@@ -352,9 +352,6 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case LAND:
         port->print("LAND");
         break;
-    case OF_LOITER:
-        port->print("OF_LOITER");
-        break;
     case DRIFT:
         port->print("DRIFT");
         break;

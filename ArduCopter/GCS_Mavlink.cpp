@@ -161,7 +161,6 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     case RTL:
     case CIRCLE:
     case LAND:
-    case OF_LOITER:
     case POSHOLD:
     case BRAKE:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
