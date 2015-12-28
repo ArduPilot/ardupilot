@@ -7,6 +7,31 @@
  *      logic for individual flight modes is in control_acro.pde, control_stabilize.pde, etc
  */
 
+
+bool Copter::is_valid_flight_mode(uint8_t mode)
+{
+    switch (mode) {
+        case STABILIZE:
+        case ACRO:
+        case ALT_HOLD:
+        case AUTO:
+        case GUIDED:
+        case LOITER:
+        case RTL:
+        case CIRCLE:
+        case LAND:
+        case DRIFT:
+        case SPORT:
+        case FLIP:
+        case AUTOTUNE:
+        case POSHOLD:
+        case BRAKE:
+            return true;
+    }
+
+    return false;
+}
+
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was succesfully set

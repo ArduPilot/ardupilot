@@ -828,6 +828,7 @@ private:
     void failsafe_disable();
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
+    bool is_valid_flight_mode(uint8_t mode);
     bool set_mode(uint8_t mode);
     void update_flight_mode();
     void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode);
