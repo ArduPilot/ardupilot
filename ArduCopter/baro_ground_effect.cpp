@@ -19,13 +19,13 @@ void Copter::update_ground_effect_detector(void)
     float xy_speed_cms = 0.0f;
     float des_climb_rate_cms = pos_control.get_desired_velocity().z;
 
-    if(pos_control.is_active_xy()) {
+    if (pos_control.is_active_xy()) {
         Vector3f vel_target = pos_control.get_vel_target();
         vel_target.z = 0.0f;
         xy_des_speed_cms = vel_target.length();
     }
 
-    if(position_ok() || optflow_position_ok()) {
+    if (position_ok() || optflow_position_ok()) {
         Vector3f vel = inertial_nav.get_velocity();
         vel.z = 0.0f;
         xy_speed_cms = vel.length();
