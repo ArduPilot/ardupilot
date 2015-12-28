@@ -223,7 +223,7 @@ void Vector3<T>::rotate(enum Rotation rotation)
         tmp = x; x = y; y = -tmp;
         return;
     }
-    case ROTATION_YAW_293_PITCH_68_ROLL_90: {
+    case ROTATION_ROLL_90_PITCH_68_YAW_293: {
         float tmpx = x;
         float tmpy = y;
         float tmpz = z;
