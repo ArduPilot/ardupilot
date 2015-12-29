@@ -184,6 +184,14 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 
+        //check if accelerometers have calibrated and require reboot
+        if (ins.accel_cal_requires_reboot()) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
+            }
+            return false;
+        }
+
         // check all accelerometers point in roughly same direction
         if (ins.get_accel_count() > 1) {
             const Vector3f &prime_accel_vec = ins.get_accel();
@@ -482,6 +490,14 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // check accels and gyro are healthy
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
+        //check if accelerometers have calibrated and require reboot
+        if (ins.accel_cal_requires_reboot()) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
+            }
+            return false;
+        }
+
         if (!ins.get_accel_health_all()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Accelerometers not healthy");
