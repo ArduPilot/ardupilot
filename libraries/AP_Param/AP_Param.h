@@ -36,11 +36,12 @@
   flags for variables in var_info and group tables
  */
 #define AP_PARAM_FLAG_NESTED_OFFSET 1
+#define AP_PARAM_FLAG_POINTER       2
 
 // a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
 // is constant and known at compile time
-#define AP_VAROFFSET(type, element) (((uintptr_t)(&((const type *)1)->element))-1)
+#define AP_VAROFFSET(type, element) (((ptrdiff_t)(&((const type *)1)->element))-1)
 
 // find the type of a variable given the class and element
 #define AP_CLASSTYPE(class, element) ((uint8_t)(((const class *) 1)->element.vtype))
@@ -54,6 +55,9 @@
 // declare a subgroup entry in a group var_info. This is for having another arbitrary object as a member of the parameter list of
 // an object
 #define AP_SUBGROUPINFO(element, name, idx, thisclass, elclass) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclass, element), { group_info : elclass::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
+
+// declare a pointer subgroup entry in a group var_info
+#define AP_SUBGROUPPTR(element, name, idx, thisclass, elclass) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclass, element), { group_info : elclass::var_info }, AP_PARAM_FLAG_POINTER }
 
 #define AP_GROUPEND     { AP_PARAM_NONE, 0xFF, "", 0, { group_info : NULL } }
 #define AP_VAREND       { AP_PARAM_NONE, "", 0, NULL, { group_info : NULL } }
@@ -85,7 +89,7 @@ public:
         uint8_t type; // AP_PARAM_*
         uint8_t idx;  // identifier within the group
         const char name[AP_MAX_NAME_SIZE+1];
-        uintptr_t offset; // offset within the object
+        ptrdiff_t offset; // offset within the object
         union {
             const struct GroupInfo *group_info;
             const float def_value;
@@ -178,6 +182,14 @@ public:
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
 
+    
+    /// Find a variable by pointer
+    ///
+    ///
+    /// @param  p               Pointer to variable
+    /// @return                 token for variable
+    static bool find_by_pointer(AP_Param *p, ParamToken &token);
+    
     /// Find a object in the top level var_info table
     ///
     /// If the variable has no name, it cannot be found by this interface.
@@ -217,6 +229,8 @@ public:
     ///
     static bool load_all(void);
 
+    static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
+    
     // set a AP_Param variable to a specified value
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
@@ -331,12 +345,15 @@ private:
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint8_t vindex, uint8_t key);
+
+    static bool adjust_group_offset(uint8_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
+
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
                                     uint8_t                     vindex,
                                     uint8_t                     group_base,
                                     uint8_t                     group_shift,
-                                    uint32_t                    group_offset,
+                                    ptrdiff_t                   group_offset,
                                     uint32_t *                  group_element,
                                     const struct GroupInfo *   &group_ret,
                                     const struct GroupInfo *   &group_ret0,
@@ -357,7 +374,7 @@ private:
                                     const struct GroupInfo *group_info,
                                     uint8_t group_base,
                                     uint8_t group_shift,
-                                    uint32_t group_offset);
+                                    ptrdiff_t group_offset);
     static const struct Info *  find_by_header(
                                     struct Param_header phdr,
                                     void **ptr);
@@ -368,7 +385,7 @@ private:
     static AP_Param *           find_group(
                                     const char *name,
                                     uint8_t vindex,
-                                    uint32_t group_offset,
+                                    ptrdiff_t group_offset,
                                     const struct GroupInfo *group_info,
                                     enum ap_var_type *ptype);
     static void                 write_sentinal(uint16_t ofs);
@@ -386,7 +403,7 @@ private:
                                     bool *found_current,
                                     uint8_t group_base,
                                     uint8_t group_shift,
-                                    uint32_t group_offset,
+                                    ptrdiff_t group_offset,
                                     ParamToken *token,
                                     enum ap_var_type *ptype);
 
