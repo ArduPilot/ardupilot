@@ -70,9 +70,9 @@ before_script:
   - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-gcc
   - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-size
   - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-objcopy
+  - python Tools/autotest/param_metadata/param_parse.py
 
 script:
-  - python Tools/autotest/param_metadata/param_parse.py
   - Tools/scripts/build_all_travis.sh
 
 notifications:
