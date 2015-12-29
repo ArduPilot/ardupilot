@@ -1241,9 +1241,14 @@ bool AP_InertialSensor::is_still()
 // called during the startup of accel cal
 void AP_InertialSensor::acal_init()
 {
-    _acal = new AP_AccelCal;
+    if (_acal == NULL) {
+        _acal = new AP_AccelCal;
+    }
+    if (_accel_calibrator == NULL) {
+        _accel_calibrator = new AccelCalibrator[INS_MAX_INSTANCES];
+    }
+
     _acal->register_client(this);
-    _accel_calibrator = new AccelCalibrator[INS_MAX_INSTANCES];
 }
 
 // update accel calibrator
