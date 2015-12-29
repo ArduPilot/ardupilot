@@ -56,11 +56,22 @@ This will install two files:
  /usr/share/data/adsp/libardupilot_skel.so
 ```
 
-To start ArduPilot just run the elf file as root on the flight board.
+To start ArduPilot just run the elf file as root on the flight board:
+
+  ./ArduCopter.elf
 
 By default ArduPilot will send telemetry on UDP 14550 to the local
 WiFi network. Just open your favourite MAVLink compatible GCS and
 connect with UDP.
+
+You can optionally give command line arguments for the device paths:
+
+  -B  GPS device (default /dev/tty-4)
+  -C  telemetry1 (default /dev/tty-2)
+  -D  telemetry2 (no default)
+  -E  GPS2 (no default)
+  -e  ESC output device (default /dev/tty-3)
+  -S  spektrum input device (default /dev/tty-1)
 
 # Logging
 
@@ -104,6 +115,9 @@ The default assignment of the ports is:
  * /dev/tty-2: telemetry at 57600
  * /dev/tty-3: RC output (see below)
  * /dev/tty-4: GPS
+
+You can control which device is used for what purpose with the command
+line options given above.
 
 This assumes a GPS that can be powered off 3.3V. A uBlox GPS is
 recommended, although any ArduPilot compatible serial GPS can be used.
