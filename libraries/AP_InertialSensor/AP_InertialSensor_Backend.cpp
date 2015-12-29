@@ -174,6 +174,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _imu._accel_filter[instance].reset();
     }
 
+    _imu.set_accel_peak_hold(instance, _imu._accel_filtered[instance]);
+
     _imu._new_accel_data[instance] = true;
 
     DataFlash_Class *dataflash = get_dataflash();
