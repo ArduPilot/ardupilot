@@ -109,6 +109,27 @@ static void socket_check(void)
 }
 
 /*
+  encode argv/argv as a sequence separated by \n
+ */
+static char *encode_argv(int argc, const char *argv[])
+{
+    uint32_t len = 0;
+    for (int i=0; i<argc; i++) {
+        len += strlen(argv[i]) + 1;
+    }
+    char *ret = (char *)malloc(len+1);
+    char *p = ret;
+    for (int i=0; i<argc; i++) {
+        size_t slen = strlen(argv[i]);
+        strcpy(p, argv[i]);
+        p[slen] = '\n';
+        p += slen + 1;
+    }
+    *p = 0;
+    return ret;
+}
+
+/*
   main program
  */
 int main(int argc, const char *argv[])
@@ -117,8 +138,10 @@ int main(int argc, const char *argv[])
 
     printf("Starting DSP code\n");
     send_storage();
-        
-    ardupilot_start();
+
+    char *cmdline = encode_argv(argc, argv);
+    ardupilot_start(cmdline, strlen(cmdline));
+    free(cmdline);
     while (true) {
         uint64_t now = micros64();
         if (now - last_get_storage_us > 1000*1000) {

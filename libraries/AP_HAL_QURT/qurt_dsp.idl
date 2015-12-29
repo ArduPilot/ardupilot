@@ -2,7 +2,7 @@
 
 interface ardupilot {
     // start main thread
-    uint32 start();
+    uint32 start(in sequence<char> cmdline);
 
     // a heartbeat for debugging
     uint32 heartbeat();

@@ -18,15 +18,34 @@ volatile int _last_dsp_line = __LINE__;
 volatile const char *_last_dsp_file = __FILE__;
 volatile uint32_t _last_counter;
 
-static void *main_thread(void *)
+static void *main_thread(void *cmdptr)
 {
+    char *cmdline = (char *)cmdptr;
     HAP_PRINTF("Ardupilot main_thread started");
-    ArduPilot_main(0, NULL);
+
+    // break cmdline into argc/argv
+    int argc = 0;
+    for (int i=0; cmdline[i]; i++) {
+        if (cmdline[i] == '\n') argc++;
+    }
+    const char **argv = (const char **)calloc(argc+2, sizeof(char *));
+    argv[0] = &cmdline[0];
+    argc = 0;
+    for (int i=0; cmdline[i]; i++) {
+        if (cmdline[i] == '\n') {
+            cmdline[i] = 0;
+            argv[argc+1] = &cmdline[i+1];
+            argc++;
+        }
+    }
+    argv[argc] = nullptr;
+    
+    ArduPilot_main(argc, argv);
     return NULL;
 }
 
 
-uint32_t ardupilot_start()
+uint32_t ardupilot_start(const char *cmdline, int len)
 {
     HAP_PRINTF("Starting Ardupilot");
     pthread_attr_t thread_attr;
@@ -39,7 +58,7 @@ uint32_t ardupilot_start()
     param.sched_priority = APM_MAIN_PRIORITY;
     (void)pthread_attr_setschedparam(&thread_attr, &param);
 
-    pthread_create(&thread_ctx, &thread_attr, main_thread, NULL);
+    pthread_create(&thread_ctx, &thread_attr, main_thread, (void *)strdup((char*)cmdline));
     return 0;
 }
 
