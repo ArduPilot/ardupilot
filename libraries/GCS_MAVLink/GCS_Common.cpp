@@ -589,7 +589,9 @@ GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
         comm_get_txspace(chan) >= 
         MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_STATUSTEXT_LEN) {
         // send immediately
-        mavlink_msg_statustext_send(chan, severity, str);
+        char msg[50] {};
+        strncpy(msg, str, sizeof(msg));
+        mavlink_msg_statustext_send(chan, severity, msg);
     } else {
         // send via the deferred queuing system
         mavlink_statustext_t *s = &pending_status;
