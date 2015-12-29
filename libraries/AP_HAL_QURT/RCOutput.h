@@ -11,6 +11,11 @@ public:
     RCOutput(const char *_device_path) {
         device_path = _device_path;
     }
+
+    void set_device_path(const char *path) {
+        device_path = path;
+    }
+
     void init();
     void set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);

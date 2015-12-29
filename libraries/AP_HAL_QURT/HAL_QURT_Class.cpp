@@ -25,6 +25,7 @@
 #include "RCOutput.h"
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include <AP_HAL/utility/getopt_cpp.h>
 #include <assert.h>
 
 using namespace QURT;
@@ -32,7 +33,8 @@ using namespace QURT;
 static UDPDriver uartADriver;
 static UARTDriver uartBDriver("/dev/tty-4");
 static UARTDriver uartCDriver("/dev/tty-2");
-static Empty::UARTDriver uartDDriver;
+static UARTDriver uartDDriver(nullptr);
+static UARTDriver uartEDriver(nullptr);
 static Semaphore  i2cSemaphore;
 static Empty::I2CDriver  i2cDriver(&i2cSemaphore);
 
@@ -53,7 +55,7 @@ HAL_QURT::HAL_QURT() :
         &uartBDriver,
         &uartCDriver,
         &uartDDriver,
-        NULL,            /* no uartE */
+        &uartEDriver,
         &i2cDriver,
         NULL, /* only one i2c */
         NULL, /* only one i2c */
@@ -74,6 +76,49 @@ void HAL_QURT::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
 
+    int opt;
+    const struct GetOptLong::option options[] = {
+        {"uartB",         true,  0, 'B'},
+        {"uartC",         true,  0, 'C'},
+        {"uartD",         true,  0, 'D'},
+        {"uartE",         true,  0, 'E'},
+        {"dsm",           true,  0, 'S'},
+        {"ESC",           true,  0, 'e'},
+        {0, false, 0, 0}
+    };
+
+    GetOptLong gopt(argc, argv, "B:C:D:E:e:S",
+                    options);
+
+    /*
+      parse command line options
+     */
+    while ((opt = gopt.getoption()) != -1) {
+        switch (opt) {
+        case 'B':
+            uartBDriver.set_device_path(gopt.optarg);
+            break;
+        case 'C':
+            uartCDriver.set_device_path(gopt.optarg);
+            break;
+        case 'D':
+            uartDDriver.set_device_path(gopt.optarg);
+            break;
+        case 'E':
+            uartEDriver.set_device_path(gopt.optarg);
+            break;
+        case 'e':
+            rcoutDriver.set_device_path(gopt.optarg);
+            break;
+        case 'S':
+            rcinDriver.set_device_path(gopt.optarg);
+            break;
+        default:
+            printf("Unknown option '%c'\n", (char)opt);
+            exit(1);
+        }
+    }
+
     /* initialize all drivers and private members here.
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
@@ -81,7 +126,6 @@ void HAL_QURT::run(int argc, char* const argv[], Callbacks* callbacks) const
     schedulerInstance.hal_initialized();
     uartA->begin(115200);
     rcinDriver.init();
-
     callbacks->setup();
     scheduler->system_initialized();
 

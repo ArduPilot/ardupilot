@@ -12,6 +12,10 @@ public:
         return static_cast<RCInput*>(rcinput);
     }
 
+    void set_device_path(const char *path) {
+        device_path = path;
+    }
+    
     void init();
     bool new_input();
     uint8_t num_channels();

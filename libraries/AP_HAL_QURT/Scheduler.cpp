@@ -245,7 +245,8 @@ void *Scheduler::_uart_thread(void *arg)
         //((UARTDriver *)hal.uartA)->timer_tick();
         ((UARTDriver *)hal.uartB)->timer_tick();
         ((UARTDriver *)hal.uartC)->timer_tick();
-        //((UARTDriver *)hal.uartD)->timer_tick();
+        ((UARTDriver *)hal.uartD)->timer_tick();
+        ((UARTDriver *)hal.uartE)->timer_tick();
     }
     return NULL;
 }

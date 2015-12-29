@@ -24,6 +24,11 @@ public:
     UARTDriver(const char *name);
 
     /* QURT implementations of UARTDriver virtual methods */
+
+    void set_device_path(const char *path) {
+        devname = path;
+    }
+    
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
     void end();

@@ -83,6 +83,9 @@ void UARTDriver::_read_callback(char *buf, size_t size)
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
+    if (devname == nullptr) {
+        return;
+    }
     if (rxS < 4096) {
         rxS = 4096;
     }
