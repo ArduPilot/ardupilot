@@ -11,8 +11,8 @@
 //  should be called at 3.3hz
 void Copter::tuning() {
 
-    // exit immediately if not tuning of when radio failsafe is invoked so tuning values are not set to zero
-    if ((g.radio_tuning <= 0) || failsafe.radio || failsafe.radio_counter != 0) {
+    // exit immediately if not using tuning function, or when radio failsafe is invoked, so tuning values are not set to zero
+    if ((g.radio_tuning <= 0) || failsafe.radio || failsafe.radio_counter != 0 || g.rc_6.radio_in == 0) {
         return;
     }
 
