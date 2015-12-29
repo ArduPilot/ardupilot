@@ -241,6 +241,8 @@ public:
 
     // update accel calibrator
     void acal_update();
+
+    bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
 private:
 
     // load backend drivers
@@ -405,6 +407,8 @@ private:
     float _trim_pitch;
     float _trim_roll;
     bool _new_trim;
+
+    bool _accel_cal_requires_reboot;
 };
 
 #include "AP_InertialSensor_Backend.h"

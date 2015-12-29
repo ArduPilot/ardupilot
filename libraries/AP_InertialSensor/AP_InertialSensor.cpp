@@ -332,7 +332,8 @@ AP_InertialSensor::AP_InertialSensor() :
     _calibrating(false),
     _log_raw_data(false),
     _backends_detected(false),
-    _dataflash(NULL)
+    _dataflash(NULL),
+    _accel_cal_requires_reboot(false)
 {
     if (_s_instance) {
         AP_HAL::panic("Too many inertial sensors");
@@ -1318,6 +1319,8 @@ void AP_InertialSensor::_acal_save_calibrations()
         hal.console->print("ERR: Trim over maximum of 10 degrees!!");
         _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers 
     }
+
+    _accel_cal_requires_reboot = true;
 }
 
 void AP_InertialSensor::_acal_event_failure()
