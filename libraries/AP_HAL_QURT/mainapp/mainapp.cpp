@@ -65,7 +65,7 @@ static void get_storage(void)
     if (ardupilot_get_storage(buf, sizeof(buf)) != 0) {
         return;
     }
-    int fd = open(STORAGE_FILE ".new", O_WRONLY);
+    int fd = open(STORAGE_FILE ".new", O_WRONLY|O_CREAT|O_TRUNC, 0644);
     if (fd == -1) {
         printf("Unable to open %s - %s\n", STORAGE_FILE ".new", strerror(errno));
     }
