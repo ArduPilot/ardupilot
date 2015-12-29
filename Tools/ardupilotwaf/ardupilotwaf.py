@@ -28,6 +28,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_GPS',
     'AP_HAL',
     'AP_HAL_Empty',
+    'AP_AccelCal',
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',

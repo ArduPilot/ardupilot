@@ -20,6 +20,7 @@
 #include <fenv.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Declination/AP_Declination.h>
 #include <Filter/Filter.h>

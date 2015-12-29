@@ -8,6 +8,7 @@ LIBRARIES += AP_Compass
 LIBRARIES += AP_Declination
 LIBRARIES += AP_GPS
 LIBRARIES += AP_InertialSensor
+LIBRARIES += AP_AccelCal
 LIBRARIES += AP_Math
 LIBRARIES += AP_Mission
 LIBRARIES += AP_NavEKF
