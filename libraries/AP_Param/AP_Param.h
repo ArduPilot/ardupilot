@@ -35,8 +35,16 @@
 /*
   flags for variables in var_info and group tables
  */
+
+// a nested offset is for subgroups that are not subclasses
 #define AP_PARAM_FLAG_NESTED_OFFSET 1
+
+// a pointer variable is for dynamically allocated objects
 #define AP_PARAM_FLAG_POINTER       2
+
+// an enable variable allows a whole subtree of variables to be made
+// invisible
+#define AP_PARAM_FLAG_ENABLE        4
 
 // a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
@@ -47,7 +55,10 @@
 #define AP_CLASSTYPE(class, element) ((uint8_t)(((const class *) 1)->element.vtype))
 
 // declare a group var_info line
-#define AP_GROUPINFO(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def} }
+#define AP_GROUPINFO_FLAGS(name, idx, class, element, def, flags) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def}, flags }
+
+// declare a group var_info line
+#define AP_GROUPINFO(name, idx, class, element, def) AP_GROUPINFO_FLAGS(name, idx, class, element, def, 0)
 
 // declare a nested group entry in a group var_info
 #define AP_NESTEDGROUPINFO(class, idx) { AP_PARAM_GROUP, idx, "", 0, { group_info : class::var_info }, 0 }
