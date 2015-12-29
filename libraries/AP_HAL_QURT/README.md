@@ -57,22 +57,22 @@ This will install two files:
 ```
 
 To start ArduPilot just run the elf file as root on the flight board:
-
+```
   ./ArduCopter.elf
-
+```
 By default ArduPilot will send telemetry on UDP 14550 to the local
 WiFi network. Just open your favourite MAVLink compatible GCS and
 connect with UDP.
 
 You can optionally give command line arguments for the device paths:
-
+```
   -B  GPS device (default /dev/tty-4)
   -C  telemetry1 (default /dev/tty-2)
   -D  telemetry2 (no default)
   -E  GPS2 (no default)
   -e  ESC output device (default /dev/tty-3)
   -S  spektrum input device (default /dev/tty-1)
-
+```
 # Logging
 
 To get DataFlash logs you need to create the logs directory like this:
