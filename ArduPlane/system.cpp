@@ -81,7 +81,7 @@ void Plane::init_ardupilot()
 
     cliSerial->printf("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n",
-                        hal.util->available_memory());
+                      (unsigned)hal.util->available_memory());
 
 
     //
