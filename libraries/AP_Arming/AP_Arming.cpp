@@ -155,6 +155,14 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
+        
+        //check if accelerometers have calibrated and require reboot
+        if (ins.accel_cal_requires_reboot()) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
+            }
+            return false;
+        }
 
         // check all accelerometers point in roughly same direction
         if (ins.get_accel_count() > 1) {
