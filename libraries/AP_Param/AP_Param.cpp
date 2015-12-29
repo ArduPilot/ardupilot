@@ -1277,6 +1277,42 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
     AP_Param *ap;
     enum ap_var_type type;
     while ((ap = next(token, &type)) != NULL && type > AP_PARAM_FLOAT) ;
+
+    if (ap != NULL && type == AP_PARAM_INT8) {
+        /* 
+           check if this is an enable variable. To do that we need to
+           find the info structures for the variable
+         */
+        uint32_t group_element;
+        const struct GroupInfo *ginfo;
+        const struct GroupInfo *ginfo0;
+        uint8_t idx;
+        const struct AP_Param::Info *info = ap->find_var_info_token(*token, &group_element, ginfo, ginfo0, &idx);
+        if (info && ginfo &&
+            (ginfo->flags & AP_PARAM_FLAG_ENABLE) &&
+            ((AP_Int8 *)ap)->get() == 0) {
+            /*
+              this is a disabled parameter tree, include this
+              parameter but not others below it. We need to keep
+              looking until we go past the parameters in this object
+            */
+            ParamToken token2 = *token;
+            enum ap_var_type type2;
+            AP_Param *ap2;
+            while ((ap2 = next(&token2, &type2)) != NULL) {
+                if (token2.key != token->key) {
+                    break;
+                }
+                if (ginfo0 != NULL && (token->group_element & 0x3F) != (token2.group_element & 0x3F)) {
+                    break;
+                }
+                // update the returned token so the next() call goes from this point
+                *token = token2;
+            }
+            
+        }
+    }
+
     if (ap != NULL && ptype != NULL) {
         *ptype = type;
     }
