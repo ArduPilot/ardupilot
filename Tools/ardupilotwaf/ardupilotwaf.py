@@ -15,6 +15,7 @@ UTILITY_SOURCE_EXTS = [ 'utility/' + glob for glob in SOURCE_EXTS ]
 # TODO: Once HAL patches get in, need to filter out the HAL based
 # on the bld.env.BOARD.
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
+    'AP_AccelCal',
     'AP_ADC',
     'AP_AHRS',
     'AP_Airspeed',
@@ -28,7 +29,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_GPS',
     'AP_HAL',
     'AP_HAL_Empty',
-    'AP_AccelCal',
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',
