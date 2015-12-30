@@ -80,8 +80,6 @@ enum ap_var_type {
     AP_PARAM_INT32,
     AP_PARAM_FLOAT,
     AP_PARAM_VECTOR3F,
-    AP_PARAM_VECTOR6F,
-    AP_PARAM_MATRIX3F,
     AP_PARAM_GROUP
 };
 
@@ -110,7 +108,7 @@ public:
     struct Info {
         uint8_t type; // AP_PARAM_*
         const char name[AP_MAX_NAME_SIZE+1];
-        uint8_t key; // k_param_*
+        uint16_t key; // k_param_*
         const void *ptr;    // pointer to the variable in memory
         union {
             const struct GroupInfo *group_info;
@@ -118,7 +116,7 @@ public:
         };
     };
     struct ConversionInfo {
-        uint8_t old_key; // k_param_*
+        uint16_t old_key; // k_param_*
         uint8_t old_group_element; // index in old object
         enum ap_var_type type; // AP_PARAM_*
         const char new_name[AP_MAX_NAME_SIZE+1];        
@@ -143,8 +141,8 @@ public:
 
     // a token used for first()/next() state
     typedef struct {
-        uint32_t key : 8;
-        uint32_t idx : 6; // offset into array types
+        uint32_t key : 9;
+        uint32_t idx : 5; // offset into array types
         uint32_t group_element : 18;
     } ParamToken;
 
@@ -340,8 +338,10 @@ private:
  *  - type: the ap_var_type value for the variable
  */
     struct Param_header {
-        uint32_t key : 8;
-        uint32_t type : 6;
+        // to get 9 bits for key we needed to split it into two parts to keep binary compatibility
+        uint32_t key_low : 8;
+        uint32_t type : 5;
+        uint32_t key_high : 1;
         uint32_t group_element : 18;
     };
 
@@ -349,19 +349,19 @@ private:
     static const uint8_t        _group_level_shift = 6;
     static const uint8_t        _group_bits  = 18;
 
-    static const uint8_t        _sentinal_key   = 0xFF;
-    static const uint8_t        _sentinal_type  = 0x3F;
+    static const uint16_t       _sentinal_key   = 0x1FF;
+    static const uint8_t        _sentinal_type  = 0x1F;
     static const uint8_t        _sentinal_group = 0xFF;
 
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
-    static bool                 duplicate_key(uint8_t vindex, uint8_t key);
+    static bool                 duplicate_key(uint16_t vindex, uint16_t key);
 
-    static bool adjust_group_offset(uint8_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
+    static bool adjust_group_offset(uint16_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
 
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
-                                    uint8_t                     vindex,
+                                    uint16_t                    vindex,
                                     uint8_t                     group_base,
                                     uint8_t                     group_shift,
                                     ptrdiff_t                   group_offset,
@@ -381,7 +381,7 @@ private:
                                                     uint8_t *                  idx) const;
     static const struct Info *  find_by_header_group(
                                     struct Param_header phdr, void **ptr,
-                                    uint8_t vindex,
+                                    uint16_t vindex,
                                     const struct GroupInfo *group_info,
                                     uint8_t group_base,
                                     uint8_t group_shift,
@@ -395,11 +395,14 @@ private:
                                     uint8_t idx) const;
     static AP_Param *           find_group(
                                     const char *name,
-                                    uint8_t vindex,
+                                    uint16_t vindex,
                                     ptrdiff_t group_offset,
                                     const struct GroupInfo *group_info,
                                     enum ap_var_type *ptype);
     static void                 write_sentinal(uint16_t ofs);
+    static uint16_t             get_key(const Param_header &phdr);
+    static void                 set_key(Param_header &phdr, uint16_t key);
+    static bool                 is_sentinal(const Param_header &phrd);
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
@@ -409,7 +412,7 @@ private:
                                     uint16_t ofs,
                                     uint8_t size);
     static AP_Param *           next_group(
-                                    uint8_t vindex, 
+                                    uint16_t vindex, 
                                     const struct GroupInfo *group_info,
                                     bool *found_current,
                                     uint8_t group_base,
@@ -435,7 +438,7 @@ private:
 #endif
 
     static StorageAccess        _storage;
-    static uint8_t              _num_vars;
+    static uint16_t             _num_vars;
     static const struct Info *  _var_info;
 
     /*
@@ -689,14 +692,6 @@ AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
-
-// declare an array type
-// _t is the base type
-// _suffix is the suffix on the AP_* type name
-// _size is the size of the array
-// _pt is the enum ap_var_type type
-#define AP_PARAMDEFA(_t, _suffix, _size, _pt)   typedef AP_ParamA<_t, _size, _pt> AP_ ## _suffix;
-AP_PARAMDEFA(float, Vector6f, 6, AP_PARAM_VECTOR6F);
 
 // declare a non-scalar type
 // this is used in AP_Math.h
