@@ -65,7 +65,7 @@ extern const AP_HAL::HAL &hal;
 //
 
 // number of rows in the _var_info[] table
-uint8_t AP_Param::_num_vars;
+uint16_t AP_Param::_num_vars;
 
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
@@ -88,7 +88,7 @@ void AP_Param::write_sentinal(uint16_t ofs)
 {
     struct Param_header phdr;
     phdr.type = _sentinal_type;
-    phdr.key  = _sentinal_key;
+    set_key(phdr, _sentinal_key);
     phdr.group_element = _sentinal_group;
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
 }
@@ -161,10 +161,10 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
 }
 
 // check for duplicate key values
-bool AP_Param::duplicate_key(uint8_t vindex, uint8_t key)
+bool AP_Param::duplicate_key(uint16_t vindex, uint16_t key)
 {
-    for (uint8_t i=vindex+1; i<_num_vars; i++) {
-        uint8_t key2 = _var_info[i].key;
+    for (uint16_t i=vindex+1; i<_num_vars; i++) {
+        uint16_t key2 = _var_info[i].key;
         if (key2 == key) {
             // no duplicate keys allowed
             return true;
@@ -178,9 +178,9 @@ bool AP_Param::check_var_info(void)
 {
     uint16_t total_size = sizeof(struct EEPROM_header);
 
-    for (uint8_t i=0; i<_num_vars; i++) {
+    for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = _var_info[i].type;
-        uint8_t key = _var_info[i].key;
+        uint16_t key = _var_info[i].key;
         if (type == AP_PARAM_GROUP) {
             if (i == 0) {
                 // first element can't be a group, for first() call
@@ -246,7 +246,7 @@ bool AP_Param::initialised(void)
   The new_offset variable is relative to the vindex base. This makes
   dealing with pointer groups tricky
  */
-bool AP_Param::adjust_group_offset(uint8_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset)
+bool AP_Param::adjust_group_offset(uint16_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset)
 {
     if (group_info.flags & AP_PARAM_FLAG_NESTED_OFFSET) {
         new_offset += group_info.offset;
@@ -268,7 +268,7 @@ bool AP_Param::adjust_group_offset(uint8_t vindex, const struct GroupInfo &group
 // find the info structure given a header and a group_info table
 // return the Info structure and a pointer to the variables storage
 const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header phdr, void **ptr,
-                                                            uint8_t vindex,
+                                                            uint16_t vindex,
                                                             const struct GroupInfo *group_info,
                                                             uint8_t group_base,
                                                             uint8_t group_shift,
@@ -314,10 +314,10 @@ const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header 
 const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, void **ptr)
 {
     // loop over all named variables
-    for (uint8_t i=0; i<_num_vars; i++) {
+    for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = _var_info[i].type;
-        uint8_t key = _var_info[i].key;
-        if (key != phdr.key) {
+        uint16_t key = _var_info[i].key;
+        if (key != get_key(phdr)) {
             // not the right key
             continue;
         }
@@ -336,7 +336,7 @@ const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, 
 
 // find the info structure for a variable in a group
 const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInfo * group_info,
-                                                           uint8_t                  vindex,
+                                                           uint16_t                 vindex,
                                                            uint8_t                  group_base,
                                                            uint8_t                  group_shift,
                                                            ptrdiff_t                group_offset,
@@ -403,7 +403,7 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 
 {
     group_ret0 = group_ret = NULL;
     
-    for (uint8_t i=0; i<_num_vars; i++) {
+    for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = _var_info[i].type;
         ptrdiff_t base = (ptrdiff_t)_var_info[i].ptr;
         if (type == AP_PARAM_GROUP) {
@@ -438,7 +438,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken &tok
                                                            const struct GroupInfo *   &group_ret0,
                                                            uint8_t *                  idx) const
 {
-    uint8_t i = token.key;
+    uint16_t i = token.key;
     uint8_t type = _var_info[i].type;
     ptrdiff_t base = (ptrdiff_t)_var_info[i].ptr;
     group_ret0 = group_ret = NULL;
@@ -483,13 +483,41 @@ uint8_t AP_Param::type_size(enum ap_var_type type)
         return 4;
     case AP_PARAM_VECTOR3F:
         return 3*4;
-    case AP_PARAM_VECTOR6F:
-        return 6*4;
-    case AP_PARAM_MATRIX3F:
-        return 3*3*4;
     }
     Debug("unknown type %u\n", type);
     return 0;
+}
+
+/*
+  extract 9 bit key from Param_header
+ */
+uint16_t AP_Param::get_key(const Param_header &phdr)
+{
+    return ((uint16_t)phdr.key_high)<<8 | phdr.key_low;
+}
+
+/*
+  set 9 bit key in Param_header
+ */
+void AP_Param::set_key(Param_header &phdr, uint16_t key)
+{
+    phdr.key_low  = key & 0xFF;
+    phdr.key_high = key >> 8;
+}
+
+/*
+  return true if a header is the end of eeprom sentinal
+ */
+bool AP_Param::is_sentinal(const Param_header &phdr)
+{
+    // note that this is an ||, not an &&, as this makes us more
+    // robust to power off while adding a variable to EEPROM
+    if (phdr.type == _sentinal_type ||
+        get_key(phdr) == _sentinal_key ||
+        phdr.group_element == _sentinal_group) {
+        return true;
+    }
+    return false;
 }
 
 // scan the EEPROM looking for a given variable by header content
@@ -504,17 +532,13 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
     while (ofs < _storage.size()) {
         _storage.read_block(&phdr, ofs, sizeof(phdr));
         if (phdr.type == target->type &&
-            phdr.key == target->key &&
+            get_key(phdr) == get_key(*target) &&
             phdr.group_element == target->group_element) {
             // found it
             *pofs = ofs;
             return true;
         }
-        // note that this is an ||, not an &&, as this makes us more
-        // robust to power off while adding a variable to EEPROM
-        if (phdr.type == _sentinal_type ||
-            phdr.key == _sentinal_key ||
-            phdr.group_element == _sentinal_group) {
+        if (is_sentinal(phdr)) {
             // we've reached the sentinal
             *pofs = ofs;
             return false;
@@ -591,7 +615,7 @@ void AP_Param::copy_name_info(const struct AP_Param::Info *info,
 
 // Find a variable by name in a group
 AP_Param *
-AP_Param::find_group(const char *name, uint8_t vindex, ptrdiff_t group_offset,
+AP_Param::find_group(const char *name, uint16_t vindex, ptrdiff_t group_offset,
                      const struct GroupInfo *group_info, enum ap_var_type *ptype)
 {
     uint8_t type;
@@ -648,7 +672,7 @@ AP_Param::find_group(const char *name, uint8_t vindex, ptrdiff_t group_offset,
 AP_Param *
 AP_Param::find(const char *name, enum ap_var_type *ptype)
 {
-    for (uint8_t i=0; i<_num_vars; i++) {
+    for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = _var_info[i].type;
         if (type == AP_PARAM_GROUP) {
             uint8_t len = strnlen(_var_info[i].name, AP_MAX_NAME_SIZE);
@@ -732,7 +756,7 @@ bool AP_Param::find_by_pointer(AP_Param *p, ParamToken &token)
 AP_Param *
 AP_Param::find_object(const char *name)
 {
-    for (uint8_t i=0; i<_num_vars; i++) {
+    for (uint16_t i=0; i<_num_vars; i++) {
         if (strcasecmp(name, _var_info[i].name) == 0) {
             return (AP_Param *)_var_info[i].ptr;
         }
@@ -791,7 +815,7 @@ bool AP_Param::save(bool force_save)
     } else {
         phdr.type = info->type;
     }
-    phdr.key  = info->key;
+    set_key(phdr, info->key);
     phdr.group_element = group_element;
 
     ap = this;
@@ -877,7 +901,7 @@ bool AP_Param::load(void)
     } else {
         phdr.type = info->type;
     }
-    phdr.key  = info->key;
+    set_key(phdr, info->key);
     phdr.group_element = group_element;
 
     // scan EEPROM to find the right location
@@ -931,7 +955,7 @@ bool AP_Param::configured_in_storage(void)
     } else {
         phdr.type = info->type;
     }
-    phdr.key  = info->key;
+    set_key(phdr, info->key);
     phdr.group_element = group_element;
 
     // scan EEPROM to find the right location
@@ -1032,7 +1056,7 @@ void AP_Param::set_object_value(const void *object_pointer,
 void AP_Param::setup_sketch_defaults(void)
 {
     setup();
-    for (uint8_t i=0; i<_num_vars; i++) {
+    for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = _var_info[i].type;
         if (type <= AP_PARAM_FLOAT) {
             void *ptr = (void*)_var_info[i].ptr;
@@ -1061,9 +1085,7 @@ bool AP_Param::load_all(void)
         _storage.read_block(&phdr, ofs, sizeof(phdr));
         // note that this is an || not an && for robustness
         // against power off while adding a variable
-        if (phdr.type == _sentinal_type ||
-            phdr.key == _sentinal_key ||
-            phdr.group_element == _sentinal_group) {
+        if (is_sentinal(phdr)) {
             // we've reached the sentinal
             return true;
         }
@@ -1124,13 +1146,11 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
             _storage.read_block(&phdr, ofs, sizeof(phdr));
             // note that this is an || not an && for robustness
             // against power off while adding a variable
-            if (phdr.type == _sentinal_type ||
-                phdr.key == _sentinal_key ||
-                phdr.group_element == _sentinal_group) {
+            if (is_sentinal(phdr)) {
                 // we've reached the sentinal
                 break;
             }
-            if (phdr.key == _var_info[token.key].key) {
+            if (get_key(phdr) == _var_info[token.key].key) {
                 const struct AP_Param::Info *info;
                 void *ptr;
                 
@@ -1165,7 +1185,7 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
 
 /// Returns the next variable in a group, recursing into groups
 /// as needed
-AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_info,
+AP_Param *AP_Param::next_group(uint16_t vindex, const struct GroupInfo *group_info,
                                bool *found_current,
                                uint8_t group_base,
                                uint8_t group_shift,
@@ -1226,7 +1246,7 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
 /// as needed
 AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
 {
-    uint8_t i = token->key;
+    uint16_t i = token->key;
     bool found_current = false;
     if (i >= _num_vars) {
         // illegal token
@@ -1397,7 +1417,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     uint16_t pofs;
     AP_Param::Param_header header;
     header.type = info->type;
-    header.key = info->old_key;
+    set_key(header, info->old_key);
     header.group_element = info->old_group_element;
     if (!scan(&header, &pofs)) {
         // the old parameter isn't saved in the EEPROM. It was
