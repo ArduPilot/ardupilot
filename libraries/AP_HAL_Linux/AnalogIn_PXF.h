@@ -3,6 +3,8 @@
 #define __AP_HAL_PXF_ANALOGIN_H__
 
 #include "AP_HAL_Linux.h"
+#include <AP_ADC/AP_ADC.h>
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -45,7 +47,7 @@ private:
 class PXFAnalogIn : public AP_HAL::AnalogIn {
 public:
     PXFAnalogIn();
-    void init(void* implspecific);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
 
     // we don't yet know how to get the board voltage
