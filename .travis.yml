@@ -72,6 +72,7 @@ before_script:
   - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-objcopy
 
 script:
+  - python Tools/autotest/param_metadata/param_parse.py
   - Tools/scripts/build_all_travis.sh
 
 notifications:
