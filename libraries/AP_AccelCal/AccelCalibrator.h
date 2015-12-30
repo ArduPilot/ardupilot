@@ -60,7 +60,7 @@ public:
 
 
     // collect and avg sample to be passed onto LSQ estimator after all requisite orientations are done
-    void new_sample(const Vector3f delta_velocity, float dt);
+    void new_sample(const Vector3f& delta_velocity, float dt);
 
     // interface for LSq estimator to read sample buffer sent after conversion from delta velocity
     // to averaged acc over time
@@ -109,6 +109,7 @@ private:
     VectorP _param_array;
     float _fitness;
     uint32_t _last_samp_frag_collected_ms;
+    float _min_sample_dist;
 
     // private methods
     // check sanity of including the sample and add it to buffer if test is passed

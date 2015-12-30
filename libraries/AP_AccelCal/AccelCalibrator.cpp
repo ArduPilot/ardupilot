@@ -69,6 +69,11 @@ void AccelCalibrator::start(enum accel_cal_fit_type_t fit_type, uint8_t num_samp
     _conf_sample_time = sample_time;
     _conf_fit_type = fit_type;
 
+    const uint16_t faces = 2*_conf_num_samples-4;
+    const float a = (4.0f * M_PI_F / (3.0f * faces)) + M_PI_F / 3.0f;
+    const float theta = 0.5f * acosf(cosf(a) / (1.0f - cosf(a)));
+    _min_sample_dist = GRAVITY_MSS * 2*sinf(theta/2);
+
     _param_struct.offset = offset;
     _param_struct.diag = diag;
     _param_struct.offdiag = offdiag;
@@ -108,7 +113,7 @@ void AccelCalibrator::collect_sample() {
 }
 
 // collect and avg sample to be passed onto LSQ estimator after all requisite orientations are done
-void AccelCalibrator::new_sample(const Vector3f delta_velocity, float dt) {
+void AccelCalibrator::new_sample(const Vector3f& delta_velocity, float dt) {
     if (_status != ACCEL_CAL_COLLECTING_SAMPLE) {
         return;
     }
@@ -190,7 +195,7 @@ bool AccelCalibrator::get_sample_corrected(uint8_t i, Vector3f& s) const {
 
 // checks if no new sample has been recieved for considerable amount of time
 void AccelCalibrator::check_for_timeout() {
-    static const uint32_t timeout = _conf_sample_time*2*1000 + 500;
+    const uint32_t timeout = _conf_sample_time*2*1000 + 500;
     if (_status == ACCEL_CAL_COLLECTING_SAMPLE && AP_HAL::millis() - _last_samp_frag_collected_ms > timeout) {
         set_status(ACCEL_CAL_FAILED);
     }
@@ -236,21 +241,15 @@ void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag, Vector3f
  */
 bool AccelCalibrator::accept_sample(const Vector3f& sample)
 {
-    static const uint16_t faces = 2*_conf_num_samples-4;
-    static const float a = (4.0f * M_PI_F / (3.0f * faces)) + M_PI_F / 3.0f;
-    static const float theta = 0.5f * acosf(cosf(a) / (1.0f - cosf(a)));
-
     if (_sample_buffer == NULL) {
         return false;
     }
-
-    float min_distance = GRAVITY_MSS * 2*sinf(theta/2);
 
     for(uint8_t i=0; i < _samples_collected; i++) {
         Vector3f other_sample;
         get_sample(i, other_sample);
 
-        if ((other_sample - sample).length() < min_distance){
+        if ((other_sample - sample).length() < _min_sample_dist){
             return false;
         }
     }
@@ -277,12 +276,11 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
             if (!running()) {
                 _samples_collected = 0;
                 if (_sample_buffer == NULL) {
-                    _sample_buffer = (struct AccelSample*)malloc(sizeof(struct AccelSample)*_conf_num_samples);
+                    _sample_buffer = (struct AccelSample*)calloc(_conf_num_samples,sizeof(struct AccelSample));
                     if (_sample_buffer == NULL) {
                         set_status(ACCEL_CAL_FAILED);
                         break;
                     }
-                    memset(_sample_buffer, 0, sizeof(struct AccelSample)*_conf_num_samples);
                 }
             }
             if (_samples_collected >= _conf_num_samples) {
@@ -341,9 +339,8 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
     while(num_iterations < max_iterations) {
         float last_fitness = fitness;
 
-        float JTJ[ACCEL_CAL_MAX_NUM_PARAMS*ACCEL_CAL_MAX_NUM_PARAMS];
+        float JTJ[ACCEL_CAL_MAX_NUM_PARAMS*ACCEL_CAL_MAX_NUM_PARAMS] {};
         VectorP JTFI;
-        memset(JTJ,0,sizeof(JTJ));
 
         for(uint16_t k = 0; k<_samples_collected; k++) {
             Vector3f sample;
