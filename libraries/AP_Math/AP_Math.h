@@ -68,7 +68,6 @@
 #define WGS84_E (sqrt(2*WGS84_F - WGS84_F*WGS84_F))
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
-AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
 // are two floats equal
