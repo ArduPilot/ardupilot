@@ -131,7 +131,7 @@ void PXFAnalogSource::set_settle_time(uint16_t settle_time_ms)
 PXFAnalogIn::PXFAnalogIn()
 {}
 
-void PXFAnalogIn::init(void* machtnichts)
+void PXFAnalogIn::init()
 {}
 
 
