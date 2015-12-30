@@ -297,17 +297,17 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     AP_GROUPINFO("GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
 
     // @Param: TRIM_OPTION
-    // @DisplayName: ACC TRIM Option
-    // @Description: Choose what is the truth for accel trim calculation
+    // @DisplayName: Accel cal trim option
+    // @Description: Specifies how the accel cal routine determines the trims
     // @User: Advanced
-    // @Values: 0:accel cal Level is Truth, 1:body aligned accel is truth
-    AP_GROUPINFO("TRIM_OPTION", 25, AP_InertialSensor, _trim_option, 0),
+    // @Values: 0:Don't adjust the trims,1:Assume first orientation was level,2:Assume ACC_BODYFIX is perfectly aligned to the vehicle
+    AP_GROUPINFO("TRIM_OPTION", 25, AP_InertialSensor, _trim_option, 1),
 
-    // @Param: ACC_BODY_ALIGNED
-    // @DisplayName: ACC body aligned
-    // @Description: The body aligned accel to be used for trim calculation
+    // @Param: ACC_BODYFIX
+    // @DisplayName: Body-fixed accelerometer
+    // @Description: The body-fixed accelerometer to be used for trim calculation
     // @User: Advanced
-    // @Value: Accelerometer ID    
+    // @Values: 1:IMU 1,2:IMU 2,3:IMU 3
     AP_GROUPINFO("ACC_BODYFIX", 26, AP_InertialSensor, _acc_body_aligned, 2),
     /*
       NOTE: parameter indexes have gaps above. When adding new
@@ -1242,6 +1242,7 @@ bool AP_InertialSensor::is_still()
 // called during the startup of accel cal
 void AP_InertialSensor::acal_init()
 {
+    // NOTE: these objects are never deallocated because the pre-arm checks force a reboot
     if (_acal == NULL) {
         _acal = new AP_AccelCal;
     }
@@ -1286,8 +1287,9 @@ void AP_InertialSensor::_acal_save_calibrations()
     Vector3f aligned_sample;
     Vector3f misaligned_sample;
     switch(_trim_option) {
-
         case 0:
+            break;
+        case 1:
             // The first level step of accel cal will be taken as gnd truth,
             // i.e. trim will be set as per the output of primary accel from the level step
             get_primary_accel_cal_sample_avg(0,aligned_sample);
@@ -1295,7 +1297,7 @@ void AP_InertialSensor::_acal_save_calibrations()
             _trim_roll = atan2f(-aligned_sample.y, -aligned_sample.z);
             _new_trim = true;
             break;
-        case 1:
+        case 2:
             // Reference accel is truth, in this scenario there is a reference accel
             // as mentioned in ACC_BODY_ALIGNED
             if (get_primary_accel_cal_sample_avg(0,misaligned_sample) && get_fixed_mount_accel_cal_sample(0,aligned_sample)) {
@@ -1350,10 +1352,10 @@ bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
 */
 bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const
 {
-    if (_accel_count <= _acc_body_aligned || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
+    if (_accel_count <= (_acc_body_aligned-1) || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
         return false;
     }
-    _accel_calibrator[_acc_body_aligned].get_sample_corrected(sample_num, ret);
+    _accel_calibrator[_acc_body_aligned-1].get_sample_corrected(sample_num, ret);
     ret.rotate(_board_orientation);
     return true;
 }
