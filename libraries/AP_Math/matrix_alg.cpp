@@ -49,7 +49,7 @@ float* mat_mul(float *A, float *B, uint8_t n)
     return ret;
 }
 
-inline void swap(float &a, float &b)
+static inline void swap(float &a, float &b)
 {
     float c;
     c = a;

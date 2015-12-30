@@ -20,7 +20,7 @@ static uint16_t get_random(void)
 }
 
 
-void show_matrix(float *A, int n) {
+static void show_matrix(float *A, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++)
             printf("%.10f  ", A[i * n + j]);
@@ -28,7 +28,7 @@ void show_matrix(float *A, int n) {
     }
 }
 
-bool compare_mat(float *A, float *B, uint8_t n)
+static bool compare_mat(const float *A, const float *B, const uint8_t n)
 {
     for(uint8_t i = 0; i < n; i++) {
         for(uint8_t j = 0; j < n; j++) {
