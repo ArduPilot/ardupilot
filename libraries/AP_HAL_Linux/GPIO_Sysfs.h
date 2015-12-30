@@ -77,17 +77,6 @@ protected:
      * Note: the pin is ignored if already exported.
      */
     static bool _export_pin(uint8_t vpin);
-
-    /*
-     * Make pins available for use. This function should be called before
-     * calling functions that use pin number as parameter.
-     *
-     * If all pins are exported successfully, true is returned. If there is an
-     * error for one of them, false is returned.
-     *
-     * Note: pins already exported are ignored.
-     */
-    static bool _export_pins(uint8_t vpins[], size_t num_vpins);
 };
 
 #endif

@@ -208,46 +208,41 @@ bool GPIO_Sysfs::usb_connected(void)
 
 bool GPIO_Sysfs::_export_pin(uint8_t vpin)
 {
-    uint8_t vpins[] = { vpin };
-    return _export_pins(vpins, 1);
-}
+    assert_vpin(vpin, n_pins, false);
 
-bool GPIO_Sysfs::_export_pins(uint8_t vpins[], size_t len)
-{
-    int fd = open(GPIO_BASE_PATH "export", O_WRONLY | O_CLOEXEC);
-    if (fd < 0) {
-        hal.console->printf("GPIO_Sysfs: Unable to open " GPIO_BASE_PATH "export.");
-        return false;
+    const unsigned int pin = pin_table[vpin];
+    char gpio_path[GPIO_PATH_MAX];
+    int fd;
+
+    int r = snprintf(gpio_path, GPIO_PATH_MAX, GPIO_BASE_PATH "gpio%u", pin);
+    if (r < 0 || r >= (int) GPIO_PATH_MAX) {
+        goto fail_snprintf;
     }
 
-    bool success = true;
+    if (access(gpio_path, F_OK) == 0) {
+        // Already exported
+        return true;
+    }
 
-    for (unsigned int i = 0; i < len; i++) {
-        if (vpins[i] >= n_pins) {
-            hal.console->printf("GPIO_Sysfs: Can't open pin %u\n", vpins[i]);
-            success = false;
-            break;
-        }
-        const unsigned int pin = pin_table[vpins[i]];
-        char gpio_path[GPIO_PATH_MAX];
+    fd = open(GPIO_BASE_PATH "export", O_WRONLY | O_CLOEXEC);
+    if (fd < 0) {
+        goto fail_open;
+    }
 
-        snprintf(gpio_path, GPIO_PATH_MAX, GPIO_BASE_PATH "gpio%u", pin);
-
-        // Verify if the pin is not already exported
-        if (access(gpio_path, F_OK) == 0)
-            continue;
-
-        int r = dprintf(fd, "%u", pin);
-        if (r < 0) {
-            hal.console->printf("GPIO_Sysfs: Unable to export pin %u.\n", pin);
-            success = false;
-            break;
-        }
+    // Try to export
+    if (dprintf(fd, "%u", pin) < 0) {
+        goto fail_export;
     }
 
     close(fd);
+    return true;
 
-    return success;
+fail_export:
+    close(fd);
+fail_open:
+fail_snprintf:
+    hal.console->printf("GPIO_Sysfs: Unable to export pin %u.\n", pin);
+    return false;
 }
 
 #endif
