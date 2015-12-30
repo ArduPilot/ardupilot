@@ -144,6 +144,8 @@ private:
     AP_Int8  _pitch_max;
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
+    AP_Int8  _pitch_limit_min_approach;
+    AP_Int8  _pitch_limit_max_approach;
 
     // current height estimate (above field elevation)
     float _height;

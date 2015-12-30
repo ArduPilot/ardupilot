@@ -57,6 +57,7 @@
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_Land/AP_Land.h>
 #include <AP_RPM/AP_RPM.h>
 
 #include <APM_OBC/APM_OBC.h>
@@ -188,6 +189,8 @@ private:
 
     AP_InertialSensor ins;
 
+    AP_Land land;
+    
 #if RANGEFINDER_ENABLED == ENABLED
     // rangefinder
     RangeFinder rangefinder {serial_manager};
@@ -924,6 +927,9 @@ private:
     void update_flight_mode(void);
     void stabilize();
     void set_servos_idle(void);
+    int16_t calculate_approach_throttle(void);
+    int16_t bat_level_pwm_offset(void);
+    int16_t approach_target_speed_pwm_offset(void);
     void set_servos();
     void update_aux();
     void update_is_flying_5Hz(void);
@@ -979,7 +985,6 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void run_cli(AP_HAL::UARTDriver *port);
-    bool restart_landing_sequence();
     void log_init();
     void init_capabilities(void);
     void dataflash_periodic(void);

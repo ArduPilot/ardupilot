@@ -67,12 +67,12 @@ public:
         k_param_flap_2_speed,
         k_param_reset_switch_chan,
         k_param_manual_level, // unused
-        k_param_land_pitch_cd,
+        k_param_land_pitch_cd,  // depreciated, moved to AP_Land
         k_param_ins_old,            // *** Deprecated, remove with next eeprom number change
         k_param_stick_mixing,
         k_param_reset_mission_chan,
-        k_param_land_flare_alt,
-        k_param_land_flare_sec,
+        k_param_land_flare_alt,  // depreciated, moved to AP_Land
+        k_param_land_flare_sec,  // depreciated, moved to AP_Land
         k_param_crosstrack_min_distance, // unused
         k_param_rudder_steer, // unused
         k_param_throttle_nudge,
@@ -124,7 +124,7 @@ public:
         k_param_terrain_lookahead,
         k_param_fbwa_tdrag_chan,
         k_param_rangefinder_landing,
-        k_param_land_flap_percent,
+        k_param_land_flap_percent,  // depreciated, moved to AP_Land
         k_param_takeoff_flap_percent,
         k_param_flap_slewrate,
         k_param_rtl_autoland,
@@ -134,18 +134,19 @@ public:
         k_param_cli_enabled,
         k_param_trim_rc_at_start,
         k_param_hil_mode,
-        k_param_land_disarm_delay,
+        k_param_land_disarm_delay,  // depreciated, moved to AP_Land
         k_param_glide_slope_threshold,
         k_param_rudder_only,
         k_param_gcs3,            // 93
         k_param_gcs_pid_mask,
         k_param_crash_detection_enable,
-        k_param_land_abort_throttle_enable,
+        k_param_land_abort_throttle_enable,  // depreciated, moved to AP_Land
         k_param_rssi = 97,
         k_param_rpm_sensor,
         k_param_parachute,
         k_param_arming = 100,
         k_param_parachute_channel,
+        k_param_land,
 
         // 105: Extra parameters
         k_param_fence_retalt = 105,
@@ -449,9 +450,6 @@ public:
     AP_Int8 reset_mission_chan;
     AP_Int32 airspeed_cruise_cm;
     AP_Int32 RTL_altitude_cm;
-    AP_Float land_flare_alt;
-    AP_Int8 land_disarm_delay;
-    AP_Int8 land_abort_throttle_enable;
     AP_Int32 min_gndspeed_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
@@ -465,7 +463,6 @@ public:
     AP_Int8 flap_1_speed;
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
-    AP_Int8 land_flap_percent;
     AP_Int8 takeoff_flap_percent;  
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;

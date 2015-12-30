@@ -17,6 +17,7 @@ def build(bld):
             'AP_Camera',
             'AP_Frsky_Telem',
             'AP_L1_Control',
+            'AP_Land',
             'AP_Menu',
             'AP_Mount',
             'AP_Navigation',

@@ -104,6 +104,10 @@ public:
     /// set_monitoring - sets the monitor type (used for example sketch only)
     void set_monitoring(uint8_t instance, uint8_t mon) { _monitoring[instance].set(mon); }
 
+    // get estimated LiPo cell count based on voltage and use
+    uint8_t estiamted_LiPo_cell_count(uint8_t instance) const;
+    uint8_t estiamted_LiPo_cell_count() const { return estiamted_LiPo_cell_count(AP_BATT_PRIMARY_INSTANCE); }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:

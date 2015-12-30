@@ -485,7 +485,7 @@ void Plane::exit_mode(enum FlightMode mode)
 
             if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND)
             {
-                restart_landing_sequence();
+                mission.restart_landing_sequence();
             }
         }
         auto_state.started_flying_in_auto_ms = 0;
@@ -497,8 +497,9 @@ void Plane::check_long_failsafe()
     uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+    if (failsafe.state != FAILSAFE_LONG &&
+            failsafe.state != FAILSAFE_GCS &&
+            !AP_Land::flightstage_is_land(flight_stage)) {
         if (failsafe.state == FAILSAFE_SHORT &&
                    (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
@@ -531,15 +532,14 @@ void Plane::check_short_failsafe()
 {
     // only act on changes
     // -------------------
-    if(failsafe.state == FAILSAFE_NONE && (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH)) {
+    if (failsafe.state == FAILSAFE_NONE && !AP_Land::flightstage_is_land(flight_stage)) {
         if(failsafe.ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
             failsafe_short_on_event(FAILSAFE_SHORT);
         }
     }
 
-    if(failsafe.state == FAILSAFE_SHORT) {
-        if(!failsafe.ch3_failsafe) {
+    if (failsafe.state == FAILSAFE_SHORT) {
+        if (!failsafe.ch3_failsafe) {
             failsafe_short_off_event();
         }
     }

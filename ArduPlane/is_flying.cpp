@@ -47,6 +47,11 @@ void Plane::update_is_flying_5Hz(void)
 
             switch (flight_stage)
             {
+            case AP_SpdHgtControl::FLIGHT_TAKEOFF_WAIT:
+                is_flying_bool = false; //we should never be flying before we takeoff
+                crash_state.is_crashed = false; //also shouldn't crash before beginning an auto takeoff
+                break;
+                
             case AP_SpdHgtControl::FLIGHT_TAKEOFF:
                 // while on the ground, an uncalibrated airspeed sensor can drift to 7m/s so
                 // ensure we aren't showing a false positive. If the throttle is suppressed
@@ -63,6 +68,8 @@ void Plane::update_is_flying_5Hz(void)
                 break;
 
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+            case AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP:
+
                 // TODO: detect ground impacts
                 if (fabsf(auto_state.sink_rate) > 0.2f) {
                     is_flying_bool = true;
@@ -70,6 +77,7 @@ void Plane::update_is_flying_5Hz(void)
                 break;
 
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+            case AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP:
                 break;
             } // switch
         }
@@ -79,7 +87,8 @@ void Plane::update_is_flying_5Hz(void)
 
         if ((control_mode == AUTO) &&
             ((flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) ||
-             (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL)) ) {
+             (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) ||
+             (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP))) {
             is_flying_bool = false;
         }
     }
@@ -157,6 +166,10 @@ void Plane::crash_detection_update(void)
     {
         switch (flight_stage)
         {
+        case AP_SpdHgtControl::FLIGHT_TAKEOFF_WAIT:
+            crashed = false; //it should be impossible to crash before takeoff even occurs
+            break;
+            
         case AP_SpdHgtControl::FLIGHT_TAKEOFF:
             auto_launch_detected = !throttle_suppressed && (g.takeoff_throttle_min_accel > 0);
 
@@ -177,6 +190,7 @@ void Plane::crash_detection_update(void)
             break;
 
         case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+        case AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP:
             if (been_auto_flying) {
                 crashed = true;
             }
@@ -186,6 +200,7 @@ void Plane::crash_detection_update(void)
             break;
 
         case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+        case AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP:
             // We should be nice and level-ish in this flight stage. If not, we most
             // likely had a crazy landing. Throttle is inhibited already at the flare
             // but go ahead and notify GCS and perform any additional post-crash actions.

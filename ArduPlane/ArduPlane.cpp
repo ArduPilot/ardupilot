@@ -498,12 +498,6 @@ void Plane::handle_auto_mode(void)
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
         }
         calc_throttle();
-        
-        if (auto_state.land_complete) {
-            // we are in the final stage of a landing - force
-            // zero throttle
-            channel_throttle->servo_out = 0;
-        }
     } else {
         // we are doing normal AUTO flight, the special cases
         // are for takeoff and landing
@@ -765,6 +759,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 
     switch (fs) {
     case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+	case AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP:
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
@@ -788,8 +783,10 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+    case AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP:
     case AP_SpdHgtControl::FLIGHT_NORMAL:
     case AP_SpdHgtControl::FLIGHT_TAKEOFF:
+    case AP_SpdHgtControl::FLIGHT_TAKEOFF_WAIT:
         break;
     }
     
@@ -829,29 +826,40 @@ void Plane::update_alt()
 void Plane::update_flight_stage(void)
 {
     // Update the speed & height controller states
-    if (auto_throttle_mode && !throttle_suppressed) {        
+    if (auto_throttle_mode) {
         if (control_mode==AUTO) {
-            if (auto_state.takeoff_complete == false) {
+            if(throttle_suppressed && auto_state.takeoff_complete == false) {
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF_WAIT);
+            } else if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
-
-                if ((g.land_abort_throttle_enable && channel_throttle->control_in > 95) ||
+                if ((land.abort_throttle_enable && channel_throttle->control_in > 95) ||
                         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
                 } else if (auto_state.land_complete == true) {
-                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
-                } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+                    if(flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP) {
+                        set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP);
+                    } else {
+                        set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
+                    }
+                } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH && flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP) {
                     float path_progress = location_path_proportion(current_loc, prev_WP_loc, next_WP_loc);
                     bool lined_up = abs(nav_controller->bearing_error_cd()) < 1000;
                     bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
                     if ((path_progress > 0.15f && lined_up && below_prev_WP) || path_progress > 0.5f) {
-                        set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
+                        float distance = get_distance(prev_WP_loc, next_WP_loc);
+                        float height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
+                        if (atan2f(height,distance) >= radians(20) && land.pre_flare_alt > 0 && land.pre_flare_alt > land.flare_alt ) {
+                            // steep approach slope detected with pre-flare configured
+                            set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP);
+                        } else {
+                            set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
+                        }
                     } else {
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);                        
                     }
                 }
-
             } else {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }

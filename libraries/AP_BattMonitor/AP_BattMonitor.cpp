@@ -299,3 +299,19 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
     // if we've gotten this far battery is ok
     return false;
 }
+
+/// estiamted_LiPo_cell_count - returns estimated LiPo cell count based on voltage and use. 4 would mean a 4S battery
+uint8_t AP_BattMonitor::estiamted_LiPo_cell_count(uint8_t instance) const
+{
+    uint8_t cell_count;
+
+    //determine cell count of the users battery based on voltage
+    //use different scaler depending on battery percent remaining
+    //prevents situations such as thinking that a dead 4 cell battery is a full 3 cell battery
+    if(capacity_remaining_pct(instance) >= 50) {
+        cell_count = (int)(voltage(instance)/4.25f) + 1;
+    } else {
+        cell_count = (int)(voltage(instance)/3.9f) + 1;
+    }
+    return cell_count;
+}

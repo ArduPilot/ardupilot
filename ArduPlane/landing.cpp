@@ -37,7 +37,7 @@ bool Plane::verify_land()
         if (adjusted_relative_altitude_cm() > auto_state.takeoff_altitude_rel_cm) {
             next_WP_loc = current_loc;
             mission.stop();
-            bool success = restart_landing_sequence();
+            bool success = mission.restart_landing_sequence();
             mission.resume();
             if (!success) {
                 // on a restart failure lets RTL or else the plane may fly away with nowhere to go!
@@ -61,25 +61,22 @@ bool Plane::verify_land()
           rangefinder data (to prevent us keeping throttle on 
           after landing if we've had positive baro drift)
     */
-#if RANGEFINDER_ENABLED == ENABLED
-    bool rangefinder_in_range = rangefinder_state.in_range;
-#else
-    bool rangefinder_in_range = false;
-#endif
-    if (height <= g.land_flare_alt ||
-        (aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec) ||
-        (!rangefinder_in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||
-        (fabsf(auto_state.sink_rate) < 0.2f && !is_flying())) {
 
+    if (height <= land.flare_alt ||
+        (aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec) ||
+        //(!rangefinder_in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||
+        (fabsf(auto_state.sink_rate) < 0.2f && !is_flying()))  {
         if (!auto_state.land_complete) {
             auto_state.post_landing_stats = true;
             if (!is_flying() && (millis()-auto_state.last_flying_ms) > 3000) {
                 gcs_send_text_fmt(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)gps.ground_speed());
             } else {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Flare %.1fm sink=%.2f speed=%.1f dist=%.1f",
-                                  (double)height, (double)auto_state.sink_rate,
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Flare %.1fm sink=%.2f Gspd=%.1f dist=%.1f C=%.2f",
+                                  (double)height,
+                                  (double)auto_state.sink_rate,
                                   (double)gps.ground_speed(),
-                                  (double)get_distance(current_loc, next_WP_loc));
+                                  (double)get_distance(current_loc, next_WP_loc),
+                                  (double)rangefinder_correction());
             }
         }
         auto_state.land_complete = true;
@@ -131,13 +128,13 @@ bool Plane::verify_land()
  */
 void Plane::disarm_if_autoland_complete()
 {
-    if (g.land_disarm_delay > 0 && 
+    if (land.disarm_delay > 0 &&
         auto_state.land_complete && 
         !is_flying() && 
         arming.arming_required() != AP_Arming::NO &&
         arming.is_armed()) {
         /* we have auto disarm enabled. See if enough time has passed */
-        if (millis() - auto_state.last_flying_ms >= g.land_disarm_delay*1000UL) {
+        if (millis() - auto_state.last_flying_ms >= land.disarm_delay*1000UL) {
             if (disarm_motors()) {
                 gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
@@ -192,12 +189,12 @@ void Plane::setup_landing_glide_slope(void)
         // the height we aim for is the one to give us the right flare point
         float aim_height = aparm.land_flare_sec * sink_rate;
         if (aim_height <= 0) {
-            aim_height = g.land_flare_alt;
+            aim_height = land.flare_alt;
         } 
             
         // don't allow the aim height to be too far above LAND_FLARE_ALT
-        if (g.land_flare_alt > 0 && aim_height > g.land_flare_alt*2) {
-            aim_height = g.land_flare_alt*2;
+        if (land.flare_alt > 0 && aim_height > land.flare_alt*2) {
+            aim_height = land.flare_alt*2;
         }
 
         // time before landing that we will flare
@@ -211,18 +208,26 @@ void Plane::setup_landing_glide_slope(void)
         if (flare_distance > total_distance/2) {
             flare_distance = total_distance/2;
         }
-
         // now calculate our aim point, which is before the landing
         // point and above it
         location_update(loc, land_bearing_cd*0.01f, -flare_distance);
         loc.alt += aim_height*100;
 
+        float landing_slope = 0.0;
+        
         // calculate slope to landing point
-        float land_slope = (sink_height - aim_height) / total_distance;
-
+        if(!is_zero(land.slope)) //use a user defined slope if one is provided
+        {
+            landing_slope = land.slope;
+        }
+        else //use the original landing slope calculation minus landing offset to determine slope
+        {
+            landing_slope = (sink_height - aim_height) / (total_distance); //slope is determined by user parameter
+        }
+        
         // calculate point along that slope 500m ahead
         location_update(loc, land_bearing_cd*0.01f, land_projection);
-        loc.alt -= land_slope * land_projection * 100;
+        loc.alt -= landing_slope * land_projection * 100;
 
         // setup the offset_cm for set_target_altitude_proportion()
         target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
@@ -237,52 +242,6 @@ void Plane::setup_landing_glide_slope(void)
         constrain_target_altitude_location(loc, prev_WP_loc);
 }
 
-/*
-     Restart a landing by first checking for a DO_LAND_START and
-     jump there. Otherwise decrement waypoint so we would re-start
-     from the top with same glide slope. Return true if successful.
- */
-bool Plane::restart_landing_sequence()
-{
-    if (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND) {
-        return false;
-    }
-
-    uint16_t do_land_start_index = mission.get_landing_sequence_start();
-    uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
-    bool success = false;
-    uint16_t current_index = mission.get_current_nav_index();
-    AP_Mission::Mission_Command cmd;
-
-    if (mission.read_cmd_from_storage(current_index+1,cmd) &&
-            cmd.id == MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT &&
-            (cmd.p1 == 0 || cmd.p1 == 1) &&
-            mission.set_current_cmd(current_index+1))
-    {
-        // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", cmd.content.location.alt/100);
-        success =  true;
-    }
-    else if (do_land_start_index != 0 &&
-            mission.set_current_cmd(do_land_start_index))
-    {
-        // look for a DO_LAND_START and use that index
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
-        success =  true;
-    }
-    else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
-               mission.set_current_cmd(prev_cmd_with_wp_index))
-    {
-        // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
-        // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
-        success =  true;
-    } else {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
-        success =  false;
-    }
-    return success;
-}
 
 /* 
    find the nearest landing sequence starting point (DO_LAND_START) and
@@ -310,26 +269,3 @@ bool Plane::jump_to_landing_sequence(void)
     return false;
 }
 
-/*
-  the height above field elevation that we pass to TECS
- */
-float Plane::tecs_hgt_afe(void)
-{
-    /*
-      pass the height above field elevation as the height above
-      the ground when in landing, which means that TECS gets the
-      rangefinder information and thus can know when the flare is
-      coming.
-    */
-    float hgt_afe;
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-        hgt_afe = height_above_target();
-        hgt_afe -= rangefinder_correction();
-    } else {
-        // when in normal flight we pass the hgt_afe as relative
-        // altitude to home
-        hgt_afe = relative_altitude();
-    }
-    return hgt_afe;
-}

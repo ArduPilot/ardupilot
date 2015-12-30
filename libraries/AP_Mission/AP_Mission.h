@@ -380,6 +380,11 @@ public:
     // be found.
     uint16_t get_landing_sequence_start();
 
+    // Restart a landing by first checking for a DO_LAND_START and
+    // jump there. Otherwise decrement waypoint so we would re-start
+    // from the top with same glide slope. Return true if successful.
+    bool restart_landing_sequence();
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
