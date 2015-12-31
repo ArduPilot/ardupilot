@@ -507,7 +507,7 @@ private:
         // debounce timer
         uint32_t debounce_timer_ms;
 
-        // length of time impact_detected has been true. times out after a few seconds. used to clamp is_flying_prob
+        // length of time impact_detected has been true. Times out after a few seconds. Used to clip isFlyingProbability
         uint32_t impact_timer_ms;
     } crash_state;
 

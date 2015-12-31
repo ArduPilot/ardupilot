@@ -53,26 +53,18 @@ void Plane::update_is_flying_5Hz(void)
             // will not change the is_flying state, anything above 0.1
             // is "true", it just allows it to decay faster once we decide we
             // aren't flying using the normal schemes
-            float accel_x = ins.get_accel_peak_hold_neg().x;
-
-            if (accel_x < -20) {
+            if (g.crash_accel_threshold == 0) {
+                crash_state.impact_detected = false;
+            } else if (ins.get_accel_peak_hold_neg().x < -(g.crash_accel_threshold)) {
                 // large deceleration detected, lets lower confidence VERY quickly
-                if (isFlyingProbability > 0.25f) {
-                    isFlyingProbability = 0.25f;
-                    crash_state.impact_detected = true;
-                    crash_state.impact_timer_ms = now_ms;
+                crash_state.impact_detected = true;
+                crash_state.impact_timer_ms = now_ms;
+                if (isFlyingProbability > 0.2f) {
+                    isFlyingProbability = 0.2f;
                 }
-            } else if (accel_x < -10) {
-                // medium deceleration detected, lets lower confidence
-                if (isFlyingProbability > 0.5f) {
-                    isFlyingProbability = 0.5f;
-                    crash_state.impact_detected = true;
-                    crash_state.impact_timer_ms = now_ms;
-                }
-            }
-
-            if (crash_state.impact_detected &&
+            } else if (crash_state.impact_detected &&
                 (now_ms - crash_state.impact_timer_ms > IS_FLYING_IMPACT_TIMER_MS)) {
+                // no impacts seen in a while, clear the flag so we stop clipping isFlyingProbability
                 crash_state.impact_detected = false;
             }
 
@@ -123,8 +115,7 @@ void Plane::update_is_flying_5Hz(void)
     }
 
     if (!crash_state.impact_detected || !is_flying_bool) {
-        // when impact is detected, enforce a clamp. Only allow isFlyingProbability to go down, not up.
-
+        // when impact is detected, enforce a clip. Only allow isFlyingProbability to go down, not up.
         // low-pass the result.
         // coef=0.15f @ 5Hz takes 3.0s to go from 100% down to 10% (or 0% up to 90%)
         isFlyingProbability = (0.85f * isFlyingProbability) + (0.15f * (float)is_flying_bool);
