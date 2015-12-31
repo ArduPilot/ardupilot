@@ -1062,7 +1062,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if PRECISION_LANDING == ENABLED
     // @Group: PRECLAND_
     // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
-    GOBJECT(precland, "PLAND_", AC_PrecLand),
+    GOBJECT(precland, "PLND_", AC_PrecLand),
 #endif
 
     // @Group: RPM
