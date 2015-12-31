@@ -52,6 +52,12 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Increment: 0.1
     AP_GROUPINFO("_MIN_QUAL", 4, AP_RPM, _quality_min[0], 0.5),
 
+    // @Param: _FILT_ALPHA
+    // @DisplayName: LPF Filter Alpha
+    // @Description: Low Pass Filter Alpha Value
+    // @Range: 0 1
+    AP_GROUPINFO("_FILT_ALPHA", 5, AP_RPM, _filter_alpha[0], 0.1),
+
 #if RPM_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second RPM type

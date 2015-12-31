@@ -83,6 +83,7 @@ void AP_RPM_PX4_PWM::update(void)
     const float scaling = ap_rpm._scaling[state.instance];
     float maximum = ap_rpm._maximum[state.instance];
     float minimum = ap_rpm._minimum[state.instance];
+    float alpha = ap_rpm._filter_alpha[state.instance];
     float quality = 0;
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
@@ -90,18 +91,29 @@ void AP_RPM_PX4_PWM::update(void)
         if (pwm.period == 0) {
             continue;
         }
+
+        // calculate new sample RPM value
         float rpm = scaling * (1.0e6f * 60) / pwm.period;
-        float filter_value = signal_quality_filter.get();
-        state.rate_rpm = signal_quality_filter.apply(rpm);
+
+        // check if new RPM sample fits within specified min-max range.  If outside range, we will reject sample and not move the filtered value.
         if ((maximum <= 0 || rpm <= maximum) && (rpm >= minimum)) {
-            if (is_zero(filter_value)){
+
+            // calculate synthetic quality value
+            // if measured RPM is zero, avoid div-by-zero
+            if (is_zero(state.rate_rpm)){
                 quality = 0;
             } else {
-                quality = 1 - constrain_float((fabsf(rpm-filter_value))/filter_value, 0.0, 1.0);
+                quality = 1 - constrain_float((fabsf(rpm-state.rate_rpm))/state.rate_rpm, 0.0, 1.0);
                 quality = powf(quality, 2.0);
             }
+
+            // apply simple LPF to new sample value
+            state.rate_rpm = (alpha * rpm) + ((1.0 - alpha) * state.rate_rpm);
+
+            // increment data-point counter
             count++;
         } else {
+            // we have rejected an RPM sample, so assign quality value of 0 to this sample.
             quality = 0;
         }
 
@@ -114,9 +126,11 @@ void AP_RPM_PX4_PWM::update(void)
         }
 #endif
 
+        // LPF new sample quality value
         state.signal_quality = (0.1 * quality) + (0.9 * state.signal_quality);      // simple LPF
     }
 
+    // we received at least one data point this cycle, so increment time-out counter
     if (count != 0) {
         state.last_reading_ms = AP_HAL::millis();
     }

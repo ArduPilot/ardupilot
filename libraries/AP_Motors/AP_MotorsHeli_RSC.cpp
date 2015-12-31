@@ -21,11 +21,16 @@
 
 extern const AP_HAL::HAL& hal;
 
-// init_servo - servo initialization on start-up
-void AP_MotorsHeli_RSC::init_servo()
+// init - initialization on start-up
+void AP_MotorsHeli_RSC::init()
 {
     // set servo range
     _servo_output.set_range(0,1000);
+
+    // set dt for governor PID
+    if (_gov_pid != nullptr){
+        _gov_pid->set_dt(1.0f/_loop_rate);
+    }
 }
 
 // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
@@ -87,7 +92,10 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 _control_output = _idle_output + (_rotor_ramp_output * (_desired_speed - _idle_output));
             } else if (_control_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
                 // throttle output depending on estimated power demand. Output is ramped up from idle speed during rotor runup.
-                _control_output = _idle_output + (_rotor_ramp_output * ((_power_output_low - _idle_output) + (_power_output_range * _load_feedforward)));
+                _control_output = calc_open_loop_power_control_output();
+            } else if (_control_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+                // throttle output based on closed-loop control using PID.
+                _control_output = calc_closed_loop_power_control_output();
             }
             break;
     }
@@ -175,4 +183,59 @@ void AP_MotorsHeli_RSC::write_rsc(int16_t servo_out)
 
         hal.rcout->write(_servo_output_channel, _servo_output.radio_out);
     }
+}
+
+// calc_open_loop_power_control_output - calculates control output for use in open loop mode, or as feedforward for closed loop mode
+int16_t AP_MotorsHeli_RSC::calc_open_loop_power_control_output()
+{
+    // throttle output depending on estimated power demand. Output is ramped up from idle speed during rotor runup.
+    return _idle_output + (_rotor_ramp_output * ((_power_output_low - _idle_output) + (_power_output_range * _load_feedforward)));
+}
+
+// calc_closed_loop_power_control_output - calculates control output for use in closed loop mode
+int16_t AP_MotorsHeli_RSC::calc_closed_loop_power_control_output()
+{
+    static float smoothing_factor;  // used to smooth out transition from gov_enabled to disabled over 1 second
+    static int16_t pid_output;      // pid closed-loop output contribution
+    int16_t target_rpm;             // target rpm is ramped
+
+    target_rpm = _rotor_ramp_output * _governor_rpm_setpoint;
+
+    if(_governor_enabled){
+        smoothing_factor += 1.0/_loop_rate;
+    } else {
+        smoothing_factor -= 1.0/_loop_rate;
+    }
+    smoothing_factor = constrain_float(smoothing_factor, 0.0, 1.0);
+
+    if (smoothing_factor >= 1.0f){
+        // Governor is in full control, run full PID
+        _gov_pid->set_input_filter_all(target_rpm - _rpm_feedback);
+        pid_output = _gov_pid->get_pid();
+    } else if ((smoothing_factor > 0.0f) && (smoothing_factor < 1.0f)){
+        // if governor is in transition but with a good RPM signal, use P-term, but frozen I-term
+        // otherwise, RPM signal must be unhealthy, in which case we use the last known pid_output
+        // until the smoothing_factor ramps to zero. This will prevent a jump from brief periods of
+        // unhealthy sensor data.
+        if (_rpm_feedback >= 0){
+            _gov_pid->set_input_filter_all(target_rpm - _rpm_feedback);
+            pid_output = (_gov_pid->get_p() + _gov_pid->get_integrator());
+        }
+    } else {
+        // governor is fully disabled, reset all terms.
+        _gov_pid->set_input_filter_all(0);
+        _gov_pid->reset_I();
+        pid_output = 0;
+    }
+
+    // total control output is sum of basic open loop control output plus PID contribution
+    return calc_open_loop_power_control_output() + (smoothing_factor * pid_output);
+}
+
+// set_governor_enable
+void AP_MotorsHeli_RSC::set_governor_enable(bool enabled, int16_t rpm, float rpm_feedback)
+{
+    _governor_enabled = enabled;
+    _governor_rpm_setpoint = rpm;
+    _rpm_feedback = rpm_feedback;
 }

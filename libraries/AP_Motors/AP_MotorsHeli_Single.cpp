@@ -162,7 +162,7 @@ void AP_MotorsHeli_Single::init_outputs()
 
     // set main rotor servo range
     // tail rotor servo use range as set in vehicle code for rc7
-    _main_rotor.init_servo();
+    _main_rotor.init();
 }
 
 // output_test - spin a motor at the pwm value specified
