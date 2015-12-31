@@ -12,6 +12,7 @@
 #define PRECLAND_P                              2.0f    // velocity controller P gain default
 #define PRECLAND_I                              1.0f    // velocity controller I gain default
 #define PRECLAND_IMAX                         500.0f    // velocity controller IMAX default
+#define PRECLAND_FILT_HZ                        5.0f    // velocity controller filter hz
 #define PRECLAND_UPDATE_TIME                    0.02f   // precland runs at 50hz
 
 // declare backend classes
@@ -43,7 +44,7 @@ public:
     };
 
     // Constructor
-    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav, AC_PI_2D& pi_precland_xy, float dt);
+    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav, float dt);
 
     // init - perform any required initialisation of landing controllers
     void init();
@@ -83,7 +84,7 @@ private:
     // references to inertial nav and ahrs libraries
     const AP_AHRS&              _ahrs;
     const AP_InertialNav&       _inav;
-    AC_PI_2D&                   _pi_precland_xy;    // horizontal velocity PI controller
+    AC_PI_2D                    _pi_vel_xy;         // horizontal velocity PI controller
 
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
