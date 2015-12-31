@@ -22,6 +22,7 @@
 #include "AP_RangeFinder_PX4_PWM.h"
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
+#include "AP_RangeFinder_HIL.h"
 #include "AP_RangeFinder_LightWareSerial.h"
 
 // table of user settable parameters
@@ -523,6 +524,15 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
     }
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL    
+        if (AP_RangeFinder_HIL::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_HIL(*this, instance, state[instance]);
+            return;
+        }    
+#endif
+
+
     if (type == RangeFinder_TYPE_LWSER) {
         if (AP_RangeFinder_LightWareSerial::detect(*this, instance, serial_manager)) {
             state[instance].instance = instance;
@@ -530,6 +540,7 @@ void RangeFinder::detect_instance(uint8_t instance)
             return;
         }
     } 
+
     if (type == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid
@@ -605,5 +616,12 @@ void RangeFinder::update_pre_arm_check(uint8_t instance)
          ((int16_t)state[instance].pre_arm_distance_min < (MAX(_ground_clearance_cm[instance],min_distance_cm(instance)) + 10)) &&
          ((int16_t)state[instance].pre_arm_distance_min > (MIN(_ground_clearance_cm[instance],min_distance_cm(instance)) - 10))) {
         state[instance].pre_arm_check = true;
+    }
+}
+
+void RangeFinder::setHIL(uint8_t instance, const struct RangeFinder_State &state_)
+{
+	if (drivers[instance]) {
+    	drivers[instance]->_update_frontend(instance, state_);
     }
 }
