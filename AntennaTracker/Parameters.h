@@ -94,6 +94,7 @@ public:
         k_param_sysid_target,       // 138
         k_param_gcs3,               // stream rates for fourth MAVLink port
         k_param_log_bitmask,        // 140
+        k_param_notify,
 
         //
         // 150: Telemetry control
