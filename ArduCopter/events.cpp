@@ -169,6 +169,11 @@ void Copter::failsafe_gcs_check()
 {
     uint32_t last_gcs_update_ms;
 
+    // do nothing if gcs failsafe already triggered or motors disarmed
+    if (failsafe.gcs || !motors.armed()) {
+        return;
+    }
+
     // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs and we are not in guided mode
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
     if ((!failsafe.gcs)&&(g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!failsafe.rc_override_active && control_mode != GUIDED))) {
@@ -189,12 +194,7 @@ void Copter::failsafe_gcs_check()
         return;
     }
 
-    // do nothing if gcs failsafe already triggered or motors disarmed
-    if (failsafe.gcs || !motors.armed()) {
-        return;
-    }
-
-    // GCS failsafe event has occured
+    // If we have gotten this far then new GCS failsafe event has occured
     // update state, log to dataflash
     set_failsafe_gcs(true);
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
