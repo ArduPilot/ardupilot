@@ -55,7 +55,7 @@ void Plane::update_is_flying_5Hz(void)
             // aren't flying using the normal schemes
             if (g.crash_accel_threshold == 0) {
                 crash_state.impact_detected = false;
-            } else if (ins.get_accel_peak_hold_neg().x < -(g.crash_accel_threshold)) {
+            } else if (ins.get_accel_peak_hold_neg_x() < -(g.crash_accel_threshold)) {
                 // large deceleration detected, lets lower confidence VERY quickly
                 crash_state.impact_detected = true;
                 crash_state.impact_timer_ms = now_ms;
