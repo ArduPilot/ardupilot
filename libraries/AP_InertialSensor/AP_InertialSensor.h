@@ -226,10 +226,7 @@ public:
 
     // accel peak hold detector
     void set_accel_peak_hold(uint8_t instance, const Vector3f &accel);
-    Vector3f get_accel_peak_hold_pos() const { return _accel_peak_hold_pos[_primary_accel]; }
-    Vector3f get_accel_peak_hold_pos(uint8_t instance) const;
-    Vector3f get_accel_peak_hold_neg() const { return _accel_peak_hold_neg[_primary_accel]; }
-    Vector3f get_accel_peak_hold_neg(uint8_t instance) const;
+    float get_accel_peak_hold_neg_x() const { return _peak_hold_state.accel_peak_hold_neg_x; }
 
     //Returns accel calibrator interface object pointer
     AP_AccelCal* get_acal() const { return _acal; }
@@ -384,11 +381,11 @@ private:
     LowPassFilterVector3f _accel_vibe_floor_filter[INS_VIBRATION_CHECK_INSTANCES];
     LowPassFilterVector3f _accel_vibe_filter[INS_VIBRATION_CHECK_INSTANCES];
 
-    // peak hold detector
-    Vector3f _accel_peak_hold_pos[INS_MAX_INSTANCES];
-    Vector3f _accel_peak_hold_neg[INS_MAX_INSTANCES];
-    Vector3ul _accel_peak_hold_pos_age[INS_MAX_INSTANCES];
-    Vector3ul _accel_peak_hold_neg_age[INS_MAX_INSTANCES];
+    // peak hold detector state for primary accel
+    struct PeakHoldState {
+        float accel_peak_hold_neg_x;
+        uint32_t accel_peak_hold_neg_x_age;
+    } _peak_hold_state;
 
     // threshold for detecting stillness
     AP_Float _still_threshold;
