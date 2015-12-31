@@ -356,7 +356,6 @@ public:
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
-        k_param_pi_precland,    // 252
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
@@ -509,10 +508,6 @@ public:
     AC_P                    p_vel_z;
     AC_PID                  pid_accel_z;
 
-#if PRECISION_LANDING == ENABLED
-    AC_PI_2D                pi_precland;
-#endif
-
     AC_P                    p_pos_xy;
     AC_P                    p_stabilize_roll;
     AC_P                    p_stabilize_pitch;
@@ -582,10 +577,6 @@ public:
 
         p_vel_z                 (VEL_Z_P),
         pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
-
-#if PRECISION_LANDING == ENABLED
-        pi_precland             (PRECLAND_P,      PRECLAND_I,                       PRECLAND_IMAX,      VEL_XY_FILT_HZ,     PRECLAND_UPDATE_TIME),
-#endif
 
         // P controller	        initial P
         //----------------------------------------------------------------------
