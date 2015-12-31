@@ -20,6 +20,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Param/AP_Param.h>
 #include "AP_BoardLED.h"
 #include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
@@ -37,9 +38,19 @@
  # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
 #endif
 
+// Device parameters values
+#define RGB_LED_OFF     0
+#define RGB_LED_LOW     1
+#define RGB_LED_MEDIUM  2
+#define RGB_LED_HIGH    3
+
 class AP_Notify
 {
+    friend class RGBLed;    // RGBLed needs access to notify parameters
 public:
+    // Constructor
+    AP_Notify();
+
     /// notify_flags_type - bitmask of notification flags
     struct notify_flags_type {
         uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
@@ -94,8 +105,12 @@ public:
     // handle a LED_CONTROL message
     static void handle_led_control(mavlink_message_t* msg);
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
     static NotifyDevice* _devices[];
+
+    AP_Int8 _rgb_led_brightness;
 };
 
 #endif    // __AP_NOTIFY_H__
