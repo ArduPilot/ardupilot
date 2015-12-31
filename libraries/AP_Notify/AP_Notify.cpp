@@ -19,9 +19,9 @@
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
-    // @Param: RGB_LED
-    // @DisplayName: RGB LED Brightness
-    // @Description: Select the RGB LED brightness level. When USB is connected brightness will always be low no matter the setting or OFF if that is configured.
+    // @Param: LED_BRIGHT
+    // @DisplayName: LED Brightness
+    // @Description: Select the RGB LED brightness level. When USB is connected brightness will never be higher than low regardless of the setting.
     // @Values: 0:Off,1:Low,2:Medium,3:High
     // @User: Advanced
     AP_GROUPINFO("LED_BRIGHT", 0, AP_Notify, _rgb_led_brightness, RGB_LED_HIGH),
