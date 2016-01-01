@@ -496,13 +496,19 @@ private:
     struct {
         // on hard landings, only check once after directly a landing so you
         // don't trigger a crash when picking up the aircraft
-        bool checkHardLanding:1;
+        bool checkedHardLanding:1;
 
         // crash detection. True when we are crashed
         bool is_crashed:1;
 
+        // impact detection flag. Expires after a few seconds via impact_timer_ms
+        bool impact_detected:1;
+
         // debounce timer
         uint32_t debounce_timer_ms;
+
+        // length of time impact_detected has been true. Times out after a few seconds. Used to clip isFlyingProbability
+        uint32_t impact_timer_ms;
     } crash_state;
 
     // true if we are in an auto-throttle mode, which means
@@ -933,6 +939,7 @@ private:
     void update_aux();
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
+    bool in_preLaunch_flight_stage(void);
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void handle_auto_mode(void);
     void calc_throttle();

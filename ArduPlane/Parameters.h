@@ -146,6 +146,7 @@ public:
         k_param_parachute,
         k_param_arming = 100,
         k_param_parachute_channel,
+        k_param_crash_accel_threshold,
 
         // 105: Extra parameters
         k_param_fence_retalt = 105,
@@ -347,6 +348,7 @@ public:
     AP_Int8  rtl_autoland;
 
     AP_Int8  trim_rc_at_start;
+    AP_Int8  crash_accel_threshold;
     AP_Int8  crash_detection_enable;
 
     // Feed-forward gains
