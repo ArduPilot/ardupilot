@@ -145,4 +145,7 @@ private:
 
     // time when motors reached lower limit
     uint32_t motors_lower_limit_start_ms;
+
+    // time we last set the loiter target
+    uint32_t last_loiter_ms;
 };

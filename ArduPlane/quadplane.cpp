@@ -469,6 +469,11 @@ void QuadPlane::control_loiter()
     if (should_relax()) {
         wp_nav->loiter_soften_for_landing();
     }
+
+    if (millis() - last_loiter_ms > 500) {
+        wp_nav->init_loiter_target();
+    }
+    last_loiter_ms = millis();
     
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
@@ -601,7 +606,9 @@ void QuadPlane::update_transition(void)
       see if we should provide some assistance
      */
     if (have_airspeed && aspeed < assist_speed &&
-        (plane.auto_throttle_mode || plane.channel_throttle->control_in>0)) {
+        (plane.auto_throttle_mode ||
+         plane.channel_throttle->control_in>0 ||
+         plane.is_flying())) {
         // the quad should provide some assistance to the plane
         transition_state = TRANSITION_AIRSPEED_WAIT;
         transition_start_ms = millis();
@@ -682,7 +689,11 @@ void QuadPlane::update(void)
         // output to motors
         motors->output();
         transition_start_ms = 0;
-        transition_state = TRANSITION_AIRSPEED_WAIT;
+        if (throttle_wait && !plane.is_flying()) {
+            transition_state = TRANSITION_DONE;
+        } else {
+            transition_state = TRANSITION_AIRSPEED_WAIT;
+        }
         last_throttle = motors->get_throttle();
     }
 
@@ -794,12 +805,11 @@ void QuadPlane::control_auto(const Location &loc)
     target.y = diff2d.y * 100;
     target.z = loc.alt - origin.alt;
 
-    printf("target %.2f %.2f %.2f\n", target.x*0.01, target.y*0.01, target.z*0.01);
-    
-    if (!locations_are_same(loc, last_auto_target)) {
+    if (!locations_are_same(loc, last_auto_target) || millis() - last_loiter_ms > 500) {
         wp_nav->set_wp_destination(target);
         last_auto_target = loc;
     }
+    last_loiter_ms = millis();
     
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);

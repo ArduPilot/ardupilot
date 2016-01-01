@@ -895,10 +895,6 @@ void Plane::update_flight_stage(void)
             } else {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }
-        } else if (control_mode == QSTABILIZE ||
-                   control_mode == QHOVER ||
-                   control_mode == QLOITER) {
-            set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);            
         } else {
             set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
@@ -913,6 +909,13 @@ void Plane::update_flight_stage(void)
         if (should_log(MASK_LOG_TECS)) {
             Log_Write_TECS_Tuning();
         }
+    } else if (control_mode == QSTABILIZE ||
+               control_mode == QHOVER ||
+               control_mode == QLOITER ||
+               quadplane.in_assisted_flight()) {
+        set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
+    } else {
+        set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
     }
 
     // tell AHRS the airspeed to true airspeed ratio
