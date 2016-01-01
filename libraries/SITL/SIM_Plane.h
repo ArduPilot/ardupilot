@@ -42,7 +42,7 @@ protected:
     const float hover_throttle = 0.5f;
     const float cruise_airspeed = 20;
     const float cruise_pitch = radians(4);
-    const float terminal_velocity = 35;
+    const float terminal_velocity = 55;
     const float wing_efficiency = 0.9;
     const float wing_span = 2.0;
     const float wing_chord = 0.15;
@@ -54,7 +54,7 @@ protected:
 
     // manually tweaked coefficients. Not even close to reality
     struct {
-        float drag = 0.01;
+        float drag = 0.001;
         float lift = 3.0;
         float vertical_stabiliser = 0.1;
         float horizontal_stabiliser = 0.001;
