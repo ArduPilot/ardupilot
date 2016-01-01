@@ -361,7 +361,15 @@ bool Vector3<T>::operator !=(const Vector3<T> &v) const
 template <typename T>
 float Vector3<T>::angle(const Vector3<T> &v2) const
 {
-    return acosf((*this)*v2) / (float)((this->length()*v2.length()));
+    float len = this->length() * v2.length();
+    if (len <= 0) {
+        return 0.0f;
+    }
+    float cosv = ((*this)*v2) / len;
+    if (fabsf(cosv) >= 1) {
+        return 0.0f;
+    }
+    return acosf(cosv);
 }
 
 // multiplication of transpose by a vector
