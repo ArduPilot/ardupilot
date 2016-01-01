@@ -1,10 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-/// @file	AP_MotorsTri.h
-/// @brief	Motor control class for Tricopters
+/// @file	AP_MotorsBlueROV.h
+/// @brief	Motor control class for ROVs
 
-#ifndef __AP_MOTORS_TRI_H__
-#define __AP_MOTORS_TRI_H__
+#ifndef __AP_MOTORS_BLUEROV_H__
+#define __AP_MOTORS_BLUEROV_H__
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -15,11 +15,11 @@
 #define AP_MOTORS_CH_TRI_YAW    CH_7
 
 /// @class      AP_MotorsTri
-class AP_MotorsTri : public AP_MotorsMulticopter {
+class AP_MotorsBlueROV : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsTri(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+    AP_MotorsBlueROV(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMulticopter(loop_rate, speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -65,4 +65,4 @@ protected:
     AP_Int16        _yaw_servo_max;                     // Maximum angle limit of yaw servo
 };
 
-#endif  // AP_MOTORSTRI
+#endif  // AP_MOTORSBLUEROV

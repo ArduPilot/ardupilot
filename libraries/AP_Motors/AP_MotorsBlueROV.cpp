@@ -15,17 +15,17 @@
  */
 
 /*
- *       AP_MotorsTri.cpp - ArduCopter motors library
- *       Code by RandyMackay. DIYDrones.com
+ *       AP_MotorsBlueROV.cpp - ArduCopter motors library
+ *       Code by Rustom Jehangir. BlueRobotics.com
  *
  */
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include "AP_MotorsTri.h"
+#include "AP_MotorsBlueROV.h"
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
+const AP_Param::GroupInfo AP_MotorsBlueROV::var_info[] = {
     // variables from parent vehicle
     AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
 
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @Description: Yaw servo reversing. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
     // @Values: -1:Reversed,1:Normal
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_REV", 31,     AP_MotorsTri,  _yaw_servo_reverse, 1),
+    AP_GROUPINFO("YAW_SV_REV", 31,     AP_MotorsBlueROV,  _yaw_servo_reverse, 1),
 
     // @Param: YAW_SV_TRIM
     // @DisplayName: Yaw Servo Trim/Center
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_TRIM", 32,     AP_MotorsTri,  _yaw_servo_trim, 1500),
+    AP_GROUPINFO("YAW_SV_TRIM", 32,     AP_MotorsBlueROV,  _yaw_servo_trim, 1500),
 
     // @Param: YAW_SV_MIN
     // @DisplayName: Yaw Servo Min Position
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_MIN", 33,     AP_MotorsTri,  _yaw_servo_min, 1250),
+    AP_GROUPINFO("YAW_SV_MIN", 33,     AP_MotorsBlueROV,  _yaw_servo_min, 1250),
 
     // @Param: YAW_SV_MAX
     // @DisplayName: Yaw Servo Max Position
@@ -65,14 +65,14 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_MAX", 34,     AP_MotorsTri,  _yaw_servo_max, 1750),
+    AP_GROUPINFO("YAW_SV_MAX", 34,     AP_MotorsBlueROV,  _yaw_servo_max, 1750),
 
 
     AP_GROUPEND
 };
 
 // init
-void AP_MotorsTri::Init()
+void AP_MotorsBlueROV::Init()
 {
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
@@ -87,7 +87,7 @@ void AP_MotorsTri::Init()
 }
 
 // set update rate to motors - a value in hertz
-void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
+void AP_MotorsBlueROV::set_update_rate( uint16_t speed_hz )
 {
     // record requested speed
     _speed_hz = speed_hz;
@@ -101,7 +101,7 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
 }
 
 // enable - starts allowing signals to be sent to motors
-void AP_MotorsTri::enable()
+void AP_MotorsBlueROV::enable()
 {
     // enable output channels
     hal.rcout->enable_ch(AP_MOTORS_MOT_1);
@@ -111,7 +111,7 @@ void AP_MotorsTri::enable()
 }
 
 // output_min - sends minimum values out to the motors
-void AP_MotorsTri::output_min()
+void AP_MotorsBlueROV::output_min()
 {
     // set lower limit flag
     limit.throttle_lower = true;
@@ -127,7 +127,7 @@ void AP_MotorsTri::output_min()
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsTri::get_motor_mask()
+uint16_t AP_MotorsBlueROV::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
     return (1U << AP_MOTORS_MOT_1) |
@@ -136,7 +136,7 @@ uint16_t AP_MotorsTri::get_motor_mask()
         (1U << AP_MOTORS_CH_TRI_YAW);
 }
 
-void AP_MotorsTri::output_armed_not_stabilizing()
+void AP_MotorsBlueROV::output_armed_not_stabilizing()
 {
     int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
     int16_t out_min = _throttle_radio_min + _min_throttle;
@@ -188,7 +188,7 @@ void AP_MotorsTri::output_armed_not_stabilizing()
 
 // sends commands to the motors
 // TODO pull code that is common to output_armed_not_stabilizing into helper functions
-void AP_MotorsTri::output_armed_stabilizing()
+void AP_MotorsBlueROV::output_armed_stabilizing()
 {
     int16_t roll_pwm;                                               // roll pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
     int16_t pitch_pwm;                                              // pitch pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
@@ -304,7 +304,7 @@ void AP_MotorsTri::output_armed_stabilizing()
 }
 
 // output_disarmed - sends commands to the motors
-void AP_MotorsTri::output_disarmed()
+void AP_MotorsBlueROV::output_disarmed()
 {
     // Send minimum values to all motors
     output_min();
@@ -313,7 +313,7 @@ void AP_MotorsTri::output_disarmed()
 // output_test - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsBlueROV::output_test(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
     if (!armed()) {
@@ -345,7 +345,7 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
 }
 
 // calc_yaw_radio_output - calculate final radio output for yaw channel
-int16_t AP_MotorsTri::calc_yaw_radio_output()
+int16_t AP_MotorsBlueROV::calc_yaw_radio_output()
 {
     int16_t ret;
 
