@@ -677,6 +677,26 @@
                     <param index="6">Longitude/Y of goal</param>
                     <param index="7">Altitude/Z of goal</param>
                </entry>
+               <entry value="84" name="MAV_CMD_NAV_VTOL_TAKEOFF">
+                    <description>Takeoff from ground using VTOL mode</description>
+                    <param index="1">Empty</param>
+                    <param index="2">Empty</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Yaw angle in degrees</param>
+                    <param index="5">Latitude</param>
+                    <param index="6">Longitude</param>
+                    <param index="7">Altitude</param>
+               </entry>
+               <entry value="85" name="MAV_CMD_NAV_VTOL_LAND">
+                    <description>Land using VTOL mode</description>
+                    <param index="1">Empty</param>
+                    <param index="2">Empty</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Yaw angle in degrees</param>
+                    <param index="5">Latitude</param>
+                    <param index="6">Longitude</param>
+                    <param index="7">Altitude</param>
+               </entry>
 
                <!-- IDs 90 and 91 are reserved until the end of 2014,
                     as they were used in some conflicting proposals
