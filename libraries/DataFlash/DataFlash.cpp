@@ -111,13 +111,6 @@ uint16_t DataFlash_Class::get_num_logs(void) {
     }
     return backends[0]->get_num_logs();
 }
-void DataFlash_Class::Log_Fill_Format(const struct LogStructure *s, struct log_Format &pkt) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->Log_Fill_Format(s, pkt);
-}
 
 void DataFlash_Class::LogReadProcess(uint16_t log_num,
                                      uint16_t start_page, uint16_t end_page,
@@ -187,11 +180,6 @@ void DataFlash_Class::flush(void) {
 void DataFlash_Class::Log_Write_EntireMission(const AP_Mission &mission)
 {
     FOR_EACH_BACKEND(Log_Write_EntireMission(mission));
-}
-
-void DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
-{
-    FOR_EACH_BACKEND(Log_Write_Format(s));
 }
 
 void DataFlash_Class::Log_Write_Message(const char *message)
