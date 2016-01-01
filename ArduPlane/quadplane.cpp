@@ -641,6 +641,7 @@ void QuadPlane::update_transition(void)
         if (throttle_scaled < 0) {
             throttle_scaled = 0;
         }
+        assisted_flight = true;
         hold_stabilize(throttle_scaled);
         attitude_control->rate_controller_run();
         motors->output();
