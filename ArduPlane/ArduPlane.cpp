@@ -824,6 +824,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 
     case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
     case AP_SpdHgtControl::FLIGHT_NORMAL:
+    case AP_SpdHgtControl::FLIGHT_VTOL:
     case AP_SpdHgtControl::FLIGHT_TAKEOFF:
         break;
     }
@@ -866,7 +867,9 @@ void Plane::update_flight_stage(void)
     // Update the speed & height controller states
     if (auto_throttle_mode && !throttle_suppressed) {        
         if (control_mode==AUTO) {
-            if (auto_state.takeoff_complete == false) {
+            if (auto_state.vtol_mode) {
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
+            } else if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
@@ -887,10 +890,15 @@ void Plane::update_flight_stage(void)
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);                        
                     }
                 }
-
+            } else if (quadplane.in_assisted_flight()) {
+                set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
             } else {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }
+        } else if (control_mode == QSTABILIZE ||
+                   control_mode == QHOVER ||
+                   control_mode == QLOITER) {
+            set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);            
         } else {
             set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }

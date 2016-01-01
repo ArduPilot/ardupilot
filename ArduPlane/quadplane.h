@@ -35,6 +35,11 @@ public:
         return initialised;
     }
 
+    // is quadplane assisting?
+    bool in_assisted_flight(void) const {
+        return available() && assisted_flight;
+    }
+    
     bool handle_do_vtol_transition(const mavlink_command_long_t &packet);
 
 private:

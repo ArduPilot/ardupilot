@@ -83,6 +83,10 @@ void Plane::update_is_flying_5Hz(void)
                 }
                 break;
 
+            case AP_SpdHgtControl::FLIGHT_VTOL:
+                // TODO: detect ground impacts
+                break;
+
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
                 if (fabsf(auto_state.sink_rate) > 0.2f) {
                     is_flying_bool = true;
@@ -198,6 +202,11 @@ void Plane::crash_detection_update(void)
             // TODO: handle auto missions without NAV_TAKEOFF mission cmd
             break;
 
+        case AP_SpdHgtControl::FLIGHT_VTOL:
+            // we need a totally new method for this
+            crashed = false;
+            break;
+            
         case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
             crashed = true;
             // when altitude gets low, we automatically progress to FLIGHT_LAND_FINAL
