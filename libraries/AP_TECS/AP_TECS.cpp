@@ -454,7 +454,9 @@ void AP_TECS::_update_height_demand(void)
 
 void AP_TECS::_detect_underspeed(void)
 {
-    if (((_integ5_state < _TASmin * 0.9f) &&
+    if (_flight_stage == AP_TECS::FLIGHT_VTOL) {
+        _underspeed = false;
+    } else if (((_integ5_state < _TASmin * 0.9f) &&
             (_throttle_dem >= _THRmaxf * 0.95f) &&
             _flight_stage != AP_TECS::FLIGHT_LAND_FINAL) ||
             ((_height < _hgt_dem_adj) && _underspeed))
