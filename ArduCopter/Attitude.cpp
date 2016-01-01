@@ -73,7 +73,18 @@ float Copter::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
+
+#if MOUNT == ENABLED
+        if(!camera_mount.has_pan_control()) {
+            yaw_look_at_WP_bearing = pv_get_bearing_cd(
+                inertial_nav.get_position(), 
+                pv_location_to_vector(camera_mount.get_roi_target()));
+        } else {
+            yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
+        }
+#else
         yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
+#endif  // MOUNT == ENABLED
     }
 
     return yaw_look_at_WP_bearing;
