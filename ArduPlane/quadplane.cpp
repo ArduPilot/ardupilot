@@ -457,6 +457,9 @@ bool QuadPlane::is_flying(void)
 bool QuadPlane::should_relax(void)
 {
     bool motor_at_lower_limit = motors->limit.throttle_lower && motors->is_throttle_mix_min();
+    if (motors->get_throttle() < 10) {
+        motor_at_lower_limit = true;
+    }
     if (!motor_at_lower_limit) {
         motors_lower_limit_start_ms = 0;
     }
@@ -912,7 +915,8 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     plane.set_next_WP(cmd.content.location);
     throttle_wait = false;    
     land_complete = false;
-
+    motors_lower_limit_start_ms = 0;
+    
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
     return true;
@@ -923,6 +927,9 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
  */
 bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
 {
+    if (!available()) {
+        return true;
+    }
     if (plane.auto_state.wp_distance > 2) {
         return false;
     }
@@ -939,11 +946,15 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
  */
 bool QuadPlane::verify_vtol_land(void)
 {
-    if (!should_relax()) {
-        return false;
+    if (!available()) {
+        return true;
     }
-    wp_nav->loiter_soften_for_landing();
-    if (millis() - motors_lower_limit_start_ms > 5000) {
+    if (should_relax()) {
+        wp_nav->loiter_soften_for_landing();
+    }
+    if (!land_complete &&
+        (motors_lower_limit_start_ms != 0 &&
+         millis() - motors_lower_limit_start_ms > 5000)) {
         plane.disarm_motors();
         land_complete = true;
         plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
