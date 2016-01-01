@@ -361,8 +361,8 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     if (on_ground(position)) {
         if (!on_ground(old_position)) {
             printf("Hit ground at %f m/s\n", velocity_ef.z);
-            position.z = -(ground_level + frame_height - home.alt*0.01f);
         }
+        position.z = -(ground_level + frame_height - home.alt*0.01f);
     }
 }
     
