@@ -11,8 +11,8 @@
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
 #include "AP_MotorsMulticopter.h"
 
-// tail servo uses channel 7
-#define AP_MOTORS_CH_TRI_YAW    CH_7
+// pitch servo uses channel 7
+#define AP_MOTORS_CH_CAM_PITCH    CH_7
 
 /// @class      AP_MotorsTri
 class AP_MotorsBlueROV : public AP_MotorsMulticopter {
