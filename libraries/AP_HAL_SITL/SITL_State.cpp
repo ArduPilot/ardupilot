@@ -311,11 +311,9 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
         }
         if (_vehicle == ArduPlane) {
             pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
-            pwm_output[7] = 1800;
         }
         if (_vehicle == APMrover2) {
             pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
-            pwm_output[7] = 1800;
         }
         for (i=0; i<SITL_NUM_CHANNELS; i++) {
             last_pwm_output[i] = pwm_output[i];
