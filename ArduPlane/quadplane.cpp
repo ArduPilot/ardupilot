@@ -868,11 +868,11 @@ void QuadPlane::control_auto(const Location &loc)
     switch (plane.mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_VTOL_LAND:
         if (plane.auto_state.wp_distance > 2) {
-            pos_control->set_alt_target_from_climb_rate_ff(0, plane.G_Dt, true);
+            pos_control->set_alt_target_from_climb_rate_ff(0, plane.G_Dt, false);
         } else if (plane.current_loc.alt > plane.next_WP_loc.alt+5*100) {
             pos_control->set_alt_target_with_slew(wp_nav->get_loiter_target().z, plane.ins.get_loop_delta_t());
         } else {
-            pos_control->set_alt_target_from_climb_rate_ff(-30, plane.G_Dt, false);            
+            pos_control->set_alt_target_from_climb_rate_ff(-30, plane.G_Dt, true);            
         }
         break;
     case MAV_CMD_NAV_VTOL_TAKEOFF:
