@@ -24,6 +24,7 @@
 #include <SITL/SITL.h>
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
+#include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
 
@@ -119,6 +120,7 @@ private:
                      float airspeed,	float altitude);
     void _fdm_input(void);
     void _fdm_input_local(void);
+    void _output_to_flightgear(void);
     void _simulator_servos(SITL::Aircraft::sitl_input &input);
     void _simulator_output(bool synthetic_clock_mode);
     void _apply_servo_filter(float deltat);
@@ -204,6 +206,9 @@ private:
     // simulated gimbal
     bool enable_ADSB;
     SITL::ADSB *adsb;
+
+    // output socket for flightgear viewing
+    SocketAPM fg_socket{true};
     
     // TCP address to connect uartC to
     const char *_client_address;

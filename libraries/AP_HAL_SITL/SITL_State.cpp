@@ -18,6 +18,7 @@
 #include <sys/select.h>
 
 #include <AP_Param/AP_Param.h>
+#include <SITL/SIM_JSBSim.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -96,6 +97,8 @@ void SITL_State::_sitl_setup(const char *home_str)
         if (enable_ADSB) {
             adsb = new ADSB(_sitl->state, home_str);
         }
+
+        fg_socket.connect("127.0.0.1", 5503);
     }
 
     if (_synthetic_clock_mode) {
@@ -231,6 +234,27 @@ void SITL_State::_fdm_input(void)
     }
 }
 
+/*
+  output current state to flightgear
+ */
+void SITL_State::_output_to_flightgear(void)
+{
+    SITL::FGNetFDM fdm {};
+    const SITL::sitl_fdm &sfdm = _sitl->state;
+
+    fdm.version = 0x18;
+    fdm.padding = 0;
+    fdm.longitude = radians(sfdm.longitude);
+    fdm.latitude = radians(sfdm.latitude);
+    fdm.altitude = sfdm.altitude;
+    fdm.agl = sfdm.altitude;
+    fdm.phi   = radians(sfdm.rollDeg);
+    fdm.theta = radians(sfdm.pitchDeg);
+    fdm.psi   = radians(sfdm.yawDeg);
+    fdm.ByteSwap();
+
+    fg_socket.send(&fdm, sizeof(fdm));
+}
 
 /*
   get FDM input from a local model
@@ -258,6 +282,8 @@ void SITL_State::_fdm_input_local(void)
     if (adsb != NULL) {
         adsb->update();
     }
+
+    _output_to_flightgear();
 
     // update simulation time
     hal.scheduler->stop_clock(_sitl->state.timestamp_us);
