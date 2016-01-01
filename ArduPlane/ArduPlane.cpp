@@ -486,7 +486,7 @@ void Plane::handle_auto_mode(void)
         nav_cmd_id = auto_rtl_command.id;
     }
 
-    if (auto_state.vtol_mode) {
+    if (quadplane.in_vtol_auto()) {
         quadplane.control_auto(next_WP_loc);
     } else if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
         (nav_cmd_id == MAV_CMD_NAV_LAND && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT)) {
@@ -541,7 +541,7 @@ void Plane::update_flight_mode(void)
     if (effective_mode == QSTABILIZE ||
         effective_mode == QHOVER ||
         effective_mode == QLOITER ||
-        (effective_mode == AUTO && auto_state.vtol_mode)) {
+        quadplane.in_vtol_auto()) {
         ahrs.set_fly_forward(false);
     } else {
         ahrs.set_fly_forward(true);
@@ -867,7 +867,7 @@ void Plane::update_flight_stage(void)
     // Update the speed & height controller states
     if (auto_throttle_mode && !throttle_suppressed) {        
         if (control_mode==AUTO) {
-            if (auto_state.vtol_mode) {
+            if (quadplane.in_vtol_auto()) {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
             } else if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);

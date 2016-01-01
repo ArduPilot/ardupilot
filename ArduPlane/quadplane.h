@@ -46,6 +46,10 @@ public:
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
     bool verify_vtol_land(void);
+    bool in_vtol_auto(void);
+
+    // vtol help for is_flying()
+    bool is_flying(void);
     
 private:
     AP_AHRS_NavEKF &ahrs;

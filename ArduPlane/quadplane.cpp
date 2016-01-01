@@ -440,6 +440,19 @@ void QuadPlane::init_loiter(void)
     init_throttle_wait();
 }
 
+
+// helper for is_flying()
+bool QuadPlane::is_flying(void)
+{
+    if (!available()) {
+        return false;
+    }
+    if (motors->get_throttle() > 200 && !motors->limit.throttle_lower) {
+        return true;
+    }
+    return false;
+}
+
 // crude landing detector to prevent tipover
 bool QuadPlane::should_relax(void)
 {
@@ -677,7 +690,7 @@ void QuadPlane::update(void)
     bool quad_mode = (plane.control_mode == QSTABILIZE ||
                       plane.control_mode == QHOVER ||
                       plane.control_mode == QLOITER ||
-                      (plane.control_mode == AUTO && plane.auto_state.vtol_mode));
+                      in_vtol_auto());
     
     if (!quad_mode) {
         update_transition();
@@ -794,6 +807,26 @@ bool QuadPlane::handle_do_vtol_transition(const mavlink_command_long_t &packet)
 }
 
 /*
+  are we in a VTOL auto state?
+ */
+bool QuadPlane::in_vtol_auto(void)
+{
+    if (plane.control_mode != AUTO) {
+        return false;
+    }
+    if (plane.auto_state.vtol_mode) {
+        return true;
+    }
+    switch (plane.mission.get_current_nav_cmd().id) {
+    case MAV_CMD_NAV_VTOL_LAND:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/*
   handle auto-mode when auto_state.vtol_mode is true
  */
 void QuadPlane::control_auto(const Location &loc)
@@ -828,7 +861,13 @@ void QuadPlane::control_auto(const Location &loc)
 
     switch (plane.mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_VTOL_LAND:
-        pos_control->set_alt_target_from_climb_rate_ff(-50, plane.G_Dt, true);
+        if (plane.auto_state.wp_distance > 2) {
+            pos_control->set_alt_target_from_climb_rate_ff(0, plane.G_Dt, true);
+        } else if (plane.current_loc.alt > plane.next_WP_loc.alt+5*100) {
+            pos_control->set_alt_target_with_slew(wp_nav->get_loiter_target().z, plane.ins.get_loop_delta_t());
+        } else {
+            pos_control->set_alt_target_from_climb_rate_ff(-30, plane.G_Dt, false);            
+        }
         break;
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         pos_control->set_alt_target_with_slew(wp_nav->get_loiter_target().z, plane.ins.get_loop_delta_t());
@@ -852,7 +891,6 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     plane.prev_WP_loc = plane.current_loc;
     plane.next_WP_loc = cmd.content.location;
     plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
-    plane.auto_state.vtol_mode = true;
     throttle_wait = false;
 
     // also update nav_controller for status output
@@ -871,7 +909,6 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     }
     plane.prev_WP_loc = plane.current_loc;
     plane.next_WP_loc = cmd.content.location;
-    plane.auto_state.vtol_mode = true;
     throttle_wait = false;    
     land_complete = false;
 
@@ -892,7 +929,6 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     if (plane.current_loc.alt+threshold < plane.next_WP_loc.alt) {
         return false;
     }
-    plane.auto_state.vtol_mode = false;
     transition_state = TRANSITION_AIRSPEED_WAIT;
     return true;
 }

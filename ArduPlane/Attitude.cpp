@@ -638,6 +638,11 @@ bool Plane::suppress_throttle(void)
         }
     }
 
+    if (quadplane.is_flying()) {
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled VTOL");
+        throttle_suppressed = false;
+    }
+
     // throttle remains suppressed
     return true;
 }
@@ -931,7 +936,7 @@ void Plane::set_servos(void)
         } else if (control_mode == QSTABILIZE ||
                    control_mode == QHOVER ||
                    control_mode == QLOITER ||
-                   (control_mode == AUTO && auto_state.vtol_mode)) {
+                   quadplane.in_vtol_auto()) {
             // no forward throttle for now
             channel_throttle->servo_out = 0;
             channel_throttle->calc_pwm();

@@ -125,6 +125,10 @@ void Plane::update_is_flying_5Hz(void)
         isFlyingProbability = (0.85f * isFlyingProbability) + (0.15f * (float)is_flying_bool);
     }
 
+    if (quadplane.is_flying()) {
+        is_flying_bool = true;
+    }
+    
     /*
       update last_flying_ms so we always know how long we have not
       been flying for. This helps for crash detection and auto-disarm
