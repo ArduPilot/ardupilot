@@ -15,6 +15,7 @@
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
+#include <SITL/SIM_Plane.h>
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_CRRCSim.h>
 #include <SITL/SIM_Gazebo.h>
@@ -75,7 +76,8 @@ static const struct {
     { "gazebo",             Gazebo::create },
     { "last_letter",        last_letter::create },
     { "tracker",            Tracker::create },
-    { "balloon",            Balloon::create }
+    { "balloon",            Balloon::create },
+    { "plane",              Plane::create },
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
