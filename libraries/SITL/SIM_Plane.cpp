@@ -153,50 +153,12 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
  */
 void Plane::update(const struct sitl_input &input)
 {
-    float delta_time = frame_time_us * 1.0e-6f;
-
     Vector3f rot_accel;
 
     calculate_forces(input, rot_accel, accel_body);
     
-    // update rotational rates in body frame
-    gyro += rot_accel * delta_time;
-
-    // update attitude
-    dcm.rotate(gyro * delta_time);
-    dcm.normalize();
-
-    Vector3f accel_earth = dcm * accel_body;
-    accel_earth += Vector3f(0, 0, GRAVITY_MSS);
-
-    // if we're on the ground, then our vertical acceleration is limited
-    // to zero. This effectively adds the force of the ground on the aircraft
-    if (on_ground(position) && accel_earth.z > 0) {
-        accel_earth.z = 0;
-    }
-
-    // work out acceleration as seen by the accelerometers. It sees the kinematic
-    // acceleration (ie. real movement), plus gravity
-    accel_body = dcm.transposed() * (accel_earth + Vector3f(0, 0, -GRAVITY_MSS));
-
-    // new velocity vector
-    velocity_ef += accel_earth * delta_time;
-
-    // new position vector
-    Vector3f old_position = position;
-    position += velocity_ef * delta_time;
-
-    // assume zero wind for now
-    airspeed = velocity_ef.length();
-
-    // constrain height to the ground
-    if (on_ground(position)) {
-        if (!on_ground(old_position)) {
-            printf("Hit ground at %f m/s\n", velocity_ef.z);
-            position.z = -(ground_level + frame_height - home.alt*0.01f);
-        }
-    }
-
+    update_dynamics(rot_accel);
+    
     // update lat/lon/altitude
     update_position();
 }

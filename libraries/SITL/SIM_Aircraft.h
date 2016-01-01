@@ -152,6 +152,9 @@ protected:
     /* return wall clock time in microseconds since 1970 */
     uint64_t get_wall_time_us(void) const;
 
+    // update attitude and relative position
+    void update_dynamics(const Vector3f &rot_accel);
+
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;
