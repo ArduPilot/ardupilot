@@ -284,6 +284,10 @@ case $FRAME in
         MODEL="$FRAME"
         check_jsbsim_version
 	;;
+    quadplane*)
+	BUILD_TARGET="sitl"
+        MODEL="$FRAME"
+	;;
     *-heli)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
