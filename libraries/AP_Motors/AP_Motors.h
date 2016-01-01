@@ -15,5 +15,6 @@
 #include "AP_MotorsHeli_Single.h"
 #include "AP_MotorsSingle.h"
 #include "AP_MotorsCoax.h"
+#include "AP_MotorsBlueROV.h"
 
 #endif // __AP_MOTORS_H__
