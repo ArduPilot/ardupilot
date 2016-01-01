@@ -79,7 +79,10 @@ enum aux_sw_func {
 #define OCTA_QUAD_FRAME 7
 #define SINGLE_FRAME 8
 #define COAX_FRAME 9
+<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
 #define BLUEROV 10
+=======
+>>>>>>> Changed to ArduCopter as the base code.
 
 // HIL enumerations
 #define HIL_MODE_DISABLED               0

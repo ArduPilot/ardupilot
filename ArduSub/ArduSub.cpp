@@ -261,9 +261,12 @@ void Copter::fast_loop()
     // run low level rate controllers that only require IMU data
     attitude_control.rate_controller_run();
     
+<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
     motors.set_forward(channel_forward->control_in);
     motors.set_strafe(channel_strafe->control_in);
 
+=======
+>>>>>>> Changed to ArduCopter as the base code.
 #if FRAME_CONFIG == HELI_FRAME
     update_heli_control_dynamics();
 #endif //HELI_FRAME

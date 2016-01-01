@@ -27,22 +27,31 @@ void Copter::init_rc_in()
     channel_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
     channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
     channel_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
+<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
     channel_forward  = RC_Channel::rc_channel(rcmap.forward()-1);
     channel_strafe   = RC_Channel::rc_channel(rcmap.strafe()-1);
+=======
+>>>>>>> Changed to ArduCopter as the base code.
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_yaw->set_angle(4500);
     channel_throttle->set_range(g.throttle_min, THR_MAX);
+<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
     channel_forward->set_angle(4500);
     channel_strafe->set_angle(4500);
+=======
+>>>>>>> Changed to ArduCopter as the base code.
 
     channel_roll->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_pitch->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_yaw->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
     channel_forward->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_strafe->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+=======
+>>>>>>> Changed to ArduCopter as the base code.
 
     //set auxiliary servo ranges
     g.rc_5.set_range(0,1000);
