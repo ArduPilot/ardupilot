@@ -13,7 +13,12 @@ static uint32_t auto_disarm_begin;
 // called at 10hz
 void Copter::arm_motors_check()
 {
-    static int16_t arming_counter;
+    // Arm motors automatically
+	if ( !motors.armed() ) {
+    	init_arm_motors(false);
+    }
+
+	/*static int16_t arming_counter;
 
     // ensure throttle is down
     if (channel_throttle->control_in > 0) {
@@ -66,13 +71,13 @@ void Copter::arm_motors_check()
     // Yaw is centered so reset arming counter
     }else{
         arming_counter = 0;
-    }
+    }*/
 }
 
 // auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
 void Copter::auto_disarm_check()
 {
-    uint32_t tnow_ms = millis();
+    /*uint32_t tnow_ms = millis();
     uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
 
     // exit immediately if we are already disarmed, or if auto
@@ -117,7 +122,7 @@ void Copter::auto_disarm_check()
     if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms) {
         init_disarm_motors();
         auto_disarm_begin = tnow_ms;
-    }
+    }*/
 }
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
