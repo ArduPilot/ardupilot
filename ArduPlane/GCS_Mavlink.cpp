@@ -1918,6 +1918,34 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
         plane.adsb.update_vehicle(msg);
         break;
+
+    case MAVLINK_MSG_ID_SET_ROI_GLOBAL_INT: // ID: 88
+#if MOUNT == ENABLED
+        mavlink_set_roi_global_int_t packet;
+        mavlink_msg_set_roi_global_int_decode(msg, &packet);
+
+        //todo: handle FRAME and ignore_mask
+
+        Location roi_loc;
+        roi_loc.lat = packet.lat_int;
+        roi_loc.lng = packet.lng_int;
+        roi_loc.alt = (int32_t)(packet.alt * 100.0f);
+
+        Vector3f roi_vel;
+        roi_vel.x = packet.vx;
+        roi_vel.y = packet.vy;
+        roi_vel.z = packet.vz;
+
+        Vector3f roi_acc;
+        roi_acc.x = packet.ax;
+        roi_acc.y = packet.ay;
+        roi_acc.z = packet.az;
+
+        plane.camera_mount.set_roi_target(packet.roi_index, roi_loc, roi_vel, roi_acc);
+
+#endif
+        break;
+        
     } // end switch
 } // end handle mavlink
 
