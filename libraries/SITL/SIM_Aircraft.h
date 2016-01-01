@@ -80,6 +80,18 @@ public:
 
     // get frame rate of model in Hz
     float get_rate_hz(void) const { return rate_hz; }       
+
+    const Vector3f &get_gyro(void) const {
+        return gyro;
+    }
+
+    const Vector3f &get_velocity_ef(void) const {
+        return velocity_ef;
+    }
+
+    const Matrix3f &get_dcm(void) const {
+        return dcm;
+    }
     
 protected:
     Location home;
