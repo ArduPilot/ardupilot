@@ -538,6 +538,7 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
             }
         }
     }
+    _last_mount_updateTime = 0 ;
 }
 
 // update - give mount opportunity to update servos.  should be called at 10hz or higher
@@ -547,6 +548,9 @@ void AP_Mount::update()
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != NULL) {
             _backends[instance]->update();
+            if(get_mode(instance) == MAV_MOUNT_MODE_GPS_POINT){ 
+                _backends[instance]->update_roi_target();
+            }
         }
     }
 }
@@ -659,12 +663,16 @@ void AP_Mount::status_msg(mavlink_channel_t chan)
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_loc)
+void AP_Mount::set_roi_target(uint8_t instance, const struct Location &roi_loc, const Vector3f roi_vel, const Vector3f roi_acc)
 {
     // call instance's set_roi_cmd
     if (instance < AP_MOUNT_MAX_INSTANCES && _backends[instance] != NULL) {
-        _backends[instance]->set_roi_target(target_loc);
+        _backends[instance]->set_roi_target(roi_loc, roi_vel, roi_acc);
     }
+}
+
+struct Location AP_Mount::get_roi_target(uint8_t instance){
+    return _backends[instance] -> get_roi_target();
 }
 
 // pass a GIMBAL_REPORT message to the backend

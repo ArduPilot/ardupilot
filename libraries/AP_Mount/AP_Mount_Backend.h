@@ -25,6 +25,8 @@
 #include <AP_Common/AP_Common.h>
 #include "AP_Mount.h"
 
+#define ROISPEED_MAX_PROPAGATION_TIME 60000000 //1 min in us, maximum single interval we will propagate ROI point.
+
 class AP_Mount_Backend
 {
 public:
@@ -53,8 +55,9 @@ public:
     // set_angle_targets - sets angle targets in degrees
     virtual void set_angle_targets(float roll, float tilt, float pan);
 
-    // set_roi_target - sets target location that mount should attempt to point towards
-    virtual void set_roi_target(const struct Location &target_loc);
+    // set_roi_target - sets target location that mount should attempt to point towards and potentiall the ROI's velocity in m/s
+    virtual void set_roi_target(const struct Location &roi_loc, const Vector3f roi_vel = Vector3f(), const Vector3f roi_acc = Vector3f());
+    struct Location get_roi_target();
 
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
@@ -73,6 +76,9 @@ public:
 
     // send a GIMBAL_REPORT message to the GCS
     virtual void send_gimbal_report(mavlink_channel_t chan) {}
+    
+    //update_roi_target - figures out time elapsed in ms since last update and moves the roi in terms of it's m/s velocity
+    virtual void update_roi_target();
 
 protected:
 

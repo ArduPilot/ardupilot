@@ -16,14 +16,24 @@ void AP_Mount_Backend::set_angle_targets(float roll, float tilt, float pan)
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_MAVLINK_TARGETING);
 }
 
-// set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
+// set_roi_target - sets target location that mount should attempt to point towards and potentialy the velocity in m/s with which the ROI point moves 
+void AP_Mount_Backend::set_roi_target(const struct Location &roi_loc, const Vector3f roi_vel, const Vector3f roi_acc)
 {
     // set the target gps location
-    _state._roi_target = target_loc;
+    _state._roi_target = roi_loc;
+    //speed mount should progress in [m/s] as an NED vector
+    _state._roi_target_velocity = roi_vel;
+    //acceleration ROI point should progress in [m/s^2] as an NED vector
+    _state._roi_target_acceleration = roi_acc;
 
+    _state._last_roi_updateTime = 0;
     // set the mode to GPS tracking mode
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
+}
+
+struct Location AP_Mount_Backend::get_roi_target()
+{
+    return _state._roi_target;
 }
 
 // configure_msg - process MOUNT_CONFIGURE messages received from GCS.  deprecated.
@@ -153,4 +163,28 @@ void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
         // calc absolute heading and then onvert to vehicle relative yaw
         angles_to_target_rad.z = wrap_PI(atan2f(GPS_vector_x, GPS_vector_y) - _frontend._ahrs.yaw);
     }
+}
+
+void AP_Mount_Backend::update_roi_target() 
+{
+    if(_state._last_roi_updateTime != 0 && 
+        (_state._roi_target_velocity.is_zero() || _state._roi_target_acceleration.is_zero())) {
+        //make sure there is a velocity, faster than zero
+        uint64_t timeElapsedUS = AP_HAL::micros() - _state._last_roi_updateTime; 
+        if (timeElapsedUS < ROISPEED_MAX_PROPAGATION_TIME) {
+            //Update the ROI position based on the current velocity
+            float elapsed = (timeElapsedUS*1e-6f);
+            float ofs_alt  = -100 * elapsed * _state._roi_target_velocity.z;
+            float ofs_nrth = elapsed * _state._roi_target_velocity.x;
+            float ofs_east = elapsed * _state._roi_target_velocity.y;
+
+            _state._roi_target.alt += ofs_alt;
+            location_offset(_state._roi_target, ofs_nrth, ofs_east);
+
+            //Update the velocity based on the acceleration
+            _state._roi_target_velocity += _state._roi_target_acceleration * elapsed;
+
+        }
+    }
+    _state._last_roi_updateTime = AP_HAL::micros();
 }
