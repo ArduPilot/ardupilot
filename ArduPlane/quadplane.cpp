@@ -642,6 +642,9 @@ void QuadPlane::update_transition(void)
             transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", aspeed);
+        } else if (plane.auto_throttle_mode) {
+            // force pitch to zero while building up airspeed
+            plane.nav_pitch_cd = 0;
         }
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
@@ -888,8 +891,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     if (!available()) {
         return false;
     }
-    plane.prev_WP_loc = plane.current_loc;
-    plane.next_WP_loc = cmd.content.location;
+    plane.set_next_WP(cmd.content.location);
     plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
     throttle_wait = false;
 
@@ -907,8 +909,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     if (!available()) {
         return false;
     }
-    plane.prev_WP_loc = plane.current_loc;
-    plane.next_WP_loc = cmd.content.location;
+    plane.set_next_WP(cmd.content.location);
     throttle_wait = false;    
     land_complete = false;
 
