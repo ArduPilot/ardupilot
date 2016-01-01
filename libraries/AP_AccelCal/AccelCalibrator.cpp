@@ -30,8 +30,7 @@ const extern AP_HAL::HAL& hal;
 
 AccelCalibrator::AccelCalibrator() :
 _conf_tolerance(ACCEL_CAL_TOLERANCE),
-_sample_buffer(NULL),
-_param_struct(*reinterpret_cast<struct param_t *>(&_param_array))
+_sample_buffer(NULL)
 {
     clear();
 }
@@ -74,9 +73,9 @@ void AccelCalibrator::start(enum accel_cal_fit_type_t fit_type, uint8_t num_samp
     const float theta = 0.5f * acosf(cosf(a) / (1.0f - cosf(a)));
     _min_sample_dist = GRAVITY_MSS * 2*sinf(theta/2);
 
-    _param_struct.offset = offset;
-    _param_struct.diag = diag;
-    _param_struct.offdiag = offdiag;
+    _param.s.offset = offset;
+    _param.s.diag = diag;
+    _param.s.offdiag = offdiag;
 
     switch (_conf_fit_type) {
         case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
@@ -153,12 +152,12 @@ void AccelCalibrator::new_sample(const Vector3f& delta_velocity, float dt) {
 
 // determines if the result is acceptable
 bool AccelCalibrator::accept_result() const {
-    if (fabsf(_param_struct.offset.x) > GRAVITY_MSS ||
-        fabsf(_param_struct.offset.y) > GRAVITY_MSS ||
-        fabsf(_param_struct.offset.z) > GRAVITY_MSS ||
-        _param_struct.diag.x < 0.8f || _param_struct.diag.x > 1.2f ||
-        _param_struct.diag.y < 0.8f || _param_struct.diag.y > 1.2f ||
-        _param_struct.diag.z < 0.8f || _param_struct.diag.z > 1.2f) {
+    if (fabsf(_param.s.offset.x) > GRAVITY_MSS ||
+        fabsf(_param.s.offset.y) > GRAVITY_MSS ||
+        fabsf(_param.s.offset.z) > GRAVITY_MSS ||
+        _param.s.diag.x < 0.8f || _param.s.diag.x > 1.2f ||
+        _param.s.diag.y < 0.8f || _param.s.diag.y > 1.2f ||
+        _param.s.diag.z < 0.8f || _param.s.diag.z > 1.2f) {
         return false;
     } else {
         return true;
@@ -183,12 +182,12 @@ bool AccelCalibrator::get_sample_corrected(uint8_t i, Vector3f& s) const {
     }
 
     Matrix3f M (
-        _param_struct.diag.x    , _param_struct.offdiag.x , _param_struct.offdiag.y,
-        _param_struct.offdiag.x , _param_struct.diag.y    , _param_struct.offdiag.z,
-        _param_struct.offdiag.y , _param_struct.offdiag.z , _param_struct.diag.z
+        _param.s.diag.x    , _param.s.offdiag.x , _param.s.offdiag.y,
+        _param.s.offdiag.x , _param.s.diag.y    , _param.s.offdiag.z,
+        _param.s.offdiag.y , _param.s.offdiag.z , _param.s.diag.z
     );
 
-    s = M*(s+_param_struct.offset);
+    s = M*(s+_param.s.offset);
 
     return true;
 }
@@ -203,20 +202,20 @@ void AccelCalibrator::check_for_timeout() {
 
 // returns spherical fit paramteters
 void AccelCalibrator::get_calibration(Vector3f& offset) const {
-    offset = -_param_struct.offset;
+    offset = -_param.s.offset;
 }
 
 // returns axis aligned ellipsoidal fit parameters
 void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag) const {
-    offset = -_param_struct.offset;
-    diag = _param_struct.diag;
+    offset = -_param.s.offset;
+    diag = _param.s.diag;
 }
 
 // returns generic ellipsoidal fit parameters
 void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag, Vector3f& offdiag) const {
-    offset = -_param_struct.offset;
-    diag = _param_struct.diag;
-    offdiag = _param_struct.offdiag;
+    offset = -_param.s.offset;
+    diag = _param.s.diag;
+    offdiag = _param.s.offdiag;
 }
 
 /////////////////////////////////////////////////////////////
@@ -330,10 +329,9 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
     if (_sample_buffer == NULL) {
         return;
     }
-    fitness = calc_mean_squared_residuals(_param_struct);
+    fitness = calc_mean_squared_residuals(_param.s);
     float min_fitness = fitness;
-    VectorP param_array = _param_array;
-    struct param_t &fit_param(*reinterpret_cast<struct param_t *>(&param_array));
+    union param_u fit_param = _param;
     uint8_t num_iterations = 0;
 
     while(num_iterations < max_iterations) {
@@ -348,7 +346,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
 
             VectorN<float,ACCEL_CAL_MAX_NUM_PARAMS> jacob;
 
-            calc_jacob(sample, fit_param, jacob);
+            calc_jacob(sample, fit_param.s, jacob);
 
             for(uint8_t i = 0; i < get_num_params(); i++) {
                 // compute JTJ
@@ -356,7 +354,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
                     JTJ[i*get_num_params()+j] += jacob[i] * jacob[j];
                 }
                 // compute JTFI
-                JTFI[i] += jacob[i] * calc_residual(sample, fit_param);
+                JTFI[i] += jacob[i] * calc_residual(sample, fit_param.s);
             }
         }
 
@@ -366,11 +364,11 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
 
         for(uint8_t row=0; row < get_num_params(); row++) {
             for(uint8_t col=0; col < get_num_params(); col++) {
-                param_array[row] -= JTFI[col] * JTJ[row*get_num_params()+col];
+                fit_param.a[row] -= JTFI[col] * JTJ[row*get_num_params()+col];
             }
         }
 
-        fitness = calc_mean_squared_residuals(fit_param);
+        fitness = calc_mean_squared_residuals(fit_param.s);
 
         if (isnan(fitness) || isinf(fitness)) {
             return;
@@ -378,7 +376,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
 
         if (fitness < min_fitness) {
             min_fitness = fitness;
-            _param_struct = fit_param;
+            _param = fit_param;
         }
 
         num_iterations++;
@@ -403,7 +401,7 @@ float AccelCalibrator::calc_residual(const Vector3f& sample, const struct param_
 // converged to LSq estimator so far
 float AccelCalibrator::calc_mean_squared_residuals() const
 {
-    return calc_mean_squared_residuals(_param_struct);
+    return calc_mean_squared_residuals(_param.s);
 }
 
 // calculated the total mean squared fitness of all the collected samples using parameters

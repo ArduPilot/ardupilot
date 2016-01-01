@@ -95,6 +95,17 @@ private:
     };
     typedef    VectorN<float, ACCEL_CAL_MAX_NUM_PARAMS> VectorP;
 
+    union param_u {
+        struct param_t s;
+        VectorN<float, ACCEL_CAL_MAX_NUM_PARAMS> a;
+
+        param_u() : a{}
+        {
+            static_assert(sizeof(*this) == sizeof(struct param_t),
+                          "Invalid union members: sizes do not match");
+        }
+    };
+
     //configuration
     uint8_t _conf_num_samples;
     float _conf_sample_time;
@@ -105,8 +116,7 @@ private:
     accel_cal_status_t _status;
     struct AccelSample* _sample_buffer;
     uint8_t _samples_collected;
-    struct param_t &_param_struct;
-    VectorP _param_array;
+    union param_u _param;
     float _fitness;
     uint32_t _last_samp_frag_collected_ms;
     float _min_sample_dist;
