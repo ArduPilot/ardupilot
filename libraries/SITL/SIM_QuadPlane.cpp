@@ -54,11 +54,7 @@ void QuadPlane::update(const struct sitl_input &input)
     // now quad forces
     Vector3f quad_rot_accel;
     Vector3f quad_accel_body;
-    printf("%u %u %u %u\n",
-           input.servos[5],
-           input.servos[6],
-           input.servos[7],
-           input.servos[8]);
+
     frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body);
 
     rot_accel += quad_rot_accel;
