@@ -88,8 +88,11 @@
  # define FRAME_CONFIG_STRING "SINGLE"
 #elif FRAME_CONFIG == COAX_FRAME
  # define FRAME_CONFIG_STRING "COAX"
+<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
 #elif FRAME_CONFIG == BLUEROV
  # define FRAME_CONFIG_STRING "BLUEROV"
+=======
+>>>>>>> Changed to ArduCopter as the base code.
 #else
  # define FRAME_CONFIG_STRING "UNKNOWN"
 #endif
