@@ -311,6 +311,8 @@ private:
  #define MOTOR_CLASS AP_MotorsSingle
 #elif FRAME_CONFIG == COAX_FRAME
  #define MOTOR_CLASS AP_MotorsCoax
+#elif FRAME_CONFIG == BLUEROV
+ #define MOTOR_CLASS AP_MotorsBlueROV
 #else
  #error Unrecognised frame type
 #endif
