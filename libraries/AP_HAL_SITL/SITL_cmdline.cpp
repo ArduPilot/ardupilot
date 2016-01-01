@@ -16,6 +16,7 @@
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
 #include <SITL/SIM_Plane.h>
+#include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_CRRCSim.h>
 #include <SITL/SIM_Gazebo.h>
@@ -61,6 +62,7 @@ static const struct {
     const char *name;
     Aircraft *(*constructor)(const char *home_str, const char *frame_str);
 } model_constructors[] = {
+    { "quadplane",          QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
     { "copter",             MultiCopter::create },
