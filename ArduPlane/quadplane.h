@@ -42,6 +42,11 @@ public:
     
     bool handle_do_vtol_transition(const mavlink_command_long_t &packet);
 
+    bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
+    bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
+    bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
+    bool verify_vtol_land(void);
+    
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
@@ -148,4 +153,6 @@ private:
 
     // time we last set the loiter target
     uint32_t last_loiter_ms;
+
+    bool land_complete:1;
 };

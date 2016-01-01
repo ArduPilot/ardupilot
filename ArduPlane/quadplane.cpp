@@ -630,6 +630,7 @@ void QuadPlane::update_transition(void)
             transition_state = TRANSITION_TIMER;
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", aspeed);
         }
+        assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
         attitude_control->rate_controller_run();
         motors->output();
@@ -825,5 +826,90 @@ void QuadPlane::control_auto(const Location &loc)
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
 
+    switch (plane.mission.get_current_nav_cmd().id) {
+    case MAV_CMD_NAV_VTOL_LAND:
+        pos_control->set_alt_target_from_climb_rate_ff(-50, plane.G_Dt, true);
+        break;
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        pos_control->set_alt_target_with_slew(wp_nav->get_loiter_target().z, plane.ins.get_loop_delta_t());
+        break;
+    default:
+        pos_control->set_alt_target_from_climb_rate_ff(assist_climb_rate_cms(), plane.G_Dt, false);
+        break;
+    }
+    
     pos_control->update_z_controller();
+}
+
+/*
+  start a VTOL takeoff
+ */
+bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
+{
+    if (!available()) {
+        return false;
+    }
+    plane.prev_WP_loc = plane.current_loc;
+    plane.next_WP_loc = cmd.content.location;
+    plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
+    plane.auto_state.vtol_mode = true;
+    throttle_wait = false;
+
+    // also update nav_controller for status output
+    plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+    return true;
+}
+
+
+/*
+  start a VTOL landing
+ */
+bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
+{
+    if (!available()) {
+        return false;
+    }
+    plane.prev_WP_loc = plane.current_loc;
+    plane.next_WP_loc = cmd.content.location;
+    plane.auto_state.vtol_mode = true;
+    throttle_wait = false;    
+    land_complete = false;
+
+    // also update nav_controller for status output
+    plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+    return true;
+}
+
+/*
+  check if a VTOL takeoff has completed
+ */
+bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
+{
+    if (plane.auto_state.wp_distance > 2) {
+        return false;
+    }
+    const int32_t threshold = 30;
+    if (plane.current_loc.alt+threshold < plane.next_WP_loc.alt) {
+        return false;
+    }
+    plane.auto_state.vtol_mode = false;
+    transition_state = TRANSITION_AIRSPEED_WAIT;
+    return true;
+}
+
+/*
+  check if a VTOL landing has completed
+ */
+bool QuadPlane::verify_vtol_land(void)
+{
+    if (!should_relax()) {
+        return false;
+    }
+    wp_nav->loiter_soften_for_landing();
+    if (millis() - motors_lower_limit_start_ms > 5000) {
+        plane.disarm_motors();
+        land_complete = true;
+        plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
+    }
+    return false;
 }

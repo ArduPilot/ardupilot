@@ -813,6 +813,8 @@ private:
     bool verify_change_alt();
     bool verify_within_distance();
     bool verify_altitude_wait(const AP_Mission::Mission_Command &cmd);
+    bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
+    bool verify_vtol_land(void);
     void do_loiter_at_location();
     void do_take_picture();
     void log_picture();
@@ -987,6 +989,8 @@ private:
     void do_altitude_wait(const AP_Mission::Mission_Command& cmd);
     void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
+    void do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
+    void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_change_alt(const AP_Mission::Mission_Command& cmd);
