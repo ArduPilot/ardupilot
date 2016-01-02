@@ -140,3 +140,4 @@ clean:
 	@rm -fr $(BUILDROOT)
 
 include $(MK_DIR)/modules.mk
+include $(MK_DIR)/mavgen.mk
