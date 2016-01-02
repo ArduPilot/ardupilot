@@ -88,18 +88,18 @@ protected:
     AP_SerialBus *_serial;
 
     /* Asynchronous state: */
-    volatile bool            _updated;
+    volatile bool            _updated = false;
     volatile uint8_t         _d1_count;
     volatile uint8_t         _d2_count;
     volatile uint32_t        _s_D1, _s_D2;
-    uint8_t                  _state;
-    uint32_t                 _last_timer;
+    uint8_t                  _state = 0;
+    uint32_t                 _last_timer = 0;
 
     bool _use_timer;
 
     // Internal calibration registers
     uint16_t                 _c1,_c2,_c3,_c4,_c5,_c6;
-    float                    _D1,_D2;
+    float                    _D1 = 0.f, _D2 = 0.f;
     uint8_t _instance;
 };
 
