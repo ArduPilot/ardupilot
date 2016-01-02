@@ -589,6 +589,32 @@ typedef enum MAV_BATTERY_FUNCTION
 } MAV_BATTERY_FUNCTION;
 #endif
 
+/** @brief Enumeration of VTOL states */
+#ifndef HAVE_ENUM_MAV_VTOL_STATE
+#define HAVE_ENUM_MAV_VTOL_STATE
+typedef enum MAV_VTOL_STATE
+{
+	MAV_VTOL_STATE_UNDEFINED=0, /* MAV is not configured as VTOL | */
+	MAV_VTOL_STATE_TRANSITION_TO_FW=1, /* VTOL is in transition from multicopter to fixed-wing | */
+	MAV_VTOL_STATE_TRANSITION_TO_MC=2, /* VTOL is in transition from fixed-wing to multicopter | */
+	MAV_VTOL_STATE_MC=3, /* VTOL is in multicopter state | */
+	MAV_VTOL_STATE_FW=4, /* VTOL is in fixed-wing state | */
+	MAV_VTOL_STATE_ENUM_END=5, /*  | */
+} MAV_VTOL_STATE;
+#endif
+
+/** @brief Enumeration of landed detector states */
+#ifndef HAVE_ENUM_MAV_LANDED_STATE
+#define HAVE_ENUM_MAV_LANDED_STATE
+typedef enum MAV_LANDED_STATE
+{
+	MAV_LANDED_STATE_UNDEFINED=0, /* MAV landed state is unknown | */
+	MAV_LANDED_STATE_ON_GROUND=1, /* MAV is landed (on ground) | */
+	MAV_LANDED_STATE_IN_AIR=2, /* MAV is in air | */
+	MAV_LANDED_STATE_ENUM_END=3, /*  | */
+} MAV_LANDED_STATE;
+#endif
+
 /** @brief Enumeration of the ADSB altimeter types */
 #ifndef HAVE_ENUM_ADSB_ALTITUDE_TYPE
 #define HAVE_ENUM_ADSB_ALTITUDE_TYPE
