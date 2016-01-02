@@ -284,7 +284,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return quadplane.verify_vtol_takeoff(cmd);
 
     case MAV_CMD_NAV_VTOL_LAND:
-        return quadplane.verify_vtol_land();
+        return quadplane.verify_vtol_land(cmd);
         
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:

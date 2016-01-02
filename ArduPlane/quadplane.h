@@ -45,7 +45,7 @@ public:
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
-    bool verify_vtol_land(void);
+    bool verify_vtol_land(const AP_Mission::Mission_Command &cmd);
     bool in_vtol_auto(void);
 
     // vtol help for is_flying()
@@ -128,6 +128,12 @@ private:
 
     // maximum yaw rate in degrees/second
     AP_Float yaw_rate_max;
+
+    // landing speed in cm/s
+    AP_Int16 land_speed_cms;
+
+    // alt to switch to QLAND_FINAL
+    AP_Float land_final_alt;
     
     AP_Int8 enable;
     bool initialised;
@@ -161,5 +167,10 @@ private:
     // time we last set the loiter target
     uint32_t last_loiter_ms;
 
-    bool land_complete:1;
+    enum {
+        QLAND_POSITION,
+        QLAND_DESCEND,
+        QLAND_FINAL,
+        QLAND_COMPLETE
+    } land_state;
 };

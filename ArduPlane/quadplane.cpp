@@ -295,6 +295,24 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("YAW_RATE_MAX", 25, QuadPlane, yaw_rate_max, 100),
+
+    // @Param: LAND_SPEED
+    // @DisplayName: Land speed
+    // @Description: The descent speed for the final stage of landing in cm/s
+    // @Units: cm/s
+    // @Range: 30 200
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("LAND_SPEED", 26, QuadPlane, land_speed_cms, 50),
+
+    // @Param: LAND_FINAL_ALT
+    // @DisplayName: Land final altitude
+    // @Description: The altitude at which we should switch to Q_LAND_SPEED descent rate
+    // @Units: m
+    // @Range: 0.5 50
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("LAND_FINAL_ALT", 27, QuadPlane, land_final_alt, 6),
     
     AP_GROUPEND
 };
@@ -878,7 +896,9 @@ void QuadPlane::control_auto(const Location &loc)
     target.y = diff2d.y * 100;
     target.z = loc.alt - origin.alt;
 
-    if (!locations_are_same(loc, last_auto_target) || millis() - last_loiter_ms > 500) {
+    if (!locations_are_same(loc, last_auto_target) ||
+        loc.alt != last_auto_target.alt ||
+        millis() - last_loiter_ms > 500) {
         wp_nav->set_wp_destination(target);
         last_auto_target = loc;
     }
@@ -888,8 +908,21 @@ void QuadPlane::control_auto(const Location &loc)
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
     pos_control->set_accel_z(pilot_accel_z);
 
-    // run loiter controller
-    wp_nav->update_wpnav();
+    if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
+        land_state >= QLAND_FINAL) {
+        /*
+          we need to use the loiter controller for final descent as
+          the wpnav controller takes over the descent rate control
+         */
+        float ekfGndSpdLimit, ekfNavVelGainScaler;    
+        ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    
+        // run loiter controller
+        wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    } else {
+        // run wpnav controller
+        wp_nav->update_wpnav();
+    }
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), wp_nav->get_yaw(), true);
@@ -900,12 +933,11 @@ void QuadPlane::control_auto(const Location &loc)
 
     switch (plane.mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_VTOL_LAND:
-        if (plane.auto_state.wp_distance > 2) {
-            pos_control->set_alt_target_from_climb_rate_ff(0, plane.G_Dt, false);
-        } else if (plane.current_loc.alt > plane.next_WP_loc.alt+5*100) {
+        if (land_state < QLAND_FINAL) {
             pos_control->set_alt_target_with_slew(wp_nav->get_loiter_target().z, plane.ins.get_loop_delta_t());
         } else {
-            pos_control->set_alt_target_from_climb_rate_ff(-30, plane.G_Dt, true);            
+            printf("alt=%.1f speed=%.1f\n", plane.current_loc.alt*0.01, -land_speed_cms*0.01);
+            pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);            
         }
         break;
     case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -946,8 +978,10 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
         return false;
     }
     plane.set_next_WP(cmd.content.location);
+    // initially aim for current altitude
+    plane.next_WP_loc.alt = plane.current_loc.alt;
+    land_state = QLAND_POSITION;
     throttle_wait = false;    
-    land_complete = false;
     motors_lower_limit_start_ms = 0;
     
     // also update nav_controller for status output
@@ -977,19 +1011,35 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
 /*
   check if a VTOL landing has completed
  */
-bool QuadPlane::verify_vtol_land(void)
+bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
 {
     if (!available()) {
         return true;
     }
+    if (land_state == QLAND_POSITION &&
+        plane.auto_state.wp_distance < 2) {
+        land_state = QLAND_DESCEND;
+        plane.gcs_send_text(MAV_SEVERITY_INFO,"Land descend started");
+        plane.set_next_WP(cmd.content.location);        
+    }
+
     if (should_relax()) {
         wp_nav->loiter_soften_for_landing();
     }
-    if (!land_complete &&
+
+    // at land_final_alt begin final landing
+    if (land_state == QLAND_DESCEND &&
+        plane.current_loc.alt < plane.next_WP_loc.alt+land_final_alt*100) {
+        land_state = QLAND_FINAL;
+        pos_control->set_alt_target(inertial_nav.get_altitude());
+        plane.gcs_send_text(MAV_SEVERITY_INFO,"Land final started");
+    }
+
+    if (land_state == QLAND_FINAL &&
         (motors_lower_limit_start_ms != 0 &&
          millis() - motors_lower_limit_start_ms > 5000)) {
         plane.disarm_motors();
-        land_complete = true;
+        land_state = QLAND_COMPLETE;
         plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
     }
     return false;
