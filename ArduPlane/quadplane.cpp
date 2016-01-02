@@ -345,6 +345,23 @@ void QuadPlane::setup(void)
     pid_accel_z.set_dt(plane.ins.get_loop_delta_t());
     pos_control->set_dt(plane.ins.get_loop_delta_t());
 
+    // setup the trim of any motors used by AP_Motors so px4io
+    // failsafe will disable motors
+    uint16_t mask = motors->get_motor_mask();
+    for (uint8_t i=0; i<16; i++) {
+        if (mask & 1U<<i) {
+            RC_Channel *ch = RC_Channel::rc_channel(i);
+            if (ch != nullptr) {
+                ch->radio_trim = thr_min_pwm;
+            }
+        }
+    }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // redo failsafe mixing on px4
+    plane.setup_failsafe_mixing();
+#endif
+    
     transition_state = TRANSITION_DONE;
 
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane initialised");
