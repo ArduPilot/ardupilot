@@ -394,7 +394,7 @@ void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
         gps.ground_speed(),
         gps.ground_speed(),
         (ahrs.yaw_sensor / 100) % 360,
-        (int16_t)(motors.get_throttle())/10,
+        (int16_t)(motors.get_throttle() * 100),
         current_loc.alt / 100.0f,
         climb_rate / 100.0f);
 }
