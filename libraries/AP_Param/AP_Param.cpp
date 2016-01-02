@@ -35,7 +35,7 @@
 
 extern const AP_HAL::HAL &hal;
 
-#define ENABLE_DEBUG 0
+#define ENABLE_DEBUG 1
 
 #if ENABLE_DEBUG
  # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -98,8 +98,6 @@ void AP_Param::write_sentinal(uint16_t ofs)
 void AP_Param::erase_all(void)
 {
     struct EEPROM_header hdr;
-
-    Debug("erase_all");
 
     // write the header
     hdr.magic[0] = k_EEPROM_magic0;
@@ -217,8 +215,6 @@ bool AP_Param::check_var_info(void)
 bool AP_Param::setup(void)
 {
     struct EEPROM_header hdr;
-
-    Debug("setup %u vars", (unsigned)_num_vars);
 
     // check the header
     _storage.read_block(&hdr, 0, sizeof(hdr));
