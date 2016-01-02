@@ -261,6 +261,9 @@ void Copter::fast_loop()
     // run low level rate controllers that only require IMU data
     attitude_control.rate_controller_run();
     
+    motors.set_forward(channel_forward->control_in);
+    motors.set_strafe(channel_strafe->control_in);
+
 #if FRAME_CONFIG == HELI_FRAME
     update_heli_control_dynamics();
 #endif //HELI_FRAME
