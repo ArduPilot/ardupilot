@@ -47,7 +47,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("FORWARD",    2, RCMapper, _ch_forward, 5),
+    AP_GROUPINFO("FORWARD",    4, RCMapper, _ch_forward, 5),
 
     // @Param: STRAFE
     // @DisplayName: Strafe channel
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("STRAFE",    2, RCMapper, _ch_strafe, 6),
+    AP_GROUPINFO("STRAFE",    5, RCMapper, _ch_strafe, 6),
 
     AP_GROUPEND
 };
