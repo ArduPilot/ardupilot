@@ -40,6 +40,24 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("YAW",         3, RCMapper, _ch_yaw, 4),
 
+    // @Param: FORWARD
+    // @DisplayName: Forward channel
+    // @Description: Forward channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Forward is normally on channel 5, but you can move it to any channel with this parameter. Reboot is required for changes to take effect.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("FORWARD",    2, RCMapper, _ch_forward, 5),
+
+    // @Param: STRAFE
+    // @DisplayName: Strafe channel
+    // @Description: Strafe channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Strafe is normally on channel 6, but you can move it to any channel with this parameter. Reboot is required for changes to take effect.
+    // @Range: 1 8
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("STRAFE",    2, RCMapper, _ch_strafe, 6),
+
     AP_GROUPEND
 };
 
