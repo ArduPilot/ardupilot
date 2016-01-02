@@ -546,6 +546,10 @@ float QuadPlane::get_pilot_desired_yaw_rate_cds(void)
         // use bank angle to get desired yaw rate
         return desired_yaw_rate_cds();
     }
+    if (plane.channel_throttle->control_in <= 0) {
+        // the user may be trying to disarm
+        return 0;
+    }
     const float yaw_rate_max_dps = 100;
     return plane.channel_rudder->norm_input() * 100 * yaw_rate_max_dps;
 }
