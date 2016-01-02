@@ -125,6 +125,9 @@ private:
 
     // speed below which quad assistance is given
     AP_Float assist_speed;
+
+    // maximum yaw rate in degrees/second
+    AP_Float yaw_rate_max;
     
     AP_Int8 enable;
     bool initialised;

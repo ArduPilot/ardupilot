@@ -286,6 +286,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("ASSIST_SPEED", 24, QuadPlane, assist_speed, 0),
+
+    // @Param: YAW_RATE_MAX
+    // @DisplayName: Maximum yaw rate
+    // @Description: This is the maximum yaw rate in degrees/second
+    // @Units: degrees/second
+    // @Range: 50 500
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("YAW_RATE_MAX", 25, QuadPlane, yaw_rate_max, 100),
     
     AP_GROUPEND
 };
@@ -542,16 +551,19 @@ void QuadPlane::control_loiter()
  */
 float QuadPlane::get_pilot_desired_yaw_rate_cds(void)
 {
+    float yaw_cds = 0;
     if (assisted_flight) {
         // use bank angle to get desired yaw rate
-        return desired_yaw_rate_cds();
+        yaw_cds += desired_yaw_rate_cds();
     }
     if (plane.channel_throttle->control_in <= 0) {
         // the user may be trying to disarm
         return 0;
     }
-    const float yaw_rate_max_dps = 100;
-    return plane.channel_rudder->norm_input() * 100 * yaw_rate_max_dps;
+
+    // add in rudder input
+    yaw_cds += plane.channel_rudder->norm_input() * 100 * yaw_rate_max;
+    return yaw_cds;
 }
 
 // get pilot desired climb rate in cm/s
