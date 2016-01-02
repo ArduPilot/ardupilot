@@ -276,7 +276,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("THR_MIN_PWM", 23, QuadPlane, thr_max_pwm, 2000),
+    AP_GROUPINFO("THR_MAX_PWM", 23, QuadPlane, thr_max_pwm, 2000),
 
     // @Param: ASSIST_SPEED
     // @DisplayName: Quadplane assistance speed
