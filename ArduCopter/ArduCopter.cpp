@@ -365,7 +365,7 @@ void Copter::update_batt_compass(void)
 
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
-        compass.set_throttle(motors.get_throttle()/1000.0f);
+        compass.set_throttle(motors.get_throttle());
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS)) {
