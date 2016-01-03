@@ -36,7 +36,6 @@ void loop()
     uint16_t radio_trim;
     int16_t error;
     float control_P, control_I, control_D;
-    float dt = 1000/50;
 
     // display PID gains
     hal.console->printf("P %f  I %f  D %f  imax %f\n", (float)pid.kP(), (float)pid.kI(), (float)pid.kD(), (float)pid.imax());
