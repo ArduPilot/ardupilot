@@ -66,7 +66,7 @@ Copter::Copter(void) :
     loiter_time_max(0),
     loiter_time(0),
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry(inertial_nav, ahrs, battery, sonar),
+    frsky_telemetry(inertial_nav, ahrs, battery, sonar, fence, rpm_sensor, motors),
 #endif
     climb_rate(0),
     sonar_alt(0),

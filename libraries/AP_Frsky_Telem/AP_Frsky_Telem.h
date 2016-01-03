@@ -20,8 +20,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AC_Fence/AC_Fence.h>
+#include <AP_RPM/AP_RPM.h>
+#include <AP_Motors/AP_Motors.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
@@ -108,7 +111,7 @@ class AP_Frsky_Telem
 {
 public:
     //constructor
-    AP_Frsky_Telem(const AP_InertialNav &inav, const AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
+    AP_Frsky_Telem(const AP_InertialNav &inav, const AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng, const AC_Fence &fence, const AP_RPM &rpm_sensor, const AP_Motors &motors);
 
     // init - perform required initialisation including detecting which protocol to use and saving parameters
     void init(const AP_SerialManager &serial_manager, const uint8_t mav_type, const char *firmware_str, const char *frame_config_str, float fs_batt_voltage, float fs_batt_mah);
@@ -119,10 +122,6 @@ public:
     void set_simple_mode(uint8_t simple_mode) { _simple_mode = simple_mode; }
     void set_land_complete(uint8_t land_complete) { _land_complete = (bool)land_complete; }
     void set_control_sensors(uint32_t control_sensors_present, uint32_t control_sensors_enabled, uint32_t control_sensors_health) { _control_sensors_present = control_sensors_present; _control_sensors_enabled = control_sensors_enabled; _control_sensors_health = control_sensors_health; }
-    void queue_message(const char *str) {
-        strncpy(_mav.message_data[_mav.msg_queued_index].text, str, 50);
-        _mav.msg_queued_index = (_mav.msg_queued_index + 1) % MSG_BUFFER_LENGTH;
-    }
 
 private:
     // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
@@ -130,9 +129,13 @@ private:
 
     const AP_InertialNav &_inav;
     const AP_AHRS &_ahrs;
-    const RangeFinder &_rng;
     const AP_BattMonitor &_battery;
-    AP_HAL::UARTDriver *_port;                     // UART used to send data to receiver
+    const RangeFinder &_rng;
+    const AC_Fence &_fence;
+    const AP_RPM &_rpm_sensor;
+    const AP_Motors &_motors;
+
+	AP_HAL::UARTDriver *_port;                     // UART used to send data to receiver
     AP_SerialManager::SerialProtocol _protocol;    // protocol used - detected using SerialManager's SERIALX_PROTOCOL parameter
     uint16_t _crc;
 
@@ -173,24 +176,25 @@ private:
     uint16_t speed_in_centimeter;
     } _gps;
 
-    // methods for packetizing messages for transmission through FrSky link
+    // method for packetizing "status_text" style messages (severity and text) found in queue for transmission through FrSky link
     uint32_t get_next_msg_chunk(bool *chunk_sent);
-    uint8_t get_next_msg_byte();
 
-    // methods for collecting what is essentially status_text, sys_status, and ekf_status_report mavlink messages for transmission through FrSky link
-    void mavlink_statustext_check(void);
+    // methods for collecting in message queue what is essentially status_text, sys_status, and ekf_status_report mavlink messages
+    void queue_message(uint8_t severity, const char *str);
+	void mavlink_statustext_check(void);
     void control_sensors_check(void);
     void ekf_status_check(void);
 
-    uint32_t calc_params(bool *params_sent);
-    uint32_t calc_gps_latlng(bool *send_latitude);
+	uint32_t calc_params(bool *params_sent);
+	uint32_t calc_gps_latlng(bool *send_latitude);
     uint32_t calc_gps_status(void);
     uint32_t calc_batt(void);
-    uint32_t calc_status(void);
+    uint32_t calc_ap_status(void);
     uint32_t calc_home(void);
     uint32_t calc_velandrng(void);
     uint32_t calc_attitude(void);
 
+    uint16_t prep_number(int32_t number, uint8_t digits, uint8_t power);
     void send_XPort(void);
     void send_SPort(void);
     void send_DPort(void);
