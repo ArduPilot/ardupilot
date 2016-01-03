@@ -574,7 +574,7 @@ float QuadPlane::get_pilot_desired_yaw_rate_cds(void)
         // use bank angle to get desired yaw rate
         yaw_cds += desired_yaw_rate_cds();
     }
-    if (plane.channel_throttle->control_in <= 0) {
+    if (plane.channel_throttle->control_in <= 0 && !plane.auto_throttle_mode) {
         // the user may be trying to disarm
         return 0;
     }
