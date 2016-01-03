@@ -375,6 +375,9 @@ void Plane::set_mode(enum FlightMode mode)
     // new mode means new loiter
     loiter.start_time_ms = 0;
 
+    // assume non-VTOL mode
+    auto_state.vtol_mode = false;
+    
     switch(control_mode)
     {
     case INITIALISING:
@@ -454,6 +457,7 @@ void Plane::set_mode(enum FlightMode mode)
             control_mode = previous_mode;
         } else {
             auto_throttle_mode = false;
+            auto_state.vtol_mode = true;
         }
         break;
     }
@@ -746,6 +750,9 @@ void Plane::frsky_telemetry_send(void)
  */
 uint8_t Plane::throttle_percentage(void)
 {
+    if (auto_state.vtol_mode) {
+        return quadplane.throttle_percentage();
+    }
     // to get the real throttle we need to use norm_output() which
     // returns a number from -1 to 1.
     return constrain_int16(50*(channel_throttle->norm_output()+1), 0, 100);

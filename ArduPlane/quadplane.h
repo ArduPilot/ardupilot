@@ -50,6 +50,11 @@ public:
 
     // vtol help for is_flying()
     bool is_flying(void);
+
+    // return current throttle as a percentate
+    uint8_t throttle_percentage(void) const {
+        return last_throttle * 0.1f;
+    }
     
 private:
     AP_AHRS_NavEKF &ahrs;
