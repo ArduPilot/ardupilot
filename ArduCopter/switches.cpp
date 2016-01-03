@@ -149,7 +149,6 @@ void Copter::read_aux_switches()
         do_aux_switch_function(g.ch8_option, aux_con.CH8_flag);
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // check if Ch9 switch has changed position
     switch_position = read_3pos_switch(g.rc_9.radio_in);
     if (aux_con.CH9_flag != switch_position) {
@@ -159,7 +158,6 @@ void Copter::read_aux_switches()
         // invoke the appropriate function
         do_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     }
-#endif
 
     // check if Ch10 switch has changed position
     switch_position = read_3pos_switch(g.rc_10.radio_in);
@@ -204,10 +202,8 @@ void Copter::init_aux_switches()
     aux_con.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
 
     // ch9, ch12 only supported on some boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     aux_con.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
     aux_con.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
-#endif
 
     // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
@@ -216,10 +212,8 @@ void Copter::init_aux_switches()
     init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
 
     // ch9, ch12 only supported on some boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
-#endif
 }
 
 // init_aux_switch_function - initialize aux functions
