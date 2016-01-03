@@ -659,8 +659,10 @@ float QuadPlane::desired_yaw_rate_cds(void)
  */
 void QuadPlane::update_transition(void)
 {
-    if (plane.control_mode == MANUAL) {
-        // in manual mode quad motors are always off
+    if (plane.control_mode == MANUAL ||
+        plane.control_mode == ACRO ||
+        plane.control_mode == TRAINING) {
+        // in manual modes quad motors are always off
         motors->output_min();
         transition_state = TRANSITION_DONE;
         return;
