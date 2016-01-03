@@ -19,6 +19,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
+#include <AP_HAL/utility/Socket.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -114,34 +115,12 @@ void SITL_State::_sitl_setup(const char *home_str)
  */
 void SITL_State::_setup_fdm(void)
 {
-    int one=1, ret;
-    struct sockaddr_in sockaddr;
-
-    memset(&sockaddr,0,sizeof(sockaddr));
-
-#ifdef HAVE_SOCK_SIN_LEN
-    sockaddr.sin_len = sizeof(sockaddr);
-#endif
-    sockaddr.sin_port = htons(_simin_port);
-    sockaddr.sin_family = AF_INET;
-
-    _sitl_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (_sitl_fd == -1) {
-        fprintf(stderr, "SITL: socket failed - %s\n", strerror(errno));
+    if (!_sitl_rc_in.bind("0.0.0.0", _simin_port)) {
+        fprintf(stderr, "SITL: socket bind failed - %s\n", strerror(errno));
         exit(1);
     }
-
-    /* we want to be able to re-use ports quickly */
-    setsockopt(_sitl_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-
-    ret = bind(_sitl_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-    if (ret == -1) {
-        fprintf(stderr, "SITL: bind failed on port %u - %s\n",
-                (unsigned)ntohs(sockaddr.sin_port), strerror(errno));
-        exit(1);
-    }
-
-    HALSITL::SITLUARTDriver::_set_nonblocking(_sitl_fd);
+    _sitl_rc_in.reuseaddress();
+    _sitl_rc_in.set_blocking(false);
 }
 #endif
 
@@ -215,15 +194,16 @@ void SITL_State::_fdm_input(void)
 {
     ssize_t size;
     struct pwm_packet {
-        uint16_t pwm[8];
+        uint16_t pwm[16];
     } pwm_pkt;
 
-    size = recv(_sitl_fd, &pwm_pkt, sizeof(pwm_pkt), MSG_DONTWAIT);
+    size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
     switch (size) {
-    case sizeof(pwm_pkt): {
+    case 8*2:
+    case 16*2: {
         // a packet giving the receiver PWM inputs
         uint8_t i;
-        for (i=0; i<8; i++) {
+        for (i=0; i<size/2; i++) {
             // setup the pwn input for the RC channel inputs
             if (pwm_pkt.pwm[i] != 0) {
                 pwm_input[i] = pwm_pkt.pwm[i];
