@@ -37,7 +37,8 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
     Plane(home_str, frame_str)
 {
     frame = &quad_frame;
-    frame->init(mass, 0.51, 50, 20*radians(360));
+    // we use a very high terminal velocity to let the plane model handle the drag
+    frame->init(mass, 0.51, 100, 20*radians(360));
 }
 
 /*

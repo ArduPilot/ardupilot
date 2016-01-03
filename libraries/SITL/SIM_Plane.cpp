@@ -71,7 +71,7 @@ float Plane::calculate_drag_induced(void) const
     if (airspeed < 0.1) {
         return 0;
     }
-    float drag_i = sq(lift) / (0.25 * sq(air_density) * sq(airspeed) * wing_area * M_PI_F * wing_efficiency * aspect_ratio);
+    float drag_i = coefficient.lift_drag * sq(lift) / (0.25 * sq(air_density) * sq(airspeed) * wing_area * M_PI_F * wing_efficiency * aspect_ratio);
     return drag_i;
 }
 
@@ -124,25 +124,25 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     // add torque of stabilisers
     rot_accel.z += velocity_bf.y * speed_scaling * coefficient.vertical_stabiliser;
     rot_accel.y -= velocity_bf.z * speed_scaling * coefficient.horizontal_stabiliser;
+
+    // calculate angle of attack
+    angle_of_attack = atan2f(velocity_bf.z, velocity_bf.x);
+    beta = atan2f(velocity_bf.y,velocity_bf.x);
+    
+    // add dihedral
+    rot_accel.x -= beta * airspeed * coefficient.dihedral;
     
     // velocity in body frame
     velocity_bf = dcm.transposed() * velocity_ef;
 
-    // calculate angle of attack
-    angle_of_attack = atan2f(velocity_bf.z, velocity_bf.x);
-    
     // get lift and drag in body frame, in neutons
     Vector3f lift_drag = calculate_lift_drag();
     
-    // air resistance
-    Vector3f air_resistance = -velocity_ef * (GRAVITY_MSS/terminal_velocity);
-
     // scale thrust to newtons
     thrust *= thrust_scale;
 
     accel_body = Vector3f(thrust/mass, 0, 0);
     accel_body += lift_drag/mass;
-    accel_body += dcm.transposed() * air_resistance;    
 
     // add some noise
     add_noise(thrust / thrust_scale);

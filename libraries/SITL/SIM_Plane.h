@@ -39,10 +39,9 @@ public:
     }
 
 protected:
-    const float hover_throttle = 0.5f;
+    const float hover_throttle = 1.2f;
     const float cruise_airspeed = 20;
     const float cruise_pitch = radians(4);
-    const float terminal_velocity = 55;
     const float wing_efficiency = 0.9;
     const float wing_span = 2.0;
     const float wing_chord = 0.15;
@@ -50,18 +49,21 @@ protected:
     const float wing_area = wing_span * wing_chord;
     const float air_density = 1.225; // kg/m^3 at sea level, ISA conditions
     float angle_of_attack;
+    float beta;
     Vector3f velocity_bf;
 
     // manually tweaked coefficients. Not even close to reality
     struct {
-        float drag = 0.001;
-        float lift = 3.0;
+        float drag = 0.005;
+        float lift = 2.0;
+        float lift_drag = 0.5;
         float vertical_stabiliser = 0.1;
-        float horizontal_stabiliser = 0.001;
+        float horizontal_stabiliser = 2;
+        float dihedral = 0.1;
     } coefficient;
 
     float thrust_scale;
-    Vector3f terminal_rotation_rate{radians(360), radians(360), radians(180)};
+    Vector3f terminal_rotation_rate{radians(170), radians(200), radians(180)};
     Vector3f max_rates{radians(350), radians(250), radians(100)};
 
     float calculate_lift(void) const;
