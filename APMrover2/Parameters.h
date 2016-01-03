@@ -249,14 +249,12 @@ public:
     RC_Channel_aux	rc_6;
     RC_Channel_aux	rc_7;
     RC_Channel_aux	rc_8;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    RC_Channel_aux rc_9;
-    RC_Channel_aux rc_10;
-    RC_Channel_aux rc_11;
-    RC_Channel_aux rc_12;
-    RC_Channel_aux rc_13;
-    RC_Channel_aux rc_14;
-#endif
+    RC_Channel_aux  rc_9;
+    RC_Channel_aux  rc_10;
+    RC_Channel_aux  rc_11;
+    RC_Channel_aux  rc_12;
+    RC_Channel_aux  rc_13;
+    RC_Channel_aux  rc_14;
 
     // Throttle
     //
@@ -310,14 +308,12 @@ public:
         rc_6(CH_6),
         rc_7(CH_7),
         rc_8(CH_8),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_9(CH_9),
         rc_10(CH_10),
         rc_11(CH_11),
         rc_12(CH_12),
         rc_13(CH_13),
         rc_14(CH_14),
-#endif
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
