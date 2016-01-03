@@ -110,7 +110,7 @@ public:
     //constructor
     AP_Frsky_Telem(const AP_InertialNav &inav, const AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
-    // init - perform required initialisation including detecting which protocol to use
+    // init - perform required initialisation including detecting which protocol to use and saving parameters
     void init(const AP_SerialManager &serial_manager, const uint8_t mav_type, const char *firmware_str, const char *frame_config_str, float fs_batt_voltage, float fs_batt_mah);
 
     void set_home_distance(float distance) { _home_distance = distance; }
@@ -174,7 +174,7 @@ private:
     } _gps;
 
     // methods for packetizing messages for transmission through FrSky link
-    uint32_t get_next_msg_chunk();
+    uint32_t get_next_msg_chunk(bool *chunk_sent);
     uint8_t get_next_msg_byte();
 
     // methods for collecting what is essentially status_text, sys_status, and ekf_status_report mavlink messages for transmission through FrSky link

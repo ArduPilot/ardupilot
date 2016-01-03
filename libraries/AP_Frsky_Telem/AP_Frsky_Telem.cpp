@@ -70,9 +70,9 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const uint8_t 
         queue_message(buf);
 		// save main parameters locally
         _params.mav_type = mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
-		_params.fs_batt_voltage = fs_batt_voltage;
-		_params.fs_batt_mah = fs_batt_mah;
-		_params.batt_capacity_mah = _battery.pack_capacity_mah();
+		_params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
+		_params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
+		_params.batt_capacity_mah = _battery.pack_capacity_mah(); // battery capacity in mAh as configured by user
     }
 
     if (_port != NULL) {
@@ -114,9 +114,8 @@ void AP_Frsky_Telem::tick(void)
  */
 void AP_Frsky_Telem::send_XPort(void)
 {
-    static uint8_t repeats = 3; // send each message "chunk" 3 times to make sure the entire messsage gets through without getting cut
-    static uint32_t msg_chunk; // contains a "chunk" (four characters/bytes) at a time of the mavlink message to be sent
-    static bool params_sent = false;
+    static bool params_sent = false; // set to true once we are done sending the AP parameters
+	static bool chunk_sent = true; // set to false whenever we are not done sending a chunk of mavlink message
     static bool send_attitude = false;
     static bool send_latitude = false;
     static uint32_t timer_gps_latlng = 0;
@@ -135,10 +134,10 @@ void AP_Frsky_Telem::send_XPort(void)
     }
 
     if ((prev_byte == 0x7E) && (new_byte == SENSOR_28)) { // byte 0x7E is the header of each poll request
-        if (params_sent == false) { // have an initialisation phase where some AP parameters are sent
+        if (!params_sent) { // have an initialisation phase where some AP parameters are sent
             frsky_send_data(0x1007, calc_params(&params_sent));
         } else { // once initialisation is complete, send data periodically
-            if (send_attitude == true) { // skip other data, send attitude only this iteration
+            if (send_attitude) { // skip other data, send attitude only this iteration
                 send_attitude = false; // next iteration, check if we should send something other than attitude
             } else { // check if there's other data to send than attitude
                 send_attitude = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
@@ -147,17 +146,8 @@ void AP_Frsky_Telem::send_XPort(void)
                 control_sensors_check();
                 ekf_status_check();
                 // if there's any message in the queue, start sending them chunk by chunk; three times each chunk
-                if ((_mav.msg_sent_index != _mav.msg_queued_index) || (repeats < 3)) {
-                    if (repeats != 0) {
-                        if (repeats == 3) {
-                            msg_chunk = get_next_msg_chunk();
-                        }
-                        frsky_send_data(0x1000, msg_chunk);
-                        repeats--;
-                    }
-                    if (repeats == 0) {
-                        repeats = 3;
-                    }
+                if ((_mav.msg_sent_index != _mav.msg_queued_index) || (!chunk_sent)) {
+					frsky_send_data(0x1000, get_next_msg_chunk(&chunk_sent));
                     return;
                 }
                 // send other sensor data if it's time for them, and reset the corresponding timer if sent
@@ -165,7 +155,7 @@ void AP_Frsky_Telem::send_XPort(void)
 		    	// if it's time, send GPS longitude then latitude shortly after
                 if ((now - timer_gps_latlng) > 1000) { // if we have at least a 2D fix
                     frsky_send_data(0x0800, calc_gps_latlng(&send_latitude));
-                    if (send_latitude == false) { // we've cycled and sent one each of latitude and longitude, so reset the timer
+                    if (!send_latitude) { // we've cycled and sent one each of longitude then latitude, so reset the timer
                         timer_gps_latlng = hal.scheduler->millis();
                     }
                     return;
@@ -217,25 +207,34 @@ uint8_t AP_Frsky_Telem::get_next_msg_byte(void)
  * grabs one "chunk" (4 bytes) of the mavlink statustext message to be transmitted
  * (for XPort protocol)
  */
-uint32_t AP_Frsky_Telem::get_next_msg_chunk(void)
+uint32_t AP_Frsky_Telem::get_next_msg_chunk(bool *chunk_sent)
 {
-    uint32_t chunk = 0;
-    uint8_t character = get_next_msg_byte();
-
-    if (character) {
-        chunk |= character<<24;
-        character = get_next_msg_byte();
+    static uint32_t chunk = 0; // a "chunk" (four characters/bytes) at a time of the mavlink message to be sent
+    static uint8_t repeats = 3; // send each message "chunk" 3 times to make sure the entire messsage gets through without getting cut
+	
+    if (repeats == 3) {
+        chunk = 0;
+        uint8_t character = get_next_msg_byte();
         if (character) {
-            chunk |= character<<16;
+            chunk |= character<<24;
             character = get_next_msg_byte();
             if (character) {
-                chunk |= character<<8;
+                chunk |= character<<16;
                 character = get_next_msg_byte();
                 if (character) {
-                    chunk |= character;
+                    chunk |= character<<8;
+                    character = get_next_msg_byte();
+                    if (character) {
+                        chunk |= character;
+                    }
                 }
             }
         }
+    }
+    repeats--;
+    if (repeats <= 0) {
+        repeats = 3;
+        *chunk_sent = true;
     }
     return chunk;
 }
@@ -362,6 +361,7 @@ void AP_Frsky_Telem::ekf_status_check(void)
 uint32_t AP_Frsky_Telem::calc_params(bool *params_sent)
 {
     static uint8_t paramID = 0;
+    static uint8_t repeats = 3;
     uint32_t params = 0; 
 
     paramID++;
@@ -379,11 +379,15 @@ uint32_t AP_Frsky_Telem::calc_params(bool *params_sent)
         params = (uint32_t)roundf(_params.batt_capacity_mah); // battery pack capacity in mAh
         break;
     }
-	//Reserve first 8 bits for param ID, use other 24 bits to store parameter value
-	params = (paramID << 24) | (params & 0xFFFFFF);
+    //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
+    params = (paramID << 24) | (params & 0xFFFFFF);
 
-	if (paramID >= 4) {
-        *params_sent = true;
+    if (paramID >= 4) {
+        paramID = 0;
+        repeats--;
+        if (repeats <= 0) {
+            *params_sent = true;
+        }
 	}
 
     return params;
@@ -498,8 +502,8 @@ uint32_t AP_Frsky_Telem::calc_home(void)
     } else { // if copter
         home = ((uint16_t)_inav.get_altitude() & 0x7FFF); // altitude between vehicle and home location in centimeters
     }
-    home |= (((uint8_t)roundf(_home_bearing * 0.01f)) & 0x7F)<<15; // angle between vehicle and home location (relative to North) in 3 degree increments
-    home |= (((uint16_t)roundf(_home_distance * 0.0033f)) & 0x3FF)<<22; // distance between vehicle and home location in meters
+    home |= (((uint8_t)roundf(_home_bearing * 0.00333f)) & 0x7F)<<15; // angle between vehicle and home location (relative to North) in 3 degree increments
+    home |= (((uint16_t)roundf(_home_distance * 0.01f)) & 0x3FF)<<22; // distance between vehicle and home location in meters
     return home;
 }
 
