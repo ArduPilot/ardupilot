@@ -197,6 +197,12 @@ public:
     // boolean false is returned if variances are not available
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    // returns the expected NED magnetic field
+    bool get_mag_field_NED(Vector3f& ret) const;
+
+    // returns the estimated magnetic field offsets in body frame
+    bool get_mag_field_correction(Vector3f &ret) const;
+
     void setTakeoffExpected(bool val);
     void setTouchdownExpected(bool val);
 
