@@ -146,6 +146,7 @@ public:
     
 private:
     static uint64_t _function_mask;
+    static bool _initialised;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
 
     void aux_servo_function_setup(void);

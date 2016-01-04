@@ -21,6 +21,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] = {
 
 RC_Channel_aux *RC_Channel_aux::_aux_channels[RC_AUX_MAX_CHANNELS];
 uint64_t RC_Channel_aux::_function_mask;
+bool RC_Channel_aux::_initialised;
 
 /// map a function to a servo channel and output it
 void
@@ -132,6 +133,7 @@ void RC_Channel_aux::update_aux_servo_function(void)
         if (_aux_channels[i] == NULL) continue;
         _aux_channels[i]->aux_servo_function_setup();
 	}
+    _initialised = true;
 }
 
 
@@ -404,11 +406,14 @@ bool RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::Aux_servo_function_
 // find first channel that a function is assigned to
 bool RC_Channel_aux::find_channel(RC_Channel_aux::Aux_servo_function_t function, uint8_t &chan)
 {
+    if (!_initialised) {
+        update_aux_servo_function();
+    }
     if (!function_assigned(function)) {
         return false;
     }
     for (uint8_t i=0; i<RC_AUX_MAX_CHANNELS; i++) {
-        if (_aux_channels[i] && _aux_channels[i]->function != function) {
+        if (_aux_channels[i] && _aux_channels[i]->function == function) {
             chan = _aux_channels[i]->_ch_out;
             return true;
         }
