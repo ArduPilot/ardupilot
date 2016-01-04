@@ -180,8 +180,6 @@ int16_t AP_Mount_Servo::closest_limit(int16_t angle, int16_t angle_min, int16_t 
     while (angle_min >= 1800) angle_min -= 3600;
     while (angle_max < -1800) angle_max += 3600;
     while (angle_max >= 1800) angle_max -= 3600;
-    // TODO call this function somehow, otherwise this will never work
-    //set_range(min, max);
 
     // If the angle is outside servo limits, saturate the angle to the closest limit
     // On a circle the closest angular position must be carefully calculated to account for wrap-around
