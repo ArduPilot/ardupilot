@@ -231,6 +231,19 @@ void SITL_State::_output_to_flightgear(void)
     fdm.phi   = radians(sfdm.rollDeg);
     fdm.theta = radians(sfdm.pitchDeg);
     fdm.psi   = radians(sfdm.yawDeg);
+    if (_vehicle == ArduCopter) {
+        fdm.num_engines = 4;
+        for (uint8_t i=0; i<4; i++) {
+            fdm.rpm[i] = constrain_float((pwm_output[i]-1000), 0, 1000);
+        }
+    } else {
+        fdm.num_engines = 4;
+        fdm.rpm[0] = constrain_float((pwm_output[2]-1000)*3, 0, 3000);
+        // for quadplane
+        fdm.rpm[1] = constrain_float((pwm_output[5]-1000)*12, 0, 12000);
+        fdm.rpm[2] = constrain_float((pwm_output[6]-1000)*12, 0, 12000);
+        fdm.rpm[3] = constrain_float((pwm_output[7]-1000)*12, 0, 12000);
+    }
     fdm.ByteSwap();
 
     fg_socket.send(&fdm, sizeof(fdm));
