@@ -196,6 +196,9 @@ public:
     // Set output throttle and disable stabilization
     void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
 
+    // get throttle passed into attitude controller (i.e. throttle_in provided to set_throttle_out)
+    float get_throttle_in() const { return _throttle_in; }
+
     // Return throttle increase applied for tilt compensation
     float angle_boost() const { return _angle_boost; }
 
@@ -327,6 +330,9 @@ protected:
     // velocity controller, in radians per second. Formerly _rate_bf_target.
     Vector3f            _ang_vel_target_rads;
 
+    // throttle provided as input to attitude controller.  This does not include angle boost.
+    // Used only for logging.
+    float               _throttle_in = 0.0f;
 
     // This represents the throttle increase applied for tilt compensation.
     // Used only for logging.

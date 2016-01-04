@@ -588,6 +588,7 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 
 void AC_AttitudeControl::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
 {
+    _throttle_in = throttle_in;
     _throttle_in_filt.apply(throttle_in, _dt);
     _motors.set_stabilizing(true);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
@@ -602,6 +603,7 @@ void AC_AttitudeControl::set_throttle_out(float throttle_in, bool apply_angle_bo
 
 void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
 {
+    _throttle_in = throttle_in;
     _throttle_in_filt.apply(throttle_in, _dt);
     if (reset_attitude_control) {
         relax_bf_rate_controller();
