@@ -129,7 +129,8 @@ protected:
     virtual void        output_armed_not_stabilizing()=0;
     virtual void        output_armed_zero_throttle() { output_min(); }
     virtual void        output_disarmed()=0;
-
+    virtual void        rc_write(uint8_t chan, uint16_t pwm);
+    
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;
 

@@ -381,7 +381,7 @@ void AP_MotorsMulticopter::throttle_pass_through(int16_t pwm)
         hal.rcout->cork();
         for (uint16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                hal.rcout->write(i, pwm);
+                rc_write(i, pwm);
             }
         }
         hal.rcout->push();

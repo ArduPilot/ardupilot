@@ -112,10 +112,10 @@ void AP_MotorsCoax::output_min()
 {
     // send minimum value to each motor
     hal.rcout->cork();
-    hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_trim);
-    hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_trim);
-    hal.rcout->write(AP_MOTORS_MOT_3, _throttle_radio_min);
-    hal.rcout->write(AP_MOTORS_MOT_4, _throttle_radio_min);
+    rc_write(AP_MOTORS_MOT_1, _servo1.radio_trim);
+    rc_write(AP_MOTORS_MOT_2, _servo2.radio_trim);
+    rc_write(AP_MOTORS_MOT_3, _throttle_radio_min);
+    rc_write(AP_MOTORS_MOT_4, _throttle_radio_min);
     hal.rcout->push();
 }
 
@@ -157,10 +157,10 @@ void AP_MotorsCoax::output_armed_not_stabilizing()
     }
 
     hal.rcout->cork();
-    hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_3, motor_out);
-    hal.rcout->write(AP_MOTORS_MOT_4, motor_out);
+    rc_write(AP_MOTORS_MOT_1, _servo1.radio_out);
+    rc_write(AP_MOTORS_MOT_2, _servo2.radio_out);
+    rc_write(AP_MOTORS_MOT_3, motor_out);
+    rc_write(AP_MOTORS_MOT_4, motor_out);
     hal.rcout->push();
 }
 
@@ -217,10 +217,10 @@ void AP_MotorsCoax::output_armed_stabilizing()
 
     // send output to each motor
     hal.rcout->cork();
-    hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_3, motor_out[AP_MOTORS_MOT_3]);
-    hal.rcout->write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4]);
+    rc_write(AP_MOTORS_MOT_1, _servo1.radio_out);
+    rc_write(AP_MOTORS_MOT_2, _servo2.radio_out);
+    rc_write(AP_MOTORS_MOT_3, motor_out[AP_MOTORS_MOT_3]);
+    rc_write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4]);
     hal.rcout->push();
 }
 
@@ -245,19 +245,19 @@ void AP_MotorsCoax::output_test(uint8_t motor_seq, int16_t pwm)
     switch (motor_seq) {
         case 1:
             // flap servo 1
-            hal.rcout->write(AP_MOTORS_MOT_1, pwm);
+            rc_write(AP_MOTORS_MOT_1, pwm);
             break;
         case 2:
             // flap servo 2
-            hal.rcout->write(AP_MOTORS_MOT_2, pwm);
+            rc_write(AP_MOTORS_MOT_2, pwm);
             break;
         case 3:
             // motor 1
-            hal.rcout->write(AP_MOTORS_MOT_3, pwm);
+            rc_write(AP_MOTORS_MOT_3, pwm);
             break;
         case 4:
             // motor 2
-            hal.rcout->write(AP_MOTORS_MOT_4, pwm);
+            rc_write(AP_MOTORS_MOT_4, pwm);
             break;
         default:
             // do nothing

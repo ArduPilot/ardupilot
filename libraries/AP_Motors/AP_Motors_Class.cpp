@@ -64,3 +64,11 @@ void AP_Motors::armed(bool arm)
     _flags.armed = arm;
     AP_Notify::flags.armed = arm;
 };
+
+/*
+  write to an output channel
+ */
+void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
+{
+    hal.rcout->write(chan, pwm);
+}
