@@ -196,7 +196,6 @@ void Plane::init_ardupilot()
     gps.init(&DataFlash, serial_manager);
 
     init_rc_in();               // sets up rc channels from radio
-    init_rc_out();              // sets up the timer libs
 
     relay.init();
 
@@ -234,6 +233,10 @@ void Plane::init_ardupilot()
     startup_ground();
 
     quadplane.setup();
+
+    // don't initialise rc output until after quadplane is setup as
+    // that can change initial values of channels
+    init_rc_out();
     
     // choose the nav controller
     set_nav_controller();

@@ -46,8 +46,6 @@ void Plane::init_rc_in()
     channel_pitch->set_default_dead_zone(30);
     channel_rudder->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
-
-    update_aux();
 }
 
 /*
@@ -69,6 +67,7 @@ void Plane::init_rc_out()
         channel_throttle->enable_out();
     }
     channel_rudder->enable_out();
+    update_aux();
     RC_Channel_aux::enable_aux_servos();
 
     // Initialization of servo outputs
