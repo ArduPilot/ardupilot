@@ -35,6 +35,9 @@ RC_Channel_aux::output_ch(void)
     case k_manual:              // manual
         radio_out = radio_in;
         break;
+    case k_motor1 ... k_motor8:
+        // handled by AP_Motors::rc_write()
+        return;
     }
     hal.rcout->write(_ch_out, radio_out);
 }
