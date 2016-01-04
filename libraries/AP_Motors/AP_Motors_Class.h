@@ -132,6 +132,7 @@ protected:
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
     virtual void        rc_enable_ch(uint8_t chan);
+    virtual uint32_t    rc_map_mask(uint32_t mask) const;
     
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;

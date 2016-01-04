@@ -114,7 +114,7 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
             mask |= 1U << i;
         }
     }
-    return mask;
+    return rc_map_mask(mask);
 }
 
 void AP_MotorsMatrix::output_armed_not_stabilizing()
