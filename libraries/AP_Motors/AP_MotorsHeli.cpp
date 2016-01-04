@@ -357,7 +357,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
 // reset_swash_servo
 void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
 {
-    servo.set_range(0, 1000);
+    servo.set_range_out(0, 1000);
 
     // swash servos always use full endpoints as restricting them would lead to scaling errors
     servo.radio_min = 1000;
