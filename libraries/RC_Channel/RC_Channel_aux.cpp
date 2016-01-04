@@ -400,3 +400,18 @@ bool RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::Aux_servo_function_
                         (unsigned)channel);
     return false;    
 }
+
+// find first channel that a function is assigned to
+bool RC_Channel_aux::find_channel(RC_Channel_aux::Aux_servo_function_t function, uint8_t &chan)
+{
+    if (!function_assigned(function)) {
+        return false;
+    }
+    for (uint8_t i=0; i<RC_AUX_MAX_CHANNELS; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function != function) {
+            chan = _aux_channels[i]->_ch_out;
+            return true;
+        }
+    }
+    return false;
+}

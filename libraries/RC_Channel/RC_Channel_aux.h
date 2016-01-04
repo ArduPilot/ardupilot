@@ -68,6 +68,14 @@ public:
         k_engine_run_enable     = 30,            ///< engine kill switch, used for gas airplanes and helicopters
         k_heli_rsc              = 31,            ///< helicopter RSC output
         k_heli_tail_rsc         = 32,            ///< helicopter tail RSC output
+        k_motor1                = 33,            ///< these allow remapping of copter motors
+        k_motor2                = 34,
+        k_motor3                = 35,
+        k_motor4                = 36,
+        k_motor5                = 37,
+        k_motor6                = 38,
+        k_motor7                = 39,
+        k_motor8                = 40,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -132,6 +140,9 @@ public:
 
     // set default channel for an auxillary function
     static bool set_aux_channel_default(Aux_servo_function_t function, uint8_t channel);
+
+    // find first channel that a function is assigned to
+    static bool find_channel(Aux_servo_function_t function, uint8_t &chan);
     
 private:
     static uint64_t _function_mask;
