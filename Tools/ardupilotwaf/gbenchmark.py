@@ -7,6 +7,7 @@ gbenchmark is a Waf tool for benchmark builds in Ardupilot
 
 from waflib import Build, Context, Task
 from waflib.TaskGen import feature, before_method, after_method
+from waflib.Errors import WafError
 
 def configure(cfg):
     env = cfg.env
@@ -34,13 +35,14 @@ def configure(cfg):
     if env.GBENCHMARK_CMAKE_GENERATOR:
         env.GBENCHMARK_GENERATOR_OPTION = '-G%s' % env.GBENCHMARK_CMAKE_GENERATOR
 
-    prefix_node = cfg.bldnode.make_node('gbenchmark')
-    my_build_node = cfg.bldnode.make_node('gbenchmark_build')
+    bldnode = cfg.bldnode.make_node(cfg.variant)
+    prefix_node = bldnode.make_node('gbenchmark')
+    my_build_node = bldnode.make_node('gbenchmark_build')
     my_src_node = cfg.srcnode.find_dir('modules/gbenchmark')
 
-    env.GBENCHMARK_PREFIX_REL = prefix_node.path_from(cfg.bldnode)
+    env.GBENCHMARK_PREFIX_REL = prefix_node.path_from(bldnode)
     env.GBENCHMARK_BUILD = my_build_node.abspath()
-    env.GBENCHMARK_BUILD_REL = my_build_node.path_from(cfg.bldnode)
+    env.GBENCHMARK_BUILD_REL = my_build_node.path_from(bldnode)
     env.GBENCHMARK_SRC = my_src_node.abspath()
 
     env.INCLUDES_GBENCHMARK = [prefix_node.make_node('include').abspath()]
@@ -99,8 +101,11 @@ class gbenchmark_build(Task.Task):
                     quiet=Context.BOTH,
                 )
             return 0
-        except Exception as e:
-            print(e.stdout, e.stderr)
+        except WafError as e:
+            print(e)
+            if hasattr(e, 'stderr'):
+                print('')
+                print(e.stderr)
             return 1
 
     def __str__(self):
