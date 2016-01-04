@@ -93,29 +93,29 @@ int16_t AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
         _acro_col_expo = 1.0f;
     }
 
-    if (_acro_col_expo <= 0) {
+    if (_acro_col_expo <= 0.0f) {
         acro_col_out = control_in;
     } else {
         // expo variables
         float col_in, col_in3, col_out;
         col_in = (float)(control_in-500)/500.0f;
         col_in3 = col_in*col_in*col_in;
-        col_out = (_acro_col_expo * col_in3) + ((1-_acro_col_expo)*col_in);
+        col_out = (_acro_col_expo * col_in3) + ((1.0f-_acro_col_expo)*col_in);
         acro_col_out = 500 + col_out*500;
     }
     acro_col_out = constrain_int16(acro_col_out, 0, 1000);
 
     // ramp to and from stab col over 1/2 second
-    if (_im_flags_heli.use_stab_col && (_stab_col_ramp < 1.0)){
+    if (_im_flags_heli.use_stab_col && (_stab_col_ramp < 1.0f)){
         _stab_col_ramp += 2.0f/(float)_loop_rate;
-    } else if(!_im_flags_heli.use_stab_col && (_stab_col_ramp > 0.0)){
+    } else if(!_im_flags_heli.use_stab_col && (_stab_col_ramp > 0.0f)){
         _stab_col_ramp -= 2.0f/(float)_loop_rate;
     }
-    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0, 1.0);
+    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0f, 1.0f);
 
     // scale collective output smoothly between acro and stab col
     int16_t collective_out;
-    collective_out = (float)((1.0-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
+    collective_out = (float)((1.0f-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
     collective_out = constrain_int16(collective_out, 0, 1000);
 
     return collective_out;
