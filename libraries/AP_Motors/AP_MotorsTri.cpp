@@ -97,17 +97,17 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
 	    1U << AP_MOTORS_MOT_1 |
 	    1U << AP_MOTORS_MOT_2 |
 	    1U << AP_MOTORS_MOT_4;
-    hal.rcout->set_freq(mask, _speed_hz);
+    rc_set_freq(mask, _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
 void AP_MotorsTri::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(AP_MOTORS_MOT_1);
-    hal.rcout->enable_ch(AP_MOTORS_MOT_2);
-    hal.rcout->enable_ch(AP_MOTORS_MOT_4);
-    hal.rcout->enable_ch(AP_MOTORS_CH_TRI_YAW);
+    rc_enable_ch(AP_MOTORS_MOT_1);
+    rc_enable_ch(AP_MOTORS_MOT_2);
+    rc_enable_ch(AP_MOTORS_MOT_4);
+    rc_enable_ch(AP_MOTORS_CH_TRI_YAW);
 }
 
 // output_min - sends minimum values out to the motors
