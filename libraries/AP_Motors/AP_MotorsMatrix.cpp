@@ -49,7 +49,7 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
 		mask |= 1U << i;
         }
     }
-    hal.rcout->set_freq( mask, _speed_hz );
+    rc_set_freq( mask, _speed_hz );
 }
 
 // set frame orientation (normally + or X)
@@ -78,7 +78,7 @@ void AP_MotorsMatrix::enable()
     // enable output channels
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->enable_ch(i);
+            rc_enable_ch(i);
         }
     }
 }

@@ -131,19 +131,19 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
         1U << AP_MOTORS_MOT_2 |
         1U << AP_MOTORS_MOT_3 |
         1U << AP_MOTORS_MOT_4;
-    hal.rcout->set_freq(mask, _speed_hz);
+    rc_set_freq(mask, _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors and servos
 void AP_MotorsHeli_Single::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(AP_MOTORS_MOT_1);    // swash servo 1
-    hal.rcout->enable_ch(AP_MOTORS_MOT_2);    // swash servo 2
-    hal.rcout->enable_ch(AP_MOTORS_MOT_3);    // swash servo 3
-    hal.rcout->enable_ch(AP_MOTORS_MOT_4);    // yaw
-    hal.rcout->enable_ch(AP_MOTORS_HELI_SINGLE_AUX);                                 // output for gyro gain or direct drive variable pitch tail motor
-    hal.rcout->enable_ch(AP_MOTORS_HELI_SINGLE_RSC);                                 // output for main rotor esc
+    rc_enable_ch(AP_MOTORS_MOT_1);    // swash servo 1
+    rc_enable_ch(AP_MOTORS_MOT_2);    // swash servo 2
+    rc_enable_ch(AP_MOTORS_MOT_3);    // swash servo 3
+    rc_enable_ch(AP_MOTORS_MOT_4);    // yaw
+    rc_enable_ch(AP_MOTORS_HELI_SINGLE_AUX);                                 // output for gyro gain or direct drive variable pitch tail motor
+    rc_enable_ch(AP_MOTORS_HELI_SINGLE_RSC);                                 // output for main rotor esc
 }
 
 // init_outputs - initialise Servo/PWM ranges and endpoints
