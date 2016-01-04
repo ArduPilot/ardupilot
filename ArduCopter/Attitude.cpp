@@ -211,9 +211,8 @@ float Copter::get_takeoff_trigger_throttle()
     return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
 }
 
-// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off
+// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output (in the range 0 to 1) before take-off
 // used only for althold, loiter, hybrid flight modes
-// returns throttle output 0 to 1000
 float Copter::get_throttle_pre_takeoff(float input_thr)
 {
     // exit immediately if input_thr is zero
@@ -221,19 +220,13 @@ float Copter::get_throttle_pre_takeoff(float input_thr)
         return 0.0f;
     }
 
-    // TODO: does this parameter sanity check really belong here?
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    // ensure reasonable throttle values
+    input_thr = constrain_float(input_thr,0.0f,1000.0f);
 
-    float in_min = g.throttle_min;
+    float in_min = 0.0f;
     float in_max = get_takeoff_trigger_throttle();
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters swash will move from bottom to 1/2 of mid throttle
-    float out_min = 0;
-#else
-    // multicopters will output between spin-when-armed and 1/2 of mid throttle
-    float out_min = motors.get_throttle_warn();
-#endif
+    float out_min = 0.0f;
     float out_max = get_non_takeoff_throttle();
 
     if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
