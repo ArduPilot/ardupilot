@@ -302,6 +302,6 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_rads)
 float AC_AttitudeControl_Heli::get_boosted_throttle(float throttle_in)
 {
     // no angle boost for trad helis
-    _angle_boost = 0;
+    _angle_boost = 0.0f;
     return throttle_in;
 }
