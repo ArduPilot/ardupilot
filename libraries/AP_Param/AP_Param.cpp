@@ -126,11 +126,6 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             Debug("idx too large (%u) in %s", idx, group_info[i].name);
             return false;
         }
-        if (used_mask & (1ULL<<idx)) {
-            Debug("Duplicate group idx %u for %s", idx, group_info[i].name);
-            return false;
-        }
-        used_mask |= (1ULL<<idx);
         if (type == AP_PARAM_GROUP) {
             // a nested group
             const struct GroupInfo *ginfo = group_info[i].group_info;
@@ -144,6 +139,11 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             }
             continue;
         }
+        if (used_mask & (1ULL<<idx)) {
+            Debug("Duplicate group idx %u for %s", idx, group_info[i].name);
+            return false;
+        }
+        used_mask |= (1ULL<<idx);
         uint8_t size = type_size((enum ap_var_type)type);
         if (size == 0) {
             Debug("invalid type in %s", group_info[i].name);
