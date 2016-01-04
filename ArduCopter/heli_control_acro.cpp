@@ -27,7 +27,7 @@ bool Copter::heli_acro_init(bool ignore_checks)
 void Copter::heli_acro_run()
 {
     float target_roll, target_pitch, target_yaw;
-    int16_t pilot_throttle_scaled;
+    float pilot_throttle_scaled;
     
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup, because
     // we may be in autorotation flight.  These should be reset only when transitioning from disarmed
