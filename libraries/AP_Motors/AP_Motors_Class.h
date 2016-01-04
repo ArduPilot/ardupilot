@@ -160,5 +160,9 @@ protected:
     float               _batt_voltage;          // latest battery voltage reading
     float               _batt_current;          // latest battery current reading
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
+
+    // mapping to output channels
+    uint8_t             _motor_map[AP_MOTORS_MAX_NUM_MOTORS];
+    uint16_t            _motor_map_mask;
 };
 #endif  // __AP_MOTORS_CLASS_H__
