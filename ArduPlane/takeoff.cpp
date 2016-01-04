@@ -72,6 +72,7 @@ bool Plane::auto_takeoff_check(void)
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         launchTimerStarted = false;
         last_tkoff_arm_time = 0;
+        steer_state.locked_course_err = 0; // use current heading without any error offset
         return true;
     }
 
