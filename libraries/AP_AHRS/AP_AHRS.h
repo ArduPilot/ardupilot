@@ -272,6 +272,16 @@ public:
         return false;
     }
 
+    // returns the expected NED magnetic field
+    virtual bool get_expected_mag_field_NED(Vector3f &ret) const {
+        return false;
+    }
+
+    // returns the estimated magnetic field offsets in body frame
+    virtual bool get_mag_field_correction(Vector3f &ret) const {
+        return false;
+    }
+
     // return a position relative to home in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
