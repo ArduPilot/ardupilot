@@ -197,7 +197,7 @@ public:
     void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
 
     // Return throttle increase applied for tilt compensation
-    int16_t angle_boost() const { return _angle_boost; }
+    float angle_boost() const { return _angle_boost; }
 
     // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
     virtual float get_althold_lean_angle_max() const = 0;
@@ -330,7 +330,7 @@ protected:
 
     // This represents the throttle increase applied for tilt compensation.
     // Used only for logging.
-    int16_t             _angle_boost;
+    float               _angle_boost;
 
     // Specifies whether the attitude controller should use the acceleration limit
     bool                _att_ctrl_use_accel_limit;

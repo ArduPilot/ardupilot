@@ -596,7 +596,7 @@ void AC_AttitudeControl::set_throttle_out(float throttle_in, bool apply_angle_bo
     }else{
         _motors.set_throttle(throttle_in);
         // Clear angle_boost for logging purposes
-        _angle_boost = 0;
+        _angle_boost = 0.0f;
     }
 }
 
@@ -610,7 +610,7 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     _motors.set_stabilizing(false);
     _motors.set_throttle(throttle_in);
-    _angle_boost = 0;
+    _angle_boost = 0.0f;
 }
 
 float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord_lim)
