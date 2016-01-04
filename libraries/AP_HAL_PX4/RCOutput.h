@@ -12,19 +12,19 @@
 class PX4::PX4RCOutput : public AP_HAL::RCOutput 
 {
 public:
-    void     init();
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
-    uint16_t get_freq(uint8_t ch);
-    void     enable_ch(uint8_t ch);
-    void     disable_ch(uint8_t ch);
-    void     write(uint8_t ch, uint16_t period_us);
-    uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_us, uint8_t len);
-    void     set_safety_pwm(uint32_t chmask, uint16_t period_us);
-    void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us);
-    bool     force_safety_on(void);
-    void     force_safety_off(void);
-    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {
+    void     init() override;
+    void     set_freq(uint32_t chmask, uint16_t freq_hz) override;
+    uint16_t get_freq(uint8_t ch) override;
+    void     enable_ch(uint8_t ch) override;
+    void     disable_ch(uint8_t ch) override;
+    void     write(uint8_t ch, uint16_t period_us) override;
+    uint16_t read(uint8_t ch) override;
+    void     read(uint16_t* period_us, uint8_t len) override;
+    void     set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
+    void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
+    bool     force_safety_on(void) override;
+    void     force_safety_off(void) override;
+    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override {
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;
     }
@@ -59,6 +59,7 @@ private:
     void _init_alt_channels(void);
     void _publish_actuators(void);
     void _arm_actuators(bool arm);
+    void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz);
 };
 
 #endif // __AP_HAL_PX4_RCOUTPUT_H__

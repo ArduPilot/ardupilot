@@ -85,19 +85,22 @@ void PX4RCOutput::_init_alt_channels(void)
     }
 }
 
-void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
+/*
+  set output frequency on outputs associated with fd
+ */
+void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz) 
 {
-    // we can't set this per channel yet
+    // we can't set this per channel
     if (freq_hz > 50) {
         // we're being asked to set the alt rate
-        if (ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) != 0) {
+        if (ioctl(fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) != 0) {
             hal.console->printf("RCOutput: Unable to set alt rate to %uHz\n", (unsigned)freq_hz);
             return;
         }
         _freq_hz = freq_hz;
     }
 
-    /* work out the new rate mask. The PX4IO board has 3 groups of servos. 
+    /* work out the new rate mask. The outputs have 3 groups of servos. 
 
        Group 0: channels 0 1
        Group 1: channels 4 5 6 7
@@ -133,8 +136,28 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         }
     }
 
-    if (ioctl(_pwm_fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
+    if (ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
         hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)_rate_mask);
+    }
+}
+
+/*
+  set output frequency
+ */
+void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
+{
+    // greater than 400 doesn't give enough room at higher periods for
+    // the down pulse
+    if (freq_hz > 400) {
+        freq_hz = 400;
+    }
+    uint32_t primary_mask = chmask & ((1UL<<_servo_count)-1);
+    uint32_t alt_mask = chmask >> _servo_count;
+    if (primary_mask && _pwm_fd != -1) {
+        set_freq_fd(_pwm_fd, primary_mask, freq_hz);
+    }
+    if (alt_mask && _alt_fd != -1) {
+        set_freq_fd(_alt_fd, alt_mask, freq_hz);
     }
 }
 
