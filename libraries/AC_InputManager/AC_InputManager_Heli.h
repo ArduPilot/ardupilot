@@ -26,7 +26,7 @@ public:
     }
 
     // get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
-    int16_t get_pilot_desired_collective(int16_t control_in);
+    float get_pilot_desired_collective(int16_t control_in);
 
     // set_use_stab_col - setter function
     void set_use_stab_col(bool use) { _im_flags_heli.use_stab_col = use; }
