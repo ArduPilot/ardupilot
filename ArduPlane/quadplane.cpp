@@ -330,6 +330,12 @@ void QuadPlane::setup(void)
     }
     initialised = true;
 
+    // setup default motors for X frame
+    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor1, CH_5);
+    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
+    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor3, CH_7);
+    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
+    
     /*
       dynamically allocate the key objects for quadplane. This ensures
       that the objects don't affect the vehicle unless enabled and
@@ -360,7 +366,10 @@ void QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    motors->set_frame_orientation(AP_MOTORS_QUADPLANE);
+    // for some strange reason we need to call wrong frame first, or
+    // setup_motors() doesn't run
+    motors->set_frame_orientation(AP_MOTORS_PLUS_FRAME);
+    motors->set_frame_orientation(AP_MOTORS_X_FRAME);
     motors->set_throttle_range(0, thr_min_pwm, thr_max_pwm);
     motors->set_hover_throttle(500);
     motors->set_update_rate(rc_speed);
