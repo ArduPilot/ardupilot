@@ -13,31 +13,31 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-/*
-  originally written by Jose Julio, Pat Hickey and Jordi Muñoz
-
-  Heavily modified by Andrew Tridgell
-*/
 #include "AP_Baro_MS5611.h"
 
-#include <AP_HAL/AP_HAL.h>
+#include <utility>
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
-#define CMD_MS5611_RESET 0x1E
-#define CMD_MS56XX_PROM 0xA0
+static const uint8_t CMD_MS56XX_RESET = 0x1E;
+static const uint8_t CMD_MS56XX_READ_ADC = 0x00;
 
-#define ADDR_CMD_CONVERT_D1_OSR256  0x40 /* write to this address to start pressure conversion */
-#define ADDR_CMD_CONVERT_D1_OSR512  0x42 /* write to this address to start pressure conversion */
-#define ADDR_CMD_CONVERT_D1_OSR1024 0x44 /* write to this address to start pressure conversion */
-#define ADDR_CMD_CONVERT_D1_OSR2048 0x46 /* write to this address to start pressure conversion */
-#define ADDR_CMD_CONVERT_D1_OSR4096 0x48 /* write to this address to start pressure conversion */
-#define ADDR_CMD_CONVERT_D2_OSR256  0x50 /* write to this address to start temperature conversion */
-#define ADDR_CMD_CONVERT_D2_OSR512  0x52 /* write to this address to start temperature conversion */
-#define ADDR_CMD_CONVERT_D2_OSR1024 0x54 /* write to this address to start temperature conversion */
-#define ADDR_CMD_CONVERT_D2_OSR2048 0x56 /* write to this address to start temperature conversion */
-#define ADDR_CMD_CONVERT_D2_OSR4096 0x58 /* write to this address to start temperature conversion */
+/* PROM start address */
+static const uint8_t CMD_MS56XX_PROM = 0xA0;
+
+/* write to one of these addresses to start pressure conversion */
+#define ADDR_CMD_CONVERT_D1_OSR256  0x40
+#define ADDR_CMD_CONVERT_D1_OSR512  0x42
+#define ADDR_CMD_CONVERT_D1_OSR1024 0x44
+#define ADDR_CMD_CONVERT_D1_OSR2048 0x46
+#define ADDR_CMD_CONVERT_D1_OSR4096 0x48
+
+/* write to one of these addresses to start temperature conversion */
+#define ADDR_CMD_CONVERT_D2_OSR256  0x50
+#define ADDR_CMD_CONVERT_D2_OSR512  0x52
+#define ADDR_CMD_CONVERT_D2_OSR1024 0x54
+#define ADDR_CMD_CONVERT_D2_OSR2048 0x56
+#define ADDR_CMD_CONVERT_D2_OSR4096 0x58
 
 /*
   use an OSR of 1024 to reduce the self-heating effect of the
@@ -45,149 +45,36 @@ extern const AP_HAL::HAL& hal;
   are quite sensitive to this effect and that reducing the OSR can
   make a big difference
  */
-#define ADDR_CMD_CONVERT_D1			ADDR_CMD_CONVERT_D1_OSR1024
-#define ADDR_CMD_CONVERT_D2			ADDR_CMD_CONVERT_D2_OSR1024
-
-// SPI Device //////////////////////////////////////////////////////////////////
-
-AP_SerialBus_SPI::AP_SerialBus_SPI(enum AP_HAL::SPIDeviceType device, enum AP_HAL::SPIDeviceDriver::bus_speed speed) :
-    _device(device),
-    _speed(speed),
-    _spi(NULL),
-    _spi_sem(NULL)
-{
-}
-
-void AP_SerialBus_SPI::init()
-{
-    _spi = hal.spi->device(_device);
-    if (_spi == NULL) {
-        AP_HAL::panic("did not get valid SPI device driver!");
-    }
-    _spi_sem = _spi->get_semaphore();
-    if (_spi_sem == NULL) {
-        AP_HAL::panic("AP_SerialBus_SPI did not get valid SPI semaphroe!");
-    }
-    _spi->set_bus_speed(_speed);
-}
-
-uint16_t AP_SerialBus_SPI::read_16bits(uint8_t reg)
-{
-    uint8_t tx[3] = { reg, 0, 0 };
-    uint8_t rx[3];
-    _spi->transaction(tx, rx, 3);
-    return ((uint16_t) rx[1] << 8 ) | ( rx[2] );
-}
-
-uint32_t AP_SerialBus_SPI::read_24bits(uint8_t reg)
-{
-    uint8_t tx[4] = { reg, 0, 0, 0 };
-    uint8_t rx[4];
-    _spi->transaction(tx, rx, 4);
-    return (((uint32_t)rx[1])<<16) | (((uint32_t)rx[2])<<8) | ((uint32_t)rx[3]);
-}
-
-bool AP_SerialBus_SPI::write(uint8_t reg)
-{
-    uint8_t tx[1] = { reg };
-    _spi->transaction(tx, NULL, 1);
-    return true;
-}
-
-bool AP_SerialBus_SPI::sem_take_blocking() 
-{
-    return _spi_sem->take(10);
-}
-
-bool AP_SerialBus_SPI::sem_take_nonblocking()
-{
-    return _spi_sem->take_nonblocking();
-}
-
-void AP_SerialBus_SPI::sem_give()
-{
-    _spi_sem->give();
-}
-
-
-/// I2C SerialBus
-AP_SerialBus_I2C::AP_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
-    _i2c(i2c),
-    _addr(addr),
-    _i2c_sem(NULL) 
-{
-}
-
-void AP_SerialBus_I2C::init()
-{
-    _i2c_sem = _i2c->get_semaphore();
-    if (_i2c_sem == NULL) {
-        AP_HAL::panic("AP_SerialBus_I2C did not get valid I2C semaphore!");
-    }
-}
-
-uint16_t AP_SerialBus_I2C::read_16bits(uint8_t reg)
-{
-    uint8_t buf[2];
-    if (_i2c->readRegisters(_addr, reg, sizeof(buf), buf) == 0) {
-        return (((uint16_t)(buf[0]) << 8) | buf[1]);
-    }
-    return 0;
-}
-
-uint32_t AP_SerialBus_I2C::read_24bits(uint8_t reg)
-{
-    uint8_t buf[3];
-    if (_i2c->readRegisters(_addr, reg, sizeof(buf), buf) == 0) {
-        return (((uint32_t)buf[0]) << 16) | (((uint32_t)buf[1]) << 8) | buf[2];
-    }
-    return 0;
-}
-
-bool AP_SerialBus_I2C::write(uint8_t reg)
-{
-    return _i2c->write(_addr, 1, &reg) == 0;
-}
-
-bool AP_SerialBus_I2C::sem_take_blocking() 
-{
-    return _i2c_sem->take(10);
-}
-
-bool AP_SerialBus_I2C::sem_take_nonblocking()
-{
-    return _i2c_sem->take_nonblocking();
-}
-
-void AP_SerialBus_I2C::sem_give()
-{
-    _i2c_sem->give();
-}
+static const uint8_t ADDR_CMD_CONVERT_PRESSURE = ADDR_CMD_CONVERT_D1_OSR1024;
+static const uint8_t ADDR_CMD_CONVERT_TEMPERATURE = ADDR_CMD_CONVERT_D2_OSR1024;
 
 /*
   constructor
  */
-AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
+AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer)
     : AP_Baro_Backend(baro)
-    , _serial(serial)
+    , _dev(std::move(dev))
     , _use_timer(use_timer)
 {
 }
 
 void AP_Baro_MS56XX::_init()
 {
+    if (!_dev) {
+        AP_HAL::panic("AP_Baro_MS56XX: failed to use device");
+    }
+
     _instance = _frontend.register_sensor();
-    _serial->init();
 
     // we need to suspend timers to prevent other SPI drivers grabbing
     // the bus while we do the long initialisation
     hal.scheduler->suspend_timer_procs();
 
-    if (!_serial->sem_take_blocking()){
+    if (!_dev->get_semaphore()->take(10)) {
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
-    _serial->write(CMD_MS5611_RESET);
+    _dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
     hal.scheduler->delay(4);
 
     uint16_t prom[8];
@@ -203,8 +90,8 @@ void AP_Baro_MS56XX::_init()
     _c5 = prom[5];
     _c6 = prom[6];
 
-    // Send a command to read Temp first
-    _serial->write(ADDR_CMD_CONVERT_D2);
+    // Send a command to read temperature first
+    _dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0);
     _last_timer = AP_HAL::micros();
     _state = 0;
 
@@ -213,7 +100,7 @@ void AP_Baro_MS56XX::_init()
     _d1_count = 0;
     _d2_count = 0;
 
-    _serial->sem_give();
+    _dev->get_semaphore()->give();
 
     hal.scheduler->resume_timer_procs();
 
@@ -251,6 +138,27 @@ static uint16_t crc4(uint16_t *data)
     return (n_rem >> 12) & 0xF;
 }
 
+uint16_t AP_Baro_MS56XX::_read_prom_word(uint8_t word)
+{
+    const uint8_t reg = CMD_MS56XX_PROM + (word << 1);
+    uint8_t val[2];
+
+    if (!_dev->transfer(&reg, 1, val, 2)) {
+        return 0;
+    }
+    return (val[0] << 8) | val[1];
+}
+
+uint32_t AP_Baro_MS56XX::_read_adc()
+{
+    uint8_t val[3];
+
+    if (!_dev->transfer(&CMD_MS56XX_READ_ADC, 1, val, 3)) {
+        return 0;
+    }
+    return (val[0] << 16) | (val[1] << 8) | val[2];
+}
+
 bool AP_Baro_MS56XX::_read_prom(uint16_t prom[8])
 {
     /*
@@ -261,7 +169,7 @@ bool AP_Baro_MS56XX::_read_prom(uint16_t prom[8])
      * CRC field must me removed for CRC-4 calculation.
      */
     for (uint8_t i = 0; i < 8; i++) {
-        prom[i] = _serial->read_16bits(CMD_MS56XX_PROM + (i << 1));
+        prom[i] = _read_prom_word(i);
     }
 
     /* save the read crc */
@@ -284,7 +192,7 @@ bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
      * calculation.
      */
     for (uint8_t i = 0; i < 7; i++) {
-        prom[i] = _serial->read_16bits(CMD_MS56XX_PROM + (i << 1));
+        prom[i] = _read_prom_word(i);
     }
 
     prom[7] = 0;
@@ -311,13 +219,13 @@ void AP_Baro_MS56XX::_timer(void)
         return;
     }
 
-    if (!_serial->sem_take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
     if (_state == 0) {
         // On state 0 we read temp
-        uint32_t d2 = _serial->read_24bits(0);
+        uint32_t d2 = _read_adc();
         if (d2 != 0) {
             _s_D2 += d2;
             _d2_count++;
@@ -329,16 +237,16 @@ void AP_Baro_MS56XX::_timer(void)
                 _d2_count = 16;
             }
 
-            if (_serial->write(ADDR_CMD_CONVERT_D1)) {      // Command to read pressure
+            if (_dev->transfer(&ADDR_CMD_CONVERT_PRESSURE, 1, nullptr, 0)) {
                 _state++;
             }
         } else {
             /* if read fails, re-initiate a temperature read command or we are
              * stuck */
-            _serial->write(ADDR_CMD_CONVERT_D2);
+            _dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0);
         }
     } else {
-        uint32_t d1 = _serial->read_24bits(0);
+        uint32_t d1 = _read_adc();
         if (d1 != 0) {
             // occasional zero values have been seen on the PXF
             // board. These may be SPI errors, but safest to ignore
@@ -355,23 +263,23 @@ void AP_Baro_MS56XX::_timer(void)
             _updated = true;
 
             if (_state == 4) {
-                if (_serial->write(ADDR_CMD_CONVERT_D2)) { // Command to read temperature
+                if (_dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0)) {
                     _state = 0;
                 }
             } else {
-                if (_serial->write(ADDR_CMD_CONVERT_D1)) { // Command to read pressure
+                if (_dev->transfer(&ADDR_CMD_CONVERT_PRESSURE, 1, nullptr, 0)) {
                     _state++;
                 }
             }
         } else {
             /* if read fails, re-initiate a pressure read command or we are
              * stuck */
-            _serial->write(ADDR_CMD_CONVERT_D1);
+            _dev->transfer(&ADDR_CMD_CONVERT_PRESSURE, 1, nullptr, 0);
         }
     }
 
     _last_timer = AP_HAL::micros();
-    _serial->sem_give();
+    _dev->get_semaphore()->give();
 }
 
 void AP_Baro_MS56XX::update()
@@ -408,8 +316,8 @@ void AP_Baro_MS56XX::update()
 }
 
 /* MS5611 class */
-AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    : AP_Baro_MS56XX(baro, serial, use_timer)
+AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer)
+    : AP_Baro_MS56XX(baro, std::move(dev), use_timer)
 {
     _init();
 }
@@ -450,8 +358,8 @@ void AP_Baro_MS5611::_calculate()
 }
 
 /* MS5607 Class */
-AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    : AP_Baro_MS56XX(baro, serial, use_timer)
+AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer)
+    : AP_Baro_MS56XX(baro, std::move(dev), use_timer)
 {
     _init();
 }
@@ -491,9 +399,9 @@ void AP_Baro_MS5607::_calculate()
     _copy_to_frontend(_instance, pressure, temperature);
 }
 
-/* MS563 Class */
-AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    : AP_Baro_MS56XX(baro, serial, use_timer)
+/* MS5637 Class */
+AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer)
+    : AP_Baro_MS56XX(baro, std::move(dev), use_timer)
 {
     _init();
 }
