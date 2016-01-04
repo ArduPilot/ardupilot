@@ -130,7 +130,7 @@ void AP_MotorsTri::output_min()
 uint16_t AP_MotorsTri::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
-    return (1U << AP_MOTORS_MOT_1) |
+    return rc_map_mask(1U << AP_MOTORS_MOT_1) |
         (1U << AP_MOTORS_MOT_2) |
         (1U << AP_MOTORS_MOT_4) |
         (1U << AP_MOTORS_CH_TRI_YAW);
