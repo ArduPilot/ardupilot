@@ -23,7 +23,6 @@ REVERSE_THROTTLE=0
 NO_REBUILD=0
 START_HIL=0
 EXTRA_ARGS=""
-EXTERNAL_SIM=0
 MODEL=""
 BREAKPOINT=""
 OVERRIDE_BUILD_TARGET=""
@@ -58,7 +57,6 @@ Options:
     -b BUILD_TARGET  override SITL build target
     -j NUM_PROC      number of processors to use during build (default 1)
     -H               start HIL
-    -e               use external simulator
     -S SPEEDUP       set simulation speedup (1 for wall clock time)
     -d TIME          delays the start of mavproxy by the number of seconds
 
@@ -147,9 +145,6 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:d:" opt; do
     w)
       WIPE_EEPROM=1
       ;;
-    e)
-      EXTERNAL_SIM=1
-      ;;
     b)
       OVERRIDE_BUILD_TARGET="$OPTARG"
       ;;
@@ -190,7 +185,6 @@ trap kill_tasks SIGINT
 MAVLINK_PORT="tcp:127.0.0.1:"$((5760+10*$INSTANCE))
 SIMIN_PORT="127.0.0.1:"$((5502+10*$INSTANCE))
 SIMOUT_PORT="127.0.0.1:"$((5501+10*$INSTANCE))
-FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 
 [ -z "$VEHICLE" ] && {
     CDIR="$PWD"
