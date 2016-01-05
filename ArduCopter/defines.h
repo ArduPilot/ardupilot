@@ -72,7 +72,7 @@ enum aux_sw_func {
 };
 
 // Frame types
-#define UNDEFINED_FRAME 0
+#define UNDEFINED_FRAME 0 
 #define QUAD_FRAME 1
 #define TRI_FRAME 2
 #define HEXA_FRAME 3
