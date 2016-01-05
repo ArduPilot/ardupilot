@@ -1087,6 +1087,43 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_COMMAND_INT:
+    {
+        // decode packet
+        mavlink_command_int_t packet;
+        mavlink_msg_command_int_decode(msg, &packet);
+        switch(packet.command)
+        {
+            case MAV_CMD_DO_SET_ROI: {
+                // param1 : /*< PARAM1, see MAV_CMD enum*/
+                // param2 : /*< PARAM2, see MAV_CMD enum*/
+                // param3 : /*< PARAM3, see MAV_CMD enum*/
+                // param4 : /*< PARAM4, see MAV_CMD enum*/
+                // x : lat
+                // y : lon
+                // z : alt
+                // sanity check location
+                if (fabsf(packet.x) > (90.0f * 1.0e7f) || fabsf(packet.y) > (180.0f * 1.0e7f)) {
+                    break;
+                }
+                Location roi_loc;
+                roi_loc.lat = packet.x;
+                roi_loc.lng = packet.y;
+                roi_loc.alt = (int32_t)(packet.z * 100.0f);
+                set_auto_yaw_roi(roi_loc);
+                result = MAV_RESULT_ACCEPTED;
+                break;
+            }
+            default:
+                result = MAV_RESULT_UNSUPPORTED;
+                break;
+        }
+
+        // send ACK or NAK
+        mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
+        break;
+    }
+
     // Pre-Flight calibration requests
     case MAVLINK_MSG_ID_COMMAND_LONG:       // MAV ID: 76
     {
