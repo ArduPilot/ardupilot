@@ -120,7 +120,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This enables EKF2. Enabling EKF2 only makes the maths run, it does not mean it will be used for flight control. To use it for flight control set AHRS_EKF_TYPE=2. A reboot or restart will need to be performed after changing the value of EK2_ENABLE for it to take effect.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF2, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF2, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
     // GPS measurement parameters
 
@@ -409,7 +409,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: 1 byte bitmap of IMUs to use in EKF2. A separate instance of EKF2 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF2 will fail to start.
     // @Range: 1 127
     // @User: Advanced
-    AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 1),
+    AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 3),
     
     // @Param: CHECK_SCALE
     // @DisplayName: GPS accuracy check scaler (%)
@@ -465,6 +465,11 @@ bool NavEKF2::InitialiseFilter(void)
     }
     if (core == nullptr) {
 
+        // don't run multiple filters for 1 IMU
+        const AP_InertialSensor &ins = _ahrs->get_ins();
+        uint8_t mask = (1U<<ins.get_accel_count())-1;
+        _imuMask.set(_imuMask.get() & mask);
+        
         // count IMUs from mask
         num_cores = 0;
         for (uint8_t i=0; i<7; i++) {
