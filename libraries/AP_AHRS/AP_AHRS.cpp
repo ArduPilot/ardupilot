@@ -120,7 +120,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Description: This controls whether the NavEKF Kalman filter is used for attitude and position estimation and whether fallback to the DCM algorithm is allowed. Note that on copters "disabled" is not available, and will be the same as "enabled - no fallback"
     // @Values: 0:Disabled,1:Enabled,2:Enable EKF2
     // @User: Advanced
-    AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, 1),
+    AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, 2),
 #endif
 
     AP_GROUPEND
