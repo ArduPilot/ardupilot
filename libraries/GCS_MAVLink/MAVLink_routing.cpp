@@ -253,6 +253,10 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
 */
 void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
+    if (msg->compid == MAV_COMP_ID_GIMBAL) {
+        return;
+    }
+
     uint16_t mask = GCS_MAVLINK::active_channel_mask();
 
     // don't send on the incoming channel. This should only matter if
