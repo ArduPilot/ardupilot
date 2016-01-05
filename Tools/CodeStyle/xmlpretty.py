@@ -1,9 +1,20 @@
 #!/usr/bin/python
 import xml.dom.minidom as minidom
-from sys import exit, argv, stderr
+from sys import exit, argv, stderr, stdout
 import re
+import argparse
 
-dom = minidom.parse(argv[1])
+parser = argparse.ArgumentParser(description="Format XML")
+parser.add_argument('infile', nargs=1)
+parser.add_argument('outfile', nargs='?')
+
+args = parser.parse_args()
+
+f = open(args.infile[0],'r')
+text = f.read()
+f.close()
+
+dom = minidom.parseString(text)
 
 def foreach_tree(doc, root, func, level=0):
     func(doc, root, level)
@@ -57,5 +68,14 @@ foreach_tree(dom, dom.documentElement, strip_text_whitespace)
 foreach_tree(dom, dom.documentElement, auto_indent)
 foreach_tree(dom, dom.documentElement, auto_space)
 
-print "<?xml version='1.0'?>"
-print dom.documentElement.toxml()
+if args.outfile is not None:
+    f = open(args.outfile, 'w')
+    f.truncate()
+else:
+    f = stdout
+
+f.write("<?xml version='1.0'?>\n")
+f.write(dom.documentElement.toxml())
+f.write("\n")
+
+f.close()
