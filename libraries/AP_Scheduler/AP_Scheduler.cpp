@@ -61,7 +61,9 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 // constructor
 AP_Scheduler::AP_Scheduler(void)
 {
-    _loop_rate_hz.set_default(SCHEDULER_DEFAULT_LOOP_RATE);
+#if !SCHEDULER_EXPOSE_LOOP_RATE_PARAMETER
+    _loop_rate_hz.set(SCHEDULER_DEFAULT_LOOP_RATE);
+#endif
     AP_Param::setup_object_defaults(this, var_info);
 
     // only allow 50 to 400 Hz
