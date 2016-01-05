@@ -416,7 +416,11 @@ void QuadPlane::hold_stabilize(float throttle_in)
                                                                          get_pilot_desired_yaw_rate_cds(),
                                                                          smoothing_gain);
 
-    attitude_control->set_throttle_out(throttle_in, true, 0);
+    if (throttle_in <= 0) {
+        attitude_control->set_throttle_out_unstabilized(0, true, 0);
+    } else {
+        attitude_control->set_throttle_out(throttle_in, true, 0);
+    }
 }
 
 // quadplane stabilize mode
