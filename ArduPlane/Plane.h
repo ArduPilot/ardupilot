@@ -527,6 +527,11 @@ private:
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
 
+    // reduce throttle to eliminate battery over-current
+    int8_t  throttle_watt_limit_max;
+    int8_t  throttle_watt_limit_min; // for reverse thrust
+    uint32_t throttle_watt_limit_timer_ms;
+
     AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
 
     // probability of aircraft is currently in flight. range from 0 to
