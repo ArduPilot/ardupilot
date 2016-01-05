@@ -891,7 +891,7 @@ void Plane::set_servos(void)
         channel_throttle->servo_out = 0;
 #else
         // convert 0 to 100% into PWM
-        uint8_t min_throttle = aparm.throttle_min.get();
+        int8_t min_throttle = aparm.throttle_min.get();
         uint8_t max_throttle = aparm.throttle_max.get();
         if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
             min_throttle = 0;
@@ -904,6 +904,49 @@ void Plane::set_servos(void)
                 max_throttle = aparm.throttle_max;
             }
         }
+
+        uint32_t now = millis();
+        if (battery.overpower_detected()) {
+            // overpower detected, cut back on the throttle if we're maxing it out by calculating a limiter value
+            // throttle limit will attack by 10% per second
+
+            if (channel_throttle->servo_out > 0 && // demanding too much positive thrust
+                throttle_watt_limit_max < max_throttle - 25 &&
+                now - throttle_watt_limit_timer_ms >= 100) {
+                // always allow for 25% throttle available regardless of battery status
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_max++;
+
+            } else if (channel_throttle->servo_out < 0 &&
+                min_throttle < 0 && // reverse thrust is available
+                throttle_watt_limit_min < -(min_throttle) - 25 &&
+                now - throttle_watt_limit_timer_ms >= 100) {
+                // always allow for 25% throttle available regardless of battery status
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_min++;
+            }
+
+        } else if (now - throttle_watt_limit_timer_ms >= 1000) {
+            // it has been 1 second since last over-current, check if we can resume higher throttle.
+            // this throttle release is needed to allow raising the max_throttle as the battery voltage drains down
+            // throttle limit will release by 1% per second
+            if (channel_throttle->servo_out > throttle_watt_limit_max && // demanding max forward thrust
+                throttle_watt_limit_max > 0) { // and we're currently limiting it
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_max--;
+
+            } else if (channel_throttle->servo_out < throttle_watt_limit_min && // demanding max negative thrust
+                throttle_watt_limit_min > 0) { // and we're limiting it
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_min--;
+            }
+        }
+
+        max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
+        if (min_throttle < 0) {
+            min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
+        }
+
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
                                                       min_throttle,
                                                       max_throttle);
