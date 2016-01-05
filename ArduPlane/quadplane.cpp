@@ -366,9 +366,7 @@ void QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    // for some strange reason we need to call wrong frame first, or
-    // setup_motors() doesn't run
-    motors->set_frame_orientation(AP_MOTORS_PLUS_FRAME);
+    motors->Init();
     motors->set_frame_orientation(AP_MOTORS_X_FRAME);
     motors->set_throttle_range(0, thr_min_pwm, thr_max_pwm);
     motors->set_hover_throttle(500);
