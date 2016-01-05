@@ -123,7 +123,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @Description: This enables EKF1 to be disabled when using alternative algorithms. When disabling it, the alternate EKF2 estimator must be enabled by setting EK2_ENABLED = 1 and flight control algorithms must be set to use the alternative estimator by setting AHRS_EKF_TYPE = 2.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 34, NavEKF, _enable, 1, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 34, NavEKF, _enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: VELNE_NOISE
     // @DisplayName: GPS horizontal velocity measurement noise scaler
