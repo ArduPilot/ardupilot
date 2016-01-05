@@ -201,7 +201,7 @@ void Plane::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(serial_manager);
+    camera_mount.init(&DataFlash, serial_manager);
 #endif
 
 #if FENCE_TRIGGERED_PIN > 0
