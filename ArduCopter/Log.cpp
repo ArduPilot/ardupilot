@@ -791,16 +791,10 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 // start a new log
 void Copter::start_logging() 
 {
-    if (g.log_bitmask != 0) {
-        if (!ap.logging_started) {
-            ap.logging_started = true;
-            DataFlash.set_mission(&mission);
-            DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
-            DataFlash.StartNewLog();
-        }
-        // enable writes
-        DataFlash.EnableWrites(true);
-    }
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+
+    DataFlash.StartNewLog();
 }
 
 void Copter::log_init(void)

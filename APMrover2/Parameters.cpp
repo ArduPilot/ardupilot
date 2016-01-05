@@ -18,8 +18,9 @@ const AP_Param::Info Rover::var_info[] = {
 	// misc
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: Two byte bitmap of log types to enable in dataflash
+    // @Description: 4 byte bitmap of log types to enable
     // @Values: 0:Disabled,3950:Default,4078:Default+IMU
+    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:SONAR,11:COMPASS,12:CAMERA,13:STEERING,14:RC,19:IMU_RAW
     // @User: Advanced
 	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
