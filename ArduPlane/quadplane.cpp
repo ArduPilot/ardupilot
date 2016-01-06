@@ -332,13 +332,22 @@ QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void QuadPlane::setup(void)
+bool QuadPlane::setup(void)
 {
-    if (!enable || initialised || hal.util->get_soft_armed()) {
-        return;
+    uint16_t mask;
+    if (initialised) {
+        return true;
     }
-    initialised = true;
+    if (!enable || hal.util->get_soft_armed()) {
+        return false;
+    }
 
+    if (hal.util->available_memory() <
+        4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav)) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
+        goto failed;
+    }
+    
     // setup default motors for X frame
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor1, CH_5);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
@@ -352,26 +361,30 @@ void QuadPlane::setup(void)
      */
     motors = new AP_MotorsQuad(plane.ins.get_sample_rate());
     if (!motors) {
-        AP_HAL::panic("Unable to allocate motors");
+        hal.console->printf("Unable to allocate motors\n");
+        goto failed;
     }
     AP_Param::load_object_from_eeprom(motors, motors->var_info);
     attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors,
                                                     p_stabilize_roll, p_stabilize_pitch, p_stabilize_yaw,
                                                     pid_rate_roll, pid_rate_pitch, pid_rate_yaw);
     if (!attitude_control) {
-        AP_HAL::panic("Unable to allocate attitude_control");
+        hal.console->printf("Unable to allocate attitude_control\n");
+        goto failed;
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
     pos_control = new AC_PosControl(ahrs, inertial_nav, *motors, *attitude_control,
                                     p_alt_hold, p_vel_z, pid_accel_z,
                                     p_pos_xy, pi_vel_xy);
     if (!pos_control) {
-        AP_HAL::panic("Unable to allocate pos_control");
+        hal.console->printf("Unable to allocate pos_control\n");
+        goto failed;
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
     wp_nav = new AC_WPNav(inertial_nav, ahrs, *pos_control, *attitude_control);
     if (!pos_control) {
-        AP_HAL::panic("Unable to allocate wp_nav");
+        hal.console->printf("Unable to allocate wp_nav\n");
+        goto failed;
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
@@ -390,7 +403,7 @@ void QuadPlane::setup(void)
 
     // setup the trim of any motors used by AP_Motors so px4io
     // failsafe will disable motors
-    uint16_t mask = motors->get_motor_mask();
+    mask = motors->get_motor_mask();
     for (uint8_t i=0; i<16; i++) {
         if (mask & 1U<<i) {
             RC_Channel *ch = RC_Channel::rc_channel(i);
@@ -408,6 +421,14 @@ void QuadPlane::setup(void)
     transition_state = TRANSITION_DONE;
 
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane initialised");
+    initialised = true;
+    return true;
+    
+failed:
+    initialised = false;
+    enable.set(0);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane setup failed");
+    return false;
 }
 
 // init quadplane stabilize mode 
@@ -759,11 +780,8 @@ void QuadPlane::update_transition(void)
  */
 void QuadPlane::update(void)
 {
-    if (!enable) {
+    if (!setup()) {
         return;
-    }
-    if (!initialised) {
-        setup();
     }
 
     bool quad_mode = (plane.control_mode == QSTABILIZE ||
@@ -832,7 +850,9 @@ void QuadPlane::control_run(void)
  */
 bool QuadPlane::init_mode(void)
 {
-    setup();
+    if (!setup()) {
+        return false;
+    }
     if (!initialised) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");        
         return false;

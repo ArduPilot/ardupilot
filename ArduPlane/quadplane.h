@@ -22,7 +22,7 @@ public:
     void control_run(void);
     void control_auto(const Location &loc);
     bool init_mode(void);
-    void setup(void);
+    bool setup(void);
     
     // update transition handling
     void update(void);
