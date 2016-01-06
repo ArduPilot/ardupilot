@@ -1935,34 +1935,33 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 } // end handle mavlink
 
 /*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
+ *  a delay() callback that processes MAVLink packets and processes
+ *  Notify events (blinks LEDs).  We set this as the callback in long
+ *  running library initialisation routines to allow MAVLink to
+ *  process packets while waiting for the initialisation to complete.
+ *  And to entertain the user with blinking lights.
  */
 void Plane::mavlink_delay_cb()
 {
-    static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs_frontend.first_initialised() || in_mavlink_delay) return;
+    static uint32_t last_50hz;
+
+    if (in_mavlink_delay) {
+        return;
+    }
 
     in_mavlink_delay = true;
 
-    uint32_t tnow = millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs_frontend.send_message(MSG_HEARTBEAT);
-        gcs_frontend.send_message(MSG_EXTENDED_STATUS1);
-    }
+    // process MAVLink packets:
+    gcs_frontend.delay_cb();
+
+    // update Notify events:
+    uint32_t tnow = AP_HAL::millis();
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
         notify.update();
     }
-    if (tnow - last_5s > 5000) {
-        last_5s = tnow;
-        gcs_frontend.send_text(MAV_SEVERITY_INFO, "Initialising APM");
-    }
+
+    // see if USB has been connected or disconnected:
     check_usb_mux();
 
     in_mavlink_delay = false;
