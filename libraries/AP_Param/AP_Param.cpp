@@ -67,6 +67,9 @@ extern const AP_HAL::HAL &hal;
 // number of rows in the _var_info[] table
 uint16_t AP_Param::_num_vars;
 
+// cached parameter count
+uint16_t AP_Param::_parameter_count;
+
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
 
@@ -823,6 +826,11 @@ bool AP_Param::save(bool force_save)
         ap = (const AP_Param *)((ptrdiff_t)ap) - (idx*sizeof(float));
     }
 
+    if (phdr.type == AP_PARAM_INT8 && ginfo != nullptr && (ginfo->flags & AP_PARAM_FLAG_ENABLE)) {
+        // clear cached parameter count
+        _parameter_count = 0;
+    }
+    
     char name[AP_MAX_NAME_SIZE+1];
     copy_name_info(info, ginfo, ginfo0, idx, name, sizeof(name), true);
 
@@ -1656,3 +1664,22 @@ void AP_Param::send_parameter(char *name, enum ap_var_type param_header_type) co
     name_axis = 'Z';
     GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->z);
 }
+
+/*
+  return count of all scalar parameters
+ */
+uint16_t AP_Param::count_parameters(void)
+{
+    // if we haven't cached the parameter count yet...
+    if (0 == _parameter_count) {
+        AP_Param  *vp;
+        AP_Param::ParamToken token;
+
+        vp = AP_Param::first(&token, NULL);
+        do {
+            _parameter_count++;
+        } while (NULL != (vp = AP_Param::next_scalar(&token, NULL)));
+    }
+    return _parameter_count;
+}
+
