@@ -294,10 +294,10 @@ void Tracker::load_parameters(void)
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
         hal.console->println_P(PSTR("done."));
-    } else {
-        uint32_t before = hal.scheduler->micros();
-        // Load all auto-loaded EEPROM variables
-        AP_Param::load_all();
-        hal.console->printf_P(PSTR("load_all took %luus\n"), (unsigned long)(hal.scheduler->micros() - before));
     }
+
+    uint32_t before = hal.scheduler->micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    hal.console->printf_P(PSTR("load_all took %luus\n"), (unsigned long)(hal.scheduler->micros() - before));
 }
