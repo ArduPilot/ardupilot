@@ -23,6 +23,7 @@ using namespace PX4;
 #define STORAGE_DIR "/fs/microsd/APM"
 #define OLD_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 #define OLD_STORAGE_FILE_BAK STORAGE_DIR "/" SKETCHNAME ".bak"
+//#define SAVE_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".sav"
 #define MTD_PARAMS_FILE "/fs/mtd"
 #define MTD_SIGNATURE 0x14012014
 #define MTD_SIGNATURE_OFFSET (8192-4)
@@ -164,6 +165,15 @@ void PX4Storage::_storage_open(void)
             }
 	}
 	close(fd);
+
+#ifdef SAVE_STORAGE_FILE
+        fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        if (fd != -1) {
+            write(fd, _buffer, sizeof(_buffer));
+            close(fd);
+            ::printf("Saved storage file %s\n", SAVE_STORAGE_FILE);
+        }
+#endif
 	_initialised = true;
 }
 
