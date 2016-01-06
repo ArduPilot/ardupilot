@@ -72,6 +72,7 @@ enum ap_message {
     MSG_RETRY_DEFERRED // this must be last
 };
 
+class GCS_Frontend;
 
 ///
 /// @class	GCS_MAVLINK
@@ -180,6 +181,11 @@ public:
       returns if a matching component is found
      */
     static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
+
+    void set_frontend(GCS_Frontend *frontend) { _frontend = frontend; }
+
+protected:
+    GCS_Frontend *_frontend;
 
 private:
     void        handleMessage(mavlink_message_t * msg);
