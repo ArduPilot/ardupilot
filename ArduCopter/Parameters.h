@@ -217,7 +217,8 @@ public:
         // 135 : reserved for Solo until features merged with master
         //
         k_param_rtl_speed_cms = 135,
-        k_param_fs_batt_curr_rtl, // 136
+        k_param_fs_batt_curr_rtl,
+        k_param_rtl_cone_slope, // 137
 
         //
         // 140: Sensor parameters
@@ -380,6 +381,7 @@ public:
 
     AP_Int16        rtl_altitude;
     AP_Int16        rtl_speed_cms;
+    AP_Float        rtl_cone_slope;
     AP_Float        sonar_gain;
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
