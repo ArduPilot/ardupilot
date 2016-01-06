@@ -68,7 +68,7 @@ void Copter::failsafe_battery_event(void)
     set_failsafe_battery(true);
 
     // warn the ground station and log to dataflash
-    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
+    gcs_frontend.send_text(MAV_SEVERITY_WARNING,"Low battery");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }

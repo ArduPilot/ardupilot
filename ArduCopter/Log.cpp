@@ -153,9 +153,9 @@ int8_t Copter::process_logs(uint8_t argc, const Menu::arg *argv)
 
 void Copter::do_erase_logs(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Erasing logs");
+    gcs_frontend.send_text(MAV_SEVERITY_INFO, "Erasing logs");
     DataFlash.EraseAll();
-    gcs_send_text(MAV_SEVERITY_INFO, "Log erase complete");
+    gcs_frontend.send_text(MAV_SEVERITY_INFO, "Log erase complete");
 }
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -845,15 +845,13 @@ void Copter::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
-        gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
+        gcs_frontend.send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
         g.log_bitmask.set(0);
     } else if (DataFlash.NeedPrep()) {
-        gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
+        gcs_frontend.send_text(MAV_SEVERITY_INFO, "Preparing log system");
         DataFlash.Prep();
-        gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
-        for (uint8_t i=0; i<num_gcs; i++) {
-            gcs[i].reset_cli_timeout();
-        }
+        gcs_frontend.send_text(MAV_SEVERITY_INFO, "Prepared log system");
+        gcs_frontend.reset_cli_timeout();
     }
 }
 

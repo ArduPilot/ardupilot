@@ -7,12 +7,13 @@
 
 void Copter::gcs_send_heartbeat(void)
 {
-    gcs_send_message(MSG_HEARTBEAT);
+    gcs_frontend.send_message(MSG_HEARTBEAT);
 }
+
 
 void Copter::gcs_send_deferred(void)
 {
-    gcs_send_message(MSG_RETRY_DEFERRED);
+    gcs_frontend.send_message(MSG_RETRY_DEFERRED);
 }
 
 /*
@@ -491,16 +492,6 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-
-void NOINLINE Copter::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
-}
-
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool Copter::telemetry_delayed(mavlink_channel_t chan)
 {
@@ -518,7 +509,7 @@ bool Copter::telemetry_delayed(mavlink_channel_t chan)
 }
 
 
-// try to send a message, return false if it won't fit in the serial tx buffer
+// try to send a message, return false if it wasn't sent
 bool GCS_MAVLINK::try_send_message(enum ap_message id)
 {
     if (copter.telemetry_delayed(chan)) {
@@ -538,7 +529,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch(id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        copter.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();
+        last_heartbeat_time = AP_HAL::millis();
         copter.send_heartbeat(chan);
         break;
 
@@ -549,13 +540,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
             CHECK_PAYLOAD_SIZE(SYS_STATUS);
             copter.send_extended_status1(chan);
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
-            copter.gcs[chan-MAVLINK_COMM_0].send_power_status();
+            send_power_status();
         }
         break;
 
     case MSG_EXTENDED_STATUS2:
         CHECK_PAYLOAD_SIZE(MEMINFO);
-        copter.gcs[chan-MAVLINK_COMM_0].send_meminfo();
+        send_meminfo();
         break;
 
     case MSG_ATTITUDE:
@@ -579,11 +570,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_GPS_RAW:
-        return copter.gcs[chan-MAVLINK_COMM_0].send_gps_raw(copter.gps);
+        return send_gps_raw(copter.gps);
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        copter.gcs[chan-MAVLINK_COMM_0].send_system_time(copter.gps);
+        send_system_time(copter.gps);
         break;
 
     case MSG_SERVO_OUT:
@@ -593,7 +584,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        copter.gcs[chan-MAVLINK_COMM_0].send_radio_in(copter.receiver_rssi);
+        send_radio_in(copter.receiver_rssi);
         break;
 
     case MSG_RADIO_OUT:
@@ -608,17 +599,17 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        copter.gcs[chan-MAVLINK_COMM_0].send_raw_imu(copter.ins, copter.compass);
+        send_raw_imu(copter.ins, copter.compass);
         break;
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        copter.gcs[chan-MAVLINK_COMM_0].send_scaled_pressure(copter.barometer);
+        send_scaled_pressure(copter.barometer);
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        copter.gcs[chan-MAVLINK_COMM_0].send_sensor_offsets(copter.ins, copter.compass, copter.barometer);
+        send_sensor_offsets(copter.ins, copter.compass, copter.barometer);
         break;
 
     case MSG_CURRENT_WAYPOINT:
@@ -628,12 +619,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        copter.gcs[chan-MAVLINK_COMM_0].queued_param_send();
+        queued_param_send();
         break;
 
     case MSG_NEXT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        copter.gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
+        queued_waypoint_send();
         break;
 
     case MSG_RANGEFINDER:
@@ -664,7 +655,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        copter.send_statustext(chan);
+        copter.gcs_frontend.send_statustext(chan);
         break;
 
     case MSG_LIMITS_STATUS:
@@ -676,7 +667,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        copter.gcs[chan-MAVLINK_COMM_0].send_ahrs(copter.ahrs);
+        send_ahrs(copter.ahrs);
         break;
 
     case MSG_SIMSTATE:
@@ -685,7 +676,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         copter.send_simstate(chan);
 #endif
         CHECK_PAYLOAD_SIZE(AHRS2);
-        copter.gcs[chan-MAVLINK_COMM_0].send_ahrs2(copter.ahrs);
+        send_ahrs2(copter.ahrs);
         break;
 
     case MSG_HWSTATUS:
@@ -702,13 +693,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
-        copter.gcs[chan-MAVLINK_COMM_0].send_battery2(copter.battery);
+        send_battery2(copter.battery);
         break;
 
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        copter.gcs[chan-MAVLINK_COMM_0].send_opticalflow(copter.ahrs, copter.optflow);
+        send_opticalflow(copter.ahrs, copter.optflow);
 #endif
         break;
 
@@ -1410,7 +1401,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 }
             } else if (is_equal(packet.param6,1.0f)) {
                 // compassmot calibration
-                result = copter.mavlink_compassmot(chan);
+                result = copter.mavlink_compassmot(this);
             }
             break;
 
@@ -1533,7 +1524,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
             // param3 : throttle (range depends upon param2)
             // param4 : timeout (in seconds)
-            result = copter.mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4);
+            result = copter.mavlink_motor_test_start(this, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4);
             break;
 
 #if EPM_ENABLED == ENABLED
@@ -1561,7 +1552,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
             if (is_equal(packet.param1,1.0f)) {
-                copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+                send_autopilot_version(FIRMWARE_VERSION);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1959,7 +1950,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+        send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     case MAVLINK_MSG_ID_LED_CONTROL:
@@ -2009,26 +2000,26 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 void Copter::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs[0].initialised || in_mavlink_delay) return;
+    if (!gcs_frontend.first_initialised() || in_mavlink_delay) return;
 
     in_mavlink_delay = true;
 
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_heartbeat();
-        gcs_send_message(MSG_EXTENDED_STATUS1);
+        gcs_frontend.send_message(MSG_HEARTBEAT);
+        gcs_frontend.send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_check_input();
-        gcs_data_stream_send();
+        gcs_frontend.update();
+        gcs_frontend.data_stream_send();
         gcs_send_deferred();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
+        gcs_frontend.send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
     check_usb_mux();
 
@@ -2036,85 +2027,15 @@ void Copter::mavlink_delay_cb()
 }
 
 /*
- *  send a message on both GCS links
- */
-void Copter::gcs_send_message(enum ap_message id)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_message(id);
-        }
-    }
-}
-
-/*
- *  send a mission item reached message and load the index before the send attempt in case it may get delayed
- */
-void Copter::gcs_send_mission_item_reached_message(uint16_t mission_index)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].mission_item_reached_index = mission_index;
-            gcs[i].send_message(MSG_MISSION_ITEM_REACHED);
-        }
-    }
-}
-
-/*
- *  send data streams in the given rate range on both links
- */
-void Copter::gcs_data_stream_send(void)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].data_stream_send();
-        }
-    }
-}
-
-/*
  *  look for incoming commands on the GCS links
  */
 void Copter::gcs_check_input(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-#if CLI_ENABLED == ENABLED
-            gcs[i].update(g.cli_enabled==1?FUNCTOR_BIND_MEMBER(&Copter::run_cli, void, AP_HAL::UARTDriver *):NULL);
-#else
-            gcs[i].update(NULL);
-#endif
-        }
-    }
+    gcs_frontend.update();
 }
 
-void Copter::gcs_send_text(MAV_SEVERITY severity, const char *str)
+void Copter::gcs_data_stream_send(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_text(severity, str);
-        }
-    }
+    gcs_frontend.data_stream_send();
 }
 
-/*
- *  send a low priority formatted message to the GCS
- *  only one fits in the queue, so if you send more than one before the
- *  last one gets into the serial buffer then the old one will be lost
- */
-void Copter::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)severity;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
-            sizeof(gcs[0].pending_status.text), fmt, arg_list);
-    va_end(arg_list);
-    gcs[0].send_message(MSG_STATUSTEXT);
-    for (uint8_t i=1; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].pending_status = gcs[0].pending_status;
-            gcs[i].send_message(MSG_STATUSTEXT);
-        }
-    }
-}

@@ -69,24 +69,24 @@ void Copter::motor_test_output()
 
 // mavlink_motor_test_check - perform checks before motor tests can begin
 //  return true if tests can continue, false if not
-bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
+bool Copter::mavlink_motor_test_check(GCS_MAVLINK *gcs, bool check_rc)
 {
     // check rc has been calibrated
     pre_arm_rc_checks();
     if(check_rc && !ap.pre_arm_rc_check) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
+        gcs->send_text(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
         return false;
     }
 
     // ensure we are landed
     if (!ap.land_complete) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: vehicle not landed");
+        gcs->send_text(MAV_SEVERITY_CRITICAL,"Motor Test: vehicle not landed");
         return false;
     }
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
+        gcs->send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
         return false;
     }
 
@@ -96,7 +96,7 @@ bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 //  returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
-uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec)
+uint8_t Copter::mavlink_motor_test_start(GCS_MAVLINK *gcs, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec)
 {
     // if test has not started try to start it
     if (!ap.motor_test) {
@@ -104,7 +104,7 @@ uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_s
            The RC calibrated check can be skipped if direct pwm is
            supplied
         */
-        if (!mavlink_motor_test_check(chan, throttle_type != 1)) {
+        if (!mavlink_motor_test_check(gcs, throttle_type != 1)) {
             return MAV_RESULT_FAILED;
         } else {
             // start test
