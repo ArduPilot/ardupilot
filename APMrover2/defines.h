@@ -59,7 +59,7 @@ enum mode {
 #define RELAY_TOGGLE 5
 #define STOP_REPEAT 10
 
-#define MAV_CMD_CONDITION_YAW 23
+// #define MAV_CMD_CONDITION_YAW 23
 
 //  Logging parameters
 #define LOG_CTUN_MSG	        0x01

@@ -189,7 +189,7 @@ void Rover::update_trigger(void)
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
     if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        gcs_frontend.send_message(MSG_CAMERA_FEEDBACK);
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
@@ -289,7 +289,7 @@ void Rover::one_second_loop(void)
     if (should_log(MASK_LOG_CURRENT))
         Log_Write_Current();
     // send a heartbeat
-    gcs_send_message(MSG_HEARTBEAT);
+    gcs_frontend.send_message(MSG_HEARTBEAT);
 
     // allow orientation change at runtime to aid config
     ahrs.set_orientation();
