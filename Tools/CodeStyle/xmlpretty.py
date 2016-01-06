@@ -16,6 +16,13 @@ f.close()
 
 dom = minidom.parseString(text)
 
+def contains_only_text(node):
+    childNodes = node.childNodes[:]
+    for child in childNodes:
+        if child.nodeType != child.TEXT_NODE:
+            return False
+    return True
+
 def foreach_tree(doc, root, func, level=0):
     func(doc, root, level)
 
@@ -47,7 +54,7 @@ def strip_text_completely(doc, node, level):
         node.unlink()
 
 def auto_indent(doc, node, level):
-    if level > 0 and node.parentNode.nodeName not in ("description", "field", "param", "include"):
+    if level > 0 and not contains_only_text(node.parentNode):
         node.parentNode.insertBefore(doc.createTextNode("\n%s" % (" "*4*level)), node)
         if node.nextSibling is None:
             node.parentNode.appendChild(doc.createTextNode("\n%s" % (" "*4*(level-1))))
