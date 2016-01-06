@@ -223,7 +223,7 @@ void AP_MotorsHeli::output_armed_stabilizing()
         reset_flight_controls();
     }
 
-    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
+    move_actuators(_roll_control_input, _pitch_control_input, get_throttle(), _yaw_control_input);
 
     update_motor_control(ROTOR_CONTROL_ACTIVE);
 }
@@ -236,7 +236,7 @@ void AP_MotorsHeli::output_armed_zero_throttle()
         reset_flight_controls();
     }
 
-    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
+    move_actuators(_roll_control_input, _pitch_control_input, get_throttle(), _yaw_control_input);
 
     update_motor_control(ROTOR_CONTROL_IDLE);
 }
@@ -254,28 +254,28 @@ void AP_MotorsHeli::output_disarmed()
                 // pass pilot commands straight through to swash
                 _roll_control_input = _roll_radio_passthrough;
                 _pitch_control_input = _pitch_radio_passthrough;
-                _throttle_control_input = _throttle_radio_passthrough;
+                _throttle_filter.reset(_throttle_radio_passthrough / 1000.0f);
                 _yaw_control_input = _yaw_radio_passthrough;
                 break;
             case SERVO_CONTROL_MODE_MANUAL_CENTER:
                 // fixate mid collective
                 _roll_control_input = 0;
                 _pitch_control_input = 0;
-                _throttle_control_input = _collective_mid_pwm;
+                _throttle_filter.reset(_collective_mid_pwm / 1000.0f);
                 _yaw_control_input = 0;
                 break;
             case SERVO_CONTROL_MODE_MANUAL_MAX:
                 // fixate max collective
                 _roll_control_input = 0;
                 _pitch_control_input = 0;
-                _throttle_control_input = 1000;
+                _throttle_filter.reset(1.0f);
                 _yaw_control_input = 4500;
                 break;
             case SERVO_CONTROL_MODE_MANUAL_MIN:
                 // fixate min collective
                 _roll_control_input = 0;
                 _pitch_control_input = 0;
-                _throttle_control_input = 0;
+                _throttle_filter.reset(0.0f);
                 _yaw_control_input = -4500;
                 break;
             case SERVO_CONTROL_MODE_MANUAL_OSCILLATE:
@@ -295,7 +295,7 @@ void AP_MotorsHeli::output_disarmed()
     calculate_scalars();
 
     // helicopters always run stabilizing flight controls
-    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
+    move_actuators(_roll_control_input, _pitch_control_input, get_throttle(), _yaw_control_input);
 
     update_motor_control(ROTOR_CONTROL_STOP);
 }
@@ -353,9 +353,6 @@ void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
 void AP_MotorsHeli::update_throttle_filter()
 {
     _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
-
-    // constrain throttle signal to 0-1000
-    _throttle_control_input = constrain_float(_throttle_filter.get(),0.0f,1000.0f);
 }
 
 // set_radio_passthrough used to pass radio inputs directly to outputs
