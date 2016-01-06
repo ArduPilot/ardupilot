@@ -1081,9 +1081,7 @@ bool AP_Param::load_all(void)
       if the HAL specifies a defaults parameter file then override
       defaults using that file
      */
-#ifdef HAL_PARAM_DEFAULTS_PATH
-    load_defaults_file(HAL_PARAM_DEFAULTS_PATH);
-#endif
+    load_defaults_file(hal.util->get_custom_defaults_file());
 
     while (ofs < _storage.size()) {
         _storage.read_block(&phdr, ofs, sizeof(phdr));
@@ -1553,6 +1551,9 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value)
  */
 bool AP_Param::load_defaults_file(const char *filename)
 {
+    if (filename == nullptr) {
+        return false;
+    }
     FILE *f = fopen(filename, "r");
     if (f == NULL) {
         return false;
