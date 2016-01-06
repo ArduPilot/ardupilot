@@ -543,7 +543,8 @@ typedef enum MAV_PROTOCOL_CAPABILITY
 	MAV_PROTOCOL_CAPABILITY_SET_ACTUATOR_TARGET=1024, /* Autopilot supports direct actuator control. | */
 	MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION=2048, /* Autopilot supports the flight termination command. | */
 	MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION=4096, /* Autopilot supports onboard compass calibration. | */
-	MAV_PROTOCOL_CAPABILITY_ENUM_END=4097, /*  | */
+	MAV_PROTOCOL_CAPABILITY_PARACHUTE=8192, /* Autopilot supports parachute deployment. | */
+	MAV_PROTOCOL_CAPABILITY_ENUM_END=8193, /*  | */
 } MAV_PROTOCOL_CAPABILITY;
 #endif
 

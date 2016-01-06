@@ -6,4 +6,8 @@ void Plane::init_capabilities(void)
 {
     hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT);
     hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT);
+
+    #if PARACHUTE == ENABLED
+        hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_PARACHUTE);
+    #endif
 }
