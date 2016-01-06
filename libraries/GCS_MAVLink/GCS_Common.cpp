@@ -27,7 +27,6 @@ extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
-uint16_t GCS_MAVLINK::_parameter_count;
 
 GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_receive_timeout(5000)
@@ -101,22 +100,6 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
 
     // and init the gcs instance
     init(uart, mav_chan);
-}
-
-uint16_t
-GCS_MAVLINK::_count_parameters()
-{
-    // if we haven't cached the parameter count yet...
-    if (0 == _parameter_count) {
-        AP_Param  *vp;
-        AP_Param::ParamToken token;
-
-        vp = AP_Param::first(&token, NULL);
-        do {
-            _parameter_count++;
-        } while (NULL != (vp = AP_Param::next_scalar(&token, NULL)));
-    }
-    return _parameter_count;
 }
 
 /**
@@ -520,7 +503,7 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     // Start sending parameters - next call to ::update will kick the first one out
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
     _queued_parameter_index = 0;
-    _queued_parameter_count = _count_parameters();
+    _queued_parameter_count = AP_Param::count_parameters();
 }
 
 void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
@@ -555,7 +538,7 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
         param_name,
         value,
         mav_var_type(p_type),
-        _count_parameters(),
+        AP_Param::count_parameters(),
         packet.param_index);
 }
 
@@ -1184,7 +1167,7 @@ void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type p
                     param_name,
                     param_value,
                     mav_var_type(param_type),
-                    _count_parameters(),
+                    AP_Param::count_parameters(),
                     -1);
             }
         }
