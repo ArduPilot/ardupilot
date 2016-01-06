@@ -583,15 +583,6 @@ void Plane::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-void Plane::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
-}
-
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool Plane::telemetry_delayed(mavlink_channel_t chan)
 {
@@ -627,7 +618,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        plane.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();
+        last_heartbeat_time = AP_HAL::millis();
         plane.send_heartbeat(chan);
         return true;
 
@@ -635,12 +626,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
         plane.send_extended_status1(chan);
         CHECK_PAYLOAD_SIZE2(POWER_STATUS);
-        plane.gcs[chan-MAVLINK_COMM_0].send_power_status();
+        send_power_status();
         break;
 
     case MSG_EXTENDED_STATUS2:
         CHECK_PAYLOAD_SIZE(MEMINFO);
-        plane.gcs[chan-MAVLINK_COMM_0].send_meminfo();
+        send_meminfo();
         break;
 
     case MSG_ATTITUDE:
@@ -667,12 +658,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        plane.gcs[chan-MAVLINK_COMM_0].send_gps_raw(plane.gps);
+        send_gps_raw(plane.gps);
         break;
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        plane.gcs[chan-MAVLINK_COMM_0].send_system_time(plane.gps);
+        send_system_time(plane.gps);
         break;
 
     case MSG_SERVO_OUT:
@@ -686,7 +677,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        plane.gcs[chan-MAVLINK_COMM_0].send_radio_in(plane.receiver_rssi);
+        send_radio_in(plane.receiver_rssi);
         break;
 
     case MSG_RADIO_OUT:
@@ -701,17 +692,17 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        plane.gcs[chan-MAVLINK_COMM_0].send_raw_imu(plane.ins, plane.compass);
+        send_raw_imu(plane.ins, plane.compass);
         break;
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        plane.gcs[chan-MAVLINK_COMM_0].send_scaled_pressure(plane.barometer);
+        send_scaled_pressure(plane.barometer);
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        plane.gcs[chan-MAVLINK_COMM_0].send_sensor_offsets(plane.ins, plane.compass, plane.barometer);
+        send_sensor_offsets(plane.ins, plane.compass, plane.barometer);
         break;
 
     case MSG_CURRENT_WAYPOINT:
@@ -721,17 +712,17 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        plane.gcs[chan-MAVLINK_COMM_0].queued_param_send();
+        queued_param_send();
         break;
 
     case MSG_NEXT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        plane.gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
+        queued_waypoint_send();
         break;
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        plane.send_statustext(chan);
+        plane.gcs_frontend.send_statustext(chan);
         break;
 
 #if GEOFENCE_ENABLED == ENABLED
@@ -743,14 +734,14 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        plane.gcs[chan-MAVLINK_COMM_0].send_ahrs(plane.ahrs);
+        send_ahrs(plane.ahrs);
         break;
 
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         plane.send_simstate(chan);
         CHECK_PAYLOAD_SIZE2(AHRS2);
-        plane.gcs[chan-MAVLINK_COMM_0].send_ahrs2(plane.ahrs);
+        send_ahrs2(plane.ahrs);
         break;
 
     case MSG_HWSTATUS:
@@ -779,7 +770,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
-        plane.gcs[chan-MAVLINK_COMM_0].send_battery2(plane.battery);
+        send_battery2(plane.battery);
         break;
 
     case MSG_WIND:
@@ -797,7 +788,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        plane.gcs[chan-MAVLINK_COMM_0].send_opticalflow(plane.ahrs, plane.optflow);
+        send_opticalflow(plane.ahrs, plane.optflow);
 #endif
         break;
 
@@ -1416,9 +1407,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.auto_state.commanded_go_around = true;
                
                 result = MAV_RESULT_ACCEPTED;
-                plane.gcs_send_text(MAV_SEVERITY_INFO,"Go around command accepted");
+                _frontend->send_text(MAV_SEVERITY_INFO,"Go around command accepted");
             } else {
-                plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Rejected go around command");
+                _frontend->send_text(MAV_SEVERITY_NOTICE,"Rejected go around command");
             }
             break;
 
@@ -1442,7 +1433,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     if (! plane.geofence_set_floor_enabled(false)) {
                         result = MAV_RESULT_FAILED;
                     } else {
-                        plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Fence floor disabled");
+                        _frontend->send_text(MAV_SEVERITY_NOTICE,"Fence floor disabled");
                     }
                     break;
                 default:
@@ -1453,7 +1444,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
             if (is_equal(packet.param1,1.0f)) {
-                plane.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+                send_autopilot_version(FIRMWARE_VERSION);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1484,7 +1475,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.Log_Write_Home_And_Origin();
                 GCS_MAVLINK::send_home_all(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
-                plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
+                _frontend->send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
                                         (double)(new_home_loc.lng*1.0e-7f),
                                         (uint32_t)(new_home_loc.alt*0.01f));
@@ -1517,10 +1508,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 case PARACHUTE_RELEASE:
                     // treat as a manual release which performs some additional check of altitude
                     if (plane.parachute.released()) {
-                        plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Parachute already released");
+                        _frontend->send_text_fmt(MAV_SEVERITY_NOTICE, "Parachute already released");
                         result = MAV_RESULT_FAILED;
                     } else if (!plane.parachute.enabled()) {
-                        plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Parachute not enabled");
+                        _frontend->send_text_fmt(MAV_SEVERITY_NOTICE, "Parachute not enabled");
                         result = MAV_RESULT_FAILED;
                     } else {
                         if (!plane.parachute_manual_release()) {
@@ -1903,7 +1894,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        plane.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+        send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
@@ -1930,7 +1921,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         plane.home_is_set = HOME_SET_NOT_LOCKED;
         plane.Log_Write_Home_And_Origin();
         GCS_MAVLINK::send_home_all(new_home_loc);
-        plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
+        _frontend->send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                 (double)(new_home_loc.lat*1.0e-7f),
                                 (double)(new_home_loc.lng*1.0e-7f),
                                 (uint32_t)(new_home_loc.alt*0.01f));
@@ -1952,15 +1943,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 void Plane::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs[0].initialised || in_mavlink_delay) return;
+    if (!gcs_frontend.first_initialised() || in_mavlink_delay) return;
 
     in_mavlink_delay = true;
 
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_message(MSG_HEARTBEAT);
-        gcs_send_message(MSG_EXTENDED_STATUS1);
+        gcs_frontend.send_message(MSG_HEARTBEAT);
+        gcs_frontend.send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
@@ -1970,7 +1961,7 @@ void Plane::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
+        gcs_frontend.send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
     check_usb_mux();
 
@@ -1978,40 +1969,11 @@ void Plane::mavlink_delay_cb()
 }
 
 /*
- *  send a message on both GCS links
- */
-void Plane::gcs_send_message(enum ap_message id)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_message(id);
-        }
-    }
-}
-
-/*
- *  send a mission item reached message and load the index before the send attempt in case it may get delayed
- */
-void Plane::gcs_send_mission_item_reached_message(uint16_t mission_index)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].mission_item_reached_index = mission_index;
-            gcs[i].send_message(MSG_MISSION_ITEM_REACHED);
-        }
-    }
-}
-
-/*
  *  send data streams in the given rate range on both links
  */
 void Plane::gcs_data_stream_send(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].data_stream_send();
-        }
-    }
+    gcs_frontend.data_stream_send();
 }
 
 /*
@@ -2019,73 +1981,15 @@ void Plane::gcs_data_stream_send(void)
  */
 void Plane::gcs_update(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-#if CLI_ENABLED == ENABLED
-            gcs[i].update(g.cli_enabled == 1 ? FUNCTOR_BIND_MEMBER(&Plane::run_cli, void, AP_HAL::UARTDriver *):NULL);
-#else
-            gcs[i].update(NULL);
-#endif
-        }
-    }
+    gcs_frontend.update();
 }
 
-void Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_text(severity, str);
-        }
-    }
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(str);
-#endif
-}
 
-/*
- *  send a low priority formatted message to the GCS
- *  only one fits in the queue, so if you send more than one before the
- *  last one gets into the serial buffer then the old one will be lost
- */
-void Plane::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)severity;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
-            sizeof(gcs[0].pending_status.text), fmt, arg_list);
-    va_end(arg_list);
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
-#endif
-    gcs[0].send_message(MSG_STATUSTEXT);
-    for (uint8_t i=1; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].pending_status = gcs[0].pending_status;
-            gcs[i].send_message(MSG_STATUSTEXT);
-        }
-    }
-}
-
-/*
-  send airspeed calibration data
- */
-void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= 
-                MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
-                airspeed.log_mavlink_send((mavlink_channel_t)i, vg);
-            }
-        }
-    }
-}
 
 /**
    retry any deferred messages
  */
 void Plane::gcs_retry_deferred(void)
 {
-    gcs_send_message(MSG_RETRY_DEFERRED);
+    gcs_frontend.send_message(MSG_RETRY_DEFERRED);
 }

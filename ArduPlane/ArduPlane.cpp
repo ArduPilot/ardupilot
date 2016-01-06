@@ -211,7 +211,7 @@ void Plane::update_trigger(void)
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
     if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        gcs_frontend.send_message(MSG_CAMERA_FEEDBACK);
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
@@ -311,7 +311,7 @@ void Plane::one_second_loop()
         Log_Write_Current();
 
     // send a heartbeat
-    gcs_send_message(MSG_HEARTBEAT);
+    gcs_frontend.send_message(MSG_HEARTBEAT);
 
     // make it possible to change control channel ordering at runtime
     set_control_channels();
@@ -341,7 +341,7 @@ void Plane::one_second_loop()
 void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "G_Dt_max=%lu G_Dt_min=%lu\n",
+        gcs_frontend.send_text_fmt(MAV_SEVERITY_INFO, "G_Dt_max=%lu G_Dt_min=%lu\n",
                           (unsigned long)G_Dt_max, 
                           (unsigned long)G_Dt_min);
     }
@@ -402,7 +402,7 @@ void Plane::airspeed_ratio_update(void)
     }
     const Vector3f &vg = gps.velocity();
     airspeed.update_calibration(vg);
-    gcs_send_airspeed_calibration(vg);
+    gcs_frontend.send_airspeed_calibration(vg);
 }
 
 
@@ -646,7 +646,7 @@ void Plane::update_flight_mode(void)
             if (tdrag_mode && !auto_state.fbwa_tdrag_takeoff_mode) {
                 if (auto_state.highest_airspeed < g.takeoff_tdrag_speed1) {
                     auto_state.fbwa_tdrag_takeoff_mode = true;
-                    gcs_send_text(MAV_SEVERITY_WARNING, "FBWA tdrag mode");
+                    gcs_frontend.send_text(MAV_SEVERITY_WARNING, "FBWA tdrag mode");
                 }
             }
         }
@@ -818,26 +818,26 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 
     switch (fs) {
     case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
+        gcs_frontend.send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
+                gcs_frontend.send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
             } else {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
+                gcs_frontend.send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
             }
         } else if (g.fence_autoenable == 2) {
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
+                gcs_frontend.send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
             } else {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+                gcs_frontend.send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
             }
         }
 #endif
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted via throttle. Climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
+        gcs_frontend.send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted via throttle. Climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:

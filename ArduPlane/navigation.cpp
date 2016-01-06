@@ -150,7 +150,7 @@ void Plane::update_loiter(uint16_t radius)
             loiter.start_time_ms = millis();
             if (control_mode == GUIDED) {
                 // starting a loiter in GUIDED means we just reached the target point
-                gcs_send_mission_item_reached_message(0);
+                gcs_frontend.send_mission_item_reached_message(0);
             }
         }
     }
