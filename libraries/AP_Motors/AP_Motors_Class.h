@@ -69,7 +69,7 @@ public:
     float               get_roll() const { return _roll_control_input; }
     float               get_pitch() const { return _pitch_control_input; }
     float               get_yaw() const { return _yaw_control_input; }
-    float               get_throttle() const { return _throttle_control_input; }
+    float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
 
     // accessors for roll, pitch, yaw to motors within the range -1 ~ +1
     float               get_roll_thrust() const { return _roll_control_input / 4500.0f; }
@@ -153,7 +153,6 @@ protected:
     // internal variables
     float               _roll_control_input;        // desired roll control from attitude controllers, +/- 4500
     float               _pitch_control_input;       // desired pitch control from attitude controller, +/- 4500
-    float               _throttle_control_input;    // desired throttle (thrust) control from attitude controller, 0-1000
     float               _yaw_control_input;         // desired yaw control from attitude controller, +/- 4500
     float               _throttle_pwm_scalar;       // scalar used to convert throttle channel pwm range into 0-1000 range, ~0.8 - 1.0
     float               _rpy_pwm_scalar;            // scaler used to convert roll, pitch, yaw inputs to pwm range

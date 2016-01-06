@@ -28,7 +28,6 @@ extern const AP_HAL::HAL& hal;
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _roll_control_input(0.0f),
     _pitch_control_input(0.0f),
-    _throttle_control_input(0.0f),
     _yaw_control_input(0.0f),
     _throttle_pwm_scalar(1.0f),
     _rpy_pwm_scalar(0.074f),
