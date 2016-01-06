@@ -421,6 +421,11 @@ bool NavEKF::InitialiseFilterDynamic(void)
         return false;
     }
     if (core == nullptr) {
+        if (hal.util->available_memory() < 4096 + sizeof(*core)) {
+            _enable.set(0);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF: not enough memory");
+            return false;
+        }
         core = new NavEKF_core(*this, _ahrs, _baro, _rng);
         if (core == nullptr) {
             _enable.set(0);
