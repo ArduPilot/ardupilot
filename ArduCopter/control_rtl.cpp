@@ -430,6 +430,10 @@ float Copter::rtl_compute_return_alt_above_origin(float rtl_return_dist)
     // maximum of current altitude + climb_min and rtl altitude
     float ret = MAX(current_loc.alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN));
 
+    if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) { // don't allow really shallow slopes
+        ret = MAX(current_loc.alt, MIN(ret, MAX(rtl_return_dist*g.rtl_cone_slope, current_loc.alt+RTL_ABS_MIN_CLIMB)));
+    }
+
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
