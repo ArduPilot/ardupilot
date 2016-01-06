@@ -149,3 +149,35 @@ void GCS_Frontend::send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     send_text_fmt(severity, fmt, arg_list);
     va_end(arg_list);
 }
+
+/*
+ *  a delay() callback that processes MAVLink packets. We set this as the
+ *  callback in long running library initialisation routines to allow
+ *  MAVLink to process packets while waiting for the initialisation to
+ *  complete
+ */
+void GCS_Frontend::delay_cb()
+{
+    static uint32_t last_1hz, last_50hz, last_5s;
+
+    if (!first_initialised()) {
+        return;
+    }
+
+    uint32_t tnow = AP_HAL::millis();
+    if (tnow - last_1hz > 1000) {
+        last_1hz = tnow;
+        send_message(MSG_HEARTBEAT);
+        send_message(MSG_EXTENDED_STATUS1);
+    }
+    if (tnow - last_50hz > 20) {
+        last_50hz = tnow;
+        update();
+        data_stream_send();
+        send_message(MSG_RETRY_DEFERRED);
+    }
+    if (tnow - last_5s > 5000) {
+        last_5s = tnow;
+        send_text(MAV_SEVERITY_INFO, "Initialising APM");
+    }
+}

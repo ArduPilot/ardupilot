@@ -36,6 +36,8 @@ public:
     }
     void update(void);
 
+    void delay_cb();
+
 protected:
 
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
