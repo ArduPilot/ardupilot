@@ -313,6 +313,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("LAND_FINAL_ALT", 27, QuadPlane, land_final_alt, 6),
+
+    // @Param: THR_MID
+    // @DisplayName: Throttle Mid Position
+    // @Description: The throttle output (0 ~ 1000) when throttle stick is in mid position.  Used to scale the manual throttle so that the mid throttle stick position is close to the throttle required to hover
+    // @User: Standard
+    // @Range: 300 700
+    // @Units: Percent*10
+    // @Increment: 1
+    AP_GROUPINFO("THR_MID", 28, QuadPlane, throttle_mid, 500),
     
     AP_GROUPEND
 };
@@ -369,7 +378,7 @@ void QuadPlane::setup(void)
     motors->Init();
     motors->set_frame_orientation(AP_MOTORS_X_FRAME);
     motors->set_throttle_range(0, thr_min_pwm, thr_max_pwm);
-    motors->set_hover_throttle(500);
+    motors->set_hover_throttle(throttle_mid);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     attitude_control->set_dt(plane.ins.get_loop_delta_t());
