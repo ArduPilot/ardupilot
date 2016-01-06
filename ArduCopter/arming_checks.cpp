@@ -196,7 +196,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         // check accelerometers have been calibrated
         if (!ins.accel_calibrated_ok_all()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accels not calibrated");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: INS not calibrated");
             }
             return false;
         }
@@ -267,7 +267,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: gyros still settling");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Nav Checks");
             }
             return false;
         }
@@ -364,7 +364,7 @@ bool Copter::pre_arm_checks(bool display_failure)
                 #if FRAME_CONFIG == HELI_FRAME
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Collective below Failsafe");
                 #else
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Throttle below Failsafe");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle below Failsafe");
                 #endif
             }
             return false;
@@ -447,12 +447,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     // ensure GPS is ok
     if (!position_ok()) {
         if (display_failure) {
-            const char *reason = ahrs.prearm_failure_reason();
-            if (reason) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
-            } else {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
-            }
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
@@ -465,7 +460,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
     if (mag_variance.length() >= g.fs_ekf_thresh) {
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: EKF compass variance");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent compasses");
         }
         return false;
     }
@@ -488,7 +483,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: High GPS HDOP");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
@@ -559,20 +554,20 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
         if (!ins.get_accel_health_all()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Accelerometers not healthy");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accelerometers not healthy");
             }
             return false;
         }
         if (!ins.get_gyro_health_all()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Gyros not healthy");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Gyros not healthy");
             }
             return false;
         }
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: gyros still settling");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Nav Checks");
             }
             return false;
         }
@@ -640,7 +635,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         // baro health check
         if (!barometer.all_healthy()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Barometer not healthy");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Barometer not healthy");
             }
             return false;
         }
@@ -661,7 +656,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // check vehicle is within fence
     if (!fence.pre_arm_check()) {
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: check fence");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check fence");
         }
         return false;
     }
