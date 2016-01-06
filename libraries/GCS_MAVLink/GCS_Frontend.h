@@ -4,6 +4,7 @@
 
 class GCS_Frontend {
     friend class Plane; // for access to gcs[], needed for params' var_info
+    friend class Copter; // for access to gcs[], needed for params' var_info
 
 public:
 

@@ -1380,3 +1380,25 @@ void GCS_MAVLINK::send_home_all(const Location &home)
         }
     }
 }
+
+void GCS_MAVLINK::mavlink_msg_command_ack_send(MAV_CMD cmd, int ret)
+{
+    ::mavlink_msg_command_ack_send(chan, cmd, ret);
+}
+
+
+void GCS_MAVLINK::mavlink_msg_compassmot_status_send(int16_t throttle_cin,
+                                                     float amps,
+                                                     float int_pct,
+                                                     float mot_ofs_x,
+                                                     float mot_ofs_y,
+                                                     float mot_ofs_z)
+{
+    ::mavlink_msg_compassmot_status_send(chan,
+                                         throttle_cin,
+                                         amps,
+                                         int_pct,
+                                         mot_ofs_x,
+                                         mot_ofs_y,
+                                         mot_ofs_z);
+}

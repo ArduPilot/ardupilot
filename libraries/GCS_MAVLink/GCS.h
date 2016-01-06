@@ -156,8 +156,12 @@ public:
     void send_home(const Location &home) const;
     static void send_home_all(const Location &home);
 
+    void mavlink_msg_command_ack_send(MAV_CMD cmd, int ret);
+    void mavlink_msg_compassmot_status_send(int16_t, float, float, float, float, float);
+
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
+    // FIXME: move to frontend:
     static uint8_t active_channel_mask(void) { return mavlink_active; }
 
     /*
