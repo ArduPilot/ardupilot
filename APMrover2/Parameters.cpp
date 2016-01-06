@@ -582,13 +582,13 @@ void Rover::load_parameters(void)
 		// save the current format version
 		g.format_version.set_and_save(Parameters::k_format_version);
 		cliSerial->println("done.");
-    } else {
-	    unsigned long before = micros();
-	    // Load all auto-loaded EEPROM variables
-	    AP_Param::load_all();
+    }
 
-	    cliSerial->printf("load_all took %luus\n", micros() - before);
-	}
+    unsigned long before = micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    
+    cliSerial->printf("load_all took %luus\n", micros() - before);
 
     // set a more reasonable default NAVL1_PERIOD for rovers
     L1_controller.set_default_period(8);
