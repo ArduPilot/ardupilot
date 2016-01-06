@@ -18,7 +18,8 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #include "VideoIn.h"
 
 #include <errno.h>
@@ -41,6 +42,29 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
+int VideoIn::get_fd(void)
+{
+    return _fd;
+}
+
+bool VideoIn::get_capabilities_flags(uint32_t *flags)
+{
+    struct v4l2_capability caps;
+    int ret;
+
+    memset(&caps, 0, sizeof caps);
+    ret = ioctl(_fd, VIDIOC_QUERYCAP, &caps);
+    if (ret < 0) {
+        hal.console->printf("VideoIn: unable to get capabilities flags: %s (%d).\n",
+                            strerror(errno), errno);
+        return false;
+    }
+
+    *flags = caps.capabilities;
+
+    return true;
+}
+
 bool VideoIn::get_frame(Frame &frame)
 {
     if (!_streaming) {
@@ -61,8 +85,7 @@ void VideoIn::put_frame(Frame &frame)
 
 bool VideoIn::open_device(const char *device_path, uint32_t memtype)
 {
-    struct v4l2_capability cap;
-    int ret;
+    uint32_t cap_flags = 0;
 
     _fd = -1;
     _buffers = NULL;
@@ -75,14 +98,11 @@ bool VideoIn::open_device(const char *device_path, uint32_t memtype)
         return false;
     }
 
-    memset(&cap, 0, sizeof cap);
-    ret = ioctl(_fd, VIDIOC_QUERYCAP, &cap);
-    if (ret < 0) {
-        hal.console->printf("Error querying caps\n");
+    if (!get_capabilities_flags(&cap_flags)) {
         return false;
     }
 
-    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
+    if (!(cap_flags & V4L2_CAP_VIDEO_CAPTURE)) {
         hal.console->printf("Error opening device %s: is not a video capture device\n",
                             device_path);
         close(_fd);
@@ -235,6 +255,48 @@ void VideoIn::prepare_capture()
     }
 }
 
+void VideoIn::crop_image_grey(uint8_t *buffer, uint32_t buffer_size, uint8_t *new_buffer, uint32_t width,
+    uint32_t height, uint32_t cropLeft, uint32_t cropRight, uint32_t cropTop, uint32_t cropBottom)
+{
+    uint32_t i, new_buffer_position = 0, columnCount = 0, lineCount = 0;
+
+    for (i = 0; i < buffer_size; i++) {
+        if (columnCount == width) {
+            columnCount = 0;
+            lineCount++;
+        }
+
+        if (columnCount < cropLeft || columnCount >= (width - cropRight)) {
+            columnCount++;
+            continue;
+        }
+
+        if (lineCount < cropTop || lineCount >= (height - cropBottom)) {
+            columnCount++;
+            continue;
+        }
+
+        columnCount++;
+
+        new_buffer[new_buffer_position] = buffer[i];
+
+        new_buffer_position++;
+    }
+}
+
+void VideoIn::convert_from_yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size, uint8_t *new_buffer)
+{
+    uint32_t i;
+    uint32_t new_buffer_position = 0;
+
+    for (i = 0; i < buffer_size; i++) {
+        if (i % 2 == 0) {
+            new_buffer[new_buffer_position] = buffer[i];
+            new_buffer_position++;
+        }
+    }
+}
+
 uint32_t VideoIn::_timeval_to_us(struct timeval& tv)
 {
     return (1.0e6 * tv.tv_sec + tv.tv_usec);
@@ -303,6 +365,7 @@ bool VideoIn::_dequeue_frame(Frame &frame)
     frame.buf_index = buf.index;
     frame.timestamp = _timeval_to_us(buf.timestamp);
     frame.sequence = buf.sequence;
+    frame.bytesused = buf.bytesused;
 
     return true;
 }
