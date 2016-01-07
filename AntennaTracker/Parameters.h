@@ -4,6 +4,7 @@
 #define PARAMETERS_H
 
 #include <AP_Common/AP_Common.h>
+#include <PID/PID.h>
 
 // Global parameter class.
 //

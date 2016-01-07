@@ -122,20 +122,6 @@ void Tracker::send_hwstatus(mavlink_channel_t chan)
         hal.i2c->lockup_count());
 }
 
-void Tracker::send_waypoint_request(mavlink_channel_t chan)
-{
-    gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
-}
-
-void Tracker::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
-}
-
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(
@@ -175,7 +161,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        tracker.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();
+        last_heartbeat_time = AP_HAL::millis();
         tracker.send_heartbeat(chan);
         return true;
 
@@ -201,12 +187,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        tracker.gcs[chan-MAVLINK_COMM_0].send_gps_raw(tracker.gps);
+        send_gps_raw(tracker.gps);
         break;
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        tracker.gcs[chan-MAVLINK_COMM_0].send_radio_in(0);
+        send_radio_in(0);
         break;
 
     case MSG_RADIO_OUT:
@@ -216,37 +202,37 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        tracker.gcs[chan-MAVLINK_COMM_0].send_raw_imu(tracker.ins, tracker.compass);
+        send_raw_imu(tracker.ins, tracker.compass);
         break;
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        tracker.gcs[chan-MAVLINK_COMM_0].send_scaled_pressure(tracker.barometer);
+        send_scaled_pressure(tracker.barometer);
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        tracker.gcs[chan-MAVLINK_COMM_0].send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
+        send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
         break;
 
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        tracker.gcs[chan-MAVLINK_COMM_0].queued_param_send();
+        queued_param_send();
         break;
 
     case MSG_NEXT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        tracker.send_waypoint_request(chan);
+        queued_waypoint_send();
         break;
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        tracker.send_statustext(chan);
+        tracker.gcs_frontend.send_statustext(chan);
         break;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        tracker.gcs[chan-MAVLINK_COMM_0].send_ahrs(tracker.ahrs);
+        send_ahrs(tracker.ahrs);
         break;
 
     case MSG_SIMSTATE:
@@ -536,30 +522,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
 
     // send data stream request to target on all channels
     //  Note: this doesn't check success for all sends meaning it's not guaranteed the vehicle's positions will be sent at 1hz
-    for (uint8_t i=0; i < num_gcs; i++) {
-        if (gcs[i].initialised) {
-            // request position
-            if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_DATA_STREAM_LEN) {
-                mavlink_msg_request_data_stream_send(
-                    (mavlink_channel_t)i,
-                    msg->sysid,
-                    msg->compid,
-                    MAV_DATA_STREAM_POSITION,
-                    1,  // 1hz
-                    1); // start streaming
-            }
-            // request air pressure
-            if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_DATA_STREAM_LEN) {
-                mavlink_msg_request_data_stream_send(
-                    (mavlink_channel_t)i,
-                    msg->sysid,
-                    msg->compid,
-                    MAV_DATA_STREAM_RAW_SENSORS,
-                    1,  // 1hz
-                    1); // start streaming
-            }
-        }
-    }
+    gcs_frontend.request_data_streams(msg->sysid, msg->compid);
 
     // flag target has been set
     target_set = true;
@@ -724,7 +687,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
                 if (is_equal(packet.param1,1.0f)) {
-                    tracker.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+                    send_autopilot_version(FIRMWARE_VERSION);
                     result = MAV_RESULT_ACCEPTED;
                 }
                 break;
@@ -739,7 +702,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             default:
                 break;
         }
-        mavlink_msg_command_ack_send(
+        ::mavlink_msg_command_ack_send(
             chan,
             packet.command,
             result);
@@ -912,7 +875,7 @@ mission_failed:
         break;
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        tracker.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+        send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     } // end switch
@@ -920,47 +883,36 @@ mission_failed:
 
 
 /*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
+ *  a delay() callback that processes MAVLink packets and processes
+ *  Notify events (blinks LEDs).  We set this as the callback in long
+ *  running library initialisation routines to allow MAVLink to
+ *  process packets while waiting for the initialisation to complete.
+ *  And to entertain the user with blinking lights.
  */
 void Tracker::mavlink_delay_cb()
 {
-    static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs[0].initialised) return;
+    static uint32_t last_50hz;
 
-    tracker.in_mavlink_delay = true;
-
-    uint32_t tnow = AP_HAL::millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs_send_message(MSG_HEARTBEAT);
-        gcs_send_message(MSG_EXTENDED_STATUS1);
+    if (in_mavlink_delay) {
+        return;
     }
+
+    in_mavlink_delay = true;
+
+    // process MAVLink packets:
+    gcs_frontend.delay_cb();
+
+    // update Notify events:
+    uint32_t tnow = AP_HAL::millis();
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
         notify.update();
     }
-    if (tnow - last_5s > 5000) {
-        last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
-    }
-    tracker.in_mavlink_delay = false;
-}
 
-/*
- *  send a message on both GCS links
- */
-void Tracker::gcs_send_message(enum ap_message id)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_message(id);
-        }
-    }
+    // see if USB has been connected or disconnected:
+    check_usb_mux();
+
+    in_mavlink_delay = false;
 }
 
 /*
@@ -968,11 +920,7 @@ void Tracker::gcs_send_message(enum ap_message id)
  */
 void Tracker::gcs_data_stream_send(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].data_stream_send();
-        }
-    }
+    gcs_frontend.data_stream_send();
 }
 
 /*
@@ -980,48 +928,7 @@ void Tracker::gcs_data_stream_send(void)
  */
 void Tracker::gcs_update(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].update(NULL);
-        }
-    }
-}
-
-void Tracker::gcs_send_text(MAV_SEVERITY severity, const char *str)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_text(severity, str);
-        }
-    }
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(str);
-#endif
-}
-
-/*
- *  send a low priority formatted message to the GCS
- *  only one fits in the queue, so if you send more than one before the
- *  last one gets into the serial buffer then the old one will be lost
- */
-void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)severity;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
-            sizeof(gcs[0].pending_status.text), fmt, arg_list);
-    va_end(arg_list);
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
-#endif
-    gcs[0].send_message(MSG_STATUSTEXT);
-    for (uint8_t i=1; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].pending_status = gcs[0].pending_status;
-            gcs[i].send_message(MSG_STATUSTEXT);
-        }
-    }
+    gcs_frontend.update();
 }
 
 /**
@@ -1029,5 +936,5 @@ void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
  */
 void Tracker::gcs_retry_deferred(void)
 {
-    gcs_send_message(MSG_RETRY_DEFERRED);
+    gcs_frontend.send_message(MSG_RETRY_DEFERRED);
 }
