@@ -40,10 +40,13 @@ public:
 
     void delay_cb();
 
+    virtual uint8_t num_gcs() const { return _num_gcs; }
+    virtual GCS_MAVLINK& gcs(const uint8_t i) { return _gcs[i]; }
+
 protected:
 
-    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    const uint8_t _num_gcs = MAVLINK_COMM_NUM_BUFFERS;
+    GCS_MAVLINK _gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     DataFlash_Class &_DataFlash;
     run_cli_fn _run_cli_func = NULL;
