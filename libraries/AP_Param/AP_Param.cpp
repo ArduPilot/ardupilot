@@ -1077,11 +1077,13 @@ bool AP_Param::load_all(void)
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
 
+#if HAL_OS_POSIX_IO == 1
     /*
       if the HAL specifies a defaults parameter file then override
       defaults using that file
      */
     load_defaults_file(hal.util->get_custom_defaults_file());
+#endif
 
     while (ofs < _storage.size()) {
         _storage.read_block(&phdr, ofs, sizeof(phdr));
