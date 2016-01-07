@@ -340,7 +340,15 @@ private:
     // RTL
     RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
     bool rtl_state_complete; // set to true if the current state is completed
-    float rtl_alt;     // altitude the vehicle is returning at
+
+    struct {
+        // NEU w/ origin-relative altitude
+        Vector3f origin_point;
+        Vector3f climb_target;
+        Vector3f return_target;
+        Vector3f descent_target;
+        bool land;
+    } rtl_path;
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
@@ -802,7 +810,8 @@ private:
     void rtl_descent_run();
     void rtl_land_start();
     void rtl_land_run();
-    float get_RTL_alt();
+    void rtl_build_path();
+    float rtl_compute_return_alt_above_origin(float rtl_return_dist);
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
