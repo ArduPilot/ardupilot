@@ -193,8 +193,13 @@ protected:
     mavlink_channel_t           chan;
 
     AP_Int16 &streamRate(uint8_t i) { return streamRates[i]; }
-    bool            waypoint_receiving() { return _waypoint_receiving; }
+    bool            waypoint_receiving() const { return _waypoint_receiving; }
+    void            set_waypoint_receiving(const bool value) { _waypoint_receiving = value; }
     AP_Param * queued_parameter() { return _queued_parameter; }
+
+    // FIXME: factor AntennaTracker to not use this!
+    void            set_waypoint_request_i(const uint16_t index) { waypoint_request_i = index; }
+    void            set_waypoint_request_last(const uint16_t index) { waypoint_request_last = index; }
 
     // number of 50Hz ticks until we next send this stream
     uint8_t         stream_ticks[NUM_STREAMS];
