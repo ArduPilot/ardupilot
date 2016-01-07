@@ -6,6 +6,7 @@ class GCS_Frontend {
     friend class Plane; // for access to gcs[], needed for params' var_info
     friend class Copter; // for access to gcs[], needed for params' var_info
     friend class Rover; // for access to gcs[], needed for params' var_info
+    friend class Tracker; // for access to gcs[], needed for params' var_info
 
 public:
 
@@ -14,7 +15,7 @@ public:
     GCS_Frontend(DataFlash_Class &DataFlash) :
         _DataFlash(DataFlash) { }
 
-    void setup_uarts(AP_SerialManager & serial_manager);
+    virtual void setup_uarts(AP_SerialManager &serial_manager);
 
     void reset_cli_timeout();
     void println_allcli(const char *msg);
