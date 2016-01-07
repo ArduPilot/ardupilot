@@ -2,7 +2,7 @@
 #include "Copter.h" // for copter global variable
 
 // try to send a message, return false if it wasn't sent
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_Backend_Copter::try_send_message(enum ap_message id)
 {
     if (copter.telemetry_delayed(chan)) {
         return false;
@@ -329,17 +329,17 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
 
 // see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+bool GCS_Backend_Copter::stream_trigger(enum streams stream_num)
 {
     if (stream_num >= NUM_STREAMS) {
         return false;
     }
-    float rate = (uint8_t)streamRates[stream_num].get();
+    float rate = (uint8_t)streamRate(stream_num).get();
 
     // send at a much lower rate while handling waypoints and
     // parameter sends
     if ((stream_num != STREAM_PARAMS) &&
-        (waypoint_receiving || _queued_parameter != NULL)) {
+        (waypoint_receiving() || queued_parameter() != NULL)) {
         rate *= 0.25f;
     }
 
@@ -362,9 +362,9 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 }
 
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_Backend_Copter::data_stream_send(void)
 {
-    if (waypoint_receiving) {
+    if (waypoint_receiving()) {
         // don't interfere with mission transfer
         return;
     }
@@ -375,9 +375,9 @@ GCS_MAVLINK::data_stream_send(void)
 
     copter.gcs_out_of_time = false;
 
-    if (_queued_parameter != NULL) {
-        if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(10);
+    if (queued_parameter() != NULL) {
+        if (streamRate(STREAM_PARAMS).get() <= 0) {
+            streamRate(STREAM_PARAMS).set(10);
         }
         if (stream_trigger(STREAM_PARAMS)) {
             send_message(MSG_NEXT_PARAM);
@@ -467,12 +467,12 @@ GCS_MAVLINK::data_stream_send(void)
 }
 
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+void GCS_Backend_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     copter.do_guided(cmd);
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_Backend_Copter::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // add home alt if needed
     if (cmd.content.location.flags.relative_alt) {
@@ -482,7 +482,7 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_Backend_Copter::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
 

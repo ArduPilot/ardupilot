@@ -122,9 +122,8 @@
 
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
-    friend class Parameters;
-    friend class GCS_Frontend_Plane; // for run_cli functor binding
+
+    friend class GCS_Backend_Copter;
 
     Copter(void);
 
