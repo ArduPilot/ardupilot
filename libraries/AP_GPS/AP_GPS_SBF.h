@@ -53,7 +53,7 @@ private:
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, StandAlone+SBAS+DGPS+RTK\n",
-    "sso, Stream2, Dsk1, Rinex+Event+RawData, msec100\n"};
+    "sso, Stream2, Dsk1, postprocess+event, msec100\n"};
    
     uint32_t last_hdop = 999;
     uint32_t crc_error_counter = 0;
