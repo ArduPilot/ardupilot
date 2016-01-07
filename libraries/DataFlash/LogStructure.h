@@ -352,6 +352,20 @@ struct PACKED log_Camera {
     uint16_t yaw;
 };
 
+struct PACKED log_Trigger {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint32_t gps_time;
+    uint16_t gps_week;
+    int32_t  latitude;
+    int32_t  longitude;
+    int32_t  altitude;
+    int32_t  altitude_rel;
+    int16_t  roll;
+    int16_t  pitch;
+    uint16_t yaw;
+};
+
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -695,9 +709,11 @@ Format characters in the format string for binary log messages
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-            "RFND", "QCC",         "TimeUS,Dist1,Dist2" }, \
+      "RFND", "QCC",         "TimeUS,Dist1,Dist2" }, \
     { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
-      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx" }
+      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx" }, \
+    { LOG_TRIGGER_MSG, sizeof(log_Trigger), \
+      "TRIG", "QIHLLeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -922,6 +938,7 @@ enum LogMessages {
     LOG_MSG_SBPRAW1,
     LOG_MSG_SBPRAW2,
     LOG_MSG_SBPRAWx,
+    LOG_TRIGGER_MSG,
 
 // message types 211 to 220 reversed for autotune use
 
