@@ -194,9 +194,9 @@ static const struct {
 static const struct {
     float v, wv;
 } wrap_PI_tests[] = {
-    { 0.2f*PI,            0.2f*PI },
-    { 0.2f*PI + 100*PI,  0.2f*PI },
-    { -0.2f*PI - 100*PI,  -0.2f*PI },
+    { 0.2f*M_PI,            0.2f*M_PI },
+    { 0.2f*M_PI + 100*M_PI,  0.2f*M_PI },
+    { -0.2f*M_PI - 100*M_PI,  -0.2f*M_PI },
 };
 
 static void test_wrap_cd(void)
@@ -237,7 +237,7 @@ static void test_wrap_cd(void)
 static void test_wgs_conversion_functions(void)
 {
 
-    #define D2R DEG_TO_RAD_DOUBLE
+    #define D2R DEG_TO_RAD
 
     /* Maximum allowable error in quantities with units of length (in meters). */
     #define MAX_DIST_ERROR_M 1e-6

@@ -45,8 +45,8 @@ float Plane::calculate_lift(void) const
     // simple lift equation from http://wright.nasa.gov/airplane/lifteq.html
     const float max_angle = radians(30);
     const float max_angle_delta = radians(10);
-    const float clift_at_max = coefficient.lift * 2 * M_PI_F * max_angle;
-    float Cl = coefficient.lift * 2 * M_PI_F * angle_of_attack;
+    const float clift_at_max = coefficient.lift * 2 * M_PI * max_angle;
+    float Cl = coefficient.lift * 2 * M_PI * angle_of_attack;
     if (fabsf(angle_of_attack) > max_angle+max_angle_delta) {
         return 0;
     }
@@ -71,7 +71,7 @@ float Plane::calculate_drag_induced(void) const
     if (airspeed < 0.1) {
         return 0;
     }
-    float drag_i = coefficient.lift_drag * sq(lift) / (0.25 * sq(air_density) * sq(airspeed) * wing_area * M_PI_F * wing_efficiency * aspect_ratio);
+    float drag_i = coefficient.lift_drag * sq(lift) / (0.25 * sq(air_density) * sq(airspeed) * wing_area * M_PI * wing_efficiency * aspect_ratio);
     return drag_i;
 }
 

@@ -121,7 +121,7 @@ float AP_L1_Control::crosstrack_error(void) const
  */
 void AP_L1_Control::_prevent_indecision(float &Nu)
 {
-    const float Nu_limit = 0.9f*M_PI_F;
+    const float Nu_limit = 0.9f*M_PI;
     if (fabsf(Nu) > Nu_limit &&
         fabsf(_last_Nu) > Nu_limit &&
         fabsf(wrap_180_cd(_target_bearing_cd - _ahrs.yaw_sensor)) > 12000 &&
