@@ -79,6 +79,7 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('gbenchmark')
+    cfg.load('static_linking')
 
     cfg.start_msg('Benchmarks')
     if cfg.env.HAS_GBENCHMARK:
