@@ -7,6 +7,9 @@ set -ex
 
 . ~/.profile
 
+# CXX and CC are exported by default by travis
+unset CXX CC
+
 # If TRAVIS_BUILD_TARGET is not set, default to all of them
 if [ -z "$TRAVIS_BUILD_TARGET" ]; then
     TRAVIS_BUILD_TARGET="sitl linux navio raspilot minlure bebop px4-v2 px4-v4"
