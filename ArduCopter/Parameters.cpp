@@ -133,6 +133,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Defines a cone above home which determines maximum climb
     // @Range: 0.5 10.0
     // @Increment: .1
+    // @Values: 0:Disabled,1:Shallow,3:Steep
     // @User: Standard
     GSCALAR(rtl_cone_slope,   "RTL_CONE_SLOPE",     RTL_CONE_SLOPE),
 
