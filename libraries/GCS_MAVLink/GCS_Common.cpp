@@ -165,7 +165,7 @@ void
 GCS_MAVLINK::queued_waypoint_send()
 {
     if (initialised &&
-        waypoint_receiving &&
+        waypoint_receiving() &&
         waypoint_request_i <= waypoint_request_last) {
         mavlink_msg_mission_request_send(
             chan,
@@ -244,7 +244,7 @@ void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_messa
     mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands());
 
     // set variables to help handle the expected sending of commands to the GCS
-    waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
+    _waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
     waypoint_dest_sysid = msg->sysid;       // record system id of GCS who has requested the commands
     waypoint_dest_compid = msg->compid;     // record component id of GCS who has requested the commands
 }
@@ -339,7 +339,7 @@ void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *m
 
     // set variables to help handle the expected receiving of commands from the GCS
     waypoint_timelast_receive = AP_HAL::millis();    // set time we last received commands to now
-    waypoint_receiving = true;              // record that we expect to receive commands
+    _waypoint_receiving = true;              // record that we expect to receive commands
     waypoint_request_i = 0;                 // reset the next expected command number to zero
     waypoint_request_last = packet.count;   // record how many commands we expect to receive
     waypoint_timelast_request = 0;          // set time we last requested commands to zero
@@ -383,7 +383,7 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
 
     waypoint_timelast_receive = AP_HAL::millis();
     waypoint_timelast_request = 0;
-    waypoint_receiving   = true;
+    _waypoint_receiving   = true;
     waypoint_request_i   = packet.start_index;
     waypoint_request_last= packet.end_index;
 }
@@ -675,7 +675,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     }
 
     // Check if receiving waypoints (mission upload expected)
-    if (!waypoint_receiving) {
+    if (waypoint_receiving()) {
         result = MAV_MISSION_ERROR;
         goto mission_ack;
     }
@@ -721,7 +721,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             MAV_MISSION_ACCEPTED);
         
         send_text(MAV_SEVERITY_INFO,"Flight plan received");
-        waypoint_receiving = false;
+        _waypoint_receiving = false;
         mission_is_complete = true;
         // XXX ignores waypoint radius for individual waypoints, can
         // only set WP_RADIUS parameter
@@ -856,14 +856,14 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
         }
     }
 
-    if (!waypoint_receiving) {
+    if (!waypoint_receiving()) {
         return;
     }
 
     uint32_t tnow = AP_HAL::millis();
     uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
 
-    if (waypoint_receiving &&
+    if (waypoint_receiving() &&
         waypoint_request_i <= waypoint_request_last &&
         tnow - waypoint_timelast_request > wp_recv_time) {
         waypoint_timelast_request = tnow;
@@ -871,8 +871,8 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
     }
 
     // stop waypoint receiving if timeout
-    if (waypoint_receiving && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
-        waypoint_receiving = false;
+    if (waypoint_receiving() && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
+        _waypoint_receiving = false;
     }
 }
 

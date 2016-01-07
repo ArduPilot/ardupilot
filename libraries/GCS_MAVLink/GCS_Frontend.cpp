@@ -98,7 +98,7 @@ void GCS_Frontend::send_message(enum ap_message id)
 void GCS_Frontend::send_mission_item_reached_message(uint16_t mission_index)
 {
     for (uint8_t i=0; i<num_gcs(); i++) {
-        GCS_MAVLINK a_gcs = gcs(i);
+        GCS_MAVLINK &a_gcs = gcs(i);
         if (a_gcs.initialised) {
             a_gcs.mission_item_reached_index = mission_index;
             a_gcs.send_message(MSG_MISSION_ITEM_REACHED);
@@ -109,7 +109,7 @@ void GCS_Frontend::send_mission_item_reached_message(uint16_t mission_index)
 
 void GCS_Frontend::send_statustext(mavlink_channel_t chan)
 {
-    GCS_MAVLINK a_gcs = gcs(chan-MAVLINK_COMM_0);
+    GCS_MAVLINK &a_gcs = gcs(chan-MAVLINK_COMM_0);
     mavlink_statustext_t *s = &a_gcs.pending_status;
     mavlink_msg_statustext_send(chan, s->severity, s->text);
 }
@@ -139,7 +139,7 @@ void GCS_Frontend::send_text_fmt(MAV_SEVERITY severity, const char *fmt, va_list
 #endif
     gcs0.send_message(MSG_STATUSTEXT);
     for (uint8_t i=1; i<num_gcs(); i++) {
-        GCS_MAVLINK a_gcs = gcs(i);
+        GCS_MAVLINK &a_gcs = gcs(i);
         if (a_gcs.initialised) {
             a_gcs.pending_status = gcs0.pending_status;
             a_gcs.send_message(MSG_STATUSTEXT);
