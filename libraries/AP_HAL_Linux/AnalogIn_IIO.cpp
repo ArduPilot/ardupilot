@@ -58,14 +58,15 @@ void IIOAnalogSource::select_pin(void)
 }
 
 /*
-  reopens an analog source (by closing and opening it again)
+  reopens an analog source (by closing and opening it again) and selects it
  */
 void IIOAnalogSource::reopen_pin(void)
 {
     char buf[100];
 
-    if (_pin_fd != -1) {
-        close(_pin_fd);
+    if (fd_analog_sources[_pin] != -1) {
+        close(fd_analog_sources[_pin]);
+        fd_analog_sources[_pin] = -1;
         _pin_fd = -1;
     }
 
@@ -82,10 +83,11 @@ void IIOAnalogSource::reopen_pin(void)
     strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
     strncat(buf, IIOAnalogSource::analog_sources[_pin], sizeof(buf));
     
-    _pin_fd = open(buf, O_RDONLY | O_NONBLOCK);
-    if (_pin_fd == -1) {
+    fd_analog_sources[_pin] = open(buf, O_RDONLY | O_NONBLOCK);
+    if (fd_analog_sources[_pin] == -1) {
         ::printf("Failed to open analog pin %s\n", buf);
-    }    
+    }
+    _pin_fd = fd_analog_sources[_pin];
 }
 
 float IIOAnalogSource::read_average() 
@@ -118,7 +120,7 @@ float IIOAnalogSource::read_latest()
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     _latest = atoi(sbuf) * BBB_VOLTAGE_SCALING;
 #else    
-    _latest = atoi(sbuf)
+    _latest = atoi(sbuf);
 #endif
     _sum_value += _latest;
     _sum_count++;
