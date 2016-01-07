@@ -1,6 +1,6 @@
 
-#ifndef __AP_HAL_PXF_ANALOGIN_H__
-#define __AP_HAL_PXF_ANALOGIN_H__
+#ifndef __AP_HAL_IIO_ANALOGIN_H__
+#define __AP_HAL_IIO_ANALOGIN_H__
 
 #include "AP_HAL_Linux.h"
 #include <AP_ADC/AP_ADC.h>
@@ -12,16 +12,20 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-
-#define PXF_ANALOG_IN_COUNT 8
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF 
+#define IIO_ANALOG_IN_COUNT 8
 // Note that echo BB-ADC cape should be loaded
-#define PXF_ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
+#define IIO_ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
 #define BBB_VOLTAGE_SCALING 0.00142602816
+#else
+#define IIO_ANALOG_IN_COUNT 8
+#define IIO_ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
+#endif
 
-class PXFAnalogSource : public AP_HAL::AnalogSource {
+class IIOAnalogSource : public AP_HAL::AnalogSource {
 public:
-    friend class PXFAnalogIn;
-    PXFAnalogSource(int16_t pin, float v);
+    friend class IIOAnalogIn;
+    IIOAnalogSource(int16_t pin, float v);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -41,12 +45,12 @@ private:
 
     void reopen_pin(void);
 
-    static const char *analog_sources[PXF_ANALOG_IN_COUNT];
+    static const char *analog_sources[IIO_ANALOG_IN_COUNT];
 };
 
-class PXFAnalogIn : public AP_HAL::AnalogIn {
+class IIOAnalogIn : public AP_HAL::AnalogIn {
 public:
-    PXFAnalogIn();
+    IIOAnalogIn();
     void init();
     AP_HAL::AnalogSource* channel(int16_t n);
 
@@ -54,4 +58,4 @@ public:
     float board_voltage(void) { return 0.0f; }
 
 };
-#endif // __AP_HAL_PXF_ANALOGIN_H__
+#endif // __AP_HAL_IIO_ANALOGIN_H__

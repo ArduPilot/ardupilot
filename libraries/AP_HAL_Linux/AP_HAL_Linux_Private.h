@@ -14,7 +14,7 @@
 #include "AnalogIn.h"
 #include "AnalogIn_ADS1115.h"
 #include "RaspilotAnalogIn.h"
-#include "AnalogIn_PXF.h"
+#include "AnalogIn_IIO.h"
 #include "Storage.h"
 #include "GPIO.h"
 #include "RCInput.h"
