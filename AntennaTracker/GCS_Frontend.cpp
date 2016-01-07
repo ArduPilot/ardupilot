@@ -6,15 +6,15 @@ void GCS_Frontend_Tracker::setup_uarts(AP_SerialManager &serial_manager, void (&
 {
     GCS_Frontend::setup_uarts(serial_manager);
 
-    for (uint8_t i=0; i<num_gcs; i++) {
-        gcs[i].set_snoop(mavlink_snoop);
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        gcs(i).set_snoop(mavlink_snoop);
     }
 }
 
 void GCS_Frontend_Tracker::request_data_streams(const uint8_t sysid, const uint8_t compid)
 {
-    for (uint8_t i=0; i < num_gcs; i++) {
-        if (gcs[i].initialised) {
+    for (uint8_t i=0; i < num_gcs(); i++) {
+        if (gcs(i).initialised) {
             // request position
             if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_DATA_STREAM_LEN) {
                 mavlink_msg_request_data_stream_send(
