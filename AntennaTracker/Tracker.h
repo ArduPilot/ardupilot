@@ -80,8 +80,7 @@
 
 class Tracker : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
-    friend class Parameters;
+    friend class GCS_Backend_Tracker;
 
     Tracker(void);
 

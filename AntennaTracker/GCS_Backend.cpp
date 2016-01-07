@@ -1,6 +1,318 @@
 #include "Tracker.h" // for access to tracker global
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_Backend_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
+{
+    // do nothing
+}
+
+void GCS_Backend_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&)
+{
+    // do nothing
+}
+
+// try to send a message, return false if it won't fit in the serial tx buffer
+bool GCS_Backend_Tracker::try_send_message(enum ap_message id)
+{
+    switch (id) {
+    case MSG_HEARTBEAT:
+        CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        last_heartbeat_time = AP_HAL::millis();
+        tracker.send_heartbeat(chan);
+        return true;
+
+    case MSG_ATTITUDE:
+        CHECK_PAYLOAD_SIZE(ATTITUDE);
+        tracker.send_attitude(chan);
+        break;
+
+    case MSG_LOCATION:
+        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
+        tracker.send_location(chan);
+        break;
+
+    case MSG_LOCAL_POSITION:
+        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
+        send_local_position(tracker.ahrs);
+        break;
+
+    case MSG_NAV_CONTROLLER_OUTPUT:
+        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
+        tracker.send_nav_controller_output(chan);
+        break;
+
+    case MSG_GPS_RAW:
+        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
+        send_gps_raw(tracker.gps);
+        break;
+
+    case MSG_RADIO_IN:
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
+        send_radio_in(0);
+        break;
+
+    case MSG_RADIO_OUT:
+        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
+        tracker.send_radio_out(chan);
+        break;
+
+    case MSG_RAW_IMU1:
+        CHECK_PAYLOAD_SIZE(RAW_IMU);
+        send_raw_imu(tracker.ins, tracker.compass);
+        break;
+
+    case MSG_RAW_IMU2:
+        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
+        send_scaled_pressure(tracker.barometer);
+        break;
+
+    case MSG_RAW_IMU3:
+        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
+        send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
+        break;
+
+    case MSG_NEXT_PARAM:
+        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
+        queued_param_send();
+        break;
+
+    case MSG_NEXT_WAYPOINT:
+        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+        queued_waypoint_send();
+        break;
+
+    case MSG_STATUSTEXT:
+        CHECK_PAYLOAD_SIZE(STATUSTEXT);
+        tracker.gcs_frontend.send_statustext(chan);
+        break;
+
+    case MSG_AHRS:
+        CHECK_PAYLOAD_SIZE(AHRS);
+        send_ahrs(tracker.ahrs);
+        break;
+
+    case MSG_SIMSTATE:
+        CHECK_PAYLOAD_SIZE(SIMSTATE);
+        tracker.send_simstate(chan);
+        break;
+
+    case MSG_HWSTATUS:
+        CHECK_PAYLOAD_SIZE(HWSTATUS);
+        tracker.send_hwstatus(chan);
+        break;
+    case MSG_MAG_CAL_PROGRESS:
+        CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
+        tracker.compass.send_mag_cal_progress(chan);
+        break;
+
+    case MSG_MAG_CAL_REPORT:
+        CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
+        tracker.compass.send_mag_cal_report(chan);
+        break;
+
+    case MSG_SERVO_OUT:
+    case MSG_EXTENDED_STATUS1:
+    case MSG_EXTENDED_STATUS2:
+    case MSG_RETRY_DEFERRED:
+    case MSG_CURRENT_WAYPOINT:
+    case MSG_VFR_HUD:
+    case MSG_SYSTEM_TIME:
+    case MSG_LIMITS_STATUS:
+    case MSG_FENCE_STATUS:
+    case MSG_WIND:
+    case MSG_RANGEFINDER:
+    case MSG_TERRAIN:
+    case MSG_BATTERY2:
+    case MSG_CAMERA_FEEDBACK:
+    case MSG_MOUNT_STATUS:
+    case MSG_OPTICAL_FLOW:
+    case MSG_GIMBAL_REPORT:
+    case MSG_EKF_STATUS_REPORT:
+    case MSG_PID_TUNING:
+    case MSG_VIBRATION:
+    case MSG_RPM:
+    case MSG_MISSION_ITEM_REACHED:
+        break; // just here to prevent a warning
+    }
+    return true;
+}
+
+
+/*
+  default stream rates to 1Hz
+ */
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
+    // @Param: RAW_SENS
+    // @DisplayName: Raw sensor stream rate
+    // @Description: Raw sensor stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  1),
+
+    // @Param: EXT_STAT
+    // @DisplayName: Extended status stream rate to ground station
+    // @Description: Extended status stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  1),
+
+    // @Param: RC_CHAN
+    // @DisplayName: RC Channel stream rate to ground station
+    // @Description: RC Channel stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  1),
+
+    // @Param: RAW_CTRL
+    // @DisplayName: Raw Control stream rate to ground station
+    // @Description: Raw Control stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  1),
+
+    // @Param: POSITION
+    // @DisplayName: Position stream rate to ground station
+    // @Description: Position stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  1),
+
+    // @Param: EXTRA1
+    // @DisplayName: Extra data type 1 stream rate to ground station
+    // @Description: Extra data type 1 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  1),
+
+    // @Param: EXTRA2
+    // @DisplayName: Extra data type 2 stream rate to ground station
+    // @Description: Extra data type 2 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  1),
+
+    // @Param: EXTRA3
+    // @DisplayName: Extra data type 3 stream rate to ground station
+    // @Description: Extra data type 3 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  1),
+
+    // @Param: PARAMS
+    // @DisplayName: Parameter stream rate to ground station
+    // @Description: Parameter stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  10),
+    AP_GROUPEND
+};
+
+// see if we should send a stream now. Called at 50Hz
+bool GCS_Backend_Tracker::stream_trigger(enum streams stream_num)
+{
+    if (stream_num >= NUM_STREAMS) {
+        return false;
+    }
+    float rate = (uint8_t)streamRate(stream_num).get();
+
+    // send at a much lower rate during parameter sends
+    if (queued_parameter() != NULL) {
+        rate *= 0.25f;
+    }
+
+    if (rate <= 0) {
+        return false;
+    }
+
+    if (stream_ticks[stream_num] == 0) {
+        // we're triggering now, setup the next trigger point
+        if (rate > 50) {
+            rate = 50;
+        }
+        stream_ticks[stream_num] = (50 / rate) -1 + stream_slowdown;
+        return true;
+    }
+
+    // count down at 50Hz
+    stream_ticks[stream_num]--;
+    return false;
+}
+
+void
+GCS_Backend_Tracker::data_stream_send(void)
+{
+    if (queued_parameter() != NULL) {
+        if (streamRate(STREAM_PARAMS).get() <= 0) {
+            streamRate(STREAM_PARAMS).set(10);
+        }
+        if (stream_trigger(STREAM_PARAMS)) {
+            send_message(MSG_NEXT_PARAM);
+        }
+    }
+
+    if (tracker.in_mavlink_delay) {
+        // don't send any other stream types while in the delay callback
+        return;
+    }
+
+    if (stream_trigger(STREAM_RAW_SENSORS)) {
+        send_message(MSG_RAW_IMU1);
+        send_message(MSG_RAW_IMU2);
+        send_message(MSG_RAW_IMU3);
+    }
+
+    if (stream_trigger(STREAM_EXTENDED_STATUS)) {
+        send_message(MSG_EXTENDED_STATUS1);
+        send_message(MSG_EXTENDED_STATUS2);
+        send_message(MSG_NAV_CONTROLLER_OUTPUT);
+        send_message(MSG_GPS_RAW);
+    }
+
+    if (stream_trigger(STREAM_POSITION)) {
+        send_message(MSG_LOCATION);
+        send_message(MSG_LOCAL_POSITION);
+    }
+
+    if (stream_trigger(STREAM_RAW_CONTROLLER)) {
+        send_message(MSG_SERVO_OUT);
+    }
+
+    if (stream_trigger(STREAM_RC_CHANNELS)) {
+        send_message(MSG_RADIO_IN);
+        send_message(MSG_RADIO_OUT);
+    }
+
+    if (stream_trigger(STREAM_EXTRA1)) {
+        send_message(MSG_ATTITUDE);
+    }
+
+    if (stream_trigger(STREAM_EXTRA3)) {
+        send_message(MSG_AHRS);
+        send_message(MSG_HWSTATUS);
+        send_message(MSG_SIMSTATE);
+        send_message(MSG_MAG_CAL_REPORT);
+        send_message(MSG_MAG_CAL_PROGRESS);
+    }
+}
+
+void GCS_Backend_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
@@ -191,11 +503,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (packet.start_index == 0)
         {
             // New home at wp index 0. Ask for it
-            waypoint_receiving = true;
-            waypoint_request_i = 0;
-            waypoint_request_last = 0;
+            set_waypoint_receiving(true);
+            set_waypoint_request_i(0);
+            set_waypoint_request_last(0);
             send_message(MSG_NEXT_WAYPOINT);
-            waypoint_receiving = true;
+            set_waypoint_receiving(true);
         }
         break;
     }
@@ -264,7 +576,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (result != MAV_MISSION_ACCEPTED) goto mission_failed;
 
         // Check if receiving waypoints (mission upload expected)
-        if (!waypoint_receiving) {
+        if (!waypoint_receiving()) {
             result = MAV_MISSION_ERROR;
             goto mission_failed;
         }
@@ -273,7 +585,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (packet.seq == 0) {
             tracker.set_home(tell_command); // New home in EEPROM
             send_text(MAV_SEVERITY_INFO,"New HOME received");
-            waypoint_receiving = false;
+            set_waypoint_receiving(false);
         }
 
 mission_failed:
