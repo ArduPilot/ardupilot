@@ -30,7 +30,8 @@ IIOAnalogSource::IIOAnalogSource(int16_t pin, float initial_value) :
     _sum_count(0),
     _pin_fd(-1)
 {
-    reopen_pin();
+    init_pins();
+    select_pin();    
 }
 
 void IIOAnalogSource::init_pins(void)
@@ -48,6 +49,17 @@ void IIOAnalogSource::init_pins(void)
     }
 }
 
+/*
+  selects a diferent file descriptor among in the fd_analog_sources array
+ */
+void IIOAnalogSource::select_pin(void)
+{
+    _pin_fd = fd_analog_sources[_pin];
+}
+
+/*
+  reopens an analog source (by closing and opening it again)
+ */
 void IIOAnalogSource::reopen_pin(void)
 {
     char buf[100];
@@ -139,7 +151,7 @@ void IIOAnalogSource::set_pin(uint8_t pin)
     _sum_count = 0;
     _latest = 0;
     _value = 0;    
-    reopen_pin();
+    select_pin();
     // _value_ratiometric = 0;
     hal.scheduler->resume_timer_procs();
 }

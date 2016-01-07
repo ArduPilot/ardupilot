@@ -42,12 +42,13 @@ private:
     uint8_t     _sum_count;
     int16_t     _pin;
     int         _pin_fd;    
+    int         fd_analog_sources[IIO_ANALOG_IN_COUNT];
 
     void reopen_pin(void);
     void init_pins(void);
+    void select_pin(void);
 
     static const char *analog_sources[IIO_ANALOG_IN_COUNT];
-    static int fd_analog_sources[IIO_ANALOG_IN_COUNT];
 };
 
 class IIOAnalogIn : public AP_HAL::AnalogIn {
