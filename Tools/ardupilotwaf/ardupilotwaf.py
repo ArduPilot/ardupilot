@@ -85,6 +85,8 @@ def program(bld, **kw):
     name = bld.path.name
     kw['defines'].extend(_get_legacy_defines(name))
 
+    kw['features'] = common_features(bld) + kw.get('features', [])
+
     target = bld.bldnode.make_node(name + '.' + bld.env.BOARD)
     bld.program(
         target=target,
@@ -102,6 +104,12 @@ def _get_next_idx():
     global LAST_IDX
     LAST_IDX += 1
     return LAST_IDX
+
+def common_features(bld):
+    features = []
+    if bld.env.STATIC_LINKING:
+        features.append('static_linking')
+    return features
 
 def vehicle_stlib(bld, **kw):
     if 'name' not in kw:
@@ -135,9 +143,9 @@ def find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
         return
 
-    features = ''
+    features = common_features(bld)
     if bld.cmd == 'check':
-        features='test'
+        features.append('test')
 
     use = Utils.to_list(use)
     use.append('GTEST')
@@ -163,7 +171,7 @@ def find_benchmarks(bld, use=[]):
     for f in bld.path.ant_glob(incl='*.cpp'):
         target = f.change_ext('.' + bld.env.BOARD)
         bld.program(
-            features=['gbenchmark'],
+            features=common_features(bld) + ['gbenchmark'],
             target=target,
             includes=includes,
             source=[f],
