@@ -87,7 +87,8 @@ def program(bld, **kw):
     name = bld.path.name
     kw['defines'].extend(_get_legacy_defines(name))
 
-    target = bld.bldnode.make_node(name + '.' + bld.env.BOARD)
+    target = bld.bldnode.make_node(bld.path.path_from(bld.srcnode))
+    target = target.make_node(name + '.' + bld.env.BOARD)
     bld.program(
         target=target,
         name=name,
