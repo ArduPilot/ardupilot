@@ -240,6 +240,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: User
     GSCALAR(level_roll_limit,              "LEVEL_ROLL_LIMIT",   5),
 
+    // @Param: LAND_SLOPE_RCALC
+    // @DisplayName: Landing slope re-calc threshold
+    // @Description: This parameter is used when using a rangefinder during landing for altitude correction from baro drift (RNGFND_LANDING=1) and the altitude correction indicates your altitude is lower than the intended slope path. This value is the threshold of the correction to re-calculate the landing approach slope. Set to zero to keep the original slope all the way down and any detected baro drift will be corrected by pitching/throttling up to snap back to resume the original slope path. Otherwise, when a rangefinder altitude correction exceeds this threshold it will trigger a slope re-calculate to give a shallower slope. This also smoothes out the approach when flying over objects such as trees. Recommend a value of 2m.
+    // @Range: 0 5
+    // @Units: meters
+    // @Increment: 0.5
+    // @User: Advanced
+    GSCALAR(land_slope_recalc_shallow_threshold,          "LAND_SLOPE_RCALC",  2.0f),
+
     // @Param: LAND_PITCH_CD
     // @DisplayName: Landing Pitch
     // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
