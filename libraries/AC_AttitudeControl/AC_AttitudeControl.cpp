@@ -57,6 +57,13 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_P_MAX", 7, AC_AttitudeControl, _accel_pitch_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
 
+    // @Param: ANGLE_BOOST
+    // @DisplayName: Angle Boost
+    // @Description: Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("ANGLE_BOOST", 12, AC_AttitudeControl, _angle_boost_enabled, 1),
+
     AP_GROUPEND
 };
 
