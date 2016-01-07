@@ -110,7 +110,7 @@ void AP_AHRS_NavEKF::update_EKF1(void)
             start_time_ms = AP_HAL::millis();
         }
         // slight extra delay on EKF1 to prioritise EKF2 for memory
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms + 100) {
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms + 100U) {
             ekf1_started = EKF1.InitialiseFilterDynamic();
         }
     }
