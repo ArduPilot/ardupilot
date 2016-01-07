@@ -15,8 +15,8 @@ GCS_Frontend_Plane::GCS_Frontend_Plane(DataFlash_Class &DataFlash, Parameters &g
  */
 void GCS_Frontend_Plane::send_airspeed_calibration(const Vector3f &vg)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (gcs(i).initialised) {
             if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= 
                 MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
                 _airspeed.log_mavlink_send((mavlink_channel_t)i, vg);
