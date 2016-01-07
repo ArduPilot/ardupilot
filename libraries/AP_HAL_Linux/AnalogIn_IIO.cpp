@@ -33,6 +33,21 @@ IIOAnalogSource::IIOAnalogSource(int16_t pin, float initial_value) :
     reopen_pin();
 }
 
+void IIOAnalogSource::init_pins(void)
+{
+    char buf[100];
+    for (int i=0; i < IIO_ANALOG_IN_COUNT; i++) {
+        // Construct the path by appending strings
+        strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
+        strncat(buf, IIOAnalogSource::analog_sources[i], sizeof(buf));
+     
+        fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK);
+        if (fd_analog_sources[i] == -1) {
+            ::printf("Failed to open analog pin %s\n", buf);
+        }    
+    }
+}
+
 void IIOAnalogSource::reopen_pin(void)
 {
     char buf[100];

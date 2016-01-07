@@ -44,8 +44,10 @@ private:
     int         _pin_fd;    
 
     void reopen_pin(void);
+    void init_pins(void);
 
     static const char *analog_sources[IIO_ANALOG_IN_COUNT];
+    static int fd_analog_sources[IIO_ANALOG_IN_COUNT];
 };
 
 class IIOAnalogIn : public AP_HAL::AnalogIn {
