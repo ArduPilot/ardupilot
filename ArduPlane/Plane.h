@@ -198,6 +198,7 @@ private:
         float initial_range;
         float correction;
         float initial_correction;
+        float last_stable_correction;
         uint32_t last_correction_time_ms;
         uint8_t in_range_count;
         float height_estimate;
@@ -889,6 +890,7 @@ private:
     bool verify_land();
     void disarm_if_autoland_complete();
     void setup_landing_glide_slope(void);
+    void adjust_landing_slope_for_rangefinder_bump(void);
     bool jump_to_landing_sequence(void);
     float tecs_hgt_afe(void);
     void set_nav_controller(void);

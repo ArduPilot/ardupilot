@@ -160,7 +160,31 @@ void Plane::disarm_if_autoland_complete()
     }
 }
 
+void Plane::adjust_landing_slope_for_rangefinder_bump(void)
+{
+#if RANGEFINDER_ENABLED == ENABLED
+    // check the rangefinder correction for a large change. When found, recalculate the glide slope. This is done by
+    // determining the slope from your current location to the land point then following that back up to the approach
+    // altitude and moving the prev_wp to that location. From there
+    float correction_delta = fabsf(rangefinder_state.last_stable_correction) - fabsf(rangefinder_state.correction);
 
+    if (g.land_slope_recalc_shallow_threshold <= 0 ||
+            fabsf(correction_delta) < g.land_slope_recalc_shallow_threshold) {
+        return;
+    }
+
+    rangefinder_state.last_stable_correction = rangefinder_state.correction;
+
+    float corrected_alt_m = (adjusted_altitude_cm() - next_WP_loc.alt)*0.01f - rangefinder_state.correction;
+    float total_distance_m = get_distance(prev_WP_loc, next_WP_loc);
+    float top_of_glide_slope_alt_m = total_distance_m * corrected_alt_m / auto_state.wp_distance;
+    prev_WP_loc.alt = top_of_glide_slope_alt_m*100 + next_WP_loc.alt;
+
+    // re-calculate with updated prev_WP_loc
+    setup_landing_glide_slope();
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Slope re-calculated");
+#endif
+}
 
 /*
   a special glide slope calculation for the landing approach
