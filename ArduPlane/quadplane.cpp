@@ -388,8 +388,8 @@ bool QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    motors->Init();
     motors->set_frame_orientation(AP_MOTORS_X_FRAME);
+    motors->Init();
     motors->set_throttle_range(0, thr_min_pwm, thr_max_pwm);
     motors->set_hover_throttle(throttle_mid);
     motors->set_update_rate(rc_speed);
