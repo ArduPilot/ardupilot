@@ -98,6 +98,10 @@ def program(bld, blddestdir='bin', **kw):
         **kw
     )
 
+def example(bld, **kw):
+    kw['blddestdir'] = 'examples'
+    program(bld, **kw)
+
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
 # compilation is independent by providing different index for each.
 # The need for this should disappear when libraries change to be
