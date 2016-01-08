@@ -26,7 +26,7 @@ def build(bld):
         ],
     )
 
-    ardupilotwaf.program(
+    ardupilotwaf.sketch(
         bld,
         use=vehicle + '_libs',
     )

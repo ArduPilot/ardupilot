@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Logs, Utils
+from waflib import Logs, Node, Utils
 
 SOURCE_EXTS = [
     '*.S',
@@ -74,7 +74,7 @@ def get_all_libraries(bld):
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
     return libraries
 
-def program(bld, destdir='bin', **kw):
+def program(bld, destdir='bin', is_sketch=False, **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
     if 'defines' not in kw:
@@ -82,8 +82,16 @@ def program(bld, destdir='bin', **kw):
     if 'source' not in kw:
         kw['source'] = bld.path.ant_glob(SOURCE_EXTS)
 
-    name = bld.path.name
-    kw['defines'].extend(_get_legacy_defines(name))
+    if is_sketch:
+        name = bld.path.name
+        kw['defines'].extend(_get_legacy_defines(name))
+    elif 'name' not in kw:
+        s = kw['source'][0]
+        if not isinstance(s, Node.Node):
+            s = bld.path.make_node(s)
+        name = s.change_ext('').name
+    else:
+        name = kw['name']
 
     target = bld.bldnode.find_or_declare(destdir + '/' +
                                          name + '.' + bld.env.BOARD)
@@ -93,9 +101,13 @@ def program(bld, destdir='bin', **kw):
         **kw
     )
 
+def sketch(bld, **kw):
+    kw['is_sketch'] = True
+    program(bld, **kw)
+
 def example(bld, **kw):
     kw['destdir'] = 'examples'
-    program(bld, **kw)
+    sketch(bld, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
 # compilation is independent by providing different index for each.
