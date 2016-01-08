@@ -57,4 +57,9 @@ void Copter::stabilize_run()
 
     // output pilot's throttle
     attitude_control.set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
+
+    //control_in is range 0-1000
+    //radio_in is raw pwm value
+    motors.set_forward(channel_forward->radio_in);
+    motors.set_strafe(channel_strafe->radio_in);
 }
