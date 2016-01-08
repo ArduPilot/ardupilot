@@ -32,15 +32,22 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+// declare functions
+void setup();
+void loop();
+void motor_order_test();
+void stability_test();
+void update_motors();
+
 RC_Channel rc1(0), rc2(1), rc3(2), rc4(3);
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri	motors(rc1, rc2, rc3, rc4, 400);
-AP_MotorsQuad   motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsHexa	motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsY6	motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsOcta	motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsOctaQuad	motors(rc1, rc2, rc3, rc4, 400);
+//AP_MotorsTri  motors(400);
+AP_MotorsQuad   motors(400);
+//AP_MotorsHexa motors(400);
+//AP_MotorsY6   motors(400);
+//AP_MotorsOcta motors(400);
+//AP_MotorsOctaQuad	motors(400);
 //AP_MotorsHeli	motors(rc1, rc2, rc3, rc4, 400);
 
 
@@ -51,11 +58,12 @@ void setup()
 
     // motor initialisation
     motors.set_update_rate(490);
-    // motors.set_frame_orientation(AP_MOTORS_X_FRAME);
-    motors.set_frame_orientation(AP_MOTORS_PLUS_FRAME);
-    motors.set_min_throttle(130);
+    motors.set_frame_orientation(AP_MOTORS_X_FRAME);
+    motors.Init();
+    motors.set_throttle_range(130,1000,2000);
     motors.set_hover_throttle(500);
-    motors.Init();      // initialise motors
+    motors.enable();
+    motors.output_min();
 
     // setup radio
     if (rc3.radio_min == 0) {
@@ -71,9 +79,6 @@ void setup()
     rc2.set_angle(4500);
     rc3.set_range(130, 1000);
     rc4.set_angle(4500);
-
-    motors.enable();
-    motors.output_min();
 
     hal.scheduler->delay(1000);
 }
@@ -123,7 +128,7 @@ void motor_order_test()
 // stability_test
 void stability_test()
 {
-    int16_t value, roll_in, pitch_in, yaw_in, throttle_in, throttle_radio_in, avg_out;
+    int16_t roll_in, pitch_in, yaw_in, throttle_in, avg_out;
 
     int16_t testing_array[][4] = {
         //  roll,   pitch,  yaw,    throttle
@@ -166,9 +171,11 @@ void stability_test()
 
     // arm motors
     motors.armed(true);
+    motors.set_interlock(true);
+    motors.set_stabilizing(true);
 
     // run stability test
-    for (int16_t i=0; i < testing_array_rows; i++) {
+    for (uint16_t i=0; i<testing_array_rows; i++) {
         roll_in = testing_array[i][0];
         pitch_in = testing_array[i][1];
         yaw_in = testing_array[i][2];
@@ -177,13 +184,12 @@ void stability_test()
         motors.set_roll(pitch_in);
         motors.set_yaw(yaw_in);
         motors.set_throttle(throttle_in);
-        motors.output();
+        update_motors();
         // calc average output
-        throttle_radio_in = rc3.radio_out;
         avg_out = ((hal.rcout->read(0) + hal.rcout->read(1) + hal.rcout->read(2) + hal.rcout->read(3))/4);
 
         // display input and output
-        hal.console->printf("R:%5d \tP:%5d \tY:%5d \tT:%5d\tMOT1:%5d \tMOT2:%5d \tMOT3:%5d \tMOT4:%5d \t ThrIn/AvgOut:%5d/%5d\n",
+        hal.console->printf("R:%5d \tP:%5d \tY:%5d \tT:%5d\tMOT1:%5d \tMOT2:%5d \tMOT3:%5d \tMOT4:%5d \t AvgOut:%5d\n",
                 (int)roll_in,
                 (int)pitch_in,
                 (int)yaw_in,
@@ -192,7 +198,6 @@ void stability_test()
                 (int)hal.rcout->read(1),
                 (int)hal.rcout->read(2),
                 (int)hal.rcout->read(3),
-                (int)throttle_radio_in,
                 (int)avg_out);
     }
     // set all inputs to motor library to zero and disarm motors
@@ -203,6 +208,14 @@ void stability_test()
     motors.armed(false);
 
     hal.console->println("finished test.");
+}
+
+void update_motors()
+{
+    // call update motors 1000 times to get any ramp limiting completed
+    for (uint16_t i=0; i<1000; i++) {
+        motors.output();
+    }
 }
 
 AP_HAL_MAIN();
