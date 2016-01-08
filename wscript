@@ -20,21 +20,11 @@ from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallCo
 # pastable. Add the 'export waf="$PWD/waf"' trick to be copy-pastable
 # as well.
 
-# TODO: add support for unit tests.
-
 # TODO: replace defines with the use of a generated config.h file
 # this makes recompilation at least when defines change. which might
 # be sufficient.
 
 # TODO: set git version as part of build preparation.
-
-# TODO: Check if we should simply use the signed 'waf' "binary" (after
-# verifying it) instead of generating it ourselves from the sources.
-
-# TODO: evaluate if we need shortcut commands for the common targets
-# (vehicles). currently using waf --targets=NAME the target name must
-# contain the board extension so make it less convenient, maybe hook
-# to support automatic filling this extension?
 
 def init(ctx):
     env = ConfigSet.ConfigSet()
