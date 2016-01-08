@@ -950,8 +950,9 @@ void QuadPlane::control_auto(const Location &loc)
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
     pos_control->set_accel_z(pilot_accel_z);
 
-    if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
-        land_state >= QLAND_FINAL) {
+    if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_TAKEOFF ||
+        (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
+         land_state >= QLAND_FINAL)) {
         /*
           we need to use the loiter controller for final descent as
           the wpnav controller takes over the descent rate control
@@ -961,13 +962,26 @@ void QuadPlane::control_auto(const Location &loc)
     
         // run loiter controller
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+                                                                             plane.nav_pitch_cd,
+                                                                             0,
+                                                                             smoothing_gain);
     } else {
         // run wpnav controller
         wp_nav->update_wpnav();
+
+        if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND && land_state >= QLAND_DESCEND) {
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+                                                                                 plane.nav_pitch_cd,
+                                                                                 0,
+                                                                                 smoothing_gain);
+        } else {
+            // call attitude controller
+            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), wp_nav->get_yaw(), true);
+        }
     }
 
-    // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), wp_nav->get_yaw(), true);
 
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
@@ -983,7 +997,7 @@ void QuadPlane::control_auto(const Location &loc)
         }
         break;
     case MAV_CMD_NAV_VTOL_TAKEOFF:
-        pos_control->set_alt_target_with_slew(wp_nav->get_loiter_target().z, plane.ins.get_loop_delta_t());
+        pos_control->set_alt_target_from_climb_rate(100, plane.G_Dt, true);            
         break;
     default:
         pos_control->set_alt_target_from_climb_rate_ff(assist_climb_rate_cms(), plane.G_Dt, false);
@@ -1005,6 +1019,17 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
     throttle_wait = false;
 
+    // set target to current position
+    wp_nav->init_loiter_target();
+
+    // initialize vertical speed and acceleration
+    pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control->set_accel_z(pilot_accel_z);
+
+    // initialise position and desired velocity
+    pos_control->set_alt_target(inertial_nav.get_altitude());
+    pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
     return true;
@@ -1039,11 +1064,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     if (!available()) {
         return true;
     }
-    if (plane.auto_state.wp_distance > 2) {
-        return false;
-    }
-    const int32_t threshold = 30;
-    if (plane.current_loc.alt+threshold < plane.next_WP_loc.alt) {
+    if (plane.current_loc.alt < plane.next_WP_loc.alt) {
         return false;
     }
     transition_state = TRANSITION_AIRSPEED_WAIT;
