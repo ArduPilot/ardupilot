@@ -7,7 +7,7 @@ def build(bld):
     # TODO: Test code doesn't build. Fix or delete the test.
     return
 
-    ardupilotwaf.program(
+    ardupilotwaf.example(
         bld,
         use='ap',
     )
