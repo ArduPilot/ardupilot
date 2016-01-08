@@ -18,7 +18,8 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #include "VideoIn.h"
 
 #include <errno.h>
@@ -232,6 +233,32 @@ void VideoIn::prepare_capture()
     /* Queue the buffers. */
     for (i = 0; i < _nbufs; ++i) {
         _queue_buffer(i);
+    }
+}
+
+void VideoIn::crop_image_8bpp(uint8_t *buffer, uint8_t *new_buffer,
+                              uint32_t width, uint32_t left, uint32_t crop_width,
+                              uint32_t top, uint32_t crop_height)
+{
+    for (uint32_t j = top; j < top + crop_height; j++) {
+        for (uint32_t i = left; i < left + crop_width; i++) {
+            new_buffer[(i - left) + (j - top) * crop_width] = 
+                buffer[i + j * width];
+        }
+    }
+}
+
+void VideoIn::convert_from_yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size,
+                                        uint8_t *new_buffer)
+{
+    uint32_t i;
+    uint32_t new_buffer_position = 0;
+
+    for (i = 0; i < buffer_size; i++) {
+        if (i % 2 == 0) {
+            new_buffer[new_buffer_position] = buffer[i];
+            new_buffer_position++;
+        }
     }
 }
 
