@@ -7,7 +7,7 @@ def build(bld):
     if bld.env.BOARD in ['sitl']:
         return
 
-    ardupilotwaf.program(
+    ardupilotwaf.example(
         bld,
         use='ap',
     )
