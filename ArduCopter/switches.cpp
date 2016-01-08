@@ -521,17 +521,17 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_RELAY2:
-			ServoRelayEvents.do_set_relay(1, ch_flag == AUX_SWITCH_HIGH);
-			break;
+            ServoRelayEvents.do_set_relay(1, ch_flag == AUX_SWITCH_HIGH);
+            break;
 
-		case AUXSW_RELAY3:
-			ServoRelayEvents.do_set_relay(2, ch_flag == AUX_SWITCH_HIGH);
-			break;
-	   
+        case AUXSW_RELAY3:
+            ServoRelayEvents.do_set_relay(2, ch_flag == AUX_SWITCH_HIGH);
+            break;
+
 	   case AUXSW_RELAY4:
-			ServoRelayEvents.do_set_relay(3, ch_flag == AUX_SWITCH_HIGH);
-			break;
-		
+            ServoRelayEvents.do_set_relay(3, ch_flag == AUX_SWITCH_HIGH);
+            break;
+
 		case AUXSW_LANDING_GEAR:
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
