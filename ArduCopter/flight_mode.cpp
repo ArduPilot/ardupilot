@@ -22,11 +22,6 @@ bool Copter::set_mode(uint8_t mode)
         return true;
     }
 
-    // If exiting throw mode before commencing flight, restore the throttle interlock to the value last set by the switch
-    if ((mode == THROW) && (control_mode != THROW) && !throw_flight_commenced) {
-        motors.set_interlock(throw_early_exit_interlock);
-    }
-
     switch(mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME
@@ -239,6 +234,10 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
 #if MOUNT == ENABLED
         camera_mount.set_mode_to_default();
 #endif  // MOUNT == ENABLED
+    }
+
+    if (old_control_mode == THROW) {
+        throw_exit();
     }
 
     // smooth throttle transition when switching from manual to automatic flight modes

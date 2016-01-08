@@ -808,6 +808,7 @@ private:
 
     // Throw to launch functionality
     bool throw_init(bool ignore_checks);
+    void throw_exit();
     void throw_run();
     bool throw_detected();
     bool throw_attitude_good();

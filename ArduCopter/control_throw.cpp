@@ -24,6 +24,15 @@ bool Copter::throw_init(bool ignore_checks)
     }
 }
 
+// clean up when exiting throw mode
+void Copter::throw_exit()
+{
+    // If exiting throw mode before commencing flight, restore the throttle interlock to the value last set by the switch
+    if (!throw_flight_commenced) {
+        motors.set_interlock(throw_early_exit_interlock);
+    }
+}
+
 // runs the throw to start controller
 // should be called at 100hz or more
 void Copter::throw_run()
