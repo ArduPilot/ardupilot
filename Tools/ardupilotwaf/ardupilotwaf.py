@@ -74,7 +74,7 @@ def get_all_libraries(bld):
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
     return libraries
 
-def program(bld, **kw):
+def program(bld, blddestdir='bin', **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
     if 'defines' not in kw:
@@ -87,7 +87,8 @@ def program(bld, **kw):
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
-    target = bld.bldnode.make_node(name + '.' + bld.env.BOARD)
+    target = bld.bldnode.find_or_declare(blddestdir + '/' +
+                                         name + '.' + bld.env.BOARD)
     bld.program(
         target=target,
         name=name,
