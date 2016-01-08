@@ -5,7 +5,7 @@ extern mavlink_hil_state_t last_hil_state; // see GCS_Mavlink.cpp
 #endif
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_Backend_Plane::try_send_message(enum ap_message id)
 {
     if (plane.telemetry_delayed(chan)) {
         return false;
@@ -340,17 +340,17 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
 
 // see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+bool GCS_Backend_Plane::stream_trigger(enum streams stream_num)
 {
     if (stream_num >= NUM_STREAMS) {
         return false;
     }
-    float rate = (uint8_t)streamRates[stream_num].get();
+    float rate = (uint8_t)streamRate(stream_num).get();
 
     // send at a much lower rate while handling waypoints and
     // parameter sends
     if ((stream_num != STREAM_PARAMS) && 
-        (waypoint_receiving || _queued_parameter != NULL)) {
+        (waypoint_receiving() || queued_parameter() != NULL)) {
         rate *= 0.25f;
     }
 
@@ -373,7 +373,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 }
 
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_Backend_Plane::data_stream_send(void)
 {
     plane.gcs_out_of_time = false;
 
@@ -381,9 +381,9 @@ GCS_MAVLINK::data_stream_send(void)
         handle_log_send(plane.DataFlash);
     }
 
-    if (_queued_parameter != NULL) {
-        if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(10);
+    if (queued_parameter() != NULL) {
+        if (streamRate(STREAM_PARAMS).get() <= 0) {
+            streamRate(STREAM_PARAMS).set(10);
         }
         if (stream_trigger(STREAM_PARAMS)) {
             send_message(MSG_NEXT_PARAM);
@@ -494,7 +494,7 @@ GCS_MAVLINK::data_stream_send(void)
   handle a request to switch to guided mode. This happens via a
   callback from handle_mission_item()
  */
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+void GCS_Backend_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (plane.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
@@ -515,7 +515,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
   handle a request to change current WP altitude. This happens via a
   callback from handle_mission_item()
  */
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_Backend_Plane::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     plane.next_WP_loc.alt = cmd.content.location.alt;
     if (cmd.content.location.flags.relative_alt) {
@@ -526,7 +526,7 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     plane.reset_offset_altitude();
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_Backend_Plane::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
@@ -877,7 +877,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.ahrs.set_home(new_home_loc);
                 plane.home_is_set = HOME_SET_NOT_LOCKED;
                 plane.Log_Write_Home_And_Origin();
-                GCS_MAVLINK::send_home_all(new_home_loc);
+                GCS_Backend_Plane::send_home_all(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
                 _frontend->send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
@@ -1324,7 +1324,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         plane.ahrs.set_home(new_home_loc);
         plane.home_is_set = HOME_SET_NOT_LOCKED;
         plane.Log_Write_Home_And_Origin();
-        GCS_MAVLINK::send_home_all(new_home_loc);
+        GCS_Backend_Plane::send_home_all(new_home_loc);
         _frontend->send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                 (double)(new_home_loc.lat*1.0e-7f),
                                 (double)(new_home_loc.lng*1.0e-7f),

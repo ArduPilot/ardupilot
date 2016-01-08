@@ -136,11 +136,9 @@ protected:
  */
 class Plane : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
-    friend class Parameters;
-    friend class AP_Arming_Plane;
     friend class QuadPlane;
-    friend class GCS_Frontend_Plane; // for run_cli functor binding
+    friend class AP_Arming_Plane; // for access to plane.g.
+    friend class GCS_Backend_Plane; // for access to telemetry_delayed()
 
     Plane(void);
 
