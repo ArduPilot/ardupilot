@@ -86,9 +86,9 @@ def sitl(env):
         '-O3',
     ]
 
-    env.LIB += [
-        'm',
-        'pthread',
+    env.LDFLAGS += [
+        '-lm',
+        '-lpthread',
     ]
 
     env.AP_LIBRARIES += [
@@ -109,10 +109,10 @@ def linux(env):
         '-O3',
     ]
 
-    env.LIB += [
-        'm',
-        'pthread',
-        'rt',
+    env.LDFLAGS += [
+        '-lm',
+        '-lpthread',
+        '-lrt',
     ]
 
     env.AP_LIBRARIES = [
