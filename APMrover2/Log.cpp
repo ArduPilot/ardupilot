@@ -256,9 +256,10 @@ struct PACKED log_Nav_Tuning {
     uint16_t target_bearing_cd;
     uint16_t nav_bearing_cd;
     int8_t   throttle;
+    float xtrack_error;
 };
 
-// Write a navigation tuning packet. Total length : 18 bytes
+// Write a navigation tuning packet
 void Rover::Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
@@ -268,7 +269,8 @@ void Rover::Log_Write_Nav_Tuning()
         wp_distance         : wp_distance,
         target_bearing_cd   : (uint16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (uint16_t)nav_controller->nav_bearing_cd(),
-        throttle            : (int8_t)(100 * channel_throttle->norm_output())
+        throttle            : (int8_t)(100 * channel_throttle->norm_output()),
+        xtrack_error        : nav_controller->crosstrack_error()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -393,7 +395,7 @@ const LogStructure Rover::log_structure[] = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qhcchf",     "TimeUS,Steer,Roll,Pitch,ThrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "QHfHHb",     "TimeUS,Yaw,WpDist,TargBrg,NavBrg,Thr" },
+      "NTUN", "QHfHHbf",    "TimeUS,Yaw,WpDist,TargBrg,NavBrg,Thr,XT" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QfHHHbHCb",  "TimeUS,LatAcc,S1Dist,S2Dist,DCnt,TAng,TTim,Spd,Thr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
