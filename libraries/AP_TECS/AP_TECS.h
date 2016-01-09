@@ -91,7 +91,12 @@ public:
     float get_height_rate_demand(void) const {
         return _hgt_rate_dem;
     }
-    
+
+    // set path_proportion
+    void set_path_proportion(float path_proportion) {
+        _path_proportion = constrain_float(path_proportion, 0.0f, 1.0f);
+    }
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -270,6 +275,9 @@ private:
 
     // counter for demanded sink rate on land final
     uint8_t _flare_counter;
+
+    // percent traveled along the previous and next waypoints
+    float _path_proportion;
 
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);

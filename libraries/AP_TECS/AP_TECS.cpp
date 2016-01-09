@@ -669,7 +669,13 @@ void AP_TECS::_update_pitch(void)
     } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         SKE_weighting = 2.0f;
     } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
-        SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+        if (_spdWeightLand < 0) {
+            // use sliding scale from normal weight down to zero at landing
+            float scaled_weight = _spdWeight * (1.0f - _path_proportion);
+            SKE_weighting = constrain_float(scaled_weight, 0.0f, 2.0f);
+        } else {
+            SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+        }
     }
 
     float SPE_weighting = 2.0f - SKE_weighting;
