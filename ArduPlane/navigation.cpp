@@ -64,6 +64,7 @@ void Plane::navigate()
     auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
+    SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
 
     // update total loiter angle
     loiter_angle_update();
