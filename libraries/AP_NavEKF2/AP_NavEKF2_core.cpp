@@ -513,7 +513,12 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     stateStruct.velocity += delVelNav;
 
     // apply a trapezoidal integration to velocities to calculate position
-    stateStruct.position += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
+    // if we are not doing aiding, then the horizontal position states are not predicted
+    if (PV_AidingMode != AID_NONE) {
+        stateStruct.position += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
+    } else {
+        stateStruct.position.z += (stateStruct.velocity.z + lastVelocity.z) * (imuDataDelayed.delVelDT*0.5f);
+    }
 
     // accumulate the bias delta angle and time since last reset by an OF measurement arrival
     delAngBodyOF += imuDataDelayed.delAng - stateStruct.gyro_bias;
@@ -1114,6 +1119,14 @@ void NavEKF2_core::CovariancePrediction()
     for (uint8_t i=0; i<=stateIndexLim; i++)
     {
         nextP[i][i] = nextP[i][i] + processNoise[i];
+    }
+
+    // If we are not using the position states, keep their covariances at the initialisation values
+    if (PV_AidingMode == AID_NONE) {
+        zeroRows(P,6,7);
+        zeroCols(P,6,7);
+        P[6][6]   = sq(frontend->_gpsHorizPosNoise);
+        P[7][7]   = P[6][6];
     }
 
     // if the total position variance exceeds 1e4 (100m), then stop covariance
