@@ -142,7 +142,7 @@ parser.add_option("-j", default=1, type='int', help='build CPUs')
 
 opts, args = parser.parse_args()
 
-import  arducopter, arduplane, apmrover2
+import  arducopter, arduplane, apmrover2, quadplane
 
 steps = [
     'prerequisites',
@@ -155,6 +155,7 @@ steps = [
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
+    'fly.QuadPlane',
 
     'build.APMrover2',
     'defaults.APMrover2',
@@ -231,6 +232,9 @@ def run_step(step):
 
     if step == 'fly.ArduPlane':
         return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map)
+
+    if step == 'fly.QuadPlane':
+        return quadplane.fly_QuadPlane(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'drive.APMrover2':
         return apmrover2.drive_APMrover2(viewerip=opts.viewerip, map=opts.map)
