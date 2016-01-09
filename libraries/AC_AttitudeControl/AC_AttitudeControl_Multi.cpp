@@ -16,6 +16,10 @@ float AC_AttitudeControl_Multi::get_althold_lean_angle_max() const
 // throttle value should be 0 ~ 1000
 float AC_AttitudeControl_Multi::get_boosted_throttle(float throttle_in)
 {
+    if (!_angle_boost_enabled) {
+        _angle_boost = 0;
+        return throttle_in;
+    }
     // inverted_factor is 1 for tilt angles below 60 degrees
     // reduces as a function of angle beyond 60 degrees
     // becomes zero at 90 degrees

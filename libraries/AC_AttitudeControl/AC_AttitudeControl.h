@@ -293,6 +293,9 @@ protected:
     // Enable/Disable body frame rate feed forward
     AP_Int8             _rate_bf_ff_enabled;
 
+    // Enable/Disable angle boost
+    AP_Int8             _angle_boost_enabled;
+
     // Intersampling period in seconds
     float               _dt;
 

@@ -49,7 +49,7 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
 		mask |= 1U << i;
         }
     }
-    hal.rcout->set_freq( mask, _speed_hz );
+    rc_set_freq( mask, _speed_hz );
 }
 
 // set frame orientation (normally + or X)
@@ -78,7 +78,7 @@ void AP_MotorsMatrix::enable()
     // enable output channels
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->enable_ch(i);
+            rc_enable_ch(i);
         }
     }
 }
@@ -114,7 +114,7 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
             mask |= 1U << i;
         }
     }
-    return mask;
+    return rc_map_mask(mask);
 }
 
 void AP_MotorsMatrix::output_armed_not_stabilizing()
@@ -415,8 +415,15 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         // set order that motor appears in test
         _test_order[motor_num] = testing_order;
 
-        // disable this channel from being used by RC_Channel_aux
-        RC_Channel_aux::disable_aux_channel(motor_num);
+        uint8_t chan;
+        if (RC_Channel_aux::find_channel((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+motor_num),
+                                         chan)) {
+            _motor_map[motor_num] = chan;
+            _motor_map_mask |= 1U<<motor_num;
+        } else {
+            // disable this channel from being used by RC_Channel_aux
+            RC_Channel_aux::disable_aux_channel(motor_num);
+        }
     }
 }
 

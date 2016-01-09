@@ -69,6 +69,7 @@ void AP_BattMonitor_SMBus_PX4::read()
             _state.last_time_micros = AP_HAL::micros();
             _state.current_total_mah = batt_status.discharged_mah;
             _state.healthy = true;
+            _state.is_powering_off = batt_status.is_powering_off;
 
             // read capacity
             if ((_batt_fd >= 0) && !_capacity_updated) {

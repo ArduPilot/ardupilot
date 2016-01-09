@@ -492,6 +492,18 @@
  # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
 #endif
 
+#ifndef RTL_ABS_MIN_CLIMB
+ # define RTL_ABS_MIN_CLIMB         250     // absolute minimum initial climb
+#endif
+
+#ifndef RTL_CONE_SLOPE
+ # define RTL_CONE_SLOPE            3.0f    // slope of RTL cone (height / distance). 0 = No cone
+#endif
+
+#ifndef RTL_MIN_CONE_SLOPE
+ # define RTL_MIN_CONE_SLOPE        0.5f    // minimum slope of cone
+#endif
+
 #ifndef RTL_LOITER_TIME
  # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before begining final descent
 #endif

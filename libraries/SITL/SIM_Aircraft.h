@@ -125,6 +125,7 @@ protected:
     uint8_t instance;
     const char *autotest_dir;
     const char *frame;
+    bool use_time_sync = true;
 
     bool on_ground(const Vector3f &pos) const;
 

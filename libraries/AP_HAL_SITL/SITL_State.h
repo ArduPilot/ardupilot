@@ -31,6 +31,7 @@ class HAL_SITL;
 
 class HALSITL::SITL_State {
     friend class HALSITL::SITLScheduler;
+    friend class HALSITL::SITLUtil;
 public:
     void init(int argc, char * const argv[]);
 
@@ -213,6 +214,8 @@ private:
     
     // TCP address to connect uartC to
     const char *_client_address;
+
+    const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

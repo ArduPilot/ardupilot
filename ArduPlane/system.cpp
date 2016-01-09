@@ -196,7 +196,6 @@ void Plane::init_ardupilot()
     gps.init(&DataFlash, serial_manager);
 
     init_rc_in();               // sets up rc channels from radio
-    init_rc_out();              // sets up the timer libs
 
     relay.init();
 
@@ -233,6 +232,12 @@ void Plane::init_ardupilot()
 
     startup_ground();
 
+    quadplane.setup();
+
+    // don't initialise rc output until after quadplane is setup as
+    // that can change initial values of channels
+    init_rc_out();
+    
     // choose the nav controller
     set_nav_controller();
 
@@ -373,6 +378,9 @@ void Plane::set_mode(enum FlightMode mode)
     // new mode means new loiter
     loiter.start_time_ms = 0;
 
+    // assume non-VTOL mode
+    auto_state.vtol_mode = false;
+    
     switch(control_mode)
     {
     case INITIALISING:
@@ -396,7 +404,7 @@ void Plane::set_mode(enum FlightMode mode)
         acro_state.locked_roll = false;
         acro_state.locked_pitch = false;
         break;
-
+        
     case CRUISE:
         auto_throttle_mode = true;
         cruise_state.locked_heading = false;
@@ -417,6 +425,7 @@ void Plane::set_mode(enum FlightMode mode)
 
     case AUTO:
         auto_throttle_mode = true;
+        auto_state.vtol_mode = false;
         next_WP_loc = prev_WP_loc = current_loc;
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
@@ -442,6 +451,17 @@ void Plane::set_mode(enum FlightMode mode)
         */
         guided_WP_loc = current_loc;
         set_guided_WP();
+        break;
+
+    case QSTABILIZE:
+    case QHOVER:
+    case QLOITER:
+        if (!quadplane.init_mode()) {
+            control_mode = previous_mode;
+        } else {
+            auto_throttle_mode = false;
+            auto_state.vtol_mode = true;
+        }
         break;
     }
 
@@ -477,6 +497,9 @@ bool Plane::mavlink_set_mode(uint8_t mode)
     case AUTO:
     case RTL:
     case LOITER:
+    case QSTABILIZE:
+    case QHOVER:
+    case QLOITER:
         set_mode((enum FlightMode)mode);
         return true;
     }
@@ -730,6 +753,9 @@ void Plane::frsky_telemetry_send(void)
  */
 uint8_t Plane::throttle_percentage(void)
 {
+    if (auto_state.vtol_mode) {
+        return quadplane.throttle_percentage();
+    }
     // to get the real throttle we need to use norm_output() which
     // returns a number from -1 to 1.
     return constrain_int16(50*(channel_throttle->norm_output()+1), 0, 100);
@@ -743,6 +769,7 @@ void Plane::change_arm_state(void)
     Log_Arm_Disarm();
     hal.util->set_soft_armed(arming.is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    quadplane.set_armed(hal.util->get_soft_armed());
 }
 
 /*

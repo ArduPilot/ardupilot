@@ -1,5 +1,11 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3.3-rc1 4-Jan-2016
+Changes from 3.3.2
+1) Restrict mode changes in helicopter when rotor is not at speed
+2) add ATC_ANGLE_BOOST param to allow disabling angle boost for all flight modes
+3) add LightWare range finder support
+------------------------------------------------------------------
 Copter 3.3.2 01-Dec-2015 / 3.3.2-rc2 18-Nov-2015
 Changes from 3.3.2-rc1
 1) Bug fix for desired climb rate initialisation that could lead to drop when entering AltHold, Loiter, PosHold

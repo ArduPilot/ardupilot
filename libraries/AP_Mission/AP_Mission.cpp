@@ -709,6 +709,14 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
         cmd.content.altitude_wait.wiggle_time = packet.param3;
         break;
 
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_VTOL_LAND:
+        copy_location = true;
+        break;
+        
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1041,6 +1049,14 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param3 = cmd.content.altitude_wait.wiggle_time;
         break;
 
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        copy_location = true;
+        break;
+
+    case MAV_CMD_NAV_VTOL_LAND:
+        copy_location = true;
+        break;
+        
     default:
         // unrecognised command
         return false;

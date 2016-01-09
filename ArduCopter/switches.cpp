@@ -235,7 +235,6 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_MISSION_RESET:
         case AUXSW_ATTCON_FEEDFWD:
         case AUXSW_ATTCON_ACCEL_LIM:
-        case AUXSW_RELAY:
         case AUXSW_LANDING_GEAR:
         case AUXSW_MOTOR_ESTOP:
         case AUXSW_MOTOR_INTERLOCK:
@@ -521,7 +520,19 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
             break;
 
-        case AUXSW_LANDING_GEAR:
+        case AUXSW_RELAY2:
+            ServoRelayEvents.do_set_relay(1, ch_flag == AUX_SWITCH_HIGH);
+            break;
+
+        case AUXSW_RELAY3:
+            ServoRelayEvents.do_set_relay(2, ch_flag == AUX_SWITCH_HIGH);
+            break;
+
+	   case AUXSW_RELAY4:
+            ServoRelayEvents.do_set_relay(3, ch_flag == AUX_SWITCH_HIGH);
+            break;
+
+		case AUXSW_LANDING_GEAR:
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
                     landinggear.set_cmd_mode(LandingGear_Deploy);

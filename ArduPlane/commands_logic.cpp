@@ -82,6 +82,14 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_altitude_wait(cmd);
         break;
 
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        crash_state.is_crashed = false;
+        return quadplane.do_vtol_takeoff(cmd);
+
+    case MAV_CMD_NAV_VTOL_LAND:
+        crash_state.is_crashed = false;
+        return quadplane.do_vtol_land(cmd);
+        
     // Conditional commands
 
     case MAV_CMD_CONDITION_DELAY:
@@ -272,6 +280,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         break;
 #endif
 
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        return quadplane.verify_vtol_takeoff(cmd);
+
+    case MAV_CMD_NAV_VTOL_LAND:
+        return quadplane.verify_vtol_land(cmd);
+        
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:

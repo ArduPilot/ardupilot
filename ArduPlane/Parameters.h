@@ -276,6 +276,7 @@ public:
         k_param_kff_pitch_to_throttle, // unused
         k_param_kff_throttle_to_pitch,
         k_param_scaling_speed,
+        k_param_quadplane,
 
         //
         // 210: flight modes

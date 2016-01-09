@@ -417,4 +417,8 @@
 #define HAL_OS_POSIX_IO 0
 #endif
 
+#ifndef HAL_PARAM_DEFAULTS_PATH
+#define HAL_PARAM_DEFAULTS_PATH NULL
+#endif
+
 #endif // __AP_HAL_BOARDS_H__

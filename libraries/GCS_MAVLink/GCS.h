@@ -212,12 +212,6 @@ private:
     ///
     /// @return         The number of reportable parameters.
     ///
-    static uint16_t             _count_parameters(); ///< count reportable
-                                                     // parameters
-
-    static uint16_t             _parameter_count;   ///< cache of reportable
-                                                    // parameters
-
     mavlink_channel_t           chan;
     uint16_t                    packet_drops;
 

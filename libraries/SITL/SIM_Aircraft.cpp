@@ -133,7 +133,9 @@ void Aircraft::update_position(void)
         time_now_us += frame_time_us;
     }
     last_time_us = time_now_us;
-    sync_frame_time();
+    if (use_time_sync) {
+        sync_frame_time();
+    }
 }
 
 /*

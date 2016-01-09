@@ -312,10 +312,10 @@ RC_Channel::update_min_max()
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
+RC_Channel::pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t _trim)
 {
-    int16_t radio_trim_high = radio_trim + dead_zone;
-    int16_t radio_trim_low  = radio_trim - dead_zone;
+    int16_t radio_trim_high = _trim + dead_zone;
+    int16_t radio_trim_low  = _trim - dead_zone;
 
     // prevent div by 0
     if ((radio_trim_low - radio_min) == 0 || (radio_max - radio_trim_high) == 0)
@@ -328,6 +328,16 @@ RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
         return reverse_mul * ((int32_t)_high_in * (int32_t)(radio_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
     }else
         return 0;
+}
+
+/*
+  return an "angle in centidegrees" (normally -4500 to 4500) from
+  the current radio_in value using the specified dead_zone
+ */
+int16_t
+RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
+{
+    return pwm_to_angle_dz_trim(dead_zone, radio_trim);
 }
 
 /*

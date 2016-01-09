@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: LAND_THR
     // @DisplayName: Cruise throttle during landing approach (percentage)
-    // @Description: Use this parameter instead of LAND_ASPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If it is negative if TECS_LAND_ASPD is in use then this value is not used during landing.
+    // @Description: Use this parameter instead of LAND_ARSPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If this value is negative then it is disabled and TECS_LAND_ARSPD is used instead.
     // @Range: -1 100
     // @Increment: 0.1
     // @User: User
@@ -454,7 +454,9 @@ void AP_TECS::_update_height_demand(void)
 
 void AP_TECS::_detect_underspeed(void)
 {
-    if (((_integ5_state < _TASmin * 0.9f) &&
+    if (_flight_stage == AP_TECS::FLIGHT_VTOL) {
+        _underspeed = false;
+    } else if (((_integ5_state < _TASmin * 0.9f) &&
             (_throttle_dem >= _THRmaxf * 0.95f) &&
             _flight_stage != AP_TECS::FLIGHT_LAND_FINAL) ||
             ((_height < _hgt_dem_adj) && _underspeed))
@@ -667,7 +669,13 @@ void AP_TECS::_update_pitch(void)
     } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         SKE_weighting = 2.0f;
     } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
-        SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+        if (_spdWeightLand < 0) {
+            // use sliding scale from normal weight down to zero at landing
+            float scaled_weight = _spdWeight * (1.0f - _path_proportion);
+            SKE_weighting = constrain_float(scaled_weight, 0.0f, 2.0f);
+        } else {
+            SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+        }
     }
 
     float SPE_weighting = 2.0f - SKE_weighting;

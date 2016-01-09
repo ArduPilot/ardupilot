@@ -434,6 +434,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Fly By Wire B altitude change rate
     // @Description: This sets the rate in m/s at which FBWB and CRUISE modes will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.
     // @Range: 1 10
+    // @Units: m/s
 	// @Increment: 0.1
     // @User: Standard
     GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  2.0f),
@@ -1034,6 +1035,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
     GOBJECT(adsb,                "ADSB_", AP_ADSB),
 
+    // @Group: Q_
+    // @Path: quadplane.cpp
+    GOBJECT(quadplane,           "Q_", QuadPlane),
+    
     // RC channel
     //-----------
     // @Group: RC1_
@@ -1282,11 +1287,11 @@ void Plane::load_parameters(void)
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
         cliSerial->println("done.");
-    } else {
-        uint32_t before = micros();
-        // Load all auto-loaded EEPROM variables
-        AP_Param::load_all();
-        AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-        cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
     }
+
+    uint32_t before = micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
+    cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

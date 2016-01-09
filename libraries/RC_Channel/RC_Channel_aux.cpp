@@ -391,6 +391,9 @@ bool RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::Aux_servo_function_
     for (uint8_t i=0; i<RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->_ch_out == channel) {
             if (_aux_channels[i]->function != k_none) {
+                if (_aux_channels[i]->function == function) {
+                    return true;
+                }
                 hal.console->printf("Channel %u already assigned %u\n",
                                     (unsigned)channel,
                                     (unsigned)_aux_channels[i]->function);

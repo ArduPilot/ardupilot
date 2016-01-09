@@ -30,29 +30,13 @@
 #define RCIN_RPI_BUFFER_LENGTH   8
 #define RCIN_RPI_SAMPLE_FREQ     500
 #define RCIN_RPI_DMA_CHANNEL     0
-#define RCIN_RPI_MAX_SIZE_LINE   50
-
+#define RCIN_RPI_MAX_COUNTER     1300
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-// Same as the circle_buffer size
-// See comments in "init_ctrl_data()" to understand values "2"
-#define RCIN_RPI_MAX_COUNTER     (RCIN_RPI_BUFFER_LENGTH * PAGE_SIZE * 2)
-#define RCIN_RPI_SIG_HIGH        0
-#define RCIN_RPI_SIG_LOW         1
-// Each gpio stands for a rcinput channel,
-// the first one in RcChnGpioTbl is channel 1 in receiver
-static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
-    RPI_GPIO_5,  RPI_GPIO_6,  RPI_GPIO_12,
-    RPI_GPIO_13, RPI_GPIO_19, RPI_GPIO_20,
-    RPI_GPIO_21, RPI_GPIO_26
-};
+#define PPM_INPUT_RPI RPI_GPIO_5
 #else
-#define RCIN_RPI_MAX_COUNTER     1304
-#define RCIN_RPI_SIG_HIGH        1
-#define RCIN_RPI_SIG_LOW         0
-static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
-    RPI_GPIO_4
-};
-#endif // CONFIG_HAL_BOARD_SUBTYPE
+#define PPM_INPUT_RPI RPI_GPIO_4
+#endif
+#define RCIN_RPI_MAX_SIZE_LINE   50
 
 //Memory Addresses
 #define RCIN_RPI_RPI1_DMA_BASE 0x20007000
@@ -283,26 +267,26 @@ void RCInput_RPI::init_ctrl_data()
     phys_fifo_addr = ((pcm_base + 0x04) & 0x00FFFFFF) | 0x7e000000;  
     
     //Init dma control blocks.
-    /*We are transferring 8 bytes of GPIO register. Every 7th iteration we are
-      sampling TIMER register, which length is 8 bytes. So, for every 7 samples of GPIO we need
-      7 * 8 + 8 = 64 bytes of buffer. Value 7 was selected specially to have a 64-byte "block"
-      TIMER - GPIO. So, we have integer count of such "blocks" at one virtual page. (4096 / 64 = 64
-      "blocks" per page. As minimum, we must have 2 virtual pages of buffer (to have integer count of
-      vitual pages for control blocks): for every 7 iterations (64 bytes of buffer) we need 7 control blocks for GPIO
-      sampling, 7 control blocks for setting frequency and 1 control block for sampling timer, so,
-      we need 7 + 7 + 1 = 15 control blocks. For integer value, we need 15 pages of control blocks.
-      Each control block length is 32 bytes. In 15 pages we will have (15 * 4096 / 32) = 15 * 128 control
-      blocks. 15 * 128 control blocks = 64 * 128 bytes of buffer = 2 pages of buffer.
-      So, for 7 * 64 * 2 iteration we init DMA for sampling GPIO
-      and timer to ((7 * 8 + 8) * 64 * 2) = 8192 bytes = 2 pages of buffer.
+    /*We are transferring 1 byte of GPIO register. Every 56th iteration we are 
+      sampling TIMER register, which length is 8 bytes. So, for every 56 samples of GPIO we need 
+      56 * 1 + 8 = 64 bytes of buffer. Value 56 was selected specially to have a 64-byte "block" 
+      TIMER - GPIO. So, we have integer count of such "blocks" at one virtual page. (4096 / 64 = 64 
+      "blocks" per page. As minimum, we must have 2 virtual pages of buffer (to have integer count of 
+      vitual pages for control blocks): for every 56 iterations (64 bytes of buffer) we need 56 control blocks for GPIO
+      sampling, 56 control blocks for setting frequency and 1 control block for sampling timer, so,
+      we need 56 + 56 + 1 = 113 control blocks. For integer value, we need 113 pages of control blocks.
+      Each control block length is 32 bytes. In 113 pages we will have (113 * 4096 / 32) = 113 * 128 control
+      blocks. 113 * 128 control blocks = 64 * 128 bytes of buffer = 2 pages of buffer.
+      So, for 56 * 64 * 2 iteration we init DMA for sampling GPIO
+      and timer to (64 * 64 * 2) = 8192 bytes = 2 pages of buffer.
     */
     //    fprintf(stderr, "ERROR SEARCH1\n");
 
   uint32_t i = 0;
-  for (i = 0; i < 7 * 128 * RCIN_RPI_BUFFER_LENGTH; i++) // 7 * 128 * 8 == 7168
+  for (i = 0; i < 56 * 128 * RCIN_RPI_BUFFER_LENGTH; i++) // 8 * 56 * 128 == 57344
 	{
-      //Transfer timer every 7th sample
-      if(i % 7 == 0) {
+      //Transfer timer every 56th sample
+      if(i % 56 == 0) {
           cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
 
           init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP | RCIN_RPI_DMA_DEST_INC | RCIN_RPI_DMA_SRC_INC, RCIN_RPI_TIMER_BASE, 
@@ -316,16 +300,16 @@ void RCInput_RPI::init_ctrl_data()
           cbp += sizeof(dma_cb_t);
       } 
 
-	    // Transfer GPIO (8 byte)
+	    // Transfer GPIO (1 byte)
 	    cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
-	    init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP, RCIN_RPI_GPIO_LEV0_ADDR,
-			(uintptr_t) circle_buffer->get_page(circle_buffer->_phys_pages, dest),
-			8,
-			0,
-			(uintptr_t) con_blocks->get_page(con_blocks->_phys_pages,
+	    init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP, RCIN_RPI_GPIO_LEV0_ADDR, 
+			(uintptr_t) circle_buffer->get_page(circle_buffer->_phys_pages, dest), 
+			1, 
+			0, 
+			(uintptr_t) con_blocks->get_page(con_blocks->_phys_pages, 
 			cbp + sizeof(dma_cb_t) ) );
-
-	    dest += 8;
+	    
+	    dest += 1;
 	    cbp += sizeof(dma_cb_t);	  
 
 	    // Delay (for setting sampling frequency)
@@ -405,9 +389,15 @@ void RCInput_RPI::set_sigaction()
 
 //Initial setup of variables
 RCInput_RPI::RCInput_RPI():
+    prev_tick(0),
+    delta_time(0),
     curr_tick_inc(1000/RCIN_RPI_SAMPLE_FREQ),
     curr_pointer(0),
-    curr_channel(0)
+    curr_channel(0),
+    width_s0(0),
+    curr_signal(0),
+    last_signal(228),
+    state(RCIN_RPI_INITIAL_STATE)
 {    
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
     int version = 2;    
@@ -416,9 +406,9 @@ RCInput_RPI::RCInput_RPI():
 #endif
     set_physical_addresses(version);
 
-    //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "15"
+    //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"
     circle_buffer = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 2, version);
-    con_blocks = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 15, version);
+    con_blocks = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 113, version);
 }
 
 RCInput_RPI::~RCInput_RPI()
@@ -442,15 +432,12 @@ void RCInput_RPI::init_registers()
 
 void RCInput_RPI::init()
 {
-    uint64_t signal_states(0);
-
+    
     init_registers();
-
-    //Enable PPM or PWM input
-    for (uint32_t i = 0; i < RCIN_RPI_CHN_NUM; ++i) {
-        rc_channels[i].enable_pin = hal.gpio->channel(RcChnGpioTbl[i]);
-        rc_channels[i].enable_pin->mode(HAL_GPIO_INPUT);
-    }
+    
+    //Enable PPM input
+    enable_pin = hal.gpio->channel(PPM_INPUT_RPI);
+    enable_pin->mode(HAL_GPIO_INPUT);
 
     //Configuration
     set_sigaction();
@@ -463,17 +450,11 @@ void RCInput_RPI::init()
 
     //Reading first sample
     curr_tick = *((uint64_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
+    prev_tick = curr_tick;
     curr_pointer += 8;
-    signal_states = *((uint64_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
-    for (uint32_t i = 0; i < RCIN_RPI_CHN_NUM; ++i) {
-        rc_channels[i].prev_tick = curr_tick;
-        rc_channels[i].curr_signal = (signal_states & (1 << RcChnGpioTbl[i])) ? RCIN_RPI_SIG_HIGH
-                                                                              : RCIN_RPI_SIG_LOW;
-        rc_channels[i].last_signal = rc_channels[i].curr_signal;
-    }
-    curr_pointer += 8;
-
-    set_num_channels(RCIN_RPI_CHN_NUM);
+    curr_signal = *((uint8_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer)) & 0x10 ? 1 : 0;
+    last_signal = curr_signal;
+    curr_pointer++;
 }
 
 
@@ -482,7 +463,6 @@ void RCInput_RPI::_timer_tick()
 {
     int j;
     void* x;
-    uint64_t signal_states(0);
 
     //Now we are getting address in which DMAC is writing at current moment
     dma_cb_t* ad = (dma_cb_t*) con_blocks->get_virt_addr(dma_reg[RCIN_RPI_DMA_CONBLK_AD | RCIN_RPI_DMA_CHANNEL << 8]);
@@ -500,7 +480,7 @@ void RCInput_RPI::_timer_tick()
     }
 
     //Processing ready bytes
-    for (;counter > 0x40;) {
+    for (;counter > 0x40;counter--) {
         //Is it timer samle?
         if (curr_pointer %  (64) == 0) {
             curr_tick = *((uint64_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
@@ -508,50 +488,36 @@ void RCInput_RPI::_timer_tick()
             counter-=8;
         }
         //Reading required bit
-        signal_states = *((uint64_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
-        for (uint32_t i = 0; i < RCIN_RPI_CHN_NUM; ++i) {
-            rc_channels[i].curr_signal = (signal_states & (1 << RcChnGpioTbl[i])) ? RCIN_RPI_SIG_HIGH
-                                                                                  : RCIN_RPI_SIG_LOW;
-
-            //If the signal changed
-            if (rc_channels[i].curr_signal != rc_channels[i].last_signal) {
-                rc_channels[i].delta_time = curr_tick - rc_channels[i].prev_tick;
-                rc_channels[i].prev_tick = curr_tick;
-                switch (rc_channels[i].state) {
-                    case RCIN_RPI_INITIAL_STATE:
-                        rc_channels[i].state = RCIN_RPI_ZERO_STATE;
-                        break;
-                    case RCIN_RPI_ZERO_STATE:
-                        if (rc_channels[i].curr_signal == 0) {
-                            rc_channels[i].width_s0 = (uint16_t)rc_channels[i].delta_time;
-                            rc_channels[i].state = RCIN_RPI_ONE_STATE;
-                            break;
-                        }
-                        else {
-                            break;
-                        }
-                    case RCIN_RPI_ONE_STATE:
-                        if (rc_channels[i].curr_signal == 1) {
-                            rc_channels[i].width_s1 = (uint16_t)rc_channels[i].delta_time;
-                            rc_channels[i].state = RCIN_RPI_ZERO_STATE;
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-                            _process_rc_pulse(rc_channels[i].width_s0,
-                                              rc_channels[i].width_s1, i);
-#else
-                            _process_rc_pulse(rc_channels[i].width_s0,
-                                              rc_channels[i].width_s1);
-#endif // CONFIG_HAL_BOARD_SUBTYPE
-                            break;
-                        }
-                        else{
-                            break;
-                        }
+        curr_signal = *((uint8_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer)) & 0x10 ? 1 : 0;
+        //If the signal changed
+        if (curr_signal != last_signal) {
+            delta_time = curr_tick - prev_tick;
+            prev_tick = curr_tick;
+            switch (state) {
+            case RCIN_RPI_INITIAL_STATE:
+                state = RCIN_RPI_ZERO_STATE;
+                break;
+            case RCIN_RPI_ZERO_STATE:
+                if (curr_signal == 0) {
+                    width_s0 = (uint16_t) delta_time;
+                    state = RCIN_RPI_ONE_STATE;
+                    break;
                 }
+                else 
+                    break;
+            case RCIN_RPI_ONE_STATE:
+                if (curr_signal == 1) {
+                    width_s1 = (uint16_t) delta_time;
+                    state = RCIN_RPI_ZERO_STATE;
+                    _process_rc_pulse(width_s0, width_s1);
+                    break;
+                }
+                else 
+                    break;
             }
-            rc_channels[i].last_signal = rc_channels[i].curr_signal;
         }
-        curr_pointer += 8;
-        counter -= 8;
+        last_signal = curr_signal;
+        curr_pointer++;
         if (curr_pointer >= circle_buffer->get_page_count()*PAGE_SIZE) {
             curr_pointer = 0;
         }

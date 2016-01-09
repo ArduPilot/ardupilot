@@ -179,6 +179,12 @@ void Copter::compass_cal_update()
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
     }
+#ifdef CAL_ALWAYS_REBOOT
+    if (compass.compass_cal_requires_reboot()) {
+        hal.scheduler->delay(1000);
+        hal.scheduler->reboot(false);
+    }
+#endif
 }
 
 void Copter::accel_cal_update()
@@ -192,6 +198,13 @@ void Copter::accel_cal_update()
     if(ins.get_new_trim(trim_roll, trim_pitch)) {
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
+
+#ifdef CAL_ALWAYS_REBOOT
+    if (ins.accel_cal_requires_reboot()) {
+        hal.scheduler->delay(1000);
+        hal.scheduler->reboot(false);
+    }
+#endif
 }
 
 #if EPM_ENABLED == ENABLED

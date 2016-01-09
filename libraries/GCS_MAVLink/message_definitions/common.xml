@@ -677,6 +677,26 @@
                     <param index="6">Longitude/Y of goal</param>
                     <param index="7">Altitude/Z of goal</param>
                </entry>
+               <entry value="84" name="MAV_CMD_NAV_VTOL_TAKEOFF">
+                    <description>Takeoff from ground using VTOL mode</description>
+                    <param index="1">Empty</param>
+                    <param index="2">Empty</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Yaw angle in degrees</param>
+                    <param index="5">Latitude</param>
+                    <param index="6">Longitude</param>
+                    <param index="7">Altitude</param>
+               </entry>
+               <entry value="85" name="MAV_CMD_NAV_VTOL_LAND">
+                    <description>Land using VTOL mode</description>
+                    <param index="1">Empty</param>
+                    <param index="2">Empty</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Yaw angle in degrees</param>
+                    <param index="5">Latitude</param>
+                    <param index="6">Longitude</param>
+                    <param index="7">Altitude</param>
+               </entry>
 
                <!-- IDs 90 and 91 are reserved until the end of 2014,
                     as they were used in some conflicting proposals
@@ -1151,6 +1171,11 @@
                   <param index="4">Speed of the vertical rotation (in degrees per second)</param>
               </entry>
 
+              <entry value="3000" name="MAV_CMD_DO_VTOL_TRANSITION">
+                  <description>Request VTOL transition</description>
+                  <param index="1">The target VTOL state, as defined by ENUM MAV_VTOL_STATE. Only MAV_VTOL_STATE_MC and MAV_VTOL_STATE_FW can be used.</param>
+              </entry>
+
               <!-- VALUES FROM 0-40000 are reserved for the common message set. Values from 40000 to UINT16_MAX are available for dialects -->
 
               <!-- BEGIN of payload range (30000 to 30999) -->
@@ -1544,6 +1569,36 @@
               </entry>
               <entry value="4" name="MAV_BATTERY_TYPE_PAYLOAD">
                   <description>Payload battery</description>
+              </entry>
+          </enum>
+          <enum name="MAV_VTOL_STATE">
+              <description>Enumeration of VTOL states</description>
+              <entry value="0" name="MAV_VTOL_STATE_UNDEFINED">
+                  <description>MAV is not configured as VTOL</description>
+              </entry>
+              <entry value="1" name="MAV_VTOL_STATE_TRANSITION_TO_FW">
+                  <description>VTOL is in transition from multicopter to fixed-wing</description>
+              </entry>
+              <entry value="2" name="MAV_VTOL_STATE_TRANSITION_TO_MC">
+                  <description>VTOL is in transition from fixed-wing to multicopter</description>
+              </entry>
+              <entry value="3" name="MAV_VTOL_STATE_MC">
+                  <description>VTOL is in multicopter state</description>
+              </entry>
+              <entry value="4" name="MAV_VTOL_STATE_FW">
+                  <description>VTOL is in fixed-wing state</description>
+              </entry>
+          </enum>
+          <enum name="MAV_LANDED_STATE">
+              <description>Enumeration of landed detector states</description>
+              <entry value="0" name="MAV_LANDED_STATE_UNDEFINED">
+                  <description>MAV landed state is unknown</description>
+              </entry>
+              <entry value="1" name="MAV_LANDED_STATE_ON_GROUND">
+                  <description>MAV is landed (on ground)</description>
+              </entry>
+              <entry value="2" name="MAV_LANDED_STATE_IN_AIR">
+                  <description>MAV is in air</description>
               </entry>
           </enum>
           <enum name="ADSB_ALTITUDE_TYPE">

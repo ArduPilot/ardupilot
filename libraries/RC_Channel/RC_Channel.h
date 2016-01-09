@@ -62,6 +62,7 @@ public:
     void        set_reverse(bool reverse);
     bool        get_reverse(void) const;
     void        set_default_dead_zone(int16_t dzone);
+    uint16_t    get_dead_zone(void) const { return _dead_zone; }
     
     // get the channel number
     uint8_t     get_ch_out(void) const { return _ch_out; };
@@ -105,6 +106,7 @@ public:
     // includes offset from PWM
     //int16_t   get_radio_out(void);
 
+    int16_t                                         pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim);
     int16_t                                         pwm_to_angle_dz(uint16_t dead_zone);
     int16_t                                         pwm_to_angle();
 

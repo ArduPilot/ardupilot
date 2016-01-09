@@ -54,7 +54,7 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
  */
 void Helicopter::update(const struct sitl_input &input)
 {
-    float rsc = (input.servos[7]-1000) / 1000.0f;
+    float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
     // ignition only for gas helis
     bool ignition_enabled = gas_heli?(input.servos[5] > 1500):true;
 
@@ -152,17 +152,20 @@ void Helicopter::update(const struct sitl_input &input)
 
     accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, -thrust / mass);
     accel_body += dcm * air_resistance;
+
+    bool was_on_ground = on_ground(position);
     
     update_dynamics(rot_accel);
     
     // constrain height to the ground
-    if (on_ground(position)) {
+    if (on_ground(position) && !was_on_ground) {
         // zero roll/pitch, but keep yaw
         float r, p, y;
         dcm.to_euler(&r, &p, &y);
         dcm.from_euler(0, 0, y);
         
         position.z = -(ground_level + frame_height - home.alt*0.01f);
+        velocity_ef.zero();
     }
 
     // update lat/lon/altitude

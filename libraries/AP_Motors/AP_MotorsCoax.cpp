@@ -88,23 +88,23 @@ void AP_MotorsCoax::set_update_rate( uint16_t speed_hz )
     uint32_t mask2 =
         1U << AP_MOTORS_MOT_3 |
         1U << AP_MOTORS_MOT_4 ;
-    hal.rcout->set_freq(mask2, _speed_hz);
+    rc_set_freq(mask2, _speed_hz);
 
     // set update rate for the two servos
     uint32_t mask =
       1U << AP_MOTORS_MOT_1 |
       1U << AP_MOTORS_MOT_2 ;
-    hal.rcout->set_freq(mask, _servo_speed);
+    rc_set_freq(mask, _servo_speed);
 }
 
 // enable - starts allowing signals to be sent to motors
 void AP_MotorsCoax::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(AP_MOTORS_MOT_1);
-    hal.rcout->enable_ch(AP_MOTORS_MOT_2);
-    hal.rcout->enable_ch(AP_MOTORS_MOT_3);
-    hal.rcout->enable_ch(AP_MOTORS_MOT_4);
+    rc_enable_ch(AP_MOTORS_MOT_1);
+    rc_enable_ch(AP_MOTORS_MOT_2);
+    rc_enable_ch(AP_MOTORS_MOT_3);
+    rc_enable_ch(AP_MOTORS_MOT_4);
 }
 
 // output_min - sends minimum values out to the motor and trim values to the servos

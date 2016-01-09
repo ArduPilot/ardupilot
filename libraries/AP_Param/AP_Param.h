@@ -313,6 +313,9 @@ public:
     // return true if the parameter is configured
     bool configured(void) { return configured_in_defaults_file() || configured_in_storage(); }
 
+    // count of parameters in tree
+    static uint16_t count_parameters(void);
+    
 private:
     /// EEPROM header
     ///
@@ -439,6 +442,7 @@ private:
 
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
+    static uint16_t             _parameter_count;
     static const struct Info *  _var_info;
 
     /*

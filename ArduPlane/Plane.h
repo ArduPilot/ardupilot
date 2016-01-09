@@ -3,8 +3,8 @@
 #ifndef _PLANE_H
 #define _PLANE_H
 
-#define THISFIRMWARE "ArduPlane V3.4.1dev"
-#define FIRMWARE_VERSION 3,4,1,FIRMWARE_VERSION_TYPE_DEV
+#define THISFIRMWARE "ArduPlane V3.5.0beta1"
+#define FIRMWARE_VERSION 3,5,0,FIRMWARE_VERSION_TYPE_BETA
 
 /*
    Lead developer: Andrew Tridgell
@@ -96,6 +96,8 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
 
+#include "quadplane.h"
+
 // Configuration
 #include "config.h"
 
@@ -135,6 +137,7 @@ public:
     friend class GCS_MAVLINK;
     friend class Parameters;
     friend class AP_Arming_Plane;
+    friend class QuadPlane;
 
     Plane(void);
 
@@ -491,6 +494,9 @@ private:
 
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
+
+        // are we in VTOL mode?
+        bool vtol_mode:1;
     } auto_state;
 
     struct {
@@ -712,7 +718,9 @@ private:
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
-
+    // support for quadcopter-plane
+    QuadPlane quadplane{ahrs};
+    
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
@@ -805,6 +813,8 @@ private:
     bool verify_change_alt();
     bool verify_within_distance();
     bool verify_altitude_wait(const AP_Mission::Mission_Command &cmd);
+    bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
+    bool verify_vtol_land(const AP_Mission::Mission_Command &cmd);
     void do_loiter_at_location();
     void do_take_picture();
     void log_picture();
@@ -979,6 +989,8 @@ private:
     void do_altitude_wait(const AP_Mission::Mission_Command& cmd);
     void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
+    void do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
+    void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_change_alt(const AP_Mission::Mission_Command& cmd);

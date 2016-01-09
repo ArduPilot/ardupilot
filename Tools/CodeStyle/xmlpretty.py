@@ -1,9 +1,27 @@
 #!/usr/bin/python
 import xml.dom.minidom as minidom
-from sys import exit, argv, stderr
+from sys import exit, argv, stderr, stdout
 import re
+import argparse
 
-dom = minidom.parse(argv[1])
+parser = argparse.ArgumentParser(description="Format XML")
+parser.add_argument('infile', nargs=1)
+parser.add_argument('outfile', nargs='?')
+
+args = parser.parse_args()
+
+f = open(args.infile[0],'r')
+text = f.read()
+f.close()
+
+dom = minidom.parseString(text)
+
+def contains_only_text(node):
+    childNodes = node.childNodes[:]
+    for child in childNodes:
+        if child.nodeType != child.TEXT_NODE:
+            return False
+    return True
 
 def foreach_tree(doc, root, func, level=0):
     func(doc, root, level)
@@ -36,7 +54,7 @@ def strip_text_completely(doc, node, level):
         node.unlink()
 
 def auto_indent(doc, node, level):
-    if level > 0 and node.parentNode.nodeName not in ("description", "field", "param", "include"):
+    if level > 0 and not contains_only_text(node.parentNode):
         node.parentNode.insertBefore(doc.createTextNode("\n%s" % (" "*4*level)), node)
         if node.nextSibling is None:
             node.parentNode.appendChild(doc.createTextNode("\n%s" % (" "*4*(level-1))))
@@ -57,5 +75,14 @@ foreach_tree(dom, dom.documentElement, strip_text_whitespace)
 foreach_tree(dom, dom.documentElement, auto_indent)
 foreach_tree(dom, dom.documentElement, auto_space)
 
-print "<?xml version='1.0'?>"
-print dom.documentElement.toxml()
+if args.outfile is not None:
+    f = open(args.outfile, 'w')
+    f.truncate()
+else:
+    f = stdout
+
+f.write("<?xml version='1.0'?>\n")
+f.write(dom.documentElement.toxml())
+f.write("\n")
+
+f.close()

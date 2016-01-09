@@ -27,10 +27,10 @@ class AP_MotorsHeli_RSC {
 public:
     AP_MotorsHeli_RSC(RC_Channel_aux::Aux_servo_function_t aux_fn,
                       uint8_t default_channel,
-                      uint16_t loop_rate) :            
+                      uint16_t loop_rate) :
+        _loop_rate(loop_rate),
         _aux_fn(aux_fn),
-        _default_channel(default_channel),
-        _loop_rate(loop_rate)
+        _default_channel(default_channel)
     {};
 
     // init_servo - servo initialization on start-up

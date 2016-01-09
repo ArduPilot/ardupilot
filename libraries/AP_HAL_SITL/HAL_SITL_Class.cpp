@@ -43,7 +43,7 @@ static SITLUARTDriver sitlUart2Driver(2, &sitlState);
 static SITLUARTDriver sitlUart3Driver(3, &sitlState);
 static SITLUARTDriver sitlUart4Driver(4, &sitlState);
 
-static SITLUtil utilInstance;
+static SITLUtil utilInstance(&sitlState);
 
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(

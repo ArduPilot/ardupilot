@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: INJECT_TO
     // @DisplayName: Destination for GPS_INJECT_DATA MAVLink packets
     // @Description: The GGS can send raw serial packets to inject data to multiple GPSes.
-    // @Values: 0:send to first GPS, 1:send to 2nd GPS, 127:send to all
+    // @Values: 0:send to first GPS,1:send to 2nd GPS,127:send to all
     AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, GPS_RTK_INJECT_TO_ALL),
 
     // @Param: SBP_LOGMASK
@@ -101,7 +101,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: GNSS system configuration
     // @Description: Bitmask for what GNSS system to use (all unchecked or zero to leave GPS as configured)
     // @Values: 0:Leave as currently configured, 1:GPS-NoSBAS, 3:GPS+SBAS, 4:Galileo-NoSBAS, 6:Galileo+SBAS, 8:Beidou, 51:GPS+IMES+QZSS+SBAS (Japan Only), 64:GLONASS, 66:GLONASS+SBAS, 67:GPS+GLONASS+SBAS
-    // @Bitmask: 0:GPS, 1:SBAS, 2:Galileo, 3:Beidou, 4:IMES, 5:QZSS, 6:GLOSNASS
+    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLOSNASS
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("GNSS_MODE", 10, AP_GPS, _gnss_mode, 0),
@@ -428,6 +428,7 @@ AP_GPS::update(void)
 
 	// update notify with gps status. We always base this on the primary_instance
     AP_Notify::flags.gps_status = state[primary_instance].status;
+    AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
 }
 
 /*

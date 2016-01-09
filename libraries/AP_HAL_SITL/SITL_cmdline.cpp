@@ -24,6 +24,7 @@
 #include <SITL/SIM_JSBSim.h>
 #include <SITL/SIM_Tracker.h>
 #include <SITL/SIM_Balloon.h>
+#include <SITL/SIM_FlightAxis.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -55,6 +56,7 @@ void SITL_State::_usage(void)
            "\t--uartC device     set device string for UARTC\n"
            "\t--uartD device     set device string for UARTD\n"
            "\t--uartE device     set device string for UARTE\n"
+           "\t--defaults path    set path to defaults file\n"
         );
 }
 
@@ -75,6 +77,7 @@ static const struct {
     { "rover",              SimRover::create },
     { "crrcsim",            CRRCSim::create },
     { "jsbsim",             JSBSim::create },
+    { "flightaxis",         FlightAxis::create },
     { "gazebo",             Gazebo::create },
     { "last_letter",        last_letter::create },
     { "tracker",            Tracker::create },
@@ -120,6 +123,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTD,
         CMDLINE_UARTE,
         CMDLINE_ADSB,
+        CMDLINE_DEFAULTS
     };
 
     const struct GetOptLong::option options[] = {
@@ -142,6 +146,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
         {"adsb",            false,  0, CMDLINE_ADSB},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
+        {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {0, false, 0, 0}
     };
 
@@ -196,6 +201,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_AUTOTESTDIR:
             autotest_dir = strdup(gopt.optarg);
+            break;
+        case CMDLINE_DEFAULTS:
+            defaults_path = strdup(gopt.optarg);
             break;
 
         case CMDLINE_UARTA:

@@ -59,6 +59,13 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     // IDs 8,9,10,11 RESERVED (in use on Solo)
 
+    // @Param: ANGLE_BOOST
+    // @DisplayName: Angle Boost
+    // @Description: Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("ANGLE_BOOST", 12, AC_AttitudeControl, _angle_boost_enabled, 1),
+
     AP_GROUPEND
 };
 
