@@ -726,6 +726,11 @@ void QuadPlane::update_transition(void)
     } else {
         assisted_flight = false;
     }
+
+    if (transition_state < TRANSITION_TIMER) {
+        // set a single loop pitch limit in TECS
+        plane.TECS_controller.set_pitch_max_limit(0);
+    }
     
     switch (transition_state) {
     case TRANSITION_AIRSPEED_WAIT: {
