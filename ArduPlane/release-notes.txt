@@ -10,8 +10,8 @@ The biggest changes in this release are:
  - switch to new EKF2 kalman filter for attitude and position estimation
  - added support for parachutes
  - added support for QuadPlanes
- - support for 3 new flight boards, the QualComm Flight, the BHAT and
-   the PXFmini
+ - support for 4 new flight boards, the QualComm Flight, the BHAT,
+   the PXFmini and the Pixracer
  - support for arming on moving platforms
 
 New Kalman Filter
@@ -48,7 +48,7 @@ This release includes support for hybrid plane/multi-rotors called
 QuadPlanes. More details are available in this blog post:
 http://diydrones.com/profiles/blogs/quadplane-support-in-apm-plane-3-5-0
 
-Support for 3 new Flight Boards
+Support for 4 new Flight Boards
 
 The porting of ArduPilot to more flight boards continues, with support
 for 3 new flight boards in this release. They are:
@@ -56,6 +56,7 @@ for 3 new flight boards in this release. They are:
  - the BHAT board
  - the PXFmini
  - the QualComm Flight
+ - the Pixracer
 
 More information about the list of supported boards is available here:
 http://dev.ardupilot.com/wiki/supported-autopilot-controller-boards/
