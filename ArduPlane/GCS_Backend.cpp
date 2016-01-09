@@ -1,3 +1,9 @@
+#include "Plane.h" // for global plane object
+
+#if HIL_SUPPORT
+extern mavlink_hil_state_t last_hil_state; // see GCS_Mavlink.cpp
+#endif
+
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK::try_send_message(enum ap_message id)
 {

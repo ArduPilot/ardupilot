@@ -446,7 +446,7 @@ void Plane::send_vfr_hud(mavlink_channel_t chan)
   keep last HIL_STATE message to allow sending SIM_STATE
  */
 #if HIL_SUPPORT
-static mavlink_hil_state_t last_hil_state;
+mavlink_hil_state_t last_hil_state;
 #endif
 
 // report simulator state
