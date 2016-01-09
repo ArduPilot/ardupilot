@@ -385,6 +385,12 @@ void NavEKF2_core::FuseMagnetometer()
             }
         }
 
+        // inhibit position state modification if we are not aiding
+        if (PV_AidingMode == AID_NONE) {
+            Kfusion[6] = 0.0f;
+            Kfusion[7] = 0.0f;
+        }
+
         // reset the observation index to 0 (we start by fusing the X measurement)
         obsIndex = 0;
 
@@ -802,6 +808,12 @@ void NavEKF2_core::FuseDeclination()
     Kfusion[17] = t14*(t8-P[17][16]*magE*t6*t7);
     for (uint8_t i=17; i<=23; i++) {
         Kfusion[i] = t14*(P[i][17]*t2*t6-P[i][16]*magE*t6*t7);
+    }
+
+    // inhibit position state modification if we are not aiding
+    if (PV_AidingMode == AID_NONE) {
+        Kfusion[6] = 0.0f;
+        Kfusion[7] = 0.0f;
     }
 
     // get the magnetic declination
