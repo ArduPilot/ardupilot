@@ -443,7 +443,7 @@ void QuadPlane::hold_stabilize(float throttle_in)
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
-                                                                         get_pilot_desired_yaw_rate_cds(),
+                                                                         get_desired_yaw_rate_cds(),
                                                                          smoothing_gain);
 
     if (throttle_in <= 0) {
@@ -487,7 +487,7 @@ void QuadPlane::hold_hover(float target_climb_rate)
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
-                                                                         get_pilot_desired_yaw_rate_cds(),
+                                                                         get_desired_yaw_rate_cds(),
                                                                          smoothing_gain);
 
     // call position controller
@@ -594,7 +594,7 @@ void QuadPlane::control_loiter()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(),
                                                                   wp_nav->get_pitch(),
-                                                                  get_pilot_desired_yaw_rate_cds());
+                                                                  get_desired_yaw_rate_cds());
 
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
@@ -606,22 +606,35 @@ void QuadPlane::control_loiter()
 }
 
 /*
-  get desired yaw rate in cd/s
+  get pilot input yaw rate in cd/s
  */
-float QuadPlane::get_pilot_desired_yaw_rate_cds(void)
+float QuadPlane::get_pilot_input_yaw_rate_cds(void)
 {
-    float yaw_cds = 0;
-    if (assisted_flight) {
-        // use bank angle to get desired yaw rate
-        yaw_cds += desired_yaw_rate_cds();
-    }
     if (plane.channel_throttle->control_in <= 0 && !plane.auto_throttle_mode) {
         // the user may be trying to disarm
         return 0;
     }
 
     // add in rudder input
-    yaw_cds += plane.channel_rudder->norm_input() * 100 * yaw_rate_max;
+    return plane.channel_rudder->norm_input() * 100 * yaw_rate_max;
+}
+
+/*
+  get overall desired yaw rate in cd/s
+ */
+float QuadPlane::get_desired_yaw_rate_cds(void)
+{
+    float yaw_cds = 0;
+    if (assisted_flight) {
+        // use bank angle to get desired yaw rate
+        yaw_cds += desired_auto_yaw_rate_cds();
+    }
+    if (plane.channel_throttle->control_in <= 0 && !plane.auto_throttle_mode) {
+        // the user may be trying to disarm
+        return 0;
+    }
+    // add in pilot input
+    yaw_cds += get_pilot_input_yaw_rate_cds();
     return yaw_cds;
 }
 
@@ -682,7 +695,7 @@ float QuadPlane::assist_climb_rate_cms(void)
 /*
   calculate desired yaw rate for assistance
  */
-float QuadPlane::desired_yaw_rate_cds(void)
+float QuadPlane::desired_auto_yaw_rate_cds(void)
 {
     float aspeed;
     if (!ahrs.airspeed_estimate(&aspeed) || aspeed < plane.aparm.airspeed_min) {
@@ -962,8 +975,9 @@ void QuadPlane::control_auto(const Location &loc)
         (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
          land_state >= QLAND_FINAL)) {
         /*
-          we need to use the loiter controller for final descent as
-          the wpnav controller takes over the descent rate control
+          for takeoff and land-final we need to use the loiter
+          controller for final descent as the wpnav controller takes
+          over the descent rate control
          */
         float ekfGndSpdLimit, ekfNavVelGainScaler;    
         ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
@@ -973,43 +987,63 @@ void QuadPlane::control_auto(const Location &loc)
 
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
-                                                                             0,
+                                                                             get_pilot_input_yaw_rate_cds(),
                                                                              smoothing_gain);
-    } else {
-        float aspeed;
-        int pitch_limit_cd = plane.aparm.pitch_limit_max_cd;
-        if (assist_speed > 0 && ahrs.airspeed_estimate(&aspeed) && aspeed < assist_speed) {
-            if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
-                land_state == QLAND_POSITION) {
-                // when starting the reposition limit the pitch for less dramatic slow down
-                const float threshold = 0.5f * assist_speed;
-                if (aspeed > threshold && plane.auto_state.wp_distance > 10 &&
-                    !location_passed_point(plane.current_loc, plane.prev_WP_loc, plane.next_WP_loc)) {
-                    float p = constrain_float((aspeed - threshold)/threshold, 0, 1);
-                    pitch_limit_cd = p*plane.aparm.pitch_limit_max_cd + 500*(1-p);
-                    plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, pitch_limit_cd);
-                }
-            } else if (aspeed < assist_speed) {
-                // while transitioning limit pitch to let forward motor gain speed
-                pitch_limit_cd = 500;
-            }
-        }
-        
+    } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
+               land_state == QLAND_POSITION) {
+        /*
+          for land repositioning we run the wpnav controller, but
+          smoothly change its pitch limit to allow the plane to slow
+          down gracefully
+         */
         // run wpnav controller
         wp_nav->update_wpnav();
 
-        if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND && land_state >= QLAND_DESCEND) {
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
-                                                                                 plane.nav_pitch_cd,
-                                                                                 0,
-                                                                                 smoothing_gain);
-        } else {
-            // call attitude controller
-            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
-                                                               MIN(wp_nav->get_pitch(), pitch_limit_cd),
-                                                               wp_nav->get_yaw(),
-                                                               true);
-        }
+        // also run fixed wing navigation
+        plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+        plane.nav_roll_cd = plane.nav_controller->nav_roll_cd();
+        
+        // yaw rate is set by fixed wing navigation controller, to keep the plane lined up nicely
+        int32_t yaw_rate = get_desired_yaw_rate_cds();
+        
+        // nav roll and pitch are controller by loiter controller
+        plane.nav_roll_cd = wp_nav->get_roll();
+        plane.nav_pitch_cd = wp_nav->get_pitch();
+
+        // during positioning we may be flying faster than the WP_Nav
+        // controller normally wants to fly. We let that happen by
+        // limiting the pitch controller of the WP_Nav controller
+        int32_t limit = plane.auto_state.wp_proportion * plane.aparm.pitch_limit_max_cd;
+        plane.nav_pitch_cd = constrain_int32(plane.nav_pitch_cd, plane.aparm.pitch_limit_min_cd, limit);
+
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+                                                                             plane.nav_pitch_cd,
+                                                                             yaw_rate,
+                                                                             smoothing_gain);
+    } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND && land_state >= QLAND_DESCEND) {
+        /*
+          for land descent we only use pilot input for yaw
+         */
+        // run wpnav controller
+        wp_nav->update_wpnav();
+
+        // force yaw rate to zero
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+                                                                             plane.nav_pitch_cd,
+                                                                             get_pilot_input_yaw_rate_cds(),
+                                                                             smoothing_gain);        
+    } else {
+        /*
+          this is full copter control of auto flight
+         */
+        // run wpnav controller
+        wp_nav->update_wpnav();
+
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
+                                                           wp_nav->get_pitch(),
+                                                           wp_nav->get_yaw(),
+                                                           true);
     }
 
 

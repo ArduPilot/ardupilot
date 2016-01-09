@@ -94,9 +94,12 @@ private:
     // hold stabilize (for transition)
     void hold_stabilize(float throttle_in);    
 
-    // get desired yaw rate in cd/s
-    float get_pilot_desired_yaw_rate_cds(void);
+    // get pilot desired yaw rate in cd/s
+    float get_pilot_input_yaw_rate_cds(void);
 
+    // get overall desired yaw rate in cd/s
+    float get_desired_yaw_rate_cds(void);
+    
     // get desired climb rate in cm/s
     float get_pilot_desired_climb_rate_cms(void);
 
@@ -116,7 +119,7 @@ private:
     float assist_climb_rate_cms(void);
 
     // calculate desired yaw rate for assistance
-    float desired_yaw_rate_cds(void);
+    float desired_auto_yaw_rate_cds(void);
 
     bool should_relax(void);
     
