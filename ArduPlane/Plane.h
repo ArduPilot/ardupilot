@@ -3,8 +3,8 @@
 #ifndef _PLANE_H
 #define _PLANE_H
 
-#define THISFIRMWARE "ArduPlane V3.4.1dev"
-#define FIRMWARE_VERSION 3,4,1,FIRMWARE_VERSION_TYPE_DEV
+#define THISFIRMWARE "ArduPlane V3.5.0beta1"
+#define FIRMWARE_VERSION 3,5,0,FIRMWARE_VERSION_TYPE_BETA
 
 /*
    Lead developer: Andrew Tridgell
