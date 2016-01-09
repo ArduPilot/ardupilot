@@ -930,6 +930,9 @@ bool QuadPlane::in_vtol_auto(void)
  */
 void QuadPlane::control_auto(const Location &loc)
 {
+    if (!setup()) {
+        return;
+    }
     Location origin = inertial_nav.get_origin();
     Vector2f diff2d;
     Vector3f target;
@@ -980,8 +983,6 @@ void QuadPlane::control_auto(const Location &loc)
                     float p = constrain_float((aspeed - threshold)/threshold, 0, 1);
                     pitch_limit_cd = p*plane.aparm.pitch_limit_max_cd + 500*(1-p);
                     plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, pitch_limit_cd);
-                    ::printf("aspeed=%.1f p=%.2f pitch_limit_cd=%d nav_pitch_cd=%d\n",
-                             aspeed, p, (int)pitch_limit_cd, (int)plane.nav_pitch_cd);
                 }
             } else if (aspeed < assist_speed) {
                 // while transitioning limit pitch to let forward motor gain speed
@@ -1016,7 +1017,6 @@ void QuadPlane::control_auto(const Location &loc)
         if (land_state < QLAND_FINAL) {
             pos_control->set_alt_target_with_slew(wp_nav->get_loiter_target().z, plane.ins.get_loop_delta_t());
         } else {
-            printf("alt=%.1f speed=%.1f\n", plane.current_loc.alt*0.01, -land_speed_cms*0.01);
             pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);            
         }
         break;
@@ -1036,7 +1036,7 @@ void QuadPlane::control_auto(const Location &loc)
  */
 bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
 {
-    if (!available()) {
+    if (!setup()) {
         return false;
     }
     plane.set_next_WP(cmd.content.location);
@@ -1065,7 +1065,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
  */
 bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
 {
-    if (!available()) {
+    if (!setup()) {
         return false;
     }
     plane.set_next_WP(cmd.content.location);
