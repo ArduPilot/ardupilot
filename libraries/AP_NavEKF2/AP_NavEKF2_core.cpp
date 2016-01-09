@@ -359,11 +359,11 @@ void NavEKF2_core::CovarianceInit()
     P[1][1]   = 0.1f;
     P[2][2]   = 0.1f;
     // velocities
-    P[3][3]   = sq(0.7f);
+    P[3][3]   = sq(frontend->_gpsHorizVelNoise);
     P[4][4]   = P[3][3];
-    P[5][5]   = sq(0.7f);
+    P[5][5]   = sq(frontend->_gpsVertVelNoise);
     // positions
-    P[6][6]   = sq(15.0f);
+    P[6][6]   = sq(frontend->_gpsHorizPosNoise);
     P[7][7]   = P[6][6];
     P[8][8]   = sq(frontend->_baroAltNoise);
     // gyro delta angle biases
