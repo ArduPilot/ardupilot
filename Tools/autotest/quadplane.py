@@ -9,22 +9,31 @@ import random
 testdir=os.path.dirname(os.path.realpath(__file__))
 
 
-#HOME_LOCATION='-27.274439,151.290064,343,8.7'
-HOME_LOCATION='-35.362938,149.165085,585,354'
+HOME_LOCATION='-27.274439,151.290064,343,8.7'
+MISSION='ArduPlane-Missions/Dalby-OBC2016.txt'
+FENCE='ArduPlane-Missions/Dalby-OBC2016-fence.txt'
 WIND="0,180,0.2" # speed,direction,variance
 
 homeloc = None
 
-def fly_mission(mavproxy, mav, filename, height_accuracy=-1):
+def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     '''fly a mission from a file'''
     print("Flying mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
+    mavproxy.send('fence load %s\n' % fence)
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('mode AUTO\n')
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 12, max_dist=60):
+    if not wait_waypoint(mav, 1, 9, max_dist=60):
+        return False
+    mavproxy.expect('DISARMED')
+    # wait for blood sample here
+    mavproxy.send('wp set 10\n')
+    mavproxy.send('arm throttle\n')
+    mavproxy.expect('ARMED')
+    if not wait_waypoint(mav, 10, 18, max_dist=60):
         return False
     mavproxy.expect('DISARMED')
     print("Mission OK")
@@ -45,7 +54,7 @@ def fly_QuadPlane(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL('ArduPlane', model='quadplane', wipe=True, home=HOME_LOCATION, speedup=10,
+    sil = util.start_SIL('ArduPlane', model='quadplane', wipe=True, home=HOME_LOCATION, speedup=20,
                          defaults_file=os.path.join(testdir, 'quadplane.parm'))
     mavproxy = util.start_MAVProxy_SIL('QuadPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
@@ -98,7 +107,9 @@ def fly_QuadPlane(viewerip=None, map=False):
         mavproxy.send('arm throttle\n')
         mavproxy.expect('ARMED')
         
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, "ArduPlane-Missions/CMAC-VTOL-ccw.txt")):
+        if not fly_mission(mavproxy, mav,
+                           os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt"),
+                           os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016-fence.txt")):
             print("Failed mission")
             failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/QuadPlane-log.bin")):
