@@ -968,6 +968,27 @@ void QuadPlane::control_auto(const Location &loc)
                                                                              0,
                                                                              smoothing_gain);
     } else {
+        float aspeed;
+        int pitch_limit_cd = plane.aparm.pitch_limit_max_cd;
+        if (assist_speed > 0 && ahrs.airspeed_estimate(&aspeed) && aspeed < assist_speed) {
+            if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
+                land_state == QLAND_POSITION) {
+                // when starting the reposition limit the pitch for less dramatic slow down
+                const float threshold = 0.5f * assist_speed;
+                if (aspeed > threshold && plane.auto_state.wp_distance > 10 &&
+                    !location_passed_point(plane.current_loc, plane.prev_WP_loc, plane.next_WP_loc)) {
+                    float p = constrain_float((aspeed - threshold)/threshold, 0, 1);
+                    pitch_limit_cd = p*plane.aparm.pitch_limit_max_cd + 500*(1-p);
+                    plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, pitch_limit_cd);
+                    ::printf("aspeed=%.1f p=%.2f pitch_limit_cd=%d nav_pitch_cd=%d\n",
+                             aspeed, p, (int)pitch_limit_cd, (int)plane.nav_pitch_cd);
+                }
+            } else if (aspeed < assist_speed) {
+                // while transitioning limit pitch to let forward motor gain speed
+                pitch_limit_cd = 500;
+            }
+        }
+        
         // run wpnav controller
         wp_nav->update_wpnav();
 
@@ -978,7 +999,10 @@ void QuadPlane::control_auto(const Location &loc)
                                                                                  smoothing_gain);
         } else {
             // call attitude controller
-            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), wp_nav->get_yaw(), true);
+            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
+                                                               MIN(wp_nav->get_pitch(), pitch_limit_cd),
+                                                               wp_nav->get_yaw(),
+                                                               true);
         }
     }
 
