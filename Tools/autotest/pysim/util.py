@@ -105,7 +105,7 @@ def pexpect_drain(p):
     except pexpect.TIMEOUT:
         pass
 
-def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1):
+def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
     '''launch a SIL instance'''
     import pexpect
     cmd=""
@@ -125,6 +125,8 @@ def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None
         cmd += ' --model=%s' % model
     if speedup != 1:
         cmd += ' --speedup=%f' % speedup
+    if defaults_file is not None:
+        cmd += ' --defaults=%s' % defaults_file
     print("Running: %s" % cmd)
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
     ret.delaybeforesend = 0
