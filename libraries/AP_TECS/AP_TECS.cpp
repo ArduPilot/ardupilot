@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Range: -1.0 2.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("LAND_SPDWGT", 14, AP_TECS, _spdWeightLand, 1.0f),
+    AP_GROUPINFO("LAND_SPDWGT", 14, AP_TECS, _spdWeightLand, -1.0f),
 
     // @Param: PITCH_MAX
     // @DisplayName: Maximum pitch in auto flight
