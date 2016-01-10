@@ -251,6 +251,7 @@ def log_download(mavproxy, mav, filename, timeout=360):
     mavproxy.expect("numLogs")
     mav.wait_heartbeat()
     mav.wait_heartbeat()
+    mavproxy.send("set shownoise 0\n")
     mavproxy.send("log download latest %s\n" % filename)
     mavproxy.expect("Finished downloading", timeout=timeout)
     mav.wait_heartbeat()
