@@ -5,6 +5,7 @@
 
 #include "AP_HAL_SITL.h"
 #include "Scheduler.h"
+#include "UARTDriver.h"
 #include <sys/time.h>
 #include <unistd.h>
 #include <fenv.h>
@@ -213,6 +214,12 @@ void SITLScheduler::_run_io_procs(bool called_from_isr)
     }
 
     _in_io_proc = false;
+
+    SITLUARTDriver::from(hal.uartA)->_timer_tick();
+    SITLUARTDriver::from(hal.uartB)->_timer_tick();
+    SITLUARTDriver::from(hal.uartC)->_timer_tick();
+    SITLUARTDriver::from(hal.uartD)->_timer_tick();
+    SITLUARTDriver::from(hal.uartE)->_timer_tick();
 }
 
 /*
