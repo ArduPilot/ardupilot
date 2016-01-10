@@ -136,10 +136,9 @@ def start_SIL(atype, valgrind=False, gdb=False, wipe=False, synthetic_clock=True
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
-    if gdb:
-        time.sleep(3)
-    else:
-        ret.expect('Waiting for connection',timeout=300)
+    # give time for parameters to properly setup
+    time.sleep(3)
+    ret.expect('Waiting for connection',timeout=300)
     return ret
 
 def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
