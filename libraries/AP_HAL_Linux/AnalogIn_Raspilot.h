@@ -1,15 +1,15 @@
-#ifndef __RaspilotAnalogIn_H__
-#define __RaspilotAnalogIn_H__
+#pragma once
+
+#include <AP_ADC/AP_ADC.h>
 
 #include "AP_HAL_Linux.h"
-#include <AP_ADC/AP_ADC.h>
 
 #define RASPILOT_ADC_MAX_CHANNELS 8
 
-class RaspilotAnalogSource: public AP_HAL::AnalogSource {
+class AnalogSource_Raspilot: public AP_HAL::AnalogSource {
 public:
     friend class RaspilotAnalogIn;
-    RaspilotAnalogSource(int16_t pin);
+    AnalogSource_Raspilot(int16_t pin);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -31,15 +31,15 @@ public:
 
     /* Board voltage is not available */
     float board_voltage(void);
-    
+
 protected:
     AP_HAL::AnalogSource *_vcc_pin_analog_source;
-    
+
 private:
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;
-    
-    RaspilotAnalogSource *_channels[RASPILOT_ADC_MAX_CHANNELS];
+
+    AnalogSource_Raspilot *_channels[RASPILOT_ADC_MAX_CHANNELS];
 
     uint8_t _channels_number;
 
@@ -47,5 +47,3 @@ private:
 
     uint32_t            _last_update_timestamp;
 };
-
-#endif
