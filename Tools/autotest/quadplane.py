@@ -112,9 +112,6 @@ def fly_QuadPlane(viewerip=None, map=False):
                            os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016-fence.txt")):
             print("Failed mission")
             failed = True
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/QuadPlane-log.bin")):
-            print("Failed log download")
-            failed = True
     except pexpect.TIMEOUT, e:
         print("Failed with timeout")
         failed = True
