@@ -385,6 +385,9 @@ void UARTDriver::_set_nonblocking(int fd)
 
 void UARTDriver::_timer_tick(void)
 {
+    if (!_connected) {
+        return;
+    }
     uint32_t navail;
     ssize_t nwritten;
 
