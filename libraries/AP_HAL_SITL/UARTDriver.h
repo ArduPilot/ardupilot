@@ -11,11 +11,11 @@
 #include <AP_HAL/utility/Socket.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
-class HALSITL::SITLUARTDriver : public AP_HAL::UARTDriver {
+class HALSITL::UARTDriver : public AP_HAL::UARTDriver {
 public:
     friend class HALSITL::SITL_State;
 
-    SITLUARTDriver(const uint8_t portNumber, SITL_State *sitlState) {
+    UARTDriver(const uint8_t portNumber, SITL_State *sitlState) {
         _portNumber = portNumber;
         _sitlState = sitlState;
 
@@ -23,8 +23,8 @@ public:
         _listen_fd = -1;
     }
 
-    static SITLUARTDriver *from(AP_HAL::UARTDriver *uart) {
-        return static_cast<SITLUARTDriver*>(uart);
+    static UARTDriver *from(AP_HAL::UARTDriver *uart) {
+        return static_cast<UARTDriver*>(uart);
     }
     
     /* Implementations of UARTDriver virtual methods */

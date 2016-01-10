@@ -6,9 +6,9 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include "Semaphores.h"
 
-class HALSITL::SITLUtil : public AP_HAL::Util {
+class HALSITL::Util : public AP_HAL::Util {
 public:
-    SITLUtil(SITL_State *_sitlState) :
+    Util(SITL_State *_sitlState) :
         sitlState(_sitlState) {}
     
     bool run_debug_shell(AP_HAL::BetterStream *stream) {

@@ -163,7 +163,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _framerate = (unsigned)atoi(gopt.optarg);
             break;
         case 'C':
-            HALSITL::SITLUARTDriver::_console = true;
+            HALSITL::UARTDriver::_console = true;
             break;
         case 'I': {
             _instance = atoi(gopt.optarg);

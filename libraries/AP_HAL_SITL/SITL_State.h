@@ -30,8 +30,8 @@
 class HAL_SITL;
 
 class HALSITL::SITL_State {
-    friend class HALSITL::SITLScheduler;
-    friend class HALSITL::SITLUtil;
+    friend class HALSITL::Scheduler;
+    friend class HALSITL::Util;
 public:
     void init(int argc, char * const argv[]);
 
@@ -145,7 +145,7 @@ private:
 
     AP_Baro *_barometer;
     AP_InertialSensor *_ins;
-    SITLScheduler *_scheduler;
+    Scheduler *_scheduler;
     Compass *_compass;
     OpticalFlow *_optical_flow;
     AP_Terrain *_terrain;

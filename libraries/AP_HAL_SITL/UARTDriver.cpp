@@ -44,11 +44,11 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-bool SITLUARTDriver::_console;
+bool UARTDriver::_console;
 
 /* UARTDriver method implementations */
 
-void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
+void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
     const char *path = _sitlState->_uart_path[_portNumber];
 
@@ -96,11 +96,11 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     _set_nonblocking(_fd);
 }
 
-void SITLUARTDriver::end()
+void UARTDriver::end()
 {
 }
 
-int16_t SITLUARTDriver::available(void)
+int16_t UARTDriver::available(void)
 {
     _check_connection();
 
@@ -113,7 +113,7 @@ int16_t SITLUARTDriver::available(void)
 
 
 
-int16_t SITLUARTDriver::txspace(void)
+int16_t UARTDriver::txspace(void)
 {
     _check_connection();
     if (!_connected) {
@@ -122,7 +122,7 @@ int16_t SITLUARTDriver::txspace(void)
     return _writebuffer.space();
 }
 
-int16_t SITLUARTDriver::read(void)
+int16_t UARTDriver::read(void)
 {
     if (available() <= 0) {
         return -1;
@@ -132,11 +132,11 @@ int16_t SITLUARTDriver::read(void)
     return c;
 }
 
-void SITLUARTDriver::flush(void)
+void UARTDriver::flush(void)
 {
 }
 
-size_t SITLUARTDriver::write(uint8_t c)
+size_t UARTDriver::write(uint8_t c)
 {
     if (txspace() <= 0) {
         return 0;
@@ -145,7 +145,7 @@ size_t SITLUARTDriver::write(uint8_t c)
     return 1;
 }
 
-size_t SITLUARTDriver::write(const uint8_t *buffer, size_t size)
+size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (txspace() <= (ssize_t)size) {
         size = txspace();
@@ -162,7 +162,7 @@ size_t SITLUARTDriver::write(const uint8_t *buffer, size_t size)
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects
  */
-void SITLUARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
+void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
     int one=1;
     struct sockaddr_in sockaddr;
@@ -250,7 +250,7 @@ void SITLUARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connecti
 /*
   start a TCP client connection for the serial port. 
  */
-void SITLUARTDriver::_tcp_start_client(const char *address, uint16_t port)
+void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 {
     int one=1;
     struct sockaddr_in sockaddr;
@@ -301,7 +301,7 @@ void SITLUARTDriver::_tcp_start_client(const char *address, uint16_t port)
 /*
   start a UART connection for the serial port
  */
-void SITLUARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
+void UARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
 {
     struct termios t {};
     if (!_connected) {
@@ -338,7 +338,7 @@ void SITLUARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
 /*
   see if a new connection is coming in
  */
-void SITLUARTDriver::_check_connection(void)
+void UARTDriver::_check_connection(void)
 {
     if (_connected) {
         // we only want 1 connection at a time
@@ -359,7 +359,7 @@ void SITLUARTDriver::_check_connection(void)
 /*
   use select() to see if something is pending
  */
-bool SITLUARTDriver::_select_check(int fd)
+bool UARTDriver::_select_check(int fd)
 {
     fd_set fds;
     struct timeval tv;
@@ -377,13 +377,13 @@ bool SITLUARTDriver::_select_check(int fd)
     return false;
 }
 
-void SITLUARTDriver::_set_nonblocking(int fd)
+void UARTDriver::_set_nonblocking(int fd)
 {
     unsigned v = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, v | O_NONBLOCK);
 }
 
-void SITLUARTDriver::_timer_tick(void)
+void UARTDriver::_timer_tick(void)
 {
     uint32_t navail;
     ssize_t nwritten;

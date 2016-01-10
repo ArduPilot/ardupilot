@@ -7,9 +7,9 @@
 
 #include "AP_HAL_SITL.h"
 
-class HALSITL::SITLRCInput : public AP_HAL::RCInput {
+class HALSITL::RCInput : public AP_HAL::RCInput {
 public:
-    SITLRCInput(SITL_State *sitlState) {
+    RCInput(SITL_State *sitlState) {
         _sitlState = sitlState;
     }
     void init() override;
