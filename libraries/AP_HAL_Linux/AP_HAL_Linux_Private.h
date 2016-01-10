@@ -35,6 +35,7 @@
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "ToneAlarmDriver.h"
+#include "ToneAlarmDriver_Raspilot.h"
 #include "Util.h"
 #include "Util_RPI.h"
 #include "Heat.h"
