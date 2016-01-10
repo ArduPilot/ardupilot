@@ -400,18 +400,19 @@ void UARTDriver::_timer_tick(void)
         }
     }
 
-    if (_readbuffer.space() == 0) {
+    uint32_t space = _readbuffer.space();
+    if (space == 0) {
         return;
     }
     
-    ssize_t nread;
-    char c;
+    char buf[space];
+    ssize_t nread = 0;
     if (!_use_send_recv) {
         int fd = _console?0:_fd;
-        nread = ::read(fd, &c, 1);
+        nread = ::read(fd, buf, space);
     } else {
         if (_select_check(_fd)) {
-            nread = recv(_fd, &c, 1, MSG_DONTWAIT);
+            nread = recv(_fd, buf, space, MSG_DONTWAIT);
             if (nread <= 0) {
                 // the socket has reached EOF
                 close(_fd);
@@ -424,8 +425,8 @@ void UARTDriver::_timer_tick(void)
             nread = 0;
         }
     }
-    if (nread == 1) {
-        _readbuffer.write((uint8_t *)&c, 1);
+    if (nread > 0) {
+        _readbuffer.write((uint8_t *)buf, nread);
     }
 }
 
