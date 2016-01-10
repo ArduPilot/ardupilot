@@ -1106,6 +1106,38 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_MANUAL_CONTROL:       // MAV ID: 69
+        {
+            if(msg->sysid != copter.g.sysid_my_gcs) break;                         // Only accept control from our gcs
+            mavlink_manual_control_t packet;
+            int16_t v[8];
+            uint16_t b;
+            mavlink_msg_manual_control_decode(msg, &packet);
+
+            static uint16_t skip = 0;
+
+            if ( skip++ % 25 == 0 ) {
+            	copter.gcs_send_text_fmt(MAV_SEVERITY_INFO,"%4.0f,%4.0f,%4.0f",packet.x,packet.y,packet.z);
+            }
+
+            v[0] = packet.x/2+1500;
+            v[1] = packet.y/2+1500;
+            v[2] = packet.z+1000;
+            v[3] = packet.r/2+1500;
+            v[4] = packet.buttons;
+            v[5] = 0;
+            v[6] = 0;
+            v[7] = 0;
+            b = packet.buttons;
+
+            // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
+            copter.failsafe.rc_override_active = hal.rcin->set_overrides(v, 8);
+
+            // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+            copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
+            break;
+        }
+
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:       // MAV ID: 70
     {
         // allow override of RC channel values for HIL
