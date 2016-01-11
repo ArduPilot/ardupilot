@@ -243,6 +243,8 @@ protected:
 private:
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
 
+    virtual bool should_try_send_message(enum ap_message id) = 0;
+
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
 
