@@ -15,6 +15,8 @@ public:
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
     void handleMessage(mavlink_message_t* msg) override;
 
+protected:
+
 private:
 
 };

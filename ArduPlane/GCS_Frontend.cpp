@@ -23,3 +23,9 @@ void GCS_Frontend_Plane::send_airspeed_calibration(const Vector3f &vg)
         }
     }
 }
+
+
+uint32_t GCS_Frontend_Plane::telem_delay() const
+{
+    return (uint32_t)_g.telem_delay;
+}

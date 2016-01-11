@@ -17,9 +17,14 @@ public:
 
     void send_airspeed_calibration(const Vector3f &vg);
 
+protected:
+
+    uint32_t telem_delay() const override;
+
 private:
 
     GCS_Backend_Plane _gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     AP_Airspeed &_airspeed;
+
 };

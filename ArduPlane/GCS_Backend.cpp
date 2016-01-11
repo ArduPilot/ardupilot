@@ -7,7 +7,7 @@ extern mavlink_hil_state_t last_hil_state; // see GCS_Mavlink.cpp
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_Backend_Plane::try_send_message(enum ap_message id)
 {
-    if (plane.telemetry_delayed(chan)) {
+    if (telemetry_delayed()) {
         return false;
     }
 

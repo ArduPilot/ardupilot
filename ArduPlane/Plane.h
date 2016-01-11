@@ -138,7 +138,7 @@ class Plane : public AP_HAL::HAL::Callbacks {
 public:
     friend class QuadPlane;
     friend class AP_Arming_Plane; // for access to plane.g.
-    friend class GCS_Backend_Plane; // for access to telemetry_delayed()
+    friend class GCS_Backend_Plane; // for access to in_mavlink_delay
 
     Plane(void);
 
@@ -748,7 +748,6 @@ private:
     void send_rpm(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
-    bool telemetry_delayed(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
