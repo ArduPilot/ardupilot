@@ -163,12 +163,13 @@ def find_tests(bld, use=[]):
 
     for f in bld.path.ant_glob(incl='*.cpp'):
         target = f.change_ext('.' + bld.env.BOARD)
-        bld.program(
+        program(
+            bld,
             features=features,
-            target=target,
             includes=includes,
             source=[f],
             use=use,
+            destdir='tests',
         )
 
 def find_benchmarks(bld, use=[]):
@@ -179,12 +180,13 @@ def find_benchmarks(bld, use=[]):
 
     for f in bld.path.ant_glob(incl='*.cpp'):
         target = f.change_ext('.' + bld.env.BOARD)
-        bld.program(
+        program(
+            bld,
             features=['gbenchmark'],
-            target=target,
             includes=includes,
             source=[f],
             use=use,
+            destdir='benchmarks',
         )
 
 def test_summary(bld):
