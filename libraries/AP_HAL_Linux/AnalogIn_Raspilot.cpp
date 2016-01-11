@@ -5,16 +5,6 @@
 #include "AnalogIn_Raspilot.h"
 #include "px4io_protocol.h"
 
-#define RASPILOT_ANALOGIN_DEBUG 0
-#if RASPILOT_ANALOGIN_DEBUG
-#include <cstdio>
-#define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
-#define error(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
-#else
-#define debug(fmt, args ...)
-#define error(fmt, args ...)
-#endif
-
 AnalogSource_Raspilot::AnalogSource_Raspilot(int16_t pin):
     _pin(pin),
     _value(0.0f)
@@ -141,9 +131,6 @@ void RaspilotAnalogIn::_update()
                 source->_value = _dma_packet_rx.regs[i] * 3.3 / 4096.0;
             }
         }
-
-        //printf("ADC_%d: %0.3f\n",i,_dma_packet_rx.regs[i] * 3.3 / 4096.0);
-
     }
 
     _last_update_timestamp = AP_HAL::micros();
