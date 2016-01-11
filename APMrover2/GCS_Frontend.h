@@ -18,6 +18,8 @@ protected:
 
     GCS_Backend_Rover &gcs(const uint8_t i) { return _gcs[i]; }
 
+    uint32_t telem_delay() const;
+
 private:
 
     GCS_Backend_Rover _gcs[MAVLINK_COMM_NUM_BUFFERS];

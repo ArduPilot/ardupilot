@@ -3,7 +3,7 @@
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_Backend_Rover::try_send_message(enum ap_message id)
 {
-    if (rover.telemetry_delayed(chan)) {
+    if (telemetry_delayed()) {
         return false;
     }
 
