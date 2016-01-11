@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS_Frontend.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1401,4 +1402,19 @@ void GCS_MAVLINK::mavlink_msg_compassmot_status_send(int16_t throttle_cin,
                                          mot_ofs_x,
                                          mot_ofs_y,
                                          mot_ofs_z);
+}
+
+bool GCS_MAVLINK::telemetry_delayed() const
+{
+    uint32_t tnow = AP_HAL::millis() >> 10;
+    if (tnow > _frontend->telem_delay()) {
+        return false;
+    }
+    if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
+        // this is USB telemetry, so won't be an Xbee
+        return false;
+    }
+    // we're either on the 2nd UART, or no USB cable is connected
+    // we need to delay telemetry by the TELEM_DELAY time
+    return true;
 }

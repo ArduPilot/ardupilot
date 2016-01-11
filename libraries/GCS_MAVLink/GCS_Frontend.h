@@ -9,6 +9,7 @@ class GCS_Frontend {
     friend class Copter; // for access to gcs[], needed for params' var_info
     friend class Rover; // for access to gcs[], needed for params' var_info
     friend class Tracker; // for access to gcs[], needed for params' var_info
+    friend class GCS_MAVLINK; // for access to telem_delay()
 
 public:
 
@@ -47,6 +48,10 @@ public:
     virtual GCS_MAVLINK& gcs(const uint8_t i) = 0;
 
 protected:
+
+    // FIXME: these pure virtual functions should be replaced with
+    // some sort of GCS_ parameter object
+    virtual uint32_t telem_delay() const = 0;
 
     const uint8_t _num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 

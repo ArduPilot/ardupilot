@@ -236,6 +236,8 @@ protected:
 
     void handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode);
 
+    bool telemetry_delayed() const;
+
 private:
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
 
