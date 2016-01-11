@@ -74,7 +74,10 @@ def get_all_libraries(bld):
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
     return libraries
 
-def program(bld, blddestdir='bin', use_legacy_defines=True, **kw):
+def program(bld, blddestdir='bin',
+            use_legacy_defines=True,
+            program_name=None,
+            **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
     if 'defines' not in kw:
@@ -82,17 +85,21 @@ def program(bld, blddestdir='bin', use_legacy_defines=True, **kw):
     if 'source' not in kw:
         kw['source'] = bld.path.ant_glob(SOURCE_EXTS)
 
-    name = bld.path.name
+    if not program_name:
+        program_name = bld.path.name
 
     if use_legacy_defines:
-        kw['defines'].extend(_get_legacy_defines(name))
+        kw['defines'].extend(_get_legacy_defines(program_name))
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
+    if blddestdir == 'bin':
+        name = program_name
+    else:
+        name = blddestdir + '/' + program_name
+
     target = bld.bldnode.find_or_declare(blddestdir + '/' +
-                                         name + '.' + bld.env.BOARD)
-    if blddestdir != 'bin':
-        name = blddestdir + '/' + name
+                                         program_name + '.' + bld.env.BOARD)
 
     bld.program(
         target=target,
