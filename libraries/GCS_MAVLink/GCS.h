@@ -154,7 +154,6 @@ public:
     void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
-    static void send_home_all(const Location &home);
 
     void mavlink_msg_command_ack_send(MAV_CMD cmd, int ret);
     void mavlink_msg_compassmot_status_send(int16_t, float, float, float, float, float);
