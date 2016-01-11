@@ -453,21 +453,6 @@ else
     sh /etc/init.d/rc.error           
 fi
 
-# optional oreo leds
-if [ -f /bin/oreoled ]
-then
-  if oreoled start autoupdate
-  then
-    echo "oreoled started OK"
-  fi
-fi
-
-# optional smbus battery monitor
-if batt_smbus -b 2 start
-then
-    echo "Found batt_smbus"
-fi
-
 # optional irlock
 if irlock start
 then
