@@ -191,6 +191,9 @@ protected:
     GCS_Frontend *_frontend;
     mavlink_channel_t           chan;
 
+    // true if we are out of time in our event timeslice
+    bool out_of_time;
+
     AP_Int16 &streamRate(uint8_t i) { return streamRates[i]; }
     bool            waypoint_receiving() const { return _waypoint_receiving; }
     void            set_waypoint_receiving(const bool value) { _waypoint_receiving = value; }
