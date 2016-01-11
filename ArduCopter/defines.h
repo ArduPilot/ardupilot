@@ -457,5 +457,6 @@ enum ThrowModeState {
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
 #define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
+#define THR_BEHAVE_DISARM_ON_LAND_DETECT (1<<2)
 
 #endif // _DEFINES_H
