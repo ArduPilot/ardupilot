@@ -11,7 +11,7 @@ bool GCS_Backend_Rover::try_send_message(enum ap_message id)
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (!rover.in_mavlink_delay && rover.scheduler.time_available_usec() < 1200) {
-        rover.gcs_out_of_time = true;
+        out_of_time = true;
         return false;
     }
 
@@ -327,7 +327,7 @@ bool GCS_Backend_Rover::stream_trigger(enum streams stream_num)
 void
 GCS_Backend_Rover::data_stream_send(void)
 {
-    rover.gcs_out_of_time = false;
+    out_of_time = false;
 
     if (!rover.in_mavlink_delay) {
         handle_log_send(rover.DataFlash);
@@ -342,7 +342,7 @@ GCS_Backend_Rover::data_stream_send(void)
         }
     }
 
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (rover.in_mavlink_delay) {
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -360,14 +360,14 @@ GCS_Backend_Rover::data_stream_send(void)
         return;
     }
 
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU3);
     }
 
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1);
@@ -377,7 +377,7 @@ GCS_Backend_Rover::data_stream_send(void)
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
     }
 
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_POSITION)) {
         // sent with GPS read
@@ -385,20 +385,20 @@ GCS_Backend_Rover::data_stream_send(void)
         send_message(MSG_LOCAL_POSITION);
     }
 
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
     }
 
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_OUT);
         send_message(MSG_RADIO_IN);
     }
 
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
@@ -408,13 +408,13 @@ GCS_Backend_Rover::data_stream_send(void)
         }
     }
     
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
     }
 
-    if (rover.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
