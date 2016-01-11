@@ -93,18 +93,26 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    // @Param: SMBUS_EN
+    // @DisplayName:  Enable use of SMBUS batteries
+    // @Description: Enabling this option on a Pixhawk enables SMBUS batteries, e.g. 3DR Solo's battery
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("SMBUS_EN", 7, AP_BoardConfig, _smbus_enable, 0),
+#endif
     
     AP_GROUPEND
 };
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 extern "C" int uavcan_main(int argc, const char *argv[]);
+extern "C" int batt_smbus_main(int argc, const char *argv[]);
 
 #define _UAVCAN_IOCBASE             (0x4000)                        // IOCTL base for module UAVCAN
 #define _UAVCAN_IOC(_n)             (_IOC(_UAVCAN_IOCBASE, _n))
 
 #define UAVCAN_IOCG_NODEID_INPROGRESS  _UAVCAN_IOC(1)               // query if node identification is in progress
-
 #endif
 
 void AP_BoardConfig::init()
@@ -205,6 +213,19 @@ void AP_BoardConfig::init()
         }
    }
 #endif
+
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    if (_smbus_enable == 1) {
+        const char *args[] = { "batt_smbus", "-b", "2", "start", NULL };
+        int ret = batt_smbus_main(5, args);
+        if (ret != 0) {
+            hal.console->printf("batt_smbus: failed to start\n");
+        } else {
+            hal.console->printf("batt_smbus: started\n");
+        }
+    }
+#endif
+
     
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */
