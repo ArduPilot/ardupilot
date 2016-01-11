@@ -719,6 +719,36 @@ void Copter::Log_Write_Precland()
  #endif     // PRECISION_LANDING == ENABLED
 }
 
+// precision landing logging
+struct PACKED log_GuidedTarget {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t type;
+    float pos_target_x;
+    float pos_target_y;
+    float pos_target_z;
+    float vel_target_x;
+    float vel_target_y;
+    float vel_target_z;
+};
+
+// Write a Guided mode target
+void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
+{
+    struct log_GuidedTarget pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
+        time_us         : AP_HAL::micros64(),
+        type            : target_type,
+        pos_target_x    : pos_target.x,
+        pos_target_y    : pos_target.y,
+        pos_target_z    : pos_target.z,
+        vel_target_x    : vel_target.x,
+        vel_target_y    : vel_target.y,
+        vel_target_z    : vel_target.z
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
@@ -761,6 +791,8 @@ const struct LogStructure Copter::log_structure[] = {
       "HELI",  "Qhh",         "TimeUS,DRRPM,ERRPM" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
       "PL",    "QBffffff",    "TimeUS,Heal,bX,bY,eX,eY,pX,pY" },
+    { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
+      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
 };
 
 #if CLI_ENABLED == ENABLED
@@ -854,6 +886,7 @@ void Copter::Log_Write_Baro(void) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
 void Copter::Log_Write_Home_And_Origin() {}
 void Copter::Log_Sensor_Health() {}
+void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {};
 
 #if FRAME_CONFIG == HELI_FRAME
 void Copter::Log_Write_Heli() {}
