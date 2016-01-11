@@ -99,6 +99,7 @@ public:
     friend class GCS_MAVLINK;
     friend class Parameters;
     friend class AP_Arming;
+    friend class GCS_Backend_Rover; // for access to in_mavlink_delay
 
     Rover(void);
 

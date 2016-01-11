@@ -1,7 +1,7 @@
 #include "Rover.h" // for global rover object
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_Backend_Rover::try_send_message(enum ap_message id)
 {
     if (rover.telemetry_delayed(chan)) {
         return false;
@@ -292,17 +292,17 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
 
 // see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+bool GCS_Backend_Rover::stream_trigger(enum streams stream_num)
 {
     if (stream_num >= NUM_STREAMS) {
         return false;
     }
-    float rate = (uint8_t)streamRates[stream_num].get();
+    float rate = (uint8_t)streamRate(stream_num).get();
 
     // send at a much lower rate while handling waypoints and
     // parameter sends
     if ((stream_num != STREAM_PARAMS) && 
-        (waypoint_receiving || _queued_parameter != NULL)) {
+        (waypoint_receiving() || queued_parameter() != NULL)) {
         rate *= 0.25f;
     }
 
@@ -325,7 +325,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 }
 
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_Backend_Rover::data_stream_send(void)
 {
     rover.gcs_out_of_time = false;
 
@@ -333,9 +333,9 @@ GCS_MAVLINK::data_stream_send(void)
         handle_log_send(rover.DataFlash);
     }
 
-    if (_queued_parameter != NULL) {
-        if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(10);
+    if (queued_parameter() != NULL) {
+        if (streamRate(STREAM_PARAMS).get() <= 0) {
+            streamRate(STREAM_PARAMS).set(10);
         }
         if (stream_trigger(STREAM_PARAMS)) {
             send_message(MSG_NEXT_PARAM);
@@ -431,7 +431,7 @@ GCS_MAVLINK::data_stream_send(void)
 
 
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+void GCS_Backend_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (rover.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
@@ -445,12 +445,12 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     rover.set_guided_WP();
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_Backend_Rover::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // nothing to do
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_Backend_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
