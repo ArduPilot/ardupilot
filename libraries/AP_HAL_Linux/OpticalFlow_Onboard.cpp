@@ -105,10 +105,6 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
             _format = px_fmt;
         }
     }
-
-    if (!_format) {
-        AP_HAL::panic("OpticalFlow_Onboard: no supported format available");
-    }
 #endif
 
     if (!_videoin->set_format(&_width, &_height, &_format, &_bytesperline,
