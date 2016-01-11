@@ -152,7 +152,7 @@ more_data:
 
     // and send the reply
     _mav_finalize_message_chan_send(chan, 
-                                    MAVLINK_MSG_ID_SERIAL_CONTROL,
+                                    MAVLINK_MSG_ID_SERIAL_CONTROL_TUPLE,
                                     (const char *)&packet,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_CRC);
