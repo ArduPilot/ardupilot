@@ -9,9 +9,45 @@ from waflib import Build, Context, Task
 from waflib.TaskGen import feature, before_method, after_method
 from waflib.Errors import WafError
 
+def _configure_cmake(ctx, bldnode):
+    env = ctx.env
+    my_build_node = bldnode.find_dir(env.GBENCHMARK_BUILD_REL)
+    if not my_build_node:
+        bldnode.make_node(env.GBENCHMARK_BUILD_REL).mkdir()
+
+    prefix_node = bldnode.make_node(env.GBENCHMARK_PREFIX_REL)
+
+    cmake_vars = {
+        'CMAKE_BUILD_TYPE': 'Release',
+        'CMAKE_INSTALL_PREFIX:PATH': prefix_node.abspath(),
+    }
+
+    cmake_vars = ' '.join("-D%s='%s'" % v for v in cmake_vars.items())
+
+    cmd = '%s %s %s %s' % (
+              env.CMAKE[0],
+              env.GBENCHMARK_SRC,
+              cmake_vars,
+              env.GBENCHMARK_GENERATOR_OPTION
+          )
+
+    ctx.cmd_and_log(
+        cmd,
+        cwd=env.GBENCHMARK_BUILD,
+        quiet=Context.BOTH,
+    )
+
 def configure(cfg):
     env = cfg.env
     env.HAS_GBENCHMARK = False
+
+    if env.TOOLCHAIN != 'native':
+        cfg.msg(
+            'Gbenchmark',
+            'cross-compilation currently not supported',
+             color='YELLOW',
+        )
+        return
 
     cfg.start_msg('Checking for gbenchmark submodule')
     cmake_lists = cfg.srcnode.find_resource('modules/gbenchmark/CMakeLists.txt')
@@ -45,6 +81,14 @@ def configure(cfg):
     env.GBENCHMARK_BUILD_REL = my_build_node.path_from(bldnode)
     env.GBENCHMARK_SRC = my_src_node.abspath()
 
+    cfg.start_msg('Configuring gbenchmark')
+    try:
+        _configure_cmake(cfg, bldnode)
+        cfg.end_msg('done')
+    except:
+        cfg.end_msg('failed', color='YELLOW')
+        return
+
     env.INCLUDES_GBENCHMARK = [prefix_node.make_node('include').abspath()]
     env.LIBPATH_GBENCHMARK = [prefix_node.make_node('lib').abspath()]
     env.LIB_GBENCHMARK = ['benchmark']
@@ -76,30 +120,22 @@ class gbenchmark_build(Task.Task):
         if not cmake_lists:
             bld.fatal('Submodule gbenchmark not initialized, please run configure again')
 
-        # Generate build system first, if necessary
-        my_build_node = bld.bldnode.find_dir(self.env.GBENCHMARK_BUILD_REL)
-        if not (my_build_node and my_build_node.find_resource('CMakeCache.txt')):
-            if not my_build_node:
-                bld.bldnode.make_node(self.env.GBENCHMARK_BUILD_REL).mkdir()
-
-            cmds.append('%s %s -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=%s %s' % (
-                            self.env.CMAKE[0],
-                            self.env.GBENCHMARK_SRC,
-                            bld.bldnode.make_node(self.env.GBENCHMARK_PREFIX_REL).abspath(),
-                            self.env.GBENCHMARK_GENERATOR_OPTION
-                        ))
-
-        cmds.append('%s --build %s --target install' % (
-                      self.env.CMAKE[0],
-                      self.env.GBENCHMARK_BUILD
-                    ))
         try:
-            for cmd in cmds:
-                bld.cmd_and_log(
-                    cmd,
-                    cwd=self.env.GBENCHMARK_BUILD,
-                    quiet=Context.BOTH,
-                )
+            # Generate build system first, if necessary
+            my_build_node = bld.bldnode.find_dir(self.env.GBENCHMARK_BUILD_REL)
+            if not (my_build_node and my_build_node.find_resource('CMakeCache.txt')):
+                _configure_cmake(bld, bld.bldnode)
+
+            # Build gbenchmark
+            cmd = '%s --build %s --target install' % (
+                    self.env.CMAKE[0],
+                    self.env.GBENCHMARK_BUILD
+                  )
+            bld.cmd_and_log(
+                cmd,
+                cwd=self.env.GBENCHMARK_BUILD,
+                quiet=Context.BOTH,
+            )
             return 0
         except WafError as e:
             print(e)
