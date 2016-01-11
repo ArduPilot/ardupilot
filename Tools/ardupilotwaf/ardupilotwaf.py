@@ -98,8 +98,7 @@ def program(bld, blddestdir='bin',
     else:
         name = blddestdir + '/' + program_name
 
-    target = bld.bldnode.find_or_declare(blddestdir + '/' +
-                                         program_name + '.' + bld.env.BOARD)
+    target = bld.bldnode.find_or_declare(blddestdir + '/' + program_name)
 
     bld.program(
         target=target,
@@ -173,7 +172,7 @@ def find_tests(bld, use=[]):
             includes=includes,
             source=[f],
             use=use,
-            program_name=f.change_ext('.' + bld.env.BOARD).name,
+            program_name=f.change_ext('').name,
             blddestdir='tests',
             use_legacy_defines=False,
         )
@@ -191,7 +190,7 @@ def find_benchmarks(bld, use=[]):
             includes=includes,
             source=[f],
             use=use,
-            program_name=f.change_ext('.' + bld.env.BOARD).name,
+            program_name=f.change_ext('').name,
             blddestdir='benchmarks',
             use_legacy_defines=False,
         )
