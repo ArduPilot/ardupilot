@@ -149,14 +149,17 @@ void Copter::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1100;
 
-	channels[0] = x*rpyScale+rpyCenter;           // pitch (forward for ROV)
-	channels[1] = y*rpyScale+rpyCenter;           // roll (strafe for ROV)
+	uint16_t mode = buttons;
+	int16_t camTilt = 1500;
+
+	channels[0] = 1500;                           // pitch
+	channels[1] = 1500;                           // roll
 	channels[2] = z*throttleScale+throttleBase;   // throttle
 	channels[3] = r*rpyScale+rpyCenter;           // yaw
-	channels[4] = buttons; // for testing only
-	channels[5] = 1100;
-	channels[6] = 1100;
-	channels[7] = 1500; // camera tilt
+	channels[4] = mode;                           // for testing only
+	channels[5] = x*rpyScale+rpyCenter;           // forward for ROV
+	channels[6] = y*rpyScale+rpyCenter;           // strafe for ROV
+	channels[7] = camTilt;                        // camera tilt
 
 	// record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
 	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 8);
