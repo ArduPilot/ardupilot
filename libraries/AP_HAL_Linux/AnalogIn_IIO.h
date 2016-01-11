@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_IIO_ANALOGIN_H__
-#define __AP_HAL_IIO_ANALOGIN_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #include <AP_ADC/AP_ADC.h>
@@ -12,7 +10,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
 #define IIO_ANALOG_IN_COUNT 8
 // Note that echo BB-ADC cape should be loaded
 #define IIO_ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
@@ -41,7 +39,7 @@ private:
     // float       _value_ratiometric;
     uint8_t     _sum_count;
     int16_t     _pin;
-    int         _pin_fd;    
+    int         _pin_fd;
     int         fd_analog_sources[IIO_ANALOG_IN_COUNT];
 
     void reopen_pin(void);
@@ -61,4 +59,3 @@ public:
     float board_voltage(void) { return 0.0f; }
 
 };
-#endif // __AP_HAL_IIO_ANALOGIN_H__

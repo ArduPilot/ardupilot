@@ -6,8 +6,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-
-
 const char* IIOAnalogSource::analog_sources[IIO_ANALOG_IN_COUNT] = {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     "in_voltage0_raw",
@@ -16,8 +14,8 @@ const char* IIOAnalogSource::analog_sources[IIO_ANALOG_IN_COUNT] = {
     "in_voltage3_raw",
     "in_voltage4_raw",
     "in_voltage5_raw",
-    "in_voltage6_raw",            
-    "in_voltage7_raw",                        
+    "in_voltage6_raw",
+    "in_voltage7_raw",
 #else
     "in_voltage0_raw",
 #endif
@@ -31,7 +29,7 @@ IIOAnalogSource::IIOAnalogSource(int16_t pin, float initial_value) :
     _pin_fd(-1)
 {
     init_pins();
-    select_pin();    
+    select_pin();
 }
 
 void IIOAnalogSource::init_pins(void)
@@ -41,11 +39,11 @@ void IIOAnalogSource::init_pins(void)
         // Construct the path by appending strings
         strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
         strncat(buf, IIOAnalogSource::analog_sources[i], sizeof(buf));
-     
+
         fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK);
         if (fd_analog_sources[i] == -1) {
             ::printf("Failed to open analog pin %s\n", buf);
-        }    
+        }
     }
 }
 
@@ -73,7 +71,7 @@ void IIOAnalogSource::reopen_pin(void)
     if (_pin < 0) {
         return;
     }
-    
+
     if (_pin > IIO_ANALOG_IN_COUNT) {
         // invalid pin
         return;
@@ -82,7 +80,7 @@ void IIOAnalogSource::reopen_pin(void)
     // Construct the path by appending strings
     strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
     strncat(buf, IIOAnalogSource::analog_sources[_pin], sizeof(buf));
-    
+
     fd_analog_sources[_pin] = open(buf, O_RDONLY | O_NONBLOCK);
     if (fd_analog_sources[_pin] == -1) {
         ::printf("Failed to open analog pin %s\n", buf);
@@ -90,7 +88,7 @@ void IIOAnalogSource::reopen_pin(void)
     _pin_fd = fd_analog_sources[_pin];
 }
 
-float IIOAnalogSource::read_average() 
+float IIOAnalogSource::read_average()
 {
     read_latest();
     if (_sum_count == 0) {
@@ -106,7 +104,7 @@ float IIOAnalogSource::read_average()
     return _value;
 }
 
-float IIOAnalogSource::read_latest() 
+float IIOAnalogSource::read_latest()
 {
     char sbuf[10];
 
@@ -119,7 +117,7 @@ float IIOAnalogSource::read_latest()
     pread(_pin_fd, sbuf, sizeof(sbuf)-1, 0);
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     _latest = atoi(sbuf) * BBB_VOLTAGE_SCALING;
-#else    
+#else
     _latest = atoi(sbuf);
 #endif
     _sum_value += _latest;
@@ -129,12 +127,12 @@ float IIOAnalogSource::read_latest()
 }
 
 // output is in volts
-float IIOAnalogSource::voltage_average() 
+float IIOAnalogSource::voltage_average()
 {
     return read_average();
 }
 
-float IIOAnalogSource::voltage_latest() 
+float IIOAnalogSource::voltage_latest()
 {
     read_latest();
     return _latest;
@@ -152,7 +150,7 @@ void IIOAnalogSource::set_pin(uint8_t pin)
     // _sum_ratiometric = 0;
     _sum_count = 0;
     _latest = 0;
-    _value = 0;    
+    _value = 0;
     select_pin();
     // _value_ratiometric = 0;
     hal.scheduler->resume_timer_procs();
