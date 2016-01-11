@@ -89,6 +89,9 @@ def program(bld, blddestdir='bin', **kw):
 
     target = bld.bldnode.find_or_declare(blddestdir + '/' +
                                          name + '.' + bld.env.BOARD)
+    if blddestdir != 'bin':
+        name = blddestdir + '/' + name
+
     bld.program(
         target=target,
         name=name,
