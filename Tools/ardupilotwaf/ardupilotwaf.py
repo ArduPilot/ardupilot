@@ -93,8 +93,7 @@ def program(bld, destdir='bin', is_sketch=False, **kw):
     else:
         name = kw['name']
 
-    target = bld.bldnode.find_or_declare(destdir + '/' +
-                                         name + '.' + bld.env.BOARD)
+    target = bld.bldnode.find_or_declare(destdir + '/' + name)
     bld.program(
         target=target,
         name=name if destdir == 'bin' else target.path_from(bld.bldnode),
@@ -162,7 +161,7 @@ def find_tests(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/tests/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        target = f.change_ext('.' + bld.env.BOARD)
+        target = f.change_ext('')
         program(
             bld,
             features=features,
@@ -179,7 +178,7 @@ def find_benchmarks(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/benchmarks/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        target = f.change_ext('.' + bld.env.BOARD)
+        target = f.change_ext('')
         program(
             bld,
             features=['gbenchmark'],
