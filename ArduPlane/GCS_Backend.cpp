@@ -877,7 +877,7 @@ void GCS_Backend_Plane::handleMessage(mavlink_message_t* msg)
                 plane.ahrs.set_home(new_home_loc);
                 plane.home_is_set = HOME_SET_NOT_LOCKED;
                 plane.Log_Write_Home_And_Origin();
-                GCS_Backend_Plane::send_home_all(new_home_loc);
+                _frontend->send_home(new_home_loc); // all GCS get new home
                 result = MAV_RESULT_ACCEPTED;
                 _frontend->send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
@@ -1324,7 +1324,7 @@ void GCS_Backend_Plane::handleMessage(mavlink_message_t* msg)
         plane.ahrs.set_home(new_home_loc);
         plane.home_is_set = HOME_SET_NOT_LOCKED;
         plane.Log_Write_Home_And_Origin();
-        GCS_Backend_Plane::send_home_all(new_home_loc);
+        _frontend->send_home(new_home_loc); // all GCS get new home
         _frontend->send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                 (double)(new_home_loc.lat*1.0e-7f),
                                 (double)(new_home_loc.lng*1.0e-7f),
