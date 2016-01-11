@@ -20,10 +20,10 @@
 #define IIO_ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
 #endif
 
-class IIOAnalogSource : public AP_HAL::AnalogSource {
+class AnalogSource_IIO : public AP_HAL::AnalogSource {
 public:
-    friend class IIOAnalogIn;
-    IIOAnalogSource(int16_t pin, float v);
+    friend class AnalogIn_IIO;
+    AnalogSource_IIO(int16_t pin, float v);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -49,9 +49,9 @@ private:
     static const char *analog_sources[IIO_ANALOG_IN_COUNT];
 };
 
-class IIOAnalogIn : public AP_HAL::AnalogIn {
+class AnalogIn_IIO : public AP_HAL::AnalogIn {
 public:
-    IIOAnalogIn();
+    AnalogIn_IIO();
     void init();
     AP_HAL::AnalogSource* channel(int16_t n);
 

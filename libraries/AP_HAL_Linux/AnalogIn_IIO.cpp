@@ -6,7 +6,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const char* IIOAnalogSource::analog_sources[IIO_ANALOG_IN_COUNT] = {
+const char* AnalogSource_IIO::analog_sources[IIO_ANALOG_IN_COUNT] = {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     "in_voltage0_raw",
     "in_voltage1_raw",
@@ -21,7 +21,7 @@ const char* IIOAnalogSource::analog_sources[IIO_ANALOG_IN_COUNT] = {
 #endif
 };
 
-IIOAnalogSource::IIOAnalogSource(int16_t pin, float initial_value) :
+AnalogSource_IIO::AnalogSource_IIO(int16_t pin, float initial_value) :
     _pin(pin),
     _value(initial_value),
     _sum_value(0),
@@ -32,13 +32,13 @@ IIOAnalogSource::IIOAnalogSource(int16_t pin, float initial_value) :
     select_pin();
 }
 
-void IIOAnalogSource::init_pins(void)
+void AnalogSource_IIO::init_pins(void)
 {
     char buf[100];
     for (int i=0; i < IIO_ANALOG_IN_COUNT; i++) {
         // Construct the path by appending strings
         strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
-        strncat(buf, IIOAnalogSource::analog_sources[i], sizeof(buf));
+        strncat(buf, AnalogSource_IIO::analog_sources[i], sizeof(buf));
 
         fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK);
         if (fd_analog_sources[i] == -1) {
@@ -50,7 +50,7 @@ void IIOAnalogSource::init_pins(void)
 /*
   selects a diferent file descriptor among in the fd_analog_sources array
  */
-void IIOAnalogSource::select_pin(void)
+void AnalogSource_IIO::select_pin(void)
 {
     _pin_fd = fd_analog_sources[_pin];
 }
@@ -58,7 +58,7 @@ void IIOAnalogSource::select_pin(void)
 /*
   reopens an analog source (by closing and opening it again) and selects it
  */
-void IIOAnalogSource::reopen_pin(void)
+void AnalogSource_IIO::reopen_pin(void)
 {
     char buf[100];
 
@@ -79,7 +79,7 @@ void IIOAnalogSource::reopen_pin(void)
 
     // Construct the path by appending strings
     strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
-    strncat(buf, IIOAnalogSource::analog_sources[_pin], sizeof(buf));
+    strncat(buf, AnalogSource_IIO::analog_sources[_pin], sizeof(buf));
 
     fd_analog_sources[_pin] = open(buf, O_RDONLY | O_NONBLOCK);
     if (fd_analog_sources[_pin] == -1) {
@@ -88,7 +88,7 @@ void IIOAnalogSource::reopen_pin(void)
     _pin_fd = fd_analog_sources[_pin];
 }
 
-float IIOAnalogSource::read_average()
+float AnalogSource_IIO::read_average()
 {
     read_latest();
     if (_sum_count == 0) {
@@ -104,7 +104,7 @@ float IIOAnalogSource::read_average()
     return _value;
 }
 
-float IIOAnalogSource::read_latest()
+float AnalogSource_IIO::read_latest()
 {
     char sbuf[10];
 
@@ -127,18 +127,18 @@ float IIOAnalogSource::read_latest()
 }
 
 // output is in volts
-float IIOAnalogSource::voltage_average()
+float AnalogSource_IIO::voltage_average()
 {
     return read_average();
 }
 
-float IIOAnalogSource::voltage_latest()
+float AnalogSource_IIO::voltage_latest()
 {
     read_latest();
     return _latest;
 }
 
-void IIOAnalogSource::set_pin(uint8_t pin)
+void AnalogSource_IIO::set_pin(uint8_t pin)
 {
     if (_pin == pin) {
         return;
@@ -156,21 +156,21 @@ void IIOAnalogSource::set_pin(uint8_t pin)
     hal.scheduler->resume_timer_procs();
 }
 
-void IIOAnalogSource::set_stop_pin(uint8_t p)
+void AnalogSource_IIO::set_stop_pin(uint8_t p)
 {}
 
-void IIOAnalogSource::set_settle_time(uint16_t settle_time_ms)
+void AnalogSource_IIO::set_settle_time(uint16_t settle_time_ms)
 {}
 
-IIOAnalogIn::IIOAnalogIn()
+AnalogIn_IIO::AnalogIn_IIO()
 {}
 
-void IIOAnalogIn::init()
+void AnalogIn_IIO::init()
 {}
 
 
-AP_HAL::AnalogSource* IIOAnalogIn::channel(int16_t pin) {
-    return new IIOAnalogSource(pin, 0);
+AP_HAL::AnalogSource* AnalogIn_IIO::channel(int16_t pin) {
+    return new AnalogSource_IIO(pin, 0);
 }
 
 #endif // CONFIG_HAL_BOARD

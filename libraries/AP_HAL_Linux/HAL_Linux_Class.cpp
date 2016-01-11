@@ -83,7 +83,7 @@ static RaspilotAnalogIn analogIn;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 static Empty::AnalogIn analogIn;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
-static IIOAnalogIn analogIn;
+static AnalogIn_IIO analogIn;
 #else
 static AnalogIn analogIn;
 #endif
