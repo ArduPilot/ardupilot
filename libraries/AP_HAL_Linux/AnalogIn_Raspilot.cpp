@@ -100,26 +100,26 @@ void RaspilotAnalogIn::_update()
         return;
     }
 
-    struct IOPacket _dma_packet_tx, _dma_packet_rx;
+    struct IOPacket tx = { }, rx = { };
     uint16_t count = RASPILOT_ADC_MAX_CHANNELS;
-    _dma_packet_tx.count_code = count | PKT_CODE_READ;
-    _dma_packet_tx.page = PX4IO_PAGE_RAW_ADC_INPUT;
-    _dma_packet_tx.offset = 0;
-    _dma_packet_tx.crc = 0;
-    _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
+    tx.count_code = count | PKT_CODE_READ;
+    tx.page = PX4IO_PAGE_RAW_ADC_INPUT;
+    tx.offset = 0;
+    tx.crc = 0;
+    tx.crc = crc_packet(&tx);
     /* set raspilotio to read reg4 */
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
+    _spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, sizeof(tx));
 
     hal.scheduler->delay_microseconds(200);
 
     count = 0;
-    _dma_packet_tx.count_code = count | PKT_CODE_READ;
-    _dma_packet_tx.page = 0;
-    _dma_packet_tx.offset = 0;
-    _dma_packet_tx.crc = 0;
-    _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
+    tx.count_code = count | PKT_CODE_READ;
+    tx.page = 0;
+    tx.offset = 0;
+    tx.crc = 0;
+    tx.crc = crc_packet(&tx);
     /* get reg4 data from raspilotio */
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
+    _spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, sizeof(tx));
 
     _spi_sem->give();
 
@@ -128,7 +128,7 @@ void RaspilotAnalogIn::_update()
             AnalogSource_Raspilot *source = _channels[j];
 
             if (source != NULL && i == source->_pin) {
-                source->_value = _dma_packet_rx.regs[i] * 3.3 / 4096.0;
+                source->_value = rx.regs[i] * 3.3 / 4096.0;
             }
         }
     }
