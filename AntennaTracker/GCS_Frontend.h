@@ -11,8 +11,7 @@ class GCS_Frontend_Tracker : public GCS_Frontend {
 public:
 
     GCS_Frontend_Tracker(DataFlash_Class &DataFlash, Parameters &g) :
-        GCS_Frontend(DataFlash),
-        _g(g)
+        GCS_Frontend(DataFlash, g)
         { }
     void setup_uarts(AP_SerialManager & serial_manager, void (&)(const mavlink_message_t*));
 
@@ -24,5 +23,4 @@ private:
 
     GCS_Backend_Tracker _gcs[MAVLINK_COMM_NUM_BUFFERS];
 
-    Parameters &_g;
 };
