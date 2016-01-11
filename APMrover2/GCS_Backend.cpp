@@ -18,6 +18,12 @@ bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
     return true;
 }
 
+bool GCS_Backend_Rover::send_HEARTBEAT()
+{
+    rover.send_heartbeat(chan);
+    return true;
+}
+
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_Backend_Rover::try_send_message(enum ap_message id)
 {
@@ -29,7 +35,7 @@ bool GCS_Backend_Rover::try_send_message(enum ap_message id)
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();        
-        rover.send_heartbeat(chan);
+        send_HEARTBEAT();
         return true;
 
     case MSG_EXTENDED_STATUS1:

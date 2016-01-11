@@ -15,6 +15,8 @@ protected:
 
     bool should_try_send_message(enum ap_message id) override;
 
+    bool send_HEARTBEAT() override;
+
 private:
 
 };
