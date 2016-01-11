@@ -31,14 +31,14 @@ public:
 
     /* Board voltage is not available */
     float board_voltage(void);
-    
+
 protected:
     AP_HAL::AnalogSource *_vcc_pin_analog_source;
-    
+
 private:
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;
-    
+
     RaspilotAnalogSource *_channels[RASPILOT_ADC_MAX_CHANNELS];
 
     uint8_t _channels_number;

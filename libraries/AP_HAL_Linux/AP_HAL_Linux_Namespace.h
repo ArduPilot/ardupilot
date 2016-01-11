@@ -44,6 +44,7 @@ namespace Linux {
     class Util;
     class UtilRPI;
     class ToneAlarm;
+    class ToneAlarm_Raspilot;
     class Heat;
     class HeatPwm;
     class CameraSensor;

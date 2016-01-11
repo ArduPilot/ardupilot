@@ -18,7 +18,11 @@ using namespace Linux;
 
 
 static int state;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+ToneAlarm_Raspilot Util::_toneAlarm;
+#else
 ToneAlarm Util::_toneAlarm;
+#endif
 
 void Util::init(int argc, char * const *argv) {
     saved_argc = argc;

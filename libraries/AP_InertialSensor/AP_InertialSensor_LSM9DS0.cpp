@@ -24,6 +24,11 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    #define LSM9DS0_DRY_X_PIN RPI_GPIO_17  // ACCEL DRDY
+    #define LSM9DS0_DRY_G_PIN RPI_GPIO_6  // GYRO DRDY
+#endif
+
  #define LSM9DS0_G_WHOAMI    0xD4
  #define LSM9DS0_XM_WHOAMI   0x49
 
@@ -386,6 +391,14 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::detect(AP_InertialSensor &
 {
     int drdy_pin_num_a = -1, drdy_pin_num_g = -1;
 
+#ifdef  LSM9DS0_DRY_X_PIN
+    drdy_pin_num_a = LSM9DS0_DRY_X_PIN;
+#endif
+
+#ifdef  LSM9DS0_DRY_G_PIN
+    drdy_pin_num_g = LSM9DS0_DRY_G_PIN;
+#endif
+
     AP_InertialSensor_LSM9DS0 *sensor =
         new AP_InertialSensor_LSM9DS0(_imu, drdy_pin_num_a, drdy_pin_num_g);
 
@@ -403,14 +416,21 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::detect(AP_InertialSensor &
 
 bool AP_InertialSensor_LSM9DS0::_init_sensor()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    _gyro_spi = hal.spi->device(AP_HAL::SPIDevice_L3GD20);
+    _accel_spi = hal.spi->device(AP_HAL::SPIDevice_LSM303D);
+#else
     _gyro_spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0_G);
     _accel_spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0_AM);
+#endif
     _spi_sem = _gyro_spi->get_semaphore(); /* same semaphore for both */
 
     if (_drdy_pin_num_a >= 0) {
         _drdy_pin_a = hal.gpio->channel(_drdy_pin_num_a);
         if (_drdy_pin_a == NULL) {
             AP_HAL::panic("LSM9DS0: null accel data-ready GPIO channel\n");
+        } else {
+            _drdy_pin_a->mode(HAL_GPIO_INPUT);
         }
     }
 
@@ -418,6 +438,8 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         _drdy_pin_g = hal.gpio->channel(_drdy_pin_num_g);
         if (_drdy_pin_g == NULL) {
             AP_HAL::panic("LSM9DS0: null gyro data-ready GPIO channel\n");
+        } else {
+            _drdy_pin_g->mode(HAL_GPIO_INPUT);
         }
     }
 
@@ -439,7 +461,10 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         whoami_ok = false;
     }
 
-    if (!whoami_ok) return false;
+    if (!whoami_ok) {
+        hal.scheduler->resume_timer_procs();
+        return false;
+    }
 
     uint8_t tries = 0;
     bool a_ready = false;
@@ -559,8 +584,37 @@ void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val)
     _gyro_spi->transaction(tx, rx, 2);
 }
 
+void AP_InertialSensor_LSM9DS0::_gyro_disable_i2c()
+{
+    uint8_t retries = 10;
+    while (retries--) {
+        // add retries
+        uint8_t a = _register_read_g(0x05);
+        _register_write_g(0x05, (0x20 | a));
+        if (_register_read_g(0x05) == (a | 0x20)) {
+            return;
+        }
+    }
+    AP_HAL::panic("LSM9DS0_G: Unable to disable I2C");
+}
+
+void AP_InertialSensor_LSM9DS0::_accel_disable_i2c()
+{
+    uint8_t a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0x10 | a));
+    a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0xF7 & a));
+    a = _register_read_xm(0x15);
+    _register_write_xm(0x15, (0x80 | a));
+    a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0xE7 & a));
+}
+
 void AP_InertialSensor_LSM9DS0::_gyro_init()
 {
+    _gyro_disable_i2c();
+    hal.scheduler->delay(1);
+
     _register_write_g(CTRL_REG1_G,
                       CTRL_REG1_G_DR_760Hz_BW_50Hz |
                       CTRL_REG1_G_PD |
@@ -590,6 +644,9 @@ void AP_InertialSensor_LSM9DS0::_gyro_init()
 
 void AP_InertialSensor_LSM9DS0::_accel_init()
 {
+    _accel_disable_i2c();
+    hal.scheduler->delay(1);
+
     _register_write_xm(CTRL_REG0_XM, 0x00);
     hal.scheduler->delay(1);
 
@@ -700,7 +757,7 @@ bool AP_InertialSensor_LSM9DS0::_gyro_data_ready()
     if (_drdy_pin_g != NULL) {
         return _drdy_pin_g->read() != 0;
     } else {
-        uint8_t status = _register_read_xm(STATUS_REG_G);
+        uint8_t status = _register_read_g(STATUS_REG_G);
         return status & STATUS_REG_G_ZYXDA;
     }
 }
@@ -748,6 +805,9 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     _gyro_raw_data(&raw_data);
 
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT //LSM303D on RasPilot
+    gyro_data.rotate(ROTATION_YAW_90);
+#endif
     gyro_data *= _gyro_scale;
 
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
