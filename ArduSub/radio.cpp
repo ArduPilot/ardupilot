@@ -141,6 +141,27 @@ void Copter::read_radio()
     }
 }
 
+void Copter::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
+	int16_t channels[8];
+
+	float rpyScale = 0.4;
+	float throttleScale = 0.8;
+	int16_t rpyCenter = 1500;
+	int16_t throttleBase = 1100;
+
+	channels[0] = x*rpyScale+rpyCenter;           // pitch (forward for ROV)
+	channels[1] = y*rpyScale+rpyCenter;           // roll (strafe for ROV)
+	channels[2] = z*throttleScale+throttleBase;   // throttle
+	channels[3] = r*rpyScale+rpyCenter;           // yaw
+	channels[4] = buttons; // for testing only
+	channels[5] = 1100;
+	channels[6] = 1100;
+	channels[7] = 1500; // camera tilt
+
+	// record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
+	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 8);
+}
+
 #define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
 void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {

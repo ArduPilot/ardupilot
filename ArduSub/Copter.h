@@ -914,6 +914,7 @@ private:
     void init_rc_out();
     void enable_motor_output();
     void read_radio();
+    void transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons);
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
     void init_barometer(bool full_calibration);
