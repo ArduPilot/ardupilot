@@ -93,6 +93,8 @@
 >>   - ***Board***: Flymaple
 >> - [Julien BERAUD](#)
 >>   - ***Board***: Bebop & Bebop 2
+>> - [Pritam Ghanghas](https://github.com/pritamghanghas)
+>>   - ***Board***: Raspilot
 >> - [Jonathan Challinger] (https://github.com/3drobotics/ardupilot-solo)
 >>   - ***Vehicle***: 3DRobotics Solo ArduPilot maintainer
 >> - [Gustavo José de Sousa](https://github.com/guludo)
