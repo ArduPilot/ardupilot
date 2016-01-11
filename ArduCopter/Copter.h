@@ -630,7 +630,6 @@ private:
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
     void send_pid_tuning(mavlink_channel_t chan);
-    bool telemetry_delayed(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
     void do_erase_logs(void);

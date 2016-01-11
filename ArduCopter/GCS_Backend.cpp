@@ -4,7 +4,7 @@
 // try to send a message, return false if it wasn't sent
 bool GCS_Backend_Copter::try_send_message(enum ap_message id)
 {
-    if (copter.telemetry_delayed(chan)) {
+    if (telemetry_delayed()) {
         return false;
     }
 

@@ -14,6 +14,10 @@ public:
 
     GCS_Backend_Copter &gcs(const uint8_t i) { return _gcs[i]; }
 
+protected:
+
+    uint32_t telem_delay() const;
+
 private:
 
     GCS_Backend_Copter _gcs[MAVLINK_COMM_NUM_BUFFERS];
