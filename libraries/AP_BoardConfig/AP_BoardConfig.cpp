@@ -101,6 +101,14 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("SMBUS_EN", 7, AP_BoardConfig, _smbus_enable, 0),
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    // @Param: OREOLED_EN
+    // @DisplayName:  Enable use of OREOLED devices
+    // @Description: Enabling this option on a Pixhawk enables OREOLED devices, e.g. 3DR Solo's LEDs
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("OREOLED_EN", 8, AP_BoardConfig, _oreoled_enable, 0),
+#endif
     
     AP_GROUPEND
 };
@@ -108,6 +116,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 extern "C" int uavcan_main(int argc, const char *argv[]);
 extern "C" int batt_smbus_main(int argc, const char *argv[]);
+extern "C" int oreoled_main(int argc, const char *argv[]);
 
 #define _UAVCAN_IOCBASE             (0x4000)                        // IOCTL base for module UAVCAN
 #define _UAVCAN_IOC(_n)             (_IOC(_UAVCAN_IOCBASE, _n))
@@ -215,6 +224,18 @@ void AP_BoardConfig::init()
 #endif
 
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+if (_oreoled_enable == 1) {
+    const char *args[] = { "oreoled", "start", "autoupdate", NULL };
+    int ret = oreoled_main(4, args);
+    if (ret != 0) {
+        hal.console->printf("oreoled: failed to start\n");
+    } else {
+        hal.console->printf("oreoled: started\n");
+    }
+}
+#endif
+
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     if (_smbus_enable == 1) {
         const char *args[] = { "batt_smbus", "-b", "2", "start", NULL };
         int ret = batt_smbus_main(5, args);
@@ -225,7 +246,6 @@ void AP_BoardConfig::init()
         }
     }
 #endif
-
     
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */
