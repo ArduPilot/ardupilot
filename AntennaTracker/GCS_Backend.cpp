@@ -10,9 +10,18 @@ void GCS_Backend_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&
     // do nothing
 }
 
+bool GCS_Backend_Tracker::should_try_send_message(enum ap_message id)
+{
+    return true;
+}
+
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_Backend_Tracker::try_send_message(enum ap_message id)
 {
+    if (!should_try_send_message(id)) {
+        return false;
+    }
+
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
