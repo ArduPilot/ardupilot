@@ -91,6 +91,11 @@ void GCS_Frontend::send_message(enum ap_message id)
     FOR_EACH_INITIALISED_GCS(send_message(id));
 }
 
+void GCS_Frontend::send_home(const Location &home)
+{
+    FOR_EACH_INITIALISED_GCS(send_home(home));
+}
+
 /*
  *  send a mission item reached message and load the index before the send attempt in case it may get delayed
  */

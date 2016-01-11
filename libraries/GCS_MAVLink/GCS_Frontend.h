@@ -35,6 +35,8 @@ public:
     void send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool try_send_message(enum ap_message id);
 
+    void send_home(const Location &home);
+
     bool first_initialised();
 
     void set_run_cli_func(run_cli_fn func) {
