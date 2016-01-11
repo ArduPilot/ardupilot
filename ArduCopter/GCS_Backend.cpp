@@ -1,8 +1,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "Copter.h" // for copter global variable
 
-// try to send a message, return false if it wasn't sent
-bool GCS_Backend_Copter::try_send_message(enum ap_message id)
+bool GCS_Backend_Copter::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
         return false;
@@ -17,6 +16,16 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
         return false;
     }
 #endif
+
+    return true;
+}
+
+// try to send a message, return false if it wasn't sent
+bool GCS_Backend_Copter::try_send_message(enum ap_message id)
+{
+    if (!should_try_send_message(id)) {
+        return false;
+    }
 
     switch(id) {
     case MSG_HEARTBEAT:
