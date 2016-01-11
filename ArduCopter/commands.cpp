@@ -105,7 +105,7 @@ bool Copter::set_home(const Location& loc)
     Log_Write_Home_And_Origin();
 
     // send new home location to GCS
-    GCS_MAVLINK::send_home_all(loc);
+    gcs_frontend.send_home(loc);
 
     // return success
     return true;
