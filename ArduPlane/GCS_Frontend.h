@@ -21,6 +21,5 @@ private:
 
     GCS_Backend_Plane _gcs[MAVLINK_COMM_NUM_BUFFERS];
 
-    Parameters &_g;
     AP_Airspeed &_airspeed;
 };

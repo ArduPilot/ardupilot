@@ -6,8 +6,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 
 GCS_Frontend_Plane::GCS_Frontend_Plane(DataFlash_Class &DataFlash, Parameters &g, AP_Airspeed &airspeed) :
-    GCS_Frontend(DataFlash),
-    _g(g),
+    GCS_Frontend(DataFlash, g),
     _airspeed(airspeed) { }
 
 /*
