@@ -107,6 +107,9 @@ qurt: all
 # support debug build
 %-debug: OPTFLAGS = -g -O0
 
+# support mavlink2 builds
+%-mavlink2: EXTRAFLAGS += "-DMAVLINK_PROTOCOL_VERSION=2"
+
 # support address sanitiser
 %-asan: OPTFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer
 %-asan: LDFLAGS += -fsanitize=address
@@ -123,6 +126,8 @@ $(1)-$(2) : EXTRAFLAGS += "-DFRAME_CONFIG=$(shell echo $(2) | tr a-z A-Z | sed s
 $(1)-$(2) : $(1)
 $(1)-$(2)-hil : $(1)-$(2)
 $(1)-$(2)-debug : $(1)-$(2)
+$(1)-$(2)-mavlink2 : $(1)-$(2)
+$(1)-$(2)-debug-mavlink2 : $(1)-$(2)
 $(1)-$(2)-hilsensors : $(1)-$(2)
 $(1)-$(2)-upload : $(1)-$(2)
 $(1)-$(2)-upload : $(1)-upload
@@ -131,6 +136,8 @@ endef
 define board_template
 $(1)-hil : $(1)
 $(1)-debug : $(1)
+$(1)-mavlink2 : $(1)
+$(1)-debug-mavlink2 : $(1)-debug
 $(1)-asan : $(1)
 $(1)-hilsensors : $(1)
 endef
