@@ -4,7 +4,7 @@
 import ardupilotwaf
 
 def build(bld):
-    ardupilotwaf.sketch(
+    ardupilotwaf.example(
         bld,
         use='ap',
     )

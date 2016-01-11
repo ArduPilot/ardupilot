@@ -7,4 +7,5 @@ def build(bld):
     ardupilotwaf.sketch(
         bld,
         use='ap',
+        destdir='tools',
     )
