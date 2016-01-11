@@ -13,7 +13,7 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (copter.scheduler.time_available_usec() < 250 && copter.motors.armed()) {
-        copter.gcs_out_of_time = true;
+        out_of_time = true;
         return false;
     }
 #endif
@@ -373,7 +373,7 @@ GCS_Backend_Copter::data_stream_send(void)
         handle_log_send(copter.DataFlash);
     }
 
-    copter.gcs_out_of_time = false;
+    out_of_time = false;
 
     if (queued_parameter() != NULL) {
         if (streamRate(STREAM_PARAMS).get() <= 0) {
@@ -386,7 +386,7 @@ GCS_Backend_Copter::data_stream_send(void)
         return;
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (copter.in_mavlink_delay) {
         // don't send any other stream types while in the delay callback
@@ -399,7 +399,7 @@ GCS_Backend_Copter::data_stream_send(void)
         send_message(MSG_RAW_IMU3);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1);
@@ -410,27 +410,27 @@ GCS_Backend_Copter::data_stream_send(void)
         send_message(MSG_LIMITS_STATUS);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_POSITION)) {
         send_message(MSG_LOCATION);
         send_message(MSG_LOCAL_POSITION);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_OUT);
         send_message(MSG_RADIO_IN);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
@@ -438,13 +438,13 @@ GCS_Backend_Copter::data_stream_send(void)
         send_message(MSG_PID_TUNING);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
