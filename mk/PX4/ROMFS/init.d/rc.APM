@@ -475,15 +475,6 @@ then
     echo "started pwm_input driver"
 fi
 
-# optional oreo leds
-if [ -f /bin/oreoled ]
-then
-  if oreoled start autoupdate
-  then
-    echo "oreoled started OK"
-  fi
-fi
-
 # optional irlock
 if irlock start
 then
