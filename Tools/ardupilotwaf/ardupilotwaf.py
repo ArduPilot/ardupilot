@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Logs, Utils
+from waflib import Logs, Node, Utils
 
 SOURCE_EXTS = [
     '*.S',
@@ -74,7 +74,7 @@ def get_all_libraries(bld):
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
     return libraries
 
-def program(bld, **kw):
+def program(bld, destdir='bin', is_sketch=False, **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
     if 'defines' not in kw:
@@ -82,15 +82,31 @@ def program(bld, **kw):
     if 'source' not in kw:
         kw['source'] = bld.path.ant_glob(SOURCE_EXTS)
 
-    name = bld.path.name
-    kw['defines'].extend(_get_legacy_defines(name))
+    if is_sketch:
+        name = bld.path.name
+        kw['defines'].extend(_get_legacy_defines(name))
+    elif 'name' not in kw:
+        s = kw['source'][0]
+        if not isinstance(s, Node.Node):
+            s = bld.path.make_node(s)
+        name = s.change_ext('').name
+    else:
+        name = kw['name']
 
-    target = bld.bldnode.make_node(name + '.' + bld.env.BOARD)
+    target = bld.bldnode.find_or_declare(destdir + '/' + name)
     bld.program(
         target=target,
-        name=name,
+        name=name if destdir == 'bin' else target.path_from(bld.bldnode),
         **kw
     )
+
+def sketch(bld, **kw):
+    kw['is_sketch'] = True
+    program(bld, **kw)
+
+def example(bld, **kw):
+    kw['destdir'] = 'examples'
+    sketch(bld, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
 # compilation is independent by providing different index for each.
@@ -145,13 +161,14 @@ def find_tests(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/tests/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        target = f.change_ext('.' + bld.env.BOARD)
-        bld.program(
+        target = f.change_ext('')
+        program(
+            bld,
             features=features,
-            target=target,
             includes=includes,
             source=[f],
             use=use,
+            destdir='tests',
         )
 
 def find_benchmarks(bld, use=[]):
@@ -161,13 +178,14 @@ def find_benchmarks(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/benchmarks/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        target = f.change_ext('.' + bld.env.BOARD)
-        bld.program(
+        target = f.change_ext('')
+        program(
+            bld,
             features=['gbenchmark'],
-            target=target,
             includes=includes,
             source=[f],
             use=use,
+            destdir='benchmarks',
         )
 
 def test_summary(bld):
