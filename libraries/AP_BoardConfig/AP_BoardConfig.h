@@ -30,6 +30,7 @@ private:
     AP_Int32 _ignore_safety_channels;
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     AP_Int8 _can_enable;
+    AP_Int8 _smbus_enable;
 #endif
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
