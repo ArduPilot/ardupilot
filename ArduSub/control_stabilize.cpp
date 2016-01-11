@@ -56,9 +56,9 @@ void Copter::stabilize_run()
     // body-frame rate controller is run directly from 100hz loop
 
     // output pilot's throttle
-    attitude_control.set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
+    attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
 
-    //control_in is range 0-1000
+    //control_in is range -1000-1000
     //radio_in is raw pwm value
     motors.set_forward(channel_forward->radio_in);
     motors.set_strafe(channel_strafe->radio_in);

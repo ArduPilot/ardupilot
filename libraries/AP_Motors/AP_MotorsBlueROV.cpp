@@ -85,6 +85,8 @@ void AP_MotorsBlueROV::Init()
     motor_enabled[AP_MOTORS_MOT_5] = true;
     motor_enabled[AP_MOTORS_MOT_6] = true;
 
+    _min_throttle = 0;
+
     // disable CH7 from being used as an aux output (i.e. for lights, etc)
     RC_Channel_aux::disable_aux_channel(AP_MOTORS_CH_CAM_PITCH);
 }
@@ -234,6 +236,10 @@ void AP_MotorsBlueROV::output_armed_stabilizing()
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
+    // Set forward and strafe control values
+    _forward_control_input = _forward_in;
+    _strafe_control_input = _strafe_in;
+
     // Throttle is 0 to 1000 only
     int16_t thr_in_min = rel_pwm_to_thr_range(_min_throttle);
     if (_throttle_control_input <= thr_in_min) {
@@ -252,23 +258,23 @@ void AP_MotorsBlueROV::output_armed_stabilizing()
     //    limit.throttle_upper = true;
     //}
 
-    roll_pwm = calc_roll_pwm();
-    pitch_pwm = calc_pitch_pwm();
-    throttle_output = _throttle_control_input;
-    forward_output = _forward_control_input; // ToDo: Clean this up to match others
-    strafe_output = _strafe_control_input;
-    yaw_radio_output = calc_yaw_radio_output();
+    roll_pwm = calc_roll_pwm()*0;
+    pitch_pwm = calc_pitch_pwm()*0;
+    throttle_output = 2*(_throttle_control_input-580);
+    forward_output = _forward_control_input*0.3;
+    strafe_output = _strafe_control_input*0.3;
+    yaw_radio_output = calc_yaw_pwm();
 
 	//left front vertical
-	motor_out[AP_MOTORS_MOT_1] = out_stopped + _throttle_control_input + roll_pwm + 0.5*pitch_pwm + 0.2*strafe_output;
+	motor_out[AP_MOTORS_MOT_1] = out_stopped + throttle_output + roll_pwm + 0.5*pitch_pwm + 0.2*strafe_output;
 	//left forward
 	motor_out[AP_MOTORS_MOT_2] = out_stopped + forward_output + yaw_radio_output;
 	//rear vertical
-	motor_out[AP_MOTORS_MOT_3] = out_stopped + _throttle_control_input + roll_pwm - pitch_pwm;
+	motor_out[AP_MOTORS_MOT_3] = out_stopped + throttle_output + roll_pwm - pitch_pwm;
 	//right forward
 	motor_out[AP_MOTORS_MOT_4] = out_stopped + forward_output - yaw_radio_output;
 	//right front vertical
-	motor_out[AP_MOTORS_MOT_5] = out_stopped + _throttle_control_input - roll_pwm + 0.5*pitch_pwm - 0.2*strafe_output;
+	motor_out[AP_MOTORS_MOT_5] = out_stopped + throttle_output - roll_pwm + 0.5*pitch_pwm - 0.2*strafe_output;
 	// strafe
 	motor_out[AP_MOTORS_MOT_6] = out_stopped + strafe_output;
 
