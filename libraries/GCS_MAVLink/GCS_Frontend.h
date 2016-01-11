@@ -2,6 +2,8 @@
 
 #pragma once
 
+class Parameters; // we can't include Parameters.h as it is in the vehicle dir
+
 class GCS_Frontend {
     friend class Plane; // for access to gcs[], needed for params' var_info
     friend class Copter; // for access to gcs[], needed for params' var_info
@@ -12,8 +14,9 @@ public:
 
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
 
-    GCS_Frontend(DataFlash_Class &DataFlash) :
-        _DataFlash(DataFlash) { }
+    GCS_Frontend(DataFlash_Class &DataFlash, Parameters &g) :
+        _DataFlash(DataFlash),
+        _g(g) { }
 
     virtual void setup_uarts(AP_SerialManager &serial_manager);
 
@@ -48,5 +51,7 @@ protected:
     const uint8_t _num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 
     DataFlash_Class &_DataFlash;
+    Parameters &_g;
+
     run_cli_fn _run_cli_func = NULL;
 };
