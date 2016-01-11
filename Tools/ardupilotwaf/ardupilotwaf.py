@@ -167,13 +167,15 @@ def find_tests(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/tests/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        target = f.change_ext('.' + bld.env.BOARD)
-        bld.program(
+        program(
+            bld,
             features=features,
-            target=target,
             includes=includes,
             source=[f],
             use=use,
+            program_name=f.change_ext('.' + bld.env.BOARD).name,
+            blddestdir='tests',
+            use_legacy_defines=False,
         )
 
 def find_benchmarks(bld, use=[]):
@@ -183,13 +185,15 @@ def find_benchmarks(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/benchmarks/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        target = f.change_ext('.' + bld.env.BOARD)
-        bld.program(
+        program(
+            bld,
             features=common_features(bld) + ['gbenchmark'],
-            target=target,
             includes=includes,
             source=[f],
             use=use,
+            program_name=f.change_ext('.' + bld.env.BOARD).name,
+            blddestdir='benchmarks',
+            use_legacy_defines=False,
         )
 
 def test_summary(bld):
