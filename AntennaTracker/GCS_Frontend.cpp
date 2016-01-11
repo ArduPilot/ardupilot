@@ -38,3 +38,10 @@ void GCS_Frontend_Tracker::request_data_streams(const uint8_t sysid, const uint8
         }
     }
 }
+
+// FIXME: we have no parameter for telem_delay
+uint32_t GCS_Frontend_Tracker::telem_delay() const
+{
+    // return (uint32_t)_g.telem_delay;
+    return (uint32_t)0;
+}

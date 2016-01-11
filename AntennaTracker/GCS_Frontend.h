@@ -19,6 +19,10 @@ public:
 
     GCS_Backend_Tracker &gcs(const uint8_t i) { return _gcs[i]; };
 
+protected:
+
+    uint32_t telem_delay() const;
+
 private:
 
     GCS_Backend_Tracker _gcs[MAVLINK_COMM_NUM_BUFFERS];
