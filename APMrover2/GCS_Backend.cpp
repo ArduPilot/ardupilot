@@ -1,17 +1,27 @@
 #include "Rover.h" // for global rover object
 
-// try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_Backend_Rover::try_send_message(enum ap_message id)
+bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
         return false;
     }
 
-    // if we don't have at least 1ms remaining before the main loop
-    // wants to fire then don't send a mavlink message. We want to
-    // prioritise the main flight control loop over communications
-    if (!rover.in_mavlink_delay && rover.scheduler.time_available_usec() < 1200) {
+    // if we don't have a minimum amount of remaining before the main
+    // loop wants to fire then don't send a mavlink message. We want
+    // to prioritise the main flight control loop over communications
+    if (!rover.in_mavlink_delay &&
+        rover.scheduler.time_available_usec() < 1200) {
         out_of_time = true;
+        return false;
+    }
+
+    return true;
+}
+
+// try to send a message, return false if it won't fit in the serial tx buffer
+bool GCS_Backend_Rover::try_send_message(enum ap_message id)
+{
+    if (!should_try_send_message(id)) {
         return false;
     }
 

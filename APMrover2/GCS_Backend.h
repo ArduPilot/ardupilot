@@ -13,6 +13,8 @@ public:
 
 protected:
 
+    bool should_try_send_message(enum ap_message id) override;
+
 private:
 
 };
