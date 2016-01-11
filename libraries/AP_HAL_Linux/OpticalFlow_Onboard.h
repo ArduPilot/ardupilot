@@ -41,6 +41,9 @@ private:
     pthread_mutex_t _mutex;
     bool _initialized;
     bool _data_available;
+    bool _crop_by_software;
+    uint32_t _crop_by_software_width;
+    uint32_t _crop_by_software_height;
     uint32_t _width;
     uint32_t _height;
     uint32_t _format;
