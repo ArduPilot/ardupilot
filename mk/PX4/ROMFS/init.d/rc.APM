@@ -484,12 +484,6 @@ then
   fi
 fi
 
-# optional smbus battery monitor
-if batt_smbus -b 2 start
-then
-    echo "Found batt_smbus"
-fi
-
 # optional irlock
 if irlock start
 then
