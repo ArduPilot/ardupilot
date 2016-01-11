@@ -136,6 +136,8 @@ public:
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
     // common send functions
+    virtual bool send_HEARTBEAT() = 0;
+
     void send_meminfo(void);
     void send_power_status(void);
     void send_ahrs2(AP_AHRS &ahrs);
