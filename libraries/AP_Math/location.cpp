@@ -22,7 +22,9 @@
  */
 #include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
+
 #include "AP_Math.h"
+#include "location.h"
 
 // scaling factor from 1e-7 degrees to meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
@@ -30,8 +32,7 @@
 // inverse of LOCATION_SCALING_FACTOR
 #define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
 
-float longitude_scale(const struct Location &loc)
-{
+float longitude_scale(const struct Location &loc) {
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_150
     static int32_t last_lat;
     static float scale = 1.0;
@@ -52,25 +53,20 @@ float longitude_scale(const struct Location &loc)
 #endif
 }
 
-
-
 // return distance in meters between two locations
-float get_distance(const struct Location &loc1, const struct Location &loc2)
-{
+float get_distance(const struct Location &loc1, const struct Location &loc2) {
     float dlat              = (float)(loc2.lat - loc1.lat);
     float dlong             = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
-    return pythagorous2(dlat, dlong) * LOCATION_SCALING_FACTOR;
+    return norm(dlat, dlong) * LOCATION_SCALING_FACTOR;
 }
 
 // return distance in centimeters to between two locations
-uint32_t get_distance_cm(const struct Location &loc1, const struct Location &loc2)
-{
+uint32_t get_distance_cm(const struct Location &loc1, const struct Location &loc2) {
     return get_distance(loc1, loc2) * 100;
 }
 
 // return bearing in centi-degrees between two locations
-int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
-{
+int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2) {
     int32_t off_x = loc2.lng - loc1.lng;
     int32_t off_y = (loc2.lat - loc1.lat) / longitude_scale(loc2);
     int32_t bearing = 9000 + atan2f(-off_y, off_x) * 5729.57795f;
@@ -146,90 +142,6 @@ Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
 {
     return Vector2f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
                     (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1));
-}
-
-/*
-  wrap an angle in centi-degrees to 0..35999
- */
-int32_t wrap_360_cd(int32_t error)
-{
-    if (error > 360000 || error < -360000) {
-        // for very large numbers use modulus
-        error = error % 36000;
-    }
-    while (error >= 36000) error -= 36000;
-    while (error < 0) error += 36000;
-    return error;
-}
-
-/*
-  wrap an angle in centi-degrees to -18000..18000
- */
-int32_t wrap_180_cd(int32_t error)
-{
-    if (error > 360000 || error < -360000) {
-        // for very large numbers use modulus
-        error = error % 36000;
-    }
-    while (error > 18000) { error -= 36000; }
-    while (error < -18000) { error += 36000; }
-    return error;
-}
-
-/*
-  wrap an angle in centi-degrees to 0..35999
- */
-float wrap_360_cd_float(float angle)
-{
-    if (angle >= 72000.0f || angle < -36000.0f) {
-        // for larger number use fmodulus
-        angle = fmod(angle, 36000.0f);
-    }
-    if (angle >= 36000.0f) angle -= 36000.0f;
-    if (angle < 0.0f) angle += 36000.0f;
-    return angle;
-}
-
-/*
-  wrap an angle in centi-degrees to -18000..18000
- */
-float wrap_180_cd_float(float angle)
-{
-    if (angle > 54000.0f || angle < -54000.0f) {
-        // for large numbers use modulus
-        angle = fmod(angle,36000.0f);
-    }
-    if (angle > 18000.0f) { angle -= 36000.0f; }
-    if (angle < -18000.0f) { angle += 36000.0f; }
-    return angle;
-}
-
-/*
-  wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
- */
-float wrap_PI(float angle_in_radians)
-{
-    if (angle_in_radians > 10*PI || angle_in_radians < -10*PI) {
-        // for very large numbers use modulus
-        angle_in_radians = fmodf(angle_in_radians, 2*PI);
-    }
-    while (angle_in_radians > PI) angle_in_radians -= 2*PI;
-    while (angle_in_radians < -PI) angle_in_radians += 2*PI;
-    return angle_in_radians;
-}
-
-/*
- * wrap an angle in radians to 0..2PI
- */
-float wrap_2PI(float angle)
-{
-    if (angle > 10*PI || angle < -10*PI) {
-        // for very large numbers use modulus
-        angle = fmodf(angle, 2*PI);
-    }
-    while (angle > 2*PI) angle -= 2*PI;
-    while (angle < 0) angle += 2*PI;
-    return angle;
 }
 
 /*
