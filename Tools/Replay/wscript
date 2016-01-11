@@ -7,4 +7,5 @@ def build(bld):
     ardupilotwaf.program(
         bld,
         use='ap',
+        blddestdir='tools',
     )
