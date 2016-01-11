@@ -85,7 +85,8 @@ def program(bld, **kw):
     name = bld.path.name
     kw['defines'].extend(_get_legacy_defines(name))
 
-    target = bld.bldnode.make_node(name + '.' + bld.env.BOARD)
+    target = bld.bldnode.make_node(bld.path.path_from(bld.srcnode))
+    target = target.make_node(name)
     bld.program(
         target=target,
         name=name,
@@ -145,7 +146,7 @@ def find_tests(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/tests/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        target = f.change_ext('.' + bld.env.BOARD)
+        target = f.change_ext('')
         bld.program(
             features=features,
             target=target,
@@ -161,7 +162,7 @@ def find_benchmarks(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/benchmarks/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        target = f.change_ext('.' + bld.env.BOARD)
+        target = f.change_ext('')
         bld.program(
             features=['gbenchmark'],
             target=target,
