@@ -4,18 +4,27 @@
 extern mavlink_hil_state_t last_hil_state; // see GCS_Mavlink.cpp
 #endif
 
-// try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_Backend_Plane::try_send_message(enum ap_message id)
+bool GCS_Backend_Plane::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
         return false;
     }
 
-    // if we don't have at least 1ms remaining before the main loop
+    // if we don't have a minimum mount of time remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (!plane.in_mavlink_delay && plane.scheduler.time_available_usec() < 1200) {
         out_of_time = true;
+        return false;
+    }
+
+    return true;
+}
+
+// try to send a message, return false if it won't fit in the serial tx buffer
+bool GCS_Backend_Plane::try_send_message(enum ap_message id)
+{
+    if (!should_try_send_message(id)) {
         return false;
     }
 

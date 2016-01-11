@@ -5,7 +5,6 @@
 
 class GCS_Backend_Plane : public GCS_MAVLINK {
 
-
 public:
 
     bool try_send_message(enum ap_message id) override;
@@ -16,6 +15,8 @@ public:
     void handleMessage(mavlink_message_t* msg) override;
 
 protected:
+
+    bool should_try_send_message(enum ap_message id) override;
 
 private:
 
