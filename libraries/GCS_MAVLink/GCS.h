@@ -136,8 +136,44 @@ public:
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
     // common send functions
+    virtual bool send_AHRS() = 0;
+    virtual bool send_AHRS2() { return true; }
+    virtual bool send_ATTITUDE() = 0;
+    virtual bool send_BATTERY2() { return true; }
+    virtual bool send_CAMERA_FEEDBACK() { return true; }
+    virtual bool send_EKF_STATUS_REPORT() { return true; }
+    virtual bool send_FENCE_STATUS() { return true; }
+    virtual bool send_GIMBAL_REPORT() { return true; };
+    virtual bool send_GLOBAL_POSITION_INT() = 0;
+    virtual bool send_GPS_RAW() = 0;
     virtual bool send_HEARTBEAT() = 0;
-    virtual bool send_SYS_STATUS() { return true; };
+    virtual bool send_HWSTATUS() = 0;
+    virtual bool send_LIMITS_STATUS() const { return true; }
+    virtual bool send_LOCAL_POSITION_NED() = 0;
+    virtual bool send_MAG_CAL_PROGRESS() = 0;
+    virtual bool send_MAG_CAL_REPORT() = 0;
+    virtual bool send_MISSION_CURRENT() { return true; }
+    virtual bool send_MISSION_ITEM_REACHED() { return true; }
+    virtual bool send_MOUNT_STATUS() { return true; };
+    virtual bool send_NAV_CONTROLLER_OUTPUT() = 0;
+    virtual bool send_OPTICAL_FLOW() { return true; }
+    virtual bool send_PID_TUNING() { return true; }
+    virtual bool send_RC_CHANNELS_RAW() = 0;
+    virtual bool send_SERVO_OUTPUT_RAW() = 0; // radio-out
+    virtual bool send_RANGEFINDER() { return true; }
+    virtual bool send_RAW_IMU() = 0;
+    virtual bool send_RC_CHANNELS_SCALED() { return true; }
+    virtual bool send_RPM() { return true; }
+    virtual bool send_SCALED_PRESSURE() { return true; }
+    virtual bool send_SENSOR_OFFSETS() = 0;
+    virtual bool send_SIMSTATE() = 0;
+    virtual bool send_STATUSTEXT() = 0;
+    virtual bool send_SYS_STATUS() { return true; }; //FIXME: well, fix Tracker
+    virtual bool send_SYSTEM_TIME() { return true; }; //FIXME: well, fix Tracker
+    virtual bool send_TERRAIN_REQUEST() { return true; }
+    virtual bool send_VFR_HUD() { return true; }
+    virtual bool send_VIBRATION() { return true; }
+    virtual bool send_WIND() { return true; }
 
     void send_meminfo(void);
     void send_power_status(void);
