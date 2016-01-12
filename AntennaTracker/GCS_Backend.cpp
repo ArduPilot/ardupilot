@@ -15,11 +15,94 @@ bool GCS_Backend_Tracker::should_try_send_message(enum ap_message id)
     return true;
 }
 
+bool GCS_Backend_Tracker::send_AHRS()
+{
+    send_ahrs(tracker.ahrs);
+    return true;
+}
+bool GCS_Backend_Tracker::send_ATTITUDE()
+{
+    tracker.send_attitude(chan);
+    return true;
+}
+bool GCS_Backend_Tracker::send_GLOBAL_POSITION_INT()
+{
+    tracker.send_location(chan);
+    return true;
+}
+bool GCS_Backend_Tracker::send_GPS_RAW()
+{
+    send_gps_raw(tracker.gps);
+    return true;
+}
 bool GCS_Backend_Tracker::send_HEARTBEAT()
 {
     tracker.send_heartbeat(chan);
     return true;
 }
+bool GCS_Backend_Tracker::send_HWSTATUS()
+{
+    tracker.send_hwstatus(chan);
+    return true;
+}
+bool GCS_Backend_Tracker::send_LOCAL_POSITION_NED()
+{
+    send_local_position(tracker.ahrs);
+    return true;
+}
+bool GCS_Backend_Tracker::send_NAV_CONTROLLER_OUTPUT()
+{
+    tracker.send_nav_controller_output(chan);
+    return true;
+}
+bool GCS_Backend_Tracker::send_MAG_CAL_PROGRESS()
+{
+    tracker.compass.send_mag_cal_progress(chan);
+    return true;
+}
+bool GCS_Backend_Tracker::send_MAG_CAL_REPORT()
+{
+    tracker.compass.send_mag_cal_report(chan);
+    return true;
+}
+bool GCS_Backend_Tracker::send_RAW_IMU()
+{
+    send_raw_imu(tracker.ins, tracker.compass);
+    return true;
+}
+bool GCS_Backend_Tracker::send_RC_CHANNELS_RAW()
+{
+    send_radio_in(0);
+    return true;
+}
+bool GCS_Backend_Tracker::send_SCALED_PRESSURE()
+{
+    send_scaled_pressure(tracker.barometer);
+    return true;
+}
+bool GCS_Backend_Tracker::send_SENSOR_OFFSETS()
+{
+    send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
+    return true;
+}
+bool GCS_Backend_Tracker::send_SERVO_OUTPUT_RAW()
+{
+    tracker.send_radio_out(chan);
+    return true;
+}
+bool GCS_Backend_Tracker::send_SIMSTATE()
+{
+    tracker.send_simstate(chan);
+    return true;
+}
+bool GCS_Backend_Tracker::send_STATUSTEXT()
+{
+    // this looks wrong; if a Backend is told to send its statustext
+    // then it should not be talking to the frontend:
+    tracker.gcs_frontend.send_statustext(chan);
+    return true;
+}
+
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_Backend_Tracker::try_send_message(enum ap_message id)
@@ -37,52 +120,52 @@ bool GCS_Backend_Tracker::try_send_message(enum ap_message id)
 
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
-        tracker.send_attitude(chan);
+        send_ATTITUDE();
         break;
 
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        tracker.send_location(chan);
+        send_GLOBAL_POSITION_INT();
         break;
 
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(tracker.ahrs);
+        send_LOCAL_POSITION_NED();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        tracker.send_nav_controller_output(chan);
+        send_NAV_CONTROLLER_OUTPUT();
         break;
 
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        send_gps_raw(tracker.gps);
+        send_GPS_RAW();
         break;
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in(0);
+        send_RC_CHANNELS_RAW();
         break;
 
     case MSG_RADIO_OUT:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        tracker.send_radio_out(chan);
+        send_SERVO_OUTPUT_RAW();
         break;
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(tracker.ins, tracker.compass);
+        send_RAW_IMU();
         break;
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure(tracker.barometer);
+        send_SCALED_PRESSURE();
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
+        send_SENSOR_OFFSETS();
         break;
 
     case MSG_NEXT_PARAM:
@@ -97,31 +180,31 @@ bool GCS_Backend_Tracker::try_send_message(enum ap_message id)
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        tracker.gcs_frontend.send_statustext(chan);
+        send_STATUSTEXT();
         break;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(tracker.ahrs);
+        send_AHRS();
         break;
 
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
-        tracker.send_simstate(chan);
+        send_SIMSTATE();
         break;
 
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
-        tracker.send_hwstatus(chan);
+        send_HWSTATUS();
         break;
     case MSG_MAG_CAL_PROGRESS:
         CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
-        tracker.compass.send_mag_cal_progress(chan);
+        send_MAG_CAL_PROGRESS();
         break;
 
     case MSG_MAG_CAL_REPORT:
         CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
-        tracker.compass.send_mag_cal_report(chan);
+        send_MAG_CAL_REPORT();
         break;
 
     case MSG_SERVO_OUT:
