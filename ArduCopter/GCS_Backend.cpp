@@ -423,7 +423,6 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         send_PID_TUNING();
-        copter.send_pid_tuning(chan);
         break;
 
     case MSG_VIBRATION:
