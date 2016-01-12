@@ -176,7 +176,9 @@ bool GCS_Backend_Plane::send_SERVO_OUTPUT_RAW()
 }
 bool GCS_Backend_Plane::send_SIMSTATE()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     plane.send_simstate(chan);
+#endif
     return true;
 }
 bool GCS_Backend_Plane::send_STATUSTEXT()
@@ -286,10 +288,8 @@ bool GCS_Backend_Plane::try_send_message(enum ap_message id)
         break;
 
     case MSG_SERVO_OUT:
-#if HIL_SUPPORT
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         send_RC_CHANNELS_SCALED();
-#endif
         break;
 
     case MSG_RADIO_IN:
@@ -343,10 +343,8 @@ bool GCS_Backend_Plane::try_send_message(enum ap_message id)
         break;
 
     case MSG_FENCE_STATUS:
-#if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         send_FENCE_STATUS();
-#endif
         break;
 
     case MSG_AHRS:
@@ -372,17 +370,13 @@ bool GCS_Backend_Plane::try_send_message(enum ap_message id)
         break;
 
     case MSG_TERRAIN:
-#if AP_TERRAIN_AVAILABLE
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         send_TERRAIN_REQUEST();
-#endif
         break;
 
     case MSG_CAMERA_FEEDBACK:
-#if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
         send_CAMERA_FEEDBACK();
-#endif
         break;
 
     case MSG_BATTERY2:
@@ -396,31 +390,23 @@ bool GCS_Backend_Plane::try_send_message(enum ap_message id)
         break;
 
     case MSG_MOUNT_STATUS:
-#if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
         send_MOUNT_STATUS();
-#endif // MOUNT == ENABLED
         break;
 
     case MSG_OPTICAL_FLOW:
-#if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_OPTICAL_FLOW();
-#endif
         break;
 
     case MSG_EKF_STATUS_REPORT:
-#if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         send_EKF_STATUS_REPORT();
-#endif
         break;
 
     case MSG_GIMBAL_REPORT:
-#if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
         send_GIMBAL_REPORT();
-#endif
         break;
 
     case MSG_RETRY_DEFERRED:
