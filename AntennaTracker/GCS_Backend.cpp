@@ -15,6 +15,12 @@ bool GCS_Backend_Tracker::should_try_send_message(enum ap_message id)
     return true;
 }
 
+bool GCS_Backend_Tracker::send_HEARTBEAT()
+{
+    tracker.send_heartbeat(chan);
+    return true;
+}
+
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_Backend_Tracker::try_send_message(enum ap_message id)
 {
@@ -26,7 +32,7 @@ bool GCS_Backend_Tracker::try_send_message(enum ap_message id)
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();
-        tracker.send_heartbeat(chan);
+        send_HEARTBEAT();
         return true;
 
     case MSG_ATTITUDE:
