@@ -117,6 +117,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 extern "C" int uavcan_main(int argc, const char *argv[]);
 extern "C" int batt_smbus_main(int argc, const char *argv[]);
 extern "C" int oreoled_main(int argc, const char *argv[]);
+extern "C" int oreoledbl_main(int argc, const char *argv[]);
 
 #define _UAVCAN_IOCBASE             (0x4000)                        // IOCTL base for module UAVCAN
 #define _UAVCAN_IOC(_n)             (_IOC(_UAVCAN_IOCBASE, _n))
@@ -225,12 +226,18 @@ void AP_BoardConfig::init()
 
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 if (_oreoled_enable == 1) {
-    const char *args[] = { "oreoled", "start", "autoupdate", NULL };
-    int ret = oreoled_main(4, args);
+    const char *oreoledbl_args[] = { "oreoledbl", "-t", "auto", "update", NULL };
+    int ret = oreoledbl_main(5, oreoledbl_args);
     if (ret != 0) {
-        hal.console->printf("oreoled: failed to start\n");
+        hal.console->printf("oreoled: failed to boot\n");
     } else {
-        hal.console->printf("oreoled: started\n");
+        const char *oreoled_args[] = { "oreoled", "start", NULL };
+        ret = oreoled_main(3, oreoled_args);
+        if (ret != 0) {
+            hal.console->printf("oreoled: failed to start\n");
+        } else {
+            hal.console->printf("oreoled: started\n");
+        }
     }
 }
 #endif
