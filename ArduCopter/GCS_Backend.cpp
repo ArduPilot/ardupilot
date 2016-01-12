@@ -20,12 +20,173 @@ bool GCS_Backend_Copter::should_try_send_message(enum ap_message id)
     return true;
 }
 
+bool GCS_Backend_Copter::send_AHRS()
+{
+    send_ahrs(copter.ahrs);
+    return true;
+}
+bool GCS_Backend_Copter::send_AHRS2()
+{
+    send_ahrs2(copter.ahrs);
+    return true;
+}
+bool GCS_Backend_Copter::send_ATTITUDE()
+{
+    copter.send_attitude(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_BATTERY2()
+{
+    send_battery2(copter.battery);
+    return true;
+}
+bool GCS_Backend_Copter::send_CAMERA_FEEDBACK()
+{
+#if CAMERA == ENABLED
+    copter.camera.send_feedback(chan, copter.gps, copter.ahrs, copter.current_loc);
+#endif
+    return true;
+}
+bool GCS_Backend_Copter::send_EKF_STATUS_REPORT()
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    copter.ahrs.send_ekf_status_report(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Copter::send_GIMBAL_REPORT()
+{
+#if MOUNT == ENABLED
+    copter.camera_mount.send_gimbal_report(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Copter::send_GLOBAL_POSITION_INT()
+{
+    copter.send_location(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_GPS_RAW()
+{
+    send_gps_raw(copter.gps);
+    return true;
+}
 bool GCS_Backend_Copter::send_HEARTBEAT()
 {
     copter.send_heartbeat(chan);
     return true;
 }
-
+bool GCS_Backend_Copter::send_HWSTATUS()
+{
+    copter.send_hwstatus(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_LIMITS_STATUS() const
+{
+    copter.send_limits_status(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_LOCAL_POSITION_NED()
+{
+    send_local_position(copter.ahrs);
+    return true;
+}
+bool GCS_Backend_Copter::send_MAG_CAL_PROGRESS()
+{
+    copter.compass.send_mag_cal_progress(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_MAG_CAL_REPORT()
+{
+    copter.compass.send_mag_cal_report(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_MISSION_CURRENT()
+{
+    copter.send_current_waypoint(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_MISSION_ITEM_REACHED()
+{
+    mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+    return true;
+}
+bool GCS_Backend_Copter::send_MOUNT_STATUS()
+{
+#if MOUNT == ENABLED
+    copter.camera_mount.status_msg(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Copter::send_NAV_CONTROLLER_OUTPUT()
+{
+    copter.send_nav_controller_output(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_OPTICAL_FLOW()
+{
+#if OPTFLOW == ENABLED
+    send_opticalflow(copter.ahrs, copter.optflow);
+#endif
+    return true;
+}
+bool GCS_Backend_Copter::send_PID_TUNING()
+{
+    copter.send_pid_tuning(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_RC_CHANNELS_RAW()
+{
+    send_radio_in(copter.receiver_rssi);
+    return true;
+}
+bool GCS_Backend_Copter::send_SERVO_OUTPUT_RAW()
+{
+    copter.send_radio_out(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_RANGEFINDER()
+{
+    copter.send_rangefinder(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_RAW_IMU()
+{
+    send_raw_imu(copter.ins, copter.compass);
+    return true;
+}
+bool GCS_Backend_Copter::send_RC_CHANNELS_SCALED()
+{
+    copter.send_servo_out(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_RPM()
+{
+    copter.send_rpm(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_SCALED_PRESSURE()
+{
+    send_scaled_pressure(copter.barometer);
+    return true;
+}
+bool GCS_Backend_Copter::send_SENSOR_OFFSETS()
+{
+    send_sensor_offsets(copter.ins, copter.compass, copter.barometer);
+    return true;
+}
+bool GCS_Backend_Copter::send_SIMSTATE()
+{
+    copter.send_simstate(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_STATUSTEXT()
+{
+    // this looks wrong; if a Backend is told to send its statustext
+    // then it should not be talking to the frontend:
+    copter.gcs_frontend.send_statustext(chan);
+    return true;
+}
 bool GCS_Backend_Copter::send_SYS_STATUS()
 {
     // this check could be moved to should_try_send_message
@@ -34,6 +195,28 @@ bool GCS_Backend_Copter::send_SYS_STATUS()
     }
 
     copter.send_extended_status1(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_SYSTEM_TIME()
+{
+    send_system_time(copter.gps);
+    return true;
+}
+bool GCS_Backend_Copter::send_TERRAIN_REQUEST()
+{
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+    copter.terrain.send_request(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Copter::send_VFR_HUD()
+{
+    copter.send_vfr_hud(chan);
+    return true;
+}
+bool GCS_Backend_Copter::send_VIBRATION()
+{
+    send_vibration(copter.ins);
     return true;
 }
 
@@ -66,70 +249,72 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
 
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
-        copter.send_attitude(chan);
+        send_ATTITUDE();
         break;
 
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        copter.send_location(chan);
+        send_GLOBAL_POSITION_INT();
         break;
 
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(copter.ahrs);
+        send_LOCAL_POSITION_NED();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        copter.send_nav_controller_output(chan);
+        send_NAV_CONTROLLER_OUTPUT();
         break;
 
     case MSG_GPS_RAW:
-        return send_gps_raw(copter.gps);
+        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
+        send_GPS_RAW();
+        break;
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time(copter.gps);
+        send_SYSTEM_TIME();
         break;
 
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-        copter.send_servo_out(chan);
+        send_RC_CHANNELS_SCALED();
         break;
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in(copter.receiver_rssi);
+        send_RC_CHANNELS_RAW();
         break;
 
     case MSG_RADIO_OUT:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        copter.send_radio_out(chan);
+        send_SERVO_OUTPUT_RAW();
         break;
 
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
-        copter.send_vfr_hud(chan);
+        send_VFR_HUD();
         break;
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(copter.ins, copter.compass);
+        send_RAW_IMU();
         break;
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure(copter.barometer);
+        send_SCALED_PRESSURE();
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(copter.ins, copter.compass, copter.barometer);
+        send_SENSOR_OFFSETS();
         break;
 
     case MSG_CURRENT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        copter.send_current_waypoint(chan);
+        send_MISSION_CURRENT();
         break;
 
     case MSG_NEXT_PARAM:
@@ -145,89 +330,89 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
     case MSG_RANGEFINDER:
 #if CONFIG_SONAR == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        copter.send_rangefinder(chan);
+        send_RANGEFINDER();
 #endif
         break;
 
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
-        copter.send_rpm(chan);
+        send_RPM();
         break;
 
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
-        copter.terrain.send_request(chan);
+        send_TERRAIN_REQUEST();
 #endif
         break;
 
     case MSG_CAMERA_FEEDBACK:
 #if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        copter.camera.send_feedback(chan, copter.gps, copter.ahrs, copter.current_loc);
+        send_CAMERA_FEEDBACK();
 #endif
         break;
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        copter.gcs_frontend.send_statustext(chan);
+        send_STATUSTEXT();
         break;
 
     case MSG_LIMITS_STATUS:
 #if AC_FENCE == ENABLED
         CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
-        copter.send_limits_status(chan);
+        send_LIMITS_STATUS();
 #endif
         break;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(copter.ahrs);
+        send_AHRS();
         break;
 
     case MSG_SIMSTATE:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         CHECK_PAYLOAD_SIZE(SIMSTATE);
-        copter.send_simstate(chan);
+        send_SIMSTATE();
 #endif
         CHECK_PAYLOAD_SIZE(AHRS2);
-        send_ahrs2(copter.ahrs);
+        send_AHRS2();
         break;
 
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
-        copter.send_hwstatus(chan);
+        send_HWSTATUS();
         break;
 
     case MSG_MOUNT_STATUS:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
-        copter.camera_mount.status_msg(chan);
+        send_MOUNT_STATUS();
 #endif // MOUNT == ENABLED
         break;
 
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(copter.battery);
+        send_BATTERY2();
         break;
 
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow(copter.ahrs, copter.optflow);
+        send_OPTICAL_FLOW();
 #endif
         break;
 
     case MSG_GIMBAL_REPORT:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
-        copter.camera_mount.send_gimbal_report(chan);
+        send_GIMBAL_REPORT();
 #endif
         break;
 
     case MSG_EKF_STATUS_REPORT:
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        copter.ahrs.send_ekf_status_report(chan);
+        send_EKF_STATUS_REPORT();
         break;
 
     case MSG_FENCE_STATUS:
@@ -237,28 +422,31 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
 
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
+        send_PID_TUNING();
         copter.send_pid_tuning(chan);
         break;
 
     case MSG_VIBRATION:
         CHECK_PAYLOAD_SIZE(VIBRATION);
-        send_vibration(copter.ins);
+        send_VIBRATION();
         break;
 
     case MSG_MISSION_ITEM_REACHED:
         CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+        send_MISSION_ITEM_REACHED();
         break;
 
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
 
     case MSG_MAG_CAL_PROGRESS:
-        copter.compass.send_mag_cal_progress(chan);
+        CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
+        send_MAG_CAL_PROGRESS();
         break;
 
     case MSG_MAG_CAL_REPORT:
-        copter.compass.send_mag_cal_report(chan);
+        CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
+        send_MAG_CAL_REPORT();
         break;
     }
 
