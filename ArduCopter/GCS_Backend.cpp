@@ -83,7 +83,9 @@ bool GCS_Backend_Copter::send_HWSTATUS()
 }
 bool GCS_Backend_Copter::send_LIMITS_STATUS() const
 {
+#if AC_FENCE == ENABLED
     copter.send_limits_status(chan);
+#endif
     return true;
 }
 bool GCS_Backend_Copter::send_LOCAL_POSITION_NED()
@@ -147,7 +149,9 @@ bool GCS_Backend_Copter::send_SERVO_OUTPUT_RAW()
 }
 bool GCS_Backend_Copter::send_RANGEFINDER()
 {
+#if CONFIG_SONAR == ENABLED
     copter.send_rangefinder(chan);
+#endif
     return true;
 }
 bool GCS_Backend_Copter::send_RAW_IMU()
@@ -177,7 +181,9 @@ bool GCS_Backend_Copter::send_SENSOR_OFFSETS()
 }
 bool GCS_Backend_Copter::send_SIMSTATE()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     copter.send_simstate(chan);
+#endif
     return true;
 }
 bool GCS_Backend_Copter::send_STATUSTEXT()
@@ -328,10 +334,8 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_RANGEFINDER:
-#if CONFIG_SONAR == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         send_RANGEFINDER();
-#endif
         break;
 
     case MSG_RPM:
@@ -340,17 +344,13 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_TERRAIN:
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         send_TERRAIN_REQUEST();
-#endif
         break;
 
     case MSG_CAMERA_FEEDBACK:
-#if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
         send_CAMERA_FEEDBACK();
-#endif
         break;
 
     case MSG_STATUSTEXT:
@@ -359,10 +359,8 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_LIMITS_STATUS:
-#if AC_FENCE == ENABLED
         CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
         send_LIMITS_STATUS();
-#endif
         break;
 
     case MSG_AHRS:
@@ -371,10 +369,8 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_SIMSTATE:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_SIMSTATE();
-#endif
         CHECK_PAYLOAD_SIZE(AHRS2);
         send_AHRS2();
         break;
@@ -385,10 +381,8 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_MOUNT_STATUS:
-#if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
         send_MOUNT_STATUS();
-#endif // MOUNT == ENABLED
         break;
 
     case MSG_BATTERY2:
@@ -397,17 +391,13 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_OPTICAL_FLOW:
-#if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_OPTICAL_FLOW();
-#endif
         break;
 
     case MSG_GIMBAL_REPORT:
-#if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
         send_GIMBAL_REPORT();
-#endif
         break;
 
     case MSG_EKF_STATUS_REPORT:
