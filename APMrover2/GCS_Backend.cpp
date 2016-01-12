@@ -18,15 +18,154 @@ bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
     return true;
 }
 
+bool GCS_Backend_Rover::send_AHRS()
+{
+    send_ahrs(rover.ahrs);
+    return true;
+}
+bool GCS_Backend_Rover::send_ATTITUDE()
+{
+    rover.send_attitude(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_BATTERY2()
+{
+    send_battery2(rover.battery);
+    return true;
+}
+bool GCS_Backend_Rover::send_CAMERA_FEEDBACK()
+{
+#if CAMERA == ENABLED
+    rover.camera.send_feedback(chan, rover.gps, rover.ahrs, rover.current_loc);
+#endif
+    return true;
+}
+bool GCS_Backend_Rover::send_EKF_STATUS_REPORT()
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    rover.ahrs.send_ekf_status_report(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Rover::send_GLOBAL_POSITION_INT()
+{
+    rover.send_location(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_GPS_RAW()
+{
+    send_gps_raw(rover.gps);
+    return true;
+}
 bool GCS_Backend_Rover::send_HEARTBEAT()
 {
     rover.send_heartbeat(chan);
     return true;
 }
-
+bool GCS_Backend_Rover::send_HWSTATUS()
+{
+    rover.send_hwstatus(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_LOCAL_POSITION_NED()
+{
+    send_local_position(rover.ahrs);
+    return true;
+}
+bool GCS_Backend_Rover::send_MISSION_CURRENT()
+{
+    rover.send_current_waypoint(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_MISSION_ITEM_REACHED()
+{
+    mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+    return true;
+}
+bool GCS_Backend_Rover::send_MAG_CAL_PROGRESS()
+{
+    rover.compass.send_mag_cal_progress(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_MAG_CAL_REPORT()
+{
+    rover.compass.send_mag_cal_report(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_MOUNT_STATUS()
+{
+#if MOUNT == ENABLED
+    rover.camera_mount.status_msg(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Rover::send_NAV_CONTROLLER_OUTPUT()
+{
+    if (rover.control_mode != MANUAL) {
+        rover.send_nav_controller_output(chan);
+    }
+    return true;
+}
+bool GCS_Backend_Rover::send_PID_TUNING()
+{
+    rover.send_pid_tuning(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_RC_CHANNELS_RAW()
+{
+    send_radio_in(rover.receiver_rssi);
+    return true;
+}
+bool GCS_Backend_Rover::send_SERVO_OUTPUT_RAW()
+{
+    rover.send_radio_out(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_RANGEFINDER()
+{
+    rover.send_rangefinder(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_RAW_IMU()
+{
+    send_raw_imu(rover.ins, rover.compass);
+    return true;
+}
+bool GCS_Backend_Rover::send_RC_CHANNELS_SCALED()
+{
+    rover.send_servo_out(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_SENSOR_OFFSETS()
+{
+    send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
+    return true;
+}
+bool GCS_Backend_Rover::send_SIMSTATE()
+{
+    rover.send_simstate(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_STATUSTEXT()
+{
+    // this looks wrong; if a Backend is told to send its statustext
+    // then it should not be talking to the frontend:
+    rover.gcs_frontend.send_statustext(chan);
+    return true;
+}
 bool GCS_Backend_Rover::send_SYS_STATUS()
 {
     rover.send_extended_status1(chan);
+    return true;
+}
+bool GCS_Backend_Rover::send_SYSTEM_TIME()
+{
+    send_system_time(rover.gps);
+    return true;
+}
+bool GCS_Backend_Rover::send_VFR_HUD()
+{
+    rover.send_vfr_hud(chan);
     return true;
 }
 
@@ -58,69 +197,67 @@ bool GCS_Backend_Rover::try_send_message(enum ap_message id)
 
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
-        rover.send_attitude(chan);
+        send_ATTITUDE();
         break;
 
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        rover.send_location(chan);
+        send_GLOBAL_POSITION_INT();
         break;
 
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(rover.ahrs);
+        send_LOCAL_POSITION_NED();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
-        if (rover.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-            rover.send_nav_controller_output(chan);
-        }
+        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
+        send_NAV_CONTROLLER_OUTPUT();
         break;
 
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        send_gps_raw(rover.gps);
+        send_GPS_RAW();
         break;
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time(rover.gps);
+        send_SYSTEM_TIME();
         break;
 
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-        rover.send_servo_out(chan);
+        send_RC_CHANNELS_SCALED();
         break;
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in(rover.receiver_rssi);
+        send_RC_CHANNELS_RAW();
         break;
 
     case MSG_RADIO_OUT:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        rover.send_radio_out(chan);
+        send_SERVO_OUTPUT_RAW();
         break;
 
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
-        rover.send_vfr_hud(chan);
+        send_VFR_HUD();
         break;
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(rover.ins, rover.compass);
+        send_RAW_IMU();
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
+        send_SENSOR_OFFSETS();
         break;
 
     case MSG_CURRENT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        rover.send_current_waypoint(chan);
+        send_MISSION_CURRENT();
         break;
 
     case MSG_NEXT_PARAM:
@@ -135,33 +272,33 @@ bool GCS_Backend_Rover::try_send_message(enum ap_message id)
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        rover.gcs_frontend.send_statustext(chan);
+        send_STATUSTEXT();
         break;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(rover.ahrs);
+        send_AHRS();
         break;
 
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
-        rover.send_simstate(chan);
+        send_SIMSTATE();
         break;
 
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
-        rover.send_hwstatus(chan);
+        send_HWSTATUS();
         break;
 
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        rover.send_rangefinder(chan);
+        send_RANGEFINDER();
         break;
 
     case MSG_MOUNT_STATUS:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
-        rover.camera_mount.status_msg(chan);
+        send_MOUNT_STATUS();
 #endif // MOUNT == ENABLED
         break;
 
@@ -175,41 +312,41 @@ bool GCS_Backend_Rover::try_send_message(enum ap_message id)
 
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(rover.battery);
+        send_BATTERY2();
         break;
 
     case MSG_CAMERA_FEEDBACK:
 #if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        rover.camera.send_feedback(chan, rover.gps, rover.ahrs, rover.current_loc);
+        send_CAMERA_FEEDBACK();
 #endif
         break;
 
     case MSG_EKF_STATUS_REPORT:
 #if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        rover.ahrs.send_ekf_status_report(chan);
+        send_EKF_STATUS_REPORT();
 #endif
         break;
 
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
-        rover.send_pid_tuning(chan);
+        send_PID_TUNING();
         break;
 
     case MSG_MISSION_ITEM_REACHED:
         CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+        send_MISSION_ITEM_REACHED();
         break;
 
     case MSG_MAG_CAL_PROGRESS:
         CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
-        rover.compass.send_mag_cal_progress(chan);
+        send_MAG_CAL_PROGRESS();
         break;
 
     case MSG_MAG_CAL_REPORT:
         CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
-        rover.compass.send_mag_cal_report(chan);
+        send_MAG_CAL_REPORT();
         break;
 
     case MSG_RETRY_DEFERRED:
