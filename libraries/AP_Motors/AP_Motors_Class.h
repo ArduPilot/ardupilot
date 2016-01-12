@@ -65,6 +65,8 @@ public:
     void                set_pitch(int16_t pitch_in) { _pitch_control_input = pitch_in; };               // range -4500 ~ 4500
     void                set_yaw(int16_t yaw_in) { _yaw_control_input = yaw_in; };                       // range -4500 ~ 4500
     void                set_throttle(float throttle_in) { _throttle_in = constrain_float(throttle_in,-100.0f,1100.0f); };   // range 0 ~ 1000
+    void                set_forward(float forward_in) { _strafe_in = constrain_float(forward_in,-100.0f,1100.0f); };        // range 0 ~ 1000
+    void                set_strafe(float strafe_in) { _strafe_in = constrain_float(strafe_in,-100.0f,1100.0f); };           // range 0 ~ 1000
     void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
@@ -72,6 +74,8 @@ public:
     float               get_pitch() const { return _pitch_control_input; }
     float               get_yaw() const { return _yaw_control_input; }
     float               get_throttle() const { return _throttle_control_input; }
+    float               get_forward() const { return _forward_control_input; }
+    float               get_strafe() const { return _strafe_control_input; }
 
 
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
@@ -151,6 +155,8 @@ protected:
     float               _roll_control_input;        // desired roll control from attitude controllers, +/- 4500
     float               _pitch_control_input;       // desired pitch control from attitude controller, +/- 4500
     float               _throttle_control_input;    // desired throttle (thrust) control from attitude controller, 0-1000
+    float               _forward_control_input;     // desired throttle (forward) control from attitude controller, 0-1000
+    float               _strafe_control_input;      // desired throttle (strafe) control from attitude controller, 0-1000
     float               _yaw_control_input;         // desired yaw control from attitude controller, +/- 4500
     float               _throttle_pwm_scalar;       // scalar used to convert throttle channel pwm range into 0-1000 range, ~0.8 - 1.0
     float               _rpy_pwm_scalar;            // scaler used to convert roll, pitch, yaw inputs to pwm range
@@ -159,6 +165,8 @@ protected:
     int16_t             _throttle_radio_min;        // minimum radio channel pwm
     int16_t             _throttle_radio_max;        // maximum radio channel pwm
     float               _throttle_in;               // last throttle input from set_throttle caller
+    float               _forward_in;                // last forward input from set_forward caller
+    float               _strafe_in;                 // last strafe input from set_strafe caller
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
 
     // battery voltage, current and air pressure compensation variables

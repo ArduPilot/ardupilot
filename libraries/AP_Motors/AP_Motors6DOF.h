@@ -22,20 +22,16 @@ public:
         AP_MotorsMatrix(loop_rate, speed_hz)
     {};
 
-    void                set_forward(float forward_in) { _forward_in = constrain_float(2*(forward_in-1500),-1000.0f,1000.0f); };        // range 0 ~ 1000
-    void                set_strafe(float strafe_in) { _strafe_in = constrain_float(2*(strafe_in-1500),-1000.0f,1000.0f); };           // range 0 ~ 1000
-
-    float               get_forward() const { return _forward_in; }		// range 1100~1900 this is raw pwm value from rc
-    float               get_strafe() const { return _strafe_in; }		// range 1100~1900 this is raw pwm value from rc
-
+    void output_min() override;
 protected:
 
 
     //Override MotorsMatrix method
-    void add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float strafe_fac, uint8_t testing_order)
+    //void add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float strafe_fac, uint8_t testing_order);
 
-    float               _forward_in;                // last forward input from set_forward caller, raw pwm
-    float               _strafe_in;                 // last strafe input from set_strafe caller, raw pwm
+    void output_armed_not_stabilizing() override;
+    void output_armed_stabilizing() override;
+
 
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward

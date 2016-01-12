@@ -25,18 +25,20 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Motors6DOF::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float strafe_fac, uint8_t testing_order) {
-	//Parent takes care of enabling output and setting up masks
-	AP_MotorsMatrix::add_motor_raw(motor_num, roll_fac, pitch_fac, yaw_fac, testing_order);
+//void AP_Motors6DOF::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float strafe_fac, uint8_t testing_order) {
+//	//Parent takes care of enabling output and setting up masks
+//	AP_MotorsMatrix::add_motor_raw(motor_num, roll_fac, pitch_fac, yaw_fac, testing_order);
+//
+//	//These are additional parameters for an ROV
+//	_throttle_factor[motor_num] = throttle_fac;
+//	_forward_factor[motor_num] = forward_fac;
+//	_strafe_factor[motor_num] = strafe_fac;
+//}
 
-	//These are additional parameters for an ROV
-	_throttle_factor[motor_num] = throttle_fac;
-	_forward_factor[motor_num] = forward_fac;
-	_strafe_factor[motor_num] = strafe_fac;
-}
+
 
 // output_min - sends minimum values out to the motors
-void AP_MotorsMatrix::output_min()
+void AP_Motors6DOF::output_min()
 {
     int8_t i;
 
@@ -62,55 +64,7 @@ void AP_MotorsMatrix::output_min()
 //ToDo: call in control_rov, to mix inputs with no stabilization control
 void AP_Motors6DOF::output_armed_not_stabilizing()
 {
-//    uint8_t i;
-//    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
-//    int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];                    // final outputs sent to the motors
-//    int16_t out_min_pwm = _throttle_radio_min + _min_throttle;      // minimum pwm value we can send to the motors
-//    int16_t out_max_pwm = _throttle_radio_max;                      // maximum pwm value we can send to the motors
-//
-//    // initialize limits flags
-//    limit.roll_pitch = true;
-//    limit.yaw = true;
-//    limit.throttle_lower = false;
-//    limit.throttle_upper = false;
-//
-//    int16_t thr_in_min = rel_pwm_to_thr_range(_spin_when_armed_ramped);
-//    if (_throttle_control_input <= thr_in_min) {
-//        _throttle_control_input = thr_in_min;
-//        limit.throttle_lower = true;
-//    }
-//
-//    if (_throttle_control_input >= _hover_out) {
-//        _throttle_control_input = _hover_out;
-//        limit.throttle_upper = true;
-//    }
-//
-//    throttle_radio_output = calc_throttle_radio_output();
-//
-//    // set output throttle
-//    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-//        if (motor_enabled[i]) {
-//            motor_out[i] = throttle_radio_output;
-//        }
-//    }
-//
-//    if(throttle_radio_output >= out_min_pwm) {
-//        // apply thrust curve and voltage scaling
-//        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-//            if (motor_enabled[i]) {
-//                motor_out[i] = apply_thrust_curve_and_volt_scaling(motor_out[i], out_min_pwm, out_max_pwm);
-//            }
-//        }
-//    }
-//
-//    // send output to each motor
-//    hal.rcout->cork();
-//    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-//        if( motor_enabled[i] ) {
-//            rc_write(i, motor_out[i]);
-//        }
-//    }
-//    hal.rcout->push();
+	output_min(); //cut the motors for now
 }
 
 // output_armed - sends commands to the motors
@@ -128,12 +82,15 @@ void AP_Motors6DOF::output_armed_stabilizing()
     int16_t strafe_pwm;
     int16_t out_min_pwm = 1100;      // minimum pwm value we can send to the motors
     int16_t out_max_pwm = 1900;                      // maximum pwm value we can send to the motors
-    int16_t out_mid_pwm = 1500;              // mid pwm value we can send to the motors
+//    int16_t out_mid_pwm = 1500;              // mid pwm value we can send to the motors
                                       // the is the best throttle we can come up which provides good control without climbing
 
-    float rpy_scale = 1.0;                                          // this is used to scale the roll, pitch and yaw to fit within the motor limits
+//    float rpy_scale = 1.0;                                          // this is used to scale the roll, pitch and yaw to fit within the motor limits
+
+
 
     int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
+    int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
     int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final outputs sent to the motors
 
     int16_t rpy_low = 0;    // lowest motor value
