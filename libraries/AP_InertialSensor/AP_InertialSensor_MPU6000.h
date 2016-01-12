@@ -1,15 +1,16 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_INERTIAL_SENSOR_MPU6000_H__
-#define __AP_INERTIAL_SENSOR_MPU6000_H__
+#pragma once
 
 #include <stdint.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/SPIDevice.h>
+#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>
-#include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
+#include <Filter/LowPassFilter2p.h>
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
@@ -18,36 +19,8 @@
 // enable debug to see a register dump on startup
 #define MPU6000_DEBUG 0
 
-#define MPU6000_SAMPLE_SIZE 14
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-#define MPU6000_MAX_FIFO_SAMPLES 6
-#else
-#define MPU6000_MAX_FIFO_SAMPLES 3
-#endif
-#define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
-
 class AP_MPU6000_AuxiliaryBus;
 class AP_MPU6000_AuxiliaryBusSlave;
-
-class AP_MPU6000_BusDriver
-{
-public:
-    virtual ~AP_MPU6000_BusDriver() { };
-    virtual void init() = 0;
-    virtual void start(bool &fifo_mode, uint8_t &max_samples) = 0;
-    virtual void read8(uint8_t reg, uint8_t *val) = 0;
-
-    /// Copy data from the device to @p buf starting at @p reg with @size
-    /// length.
-    virtual void read_block(uint8_t reg, uint8_t *buf, uint32_t size) = 0;
-    virtual void write8(uint8_t reg, uint8_t val) = 0;
-    virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
-    virtual void read_data_transaction(uint8_t* samples,
-                            AP_HAL::DigitalSource *_drdy_pin,
-                            uint8_t &n_samples) = 0;
-    virtual AP_HAL::Semaphore* get_semaphore() = 0;
-    virtual bool has_auxiliary_bus() = 0;
-};
 
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
@@ -55,15 +28,17 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
     friend AP_MPU6000_AuxiliaryBusSlave;
 
 public:
-    AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_MPU6000_BusDriver *bus);
-    ~AP_InertialSensor_MPU6000();
-    static AP_InertialSensor_Backend *detect_i2c(AP_InertialSensor &_imu,
-                                                 AP_HAL::I2CDriver *i2c,
-                                                 uint8_t addr);
-    static AP_InertialSensor_Backend *detect_spi(AP_InertialSensor &_imu);
+    virtual ~AP_InertialSensor_MPU6000();
+
     static AP_InertialSensor_MPU6000 &from(AP_InertialSensor_Backend &backend) {
         return static_cast<AP_InertialSensor_MPU6000&>(backend);
     }
+
+    static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
+                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+
+    static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
+                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev);
 
     /* update accel and gyro state */
     bool update();
@@ -76,93 +51,68 @@ public:
     void start() override;
 
 private:
-    static AP_InertialSensor_Backend *_detect(AP_InertialSensor &_imu,
-                                              AP_MPU6000_BusDriver *bus,
-                                              int16_t id = -1);
+    enum bus_type {
+        BUS_TYPE_I2C = 0,
+        BUS_TYPE_SPI,
+    };
+
+    AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                              enum bus_type bus_type,
+                              bool use_fifo,
+                              uint8_t read_flag);
 
 #if MPU6000_DEBUG
-    void _dump_registers(void);
+    void _dump_registers();
 #endif
+
+    /* Initialize sensor*/
+    bool _init();
+    bool _hardware_init();
+
+    void _set_filter_register(uint16_t filter_hz);
+    void _fifo_reset();
+    void _fifo_enable();
+    bool _has_auxiliary_bus();
+
+    /* Read samples from FIFO (FIFO enabled) */
+    void _read_fifo();
+
+    /* Read a single sample (FIFO disabled) */
+    void _read_sample();
+
+    /* Check if there's data available by either reading DRDY pin or register */
+    bool _data_ready();
+
+    /* Poll for new data (non-blocking) */
+    void _poll_data();
+
+    /* Read and write functions taking the differences between buses into
+     * account */
+    bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
+    uint8_t _register_read(uint8_t reg);
+    void _register_write(uint8_t reg, uint8_t val );
+    void _register_write_check(uint8_t reg, uint8_t val);
+
+    void _accumulate(uint8_t *samples, uint8_t n_samples);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    AP_HAL::DigitalSource *_drdy_pin;
-    bool    _init_sensor(void);
-    void    _read_data_transaction();
-    bool    _data_ready();
-    void    _poll_data(void);
-    void    _read_block(uint8_t reg, uint8_t *buf, uint32_t size);
-    uint8_t _register_read( uint8_t reg);
-    void    _register_write( uint8_t reg, uint8_t val );
-    void    _register_write_check(uint8_t reg, uint8_t val);
-    bool    _hardware_init(void);
-    void    _accumulate(uint8_t *samples, uint8_t n_samples);
+    const uint8_t _read_flag;
+    const bool _use_fifo;
+    const enum bus_type _bus_type;
 
-    AP_MPU6000_BusDriver *_bus;
-    AP_HAL::Semaphore    *_bus_sem;
-
-    AP_MPU6000_AuxiliaryBus *_auxiliary_bus = nullptr;
-
-    static const float   _gyro_scale;
-
-    void _set_filter_register(uint16_t filter_hz);
-
-    float    _temp_filtered;
-
-    LowPassFilter2pFloat    _temp_filter;
-
-    bool _fifo_mode;
-    uint8_t *_samples = nullptr;
-};
-
-class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
-{
-public:
-    AP_MPU6000_BusDriver_SPI(void);
-    void init();
-    void start(bool &fifo_mode, uint8_t &max_samples);
-    void read8(uint8_t reg, uint8_t *val);
-    void read_block(uint8_t reg, uint8_t *buf, uint32_t size) override;
-    void write8(uint8_t reg, uint8_t val);
-    void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-    void read_data_transaction(uint8_t* samples,
-                               AP_HAL::DigitalSource *_drdy_pin,
-                               uint8_t &n_samples);
-    AP_HAL::Semaphore* get_semaphore();
-    bool has_auxiliary_bus() override;
-
-private:
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
-    // count of bus errors
     uint16_t _error_count;
+
+    float _temp_filtered;
+    LowPassFilter2pFloat _temp_filter;
+
+    AP_HAL::DigitalSource *_drdy_pin;
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_MPU6000_AuxiliaryBus *_auxiliary_bus;
 };
-
-class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
-{
-public:
-    AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
-    void init();
-    void start(bool &fifo_mode, uint8_t &max_samples);
-    void read8(uint8_t reg, uint8_t *val);
-    void read_block(uint8_t reg, uint8_t *buf, uint32_t size) override;
-    void write8(uint8_t reg, uint8_t val);
-    void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-    void read_data_transaction(uint8_t* samples,
-                               AP_HAL::DigitalSource *_drdy_pin,
-                               uint8_t &n_samples);
-    AP_HAL::Semaphore* get_semaphore();
-    bool has_auxiliary_bus() override;
-
-private:
-    uint8_t _addr;
-    AP_HAL::I2CDriver *_i2c;
-    AP_HAL::Semaphore *_i2c_sem;
-    uint8_t _rx[MAX_DATA_READ];
-};
-
 
 class AP_MPU6000_AuxiliaryBusSlave : public AuxiliaryBusSlave
 {
@@ -207,5 +157,3 @@ private:
     static const uint8_t MAX_EXT_SENS_DATA = 24;
     uint8_t _ext_sens_data = 0;
 };
-
-#endif // __AP_INERTIAL_SENSOR_MPU6000_H__
