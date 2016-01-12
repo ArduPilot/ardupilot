@@ -26,6 +26,18 @@ bool GCS_Backend_Copter::send_HEARTBEAT()
     return true;
 }
 
+bool GCS_Backend_Copter::send_SYS_STATUS()
+{
+    // this check could be moved to should_try_send_message
+    if (!copter.ap.initialised) {
+        return false;
+    }
+
+    copter.send_extended_status1(chan);
+    return true;
+}
+
+
 // try to send a message, return false if it wasn't sent
 bool GCS_Backend_Copter::try_send_message(enum ap_message id)
 {
@@ -41,14 +53,10 @@ bool GCS_Backend_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_EXTENDED_STATUS1:
-        // send extended status only once vehicle has been initialised
-        // to avoid unnecessary errors being reported to user
-        if (copter.ap.initialised) {
-            CHECK_PAYLOAD_SIZE(SYS_STATUS);
-            copter.send_extended_status1(chan);
-            CHECK_PAYLOAD_SIZE(POWER_STATUS);
-            send_power_status();
-        }
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+        send_SYS_STATUS();
+        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+        send_power_status();
         break;
 
     case MSG_EXTENDED_STATUS2:
