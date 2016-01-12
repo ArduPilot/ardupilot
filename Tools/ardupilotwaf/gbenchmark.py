@@ -91,7 +91,7 @@ def configure(cfg):
 
     env.INCLUDES_GBENCHMARK = [prefix_node.make_node('include').abspath()]
     env.LIBPATH_GBENCHMARK = [prefix_node.make_node('lib').abspath()]
-    env.LIB_GBENCHMARK = ['benchmark']
+    env.LIB_GBENCHMARK = ['benchmark','pthread']
 
     env.HAS_GBENCHMARK = True
 
