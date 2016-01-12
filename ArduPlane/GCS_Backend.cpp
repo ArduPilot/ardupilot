@@ -27,6 +27,12 @@ bool GCS_Backend_Plane::send_HEARTBEAT()
     return true;
 }
 
+bool GCS_Backend_Plane::send_SYS_STATUS()
+{
+    plane.send_extended_status1(chan);
+    return true;
+}
+
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_Backend_Plane::try_send_message(enum ap_message id)
 {
@@ -43,7 +49,7 @@ bool GCS_Backend_Plane::try_send_message(enum ap_message id)
 
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        plane.send_extended_status1(chan);
+        send_SYS_STATUS();
         CHECK_PAYLOAD_SIZE2(POWER_STATUS);
         send_power_status();
         break;
