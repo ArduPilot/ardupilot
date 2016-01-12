@@ -137,6 +137,7 @@ public:
 
     // common send functions
     virtual bool send_HEARTBEAT() = 0;
+    virtual bool send_SYS_STATUS() { return true; };
 
     void send_meminfo(void);
     void send_power_status(void);
