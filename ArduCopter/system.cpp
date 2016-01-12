@@ -94,6 +94,9 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
+    // init vehicle capabilties
+    init_capabilities();
+
     cliSerial->printf("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n",
                       (unsigned)hal.util->available_memory());
@@ -277,9 +280,6 @@ void Copter::init_ardupilot()
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
-
-    // init vehicle capabilties
-    init_capabilities();
 
     cliSerial->print("\nReady to FLY ");
 
