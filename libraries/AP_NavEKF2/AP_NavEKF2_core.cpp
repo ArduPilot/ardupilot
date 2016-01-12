@@ -544,20 +544,8 @@ void  NavEKF2_core::calcOutputStatesFast() {
 
     // Calculate strapdown solution at the current time horizon
 
-    // remove gyro scale factor errors
-    Vector3f delAng;
-    delAng.x = imuDataNew.delAng.x * stateStruct.gyro_scale.x;
-    delAng.y = imuDataNew.delAng.y * stateStruct.gyro_scale.y;
-    delAng.z = imuDataNew.delAng.z * stateStruct.gyro_scale.z;
-
-    // remove sensor bias errors
-    delAng -= stateStruct.gyro_bias;
-    Vector3f delVel;
-    delVel = imuDataNew.delVel;
-    delVel.z -= stateStruct.accel_zbias;
-
     // apply corections to track EKF solution
-    delAng += delAngCorrection;
+    Vector3f delAng = imuDataNew.delAng + delAngCorrection;
 
     // convert the rotation vector to its equivalent quaternion
     Quaternion deltaQuat;
@@ -575,7 +563,7 @@ void  NavEKF2_core::calcOutputStatesFast() {
     // transform body delta velocities to delta velocities in the nav frame
     // Add the earth frame correction required to track the EKF states
     // * and + operators have been overloaded
-    Vector3f delVelNav  = Tbn_temp*delVel + delVelCorrection;
+    Vector3f delVelNav  = Tbn_temp*imuDataNew.delVel + delVelCorrection;
     delVelNav.z += GRAVITY_MSS*imuDataNew.delVelDT;
 
     // save velocity for use in trapezoidal intergration for position calcuation
