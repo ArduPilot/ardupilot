@@ -296,10 +296,8 @@ bool GCS_Backend_Rover::try_send_message(enum ap_message id)
         break;
 
     case MSG_MOUNT_STATUS:
-#if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
         send_MOUNT_STATUS();
-#endif // MOUNT == ENABLED
         break;
 
     case MSG_RAW_IMU2:
@@ -316,17 +314,13 @@ bool GCS_Backend_Rover::try_send_message(enum ap_message id)
         break;
 
     case MSG_CAMERA_FEEDBACK:
-#if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
         send_CAMERA_FEEDBACK();
-#endif
         break;
 
     case MSG_EKF_STATUS_REPORT:
-#if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         send_EKF_STATUS_REPORT();
-#endif
         break;
 
     case MSG_PID_TUNING:
