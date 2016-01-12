@@ -21,15 +21,211 @@ bool GCS_Backend_Plane::should_try_send_message(enum ap_message id)
     return true;
 }
 
+bool GCS_Backend_Plane::send_AHRS()
+{
+    send_ahrs(plane.ahrs);
+    return true;
+}
+bool GCS_Backend_Plane::send_AHRS2()
+{
+    send_ahrs2(plane.ahrs);
+    return true;
+}
+bool GCS_Backend_Plane::send_ATTITUDE()
+{
+    plane.send_attitude(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_BATTERY2()
+{
+    send_battery2(plane.battery);
+    return true;
+}
+bool GCS_Backend_Plane::send_CAMERA_FEEDBACK()
+{
+#if CAMERA == ENABLED
+    plane.camera.send_feedback(chan, plane.gps, plane.ahrs, plane.current_loc);
+#endif
+    return true;
+}
+bool GCS_Backend_Plane::send_EKF_STATUS_REPORT()
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    plane.ahrs.send_ekf_status_report(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Plane::send_FENCE_STATUS()
+{
+#if GEOFENCE_ENABLED == ENABLED
+    plane.send_fence_status(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Plane::send_GIMBAL_REPORT()
+{
+#if MOUNT == ENABLED
+    plane.camera_mount.send_gimbal_report(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Plane::send_GLOBAL_POSITION_INT()
+{
+    plane.send_location(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_GPS_RAW()
+{
+    send_gps_raw(plane.gps);
+    return true;
+}
 bool GCS_Backend_Plane::send_HEARTBEAT()
 {
     plane.send_heartbeat(chan);
     return true;
 }
-
+bool GCS_Backend_Plane::send_HWSTATUS()
+{
+    plane.send_hwstatus(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_LOCAL_POSITION_NED()
+{
+    send_local_position(plane.ahrs);
+    return true;
+}
+bool GCS_Backend_Plane::send_MAG_CAL_PROGRESS()
+{
+    plane.compass.send_mag_cal_progress(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_MAG_CAL_REPORT()
+{
+    plane.compass.send_mag_cal_report(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_MOUNT_STATUS()
+{
+#if MOUNT == ENABLED
+    plane.camera_mount.status_msg(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Plane::send_NAV_CONTROLLER_OUTPUT()
+{
+    if (plane.control_mode != MANUAL) {
+        plane.send_nav_controller_output(chan);
+    }
+    return true;
+}
+bool GCS_Backend_Plane::send_OPTICAL_FLOW()
+{
+#if OPTFLOW == ENABLED
+    send_opticalflow(plane.ahrs, plane.optflow);
+#endif
+    return true;
+}
+bool GCS_Backend_Plane::send_PID_TUNING()
+{
+    plane.send_pid_tuning(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_RANGEFINDER()
+{
+    plane.send_rangefinder(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_RAW_IMU()
+{
+    send_raw_imu(plane.ins, plane.compass);
+    return true;
+}
+bool GCS_Backend_Plane::send_RC_CHANNELS_RAW()
+{
+    send_radio_in(plane.receiver_rssi);
+    return true;
+}
+bool GCS_Backend_Plane::send_RC_CHANNELS_SCALED()
+{
+#if HIL_SUPPORT
+    if (plane.g.hil_mode == 1) {
+        plane.send_servo_out(chan);
+    }
+#endif
+    return true;
+}
+bool GCS_Backend_Plane::send_RPM()
+{
+    plane.send_rpm(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_SCALED_PRESSURE()
+{
+    send_scaled_pressure(plane.barometer);
+    return true;
+}
+bool GCS_Backend_Plane::send_SENSOR_OFFSETS()
+{
+    send_sensor_offsets(plane.ins, plane.compass, plane.barometer);
+    return true;
+}
+bool GCS_Backend_Plane::send_SERVO_OUTPUT_RAW()
+{
+    plane.send_radio_out(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_SIMSTATE()
+{
+    plane.send_simstate(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_STATUSTEXT()
+{
+    // this looks wrong; if a Backend is told to send its statustext
+    // then it should not be talking to the frontend:
+    plane.gcs_frontend.send_statustext(chan);
+    return true;
+}
 bool GCS_Backend_Plane::send_SYS_STATUS()
 {
     plane.send_extended_status1(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_SYSTEM_TIME()
+{
+    send_system_time(plane.gps);
+    return true;
+}
+bool GCS_Backend_Plane::send_TERRAIN_REQUEST()
+{
+#if AP_TERRAIN_AVAILABLE
+    plane.terrain.send_request(chan);
+#endif
+    return true;
+}
+bool GCS_Backend_Plane::send_VFR_HUD()
+{
+    plane.send_vfr_hud(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_MISSION_CURRENT()
+{
+    plane.send_current_waypoint(chan);
+    return true;
+}
+bool GCS_Backend_Plane::send_MISSION_ITEM_REACHED()
+{
+    mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+    return true;
+}
+bool GCS_Backend_Plane::send_VIBRATION()
+{
+    send_vibration(plane.ins);
+    return true;
+}
+bool GCS_Backend_Plane::send_WIND()
+{
+    plane.send_wind(chan);
     return true;
 }
 
@@ -61,78 +257,74 @@ bool GCS_Backend_Plane::try_send_message(enum ap_message id)
 
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
-        plane.send_attitude(chan);
+        send_ATTITUDE();
         break;
 
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        plane.send_location(chan);
+        send_GLOBAL_POSITION_INT();
         break;
 
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(plane.ahrs);
+        send_LOCAL_POSITION_NED();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
-        if (plane.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-            plane.send_nav_controller_output(chan);
-        }
+        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
+        send_NAV_CONTROLLER_OUTPUT();
         break;
 
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        send_gps_raw(plane.gps);
+        send_GPS_RAW();
         break;
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time(plane.gps);
+        send_SYSTEM_TIME();
         break;
 
     case MSG_SERVO_OUT:
 #if HIL_SUPPORT
-        if (plane.g.hil_mode == 1) {
-            CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-            plane.send_servo_out(chan);
-        }
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
+        send_RC_CHANNELS_SCALED();
 #endif
         break;
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in(plane.receiver_rssi);
+        send_RC_CHANNELS_RAW();
         break;
 
     case MSG_RADIO_OUT:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        plane.send_radio_out(chan);
+        send_SERVO_OUTPUT_RAW();
         break;
 
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
-        plane.send_vfr_hud(chan);
+        send_VFR_HUD();
         break;
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(plane.ins, plane.compass);
+        send_RAW_IMU();
         break;
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure(plane.barometer);
+        send_SCALED_PRESSURE();
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(plane.ins, plane.compass, plane.barometer);
+        send_SENSOR_OFFSETS();
         break;
 
     case MSG_CURRENT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        plane.send_current_waypoint(chan);
+        send_MISSION_CURRENT();
         break;
 
     case MSG_NEXT_PARAM:
@@ -147,87 +339,87 @@ bool GCS_Backend_Plane::try_send_message(enum ap_message id)
 
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        plane.gcs_frontend.send_statustext(chan);
+        send_STATUSTEXT();
         break;
 
-#if GEOFENCE_ENABLED == ENABLED
     case MSG_FENCE_STATUS:
+#if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
-        plane.send_fence_status(chan);
-        break;
+        send_FENCE_STATUS();
 #endif
+        break;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(plane.ahrs);
+        send_AHRS();
         break;
 
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
-        plane.send_simstate(chan);
+        send_SIMSTATE();
         CHECK_PAYLOAD_SIZE2(AHRS2);
-        send_ahrs2(plane.ahrs);
+        send_AHRS2();
         break;
 
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
-        plane.send_hwstatus(chan);
+        send_HWSTATUS();
         break;
 
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        plane.send_rangefinder(chan);
+        send_RANGEFINDER();
         break;
 
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
-        plane.terrain.send_request(chan);
+        send_TERRAIN_REQUEST();
 #endif
         break;
 
     case MSG_CAMERA_FEEDBACK:
 #if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        plane.camera.send_feedback(chan, plane.gps, plane.ahrs, plane.current_loc);
+        send_CAMERA_FEEDBACK();
 #endif
         break;
 
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(plane.battery);
+        send_BATTERY2();
         break;
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
-        plane.send_wind(chan);
+        send_WIND();
         break;
 
     case MSG_MOUNT_STATUS:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
-        plane.camera_mount.status_msg(chan);
+        send_MOUNT_STATUS();
 #endif // MOUNT == ENABLED
         break;
 
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow(plane.ahrs, plane.optflow);
+        send_OPTICAL_FLOW();
 #endif
         break;
 
     case MSG_EKF_STATUS_REPORT:
 #if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        plane.ahrs.send_ekf_status_report(chan);
+        send_EKF_STATUS_REPORT();
 #endif
         break;
 
     case MSG_GIMBAL_REPORT:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
-        plane.camera_mount.send_gimbal_report(chan);
+        send_GIMBAL_REPORT();
 #endif
         break;
 
@@ -240,32 +432,32 @@ bool GCS_Backend_Plane::try_send_message(enum ap_message id)
 
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
-        plane.send_pid_tuning(chan);
+        send_PID_TUNING();
         break;
 
     case MSG_VIBRATION:
         CHECK_PAYLOAD_SIZE(VIBRATION);
-        send_vibration(plane.ins);
+        send_VIBRATION();
         break;
 
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
-        plane.send_rpm(chan);
+        send_RPM();
         break;
 
     case MSG_MISSION_ITEM_REACHED:
         CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+        send_MISSION_ITEM_REACHED();
         break;
 
     case MSG_MAG_CAL_PROGRESS:
         CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
-        plane.compass.send_mag_cal_progress(chan);
+        send_MAG_CAL_PROGRESS();
         break;
 
     case MSG_MAG_CAL_REPORT:
         CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
-        plane.compass.send_mag_cal_report(chan);
+        send_MAG_CAL_REPORT();
         break;
     }
     return true;
