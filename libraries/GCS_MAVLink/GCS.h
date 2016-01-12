@@ -377,8 +377,7 @@ private:
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
 
-    // vehicle specific message send function
-    virtual bool try_send_message(enum ap_message id) = 0;
+    virtual bool try_send_message(enum ap_message id);
 
     virtual void handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
