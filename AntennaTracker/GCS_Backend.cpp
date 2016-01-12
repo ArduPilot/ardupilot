@@ -92,7 +92,9 @@ bool GCS_Backend_Tracker::send_SERVO_OUTPUT_RAW()
 }
 bool GCS_Backend_Tracker::send_SIMSTATE()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     tracker.send_simstate(chan);
+#endif
     return true;
 }
 bool GCS_Backend_Tracker::send_STATUSTEXT()
