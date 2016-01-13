@@ -22,6 +22,8 @@ protected:
 
     Compass &_compass() const override;
 
+    AP_Baro &_barometer() const override;
+
     bool should_try_send_message(enum ap_message id) override;
 
     bool send_AHRS2() override;

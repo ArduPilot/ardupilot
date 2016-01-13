@@ -10,6 +10,8 @@ AP_AHRS &GCS_Backend_Rover::_ahrs() const { return rover.ahrs; }
 
 Compass &GCS_Backend_Rover::_compass() const { return rover.compass; }
 
+AP_Baro &GCS_Backend_Rover::_barometer() const { return rover.barometer; }
+
 bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
