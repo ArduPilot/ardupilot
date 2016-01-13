@@ -167,7 +167,7 @@ bool GCS_Backend_Plane::send_VFR_HUD()
 }
 bool GCS_Backend_Plane::send_MISSION_CURRENT()
 {
-    plane.send_current_waypoint(chan);
+    mavlink_msg_mission_current_send(chan, plane.mission.get_current_nav_index());
     return true;
 }
 bool GCS_Backend_Plane::send_MISSION_ITEM_REACHED()
