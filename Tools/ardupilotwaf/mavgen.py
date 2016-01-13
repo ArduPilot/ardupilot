@@ -15,6 +15,11 @@ class mavgen(Task.Task):
     color   = 'GREEN'
     run_str = '${PYTHON} ${MAVGEN} --lang=C --wire-protocol=1.0 --output ${TGT} ${SRC}'
 
+    def post_run(self):
+        super(mavgen, self).post_run()
+        for header in self.generator.output_dir.ant_glob("*.h **/*.h", remove=False):
+            header.sig = header.cache_sig = self.cache_sig
+
 def options(opt):
     opt.load('python')
 
