@@ -176,7 +176,7 @@ public:
     virtual bool send_RC_CHANNELS_SCALED() { return true; }
     virtual bool send_RPM() { return true; }
     virtual bool send_SCALED_PRESSURE();
-    virtual bool send_SENSOR_OFFSETS() = 0;
+    virtual bool send_SENSOR_OFFSETS();
     virtual bool send_SIMSTATE() = 0;
     virtual bool send_STATUSTEXT() = 0;
     virtual bool send_SYS_STATUS() { return true; }; //FIXME: well, fix Tracker
@@ -189,8 +189,8 @@ public:
     void send_meminfo(void);
     void send_power_status(void);
     void send_radio_in(uint8_t receiver_rssi);
-    void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
     void send_battery2(const AP_BattMonitor &battery);
+
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif

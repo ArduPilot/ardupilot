@@ -1107,13 +1107,18 @@ bool GCS_MAVLINK::send_SCALED_PRESSURE()
     return false;
 }
 
-void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer)
+bool GCS_MAVLINK::send_SENSOR_OFFSETS()
 {
+
+    const AP_InertialSensor &ins = _ins();
+    const Compass &compass = _compass();
+    AP_Baro &barometer = _barometer();
+
     // run this message at a much lower rate - otherwise it
     // pointlessly wastes quite a lot of bandwidth
     static uint8_t counter;
     if (counter++ < 10) {
-        return;
+        return false;
     }
     counter = 0;
 
@@ -1134,6 +1139,7 @@ void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compas
                                     accel_offsets.x,
                                     accel_offsets.y,
                                     accel_offsets.z);
+    return true;
 }
 
 bool GCS_MAVLINK::send_AHRS()
