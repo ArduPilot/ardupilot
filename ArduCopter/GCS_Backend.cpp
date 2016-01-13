@@ -13,6 +13,8 @@ Compass &GCS_Backend_Copter::_compass() const { return copter.compass; }
 
 AP_Baro &GCS_Backend_Copter::_barometer() const { return copter.barometer; }
 
+AP_InertialSensor &GCS_Backend_Copter::_ins() const { return copter.ins; }
+
 bool GCS_Backend_Copter::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -124,11 +126,6 @@ bool GCS_Backend_Copter::send_RANGEFINDER()
 #endif
     return true;
 }
-bool GCS_Backend_Copter::send_RAW_IMU()
-{
-    send_raw_imu(copter.ins, copter.compass);
-    return true;
-}
 bool GCS_Backend_Copter::send_RC_CHANNELS_SCALED()
 {
     copter.send_servo_out(chan);
@@ -178,11 +175,6 @@ bool GCS_Backend_Copter::send_TERRAIN_REQUEST()
 bool GCS_Backend_Copter::send_VFR_HUD()
 {
     copter.send_vfr_hud(chan);
-    return true;
-}
-bool GCS_Backend_Copter::send_VIBRATION()
-{
-    send_vibration(copter.ins);
     return true;
 }
 

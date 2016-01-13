@@ -24,6 +24,8 @@ protected:
 
     AP_Baro &_barometer() const override;
 
+    AP_InertialSensor &_ins() const override;
+
     bool should_try_send_message(enum ap_message id) override;
 
     bool send_ATTITUDE() override;
@@ -40,7 +42,6 @@ protected:
     bool send_OPTICAL_FLOW() override;
     bool send_PID_TUNING() override;
     bool send_RANGEFINDER() override;
-    bool send_RAW_IMU() override;
     bool send_RC_CHANNELS_RAW() override;
     bool send_RC_CHANNELS_SCALED() override;
     bool send_RPM() override;
@@ -51,7 +52,6 @@ protected:
     bool send_SYS_STATUS() override;
     bool send_TERRAIN_REQUEST() override;
     bool send_VFR_HUD() override;
-    bool send_VIBRATION() override;
 
 private:
 
