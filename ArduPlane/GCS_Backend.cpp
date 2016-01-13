@@ -10,6 +10,7 @@ AP_AHRS_NavEKF &GCS_Backend_Plane::_ahrs() const { return plane.ahrs; }
 #else
 AP_AHRS &GCS_Backend_Plane::_ahrs() const { return plane.ahrs; }
 #endif
+Compass &GCS_Backend_Plane::_compass() const { return plane.compass; }
 
 bool GCS_Backend_Plane::should_try_send_message(enum ap_message id)
 {
@@ -67,16 +68,6 @@ bool GCS_Backend_Plane::send_GLOBAL_POSITION_INT()
 bool GCS_Backend_Plane::send_HEARTBEAT()
 {
     plane.send_heartbeat(chan);
-    return true;
-}
-bool GCS_Backend_Plane::send_MAG_CAL_PROGRESS()
-{
-    plane.compass.send_mag_cal_progress(chan);
-    return true;
-}
-bool GCS_Backend_Plane::send_MAG_CAL_REPORT()
-{
-    plane.compass.send_mag_cal_report(chan);
     return true;
 }
 bool GCS_Backend_Plane::send_MOUNT_STATUS()

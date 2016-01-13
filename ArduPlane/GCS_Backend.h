@@ -21,6 +21,7 @@ protected:
 #else
     AP_AHRS &_ahrs() const override;
 #endif
+    Compass &_compass() const override;
 
     bool should_try_send_message(enum ap_message id) override;
 
@@ -31,8 +32,6 @@ protected:
     bool send_GIMBAL_REPORT() override;
     bool send_GLOBAL_POSITION_INT() override;
     bool send_HEARTBEAT() override;
-    bool send_MAG_CAL_PROGRESS() override;
-    bool send_MAG_CAL_REPORT() override;
     bool send_MISSION_CURRENT() override;
     bool send_MISSION_ITEM_REACHED() override;
     bool send_MOUNT_STATUS() override;
