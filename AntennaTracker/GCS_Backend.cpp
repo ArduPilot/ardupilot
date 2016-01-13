@@ -43,11 +43,6 @@ bool GCS_Backend_Tracker::send_HEARTBEAT()
     tracker.send_heartbeat(chan);
     return true;
 }
-bool GCS_Backend_Tracker::send_HWSTATUS()
-{
-    tracker.send_hwstatus(chan);
-    return true;
-}
 bool GCS_Backend_Tracker::send_LOCAL_POSITION_NED()
 {
     send_local_position(tracker.ahrs);

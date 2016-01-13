@@ -114,14 +114,6 @@ void Tracker::send_radio_out(mavlink_channel_t chan)
         hal.rcout->read(7));
 }
 
-void Tracker::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        0,
-        hal.i2c->lockup_count());
-}
-
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(

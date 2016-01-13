@@ -26,7 +26,6 @@ protected:
     bool send_ATTITUDE() override;
     bool send_GLOBAL_POSITION_INT() override;
     bool send_HEARTBEAT() override;
-    bool send_HWSTATUS() override;
     bool send_LOCAL_POSITION_NED() override;
     bool send_MAG_CAL_PROGRESS() override;
     bool send_MAG_CAL_REPORT() override;
