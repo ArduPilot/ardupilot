@@ -79,11 +79,6 @@ bool GCS_Backend_Copter::send_HEARTBEAT()
     copter.send_heartbeat(chan);
     return true;
 }
-bool GCS_Backend_Copter::send_HWSTATUS()
-{
-    copter.send_hwstatus(chan);
-    return true;
-}
 bool GCS_Backend_Copter::send_LIMITS_STATUS() const
 {
 #if AC_FENCE == ENABLED
