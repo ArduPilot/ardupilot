@@ -117,13 +117,6 @@ bool GCS_Backend_Rover::send_SIMSTATE()
     rover.send_simstate(chan);
     return true;
 }
-bool GCS_Backend_Rover::send_STATUSTEXT()
-{
-    // this looks wrong; if a Backend is told to send its statustext
-    // then it should not be talking to the frontend:
-    rover.gcs_frontend.send_statustext(chan);
-    return true;
-}
 bool GCS_Backend_Rover::send_SYS_STATUS()
 {
     rover.send_extended_status1(chan);

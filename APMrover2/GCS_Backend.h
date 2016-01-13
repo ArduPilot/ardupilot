@@ -44,7 +44,6 @@ protected:
     bool send_RC_CHANNELS_SCALED() override;
     bool send_SERVO_OUTPUT_RAW() override;
     bool send_SIMSTATE() override;
-    bool send_STATUSTEXT() override;
     bool send_SYS_STATUS() override;
     bool send_VFR_HUD() override;
 
