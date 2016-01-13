@@ -136,13 +136,6 @@ bool GCS_Backend_Plane::send_SIMSTATE()
 #endif
     return true;
 }
-bool GCS_Backend_Plane::send_STATUSTEXT()
-{
-    // this looks wrong; if a Backend is told to send its statustext
-    // then it should not be talking to the frontend:
-    plane.gcs_frontend.send_statustext(chan);
-    return true;
-}
 bool GCS_Backend_Plane::send_SYS_STATUS()
 {
     plane.send_extended_status1(chan);
