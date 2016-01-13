@@ -112,11 +112,6 @@ bool GCS_Backend_Rover::send_RC_CHANNELS_SCALED()
     rover.send_servo_out(chan);
     return true;
 }
-bool GCS_Backend_Rover::send_SENSOR_OFFSETS()
-{
-    send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
-    return true;
-}
 bool GCS_Backend_Rover::send_SIMSTATE()
 {
     rover.send_simstate(chan);
