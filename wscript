@@ -124,7 +124,6 @@ def build(bld):
         source=['modules/mavlink/message_definitions/v1.0/ardupilotmega.xml'],
         target=['libraries/GCS_MAVLink/include/mavlink/v1.0/'])
 
-    bld.add_group()
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider
