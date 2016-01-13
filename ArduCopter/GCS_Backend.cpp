@@ -1,6 +1,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include "Copter.h" // for copter global variable
 
+AP_GPS &GCS_Backend_Copter::_gps() const { return copter.gps; }
+
 bool GCS_Backend_Copter::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -64,11 +66,6 @@ bool GCS_Backend_Copter::send_GIMBAL_REPORT()
 bool GCS_Backend_Copter::send_GLOBAL_POSITION_INT()
 {
     copter.send_location(chan);
-    return true;
-}
-bool GCS_Backend_Copter::send_GPS_RAW()
-{
-    send_gps_raw(copter.gps);
     return true;
 }
 bool GCS_Backend_Copter::send_HEARTBEAT()
