@@ -12,6 +12,8 @@ Compass &GCS_Backend_Rover::_compass() const { return rover.compass; }
 
 AP_Baro &GCS_Backend_Rover::_barometer() const { return rover.barometer; }
 
+AP_InertialSensor &GCS_Backend_Rover::_ins() const { return rover.ins; }
+
 bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -103,11 +105,6 @@ bool GCS_Backend_Rover::send_SERVO_OUTPUT_RAW()
 bool GCS_Backend_Rover::send_RANGEFINDER()
 {
     rover.send_rangefinder(chan);
-    return true;
-}
-bool GCS_Backend_Rover::send_RAW_IMU()
-{
-    send_raw_imu(rover.ins, rover.compass);
     return true;
 }
 bool GCS_Backend_Rover::send_RC_CHANNELS_SCALED()
