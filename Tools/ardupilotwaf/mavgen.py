@@ -37,7 +37,11 @@ def process_mavgen(self):
         outputs.append(t)
 
     self.source = []
-    self.create_task('mavgen', inputs, outputs)
+
+    task = self.create_task('mavgen', inputs, outputs)
+
+    task.env.env = dict(os.environ)
+    task.env.env['PYTHONPATH'] = task.env.MAVLINK_DIR
 
 def configure(cfg):
     """
@@ -47,7 +51,6 @@ def configure(cfg):
     cfg.check_python_version(minver=(2,7,0))
 
     env = cfg.env
-    cfg.env.env = dict(os.environ)
 
     cfg.start_msg('Checking for message_definitions')
     if not cfg.srcnode.find_resource('modules/mavlink/message_definitions/v1.0/ardupilotmega.xml'):
@@ -60,6 +63,5 @@ def configure(cfg):
     env.MAVLINK_HEADERS = cfg.bldnode.make_node('/libraries/GCS_MAVLink/include/mavlink/v1.0/').abspath()
 
     env.MAVGEN = env.MAVLINK_DIR  + '/pymavlink/tools/mavgen.py'
-    cfg.env.env['PYTHONPATH'] = env.MAVLINK_DIR
 
     env.MAV_MSG_DEFS = cfg.srcnode.find_resource('modules/mavlink/message_definitions/v1.0/ardupilotmega.xml').abspath()
