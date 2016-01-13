@@ -142,6 +142,7 @@ public:
 #else
     virtual AP_AHRS &_ahrs() const = 0;
 #endif
+    virtual Compass &_compass() const = 0;
 
     // common send functions
     virtual bool send_AHRS();
@@ -158,8 +159,8 @@ public:
     virtual bool send_HWSTATUS();
     virtual bool send_LIMITS_STATUS() const { return true; }
     virtual bool send_LOCAL_POSITION_NED() const;
-    virtual bool send_MAG_CAL_PROGRESS() = 0;
-    virtual bool send_MAG_CAL_REPORT() = 0;
+    virtual bool send_MAG_CAL_PROGRESS();
+    virtual bool send_MAG_CAL_REPORT();
     virtual bool send_MISSION_CURRENT() { return true; }
     virtual bool send_MISSION_ITEM_REACHED() { return true; }
     virtual bool send_MOUNT_STATUS() { return true; };

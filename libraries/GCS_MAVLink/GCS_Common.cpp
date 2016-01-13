@@ -1392,6 +1392,17 @@ bool GCS_MAVLINK::send_EKF_STATUS_REPORT()
     return true;
 }
 
+bool GCS_MAVLINK::send_MAG_CAL_PROGRESS()
+{
+    _compass().send_mag_cal_progress(chan);
+    return true;
+}
+bool GCS_MAVLINK::send_MAG_CAL_REPORT()
+{
+    _compass().send_mag_cal_report(chan);
+    return true;
+}
+
 void GCS_MAVLINK::mavlink_msg_command_ack_send(MAV_CMD cmd, int ret)
 {
     ::mavlink_msg_command_ack_send(chan, cmd, ret);
