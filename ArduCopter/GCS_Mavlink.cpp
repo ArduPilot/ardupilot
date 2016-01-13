@@ -391,11 +391,6 @@ void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
         climb_rate / 100.0f);
 }
 
-void NOINLINE Copter::send_current_waypoint(mavlink_channel_t chan)
-{
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
-}
-
 #if CONFIG_SONAR == ENABLED
 void NOINLINE Copter::send_rangefinder(mavlink_channel_t chan)
 {

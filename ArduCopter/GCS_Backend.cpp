@@ -77,7 +77,7 @@ bool GCS_Backend_Copter::send_LIMITS_STATUS() const
 }
 bool GCS_Backend_Copter::send_MISSION_CURRENT()
 {
-    copter.send_current_waypoint(chan);
+    mavlink_msg_mission_current_send(chan, copter.mission.get_current_nav_index());
     return true;
 }
 bool GCS_Backend_Copter::send_MISSION_ITEM_REACHED()
