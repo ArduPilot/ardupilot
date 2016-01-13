@@ -201,11 +201,6 @@ bool GCS_Backend_Copter::send_SYS_STATUS()
     copter.send_extended_status1(chan);
     return true;
 }
-bool GCS_Backend_Copter::send_SYSTEM_TIME()
-{
-    send_system_time(copter.gps);
-    return true;
-}
 bool GCS_Backend_Copter::send_TERRAIN_REQUEST()
 {
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
