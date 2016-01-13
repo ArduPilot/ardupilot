@@ -8,6 +8,8 @@ AP_AHRS_NavEKF &GCS_Backend_Rover::_ahrs() const { return rover.ahrs; }
 AP_AHRS &GCS_Backend_Rover::_ahrs() const { return rover.ahrs; }
 #endif
 
+Compass &GCS_Backend_Rover::_compass() const { return rover.compass; }
+
 bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -65,16 +67,6 @@ bool GCS_Backend_Rover::send_MISSION_CURRENT()
 bool GCS_Backend_Rover::send_MISSION_ITEM_REACHED()
 {
     mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
-    return true;
-}
-bool GCS_Backend_Rover::send_MAG_CAL_PROGRESS()
-{
-    rover.compass.send_mag_cal_progress(chan);
-    return true;
-}
-bool GCS_Backend_Rover::send_MAG_CAL_REPORT()
-{
-    rover.compass.send_mag_cal_report(chan);
     return true;
 }
 bool GCS_Backend_Rover::send_MOUNT_STATUS()
