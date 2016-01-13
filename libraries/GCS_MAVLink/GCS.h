@@ -177,7 +177,7 @@ public:
     virtual bool send_SIMSTATE() = 0;
     virtual bool send_STATUSTEXT() = 0;
     virtual bool send_SYS_STATUS() { return true; }; //FIXME: well, fix Tracker
-    virtual bool send_SYSTEM_TIME() { return true; }; //FIXME: well, fix Tracker
+    virtual bool send_SYSTEM_TIME();
     virtual bool send_TERRAIN_REQUEST() { return true; }
     virtual bool send_VFR_HUD() { return true; }
     virtual bool send_VIBRATION() { return true; }
@@ -186,7 +186,6 @@ public:
     void send_meminfo(void);
     void send_power_status(void);
     void send_ahrs2(AP_AHRS &ahrs);
-    void send_system_time(AP_GPS &gps);
     void send_radio_in(uint8_t receiver_rssi);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
     void send_scaled_pressure(AP_Baro &barometer);

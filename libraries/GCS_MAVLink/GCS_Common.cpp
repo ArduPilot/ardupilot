@@ -923,12 +923,15 @@ bool GCS_MAVLINK::send_GPS_RAW()
 /*
   send the SYSTEM_TIME message
  */
-void GCS_MAVLINK::send_system_time(AP_GPS &gps)
+bool GCS_MAVLINK::send_SYSTEM_TIME()
 {
+    AP_GPS &gps = _gps();
+
     mavlink_msg_system_time_send(
         chan,
         gps.time_epoch_usec(),
         AP_HAL::millis());
+    return true;
 }
 
 
