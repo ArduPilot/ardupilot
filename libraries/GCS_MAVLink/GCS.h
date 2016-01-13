@@ -144,12 +144,12 @@ public:
 #endif
 
     // common send functions
-    virtual bool send_AHRS() = 0;
-    virtual bool send_AHRS2() { return true; }
+    virtual bool send_AHRS();
+    virtual bool send_AHRS2();
     virtual bool send_ATTITUDE() = 0;
     virtual bool send_BATTERY2() { return true; }
     virtual bool send_CAMERA_FEEDBACK() { return true; }
-    virtual bool send_EKF_STATUS_REPORT() { return true; }
+    virtual bool send_EKF_STATUS_REPORT();
     virtual bool send_FENCE_STATUS() { return true; }
     virtual bool send_GIMBAL_REPORT() { return true; };
     virtual bool send_GLOBAL_POSITION_INT() = 0;
@@ -157,7 +157,7 @@ public:
     virtual bool send_HEARTBEAT() = 0;
     virtual bool send_HWSTATUS();
     virtual bool send_LIMITS_STATUS() const { return true; }
-    virtual bool send_LOCAL_POSITION_NED() = 0;
+    virtual bool send_LOCAL_POSITION_NED() const;
     virtual bool send_MAG_CAL_PROGRESS() = 0;
     virtual bool send_MAG_CAL_REPORT() = 0;
     virtual bool send_MISSION_CURRENT() { return true; }
@@ -185,18 +185,15 @@ public:
 
     void send_meminfo(void);
     void send_power_status(void);
-    void send_ahrs2(AP_AHRS &ahrs);
     void send_radio_in(uint8_t receiver_rssi);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
     void send_scaled_pressure(AP_Baro &barometer);
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
-    void send_ahrs(AP_AHRS &ahrs);
     void send_battery2(const AP_BattMonitor &battery);
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
     void send_autopilot_version(uint8_t major_version, uint8_t minor_version, uint8_t patch_version, uint8_t version_type) const;
-    void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
 

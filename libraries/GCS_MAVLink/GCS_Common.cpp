@@ -202,9 +202,11 @@ void GCS_MAVLINK::send_power_status(void)
 }
 
 // report AHRS2 state
-void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
+bool GCS_MAVLINK::send_AHRS2()
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
+    AP_AHRS_NavEKF &ahrs = _ahrs();
+
     Vector3f euler;
     struct Location loc {};
     if (ahrs.get_secondary_attitude(euler)) {
@@ -216,10 +218,10 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
                                loc.lat,
                                loc.lng);
     }
-    AP_AHRS_NavEKF &_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
-    if (_ahrs.get_NavEKF2().activeCores() > 0) {
-        _ahrs.get_NavEKF2().getLLH(loc);
-        _ahrs.get_NavEKF2().getEulerAngles(-1,euler);
+    AP_AHRS_NavEKF &a_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
+    if (a_ahrs.get_NavEKF2().activeCores() > 0) {
+        a_ahrs.get_NavEKF2().getLLH(loc);
+        a_ahrs.get_NavEKF2().getEulerAngles(-1,euler);
         mavlink_msg_ahrs3_send(chan,
                                euler.x,
                                euler.y,
@@ -230,6 +232,7 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
                                0, 0, 0, 0);
     }
 #endif
+    return true;
 }
 
 /*
@@ -1124,8 +1127,10 @@ void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compas
                                     accel_offsets.z);
 }
 
-void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
+bool GCS_MAVLINK::send_AHRS()
 {
+    AP_AHRS &ahrs = _ahrs();
+
     const Vector3f &omega_I = ahrs.get_gyro_drift();
     mavlink_msg_ahrs_send(
         chan,
@@ -1136,6 +1141,7 @@ void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
         0,
         ahrs.get_error_rp(),
         ahrs.get_error_yaw());
+    return true;
 }
 
 /*
@@ -1314,13 +1320,14 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
 /*
   send LOCAL_POSITION_NED message
  */
-void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
+bool GCS_MAVLINK::send_LOCAL_POSITION_NED() const
 {
+    const AP_AHRS &ahrs = _ahrs();
     Vector3f local_position, velocity;
     if (!ahrs.get_relative_position_NED(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
         // we don't know the position and velocity
-        return;
+        return false;
     }
 
     mavlink_msg_local_position_ned_send(
@@ -1332,6 +1339,7 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
         velocity.x,
         velocity.y,
         velocity.z);
+    return true;
 }
 
 /*
@@ -1373,8 +1381,16 @@ bool GCS_MAVLINK::send_HWSTATUS()
         chan,
         hal.analogin->board_voltage()*1000,
         hal.i2c->lockup_count());
+    return true;
 }
 
+bool GCS_MAVLINK::send_EKF_STATUS_REPORT()
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    _ahrs().send_ekf_status_report(chan);
+#endif
+    return true;
+}
 
 void GCS_MAVLINK::mavlink_msg_command_ack_send(MAV_CMD cmd, int ret)
 {
