@@ -34,6 +34,7 @@ def build(bld):
             'AP_Motors',
             'AC_PID'
         ],
+        use='mavlink',
     )
 
     ardupilotwaf.program(
