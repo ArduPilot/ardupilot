@@ -14,6 +14,8 @@ Compass &GCS_Backend_Plane::_compass() const { return plane.compass; }
 
 AP_Baro &GCS_Backend_Plane::_barometer() const { return plane.barometer; }
 
+AP_InertialSensor &GCS_Backend_Plane::_ins() const { return plane.ins; }
+
 bool GCS_Backend_Plane::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -103,11 +105,6 @@ bool GCS_Backend_Plane::send_RANGEFINDER()
     plane.send_rangefinder(chan);
     return true;
 }
-bool GCS_Backend_Plane::send_RAW_IMU()
-{
-    send_raw_imu(plane.ins, plane.compass);
-    return true;
-}
 bool GCS_Backend_Plane::send_RC_CHANNELS_RAW()
 {
     send_radio_in(plane.receiver_rssi);
@@ -176,11 +173,6 @@ bool GCS_Backend_Plane::send_MISSION_CURRENT()
 bool GCS_Backend_Plane::send_MISSION_ITEM_REACHED()
 {
     mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
-    return true;
-}
-bool GCS_Backend_Plane::send_VIBRATION()
-{
-    send_vibration(plane.ins);
     return true;
 }
 bool GCS_Backend_Plane::send_WIND()
