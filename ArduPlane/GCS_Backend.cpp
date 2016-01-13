@@ -4,6 +4,8 @@
 extern mavlink_hil_state_t last_hil_state; // see GCS_Mavlink.cpp
 #endif
 
+AP_GPS &GCS_Backend_Plane::_gps() const { return plane.gps; }
+
 bool GCS_Backend_Plane::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -72,11 +74,6 @@ bool GCS_Backend_Plane::send_GIMBAL_REPORT()
 bool GCS_Backend_Plane::send_GLOBAL_POSITION_INT()
 {
     plane.send_location(chan);
-    return true;
-}
-bool GCS_Backend_Plane::send_GPS_RAW()
-{
-    send_gps_raw(plane.gps);
     return true;
 }
 bool GCS_Backend_Plane::send_HEARTBEAT()
