@@ -160,11 +160,6 @@ bool GCS_Backend_Rover::send_SYS_STATUS()
     rover.send_extended_status1(chan);
     return true;
 }
-bool GCS_Backend_Rover::send_SYSTEM_TIME()
-{
-    send_system_time(rover.gps);
-    return true;
-}
 bool GCS_Backend_Rover::send_VFR_HUD()
 {
     rover.send_vfr_hud(chan);
