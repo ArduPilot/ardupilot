@@ -155,7 +155,7 @@ public:
     virtual bool send_GLOBAL_POSITION_INT() = 0;
     virtual bool send_GPS_RAW();
     virtual bool send_HEARTBEAT() = 0;
-    virtual bool send_HWSTATUS() = 0;
+    virtual bool send_HWSTATUS();
     virtual bool send_LIMITS_STATUS() const { return true; }
     virtual bool send_LOCAL_POSITION_NED() = 0;
     virtual bool send_MAG_CAL_PROGRESS() = 0;

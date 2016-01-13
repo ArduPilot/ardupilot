@@ -1364,6 +1364,15 @@ void GCS_MAVLINK::send_home(const Location &home) const
     }
 }
 
+bool GCS_MAVLINK::send_HWSTATUS()
+{
+    mavlink_msg_hwstatus_send(
+        chan,
+        hal.analogin->board_voltage()*1000,
+        hal.i2c->lockup_count());
+}
+
+
 void GCS_MAVLINK::mavlink_msg_command_ack_send(MAV_CMD cmd, int ret)
 {
     ::mavlink_msg_command_ack_send(chan, cmd, ret);
