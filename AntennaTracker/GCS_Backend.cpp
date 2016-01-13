@@ -1,5 +1,7 @@
 #include "Tracker.h" // for access to tracker global
 
+AP_GPS &GCS_Backend_Tracker::_gps() const { return tracker.gps; }
+
 void GCS_Backend_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
@@ -28,11 +30,6 @@ bool GCS_Backend_Tracker::send_ATTITUDE()
 bool GCS_Backend_Tracker::send_GLOBAL_POSITION_INT()
 {
     tracker.send_location(chan);
-    return true;
-}
-bool GCS_Backend_Tracker::send_GPS_RAW()
-{
-    send_gps_raw(tracker.gps);
     return true;
 }
 bool GCS_Backend_Tracker::send_HEARTBEAT()
