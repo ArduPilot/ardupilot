@@ -97,8 +97,7 @@ def configure(cfg):
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
-        cfg.bldnode.abspath() +'/' + cfg.env.BOARD + '/libraries/',
-        cfg.bldnode.abspath() +'/' + cfg.env.BOARD + '/libraries/GCS_MAVLink'])
+    ])
 
     # TODO: Investigate if code could be changed to not depend on the
     # source absolute path.
@@ -125,6 +124,12 @@ def build(bld):
         source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
         target='libraries/GCS_MAVLink/include/mavlink/v1.0/',
         name='mavlink',
+        # this below is not ideal, mavgen tool should set this, but that's not
+        # currently possible
+        export_includes=[
+            bld.bldnode.make_node('libraries').abspath(),
+            bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
+        ],
     )
 
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
