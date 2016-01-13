@@ -3,6 +3,12 @@
 
 AP_GPS &GCS_Backend_Copter::_gps() const { return copter.gps; }
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF &GCS_Backend_Copter::_ahrs() const { return copter.ahrs; }
+#else
+AP_AHRS &GCS_Backend_Copter::_ahrs() const { return copter.ahrs; }
+#endif
+
 bool GCS_Backend_Copter::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
