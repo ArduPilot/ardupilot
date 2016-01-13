@@ -28,16 +28,6 @@ bool GCS_Backend_Plane::should_try_send_message(enum ap_message id)
     return true;
 }
 
-bool GCS_Backend_Plane::send_AHRS()
-{
-    send_ahrs(plane.ahrs);
-    return true;
-}
-bool GCS_Backend_Plane::send_AHRS2()
-{
-    send_ahrs2(plane.ahrs);
-    return true;
-}
 bool GCS_Backend_Plane::send_ATTITUDE()
 {
     plane.send_attitude(chan);
@@ -52,13 +42,6 @@ bool GCS_Backend_Plane::send_CAMERA_FEEDBACK()
 {
 #if CAMERA == ENABLED
     plane.camera.send_feedback(chan, plane.gps, plane.ahrs, plane.current_loc);
-#endif
-    return true;
-}
-bool GCS_Backend_Plane::send_EKF_STATUS_REPORT()
-{
-#if AP_AHRS_NAVEKF_AVAILABLE
-    plane.ahrs.send_ekf_status_report(chan);
 #endif
     return true;
 }
@@ -84,11 +67,6 @@ bool GCS_Backend_Plane::send_GLOBAL_POSITION_INT()
 bool GCS_Backend_Plane::send_HEARTBEAT()
 {
     plane.send_heartbeat(chan);
-    return true;
-}
-bool GCS_Backend_Plane::send_LOCAL_POSITION_NED()
-{
-    send_local_position(plane.ahrs);
     return true;
 }
 bool GCS_Backend_Plane::send_MAG_CAL_PROGRESS()

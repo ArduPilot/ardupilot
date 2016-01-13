@@ -24,17 +24,13 @@ protected:
 
     bool should_try_send_message(enum ap_message id) override;
 
-    bool send_AHRS2() override;
-    bool send_AHRS() override;
     bool send_ATTITUDE() override;
     bool send_BATTERY2() override;
     bool send_CAMERA_FEEDBACK() override;
-    bool send_EKF_STATUS_REPORT() override;
     bool send_FENCE_STATUS() override;
     bool send_GIMBAL_REPORT() override;
     bool send_GLOBAL_POSITION_INT() override;
     bool send_HEARTBEAT() override;
-    bool send_LOCAL_POSITION_NED() override;
     bool send_MAG_CAL_PROGRESS() override;
     bool send_MAG_CAL_REPORT() override;
     bool send_MISSION_CURRENT() override;
