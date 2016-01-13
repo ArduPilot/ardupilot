@@ -54,11 +54,6 @@ bool GCS_Backend_Tracker::send_RC_CHANNELS_RAW()
     send_radio_in(0);
     return true;
 }
-bool GCS_Backend_Tracker::send_SENSOR_OFFSETS()
-{
-    send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
-    return true;
-}
 bool GCS_Backend_Tracker::send_SERVO_OUTPUT_RAW()
 {
     tracker.send_radio_out(chan);

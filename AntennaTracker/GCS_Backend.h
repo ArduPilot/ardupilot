@@ -33,7 +33,6 @@ protected:
     bool send_HEARTBEAT() override;
     bool send_NAV_CONTROLLER_OUTPUT() override;
     bool send_RC_CHANNELS_RAW() override;
-    bool send_SENSOR_OFFSETS() override;
     bool send_SERVO_OUTPUT_RAW() override;
     bool send_SIMSTATE() override;
     bool send_STATUSTEXT() override;
