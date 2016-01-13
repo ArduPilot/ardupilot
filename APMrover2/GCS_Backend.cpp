@@ -2,6 +2,12 @@
 
 AP_GPS &GCS_Backend_Rover::_gps() const { return rover.gps; }
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF &GCS_Backend_Rover::_ahrs() const { return rover.ahrs; }
+#else
+AP_AHRS &GCS_Backend_Rover::_ahrs() const { return rover.ahrs; }
+#endif
+
 bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
