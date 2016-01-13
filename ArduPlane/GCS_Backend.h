@@ -16,6 +16,11 @@ public:
 protected:
 
     AP_GPS &_gps() const override;
+#if AP_AHRS_NAVEKF_AVAILABLE
+    AP_AHRS_NavEKF &_ahrs() const override;
+#else
+    AP_AHRS &_ahrs() const override;
+#endif
 
     bool should_try_send_message(enum ap_message id) override;
 

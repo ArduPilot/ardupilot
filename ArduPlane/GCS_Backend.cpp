@@ -5,6 +5,11 @@ extern mavlink_hil_state_t last_hil_state; // see GCS_Mavlink.cpp
 #endif
 
 AP_GPS &GCS_Backend_Plane::_gps() const { return plane.gps; }
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF &GCS_Backend_Plane::_ahrs() const { return plane.ahrs; }
+#else
+AP_AHRS &GCS_Backend_Plane::_ahrs() const { return plane.ahrs; }
+#endif
 
 bool GCS_Backend_Plane::should_try_send_message(enum ap_message id)
 {
