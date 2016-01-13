@@ -10,6 +10,8 @@ AP_AHRS &GCS_Backend_Tracker::_ahrs() const { return tracker.ahrs; }
 
 Compass &GCS_Backend_Tracker::_compass() const { return tracker.compass; }
 
+AP_Baro &GCS_Backend_Tracker::_barometer() const { return tracker.barometer; }
+
 void GCS_Backend_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
@@ -53,11 +55,6 @@ bool GCS_Backend_Tracker::send_RAW_IMU()
 bool GCS_Backend_Tracker::send_RC_CHANNELS_RAW()
 {
     send_radio_in(0);
-    return true;
-}
-bool GCS_Backend_Tracker::send_SCALED_PRESSURE()
-{
-    send_scaled_pressure(tracker.barometer);
     return true;
 }
 bool GCS_Backend_Tracker::send_SENSOR_OFFSETS()
