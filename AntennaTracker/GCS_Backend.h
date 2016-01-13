@@ -20,13 +20,13 @@ protected:
     AP_AHRS &_ahrs() const override;
 #endif
 
+    Compass &_compass() const override;
+
     bool should_try_send_message(enum ap_message id) override;
 
     bool send_ATTITUDE() override;
     bool send_GLOBAL_POSITION_INT() override;
     bool send_HEARTBEAT() override;
-    bool send_MAG_CAL_PROGRESS() override;
-    bool send_MAG_CAL_REPORT() override;
     bool send_NAV_CONTROLLER_OUTPUT() override;
     bool send_RAW_IMU() override;
     bool send_RC_CHANNELS_RAW() override;

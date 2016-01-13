@@ -8,6 +8,8 @@ AP_AHRS_NavEKF &GCS_Backend_Tracker::_ahrs() const { return tracker.ahrs; }
 AP_AHRS &GCS_Backend_Tracker::_ahrs() const { return tracker.ahrs; }
 #endif
 
+Compass &GCS_Backend_Tracker::_compass() const { return tracker.compass; }
+
 void GCS_Backend_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
@@ -41,16 +43,6 @@ bool GCS_Backend_Tracker::send_HEARTBEAT()
 bool GCS_Backend_Tracker::send_NAV_CONTROLLER_OUTPUT()
 {
     tracker.send_nav_controller_output(chan);
-    return true;
-}
-bool GCS_Backend_Tracker::send_MAG_CAL_PROGRESS()
-{
-    tracker.compass.send_mag_cal_progress(chan);
-    return true;
-}
-bool GCS_Backend_Tracker::send_MAG_CAL_REPORT()
-{
-    tracker.compass.send_mag_cal_report(chan);
     return true;
 }
 bool GCS_Backend_Tracker::send_RAW_IMU()
