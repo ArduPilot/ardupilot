@@ -91,7 +91,7 @@
 >>   - ***Board***: VRBrain
 >> - [Mike McCauley](#)
 >>   - ***Board***: Flymaple
->> - [Julien BERAUD](#)
+>> - [Julien BERAUD](https://github.com/jberaud)
 >>   - ***Board***: Bebop & Bebop 2
 >> - [Pritam Ghanghas](https://github.com/pritamghanghas)
 >>   - ***Board***: Raspilot
