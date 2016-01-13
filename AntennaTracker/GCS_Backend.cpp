@@ -66,13 +66,6 @@ bool GCS_Backend_Tracker::send_SIMSTATE()
 #endif
     return true;
 }
-bool GCS_Backend_Tracker::send_STATUSTEXT()
-{
-    // this looks wrong; if a Backend is told to send its statustext
-    // then it should not be talking to the frontend:
-    tracker.gcs_frontend.send_statustext(chan);
-    return true;
-}
 
 
 /*

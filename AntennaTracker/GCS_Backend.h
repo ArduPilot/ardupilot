@@ -35,7 +35,6 @@ protected:
     bool send_RC_CHANNELS_RAW() override;
     bool send_SERVO_OUTPUT_RAW() override;
     bool send_SIMSTATE() override;
-    bool send_STATUSTEXT() override;
 
 private:
 
