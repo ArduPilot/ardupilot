@@ -12,6 +12,8 @@ AP_AHRS &GCS_Backend_Plane::_ahrs() const { return plane.ahrs; }
 #endif
 Compass &GCS_Backend_Plane::_compass() const { return plane.compass; }
 
+AP_Baro &GCS_Backend_Plane::_barometer() const { return plane.barometer; }
+
 bool GCS_Backend_Plane::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -123,11 +125,6 @@ bool GCS_Backend_Plane::send_RC_CHANNELS_SCALED()
 bool GCS_Backend_Plane::send_RPM()
 {
     plane.send_rpm(chan);
-    return true;
-}
-bool GCS_Backend_Plane::send_SCALED_PRESSURE()
-{
-    send_scaled_pressure(plane.barometer);
     return true;
 }
 bool GCS_Backend_Plane::send_SENSOR_OFFSETS()
