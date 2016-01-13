@@ -47,7 +47,6 @@ protected:
     bool send_RPM() override;
     bool send_SERVO_OUTPUT_RAW() override;
     bool send_SIMSTATE() override;
-    bool send_STATUSTEXT() override;
     bool send_SYS_STATUS() override;
     bool send_TERRAIN_REQUEST() override;
     bool send_VFR_HUD() override;

@@ -143,13 +143,6 @@ bool GCS_Backend_Copter::send_SIMSTATE()
 #endif
     return true;
 }
-bool GCS_Backend_Copter::send_STATUSTEXT()
-{
-    // this looks wrong; if a Backend is told to send its statustext
-    // then it should not be talking to the frontend:
-    copter.gcs_frontend.send_statustext(chan);
-    return true;
-}
 bool GCS_Backend_Copter::send_SYS_STATUS()
 {
     // this check could be moved to should_try_send_message
