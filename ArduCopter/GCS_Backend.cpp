@@ -9,6 +9,8 @@ AP_AHRS_NavEKF &GCS_Backend_Copter::_ahrs() const { return copter.ahrs; }
 AP_AHRS &GCS_Backend_Copter::_ahrs() const { return copter.ahrs; }
 #endif
 
+Compass &GCS_Backend_Copter::_compass() const { return copter.compass; }
+
 bool GCS_Backend_Copter::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -67,16 +69,6 @@ bool GCS_Backend_Copter::send_LIMITS_STATUS() const
 #if AC_FENCE == ENABLED
     copter.send_limits_status(chan);
 #endif
-    return true;
-}
-bool GCS_Backend_Copter::send_MAG_CAL_PROGRESS()
-{
-    copter.compass.send_mag_cal_progress(chan);
-    return true;
-}
-bool GCS_Backend_Copter::send_MAG_CAL_REPORT()
-{
-    copter.compass.send_mag_cal_report(chan);
     return true;
 }
 bool GCS_Backend_Copter::send_MISSION_CURRENT()
