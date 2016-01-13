@@ -69,11 +69,6 @@ bool GCS_Backend_Rover::send_HEARTBEAT()
     rover.send_heartbeat(chan);
     return true;
 }
-bool GCS_Backend_Rover::send_HWSTATUS()
-{
-    rover.send_hwstatus(chan);
-    return true;
-}
 bool GCS_Backend_Rover::send_LOCAL_POSITION_NED()
 {
     send_local_position(rover.ahrs);

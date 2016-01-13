@@ -310,14 +310,6 @@ void Rover::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void Rover::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        hal.i2c->lockup_count());
-}
-
 void Rover::send_rangefinder(mavlink_channel_t chan)
 {
     if (!sonar.has_data(0) && !sonar.has_data(1)) {
