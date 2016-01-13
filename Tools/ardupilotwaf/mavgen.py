@@ -14,6 +14,7 @@ class mavgen(Task.Task):
     """generate mavlink header files"""
     color   = 'GREEN'
     run_str = '${PYTHON} ${MAVGEN} --lang=C --wire-protocol=1.0 --output ${TGT} ${SRC}'
+    before  = 'cxx c'
 
     def post_run(self):
         super(mavgen, self).post_run()
