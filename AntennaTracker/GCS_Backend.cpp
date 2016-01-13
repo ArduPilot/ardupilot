@@ -23,11 +23,6 @@ bool GCS_Backend_Tracker::should_try_send_message(enum ap_message id)
     return true;
 }
 
-bool GCS_Backend_Tracker::send_AHRS()
-{
-    send_ahrs(tracker.ahrs);
-    return true;
-}
 bool GCS_Backend_Tracker::send_ATTITUDE()
 {
     tracker.send_attitude(chan);
@@ -41,11 +36,6 @@ bool GCS_Backend_Tracker::send_GLOBAL_POSITION_INT()
 bool GCS_Backend_Tracker::send_HEARTBEAT()
 {
     tracker.send_heartbeat(chan);
-    return true;
-}
-bool GCS_Backend_Tracker::send_LOCAL_POSITION_NED()
-{
-    send_local_position(tracker.ahrs);
     return true;
 }
 bool GCS_Backend_Tracker::send_NAV_CONTROLLER_OUTPUT()
