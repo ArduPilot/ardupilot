@@ -293,11 +293,17 @@ void VideoIn::crop_8bpp(uint8_t *buffer, uint8_t *new_buffer,
                         uint32_t width, uint32_t left, uint32_t crop_width,
                         uint32_t top, uint32_t crop_height)
 {
-    for (uint32_t j = top; j < top + crop_height; j++) {
-        for (uint32_t i = left; i < left + crop_width; i++) {
-            new_buffer[(i - left) + (j - top) * crop_width] = 
-                buffer[i + j * width];
+    uint32_t crop_x = left + crop_width;
+    uint32_t crop_y = top + crop_height;
+    uint32_t buffer_index = top * width;
+    uint32_t new_buffer_index = 0;
+
+    for (uint32_t j = top; j < crop_y; j++) {
+        for (uint32_t i = left; i < crop_x; i++) {
+            new_buffer[i - left + new_buffer_index] =  buffer[i + buffer_index];
         }
+        buffer_index += width;
+        new_buffer_index += crop_width;
     }
 }
 
