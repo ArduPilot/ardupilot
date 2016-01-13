@@ -28,16 +28,6 @@ bool GCS_Backend_Copter::should_try_send_message(enum ap_message id)
     return true;
 }
 
-bool GCS_Backend_Copter::send_AHRS()
-{
-    send_ahrs(copter.ahrs);
-    return true;
-}
-bool GCS_Backend_Copter::send_AHRS2()
-{
-    send_ahrs2(copter.ahrs);
-    return true;
-}
 bool GCS_Backend_Copter::send_ATTITUDE()
 {
     copter.send_attitude(chan);
@@ -52,13 +42,6 @@ bool GCS_Backend_Copter::send_CAMERA_FEEDBACK()
 {
 #if CAMERA == ENABLED
     copter.camera.send_feedback(chan, copter.gps, copter.ahrs, copter.current_loc);
-#endif
-    return true;
-}
-bool GCS_Backend_Copter::send_EKF_STATUS_REPORT()
-{
-#if AP_AHRS_NAVEKF_AVAILABLE
-    copter.ahrs.send_ekf_status_report(chan);
 #endif
     return true;
 }
@@ -84,11 +67,6 @@ bool GCS_Backend_Copter::send_LIMITS_STATUS() const
 #if AC_FENCE == ENABLED
     copter.send_limits_status(chan);
 #endif
-    return true;
-}
-bool GCS_Backend_Copter::send_LOCAL_POSITION_NED()
-{
-    send_local_position(copter.ahrs);
     return true;
 }
 bool GCS_Backend_Copter::send_MAG_CAL_PROGRESS()
