@@ -124,11 +124,6 @@ bool GCS_Backend_Plane::send_RPM()
     plane.send_rpm(chan);
     return true;
 }
-bool GCS_Backend_Plane::send_SENSOR_OFFSETS()
-{
-    send_sensor_offsets(plane.ins, plane.compass, plane.barometer);
-    return true;
-}
 bool GCS_Backend_Plane::send_SERVO_OUTPUT_RAW()
 {
     plane.send_radio_out(chan);
