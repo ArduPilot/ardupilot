@@ -310,14 +310,11 @@ void VideoIn::crop_8bpp(uint8_t *buffer, uint8_t *new_buffer,
 void VideoIn::yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size,
                            uint8_t *new_buffer)
 {
-    uint32_t i;
     uint32_t new_buffer_position = 0;
 
-    for (i = 0; i < buffer_size; i++) {
-        if (i % 2 == 0) {
-            new_buffer[new_buffer_position] = buffer[i];
-            new_buffer_position++;
-        }
+    for (uint32_t i = 0; i < buffer_size; i += 2) {
+        new_buffer[new_buffer_position] = buffer[i];
+        new_buffer_position++;
     }
 }
 
