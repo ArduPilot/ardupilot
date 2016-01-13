@@ -4,7 +4,6 @@ class GCS_Backend_Rover : public GCS_MAVLINK {
 
 public:
 
-    bool try_send_message(enum ap_message id) override;
     bool stream_trigger(enum streams stream_num) override;
     void data_stream_send(void) override;
     void handle_guided_request(AP_Mission::Mission_Command &cmd) override;
@@ -16,6 +15,7 @@ protected:
     bool should_try_send_message(enum ap_message id) override;
 
     bool send_AHRS() override;
+    bool send_AHRS2() override;
     bool send_ATTITUDE() override;
     bool send_BATTERY2() override;
     bool send_CAMERA_FEEDBACK() override;
