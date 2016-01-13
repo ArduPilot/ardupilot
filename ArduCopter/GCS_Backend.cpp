@@ -11,6 +11,8 @@ AP_AHRS &GCS_Backend_Copter::_ahrs() const { return copter.ahrs; }
 
 Compass &GCS_Backend_Copter::_compass() const { return copter.compass; }
 
+AP_Baro &GCS_Backend_Copter::_barometer() const { return copter.barometer; }
+
 bool GCS_Backend_Copter::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -135,11 +137,6 @@ bool GCS_Backend_Copter::send_RC_CHANNELS_SCALED()
 bool GCS_Backend_Copter::send_RPM()
 {
     copter.send_rpm(chan);
-    return true;
-}
-bool GCS_Backend_Copter::send_SCALED_PRESSURE()
-{
-    send_scaled_pressure(copter.barometer);
     return true;
 }
 bool GCS_Backend_Copter::send_SENSOR_OFFSETS()
