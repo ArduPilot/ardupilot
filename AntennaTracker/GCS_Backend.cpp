@@ -12,6 +12,8 @@ Compass &GCS_Backend_Tracker::_compass() const { return tracker.compass; }
 
 AP_Baro &GCS_Backend_Tracker::_barometer() const { return tracker.barometer; }
 
+AP_InertialSensor &GCS_Backend_Tracker::_ins() const { return tracker.ins; }
+
 void GCS_Backend_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
@@ -45,11 +47,6 @@ bool GCS_Backend_Tracker::send_HEARTBEAT()
 bool GCS_Backend_Tracker::send_NAV_CONTROLLER_OUTPUT()
 {
     tracker.send_nav_controller_output(chan);
-    return true;
-}
-bool GCS_Backend_Tracker::send_RAW_IMU()
-{
-    send_raw_imu(tracker.ins, tracker.compass);
     return true;
 }
 bool GCS_Backend_Tracker::send_RC_CHANNELS_RAW()
