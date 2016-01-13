@@ -136,11 +136,6 @@ bool GCS_Backend_Copter::send_RPM()
     copter.send_rpm(chan);
     return true;
 }
-bool GCS_Backend_Copter::send_SENSOR_OFFSETS()
-{
-    send_sensor_offsets(copter.ins, copter.compass, copter.barometer);
-    return true;
-}
 bool GCS_Backend_Copter::send_SIMSTATE()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
