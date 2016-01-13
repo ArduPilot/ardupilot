@@ -135,6 +135,9 @@ public:
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
+    // functions that must return a resouce for base class to work with:
+    virtual AP_GPS &_gps() const = 0;
+
     // common send functions
     virtual bool send_AHRS() = 0;
     virtual bool send_AHRS2() { return true; }
@@ -145,7 +148,7 @@ public:
     virtual bool send_FENCE_STATUS() { return true; }
     virtual bool send_GIMBAL_REPORT() { return true; };
     virtual bool send_GLOBAL_POSITION_INT() = 0;
-    virtual bool send_GPS_RAW() = 0;
+    virtual bool send_GPS_RAW();
     virtual bool send_HEARTBEAT() = 0;
     virtual bool send_HWSTATUS() = 0;
     virtual bool send_LIMITS_STATUS() const { return true; }
@@ -178,7 +181,6 @@ public:
     void send_meminfo(void);
     void send_power_status(void);
     void send_ahrs2(AP_AHRS &ahrs);
-    bool send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
     void send_radio_in(uint8_t receiver_rssi);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);

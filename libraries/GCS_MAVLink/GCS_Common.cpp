@@ -882,8 +882,10 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
   send raw GPS position information (GPS_RAW_INT, GPS2_RAW, GPS_RTK and GPS2_RTK).
   returns true if messages fit into transmit buffer, false otherwise.
  */
-bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
+bool GCS_MAVLINK::send_GPS_RAW()
 {
+    AP_GPS &gps = _gps();
+
     if (comm_get_txspace(chan) >= 
         MAVLINK_MSG_ID_GPS_RAW_INT_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
         gps.send_mavlink_gps_raw(chan);
