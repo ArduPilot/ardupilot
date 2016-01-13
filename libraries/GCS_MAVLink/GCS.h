@@ -144,6 +144,7 @@ public:
 #endif
     virtual Compass &_compass() const = 0;
     virtual AP_Baro &_barometer() const = 0;
+    virtual AP_InertialSensor &_ins() const = 0;
 
     // common send functions
     virtual bool send_AHRS();
@@ -171,7 +172,7 @@ public:
     virtual bool send_RC_CHANNELS_RAW() = 0;
     virtual bool send_SERVO_OUTPUT_RAW() = 0; // radio-out
     virtual bool send_RANGEFINDER() { return true; }
-    virtual bool send_RAW_IMU() = 0;
+    virtual bool send_RAW_IMU();
     virtual bool send_RC_CHANNELS_SCALED() { return true; }
     virtual bool send_RPM() { return true; }
     virtual bool send_SCALED_PRESSURE();
@@ -182,20 +183,18 @@ public:
     virtual bool send_SYSTEM_TIME();
     virtual bool send_TERRAIN_REQUEST() { return true; }
     virtual bool send_VFR_HUD() { return true; }
-    virtual bool send_VIBRATION() { return true; }
+    virtual bool send_VIBRATION() const;
     virtual bool send_WIND() { return true; }
 
     void send_meminfo(void);
     void send_power_status(void);
     void send_radio_in(uint8_t receiver_rssi);
-    void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
     void send_battery2(const AP_BattMonitor &battery);
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
     void send_autopilot_version(uint8_t major_version, uint8_t minor_version, uint8_t patch_version, uint8_t version_type) const;
-    void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
 
     void mavlink_msg_command_ack_send(MAV_CMD cmd, int ret);

@@ -991,8 +991,11 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
     }
 }
 
-void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &compass)
+bool GCS_MAVLINK::send_RAW_IMU()
 {
+    const AP_InertialSensor &ins = _ins();
+    const Compass &compass = _compass();
+
     const Vector3f &accel = ins.get_accel(0);
     const Vector3f &gyro = ins.get_gyro(0);
     Vector3f mag;
@@ -1018,7 +1021,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     if (ins.get_gyro_count() <= 1 &&
         ins.get_accel_count() <= 1 &&
         compass.get_count() <= 1) {
-        return;
+        return true;
     }
     const Vector3f &accel2 = ins.get_accel(1);
     const Vector3f &gyro2 = ins.get_gyro(1);
@@ -1043,7 +1046,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     if (ins.get_gyro_count() <= 2 &&
         ins.get_accel_count() <= 2 &&
         compass.get_count() <= 2) {
-        return;
+        return true;
     }
     const Vector3f &accel3 = ins.get_accel(2);
     const Vector3f &gyro3 = ins.get_gyro(2);
@@ -1064,6 +1067,8 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);        
+
+    return true;
 }
 
 bool GCS_MAVLINK::send_SCALED_PRESSURE()
@@ -1349,8 +1354,10 @@ bool GCS_MAVLINK::send_LOCAL_POSITION_NED() const
 /*
   send LOCAL_POSITION_NED message
  */
-void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
+bool GCS_MAVLINK::send_VIBRATION() const
 {
+    const AP_InertialSensor &ins = _ins();
+
     Vector3f vibration = ins.get_vibration_levels();
 
     mavlink_msg_vibration_send(
@@ -1362,6 +1369,7 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
         ins.get_accel_clip_count(0),
         ins.get_accel_clip_count(1),
         ins.get_accel_clip_count(2));
+    return true;
 }
 
 void GCS_MAVLINK::send_home(const Location &home) const
