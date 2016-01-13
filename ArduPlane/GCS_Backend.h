@@ -54,7 +54,6 @@ protected:
     bool send_SIMSTATE() override;
     bool send_STATUSTEXT() override;
     bool send_SYS_STATUS() override;
-    bool send_SYSTEM_TIME() override;
     bool send_TERRAIN_REQUEST() override;
     bool send_VFR_HUD() override;
     bool send_VIBRATION() override;
