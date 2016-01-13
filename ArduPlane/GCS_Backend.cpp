@@ -86,11 +86,6 @@ bool GCS_Backend_Plane::send_HEARTBEAT()
     plane.send_heartbeat(chan);
     return true;
 }
-bool GCS_Backend_Plane::send_HWSTATUS()
-{
-    plane.send_hwstatus(chan);
-    return true;
-}
 bool GCS_Backend_Plane::send_LOCAL_POSITION_NED()
 {
     send_local_position(plane.ahrs);

@@ -472,14 +472,6 @@ void Plane::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void Plane::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        hal.i2c->lockup_count());
-}
-
 void Plane::send_wind(mavlink_channel_t chan)
 {
     Vector3f wind = ahrs.wind_estimate();
