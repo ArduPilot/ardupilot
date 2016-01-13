@@ -26,11 +26,6 @@ bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
     return true;
 }
 
-bool GCS_Backend_Rover::send_AHRS()
-{
-    send_ahrs(rover.ahrs);
-    return true;
-}
 bool GCS_Backend_Rover::send_AHRS2()
 {
     return true;
@@ -52,13 +47,6 @@ bool GCS_Backend_Rover::send_CAMERA_FEEDBACK()
 #endif
     return true;
 }
-bool GCS_Backend_Rover::send_EKF_STATUS_REPORT()
-{
-#if AP_AHRS_NAVEKF_AVAILABLE
-    rover.ahrs.send_ekf_status_report(chan);
-#endif
-    return true;
-}
 bool GCS_Backend_Rover::send_GLOBAL_POSITION_INT()
 {
     rover.send_location(chan);
@@ -67,11 +55,6 @@ bool GCS_Backend_Rover::send_GLOBAL_POSITION_INT()
 bool GCS_Backend_Rover::send_HEARTBEAT()
 {
     rover.send_heartbeat(chan);
-    return true;
-}
-bool GCS_Backend_Rover::send_LOCAL_POSITION_NED()
-{
-    send_local_position(rover.ahrs);
     return true;
 }
 bool GCS_Backend_Rover::send_MISSION_CURRENT()
