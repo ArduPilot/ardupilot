@@ -2,6 +2,12 @@
 
 AP_GPS &GCS_Backend_Tracker::_gps() const { return tracker.gps; }
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF &GCS_Backend_Tracker::_ahrs() const { return tracker.ahrs; }
+#else
+AP_AHRS &GCS_Backend_Tracker::_ahrs() const { return tracker.ahrs; }
+#endif
+
 void GCS_Backend_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
