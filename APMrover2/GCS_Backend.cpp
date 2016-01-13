@@ -1,5 +1,7 @@
 #include "Rover.h" // for global rover object
 
+AP_GPS &GCS_Backend_Rover::_gps() const { return rover.gps; }
+
 bool GCS_Backend_Rover::should_try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -54,11 +56,6 @@ bool GCS_Backend_Rover::send_EKF_STATUS_REPORT()
 bool GCS_Backend_Rover::send_GLOBAL_POSITION_INT()
 {
     rover.send_location(chan);
-    return true;
-}
-bool GCS_Backend_Rover::send_GPS_RAW()
-{
-    send_gps_raw(rover.gps);
     return true;
 }
 bool GCS_Backend_Rover::send_HEARTBEAT()
