@@ -120,9 +120,12 @@ def list_boards(ctx):
 def build(bld):
 
     #generate mavlink headers
-    bld(features=['mavgen'],
-        source=['modules/mavlink/message_definitions/v1.0/ardupilotmega.xml'],
-        target=['libraries/GCS_MAVLink/include/mavlink/v1.0/'])
+    bld(
+        features='mavgen',
+        source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
+        target='libraries/GCS_MAVLink/include/mavlink/v1.0/',
+        name='mavlink',
+    )
 
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
@@ -133,6 +136,7 @@ def build(bld):
         name='ap',
         vehicle='UNKNOWN',
         libraries=ardupilotwaf.get_all_libraries(bld),
+        use='mavlink',
     )
     # TODO: Currently each vehicle also generate its own copy of the
     # libraries. Fix this, or at least reduce the amount of

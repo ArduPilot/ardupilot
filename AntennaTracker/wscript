@@ -12,6 +12,7 @@ def build(bld):
         libraries=ardupilotwaf.COMMON_VEHICLE_DEPENDENT_LIBRARIES + [
             'PID',
         ],
+        use='mavlink',
     )
 
     ardupilotwaf.program(
