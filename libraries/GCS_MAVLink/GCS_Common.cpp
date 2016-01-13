@@ -1578,8 +1578,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_FENCE_STATUS:
+        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+        send_FENCE_STATUS();
+        break;
+
     case MSG_WIND:
-        // unused
+        CHECK_PAYLOAD_SIZE(WIND);
+        send_WIND();
         break;
 
     case MSG_PID_TUNING:
