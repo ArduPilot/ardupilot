@@ -143,6 +143,7 @@ public:
     virtual AP_AHRS &_ahrs() const = 0;
 #endif
     virtual Compass &_compass() const = 0;
+    virtual AP_Baro &_barometer() const = 0;
 
     // common send functions
     virtual bool send_AHRS();
@@ -173,7 +174,7 @@ public:
     virtual bool send_RAW_IMU() = 0;
     virtual bool send_RC_CHANNELS_SCALED() { return true; }
     virtual bool send_RPM() { return true; }
-    virtual bool send_SCALED_PRESSURE() { return true; }
+    virtual bool send_SCALED_PRESSURE();
     virtual bool send_SENSOR_OFFSETS() = 0;
     virtual bool send_SIMSTATE() = 0;
     virtual bool send_STATUSTEXT() = 0;
@@ -188,7 +189,6 @@ public:
     void send_power_status(void);
     void send_radio_in(uint8_t receiver_rssi);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
-    void send_scaled_pressure(AP_Baro &barometer);
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
     void send_battery2(const AP_BattMonitor &battery);
 #if AP_AHRS_NAVEKF_AVAILABLE

@@ -1066,8 +1066,10 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.z);        
 }
 
-void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
+bool GCS_MAVLINK::send_SCALED_PRESSURE()
 {
+    AP_Baro &barometer = _barometer();
+
     uint32_t now = AP_HAL::millis();
     float pressure = barometer.get_pressure(0);
     mavlink_msg_scaled_pressure_send(
@@ -1096,6 +1098,8 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
             (pressure - barometer.get_ground_pressure(2))*0.01f, // hectopascal
             barometer.get_temperature(2)*100); // 0.01 degrees C        
     }
+
+    return false;
 }
 
 void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer)
