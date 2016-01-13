@@ -370,11 +370,6 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-void Rover::send_current_waypoint(mavlink_channel_t chan)
-{
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
-}
-
 /*
  *  a delay() callback that processes MAVLink packets and processes
  *  Notify events (blinks LEDs).  We set this as the callback in long
