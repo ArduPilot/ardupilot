@@ -1142,6 +1142,14 @@ bool GCS_MAVLINK::send_SENSOR_OFFSETS()
     return true;
 }
 
+bool GCS_MAVLINK::send_STATUSTEXT()
+{
+    // this looks wrong; if a Backend is told to send its statustext
+    // then it should not be talking to the frontend:
+    _frontend->send_statustext(chan);
+    return true;
+}
+
 bool GCS_MAVLINK::send_AHRS()
 {
     AP_AHRS &ahrs = _ahrs();

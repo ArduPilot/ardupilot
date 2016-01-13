@@ -178,7 +178,7 @@ public:
     virtual bool send_SCALED_PRESSURE();
     virtual bool send_SENSOR_OFFSETS();
     virtual bool send_SIMSTATE() = 0;
-    virtual bool send_STATUSTEXT() = 0;
+    virtual bool send_STATUSTEXT();
     virtual bool send_SYS_STATUS() { return true; }; //FIXME: well, fix Tracker
     virtual bool send_SYSTEM_TIME();
     virtual bool send_TERRAIN_REQUEST() { return true; }
