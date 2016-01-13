@@ -137,6 +137,11 @@ public:
 
     // functions that must return a resouce for base class to work with:
     virtual AP_GPS &_gps() const = 0;
+#if AP_AHRS_NAVEKF_AVAILABLE
+    virtual AP_AHRS_NavEKF &_ahrs() const = 0;
+#else
+    virtual AP_AHRS &_ahrs() const = 0;
+#endif
 
     // common send functions
     virtual bool send_AHRS() = 0;
