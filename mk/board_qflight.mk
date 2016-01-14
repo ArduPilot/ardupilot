@@ -64,7 +64,7 @@ LIBSKETCH_SKEL_SO	=	$(BUILDROOT)/libqflight_skel.so
 .SUFFIXES: .o .c .cpp .so .do
 
 # build DSP object from C file
-$(BUILDROOT)/libraries/%.do: $(SKETCHBOOK)/libraries/%.c
+$(BUILDROOT)/libraries/%.do: $(SKETCHBOOK)/libraries/%.c MAV_GEN
 	$(RULEHDR)
 	$(v)$(QURT_CC) $(DSP_FLAGS) -c -o $@ $<
 
