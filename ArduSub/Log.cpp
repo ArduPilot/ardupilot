@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 #if LOGGING_ENABLED == ENABLED
 
@@ -21,9 +21,9 @@ static const struct Menu::command log_menu_commands[] = {
 };
 
 // A Macro to create the Menu
-MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&copter, &Copter::print_log_menu, bool));
+MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&sub, &Sub::print_log_menu, bool));
 
-bool Copter::print_log_menu(void)
+bool Sub::print_log_menu(void)
 {
     cliSerial->printf("logs enabled: ");
 
@@ -55,7 +55,7 @@ bool Copter::print_log_menu(void)
 }
 
 #if CLI_ENABLED == ENABLED
-int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
+int8_t Sub::dump_log(uint8_t argc, const Menu::arg *argv)
 {
     int16_t dump_log_num;
     uint16_t dump_log_start;
@@ -82,7 +82,7 @@ int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
-int8_t Copter::erase_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Sub::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
     in_mavlink_delay = true;
     do_erase_logs();
@@ -90,7 +90,7 @@ int8_t Copter::erase_logs(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv)
 {
     uint16_t bits;
 
@@ -138,14 +138,14 @@ int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv)
     return(0);
 }
 
-int8_t Copter::process_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Sub::process_logs(uint8_t argc, const Menu::arg *argv)
 {
     log_menu.run();
     return 0;
 }
 #endif // CLI_ENABLED
 
-void Copter::do_erase_logs(void)
+void Sub::do_erase_logs(void)
 {
     gcs_send_text(MAV_SEVERITY_INFO, "Erasing logs");
     DataFlash.EraseAll();
@@ -168,7 +168,7 @@ struct PACKED log_AutoTune {
 };
 
 // Write an Autotune data packet
-void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
+void Sub::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
 {
     struct log_AutoTune pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
@@ -194,7 +194,7 @@ struct PACKED log_AutoTuneDetails {
 };
 
 // Write an Autotune data packet
-void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
+void Sub::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 {
     struct log_AutoTuneDetails pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
@@ -207,7 +207,7 @@ void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 #endif
 
 // Write a Current data packet
-void Copter::Log_Write_Current()
+void Sub::Log_Write_Current()
 {
     DataFlash.Log_Write_Current(battery, (int16_t)(motors.get_throttle()));
 
@@ -226,7 +226,7 @@ struct PACKED log_Optflow {
 };
 
 // Write an optical flow packet
-void Copter::Log_Write_Optflow()
+void Sub::Log_Write_Optflow()
 {
  #if OPTFLOW == ENABLED
     // exit immediately if not enabled
@@ -264,7 +264,7 @@ struct PACKED log_Nav_Tuning {
 };
 
 // Write an Nav Tuning packet
-void Copter::Log_Write_Nav_Tuning()
+void Sub::Log_Write_Nav_Tuning()
 {
     const Vector3f &pos_target = pos_control.get_pos_target();
     const Vector3f &vel_target = pos_control.get_vel_target();
@@ -305,7 +305,7 @@ struct PACKED log_Control_Tuning {
 };
 
 // Write a control tuning packet
-void Copter::Log_Write_Control_Tuning()
+void Sub::Log_Write_Control_Tuning()
 {
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
@@ -336,7 +336,7 @@ struct PACKED log_Performance {
 };
 
 // Write a performance monitoring packet
-void Copter::Log_Write_Performance()
+void Sub::Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
@@ -352,7 +352,7 @@ void Copter::Log_Write_Performance()
 }
 
 // Write an attitude packet
-void Copter::Log_Write_Attitude()
+void Sub::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control.get_att_target_euler_cd();
     targets.z = wrap_360_cd_float(targets.z);
@@ -388,7 +388,7 @@ struct PACKED log_Rate {
 };
 
 // Write an rate packet
-void Copter::Log_Write_Rate()
+void Sub::Log_Write_Rate()
 {
     const Vector3f &rate_targets = attitude_control.rate_bf_targets();
     const Vector3f &accel_target = pos_control.get_accel_target();
@@ -421,7 +421,7 @@ struct PACKED log_MotBatt {
 };
 
 // Write an rate packet
-void Copter::Log_Write_MotBatt()
+void Sub::Log_Write_MotBatt()
 {
 #if FRAME_CONFIG != HELI_FRAME
     struct log_MotBatt pkt_mot = {
@@ -442,7 +442,7 @@ struct PACKED log_Startup {
 };
 
 // Write Startup packet
-void Copter::Log_Write_Startup()
+void Sub::Log_Write_Startup()
 {
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
@@ -458,7 +458,7 @@ struct PACKED log_Event {
 };
 
 // Wrote an event packet
-void Copter::Log_Write_Event(uint8_t id)
+void Sub::Log_Write_Event(uint8_t id)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Event pkt = {
@@ -479,7 +479,7 @@ struct PACKED log_Data_Int16t {
 
 // Write an int16_t data packet
 UNUSED_FUNCTION
-void Copter::Log_Write_Data(uint8_t id, int16_t value)
+void Sub::Log_Write_Data(uint8_t id, int16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int16t pkt = {
@@ -501,7 +501,7 @@ struct PACKED log_Data_UInt16t {
 
 // Write an uint16_t data packet
 UNUSED_FUNCTION 
-void Copter::Log_Write_Data(uint8_t id, uint16_t value)
+void Sub::Log_Write_Data(uint8_t id, uint16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt16t pkt = {
@@ -522,7 +522,7 @@ struct PACKED log_Data_Int32t {
 };
 
 // Write an int32_t data packet
-void Copter::Log_Write_Data(uint8_t id, int32_t value)
+void Sub::Log_Write_Data(uint8_t id, int32_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int32t pkt = {
@@ -543,7 +543,7 @@ struct PACKED log_Data_UInt32t {
 };
 
 // Write a uint32_t data packet
-void Copter::Log_Write_Data(uint8_t id, uint32_t value)
+void Sub::Log_Write_Data(uint8_t id, uint32_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt32t pkt = {
@@ -565,7 +565,7 @@ struct PACKED log_Data_Float {
 
 // Write a float data packet
 UNUSED_FUNCTION
-void Copter::Log_Write_Data(uint8_t id, float value)
+void Sub::Log_Write_Data(uint8_t id, float value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Float pkt = {
@@ -586,7 +586,7 @@ struct PACKED log_Error {
 };
 
 // Write an error packet
-void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
+void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 {
     struct log_Error pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
@@ -597,7 +597,7 @@ void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-void Copter::Log_Write_Baro(void)
+void Sub::Log_Write_Baro(void)
 {
     DataFlash.Log_Write_Baro(barometer);
 }
@@ -612,7 +612,7 @@ struct PACKED log_ParameterTuning {
     int16_t  tuning_high;   // tuning high end value
 };
 
-void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high)
+void Sub::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high)
 {
     struct log_ParameterTuning pkt_tune = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
@@ -628,7 +628,7 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t
 }
 
 // log EKF origin and ahrs home to dataflash
-void Copter::Log_Write_Home_And_Origin()
+void Sub::Log_Write_Home_And_Origin()
 {
     // log ekf origin if set
     Location ekf_orig;
@@ -643,7 +643,7 @@ void Copter::Log_Write_Home_And_Origin()
 }
 
 // logs when baro or compass becomes unhealthy
-void Copter::Log_Sensor_Health()
+void Sub::Log_Sensor_Health()
 {
     // check baro
     if (sensor_health.baro != barometer.healthy()) {
@@ -667,7 +667,7 @@ struct PACKED log_Heli {
 
 #if FRAME_CONFIG == HELI_FRAME
 // Write an helicopter packet
-void Copter::Log_Write_Heli()
+void Sub::Log_Write_Heli()
 {
     struct log_Heli pkt_heli = {
         LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
@@ -693,7 +693,7 @@ struct PACKED log_Precland {
 };
 
 // Write an optical flow packet
-void Copter::Log_Write_Precland()
+void Sub::Log_Write_Precland()
 {
  #if PRECISION_LANDING == ENABLED
     // exit immediately if not enabled
@@ -719,7 +719,7 @@ void Copter::Log_Write_Precland()
  #endif     // PRECISION_LANDING == ENABLED
 }
 
-const struct LogStructure Copter::log_structure[] = {
+const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
@@ -765,7 +765,7 @@ const struct LogStructure Copter::log_structure[] = {
 
 #if CLI_ENABLED == ENABLED
 // Read the DataFlash log memory
-void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
+void Sub::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"
@@ -775,12 +775,12 @@ void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_pag
     cliSerial->println(HAL_BOARD_NAME);
 
     DataFlash.LogReadProcess(list_entry, start_page, end_page,
-                             FUNCTOR_BIND_MEMBER(&Copter::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
+                             FUNCTOR_BIND_MEMBER(&Sub::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
                              cliSerial);
 }
 #endif // CLI_ENABLED
 
-void Copter::Log_Write_Vehicle_Startup_Messages()
+void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
     DataFlash.Log_Write_Message("Frame: " FRAME_CONFIG_STRING);
@@ -789,13 +789,13 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 
 
 // start a new log
-void Copter::start_logging() 
+void Sub::start_logging() 
 {
     if (g.log_bitmask != 0) {
         if (!ap.logging_started) {
             ap.logging_started = true;
             DataFlash.set_mission(&mission);
-            DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+            DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
             DataFlash.StartNewLog();
         }
         // enable writes
@@ -803,7 +803,7 @@ void Copter::start_logging()
     }
 }
 
-void Copter::log_init(void)
+void Sub::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
@@ -822,48 +822,48 @@ void Copter::log_init(void)
 #else // LOGGING_ENABLED
 
 #if CLI_ENABLED == ENABLED
-bool Copter::print_log_menu(void) { return true; }
-int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Copter::erase_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Copter::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-void Copter::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page) {}
+bool Sub::print_log_menu(void) { return true; }
+int8_t Sub::dump_log(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Sub::erase_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Sub::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+void Sub::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page) {}
 #endif // CLI_ENABLED == ENABLED
 
-void Copter::do_erase_logs(void) {}
-void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, \
+void Sub::do_erase_logs(void) {}
+void Sub::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, \
                                 float meas_min, float meas_max, float new_gain_rp, \
                                 float new_gain_rd, float new_gain_sp, float new_ddt) {}
-void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
-void Copter::Log_Write_Current() {}
-void Copter::Log_Write_Nav_Tuning() {}
-void Copter::Log_Write_Control_Tuning() {}
-void Copter::Log_Write_Performance() {}
-void Copter::Log_Write_Attitude(void) {}
-void Copter::Log_Write_Rate() {}
-void Copter::Log_Write_MotBatt() {}
-void Copter::Log_Write_Startup() {}
-void Copter::Log_Write_Event(uint8_t id) {}
-void Copter::Log_Write_Data(uint8_t id, int32_t value) {}
-void Copter::Log_Write_Data(uint8_t id, uint32_t value) {}
-void Copter::Log_Write_Data(uint8_t id, int16_t value) {}
-void Copter::Log_Write_Data(uint8_t id, uint16_t value) {}
-void Copter::Log_Write_Data(uint8_t id, float value) {}
-void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
-void Copter::Log_Write_Baro(void) {}
-void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
-void Copter::Log_Write_Home_And_Origin() {}
-void Copter::Log_Sensor_Health() {}
+void Sub::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
+void Sub::Log_Write_Current() {}
+void Sub::Log_Write_Nav_Tuning() {}
+void Sub::Log_Write_Control_Tuning() {}
+void Sub::Log_Write_Performance() {}
+void Sub::Log_Write_Attitude(void) {}
+void Sub::Log_Write_Rate() {}
+void Sub::Log_Write_MotBatt() {}
+void Sub::Log_Write_Startup() {}
+void Sub::Log_Write_Event(uint8_t id) {}
+void Sub::Log_Write_Data(uint8_t id, int32_t value) {}
+void Sub::Log_Write_Data(uint8_t id, uint32_t value) {}
+void Sub::Log_Write_Data(uint8_t id, int16_t value) {}
+void Sub::Log_Write_Data(uint8_t id, uint16_t value) {}
+void Sub::Log_Write_Data(uint8_t id, float value) {}
+void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
+void Sub::Log_Write_Baro(void) {}
+void Sub::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
+void Sub::Log_Write_Home_And_Origin() {}
+void Sub::Log_Sensor_Health() {}
 
 #if FRAME_CONFIG == HELI_FRAME
-void Copter::Log_Write_Heli() {}
+void Sub::Log_Write_Heli() {}
 #endif
 
 #if OPTFLOW == ENABLED
-void Copter::Log_Write_Optflow() {}
+void Sub::Log_Write_Optflow() {}
 #endif
 
-void Copter::start_logging() {}
-void Copter::log_init(void) {}
+void Sub::start_logging() {}
+void Sub::log_init(void) {}
 
 #endif // LOGGING_ENABLED

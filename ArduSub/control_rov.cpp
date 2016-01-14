@@ -1,13 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*
  * control_rov.cpp - Control for basic ROV operation
  */
 
 // stabilize_init - initialise stabilize controller
-bool Copter::rov_init(bool ignore_checks)
+bool Sub::rov_init(bool ignore_checks)
 {
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
     //if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (g.rc_3.control_in > get_non_takeoff_throttle())) {
@@ -21,7 +21,7 @@ bool Copter::rov_init(bool ignore_checks)
 
 // stabilize_run - runs the main stabilize controller
 // should be called at 100hz or more
-void Copter::rov_run()
+void Sub::rov_run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;

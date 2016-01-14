@@ -73,9 +73,9 @@
  *
  */
 
-#include "Copter.h"
+#include "Sub.h"
 
-#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Copter, &copter, func, rate_hz, max_time_micros)
+#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Sub, &sub, func, rate_hz, max_time_micros)
 
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
@@ -93,7 +93,7 @@
   4000 = 0.1hz
   
  */
-const AP_Scheduler::Task Copter::scheduler_tasks[] = {
+const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(rc_loop,              100,    130),
     SCHED_TASK(throttle_loop,         50,     75),
     SCHED_TASK(update_GPS,            50,    200),
@@ -163,7 +163,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 };
 
 
-void Copter::setup() 
+void Sub::setup()
 {
     cliSerial = hal.console;
 
@@ -186,7 +186,7 @@ void Copter::setup()
 /*
   if the compass is enabled then try to accumulate a reading
  */
-void Copter::compass_accumulate(void)
+void Sub::compass_accumulate(void)
 {
     if (g.compass_enabled) {
         compass.accumulate();
@@ -196,12 +196,12 @@ void Copter::compass_accumulate(void)
 /*
   try to accumulate a baro reading
  */
-void Copter::barometer_accumulate(void)
+void Sub::barometer_accumulate(void)
 {
     barometer.accumulate();
 }
 
-void Copter::perf_update(void)
+void Sub::perf_update(void)
 {
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
@@ -216,7 +216,7 @@ void Copter::perf_update(void)
     pmTest1 = 0;
 }
 
-void Copter::loop()
+void Sub::loop()
 {
     // wait for an INS sample
     ins.wait_for_sample();
@@ -251,7 +251,7 @@ void Copter::loop()
 
 
 // Main loop - 400hz
-void Copter::fast_loop()
+void Sub::fast_loop()
 {
 
     // IMU DCM Algorithm
@@ -298,7 +298,7 @@ void Copter::fast_loop()
 
 // rc_loops - reads user input from transmitter/receiver
 // called at 100hz
-void Copter::rc_loop()
+void Sub::rc_loop()
 {
     // Read radio and 3-position switch on radio
     // -----------------------------------------
@@ -308,7 +308,7 @@ void Copter::rc_loop()
 
 // throttle_loop - should be run at 50 hz
 // ---------------------------
-void Copter::throttle_loop()
+void Sub::throttle_loop()
 {
     // get altitude and climb rate from inertial lib
     read_inertial_altitude();
@@ -334,7 +334,7 @@ void Copter::throttle_loop()
 
 // update_mount - update camera mount position
 // should be run at 50hz
-void Copter::update_mount()
+void Sub::update_mount()
 {
 #if MOUNT == ENABLED
     // update camera mount's position
@@ -348,7 +348,7 @@ void Copter::update_mount()
 
 // update_batt_compass - read battery and compass
 // should be called at 10hz
-void Copter::update_batt_compass(void)
+void Sub::update_batt_compass(void)
 {
     // read battery before compass because it may be used for motor interference compensation
     read_battery();
@@ -366,7 +366,7 @@ void Copter::update_batt_compass(void)
 
 // ten_hz_logging_loop
 // should be run at 10hz
-void Copter::ten_hz_logging_loop()
+void Sub::ten_hz_logging_loop()
 {
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -404,7 +404,7 @@ void Copter::ten_hz_logging_loop()
 
 // fifty_hz_logging_loop
 // should be run at 50hz
-void Copter::fifty_hz_logging_loop()
+void Sub::fifty_hz_logging_loop()
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     // HIL for a copter needs very fast update of the servo values
@@ -432,7 +432,7 @@ void Copter::fifty_hz_logging_loop()
 
 // full_rate_logging_loop
 // should be run at the MAIN_LOOP_RATE
-void Copter::full_rate_logging_loop()
+void Sub::full_rate_logging_loop()
 {
     if (should_log(MASK_LOG_IMU_FAST) && !should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
@@ -442,13 +442,13 @@ void Copter::full_rate_logging_loop()
     }
 }
 
-void Copter::dataflash_periodic(void)
+void Sub::dataflash_periodic(void)
 {
     DataFlash.periodic_tasks();
 }
 
 // three_hz_loop - 3.3hz loop
-void Copter::three_hz_loop()
+void Sub::three_hz_loop()
 {
     // check if we've lost contact with the ground station
     failsafe_gcs_check();
@@ -469,7 +469,7 @@ void Copter::three_hz_loop()
 }
 
 // one_hz_loop - runs at 1Hz
-void Copter::one_hz_loop()
+void Sub::one_hz_loop()
 {
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
@@ -520,7 +520,7 @@ void Copter::one_hz_loop()
 }
 
 // called at 50hz
-void Copter::update_GPS(void)
+void Sub::update_GPS(void)
 {
     static uint32_t last_gps_reading[GPS_MAX_INSTANCES];   // time of last gps message
     bool gps_updated = false;
@@ -549,7 +549,7 @@ void Copter::update_GPS(void)
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
 
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc, copter.ahrs) == true) {
+            if (camera.update_location(current_loc, sub.ahrs) == true) {
                 do_take_picture();
             }
 #endif
@@ -557,7 +557,7 @@ void Copter::update_GPS(void)
     }
 }
 
-void Copter::init_simple_bearing()
+void Sub::init_simple_bearing()
 {
     // capture current cos_yaw and sin_yaw values
     simple_cos_yaw = ahrs.cos_yaw();
@@ -575,7 +575,7 @@ void Copter::init_simple_bearing()
 }
 
 // update_simple_mode - rotates pilot input if we are in simple mode
-void Copter::update_simple_mode(void)
+void Sub::update_simple_mode(void)
 {
     float rollx, pitchx;
 
@@ -604,7 +604,7 @@ void Copter::update_simple_mode(void)
 
 // update_super_simple_bearing - adjusts simple bearing based on location
 // should be called after home_bearing has been updated
-void Copter::update_super_simple_bearing(bool force_update)
+void Sub::update_super_simple_bearing(bool force_update)
 {
     // check if we are in super simple mode and at least 10m from home
     if(force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
@@ -618,7 +618,7 @@ void Copter::update_super_simple_bearing(bool force_update)
     }
 }
 
-void Copter::read_AHRS(void)
+void Sub::read_AHRS(void)
 {
     // Perform IMU calculations and get attitude info
     //-----------------------------------------------
@@ -631,7 +631,7 @@ void Copter::read_AHRS(void)
 }
 
 // read baro and sonar altitude at 10hz
-void Copter::update_altitude()
+void Sub::update_altitude()
 {
     // read in baro altitude
     read_barometer();
@@ -645,4 +645,4 @@ void Copter::update_altitude()
     }
 }
 
-AP_HAL_MAIN_CALLBACKS(&copter);
+AP_HAL_MAIN_CALLBACKS(&sub);

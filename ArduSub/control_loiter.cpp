@@ -1,13 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*
  * control_loiter.pde - init and run calls for loiter flight mode
  */
 
 // loiter_init - initialise loiter controller
-bool Copter::loiter_init(bool ignore_checks)
+bool Sub::loiter_init(bool ignore_checks)
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter Loiter if the Rotor Runup is not complete
@@ -37,7 +37,7 @@ bool Copter::loiter_init(bool ignore_checks)
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
-void Copter::loiter_run()
+void Sub::loiter_run()
 {
     LoiterModeState loiter_state;
     float target_yaw_rate = 0.0f;

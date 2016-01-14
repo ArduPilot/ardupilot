@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 #define CONTROL_SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -18,7 +18,7 @@ static union {
     uint32_t value;
 } aux_con;
 
-void Copter::read_control_switch()
+void Sub::read_control_switch()
 {
     uint32_t tnow_ms = millis();
 
@@ -75,7 +75,7 @@ void Copter::read_control_switch()
 }
 
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
-bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
+bool Sub::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
     bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check 
                 || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
@@ -84,7 +84,7 @@ bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 }
 
 // check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated
-bool Copter::check_duplicate_auxsw(void)
+bool Sub::check_duplicate_auxsw(void)
 {
     bool ret = ((g.ch7_option != AUXSW_DO_NOTHING) && (g.ch7_option == g.ch8_option ||
                 g.ch7_option == g.ch9_option || g.ch7_option == g.ch10_option ||
@@ -105,14 +105,14 @@ bool Copter::check_duplicate_auxsw(void)
     return ret;
 }
 
-void Copter::reset_control_switch()
+void Sub::reset_control_switch()
 {
     control_switch_state.last_switch_position = control_switch_state.debounced_switch_position = -1;
     read_control_switch();
 }
 
 // read_3pos_switch
-uint8_t Copter::read_3pos_switch(int16_t radio_in)
+uint8_t Sub::read_3pos_switch(int16_t radio_in)
 {
     if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;      // switch is in low position
     if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
@@ -120,7 +120,7 @@ uint8_t Copter::read_3pos_switch(int16_t radio_in)
 }
 
 // read_aux_switches - checks aux switch positions and invokes configured actions
-void Copter::read_aux_switches()
+void Sub::read_aux_switches()
 {
     uint8_t switch_position;
 
@@ -195,7 +195,7 @@ void Copter::read_aux_switches()
 }
 
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
-void Copter::init_aux_switches()
+void Sub::init_aux_switches()
 {
     // set the CH7 ~ CH12 flags
     aux_con.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
@@ -223,7 +223,7 @@ void Copter::init_aux_switches()
 }
 
 // init_aux_switch_function - initialize aux functions
-void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
+void Sub::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
 {    
     // init channel options
     switch(ch_option) {
@@ -251,7 +251,7 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
 }
 
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
-void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
+void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
 
     switch(ch_function) {
@@ -585,7 +585,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 }
 
 // save_trim - adds roll and pitch trims from the radio to ahrs
-void Copter::save_trim()
+void Sub::save_trim()
 {
     // save roll and pitch trim
     float roll_trim = ToRad((float)channel_roll->control_in/100.0f);
@@ -597,7 +597,7 @@ void Copter::save_trim()
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
 // meant to be called continuously while the pilot attempts to keep the copter level
-void Copter::auto_trim()
+void Sub::auto_trim()
 {
     if(auto_trim_counter > 0) {
         auto_trim_counter--;
