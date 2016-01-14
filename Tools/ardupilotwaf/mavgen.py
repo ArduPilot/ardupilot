@@ -53,16 +53,11 @@ def configure(cfg):
 
     env = cfg.env
 
-    cfg.start_msg('Checking for message_definitions')
-    if not cfg.srcnode.find_resource('modules/mavlink/message_definitions/v1.0/ardupilotmega.xml'):
-        cfg.fatal(env.MAV_MSG_DEFS + ' not found, please run: git submodule init && git submodule update', color='RED')
+    cfg.start_msg('Checking for mavgen')
+    if not cfg.srcnode.find_resource('modules/mavlink/pymavlink/tools/mavgen.py'):
+        cfg.fatal('not found, please run: git submodule init && git submodule update')
         return
-    cfg.end_msg('success')
+    cfg.end_msg('yes')
 
     env.MAVLINK_DIR = cfg.srcnode.find_dir('modules/mavlink/').abspath()
-
-    env.MAVLINK_HEADERS = cfg.bldnode.make_node('/libraries/GCS_MAVLink/include/mavlink/v1.0/').abspath()
-
     env.MAVGEN = env.MAVLINK_DIR  + '/pymavlink/tools/mavgen.py'
-
-    env.MAV_MSG_DEFS = cfg.srcnode.find_resource('modules/mavlink/message_definitions/v1.0/ardupilotmega.xml').abspath()
