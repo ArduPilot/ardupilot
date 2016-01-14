@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,18 +16,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  constructor for main Copter class
+  constructor for main Sub class
  */
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-Copter::Copter(void) :
+Sub::Sub(void) :
     flight_modes(&g.flight_mode1),
     sonar_enabled(true),
     mission(ahrs, 
-            FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
+            FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)),
     control_mode(STABILIZE),
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
     motors(g.rc_7, g.heli_servo_rsc, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE),
@@ -132,4 +132,4 @@ Copter::Copter(void) :
     sensor_health.compass = true;
 }
 
-Copter copter;
+Sub sub;

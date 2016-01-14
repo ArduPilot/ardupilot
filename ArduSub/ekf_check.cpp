@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /**
  *
@@ -28,7 +28,7 @@ static struct {
 
 // ekf_check - detects if ekf variance are out of tolerance and triggers failsafe
 // should be called at 10hz
-void Copter::ekf_check()
+void Sub::ekf_check()
 {
     // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
     Location temp_loc;
@@ -89,7 +89,7 @@ void Copter::ekf_check()
 }
 
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance
-bool Copter::ekf_over_threshold()
+bool Sub::ekf_over_threshold()
 {
     // return false immediately if disabled
     if (g.fs_ekf_thresh <= 0.0f) {
@@ -116,7 +116,7 @@ bool Copter::ekf_over_threshold()
 
 
 // failsafe_ekf_event - perform ekf failsafe
-void Copter::failsafe_ekf_event()
+void Sub::failsafe_ekf_event()
 {
     // return immediately if ekf failsafe already triggered
     if (failsafe.ekf) {
@@ -157,7 +157,7 @@ void Copter::failsafe_ekf_event()
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
-void Copter::failsafe_ekf_off_event(void)
+void Sub::failsafe_ekf_off_event(void)
 {
     // return immediately if not in ekf failsafe
     if (!failsafe.ekf) {

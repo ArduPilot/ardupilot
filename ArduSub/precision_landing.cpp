@@ -4,7 +4,7 @@
 // functions to support precision landing
 //
 
-#include "Copter.h"
+#include "Sub.h"
 
 #if PRECISION_LANDING == ENABLED
 

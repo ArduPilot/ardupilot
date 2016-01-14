@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 // Code to detect a crash main ArduCopter code
 #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
@@ -10,7 +10,7 @@
 // crash_check - disarms motors if a crash has been detected
 // crashes are detected by the vehicle being more than 20 degrees beyond it's angle limits continuously for more than 1 second
 // called at MAIN_LOOP_RATE
-void Copter::crash_check()
+void Sub::crash_check()
 {
     static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
@@ -62,7 +62,7 @@ void Copter::crash_check()
 // parachute_check - disarms motors and triggers the parachute if serious loss of control has been detected
 // vehicle is considered to have a "serious loss of control" by the vehicle being more than 30 degrees off from the target roll and pitch angles continuously for 1 second
 // called at MAIN_LOOP_RATE
-void Copter::parachute_check()
+void Sub::parachute_check()
 {
     static uint16_t control_loss_count;	// number of iterations we have been out of control
     static int32_t baro_alt_start;
@@ -133,7 +133,7 @@ void Copter::parachute_check()
 }
 
 // parachute_release - trigger the release of the parachute, disarm the motors and notify the user
-void Copter::parachute_release()
+void Sub::parachute_release()
 {
     // send message to gcs and dataflash
     gcs_send_text(MAV_SEVERITY_INFO,"Parachute: Released");
@@ -148,7 +148,7 @@ void Copter::parachute_release()
 
 // parachute_manual_release - trigger the release of the parachute, after performing some checks for pilot error
 //   checks if the vehicle is landed 
-void Copter::parachute_manual_release()
+void Sub::parachute_manual_release()
 {
     // exit immediately if parachute is not enabled
     if (!parachute.enabled()) {

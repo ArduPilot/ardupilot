@@ -1,13 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*
  * control_brake.pde - init and run calls for brake flight mode
  */
 
 // brake_init - initialise brake controller
-bool Copter::brake_init(bool ignore_checks)
+bool Sub::brake_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
 
@@ -33,7 +33,7 @@ bool Copter::brake_init(bool ignore_checks)
 
 // brake_run - runs the brake controller
 // should be called at 100hz or more
-void Copter::brake_run()
+void Sub::brake_run()
 {
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {

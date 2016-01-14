@@ -1,13 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*
  * control_sport.pde - init and run calls for sport flight mode
  */
 
 // sport_init - initialise sport controller
-bool Copter::sport_init(bool ignore_checks)
+bool Sub::sport_init(bool ignore_checks)
 {
     // initialize vertical speed and acceleration
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
@@ -22,7 +22,7 @@ bool Copter::sport_init(bool ignore_checks)
 
 // sport_run - runs the sport controller
 // should be called at 100hz or more
-void Copter::sport_run()
+void Sub::sport_run()
 {
     float target_roll_rate, target_pitch_rate, target_yaw_rate;
     float target_climb_rate = 0;

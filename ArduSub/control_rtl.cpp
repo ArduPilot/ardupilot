@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*
  * control_rtl.pde - init and run calls for RTL flight mode
@@ -10,7 +10,7 @@
  */
 
 // rtl_init - initialise rtl controller
-bool Copter::rtl_init(bool ignore_checks)
+bool Sub::rtl_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
         rtl_climb_start();
@@ -22,7 +22,7 @@ bool Copter::rtl_init(bool ignore_checks)
 
 // rtl_run - runs the return-to-launch controller
 // should be called at 100hz or more
-void Copter::rtl_run()
+void Sub::rtl_run()
 {
     // check if we need to move to next state
     if (rtl_state_complete) {
@@ -75,7 +75,7 @@ void Copter::rtl_run()
 }
 
 // rtl_climb_start - initialise climb to RTL altitude
-void Copter::rtl_climb_start()
+void Sub::rtl_climb_start()
 {
     rtl_state = RTL_InitialClimb;
     rtl_state_complete = false;
@@ -112,7 +112,7 @@ void Copter::rtl_climb_start()
 }
 
 // rtl_return_start - initialise return to home
-void Copter::rtl_return_start()
+void Sub::rtl_return_start()
 {
     rtl_state = RTL_ReturnHome;
     rtl_state_complete = false;
@@ -137,7 +137,7 @@ void Copter::rtl_return_start()
 
 // rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
 //      called by rtl_run at 100hz or more
-void Copter::rtl_climb_return_run()
+void Sub::rtl_climb_return_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
@@ -183,7 +183,7 @@ void Copter::rtl_climb_return_run()
 }
 
 // rtl_return_start - initialise return to home
-void Copter::rtl_loiterathome_start()
+void Sub::rtl_loiterathome_start()
 {
     rtl_state = RTL_LoiterAtHome;
     rtl_state_complete = false;
@@ -199,7 +199,7 @@ void Copter::rtl_loiterathome_start()
 
 // rtl_climb_return_descent_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
 //      called by rtl_run at 100hz or more
-void Copter::rtl_loiterathome_run()
+void Sub::rtl_loiterathome_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
@@ -255,7 +255,7 @@ void Copter::rtl_loiterathome_run()
 }
 
 // rtl_descent_start - initialise descent to final alt
-void Copter::rtl_descent_start()
+void Sub::rtl_descent_start()
 {
     rtl_state = RTL_FinalDescent;
     rtl_state_complete = false;
@@ -272,7 +272,7 @@ void Copter::rtl_descent_start()
 
 // rtl_descent_run - implements the final descent to the RTL_ALT
 //      called by rtl_run at 100hz or more
-void Copter::rtl_descent_run()
+void Sub::rtl_descent_run()
 {
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
@@ -324,7 +324,7 @@ void Copter::rtl_descent_run()
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
-void Copter::rtl_land_start()
+void Sub::rtl_land_start()
 {
     rtl_state = RTL_Land;
     rtl_state_complete = false;
@@ -341,7 +341,7 @@ void Copter::rtl_land_start()
 
 // rtl_returnhome_run - return home
 //      called by rtl_run at 100hz or more
-void Copter::rtl_land_run()
+void Sub::rtl_land_run()
 {
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
@@ -417,7 +417,7 @@ void Copter::rtl_land_run()
 
 // get_RTL_alt - return altitude which vehicle should return home at
 //      altitude is in cm above home
-float Copter::get_RTL_alt()
+float Sub::get_RTL_alt()
 {
     // maximum of current altitude + climb_min and rtl altitude
     float ret = MAX(current_loc.alt + MAX(0, g.rtl_climb_min), g.rtl_altitude);

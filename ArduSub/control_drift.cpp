@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*
  * control_drift.pde - init and run calls for drift flight mode
@@ -29,7 +29,7 @@
 #endif
 
 // drift_init - initialise drift controller
-bool Copter::drift_init(bool ignore_checks)
+bool Sub::drift_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
         return true;
@@ -40,7 +40,7 @@ bool Copter::drift_init(bool ignore_checks)
 
 // drift_run - runs the drift controller
 // should be called at 100hz or more
-void Copter::drift_run()
+void Sub::drift_run()
 {
     static float breaker = 0.0f;
     static float roll_input = 0.0f;
@@ -101,7 +101,7 @@ void Copter::drift_run()
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1000) based on pilot input and z-axis velocity
-int16_t Copter::get_throttle_assist(float velz, int16_t pilot_throttle_scaled)
+int16_t Sub::get_throttle_assist(float velz, int16_t pilot_throttle_scaled)
 {
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 213 ~ 787

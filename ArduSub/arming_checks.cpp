@@ -1,9 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 // performs pre-arm checks. expects to be called at 1hz.
-void Copter::update_arming_checks(void)
+void Sub::update_arming_checks(void)
 {
     // perform pre-arm checks & display failures every 30 seconds
     static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
@@ -20,7 +20,7 @@ void Copter::update_arming_checks(void)
 }
 
 // performs pre-arm checks and arming checks
-bool Copter::all_arming_checks_passing(bool arming_from_gcs)
+bool Sub::all_arming_checks_passing(bool arming_from_gcs)
 {
     if (pre_arm_checks(true)) {
         set_pre_arm_check(true);
@@ -31,7 +31,7 @@ bool Copter::all_arming_checks_passing(bool arming_from_gcs)
 
 // perform pre-arm checks and set ap.pre_arm_check flag
 //  return true if the checks pass successfully
-bool Copter::pre_arm_checks(bool display_failure)
+bool Sub::pre_arm_checks(bool display_failure)
 {
     // exit immediately if already armed
     if (motors.armed()) {
@@ -345,7 +345,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 }
 
 // perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
-void Copter::pre_arm_rc_checks()
+void Sub::pre_arm_rc_checks()
 {
     // exit immediately if we've already successfully performed the pre-arm rc check
     if (ap.pre_arm_rc_check) {
@@ -388,7 +388,7 @@ void Copter::pre_arm_rc_checks()
 }
 
 // performs pre_arm gps related checks and returns true if passed
-bool Copter::pre_arm_gps_checks(bool display_failure)
+bool Sub::pre_arm_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
@@ -470,7 +470,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
 }
 
 // check ekf attitude is acceptable
-bool Copter::pre_arm_ekf_attitude_check()
+bool Sub::pre_arm_ekf_attitude_check()
 {
     // get ekf filter status
     nav_filter_status filt_status = inertial_nav.get_filter_status();
@@ -481,7 +481,7 @@ bool Copter::pre_arm_ekf_attitude_check()
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
 //  has side-effect that logging is started
-bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
+bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
 {
     #if LOGGING_ENABLED == ENABLED
     // start dataflash

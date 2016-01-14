@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -12,7 +12,7 @@
 #if CLI_ENABLED == ENABLED
 
 // This is the help function
-int8_t Copter::main_menu_help(uint8_t argc, const Menu::arg *argv)
+int8_t Sub::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->printf("Commands:\n"
                          "  logs\n"
@@ -37,14 +37,14 @@ const struct Menu::command main_menu_commands[] = {
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
-int8_t Copter::reboot_board(uint8_t argc, const Menu::arg *argv)
+int8_t Sub::reboot_board(uint8_t argc, const Menu::arg *argv)
 {
     hal.scheduler->reboot(false);
     return 0;
 }
 
 // the user wants the CLI. It never exits
-void Copter::run_cli(AP_HAL::UARTDriver *port)
+void Sub::run_cli(AP_HAL::UARTDriver *port)
 {
     cliSerial = port;
     Menu::set_port(port);
@@ -71,16 +71,16 @@ void Copter::run_cli(AP_HAL::UARTDriver *port)
 
 static void mavlink_delay_cb_static()
 {
-    copter.mavlink_delay_cb();
+    sub.mavlink_delay_cb();
 }
 
 
 static void failsafe_check_static()
 {
-    copter.failsafe_check();
+    sub.failsafe_check();
 }
 
-void Copter::init_ardupilot()
+void Sub::init_ardupilot()
 {
     if (!hal.gpio->usb_connected()) {
         // USB is not connected, this means UART0 may be a Xbee, with
@@ -291,7 +291,7 @@ void Copter::init_ardupilot()
 //******************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //******************************************************************************
-void Copter::startup_INS_ground()
+void Sub::startup_INS_ground()
 {
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
@@ -305,14 +305,14 @@ void Copter::startup_INS_ground()
 }
 
 // calibrate gyros - returns true if succesfully calibrated
-bool Copter::calibrate_gyros()
+bool Sub::calibrate_gyros()
 {
     // gyro offset calibration
-    copter.ins.init_gyro();
+    sub.ins.init_gyro();
 
     // reset ahrs gyro bias
-    if (copter.ins.gyro_calibrated_ok_all()) {
-        copter.ahrs.reset_gyro_drift();
+    if (sub.ins.gyro_calibrated_ok_all()) {
+        sub.ahrs.reset_gyro_drift();
         return true;
     }
 
@@ -320,7 +320,7 @@ bool Copter::calibrate_gyros()
 }
 
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
-bool Copter::position_ok()
+bool Sub::position_ok()
 {
     // return false if ekf failsafe has triggered
     if (failsafe.ekf) {
@@ -332,7 +332,7 @@ bool Copter::position_ok()
 }
 
 // ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
-bool Copter::ekf_position_ok()
+bool Sub::ekf_position_ok()
 {
     if (!ahrs.have_inertial_nav()) {
         // do not allow navigation with dcm position
@@ -352,7 +352,7 @@ bool Copter::ekf_position_ok()
 }
 
 // optflow_position_ok - returns true if optical flow based position estimate is ok
-bool Copter::optflow_position_ok()
+bool Sub::optflow_position_ok()
 {
 #if OPTFLOW != ENABLED
     return false;
@@ -375,7 +375,7 @@ bool Copter::optflow_position_ok()
 }
 
 // update_auto_armed - update status of auto_armed flag
-void Copter::update_auto_armed()
+void Sub::update_auto_armed()
 {
     // disarm checks
     if(ap.auto_armed){
@@ -412,7 +412,7 @@ void Copter::update_auto_armed()
     }
 }
 
-void Copter::check_usb_mux(void)
+void Sub::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
     if (usb_check == ap.usb_connected) {
@@ -426,7 +426,7 @@ void Copter::check_usb_mux(void)
 // frsky_telemetry_send - sends telemetry data using frsky telemetry
 //  should be called at 5Hz by scheduler
 #if FRSKY_TELEM_ENABLED == ENABLED
-void Copter::frsky_telemetry_send(void)
+void Sub::frsky_telemetry_send(void)
 {
     frsky_telemetry.send_frames((uint8_t)control_mode);
 }
@@ -435,7 +435,7 @@ void Copter::frsky_telemetry_send(void)
 /*
   should we log a message type now?
  */
-bool Copter::should_log(uint32_t mask)
+bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {

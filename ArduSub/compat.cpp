@@ -1,6 +1,6 @@
-#include "Copter.h"
+#include "Sub.h"
 
-void Copter::delay(uint32_t ms)
+void Sub::delay(uint32_t ms)
 {
     hal.scheduler->delay(ms);
 }
