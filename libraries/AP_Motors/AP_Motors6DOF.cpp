@@ -75,17 +75,15 @@ void AP_Motors6DOF::output_armed_stabilizing()
     int16_t roll_pwm;                                               // roll pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
     int16_t pitch_pwm;                                              // pitch pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
     int16_t yaw_pwm;                                                // yaw pwm value, initially calculated by calc_yaw_pwm() but may be modified after, +/- 400
-    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
-    int16_t forward_pwm;
-    int16_t strafe_pwm;
+    int16_t throttle_radio_output;                                  // throttle pwm value, +/- 400
+    int16_t forward_pwm;                                            // forward pwm value, +/- 400
+    int16_t strafe_pwm;                                             // forward pwm value, +/- 400
     int16_t out_min_pwm = 1100;      // minimum pwm value we can send to the motors
     int16_t out_max_pwm = 1900;                      // maximum pwm value we can send to the motors
 //    int16_t out_mid_pwm = 1500;              // mid pwm value we can send to the motors
                                       // the is the best throttle we can come up which provides good control without climbing
 
-//    float rpy_scale = 1.0;                                          // this is used to scale the roll, pitch and yaw to fit within the motor limits
-
-
+    float rpy_scale = 1.0;                                          // this is used to scale the roll, pitch and yaw to fit within the motor limits
 
     int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
     int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
@@ -117,8 +115,8 @@ void AP_Motors6DOF::output_armed_stabilizing()
     pitch_pwm = calc_pitch_pwm();
     yaw_pwm = calc_yaw_pwm();
     throttle_radio_output = (calc_throttle_radio_output()-_throttle_radio_min-(_throttle_radio_max-_throttle_radio_min)/2);
-    forward_pwm = get_forward();
-    strafe_pwm = get_strafe();
+    forward_pwm = get_forward()*0.4;
+    strafe_pwm = get_strafe()*0.4;
 
     // calculate roll, pitch and yaw for each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -133,8 +131,6 @@ void AP_Motors6DOF::output_armed_stabilizing()
 
     // calculate linear command for each motor
     // linear factors should be 0.0 or 1.0 for now
-    // ToDo calculate linear commands in a function to ensure that any input > 1500 before scaling turns into an output > 1500 after scaling
-    // and any input < 1500 turns into an output < 1500
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
 
