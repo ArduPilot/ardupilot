@@ -7,12 +7,12 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
-void SITLRCInput::init()
+void RCInput::init()
 {
     clear_overrides();
 }
 
-bool SITLRCInput::new_input()
+bool RCInput::new_input()
 {
     if (_sitlState->new_rc_input) {
         _sitlState->new_rc_input = false;
@@ -21,7 +21,7 @@ bool SITLRCInput::new_input()
     return false;
 }
 
-uint16_t SITLRCInput::read(uint8_t ch)
+uint16_t RCInput::read(uint8_t ch)
 {
     if (ch >= SITL_RC_INPUT_CHANNELS) {
         return 0;
@@ -29,7 +29,7 @@ uint16_t SITLRCInput::read(uint8_t ch)
     return _override[ch]? _override[ch] : _sitlState->pwm_input[ch];
 }
 
-uint8_t SITLRCInput::read(uint16_t* periods, uint8_t len)
+uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 {
     if (len > SITL_RC_INPUT_CHANNELS) {
         len = SITL_RC_INPUT_CHANNELS;
@@ -40,7 +40,7 @@ uint8_t SITLRCInput::read(uint16_t* periods, uint8_t len)
     return 8;
 }
 
-bool SITLRCInput::set_overrides(int16_t *overrides, uint8_t len)
+bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
 {
     bool res = false;
     if (len > SITL_RC_INPUT_CHANNELS) {
@@ -52,7 +52,7 @@ bool SITLRCInput::set_overrides(int16_t *overrides, uint8_t len)
     return res;
 }
 
-bool SITLRCInput::set_override(uint8_t channel, int16_t override)
+bool RCInput::set_override(uint8_t channel, int16_t override)
 {
     if (override < 0) return false; /* -1: no change. */
     if (channel < SITL_RC_INPUT_CHANNELS) {
@@ -64,7 +64,7 @@ bool SITLRCInput::set_override(uint8_t channel, int16_t override)
     return false;
 }
 
-void SITLRCInput::clear_overrides()
+void RCInput::clear_overrides()
 {
     memset(_override, 0, sizeof(_override));
 }

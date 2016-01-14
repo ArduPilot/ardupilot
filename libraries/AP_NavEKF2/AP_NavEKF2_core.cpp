@@ -359,11 +359,11 @@ void NavEKF2_core::CovarianceInit()
     P[1][1]   = 0.1f;
     P[2][2]   = 0.1f;
     // velocities
-    P[3][3]   = sq(0.7f);
+    P[3][3]   = sq(frontend->_gpsHorizVelNoise);
     P[4][4]   = P[3][3];
-    P[5][5]   = sq(0.7f);
+    P[5][5]   = sq(frontend->_gpsVertVelNoise);
     // positions
-    P[6][6]   = sq(15.0f);
+    P[6][6]   = sq(frontend->_gpsHorizPosNoise);
     P[7][7]   = P[6][6];
     P[8][8]   = sq(frontend->_baroAltNoise);
     // gyro delta angle biases
@@ -513,7 +513,12 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     stateStruct.velocity += delVelNav;
 
     // apply a trapezoidal integration to velocities to calculate position
-    stateStruct.position += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
+    // if we are not doing aiding, then the horizontal position states are not predicted
+    if (PV_AidingMode != AID_NONE) {
+        stateStruct.position += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
+    } else {
+        stateStruct.position.z += (stateStruct.velocity.z + lastVelocity.z) * (imuDataDelayed.delVelDT*0.5f);
+    }
 
     // accumulate the bias delta angle and time since last reset by an OF measurement arrival
     delAngBodyOF += imuDataDelayed.delAng - stateStruct.gyro_bias;
@@ -539,20 +544,8 @@ void  NavEKF2_core::calcOutputStatesFast() {
 
     // Calculate strapdown solution at the current time horizon
 
-    // remove gyro scale factor errors
-    Vector3f delAng;
-    delAng.x = imuDataNew.delAng.x * stateStruct.gyro_scale.x;
-    delAng.y = imuDataNew.delAng.y * stateStruct.gyro_scale.y;
-    delAng.z = imuDataNew.delAng.z * stateStruct.gyro_scale.z;
-
-    // remove sensor bias errors
-    delAng -= stateStruct.gyro_bias;
-    Vector3f delVel;
-    delVel = imuDataNew.delVel;
-    delVel.z -= stateStruct.accel_zbias;
-
     // apply corections to track EKF solution
-    delAng += delAngCorrection;
+    Vector3f delAng = imuDataNew.delAng + delAngCorrection;
 
     // convert the rotation vector to its equivalent quaternion
     Quaternion deltaQuat;
@@ -570,7 +563,7 @@ void  NavEKF2_core::calcOutputStatesFast() {
     // transform body delta velocities to delta velocities in the nav frame
     // Add the earth frame correction required to track the EKF states
     // * and + operators have been overloaded
-    Vector3f delVelNav  = Tbn_temp*delVel + delVelCorrection;
+    Vector3f delVelNav  = Tbn_temp*imuDataNew.delVel + delVelCorrection;
     delVelNav.z += GRAVITY_MSS*imuDataNew.delVelDT;
 
     // save velocity for use in trapezoidal intergration for position calcuation
@@ -1237,7 +1230,16 @@ void NavEKF2_core::ConstrainVariances()
 {
     for (uint8_t i=0; i<=2; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f); // attitude error
     for (uint8_t i=3; i<=5; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // velocities
-    for (uint8_t i=6; i<=8; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f); // positions
+    // If we are not using the horizontal position states, keep their covariances at the initialisation values
+    if (PV_AidingMode == AID_NONE) {
+        zeroRows(P,6,7);
+        zeroCols(P,6,7);
+        P[6][6]   = sq(frontend->_gpsHorizPosNoise);
+        P[7][7]   = P[6][6];
+    } else {
+        for (uint8_t i=6; i<=7; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f);
+    }
+    P[8][8] = constrain_float(P[8][8],0.0f,1.0e6f); // vertical position
     for (uint8_t i=9; i<=11; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtEkfAvg)); // delta angle biases
     for (uint8_t i=12; i<=14; i++) P[i][i] = constrain_float(P[i][i],0.0f,0.01f); // delta angle scale factors
     P[15][15] = constrain_float(P[15][15],0.0f,sq(10.0f * dtEkfAvg)); // delta velocity bias

@@ -6,9 +6,9 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_HAL_SITL.h"
 
-class HALSITL::SITLRCOutput : public AP_HAL::RCOutput {
+class HALSITL::RCOutput : public AP_HAL::RCOutput {
 public:
-    SITLRCOutput(SITL_State *sitlState) {
+    RCOutput(SITL_State *sitlState) {
         _sitlState = sitlState;
         _freq_hz = 50;
     }

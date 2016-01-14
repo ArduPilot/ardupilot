@@ -58,24 +58,6 @@ def configure(cfg):
     # use a different variant for each board
     cfg.setenv(cfg.env.BOARD)
 
-    cfg.load('compiler_cxx compiler_c')
-    cfg.load('clang_compilation_database')
-    cfg.load('waf_unit_test')
-    cfg.load('gbenchmark')
-
-    cfg.start_msg('Benchmarks')
-    if cfg.env.HAS_GBENCHMARK:
-        cfg.end_msg('enabled')
-    else:
-        cfg.end_msg('disabled', color='YELLOW')
-
-    cfg.env.HAS_GTEST = cfg.check_cxx(
-        lib='gtest',
-        mandatory=False,
-        uselib_store='GTEST',
-        errmsg='not found, unit tests disabled',
-    )
-
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
     board_dict = boards.BOARDS[cfg.env.BOARD].get_merged_dict()
@@ -91,6 +73,26 @@ def configure(cfg):
                 cfg.env.prepend_value(k, '%s=%s' % item)
         else:
             cfg.env.prepend_value(k, val)
+
+    cfg.load('toolchain')
+    cfg.load('compiler_cxx compiler_c')
+    cfg.load('clang_compilation_database')
+    cfg.load('waf_unit_test')
+    cfg.load('gbenchmark')
+    cfg.load('static_linking')
+
+    cfg.start_msg('Benchmarks')
+    if cfg.env.HAS_GBENCHMARK:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.env.HAS_GTEST = cfg.check_cxx(
+        lib='gtest',
+        mandatory=False,
+        uselib_store='GTEST',
+        errmsg='not found, unit tests disabled',
+    )
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/'

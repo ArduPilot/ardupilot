@@ -21,7 +21,7 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.001f
 #define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    3.5E-05f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
 #define VEL_GATE_DEFAULT        200
@@ -418,6 +418,14 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @Units: %
     AP_GROUPINFO("CHECK_SCALE", 34, NavEKF2, _gpsCheckScaler, CHECK_SCALER_DEFAULT),
+
+    // @Param: NOAID_NOISE
+    // @DisplayName: Non-GPS operation velocity change (m/s)
+    // @Description: This sets the amount of velocity change that the EKF allows for when operating without external measurements (eg GPs or optical flow). Increasing this parameter makes the EKF attitude estimate less affected by changes in vehicle velocity but also makes the EKF attitude estimate more affected by IMU errors.
+    // @Range: 0.5 25.0
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizVelNoise, 10.0f),
 
     AP_GROUPEND
 };

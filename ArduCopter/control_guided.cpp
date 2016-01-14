@@ -164,6 +164,9 @@ void Copter::guided_set_destination(const Vector3f& destination)
     }
 
     wp_nav.set_wp_destination(destination);
+
+    // log target
+    Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
 }
 
 // guided_set_velocity - sets guided mode's target velocity
@@ -178,6 +181,9 @@ void Copter::guided_set_velocity(const Vector3f& velocity)
 
     // set position controller velocity target
     pos_control.set_desired_velocity(velocity);
+
+    // log target
+    Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity);
 }
 
 // set guided mode posvel target
@@ -192,6 +198,9 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
     posvel_vel_target_cms = velocity;
 
     pos_control.set_pos_target(posvel_pos_target_cm);
+
+    // log target
+    Log_Write_GuidedTarget(guided_mode, destination, velocity);
 }
 
 // set guided mode angle target
@@ -210,6 +219,11 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
 
     guided_angle_state.climb_rate_cms = climb_rate_cms;
     guided_angle_state.update_time_ms = millis();
+
+    // log target
+    Log_Write_GuidedTarget(guided_mode,
+                           Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
+                           Vector3f(0.0f, 0.0f, guided_angle_state.climb_rate_cms));
 }
 
 // guided_run - runs the guided controller

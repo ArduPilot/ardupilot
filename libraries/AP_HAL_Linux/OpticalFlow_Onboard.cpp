@@ -1,8 +1,4 @@
 /*
-    This class has been implemented based on
-    yavta -- Yet Another V4L2 Test Application written by:
-    Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -18,9 +14,11 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #include "OpticalFlow_Onboard.h"
 
+#include <vector>
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/types.h>
@@ -56,8 +54,26 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
     }
 
     _get_gyro = get_gyro;
-
     _videoin = new VideoIn;
+    const char* device_path = HAL_OPTFLOW_ONBOARD_VDEV_PATH;
+    memtype = V4L2_MEMORY_MMAP;
+    nbufs = HAL_OPTFLOW_ONBOARD_NBUFS;
+    _width = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
+    _height = HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
+    crop_width = HAL_OPTFLOW_ONBOARD_CROP_WIDTH;
+    crop_height = HAL_OPTFLOW_ONBOARD_CROP_HEIGHT;
+    top = 0;
+    /* make the image square by cropping to YxY, removing the lateral edges */
+    left = (HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH -
+            HAL_OPTFLOW_ONBOARD_SENSOR_HEIGHT) / 2;
+
+    if (device_path == NULL ||
+        !_videoin->open_device(device_path, memtype)) {
+        AP_HAL::panic("OpticalFlow_Onboard: couldn't open "
+                      "video device");
+    }
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _pwm = new PWM_Sysfs_Bebop(BEBOP_CAMV_PWM);
     _pwm->set_freq(BEBOP_CAMV_PWM_FREQ);
     _pwm->enable(true);
@@ -71,37 +87,50 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
                                    V4L2_MBUS_FMT_UYVY8_2X8)) {
         AP_HAL::panic("OpticalFlow_Onboard: couldn't set subdev fmt\n");
     }
-    const char* device_path = HAL_OPTFLOW_ONBOARD_VDEV_PATH;
-    memtype = V4L2_MEMORY_MMAP;
-    nbufs = HAL_OPTFLOW_ONBOARD_NBUFS;
-    _width = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
-    _height = HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
-    crop_width = HAL_OPTFLOW_ONBOARD_CROP_WIDTH;
-    crop_height = HAL_OPTFLOW_ONBOARD_CROP_HEIGHT;
-    top = 0;
-    /* make the image square by cropping to YxY, removing the lateral edges */
-    left = (HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH -
-            HAL_OPTFLOW_ONBOARD_SENSOR_HEIGHT) / 2;
     _format = V4L2_PIX_FMT_NV12;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+    std::vector<uint32_t> pixel_formats;
 
-    if (device_path == NULL ||
-        !_videoin->open_device(device_path, memtype)) {
-        AP_HAL::panic("OpticalFlow_Onboard: couldn't open "
-                      "video device");
-    }
+    _videoin->get_pixel_formats(&pixel_formats);
 
-    if (!_videoin->set_crop(left, top, crop_width, crop_height)) {
-        AP_HAL::panic("OpticalFlow_Onboard: couldn't set video crop");
+    for (uint32_t px_fmt : pixel_formats) {
+        if (px_fmt == V4L2_PIX_FMT_NV12 || px_fmt == V4L2_PIX_FMT_GREY) {
+            _format = px_fmt;
+            break;
+        }
+
+        /* if V4L2_PIX_FMT_YUYV format is found we still iterate through
+         * the vector since the other formats need no conversions. */
+        if (px_fmt == V4L2_PIX_FMT_YUYV) {
+            _format = px_fmt;
+        }
     }
+#endif
 
     if (!_videoin->set_format(&_width, &_height, &_format, &_bytesperline,
                               &_sizeimage)) {
         AP_HAL::panic("OpticalFlow_Onboard: couldn't set video format");
-        return;
     }
 
-    if (_format != V4L2_PIX_FMT_NV12 && _format != V4L2_PIX_FMT_GREY) {
-        AP_HAL::panic("OpticalFlow_Onboard: planar or monochrome format needed");
+    if (_format != V4L2_PIX_FMT_NV12 && _format != V4L2_PIX_FMT_GREY &&
+        _format != V4L2_PIX_FMT_YUYV) {
+        AP_HAL::panic("OpticalFlow_Onboard: format not supported\n");
+    }
+
+    if (_videoin->set_crop(left, top, crop_width, crop_height)) {
+        _crop_by_software = false;
+    } else {
+        /* here we store the actual camera output width and height to use them
+         * later on to software crop each frame. */
+        _crop_by_software = true;
+        _crop_by_software_width = _width;
+        _crop_by_software_height = _height;
+
+        /* we set these values here in order to the calculations be correct
+         * (such as PX4 init) even though we crop each frame later on. */
+        _width = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
+        _height = HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
+        _bytesperline = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
     }
 
     if (!_videoin->allocate_buffers(nbufs)) {
@@ -179,13 +208,75 @@ void OpticalFlow_Onboard::_run_optflow()
     Vector3f gyro_rate;
     Vector2f flow_rate;
     VideoIn::Frame video_frame;
+    uint32_t convert_buffer_size = 0, crop_buffer_size = 0;
+    uint32_t crop_left = 0, crop_top = 0;
+    uint8_t *convert_buffer = NULL, *crop_buffer = NULL;
     uint8_t qual;
+
+    if (_format == V4L2_PIX_FMT_YUYV) {
+        if (_crop_by_software) {
+            convert_buffer_size = _crop_by_software_width * _crop_by_software_height;
+        } else {
+            convert_buffer_size = _width * _height;
+        }
+
+        convert_buffer = (uint8_t *)malloc(convert_buffer_size);
+        if (!convert_buffer) {
+            AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate conversion buffer\n");
+        }
+    }
+
+    if (_crop_by_software) {
+        crop_buffer_size = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH *
+            HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
+
+        crop_buffer = (uint8_t *)malloc(crop_buffer_size);
+        if (!crop_buffer) {
+            if (convert_buffer) {
+                free(convert_buffer);
+            }
+
+            AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate crop buffer\n");
+        }
+
+        crop_left = _crop_by_software_width / 2 -
+           HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH / 2;
+        crop_top = _crop_by_software_height / 2 -
+           HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT / 2;
+    }
 
     while(true) {
         /* wait for next frame to come */
         if (!_videoin->get_frame(video_frame)) {
+            if (convert_buffer) {
+               free(convert_buffer);
+            }
+
+            if (crop_buffer) {
+               free(crop_buffer);
+            }
+
             AP_HAL::panic("OpticalFlow_Onboard: couldn't get frame\n");
         }
+
+        if (_format == V4L2_PIX_FMT_YUYV) {
+            VideoIn::yuyv_to_grey((uint8_t *)video_frame.data,
+                convert_buffer_size * 2, convert_buffer);
+
+            memset(video_frame.data, 0, convert_buffer_size * 2);
+            memcpy(video_frame.data, convert_buffer, convert_buffer_size);
+        }
+
+        if (_crop_by_software) {
+            VideoIn::crop_8bpp((uint8_t *)video_frame.data, crop_buffer,
+                               _crop_by_software_width,
+                               crop_left, HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH,
+                               crop_top, HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT);
+
+            memset(video_frame.data, 0, _crop_by_software_width * _crop_by_software_height);
+            memcpy(video_frame.data, crop_buffer, crop_buffer_size);
+        }
+
         /* if it is at least the second frame we receive
          * since we have to compare 2 frames */
         if (_last_video_frame.data == NULL) {
@@ -246,6 +337,14 @@ void OpticalFlow_Onboard::_run_optflow()
         /* give the last frame back to the video input driver */
         _videoin->put_frame(_last_video_frame);
         _last_video_frame = video_frame;
+    }
+
+    if (convert_buffer) {
+        free(convert_buffer);
+    }
+
+    if (crop_buffer) {
+        free(crop_buffer);
     }
 }
 #endif
