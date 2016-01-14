@@ -267,6 +267,13 @@ void Copter::rtl_descent_run()
 
     // process pilot's input
     if (!failsafe.radio) {
+        if((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > 0.7f*THR_MAX){
+            // exit land if throttle is high
+            if (!set_mode(LOITER)) {
+                set_mode(ALT_HOLD);
+            }
+        }
+
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
@@ -355,6 +362,13 @@ void Copter::rtl_land_run()
 
     // process pilot's input
     if (!failsafe.radio) {
+        if((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > 0.7f*THR_MAX){
+            // exit land if throttle is high
+            if (!set_mode(LOITER)) {
+                set_mode(ALT_HOLD);
+            }
+        }
+
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
