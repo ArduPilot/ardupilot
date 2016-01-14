@@ -26,6 +26,9 @@ void AP_MotorsBlueROV::setup_motors()
     // call parent
     AP_Motors6DOF::setup_motors();
 
+#define BLUEROV_VERSION 1
+
+#if ( BLUEROV_VERSION == 1)
     // hard coded config for BlueROV
     float
 		//Front left downward facing
@@ -75,56 +78,58 @@ void AP_MotorsBlueROV::setup_motors()
 		MOT_6_THROTTLE_FACTOR = 0.0,
 		MOT_6_FORWARD_FACTOR = 0.0,
 		MOT_6_STRAFE_FACTOR = 1.0;
-
+#elif ( BLUEROV_VERSION == 2 )
     //For a vectored configuration, the numbers would look something like this.
-//    float
-//		//Front left
-//		MOT_1_ROLL_FACTOR = 0.0,
-//		MOT_1_PITCH_FACTOR = 0.0,
-//		MOT_1_YAW_FACTOR = 0.25,
-//		MOT_1_THROTTLE_FACTOR = 0.0,
-//		MOT_1_FORWARD_FACTOR = 0.25,
-//		MOT_1_STRAFE_FACTOR = 0.25,
-//
-//		//Front right
-//		MOT_2_ROLL_FACTOR = 0.0,
-//		MOT_2_PITCH_FACTOR = 0.0,
-//		MOT_2_YAW_FACTOR = -0.25,
-//		MOT_2_THROTTLE_FACTOR = 0.0,
-//		MOT_2_FORWARD_FACTOR = 0.25,
-//		MOT_2_STRAFE_FACTOR = -0.25,
-//
-//		//Back left
-//		MOT_3_ROLL_FACTOR = 0,
-//		MOT_3_PITCH_FACTOR = 0,
-//		MOT_3_YAW_FACTOR = -0.25,
-//		MOT_3_THROTTLE_FACTOR = 0.0,
-//		MOT_3_FORWARD_FACTOR = 0.25,
-//		MOT_3_STRAFE_FACTOR = -0.25,
-//
-//		//Back right
-//		MOT_4_ROLL_FACTOR = 0,
-//		MOT_4_PITCH_FACTOR = 0,
-//		MOT_4_YAW_FACTOR = 0.25,
-//		MOT_4_THROTTLE_FACTOR = 0.0,
-//		MOT_4_FORWARD_FACTOR = 0.25,
-//		MOT_4_STRAFE_FACTOR = 0.25,
-//
-//		//Left, facing up
-//		MOT_5_ROLL_FACTOR = -1.0,
-//		MOT_5_PITCH_FACTOR = 0.0,
-//		MOT_5_YAW_FACTOR = 0.0,
-//		MOT_5_THROTTLE_FACTOR = 1.0,
-//		MOT_5_FORWARD_FACTOR = 0.0,
-//		MOT_5_STRAFE_FACTOR = 0.0,
-//
-//		//Right, facing up
-//		MOT_6_ROLL_FACTOR = 1.0,
-//		MOT_6_PITCH_FACTOR = 0.0,
-//		MOT_6_YAW_FACTOR = 0.0,
-//		MOT_6_THROTTLE_FACTOR = 1.0,
-//		MOT_6_FORWARD_FACTOR = 0.0,
-//		MOT_6_STRAFE_FACTOR = 0.0;
+    float
+		//Front left
+		MOT_1_ROLL_FACTOR = 0.0,
+		MOT_1_PITCH_FACTOR = 0.0,
+		MOT_1_YAW_FACTOR = -0.25,
+		MOT_1_THROTTLE_FACTOR = 0.0,
+		MOT_1_FORWARD_FACTOR = -1.0,
+		MOT_1_STRAFE_FACTOR = -1.0,
+
+		//Left, facing up
+		MOT_2_ROLL_FACTOR = 1.0,
+		MOT_2_PITCH_FACTOR = 0.0,
+		MOT_2_YAW_FACTOR = 0.0,
+		MOT_2_THROTTLE_FACTOR = -1.0,
+		MOT_2_FORWARD_FACTOR = 0.0,
+		MOT_2_STRAFE_FACTOR = 0.0,
+
+		//Back left
+		MOT_3_ROLL_FACTOR = 0,
+		MOT_3_PITCH_FACTOR = 0,
+		MOT_3_YAW_FACTOR = 0.25,
+		MOT_3_THROTTLE_FACTOR = 0.0,
+		MOT_3_FORWARD_FACTOR = 1.0,
+		MOT_3_STRAFE_FACTOR = -1.0,
+
+		//Back right
+		MOT_4_ROLL_FACTOR = 0,
+		MOT_4_PITCH_FACTOR = 0,
+		MOT_4_YAW_FACTOR = -0.25,
+		MOT_4_THROTTLE_FACTOR = 0.0,
+		MOT_4_FORWARD_FACTOR = 1.0,
+		MOT_4_STRAFE_FACTOR = 1.0,
+
+		//Right, facing up
+		MOT_5_ROLL_FACTOR = -1.0,
+		MOT_5_PITCH_FACTOR = 0.0,
+		MOT_5_YAW_FACTOR = 0.0,
+		MOT_5_THROTTLE_FACTOR = -1.0,
+		MOT_5_FORWARD_FACTOR = 0.0,
+		MOT_5_STRAFE_FACTOR = 0.0,
+
+		//Front right
+		MOT_6_ROLL_FACTOR = 0.0,
+		MOT_6_PITCH_FACTOR = 0.0,
+		MOT_6_YAW_FACTOR = 0.25,
+		MOT_6_THROTTLE_FACTOR = 0.0,
+		MOT_6_FORWARD_FACTOR = -1.0,
+		MOT_6_STRAFE_FACTOR = 1.0;
+
+#endif
 
     add_motor_raw_6dof(AP_MOTORS_MOT_1, MOT_1_ROLL_FACTOR, MOT_1_PITCH_FACTOR, MOT_1_YAW_FACTOR, MOT_1_THROTTLE_FACTOR, MOT_1_FORWARD_FACTOR, MOT_1_STRAFE_FACTOR,1);
     add_motor_raw_6dof(AP_MOTORS_MOT_2, MOT_2_ROLL_FACTOR, MOT_2_PITCH_FACTOR, MOT_2_YAW_FACTOR, MOT_2_THROTTLE_FACTOR, MOT_2_FORWARD_FACTOR, MOT_2_STRAFE_FACTOR,2);
