@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 //
 //  failsafe support
@@ -17,7 +17,7 @@ static bool in_failsafe;
 //
 // failsafe_enable - enable failsafe
 //
-void Copter::failsafe_enable()
+void Sub::failsafe_enable()
 {
     failsafe_enabled = true;
     failsafe_last_timestamp = micros();
@@ -26,7 +26,7 @@ void Copter::failsafe_enable()
 //
 // failsafe_disable - used when we know we are going to delay the mainloop significantly
 //
-void Copter::failsafe_disable()
+void Sub::failsafe_disable()
 {
     failsafe_enabled = false;
 }
@@ -34,7 +34,7 @@ void Copter::failsafe_disable()
 //
 //  failsafe_check - this function is called from the core timer interrupt at 1kHz.
 //
-void Copter::failsafe_check()
+void Sub::failsafe_check()
 {
     uint32_t tnow = AP_HAL::micros();
 

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 static bool land_with_gps;
 
@@ -8,7 +8,7 @@ static uint32_t land_start_time;
 static bool land_pause;
 
 // land_init - initialise land controller
-bool Copter::land_init(bool ignore_checks)
+bool Sub::land_init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
     land_with_gps = position_ok();
@@ -38,7 +38,7 @@ bool Copter::land_init(bool ignore_checks)
 
 // land_run - runs the land controller
 // should be called at 100hz or more
-void Copter::land_run()
+void Sub::land_run()
 {
     if (land_with_gps) {
         land_gps_run();
@@ -50,7 +50,7 @@ void Copter::land_run()
 // land_run - runs the land controller
 //      horizontal position controlled with loiter controller
 //      should be called at 100hz or more
-void Copter::land_gps_run()
+void Sub::land_gps_run()
 {
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
@@ -141,7 +141,7 @@ void Copter::land_gps_run()
 // land_nogps_run - runs the land controller
 //      pilot controls roll and pitch angles
 //      should be called at 100hz or more
-void Copter::land_nogps_run()
+void Sub::land_nogps_run()
 {
     float target_roll = 0.0f, target_pitch = 0.0f;
     float target_yaw_rate = 0;
@@ -207,7 +207,7 @@ void Copter::land_nogps_run()
 // get_land_descent_speed - high level landing logic
 //      returns climb rate (in cm/s) which should be passed to the position controller
 //      should be called at 100hz or higher
-float Copter::get_land_descent_speed()
+float Sub::get_land_descent_speed()
 {
 #if CONFIG_SONAR == ENABLED
     bool sonar_ok = sonar_enabled && (sonar.status() == RangeFinder::RangeFinder_Good);
@@ -225,14 +225,14 @@ float Copter::get_land_descent_speed()
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
 //  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
 //  has no effect if we are not already in LAND mode
-void Copter::land_do_not_use_GPS()
+void Sub::land_do_not_use_GPS()
 {
     land_with_gps = false;
 }
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
-void Copter::set_mode_land_with_pause()
+void Sub::set_mode_land_with_pause()
 {
     set_mode(LAND);
     land_pause = true;
@@ -242,6 +242,6 @@ void Copter::set_mode_land_with_pause()
 }
 
 // landing_with_GPS - returns true if vehicle is landing using GPS
-bool Copter::landing_with_GPS() {
+bool Sub::landing_with_GPS() {
     return (control_mode == LAND && land_with_gps);
 }

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*
  * control_guided.pde - init and run calls for guided flight mode
@@ -36,7 +36,7 @@ struct Guided_Limit {
 } guided_limit;
 
 // guided_init - initialise guided controller
-bool Copter::guided_init(bool ignore_checks)
+bool Sub::guided_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
         // initialise yaw
@@ -51,7 +51,7 @@ bool Copter::guided_init(bool ignore_checks)
 
 
 // guided_takeoff_start - initialises waypoint controller to implement take-off
-void Copter::guided_takeoff_start(float final_alt_above_home)
+void Sub::guided_takeoff_start(float final_alt_above_home)
 {
     guided_mode = Guided_TakeOff;
     
@@ -68,7 +68,7 @@ void Copter::guided_takeoff_start(float final_alt_above_home)
 }
 
 // initialise guided mode's position controller
-void Copter::guided_pos_control_start()
+void Sub::guided_pos_control_start()
 {
     // set to position control mode
     guided_mode = Guided_WP;
@@ -89,7 +89,7 @@ void Copter::guided_pos_control_start()
 }
 
 // initialise guided mode's velocity controller
-void Copter::guided_vel_control_start()
+void Sub::guided_vel_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = Guided_Velocity;
@@ -103,7 +103,7 @@ void Copter::guided_vel_control_start()
 }
 
 // initialise guided mode's posvel controller
-void Copter::guided_posvel_control_start()
+void Sub::guided_posvel_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = Guided_PosVel;
@@ -131,7 +131,7 @@ void Copter::guided_posvel_control_start()
 }
 
 // initialise guided mode's angle controller
-void Copter::guided_angle_control_start()
+void Sub::guided_angle_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = Guided_Angle;
@@ -156,7 +156,7 @@ void Copter::guided_angle_control_start()
 }
 
 // guided_set_destination - sets guided mode's target destination
-void Copter::guided_set_destination(const Vector3f& destination)
+void Sub::guided_set_destination(const Vector3f& destination)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -167,7 +167,7 @@ void Copter::guided_set_destination(const Vector3f& destination)
 }
 
 // guided_set_velocity - sets guided mode's target velocity
-void Copter::guided_set_velocity(const Vector3f& velocity)
+void Sub::guided_set_velocity(const Vector3f& velocity)
 {
     // check we are in velocity control mode
     if (guided_mode != Guided_Velocity) {
@@ -181,7 +181,7 @@ void Copter::guided_set_velocity(const Vector3f& velocity)
 }
 
 // set guided mode posvel target
-void Copter::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity) {
+void Sub::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity) {
     // check we are in velocity control mode
     if (guided_mode != Guided_PosVel) {
         guided_posvel_control_start();
@@ -195,7 +195,7 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
 }
 
 // set guided mode angle target
-void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
+void Sub::guided_set_angle(const Quaternion &q, float climb_rate_cms)
 {
     // check we are in velocity control mode
     if (guided_mode != Guided_Angle) {
@@ -214,7 +214,7 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
 
 // guided_run - runs the guided controller
 // should be called at 100hz or more
-void Copter::guided_run()
+void Sub::guided_run()
 {
     // call the correct auto controller
     switch (guided_mode) {
@@ -248,7 +248,7 @@ void Copter::guided_run()
 
 // guided_takeoff_run - takeoff in guided mode
 //      called by guided_run at 100hz or more
-void Copter::guided_takeoff_run()
+void Sub::guided_takeoff_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!ap.auto_armed || !motors.get_interlock()) {
@@ -281,7 +281,7 @@ void Copter::guided_takeoff_run()
 
 // guided_pos_control_run - runs the guided position controller
 // called from guided_run
-void Copter::guided_pos_control_run()
+void Sub::guided_pos_control_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
@@ -323,7 +323,7 @@ void Copter::guided_pos_control_run()
 
 // guided_vel_control_run - runs the guided velocity controller
 // called from guided_run
-void Copter::guided_vel_control_run()
+void Sub::guided_vel_control_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
@@ -370,7 +370,7 @@ void Copter::guided_vel_control_run()
 
 // guided_posvel_control_run - runs the guided spline controller
 // called from guided_run
-void Copter::guided_posvel_control_run()
+void Sub::guided_posvel_control_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
@@ -439,7 +439,7 @@ void Copter::guided_posvel_control_run()
 
 // guided_angle_control_run - runs the guided angle controller
 // called from guided_run
-void Copter::guided_angle_control_run()
+void Sub::guided_angle_control_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
@@ -491,7 +491,7 @@ void Copter::guided_angle_control_run()
 // Guided Limit code
 
 // guided_limit_clear - clear/turn off guided limits
-void Copter::guided_limit_clear()
+void Sub::guided_limit_clear()
 {
     guided_limit.timeout_ms = 0;
     guided_limit.alt_min_cm = 0.0f;
@@ -500,7 +500,7 @@ void Copter::guided_limit_clear()
 }
 
 // guided_limit_set - set guided timeout and movement limits
-void Copter::guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm)
+void Sub::guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm)
 {
     guided_limit.timeout_ms = timeout_ms;
     guided_limit.alt_min_cm = alt_min_cm;
@@ -510,7 +510,7 @@ void Copter::guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_m
 
 // guided_limit_init_time_and_pos - initialise guided start time and position as reference for limit checking
 //  only called from AUTO mode's auto_nav_guided_start function
-void Copter::guided_limit_init_time_and_pos()
+void Sub::guided_limit_init_time_and_pos()
 {
     // initialise start time
     guided_limit.start_time = AP_HAL::millis();
@@ -521,7 +521,7 @@ void Copter::guided_limit_init_time_and_pos()
 
 // guided_limit_check - returns true if guided mode has breached a limit
 //  used when guided is invoked from the NAV_GUIDED_ENABLE mission command
-bool Copter::guided_limit_check()
+bool Sub::guided_limit_check()
 {
     // check if we have passed the timeout
     if ((guided_limit.timeout_ms > 0) && (millis() - guided_limit.start_time >= guided_limit.timeout_ms)) {

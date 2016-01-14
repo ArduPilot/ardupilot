@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
@@ -11,7 +11,7 @@ static uint32_t auto_disarm_begin;
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
-void Copter::arm_motors_check()
+void Sub::arm_motors_check()
 {
 <<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
     // Arm motors automatically
@@ -83,7 +83,7 @@ void Copter::arm_motors_check()
 }
 
 // auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
-void Copter::auto_disarm_check()
+void Sub::auto_disarm_check()
 {
 <<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
     /*uint32_t tnow_ms = millis();
@@ -143,7 +143,7 @@ void Copter::auto_disarm_check()
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Copter::init_arm_motors(bool arming_from_gcs)
+bool Sub::init_arm_motors(bool arming_from_gcs)
 {
     static bool in_arm_motors = false;
 
@@ -231,7 +231,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 }
 
 // init_disarm_motors - disarm motors
-void Copter::init_disarm_motors()
+void Sub::init_disarm_motors()
 {
     // return immediately if we are already disarmed
     if (!motors.armed()) {
@@ -277,7 +277,7 @@ void Copter::init_disarm_motors()
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
-void Copter::motors_output()
+void Sub::motors_output()
 {
     // check if we are performing the motor test
     if (ap.motor_test) {
@@ -295,7 +295,7 @@ void Copter::motors_output()
 }
 
 // check for pilot stick input to trigger lost vehicle alarm
-void Copter::lost_vehicle_check()
+void Sub::lost_vehicle_check()
 {
     static uint8_t soundalarm_counter;
 

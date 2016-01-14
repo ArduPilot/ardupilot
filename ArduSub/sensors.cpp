@@ -1,8 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
-void Copter::init_barometer(bool full_calibration)
+void Sub::init_barometer(bool full_calibration)
 {
     gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     if (full_calibration) {
@@ -14,7 +14,7 @@ void Copter::init_barometer(bool full_calibration)
 }
 
 // return barometric altitude in centimeters
-void Copter::read_barometer(void)
+void Sub::read_barometer(void)
 {
     barometer.update();
     if (should_log(MASK_LOG_IMU)) {
@@ -27,14 +27,14 @@ void Copter::read_barometer(void)
 }
 
 #if CONFIG_SONAR == ENABLED
-void Copter::init_sonar(void)
+void Sub::init_sonar(void)
 {
    sonar.init();
 }
 #endif
 
 // return sonar altitude in centimeters
-int16_t Copter::read_sonar(void)
+int16_t Sub::read_sonar(void)
 {
 #if CONFIG_SONAR == ENABLED
     sonar.update();
@@ -72,7 +72,7 @@ int16_t Copter::read_sonar(void)
 /*
   update RPM sensors
  */
-void Copter::rpm_update(void)
+void Sub::rpm_update(void)
 {
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
@@ -83,7 +83,7 @@ void Copter::rpm_update(void)
 }
 
 // initialise compass
-void Copter::init_compass()
+void Sub::init_compass()
 {
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
@@ -95,7 +95,7 @@ void Copter::init_compass()
 }
 
 // initialise optical flow sensor
-void Copter::init_optflow()
+void Sub::init_optflow()
 {
 #if OPTFLOW == ENABLED
     // exit immediately if not enabled
@@ -110,7 +110,7 @@ void Copter::init_optflow()
 
 // called at 200hz
 #if OPTFLOW == ENABLED
-void Copter::update_optical_flow(void)
+void Sub::update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
 
@@ -138,7 +138,7 @@ void Copter::update_optical_flow(void)
 
 // read_battery - check battery voltage and current and invoke failsafe if necessary
 // called at 10hz
-void Copter::read_battery(void)
+void Sub::read_battery(void)
 {
     battery.read();
 
@@ -169,19 +169,19 @@ void Copter::read_battery(void)
 
 // read the receiver RSSI as an 8 bit number for MAVLink
 // RC_CHANNELS_SCALED message
-void Copter::read_receiver_rssi(void)
+void Sub::read_receiver_rssi(void)
 {
     receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
-void Copter::compass_cal_update()
+void Sub::compass_cal_update()
 {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
     }
 }
 
-void Copter::accel_cal_update()
+void Sub::accel_cal_update()
 {
     if (hal.util->get_soft_armed()) {
         return;
@@ -196,7 +196,7 @@ void Copter::accel_cal_update()
 
 #if EPM_ENABLED == ENABLED
 // epm update - moves epm pwm output back to neutral after grab or release is completed
-void Copter::epm_update()
+void Sub::epm_update()
 {
     epm.update();
 }
