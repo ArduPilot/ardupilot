@@ -1,9 +1,9 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 // set_home_state - update home state
-void Copter::set_home_state(enum HomeState new_home_state)
+void Sub::set_home_state(enum HomeState new_home_state)
 {
     // if no change, exit immediately
     if (ap.home_state == new_home_state)
@@ -19,13 +19,13 @@ void Copter::set_home_state(enum HomeState new_home_state)
 }
 
 // home_is_set - returns true if home positions has been set (to GPS location, armed location or EKF origin)
-bool Copter::home_is_set()
+bool Sub::home_is_set()
 {
     return (ap.home_state == HOME_SET_NOT_LOCKED || ap.home_state == HOME_SET_AND_LOCKED);
 }
 
 // ---------------------------------------------
-void Copter::set_auto_armed(bool b)
+void Sub::set_auto_armed(bool b)
 {
     // if no change, exit immediately
     if( ap.auto_armed == b )
@@ -38,7 +38,7 @@ void Copter::set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void Copter::set_simple_mode(uint8_t b)
+void Sub::set_simple_mode(uint8_t b)
 {
     if(ap.simple_mode != b){
         if(b == 0){
@@ -58,7 +58,7 @@ void Copter::set_simple_mode(uint8_t b)
 }
 
 // ---------------------------------------------
-void Copter::set_failsafe_radio(bool b)
+void Sub::set_failsafe_radio(bool b)
 {
     // only act on changes
     // -------------------
@@ -85,21 +85,21 @@ void Copter::set_failsafe_radio(bool b)
 
 
 // ---------------------------------------------
-void Copter::set_failsafe_battery(bool b)
+void Sub::set_failsafe_battery(bool b)
 {
     failsafe.battery = b;
     AP_Notify::flags.failsafe_battery = b;
 }
 
 // ---------------------------------------------
-void Copter::set_failsafe_gcs(bool b)
+void Sub::set_failsafe_gcs(bool b)
 {
     failsafe.gcs = b;
 }
 
 // ---------------------------------------------
 
-void Copter::set_pre_arm_check(bool b)
+void Sub::set_pre_arm_check(bool b)
 {
     if(ap.pre_arm_check != b) {
         ap.pre_arm_check = b;
@@ -107,14 +107,14 @@ void Copter::set_pre_arm_check(bool b)
     }
 }
 
-void Copter::set_pre_arm_rc_check(bool b)
+void Sub::set_pre_arm_rc_check(bool b)
 {
     if(ap.pre_arm_rc_check != b) {
         ap.pre_arm_rc_check = b;
     }
 }
 
-void Copter::update_using_interlock()
+void Sub::update_using_interlock()
 {
 #if FRAME_CONFIG == HELI_FRAME
     // helicopters are always using motor interlock
@@ -125,7 +125,7 @@ void Copter::update_using_interlock()
 #endif
 }
 
-void Copter::set_motor_emergency_stop(bool b)
+void Sub::set_motor_emergency_stop(bool b)
 {
     if(ap.motor_emergency_stop != b) {
         ap.motor_emergency_stop = b;

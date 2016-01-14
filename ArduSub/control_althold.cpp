@@ -1,5 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include "Copter.h"
+#include "Sub.h"
 
 
 /*
@@ -7,7 +7,7 @@
  */
 
 // althold_init - initialise althold controller
-bool Copter::althold_init(bool ignore_checks)
+bool Sub::althold_init(bool ignore_checks)
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter Alt Hold if the Rotor Runup is not complete
@@ -32,7 +32,7 @@ bool Copter::althold_init(bool ignore_checks)
 
 // althold_run - runs the althold controller
 // should be called at 100hz or more
-void Copter::althold_run()
+void Sub::althold_run()
 {
     AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;

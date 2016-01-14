@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 /*
   mavlink motor test - implements the MAV_CMD_DO_MOTOR_TEST mavlink command so that the GCS/pilot can test an individual motor or flaps
@@ -19,7 +19,7 @@ static uint8_t motor_test_throttle_type = 0;    // motor throttle type (0=thrott
 static uint16_t motor_test_throttle_value = 0;  // throttle to be sent to motor, value depends upon it's type
 
 // motor_test_output - checks for timeout and sends updates to motors objects
-void Copter::motor_test_output()
+void Sub::motor_test_output()
 {
     // exit immediately if the motor test is not running
     if (!ap.motor_test) {
@@ -69,7 +69,7 @@ void Copter::motor_test_output()
 
 // mavlink_motor_test_check - perform checks before motor tests can begin
 //  return true if tests can continue, false if not
-bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
+bool Sub::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 {
     // check rc has been calibrated
     pre_arm_rc_checks();
@@ -96,7 +96,7 @@ bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 //  returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
-uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec)
+uint8_t Sub::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec)
 {
     // if test has not started try to start it
     if (!ap.motor_test) {
@@ -141,7 +141,7 @@ uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_s
 }
 
 // motor_test_stop - stops the motor test
-void Copter::motor_test_stop()
+void Sub::motor_test_stop()
 {
     // exit immediately if the test is not running
     if (!ap.motor_test) {

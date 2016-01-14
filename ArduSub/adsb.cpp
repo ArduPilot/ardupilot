@@ -17,7 +17,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Copter.h"
+#include "Sub.h"
 
 #if ADSB_ENABLED == ENABLED
 

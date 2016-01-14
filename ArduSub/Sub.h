@@ -1,9 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#ifndef _COPTER_H
-#define _COPTER_H
+#ifndef _SUB_H
+#define _SUB_H
 
-#define THISFIRMWARE "APM:Copter V3.4-dev"
+#define THISFIRMWARE "ArduSub V3.4-dev"
 #define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_DEV
 
 /*
@@ -21,7 +21,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  This is the main Copter class
+  This is the main Sub class
  */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -81,7 +81,7 @@
 #include <AC_WPNav/AC_WPNav.h>           // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-#include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
+#include <AC_Fence/AC_Fence.h>           // ArduCopter Fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify/AP_Notify.h>          // Notify library
@@ -122,12 +122,12 @@
 #include <SITL/SITL.h>
 #endif
 
-class Copter : public AP_HAL::HAL::Callbacks {
+class Sub : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK;
     friend class Parameters;
 
-    Copter(void);
+    Sub(void);
 
     // HAL::Callbacks implementation.
     void setup() override;
@@ -333,7 +333,7 @@ private:
 
     // Location & Navigation
     int32_t wp_bearing;
-    // The location of home in relation to the copter in centi-degrees
+    // The location of home in relation to the Sub in centi-degrees
     int32_t home_bearing;
     // distance between plane and home in cm
     int32_t home_distance;
@@ -356,8 +356,8 @@ private:
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
 
     // SIMPLE Mode
-    // Used to track the orientation of the copter for Simple mode. This value is reset at each arming
-    // or in SuperSimple mode when the copter leaves a 20m radius from home.
+    // Used to track the orientation of the Sub for Simple mode. This value is reset at each arming
+    // or in SuperSimple mode when the Sub leaves a 20m radius from home.
     float simple_cos_yaw;
     float simple_sin_yaw;
     int32_t super_simple_last_bearing;
@@ -376,7 +376,7 @@ private:
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
     // Flip
-    Vector3f flip_orig_attitude;         // original copter attitude before flip
+    Vector3f flip_orig_attitude;         // original Sub attitude before flip
 
     // Battery Sensors
     AP_BattMonitor battery;
@@ -398,7 +398,7 @@ private:
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // 3D Location vectors
-    // Current location of the copter (altitude is relative to home)
+    // Current location of the Sub (altitude is relative to home)
     struct Location current_loc;
 
     // Navigation Yaw control
@@ -1050,12 +1050,12 @@ public:
     int8_t reboot_board(uint8_t argc, const Menu::arg *argv);
 };
 
-#define MENU_FUNC(func) FUNCTOR_BIND(&copter, &Copter::func, int8_t, uint8_t, const Menu::arg *)
+#define MENU_FUNC(func) FUNCTOR_BIND(&sub, &Sub::func, int8_t, uint8_t, const Menu::arg *)
 
 extern const AP_HAL::HAL& hal;
-extern Copter copter;
+extern Sub sub;
 
 using AP_HAL::millis;
 using AP_HAL::micros;
 
-#endif // _COPTER_H_
+#endif // _SUB_H_

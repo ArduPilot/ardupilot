@@ -1,16 +1,16 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+#include "Sub.h"
 
 // read_inertia - read inertia in from accelerometers
-void Copter::read_inertia()
+void Sub::read_inertia()
 {
     // inertial altitude estimates
     inertial_nav.update(G_Dt);
 }
 
 // read_inertial_altitude - pull altitude and climb rate from inertial nav library
-void Copter::read_inertial_altitude()
+void Sub::read_inertial_altitude()
 {
     // exit immediately if we do not have an altitude estimate
     if (!inertial_nav.get_filter_status().flags.vert_pos) {
