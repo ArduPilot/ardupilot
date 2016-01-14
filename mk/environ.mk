@@ -120,6 +120,15 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   endif
 endif
 
+ifneq ($(findstring mavlink2, $(MAKECMDGOALS)),)
+EXTRAFLAGS += -DMAVLINK_PROTOCOL_VERSION=2
+MAVLINK_SUBDIR=v2.0
+MAVLINK_WIRE_PROTOCOL=2.0
+else
+MAVLINK_SUBDIR=v1.0
+MAVLINK_WIRE_PROTOCOL=1.0
+endif
+
 ifneq ($(APPDIR),)
 # this is a recusive PX4 build
 HAL_BOARD = HAL_BOARD_PX4
