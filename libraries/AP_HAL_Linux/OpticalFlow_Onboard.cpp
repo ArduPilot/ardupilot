@@ -374,10 +374,12 @@ void OpticalFlow_Onboard::_run_optflow()
                                   HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
         _integration_timespan += video_frame.timestamp -
                                  _last_video_frame.timestamp;
-        _gyro_x_integral       += gyro_rate.x * (video_frame.timestamp -
-                                 _last_video_frame.timestamp);
-        _gyro_y_integral       += gyro_rate.y * (video_frame.timestamp -
-                                 _last_video_frame.timestamp);
+        _gyro_x_integral       += (gyro_rate.x + _last_gyro_rate.x) / 2.0f *
+                                  (video_frame.timestamp -
+                                  _last_video_frame.timestamp);
+        _gyro_y_integral       += (gyro_rate.y + _last_gyro_rate.y) / 2.0f *
+                                  (video_frame.timestamp -
+                                  _last_video_frame.timestamp);
         _surface_quality = qual;
         _data_available = true;
         pthread_mutex_unlock(&_mutex);
@@ -385,6 +387,7 @@ void OpticalFlow_Onboard::_run_optflow()
         /* give the last frame back to the video input driver */
         _videoin->put_frame(_last_video_frame);
         _last_video_frame = video_frame;
+        _last_gyro_rate = gyro_rate;
     }
 
     if (convert_buffer) {

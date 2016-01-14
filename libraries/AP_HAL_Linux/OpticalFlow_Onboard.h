@@ -57,4 +57,5 @@ private:
     uint32_t _integration_timespan;
     uint8_t _surface_quality;
     AP_HAL::OpticalFlow::Gyro_Cb _get_gyro;
+    Vector3f _last_gyro_rate;
 };
