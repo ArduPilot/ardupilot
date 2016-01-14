@@ -107,9 +107,6 @@ qurt: all
 # support debug build
 %-debug: OPTFLAGS = -g -O0
 
-# support mavlink2 builds
-%-mavlink2: EXTRAFLAGS += "-DMAVLINK_PROTOCOL_VERSION=2"
-
 # support address sanitiser
 %-asan: OPTFLAGS = -g -O0 -fsanitize=address -fno-omit-frame-pointer
 %-asan: LDFLAGS += -fsanitize=address
