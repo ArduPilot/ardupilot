@@ -13,7 +13,7 @@ import os
 class mavgen(Task.Task):
     """generate mavlink header files"""
     color   = 'GREEN'
-    run_str = '${PYTHON} ${MAVGEN} --lang=C --wire-protocol=1.0 --output ${TGT} ${SRC}'
+    run_str = '${PYTHON} ${MAVGEN} --lang=C --wire-protocol=1.0 --output ${OUTPUT_DIR} ${SRC}'
     before  = 'cxx c'
 
     def post_run(self):
@@ -27,18 +27,19 @@ def options(opt):
 @feature('mavgen')
 @before_method('process_source')
 def process_mavgen(self):
+    if not hasattr(self, 'output_dir'):
+        self.bld.fatal('mavgen: missing option output_dir')
+
     inputs = self.to_nodes(self.source)
     outputs = []
 
-    self.target = Utils.to_list(getattr(self, 'target', []))
-    for t in self.target:
-        if not isinstance(t, Node.Node):
-            t = self.bld.bldnode.find_or_declare(t)
-        outputs.append(t)
-
     self.source = []
 
+    if not isinstance(self.output_dir, Node.Node):
+        self.output_dir = self.bld.bldnode.find_or_declare(self.output_dir)
+
     task = self.create_task('mavgen', inputs, outputs)
+    task.env['OUTPUT_DIR'] = self.output_dir.abspath()
 
     task.env.env = dict(os.environ)
     task.env.env['PYTHONPATH'] = task.env.MAVLINK_DIR
