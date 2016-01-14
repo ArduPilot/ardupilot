@@ -87,7 +87,8 @@ void Copter::land_gps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
-        if((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > 0.7f*THR_MAX){
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(LOITER)) {
                 set_mode(ALT_HOLD);
@@ -155,7 +156,8 @@ void Copter::land_nogps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
-        if((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > 0.7f*THR_MAX){
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(LOITER)) {
                 set_mode(ALT_HOLD);
