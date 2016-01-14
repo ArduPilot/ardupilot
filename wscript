@@ -41,7 +41,7 @@ def init(ctx):
 def options(opt):
     boards_names = boards.get_boards_names()
 
-    opt.load('compiler_cxx compiler_c waf_unit_test')
+    opt.load('compiler_cxx compiler_c waf_unit_test python')
     opt.add_option('--board',
                    action='store',
                    choices=boards_names,
@@ -78,6 +78,7 @@ def configure(cfg):
     cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
+    cfg.load('mavgen')
     cfg.load('gbenchmark')
     cfg.load('static_linking')
 
@@ -95,7 +96,7 @@ def configure(cfg):
     )
 
     cfg.env.prepend_value('INCLUDES', [
-        cfg.srcnode.abspath() + '/libraries/'
+        cfg.srcnode.abspath() + '/libraries/',
     ])
 
     # TODO: Investigate if code could be changed to not depend on the
@@ -116,6 +117,21 @@ def list_boards(ctx):
     print(*boards.get_boards_names())
 
 def build(bld):
+
+    #generate mavlink headers
+    bld(
+        features='mavgen',
+        source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
+        output_dir='libraries/GCS_MAVLink/include/mavlink/v1.0/',
+        name='mavlink',
+        # this below is not ideal, mavgen tool should set this, but that's not
+        # currently possible
+        export_includes=[
+            bld.bldnode.make_node('libraries').abspath(),
+            bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
+        ],
+    )
+
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider
@@ -125,8 +141,8 @@ def build(bld):
         name='ap',
         vehicle='UNKNOWN',
         libraries=ardupilotwaf.get_all_libraries(bld),
+        use='mavlink',
     )
-
     # TODO: Currently each vehicle also generate its own copy of the
     # libraries. Fix this, or at least reduce the amount of
     # vehicle-dependent libraries.

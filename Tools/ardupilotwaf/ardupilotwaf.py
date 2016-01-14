@@ -129,15 +129,12 @@ def vehicle_stlib(bld, **kw):
         lib_sources = lib_node.ant_glob(SOURCE_EXTS + UTILITY_SOURCE_EXTS)
         sources.extend(lib_sources)
 
-    name = kw['name']
-    vehicle = kw['vehicle']
+    kw['source'] = sources
+    kw['target'] = kw['name']
+    kw['defines'] = _get_legacy_defines(kw['vehicle'])
+    kw['idx'] = _get_next_idx()
 
-    bld.stlib(
-        source=sources,
-        target=name,
-        defines=_get_legacy_defines(vehicle),
-        idx=_get_next_idx(),
-    )
+    bld.stlib(**kw)
 
 def find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
