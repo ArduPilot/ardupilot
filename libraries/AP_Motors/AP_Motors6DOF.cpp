@@ -25,17 +25,15 @@
 
 extern const AP_HAL::HAL& hal;
 
-//void AP_Motors6DOF::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float strafe_fac, uint8_t testing_order) {
-//	//Parent takes care of enabling output and setting up masks
-//	AP_MotorsMatrix::add_motor_raw(motor_num, roll_fac, pitch_fac, yaw_fac, testing_order);
-//
-//	//These are additional parameters for an ROV
-//	_throttle_factor[motor_num] = throttle_fac;
-//	_forward_factor[motor_num] = forward_fac;
-//	_strafe_factor[motor_num] = strafe_fac;
-//}
+void AP_Motors6DOF::add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float strafe_fac, uint8_t testing_order) {
+	//Parent takes care of enabling output and setting up masks
+	add_motor_raw(motor_num, roll_fac, pitch_fac, yaw_fac, testing_order);
 
-
+	//These are additional parameters for an ROV
+	_throttle_factor[motor_num] = throttle_fac;
+	_forward_factor[motor_num] = forward_fac;
+	_strafe_factor[motor_num] = strafe_fac;
+}
 
 // output_min - sends minimum values out to the motors
 void AP_Motors6DOF::output_min()
@@ -118,7 +116,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
     roll_pwm = calc_roll_pwm();
     pitch_pwm = calc_pitch_pwm();
     yaw_pwm = calc_yaw_pwm();
-    throttle_radio_output = calc_throttle_radio_output();
+    throttle_radio_output = (calc_throttle_radio_output()-_throttle_radio_min-(_throttle_radio_max-_throttle_radio_min)/2);
     forward_pwm = get_forward();
     strafe_pwm = get_strafe();
 
@@ -151,7 +149,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
 
-        	motor_out[i] = rpy_out[i] + linear_out[i];
+        	motor_out[i] = 1500 + rpy_out[i] + linear_out[i];
 
         }
     }
