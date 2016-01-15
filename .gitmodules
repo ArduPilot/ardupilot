@@ -16,3 +16,6 @@
 [submodule "modules/mavlink"]
 	path = modules/mavlink
 	url = git://github.com/diydrones/mavlink
+[submodule "gtest"]
+	path = modules/gtest
+	url = git://github.com/diydrones/googletest
