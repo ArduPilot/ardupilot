@@ -31,6 +31,10 @@ target:
     # List all the targets available
     waf list
 
+There are also shortcuts for vehicle builds, for example:
+    # Shortcut for waf --targets ArduCopter
+    waf copter
+
 By default all the files produced by the build will be inside the build/
 subdirectory. The binaries will also be there, with the name identifying
 the target board.
