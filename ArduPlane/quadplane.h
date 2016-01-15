@@ -145,6 +145,8 @@ private:
     AP_Float land_final_alt;
     
     AP_Int8 enable;
+    AP_Int8 transition_pitch_max;
+    
     bool initialised;
     
     // timer start for transition
@@ -182,4 +184,6 @@ private:
         QLAND_FINAL,
         QLAND_COMPLETE
     } land_state;
+    int32_t land_yaw_cd;
+    float land_wp_proportion;
 };

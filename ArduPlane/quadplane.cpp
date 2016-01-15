@@ -322,6 +322,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Units: Percent*10
     // @Increment: 1
     AP_GROUPINFO("THR_MID", 28, QuadPlane, throttle_mid, 500),
+
+    // @Param: TRAN_PIT_MAX
+    // @DisplayName: Transition max pitch
+    // @Description: Maximum pitch during transition to auto fixed wing flight
+    // @User: Standard
+    // @Range: 0 30
+    // @Units: Degrees
+    // @Increment: 1
+    AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
     
     AP_GROUPEND
 };
@@ -742,7 +751,7 @@ void QuadPlane::update_transition(void)
 
     if (transition_state < TRANSITION_TIMER) {
         // set a single loop pitch limit in TECS
-        plane.TECS_controller.set_pitch_max_limit(0);
+        plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
     }
     
     switch (transition_state) {
@@ -757,9 +766,6 @@ void QuadPlane::update_transition(void)
             transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", aspeed);
-        } else if (plane.auto_throttle_mode) {
-            // force pitch to zero while building up airspeed
-            plane.nav_pitch_cd = 0;
         }
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
@@ -971,13 +977,10 @@ void QuadPlane::control_auto(const Location &loc)
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
     pos_control->set_accel_z(pilot_accel_z);
 
-    if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_TAKEOFF ||
-        (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
-         land_state >= QLAND_FINAL)) {
+    if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_TAKEOFF) {
         /*
-          for takeoff and land-final we need to use the loiter
-          controller for final descent as the wpnav controller takes
-          over the descent rate control
+          for takeoff we need to use the loiter controller wpnav controller takes over the descent rate
+          control
          */
         float ekfGndSpdLimit, ekfNavVelGainScaler;    
         ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
@@ -989,49 +992,62 @@ void QuadPlane::control_auto(const Location &loc)
                                                                              plane.nav_pitch_cd,
                                                                              get_pilot_input_yaw_rate_cds(),
                                                                              smoothing_gain);
+
+        // nav roll and pitch are controller by position controller
+        plane.nav_roll_cd = pos_control->get_roll();
+        plane.nav_pitch_cd = pos_control->get_pitch();
     } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
-               land_state == QLAND_POSITION) {
+               land_state >= QLAND_FINAL) {
         /*
-          for land repositioning we run the wpnav controller, but
-          smoothly change its pitch limit to allow the plane to slow
-          down gracefully
+          for land-final we use the loiter controller
          */
-        // run wpnav controller
-        wp_nav->update_wpnav();
+        float ekfGndSpdLimit, ekfNavVelGainScaler;    
+        ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    
+        // run loiter controller
+        wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-        // also run fixed wing navigation
-        plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
-        plane.nav_roll_cd = plane.nav_controller->nav_roll_cd();
-        
-        // yaw rate is set by fixed wing navigation controller, to keep the plane lined up nicely
-        int32_t yaw_rate = get_desired_yaw_rate_cds();
-        
-        // nav roll and pitch are controller by loiter controller
-        plane.nav_roll_cd = wp_nav->get_roll();
-        plane.nav_pitch_cd = wp_nav->get_pitch();
-
-        // during positioning we may be flying faster than the WP_Nav
-        // controller normally wants to fly. We let that happen by
-        // limiting the pitch controller of the WP_Nav controller
-        int32_t limit = plane.auto_state.wp_proportion * plane.aparm.pitch_limit_max_cd;
-        plane.nav_pitch_cd = constrain_int32(plane.nav_pitch_cd, plane.aparm.pitch_limit_min_cd, limit);
-
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
-                                                                             plane.nav_pitch_cd,
-                                                                             yaw_rate,
-                                                                             smoothing_gain);
-    } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND && land_state >= QLAND_DESCEND) {
-        /*
-          for land descent we only use pilot input for yaw
-         */
-        // run wpnav controller
-        wp_nav->update_wpnav();
-
-        // force yaw rate to zero
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              get_pilot_input_yaw_rate_cds(),
-                                                                             smoothing_gain);        
+                                                                             smoothing_gain);
+        // nav roll and pitch are controller by position controller
+        plane.nav_roll_cd = pos_control->get_roll();
+        plane.nav_pitch_cd = pos_control->get_pitch();
+    } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND) {
+        /*
+          for land repositioning we run the loiter controller
+         */
+        
+        // also run fixed wing navigation
+        plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+
+        pos_control->set_xy_target(target.x, target.y);
+        
+        float ekfGndSpdLimit, ekfNavVelGainScaler;    
+        ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+        
+        // run loiter controller
+        wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+
+        // nav roll and pitch are controller by position controller
+        plane.nav_roll_cd = wp_nav->get_roll();
+        plane.nav_pitch_cd = wp_nav->get_pitch();
+
+        if (land_state == QLAND_POSITION) {
+            // during positioning we may be flying faster than the position
+            // controller normally wants to fly. We let that happen by
+            // limiting the pitch controller
+            land_wp_proportion = constrain_float(MAX(land_wp_proportion, plane.auto_state.wp_proportion), 0, 1);
+            int32_t limit = land_wp_proportion * plane.aparm.pitch_limit_max_cd;
+            plane.nav_pitch_cd = constrain_int32(plane.nav_pitch_cd, plane.aparm.pitch_limit_min_cd, limit);
+            wp_nav->set_speed_xy(constrain_float((1-land_wp_proportion)*20*100.0, 500, 2000));
+        }
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+                                                                             plane.nav_pitch_cd,
+                                                                             get_pilot_input_yaw_rate_cds(),
+                                                                             smoothing_gain);
     } else {
         /*
           this is full copter control of auto flight
@@ -1044,17 +1060,16 @@ void QuadPlane::control_auto(const Location &loc)
                                                            wp_nav->get_pitch(),
                                                            wp_nav->get_yaw(),
                                                            true);
+        // nav roll and pitch are controller by loiter controller
+        plane.nav_roll_cd = wp_nav->get_roll();
+        plane.nav_pitch_cd = wp_nav->get_pitch();
     }
 
 
-    // nav roll and pitch are controller by loiter controller
-    plane.nav_roll_cd = wp_nav->get_roll();
-    plane.nav_pitch_cd = wp_nav->get_pitch();
-
     switch (plane.mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_VTOL_LAND:
-        if (land_state < QLAND_FINAL) {
-            pos_control->set_alt_target_with_slew(wp_nav->get_loiter_target().z, plane.ins.get_loop_delta_t());
+        if (land_state > QLAND_POSITION && land_state < QLAND_FINAL) {
+            pos_control->set_alt_target_from_climb_rate(-wp_nav->get_speed_down(), plane.G_Dt, true);            
         } else {
             pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);            
         }
@@ -1107,12 +1122,29 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     if (!setup()) {
         return false;
     }
+    motors->slow_start(true);
+    pid_rate_roll.reset_I();
+    pid_rate_pitch.reset_I();
+    pid_rate_yaw.reset_I();
+    pid_accel_z.reset_I();
+    pi_vel_xy.reset_I();
+    
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
     land_state = QLAND_POSITION;
-    throttle_wait = false;    
+    throttle_wait = false;
+    land_yaw_cd = get_bearing_cd(plane.prev_WP_loc, plane.next_WP_loc);
+    land_wp_proportion = 0;
     motors_lower_limit_start_ms = 0;
+    Location origin = inertial_nav.get_origin();
+    Vector2f diff2d;
+    Vector3f target;
+    diff2d = location_diff(origin, plane.next_WP_loc);
+    target.x = diff2d.x * 100;
+    target.y = diff2d.y * 100;
+    target.z = plane.next_WP_loc.alt - origin.alt;
+    wp_nav->set_wp_origin_and_destination(inertial_nav.get_position(), target);
     
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
