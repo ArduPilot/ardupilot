@@ -814,7 +814,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
 }
 
 void
-GCS_MAVLINK::update(run_cli_fn run_cli)
+GCS_MAVLINK::update()
 {
     // receive new packets
     mavlink_message_t msg;
@@ -827,7 +827,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
     {
         uint8_t c = comm_receive_ch(chan);
 
-        if (run_cli) {
+        if (_run_cli) {
             /* allow CLI to be started by hitting enter 3 times, if no
              *  heartbeat packets have been received */
             if ((mavlink_active==0) && (AP_HAL::millis() - _cli_timeout) < 20000 && 
@@ -838,7 +838,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
                     crlf_count = 0;
                 }
                 if (crlf_count == 3) {
-                    run_cli(_port);
+                    _run_cli(_port);
                 }
             }
         }

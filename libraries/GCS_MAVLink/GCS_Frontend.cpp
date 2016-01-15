@@ -26,7 +26,13 @@ extern const AP_HAL::HAL& hal;
  */
 void GCS_Frontend::update(void)
 {
-    FOR_EACH_INITIALISED_GCS(update(_run_cli_func));
+    FOR_EACH_INITIALISED_GCS(update());
+}
+
+void GCS_Frontend::set_run_cli_func(run_cli_fn func)
+{
+    _run_cli_func = func;
+    FOR_EACH_GCS(set_run_cli_func(_run_cli_func));
 }
 
 // TODO: add some sanity checking that we have 4 GCS objects!

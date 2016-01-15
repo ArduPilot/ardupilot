@@ -39,9 +39,7 @@ public:
 
     bool first_initialised();
 
-    void set_run_cli_func(run_cli_fn func) {
-        _run_cli_func = func;
-    }
+    void set_run_cli_func(run_cli_fn func);
     void update(void);
 
     void delay_cb();

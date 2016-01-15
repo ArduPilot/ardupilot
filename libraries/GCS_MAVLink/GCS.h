@@ -83,7 +83,8 @@ class GCS_MAVLINK
 public:
     GCS_MAVLINK();
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-    void        update(run_cli_fn run_cli);
+    void        update();
+    void set_run_cli_func(run_cli_fn func) { _run_cli = func; }
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
@@ -283,6 +284,8 @@ protected:
     bool telemetry_delayed() const;
 
 private:
+    run_cli_fn _run_cli;
+
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
 
     virtual bool should_try_send_message(enum ap_message id) = 0;
