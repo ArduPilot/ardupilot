@@ -112,13 +112,6 @@ void GCS_Frontend::send_mission_item_reached_message(uint16_t mission_index)
 }
 
 
-void GCS_Frontend::send_statustext(mavlink_channel_t chan)
-{
-    GCS_MAVLINK &a_gcs = gcs(chan-MAVLINK_COMM_0);
-    mavlink_statustext_t *s = &a_gcs.pending_status;
-    mavlink_msg_statustext_send(chan, s->severity, s->text);
-}
-
 void GCS_Frontend::send_text(MAV_SEVERITY severity, const char *str)
 {
     FOR_EACH_INITIALISED_GCS(send_text(severity, str));

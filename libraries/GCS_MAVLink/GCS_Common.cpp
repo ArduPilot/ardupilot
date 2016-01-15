@@ -1142,11 +1142,10 @@ bool GCS_MAVLINK::send_SENSOR_OFFSETS()
     return true;
 }
 
+// push the pending status text out to the channel
 bool GCS_MAVLINK::send_STATUSTEXT()
 {
-    // this looks wrong; if a Backend is told to send its statustext
-    // then it should not be talking to the frontend:
-    _frontend->send_statustext(chan);
+    mavlink_msg_statustext_send(chan, pending_status.severity, pending_status.text);
     return true;
 }
 
