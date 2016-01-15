@@ -178,6 +178,7 @@ def build(bld):
         bld.recurse(d)
 
     if bld.cmd == 'check':
+        bld.options.clear_failed_tests = True
         if not bld.env.HAS_GTEST:
             bld.fatal('check: gtest library is required')
         bld.add_post_fun(ardupilotwaf.test_summary)
