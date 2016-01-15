@@ -12,6 +12,8 @@ Example::
         cfg.load('cxx_compiler')
 """
 
+import sys
+
 from waflib import Utils
 
 suffixes = dict(
@@ -30,8 +32,23 @@ def configure(cfg):
         prefix = ''
     else:
         cfg.env.TOOLCHAIN = Utils.to_list(cfg.env.TOOLCHAIN)[0]
+        if sys.platform == 'win32':
+            if cfg.env.TOOLCHAIN == 'arm-linux-gnueabihf':
+                cfg.env.TOOLCHAIN = 'arm-none-eabi'
         cfg.msg('Using toolchain prefix', cfg.env.TOOLCHAIN)
         prefix = cfg.env.TOOLCHAIN + '-'
 
+    if sys.platform == 'win32':
+        """
+        Removes msvc check.
+        """
+        from waflib.Tools.compiler_cxx import cxx_compiler
+        from waflib.Tools.compiler_c import c_compiler
+        cxx_compiler['win32'] = ['g++', 'clang++']
+        c_compiler['win32'] = ['gcc', 'clang']
+        exe = '.exe'
+    else:
+        exe = ''
+    
     for k in suffixes:
-        cfg.env.append_value(k, prefix + suffixes[k])
+        cfg.env.append_value(k, prefix + suffixes[k] + exe)
