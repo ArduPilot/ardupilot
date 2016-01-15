@@ -497,7 +497,7 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
-        send_text(MAV_SEVERITY_WARNING, sysid);
+        send_text(MAV_SEVERITY_INFO, sysid);
     }
 
     // Start sending parameters - next call to ::update will kick the first one out
