@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Logs, Utils
+from waflib import Logs, Options, Utils
 
 SOURCE_EXTS = [
     '*.S',
@@ -236,3 +236,15 @@ def test_summary(bld):
 
     for filename in fails:
         Logs.error('    %s' % filename)
+
+def build_shortcut(targets=None):
+    def build_fn(bld):
+        if targets:
+            if Options.options.targets:
+                Options.options.targets += ',' + targets
+            else:
+                Options.options.targets = targets
+
+        Options.commands = ['build'] + Options.commands
+
+    return build_fn
