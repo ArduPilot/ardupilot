@@ -93,16 +93,11 @@ def program(bld, blddestdir='bin',
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
-    if blddestdir == 'bin':
-        name = program_name
-    else:
-        name = blddestdir + '/' + program_name
-
-    target = bld.bldnode.find_or_declare(blddestdir + '/' + program_name)
+    target = blddestdir + '/' + program_name
 
     bld.program(
         target=target,
-        name=name,
+        name=target,
         **kw
     )
 
