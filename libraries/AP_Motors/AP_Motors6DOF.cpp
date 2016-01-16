@@ -25,6 +25,67 @@
 
 extern const AP_HAL::HAL& hal;
 
+// parameters for the motor class
+const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
+    // @Param: MOT1_REVERSE
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1: normal, -1: reverse
+    // @User: Standard
+    AP_GROUPINFO("MOT1_REVERSE", 0, AP_Motors6DOF, _motor_reverse[0], 1),
+
+	// @Param: MOT2_REVERSE
+	// @DisplayName: Motor normal or reverse
+	// @Description: Used to change motor rotation directions without changing wires
+	// @Values: 1: normal, -1: reverse
+	// @User: Standard
+	AP_GROUPINFO("MOT2_REVERSE", 1, AP_Motors6DOF, _motor_reverse[1], 1),
+
+	// @Param: MOT3_REVERSE
+	// @DisplayName: Motor normal or reverse
+	// @Description: Used to change motor rotation directions without changing wires
+	// @Values: 1: normal, -1: reverse
+	// @User: Standard
+	AP_GROUPINFO("MOT3_REVERSE", 2, AP_Motors6DOF, _motor_reverse[2], 1),
+
+	// @Param: MOT4_REVERSE
+	// @DisplayName: Motor normal or reverse
+	// @Description: Used to change motor rotation directions without changing wires
+	// @Values: 1: normal, -1: reverse
+	// @User: Standard
+	AP_GROUPINFO("MOT4_REVERSE", 3, AP_Motors6DOF, _motor_reverse[3], 1),
+
+	// @Param: MOT5_REVERSE
+	// @DisplayName: Motor normal or reverse
+	// @Description: Used to change motor rotation directions without changing wires
+	// @Values: 1: normal, -1: reverse
+	// @User: Standard
+	AP_GROUPINFO("MOT5_REVERSE", 4, AP_Motors6DOF, _motor_reverse[4], 1),
+
+	// @Param: MOT6_REVERSE
+	// @DisplayName: Motor normal or reverse
+	// @Description: Used to change motor rotation directions without changing wires
+	// @Values: 1: normal, -1: reverse
+	// @User: Standard
+	AP_GROUPINFO("MOT6_REVERSE", 5, AP_Motors6DOF, _motor_reverse[5], 1),
+
+	// @Param: MOT7_REVERSE
+	// @DisplayName: Motor normal or reverse
+	// @Description: Used to change motor rotation directions without changing wires
+	// @Values: 1: normal, -1: reverse
+	// @User: Standard
+	AP_GROUPINFO("MOT7_REVERSE", 6, AP_Motors6DOF, _motor_reverse[6], 1),
+
+	// @Param: MOT8_REVERSE
+	// @DisplayName: Motor normal or reverse
+	// @Description: Used to change motor rotation directions without changing wires
+	// @Values: 1: normal, -1: reverse
+	// @User: Standard
+	AP_GROUPINFO("MOT8_REVERSE", 7, AP_Motors6DOF, _motor_reverse[7], 1),
+
+    AP_GROUPEND
+};
+
 void AP_Motors6DOF::add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float strafe_fac, uint8_t testing_order) {
 	//Parent takes care of enabling output and setting up masks
 	add_motor_raw(motor_num, roll_fac, pitch_fac, yaw_fac, testing_order);
@@ -145,7 +206,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
 
-        	motor_out[i] = 1500 + rpy_out[i] + linear_out[i];
+        	motor_out[i] = 1500 + _motor_reverse[i]*(rpy_out[i] + linear_out[i]);
 
         }
     }
