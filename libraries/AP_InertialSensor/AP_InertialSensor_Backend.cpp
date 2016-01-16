@@ -54,6 +54,7 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 
     // publish delta angle
     _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
+    _imu._delta_angle_dt[instance] = _imu._delta_angle_acc_dt[instance];
     _imu._delta_angle_valid[instance] = true;
 }
 
@@ -87,6 +88,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     // referenced paper, but in simulation little difference was found between
     // integrating together and integrating separately (see examples/coning.py)
     _imu._delta_angle_acc[instance] += delta_angle + delta_coning;
+    _imu._delta_angle_acc_dt[instance] += dt;
 
     // save previous delta angle for coning correction
     _imu._last_delta_angle[instance] = delta_angle;
