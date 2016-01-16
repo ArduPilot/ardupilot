@@ -131,6 +131,8 @@ public:
     void setup() override;
     void loop() override;
 
+    GCS_Frontend &gcs() { return gcs_frontend; }
+
 private:
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
