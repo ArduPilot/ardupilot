@@ -358,6 +358,7 @@ AP_InertialSensor::AP_InertialSensor() :
         _delta_velocity_acc_dt[i] = 0;
 
         _delta_angle_acc[i].zero();
+        _delta_angle_acc_dt[i] = 0;
         _last_delta_angle[i].zero();
         _last_raw_gyro[i].zero();
     }
@@ -911,6 +912,7 @@ void AP_InertialSensor::update(void)
             _delta_velocity_acc[i].zero();
             _delta_velocity_acc_dt[i] = 0;
             _delta_angle_acc[i].zero();
+            _delta_angle_acc_dt[i] = 0;
         }
 
         // adjust health status if a sensor has a non-zero error count
@@ -1102,6 +1104,17 @@ float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
 {
     if (_delta_velocity_valid[i]) {
         return _delta_velocity_dt[i];
+    }
+    return get_delta_time();
+}
+
+/*
+  return delta_time for the delta_angle
+ */
+float AP_InertialSensor::get_delta_angle_dt(uint8_t i) const
+{
+    if (_delta_angle_valid[i]) {
+        return _delta_angle_dt[i];
     }
     return get_delta_time();
 }
