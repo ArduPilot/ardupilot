@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_Frontend.h>
 
 extern const AP_HAL::HAL& hal;
+extern GCS_Frontend &gcs;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
@@ -1166,47 +1167,39 @@ bool GCS_MAVLINK::send_AHRS()
     return true;
 }
 
+void GCS_MAVLINK::send_param_value(const char *param_name, ap_var_type param_type, float param_value)
+{
+    if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_PARAM_VALUE_LEN) {
+        return;
+    }
+    mavlink_msg_param_value_send(
+        chan,
+        param_name,
+        param_value,
+        mav_var_type(param_type),
+        AP_Param::count_parameters(),
+        -1);
+}
+
+// the following send_.*all functions are here for compatability while
+// their use is discontinued.
 /*
   send a statustext message to all active MAVLink connections
  */
 void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
 {
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
-                char msg2[50] {};
-                va_list arg_list;
-                va_start(arg_list, fmt);
-                hal.util->vsnprintf((char *)msg2, sizeof(msg2), fmt, arg_list);
-                va_end(arg_list);
-                mavlink_msg_statustext_send(chan,
-                                            severity,
-                                            msg2);
-            }
-        }
-    }
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    gcs.send_text_fmt_active(severity, fmt, arg_list);
+    va_end(arg_list);
 }
 
 /*
-  send a parameter value message to all active MAVLink connections
+  send a parameter value message to all active MAVLink connections.
  */
 void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value)
 {
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_PARAM_VALUE_LEN) {
-                mavlink_msg_param_value_send(
-                    chan,
-                    param_name,
-                    param_value,
-                    mav_var_type(param_type),
-                    AP_Param::count_parameters(),
-                    -1);
-            }
-        }
-    }
+    gcs.send_param_value_active(param_name, param_type, param_value);
 }
 
 // report battery2 state

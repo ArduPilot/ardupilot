@@ -21,6 +21,20 @@ extern const AP_HAL::HAL& hal;
         }                                         \
     } while (0)
 
+#define FOR_EACH_ACTIVE_GCS(methodcall)                                 \
+    do {                                                                \
+        uint8_t count = num_gcs();                                      \
+        for (uint8_t i=0; i<count; i++) {                               \
+            if (!((1U<<i) & GCS_MAVLINK::active_channel_mask())) {      \
+                continue;                                               \
+            }                                                           \
+            GCS_MAVLINK &a_gcs = gcs(i);                                \
+            if (a_gcs.initialised) {                                    \
+                a_gcs.methodcall;                                       \
+            }                                                           \
+        }                                                               \
+    } while (0)
+
 /*
  *  look for incoming commands on the GCS links
  */
@@ -132,7 +146,7 @@ void GCS_Frontend::send_text(MAV_SEVERITY severity, const char *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void GCS_Frontend::send_text_fmt(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
+void GCS_Frontend::send_text_fmt(MAV_SEVERITY severity, const char *fmt, va_list arg_list, bool activeonly)
 {
     GCS_MAVLINK &gcs0 = gcs(0);
     gcs0.pending_status.severity = (uint8_t)severity;
@@ -141,14 +155,43 @@ void GCS_Frontend::send_text_fmt(MAV_SEVERITY severity, const char *fmt, va_list
 #if LOGGING_ENABLED == ENABLED
     _DataFlash.Log_Write_Message(gcs0.pending_status.text);
 #endif
-    gcs0.send_message(MSG_STATUSTEXT);
+    if (!activeonly ||  ((1U<<0) & GCS_MAVLINK::active_channel_mask())) {
+        gcs0.send_message(MSG_STATUSTEXT);
+    }
     for (uint8_t i=1; i<num_gcs(); i++) {
-        GCS_MAVLINK &a_gcs = gcs(i);
-        if (a_gcs.initialised) {
-            a_gcs.pending_status = gcs0.pending_status;
-            a_gcs.send_message(MSG_STATUSTEXT);
+        if (!activeonly ||  ((1U<<i) & GCS_MAVLINK::active_channel_mask())) {
+            GCS_MAVLINK &a_gcs = gcs(i);
+            if (a_gcs.initialised) {
+                a_gcs.pending_status = gcs0.pending_status;
+                a_gcs.send_message(MSG_STATUSTEXT);
+            }
         }
     }
+}
+
+
+void GCS_Frontend::send_param_value_active(const char *param_name, ap_var_type param_type, float param_value)
+{
+    send_param_value(param_name, param_type, param_value, true);
+}
+
+void GCS_Frontend::send_param_value(const char *param_name, ap_var_type param_type, float param_value, bool activeonly)
+{
+    if (activeonly) {
+        FOR_EACH_ACTIVE_GCS(send_param_value(param_name, param_type, param_value));
+    } else {
+        FOR_EACH_INITIALISED_GCS(send_param_value(param_name, param_type, param_value));
+    }
+}
+
+/*
+ *  send a low priority formatted message to all "active" GCS
+ *  only one fits in the queue, so if you send more than one before the
+ *  last one gets into the serial buffer then the old one will be lost
+ */
+void GCS_Frontend::send_text_fmt_active(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
+{
+    send_text_fmt(severity, fmt, arg_list, true);
 }
 
 void GCS_Frontend::send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)

@@ -80,6 +80,7 @@ class GCS_Frontend;
 ///
 class GCS_MAVLINK
 {
+
 public:
     GCS_MAVLINK();
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
@@ -147,7 +148,10 @@ public:
     virtual AP_Baro &_barometer() const = 0;
     virtual AP_InertialSensor &_ins() const = 0;
 
-    // common send functions
+    // common send functions.  These functions are expected to take
+    // state from both the GCS_Backend_* object and the related
+    // vehicle (e.g. plane.airspeed) and call the nominated
+    // mavlink_.*_send function with that data.
     virtual bool send_AHRS();
     virtual bool send_AHRS2();
     virtual bool send_ATTITUDE() = 0;
@@ -197,6 +201,9 @@ public:
 #endif
     void send_autopilot_version(uint8_t major_version, uint8_t minor_version, uint8_t patch_version, uint8_t version_type) const;
     void send_home(const Location &home) const;
+
+    // send a specific parameter value to this GCS
+    void send_param_value(const char *param_name, ap_var_type param_type, float param_value);
 
     void mavlink_msg_command_ack_send(MAV_CMD cmd, int ret);
     void mavlink_msg_compassmot_status_send(int16_t, float, float, float, float, float);

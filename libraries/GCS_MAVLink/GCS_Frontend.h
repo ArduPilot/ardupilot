@@ -31,9 +31,21 @@ public:
     void send_statustext(mavlink_channel_t chan);
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
-    void send_text_fmt(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
+    void send_text_fmt(MAV_SEVERITY severity, const char *fmt, va_list arg_list, bool activeonly = false);
     void send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool try_send_message(enum ap_message id);
+    void send_param_value(const char *param_name, ap_var_type param_type, float param_value, bool activeonly);
+
+    // "active" link functions.  A link is "active" if we have
+    // received any packets on it.  If a link is *NOT* active, there
+    // may still be a GCS on that link - just something which does not
+    // transmit mavlink.  An example of this might be a HUD device.
+
+    // send a text message to all active GCS.
+    void send_text_fmt_active(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
+    // send a parameter value to all active GCS
+    // note that this does not currently use the defered queuing mechanism
+    void send_param_value_active(const char *param_name, ap_var_type param_type, float param_value);
 
     void send_home(const Location &home);
 
