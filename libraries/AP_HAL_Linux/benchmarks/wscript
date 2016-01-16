@@ -4,8 +4,7 @@
 import ardupilotwaf
 
 def build(bld):
-    ardupilotwaf.program(
+    ardupilotwaf.find_benchmarks(
         bld,
         use='ap',
-        blddestdir='tools',
     )

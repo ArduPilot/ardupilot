@@ -250,29 +250,71 @@ void VideoIn::prepare_capture()
     }
 }
 
+void VideoIn::shrink_8bpp(uint8_t *buffer, uint8_t *new_buffer,
+                          uint32_t width, uint32_t height, uint32_t left,
+                          uint32_t selection_width, uint32_t top,
+                          uint32_t selection_height, uint32_t fx, uint32_t fy)
+{
+    uint32_t i, j, k, kk, px, block_x, block_y, block_position;
+    uint32_t out_width = selection_width / fx;
+    uint32_t out_height = selection_height / fy;
+    uint32_t width_per_fy = width * fy;
+    uint32_t fx_fy = fx * fy;
+    uint32_t width_sum, out_width_sum = 0;
+
+    /* selection offset */
+    block_y = top * width;
+    block_position = left + block_y;
+
+    for (i = 0; i < out_height; i++) {
+        block_x = left;
+        for (j = 0; j < out_width; j++) {
+            px = 0;
+
+            width_sum = 0;
+            for(k = 0; k < fy; k++) {
+                for(kk = 0; kk < fx; kk++) {
+                    px += buffer[block_position + kk + width_sum];
+                }
+                width_sum += width;
+            }
+
+            new_buffer[j + out_width_sum] = px / (fx_fy);
+
+            block_x += fx;
+            block_position = block_x + block_y;
+        }
+        block_y += width_per_fy;
+        out_width_sum += out_width;
+    }
+}
+
 void VideoIn::crop_8bpp(uint8_t *buffer, uint8_t *new_buffer,
                         uint32_t width, uint32_t left, uint32_t crop_width,
                         uint32_t top, uint32_t crop_height)
 {
-    for (uint32_t j = top; j < top + crop_height; j++) {
-        for (uint32_t i = left; i < left + crop_width; i++) {
-            new_buffer[(i - left) + (j - top) * crop_width] = 
-                buffer[i + j * width];
+    uint32_t crop_x = left + crop_width;
+    uint32_t crop_y = top + crop_height;
+    uint32_t buffer_index = top * width;
+    uint32_t new_buffer_index = 0;
+
+    for (uint32_t j = top; j < crop_y; j++) {
+        for (uint32_t i = left; i < crop_x; i++) {
+            new_buffer[i - left + new_buffer_index] =  buffer[i + buffer_index];
         }
+        buffer_index += width;
+        new_buffer_index += crop_width;
     }
 }
 
 void VideoIn::yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size,
                            uint8_t *new_buffer)
 {
-    uint32_t i;
     uint32_t new_buffer_position = 0;
 
-    for (i = 0; i < buffer_size; i++) {
-        if (i % 2 == 0) {
-            new_buffer[new_buffer_position] = buffer[i];
-            new_buffer_position++;
-        }
+    for (uint32_t i = 0; i < buffer_size; i += 2) {
+        new_buffer[new_buffer_position] = buffer[i];
+        new_buffer_position++;
     }
 }
 

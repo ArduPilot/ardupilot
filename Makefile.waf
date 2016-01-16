@@ -7,12 +7,11 @@ EXPLICIT_COMMANDS = check clean list_boards
 
 VEHICLES = copter plane rover
 
-copter_WAF_TARGET = ArduCopter
-plane_WAF_TARGET = ArduPlane
-rover_WAF_TARGET = APMrover2
-
 all: $(WAF_BINARY)
 	@$(WAF) build
+
+check-all: $(WAF_BINARY)
+	@$(WAF) check --alltests
 
 $(WAF_BINARY):
 	@git submodule init && git submodule update
@@ -28,7 +27,7 @@ $(EXPLICIT_COMMANDS): $(WAF_BINARY)
 
 $(VEHICLES): $(WAF_BINARY)
 	@echo Build for vehicle $@
-	@$(WAF) build --target $($@_WAF_TARGET)
+	@$(WAF) $@
 
 .DEFAULT: %-configure
 	@$(WAF) configure --board $@ build
@@ -64,6 +63,13 @@ help:
 	@echo "Not that if it's your first time building or you want to change the target "
 	@echo "board/platform, you'll need to configure the build before (e.g"
 	@echo "make linux-configure)"
+	@echo ""
+	@echo "Check"
+	@echo "-----"
+	@echo "Check targets are used for running tests. There are two targets available:"
+	@echo "    check:     for running tests that are still failing or that are new or"
+	@echo "               have been modified"
+	@echo "    check-all: to run all tests"
 	@echo ""
 	@echo "Waf commands"
 	@echo "------------"

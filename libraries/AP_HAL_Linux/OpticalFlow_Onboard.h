@@ -42,8 +42,9 @@ private:
     bool _initialized;
     bool _data_available;
     bool _crop_by_software;
-    uint32_t _crop_by_software_width;
-    uint32_t _crop_by_software_height;
+    bool _shrink_by_software;
+    uint32_t _camera_output_width;
+    uint32_t _camera_output_height;
     uint32_t _width;
     uint32_t _height;
     uint32_t _format;
@@ -56,4 +57,5 @@ private:
     uint32_t _integration_timespan;
     uint8_t _surface_quality;
     AP_HAL::OpticalFlow::Gyro_Cb _get_gyro;
+    Vector3f _last_gyro_rate;
 };

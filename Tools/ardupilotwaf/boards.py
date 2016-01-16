@@ -91,9 +91,8 @@ def sitl(env):
 
     env.LIB += [
         'm',
-        'pthread',
     ]
-
+    env.LINKFLAGS += ['-pthread',]
     env.AP_LIBRARIES += [
         'AP_HAL_SITL',
         'SITL',
@@ -114,10 +113,9 @@ def linux(env):
 
     env.LIB += [
         'm',
-        'pthread',
         'rt',
     ]
-
+    env.LINKFLAGS += ['-pthread',]
     env.AP_LIBRARIES = [
         'AP_HAL_Linux',
     ]

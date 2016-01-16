@@ -117,20 +117,40 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
         AP_HAL::panic("OpticalFlow_Onboard: format not supported\n");
     }
 
-    if (_videoin->set_crop(left, top, crop_width, crop_height)) {
-        _crop_by_software = false;
+    if (_width == HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH &&
+        _height == HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT) {
+        _shrink_by_software = false;
     } else {
-        /* here we store the actual camera output width and height to use them
-         * later on to software crop each frame. */
-        _crop_by_software = true;
-        _crop_by_software_width = _width;
-        _crop_by_software_height = _height;
+        /* here we store the actual camera output width and height to use
+         * them later on to software shrink each frame. */
+        _shrink_by_software = true;
+        _camera_output_width = _width;
+        _camera_output_height = _height;
 
         /* we set these values here in order to the calculations be correct
-         * (such as PX4 init) even though we crop each frame later on. */
+         * (such as PX4 init) even though we shrink each frame later on. */
         _width = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
         _height = HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
         _bytesperline = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
+    }
+
+    if (_videoin->set_crop(left, top, crop_width, crop_height)) {
+        _crop_by_software = false;
+    } else {
+        _crop_by_software = true;
+
+        if (!_shrink_by_software) {
+            /* here we store the actual camera output width and height to use
+             * them later on to software crop each frame. */
+            _camera_output_width = _width;
+            _camera_output_height = _height;
+
+            /* we set these values here in order to the calculations be correct
+             * (such as PX4 init) even though we crop each frame later on. */
+            _width = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
+            _height = HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
+            _bytesperline = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
+        }
     }
 
     if (!_videoin->allocate_buffers(nbufs)) {
@@ -208,14 +228,16 @@ void OpticalFlow_Onboard::_run_optflow()
     Vector3f gyro_rate;
     Vector2f flow_rate;
     VideoIn::Frame video_frame;
-    uint32_t convert_buffer_size = 0, crop_buffer_size = 0;
+    uint32_t convert_buffer_size = 0, output_buffer_size = 0;
     uint32_t crop_left = 0, crop_top = 0;
-    uint8_t *convert_buffer = NULL, *crop_buffer = NULL;
+    uint32_t shrink_scale = 0, shrink_width = 0, shrink_height = 0;
+    uint32_t shrink_width_offset = 0, shrink_height_offset = 0;
+    uint8_t *convert_buffer = NULL, *output_buffer = NULL;
     uint8_t qual;
 
     if (_format == V4L2_PIX_FMT_YUYV) {
-        if (_crop_by_software) {
-            convert_buffer_size = _crop_by_software_width * _crop_by_software_height;
+        if (_shrink_by_software || _crop_by_software) {
+            convert_buffer_size = _camera_output_width * _camera_output_height;
         } else {
             convert_buffer_size = _width * _height;
         }
@@ -226,22 +248,38 @@ void OpticalFlow_Onboard::_run_optflow()
         }
     }
 
-    if (_crop_by_software) {
-        crop_buffer_size = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH *
+    if (_shrink_by_software || _crop_by_software) {
+        output_buffer_size = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH *
             HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
 
-        crop_buffer = (uint8_t *)malloc(crop_buffer_size);
-        if (!crop_buffer) {
+        output_buffer = (uint8_t *)malloc(output_buffer_size);
+        if (!output_buffer) {
             if (convert_buffer) {
                 free(convert_buffer);
             }
 
             AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate crop buffer\n");
         }
+    }
 
-        crop_left = _crop_by_software_width / 2 -
+    if (_shrink_by_software) {
+        if (_camera_output_width > _camera_output_height) {
+            shrink_scale = (uint32_t) _camera_output_height /
+                HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
+        } else {
+            shrink_scale = (uint32_t) _camera_output_width /
+                HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
+        }
+
+        shrink_width = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH * shrink_scale;
+        shrink_height = HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT * shrink_scale;
+
+        shrink_width_offset = (_camera_output_width - shrink_width) / 2;
+        shrink_height_offset = (_camera_output_height - shrink_height) / 2;
+    } else if (_crop_by_software) {
+        crop_left = _camera_output_width / 2 -
            HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH / 2;
-        crop_top = _crop_by_software_height / 2 -
+        crop_top = _camera_output_height / 2 -
            HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT / 2;
     }
 
@@ -252,8 +290,8 @@ void OpticalFlow_Onboard::_run_optflow()
                free(convert_buffer);
             }
 
-            if (crop_buffer) {
-               free(crop_buffer);
+            if (output_buffer) {
+               free(output_buffer);
             }
 
             AP_HAL::panic("OpticalFlow_Onboard: couldn't get frame\n");
@@ -267,14 +305,24 @@ void OpticalFlow_Onboard::_run_optflow()
             memcpy(video_frame.data, convert_buffer, convert_buffer_size);
         }
 
-        if (_crop_by_software) {
-            VideoIn::crop_8bpp((uint8_t *)video_frame.data, crop_buffer,
-                               _crop_by_software_width,
+        if (_shrink_by_software) {
+            /* shrink_8bpp() will shrink a selected area using the offsets,
+             * therefore, we don't need the crop. */
+            VideoIn::shrink_8bpp((uint8_t *)video_frame.data, output_buffer,
+                                 _camera_output_width, _camera_output_height,
+                                 shrink_width_offset, shrink_width,
+                                 shrink_height_offset, shrink_height,
+                                 shrink_scale, shrink_scale);
+            memset(video_frame.data, 0, _camera_output_width * _camera_output_height);
+            memcpy(video_frame.data, output_buffer, output_buffer_size);
+        } else if (_crop_by_software) {
+            VideoIn::crop_8bpp((uint8_t *)video_frame.data, output_buffer,
+                               _camera_output_width,
                                crop_left, HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH,
                                crop_top, HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT);
 
-            memset(video_frame.data, 0, _crop_by_software_width * _crop_by_software_height);
-            memcpy(video_frame.data, crop_buffer, crop_buffer_size);
+            memset(video_frame.data, 0, _camera_output_width * _camera_output_height);
+            memcpy(video_frame.data, output_buffer, output_buffer_size);
         }
 
         /* if it is at least the second frame we receive
@@ -326,10 +374,12 @@ void OpticalFlow_Onboard::_run_optflow()
                                   HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
         _integration_timespan += video_frame.timestamp -
                                  _last_video_frame.timestamp;
-        _gyro_x_integral       += gyro_rate.x * (video_frame.timestamp -
-                                 _last_video_frame.timestamp);
-        _gyro_y_integral       += gyro_rate.y * (video_frame.timestamp -
-                                 _last_video_frame.timestamp);
+        _gyro_x_integral       += (gyro_rate.x + _last_gyro_rate.x) / 2.0f *
+                                  (video_frame.timestamp -
+                                  _last_video_frame.timestamp);
+        _gyro_y_integral       += (gyro_rate.y + _last_gyro_rate.y) / 2.0f *
+                                  (video_frame.timestamp -
+                                  _last_video_frame.timestamp);
         _surface_quality = qual;
         _data_available = true;
         pthread_mutex_unlock(&_mutex);
@@ -337,14 +387,15 @@ void OpticalFlow_Onboard::_run_optflow()
         /* give the last frame back to the video input driver */
         _videoin->put_frame(_last_video_frame);
         _last_video_frame = video_frame;
+        _last_gyro_rate = gyro_rate;
     }
 
     if (convert_buffer) {
         free(convert_buffer);
     }
 
-    if (crop_buffer) {
-        free(crop_buffer);
+    if (output_buffer) {
+        free(output_buffer);
     }
 }
 #endif

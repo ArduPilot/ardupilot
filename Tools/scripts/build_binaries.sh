@@ -170,7 +170,7 @@ build_arduplane() {
             continue
         }
         extension=$(board_extension $b)
-	copyit $TMPDIR/ArduPlane.build/ArduPlane.$extension $ddir $tag
+	copyit $BUILDROOT/ArduPlane.$extension $ddir $tag
 	touch $binaries/Plane/$tag
     done
     echo "Building ArduPlane PX4 binaries"
@@ -226,7 +226,7 @@ build_arducopter() {
                 continue
             }
             extension=$(board_extension $b)
-	    copyit $TMPDIR/ArduCopter.build/ArduCopter.$extension $ddir $tag
+	    copyit $BUILDROOT/ArduCopter.$extension $ddir $tag
 	    touch $binaries/Copter/$tag
         done
     done
@@ -270,7 +270,7 @@ build_rover() {
             continue
         }
         extension=$(board_extension $b)
-	copyit $TMPDIR/APMrover2.build/APMrover2.$extension $ddir $tag
+	copyit $BUILDROOT/APMrover2.$extension $ddir $tag
 	touch $binaries/Rover/$tag
     done
     echo "Building APMrover2 PX4 binaries"
@@ -312,7 +312,7 @@ build_antennatracker() {
             continue
         }
         extension=$(board_extension $b)
-	copyit $TMPDIR/AntennaTracker.build/AntennaTracker.$extension $ddir $tag
+	copyit $BUILDROOT/AntennaTracker.$extension $ddir $tag
 	touch $binaries/AntennaTracker/$tag
     done
     echo "Building AntennaTracker PX4 binaries"
@@ -341,6 +341,9 @@ build_antennatracker() {
     git submodule init
     git submodule update
 }
+
+export BUILDROOT="$TMPDIR/binaries.build"
+rm -rf $BUILDROOT
 
 # make sure PX4 is rebuilt from scratch
 for d in ArduPlane ArduCopter APMrover2 AntennaTracker; do

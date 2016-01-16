@@ -8,6 +8,9 @@
 set -e
 set -x
 
+export BUILDROOT="/tmp/all.build"
+rm -rf $BUILDROOT
+
 echo "Testing ArduPlane build"
 pushd ArduPlane
 for b in sitl linux; do

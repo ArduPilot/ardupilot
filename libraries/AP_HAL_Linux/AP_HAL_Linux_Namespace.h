@@ -51,6 +51,7 @@ namespace Linux {
     class VideoIn;
     class OpticalFlow_Onboard;
     class Flow_PX4;
+    class Perf_Lttng;
 }
 
 #endif // __AP_HAL_LINUX_NAMESPACE_H__
