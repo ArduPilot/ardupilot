@@ -107,6 +107,8 @@ public:
     void setup(void) override;
     void loop(void) override;
 
+    GCS_Frontend &gcs() { return gcs_frontend; }
+
 private:
     AP_HAL::BetterStream* cliSerial;
 
