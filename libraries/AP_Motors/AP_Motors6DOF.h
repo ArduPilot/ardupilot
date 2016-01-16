@@ -20,7 +20,9 @@ public:
     /// Constructor
     AP_Motors6DOF(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMatrix(loop_rate, speed_hz)
-    {};
+    {
+    	AP_Param::setup_object_defaults(this, var_info);
+    };
 
     void output_min() override;
 
