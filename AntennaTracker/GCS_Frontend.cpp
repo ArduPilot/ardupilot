@@ -45,3 +45,7 @@ uint32_t GCS_Frontend_Tracker::telem_delay() const
     // return (uint32_t)_g.telem_delay;
     return (uint32_t)0;
 }
+
+GCS_Frontend& GCS_Frontend_Static::get_Frontend() {
+    return tracker.gcs();
+}

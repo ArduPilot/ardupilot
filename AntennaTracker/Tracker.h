@@ -88,6 +88,8 @@ public:
     void setup() override;
     void loop() override;
 
+    GCS_Frontend &gcs() { return gcs_frontend; }
+
 private:
     Parameters g;
 
