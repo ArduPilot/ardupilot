@@ -23,6 +23,9 @@ public:
     {};
 
     void output_min() override;
+
+    // var_info for holding Parameter information
+	static const struct AP_Param::GroupInfo        var_info[];
 protected:
 
 
@@ -32,6 +35,8 @@ protected:
     void output_armed_not_stabilizing() override;
     void output_armed_stabilizing() override;
 
+    // Parameters
+    AP_Int8             _motor_reverse[8];
 
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
