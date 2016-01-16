@@ -60,3 +60,7 @@ protected:
 
     run_cli_fn _run_cli_func = NULL;
 };
+
+namespace GCS_Frontend_Static {
+    GCS_Frontend& get_Frontend();
+};

@@ -190,3 +190,5 @@ void GCS_Frontend::delay_cb()
         send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
 }
+
+GCS_Frontend &gcs = GCS_Frontend_Static::get_Frontend();
