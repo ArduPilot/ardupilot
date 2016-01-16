@@ -28,7 +28,6 @@ extern const AP_HAL::HAL& hal;
 extern GCS_Frontend &gcs;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
-uint8_t GCS_MAVLINK::mavlink_active = 0;
 
 GCS_MAVLINK::GCS_MAVLINK()
 {
@@ -814,6 +813,10 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     }
 }
 
+void GCS_MAVLINK::set_active() {
+    _frontend->set_channel_active(chan);
+}
+
 void
 GCS_MAVLINK::update()
 {
@@ -831,7 +834,11 @@ GCS_MAVLINK::update()
         if (_run_cli) {
             /* allow CLI to be started by hitting enter 3 times, if no
              *  heartbeat packets have been received */
-            if ((mavlink_active==0) && (AP_HAL::millis() - _cli_timeout) < 20000 && 
+            // note that this checks for activity on *any* channel.
+            // I'm not sure if this was originally by design
+            // -pb20160116
+            if (_frontend->active_channel_mask() &&
+                (AP_HAL::millis() - _cli_timeout) < 20000 && 
                 comm_is_idle(chan)) {
                 if (c == '\n' || c == '\r') {
                     crlf_count++;
@@ -849,7 +856,7 @@ GCS_MAVLINK::update()
             // we exclude radio packets to make it possible to use the
             // CLI over the radio
             if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-                mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
+                set_active();
             }
             // if a snoop handler has been setup then use it
             if (msg_snoop != NULL) {

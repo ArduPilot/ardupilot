@@ -97,12 +97,15 @@ public:
         msg_snoop = _msg_snoop;
     }
 
+    // indicate we have seen mavlink traffic on this channel:
+    void set_active();
+
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-    // set to true if this GCS link is active
+    // set to true if this GCS link is ready
     bool            initialised;
 
     // NOTE! The streams enum below and the
@@ -207,11 +210,6 @@ public:
 
     void mavlink_msg_command_ack_send(MAV_CMD cmd, int ret);
     void mavlink_msg_compassmot_status_send(int16_t, float, float, float, float, float);
-
-    // return a bitmap of active channels. Used by libraries to loop
-    // over active channels to send to all active channels    
-    // FIXME: move to frontend:
-    static uint8_t active_channel_mask(void) { return mavlink_active; }
 
     /*
       send a statustext message to all active MAVLink
@@ -380,9 +378,6 @@ private:
     enum ap_message deferred_messages[MSG_RETRY_DEFERRED];
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
-
-    // bitmask of what mavlink channels are active
-    static uint8_t mavlink_active;
 
     // mavlink routing object
     static MAVLink_routing routing;

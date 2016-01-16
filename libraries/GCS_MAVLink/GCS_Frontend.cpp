@@ -25,7 +25,7 @@ extern const AP_HAL::HAL& hal;
     do {                                                                \
         uint8_t count = num_gcs();                                      \
         for (uint8_t i=0; i<count; i++) {                               \
-            if (!((1U<<i) & GCS_MAVLINK::active_channel_mask())) {      \
+            if (!((1U<<i) & active_channel_mask())) {      \
                 continue;                                               \
             }                                                           \
             GCS_MAVLINK &a_gcs = gcs(i);                                \
@@ -34,6 +34,11 @@ extern const AP_HAL::HAL& hal;
             }                                                           \
         }                                                               \
     } while (0)
+
+void GCS_Frontend::set_channel_active(const mavlink_channel_t chan)
+{
+    mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
+}
 
 /*
  *  look for incoming commands on the GCS links
@@ -155,11 +160,11 @@ void GCS_Frontend::send_text_fmt(MAV_SEVERITY severity, const char *fmt, va_list
 #if LOGGING_ENABLED == ENABLED
     _DataFlash.Log_Write_Message(gcs0.pending_status.text);
 #endif
-    if (!activeonly ||  ((1U<<0) & GCS_MAVLINK::active_channel_mask())) {
+    if (!activeonly ||  ((1U<<0) & active_channel_mask())) {
         gcs0.send_message(MSG_STATUSTEXT);
     }
     for (uint8_t i=1; i<num_gcs(); i++) {
-        if (!activeonly ||  ((1U<<i) & GCS_MAVLINK::active_channel_mask())) {
+        if (!activeonly ||  ((1U<<i) & active_channel_mask())) {
             GCS_MAVLINK &a_gcs = gcs(i);
             if (a_gcs.initialised) {
                 a_gcs.pending_status = gcs0.pending_status;

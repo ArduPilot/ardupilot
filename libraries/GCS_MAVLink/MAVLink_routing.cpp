@@ -21,10 +21,11 @@
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-#include "GCS.h"
+#include "GCS_Frontend.h"
 #include "MAVLink_routing.h"
 
 extern const AP_HAL::HAL& hal;
+extern GCS_Frontend &gcs;
 
 #define ROUTING_DEBUG 0
 
@@ -253,7 +254,7 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
 */
 void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
-    uint16_t mask = GCS_MAVLINK::active_channel_mask();
+    uint16_t mask = gcs.active_channel_mask();
 
     // don't send on the incoming channel. This should only matter if
     // the routing table is full

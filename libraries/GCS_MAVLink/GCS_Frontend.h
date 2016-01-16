@@ -59,7 +59,16 @@ public:
     virtual uint8_t num_gcs() const { return _num_gcs; }
     virtual GCS_MAVLINK& gcs(const uint8_t i) = 0;
 
+    // return a bitmap of active channels. Used by libraries to loop
+    // over active channels to send to all active channels note that
+    // "active" here means, "have received a mavlink packet from", not
+    // necessarily that there is a GCS on this channel
+    uint8_t active_channel_mask(void) const { return mavlink_active; }
+
 protected:
+
+    // indicate that a channel has seen mavlink traffic:
+    void set_channel_active(mavlink_channel_t chan);
 
     // FIXME: these pure virtual functions should be replaced with
     // some sort of GCS_ parameter object
@@ -71,6 +80,12 @@ protected:
     Parameters &_g;
 
     run_cli_fn _run_cli_func = NULL;
+
+private:
+
+    // bitmask of what mavlink channels are active
+    uint8_t mavlink_active;
+
 };
 
 namespace GCS_Frontend_Static {
