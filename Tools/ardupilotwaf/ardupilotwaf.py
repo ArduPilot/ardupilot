@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from waflib import Logs, Options, Utils
+import os.path
 
 SOURCE_EXTS = [
     '*.S',
@@ -93,11 +94,12 @@ def program(bld, blddestdir='bin',
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
-    target = blddestdir + '/' + program_name
+    name = os.path.join(blddestdir, program_name)
+    target = os.path.join(bld.srcnode.path_from(bld.path), name)
 
     bld.program(
         target=target,
-        name=target,
+        name=name,
         **kw
     )
 
