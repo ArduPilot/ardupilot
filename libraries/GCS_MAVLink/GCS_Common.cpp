@@ -49,6 +49,15 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
     initialised = true;
     _queued_parameter = NULL;
     reset_cli_timeout();
+
+    // setup for signing
+	mavlink_status_t *status = mavlink_get_channel_status(chan);
+    signing.flags = MAVLINK_SIGNING_FLAG_SIGN_OUTGOING;
+    signing.link_id = chan;
+    signing.timestamp = 0;
+    memset(signing.secret_key, 42, sizeof(signing.secret_key));
+    status->signing = &signing;
+    
 }
 
 
