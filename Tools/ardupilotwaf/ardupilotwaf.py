@@ -94,11 +94,12 @@ def program(bld, blddestdir='bin',
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
-    target = os.path.join(blddestdir, program_name)
+    name = os.path.join(blddestdir, program_name)
+    target = bld.bldnode.find_or_declare(name)
 
     bld.program(
         target=target,
-        name=target,
+        name=name,
         **kw
     )
 
