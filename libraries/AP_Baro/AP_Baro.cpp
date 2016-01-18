@@ -85,7 +85,9 @@ AP_Baro::AP_Baro() :
         _hil_mode(false)
 {
     memset(sensors, 0, sizeof(sensors));
-
+    for(int i = 0 ; i < BARO_MAX_INSTANCES; i++) {
+    	set_precision_multiplier(i, 1);
+    }
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -370,7 +372,14 @@ void AP_Baro::update(void)
             if (is_zero(sensors[i].ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
-            float altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
+            float altitude;
+            if(sensors[i].type == BARO_TYPE_AIR) {
+            	altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
+            } else if(sensors[i].type == BARO_TYPE_WATER) {
+            	//101325Pa is sea level air pressure, 10052 Pascal/ m depth in water.
+            	//No temperature or depth compensation for density of water.
+            	altitude = (sensors[i].ground_pressure - sensors[i].pressure) * sensors[i].precision_multiplier / 10052.0f;
+            }
             // sanity check altitude
             sensors[i].alt_ok = !(isnan(altitude) || isinf(altitude));
             if (sensors[i].alt_ok) {

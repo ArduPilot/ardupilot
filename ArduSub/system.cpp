@@ -244,6 +244,11 @@ void Sub::init_ardupilot()
     // read Baro pressure at ground
     //-----------------------------
     init_barometer(true);
+    if(barometer.num_instances() > 1) {
+    //We have an external MS58XX pressure sensor connected
+    	barometer.set_type(1, BARO_TYPE_WATER); //Altitude (depth) is calculated differently underwater 
+    	barometer.set_precision_multiplier(1, 10); //The MS58XX values reported need to be multiplied by 10 to match units everywhere else
+    }
 
     // initialise sonar
 #if CONFIG_SONAR == ENABLED

@@ -14,6 +14,9 @@
 // multiple sensor instances
 #define BARO_MAX_DRIVERS 2
 
+#define BARO_TYPE_AIR 0
+#define BARO_TYPE_WATER 1
+
 class AP_Baro_Backend;
 
 class AP_Baro
@@ -40,7 +43,7 @@ public:
 
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
-    float get_pressure(uint8_t instance) const { return sensors[instance].pressure; }
+    float get_pressure(uint8_t instance) const { return sensors[instance].pressure * sensors[instance].precision_multiplier; }
 
     // temperature in degrees C
     float get_temperature(void) const { return get_temperature(_primary); }
@@ -85,7 +88,7 @@ public:
     // ground pressure in Pascal
     // the ground values are only valid after calibration
     float get_ground_pressure(void) const { return get_ground_pressure(_primary); }
-    float get_ground_pressure(uint8_t i)  const { return sensors[i].ground_pressure.get(); }
+    float get_ground_pressure(uint8_t i)  const { return sensors[i].ground_pressure.get() * sensors[i].precision_multiplier; }
 
     // set the temperature to be used for altitude calibration. This
     // allows an external temperature source (such as a digital
@@ -108,6 +111,9 @@ public:
     // HIL (and SITL) interface, setting pressure and temperature
     void setHIL(uint8_t instance, float pressure, float temperature);
 
+    void set_type(uint8_t instance, uint8_t type) { sensors[instance].type = type; };
+    void set_precision_multiplier(uint8_t instance, uint8_t multiplier) { sensors[instance].precision_multiplier = multiplier; };
+    
     // HIL variables
     struct {
         AP_Buffer<float,10> press_buffer;
@@ -136,6 +142,8 @@ private:
     uint8_t _primary;
 
     struct sensor {
+    	uint8_t type;					// 0 for air pressure (default), 1 for water pressure
+    	uint8_t precision_multiplier;   // multiplier to convert pressure reported by get_pressure call to Pascal units, for MS56XX air sensors, this is 1, for MS58XX water sensors, this is 10.
         uint32_t last_update_ms;        // last update time in ms
         bool healthy:1;                 // true if sensor is healthy
         bool alt_ok:1;                  // true if calculated altitude is ok
