@@ -18,7 +18,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Frontend.h>
 #include <DataFlash/DataFlash.h>
 #include "AP_Terrain.h"
 
@@ -33,6 +33,7 @@
 #include <errno.h>
 
 extern const AP_HAL::HAL& hal;
+extern GCS_Frontend &gcs;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Terrain::var_info[] = {
@@ -385,7 +386,7 @@ bool AP_Terrain::allocate(void)
     cache = (struct grid_cache *)calloc(TERRAIN_GRID_BLOCK_CACHE_SIZE, sizeof(cache[0]));
     if (cache == nullptr) {
         enable.set(0);
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
+        gcs.send_text_active(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
         return false;
     }
     cache_size = TERRAIN_GRID_BLOCK_CACHE_SIZE;
