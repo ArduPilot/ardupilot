@@ -427,7 +427,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
         if (display_failure) {
             const char *reason = ahrs.prearm_failure_reason();
             if (reason) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
+                gcs_frontend.send_text_fmt_active(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
             } else {
                 gcs_frontend.send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
             }
