@@ -18,6 +18,16 @@ def configure(cfg):
         )
         return
 
+    cfg.env.SYSTEM_HAS_GTEST = cfg.env.HAS_GTEST = cfg.check_cxx(
+        lib='gtest',
+        mandatory=False,
+        uselib_store='GTEST',
+        errmsg='not found, falling back to submodule',
+    )
+
+    if cfg.env.HAS_GTEST:
+        return
+
     cfg.start_msg('Checking for gtest submodule')
     readme = cfg.srcnode.find_resource('modules/gtest/README')
     if not readme:
@@ -28,6 +38,9 @@ def configure(cfg):
     cfg.env.HAS_GTEST = True
 
 def build(bld):
+    if bld.env.SYSTEM_HAS_GTEST:
+        return
+
     bld.stlib(
         source='modules/gtest/src/gtest-all.cc',
         target='gtest/gtest',
