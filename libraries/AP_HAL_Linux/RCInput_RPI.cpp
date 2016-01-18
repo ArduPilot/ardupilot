@@ -476,7 +476,7 @@ void RCInput_RPI::init()
 void RCInput_RPI::_timer_tick()
 {
     int j;
-    void *x;
+    void *x = nullptr;
     uint64_t signal_states(0);
 
     //Now we are getting address in which DMAC is writing at current moment
