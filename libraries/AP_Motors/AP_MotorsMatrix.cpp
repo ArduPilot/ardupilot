@@ -88,13 +88,7 @@ void AP_MotorsMatrix::output_min()
 {
     int8_t i;
 
-    // set limits flags
-    limit.roll_pitch = true;
-    limit.yaw = true;
-    limit.throttle_lower = true;
-    limit.throttle_upper = false;
-
-    // fill the motor_out[] array for HIL use and send minimum value to each motor
+    // send output to each motor
     hal.rcout->cork();
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
