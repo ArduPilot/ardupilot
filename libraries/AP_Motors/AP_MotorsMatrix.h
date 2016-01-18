@@ -66,7 +66,6 @@ public:
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
-    void                output_disarmed();
 
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
