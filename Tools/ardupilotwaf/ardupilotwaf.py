@@ -234,6 +234,8 @@ def test_summary(bld):
     for filename in fails:
         Logs.error('    %s' % filename)
 
+    bld.fatal('check: some tests failed')
+
 def build_shortcut(targets=None):
     def build_fn(bld):
         if targets:
