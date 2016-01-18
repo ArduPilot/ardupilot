@@ -268,7 +268,8 @@ void Copter::autotune_run()
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     // this should not actually be possible because of the autotune_init() checks
-    if (!ap.auto_armed || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         return;
@@ -296,8 +297,13 @@ void Copter::autotune_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
+        if (ap.throttle_zero) {
+            motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_SPIN_WHEN_ARMED);
+        }else{
+            motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
+        }
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
     }else{
         // check if pilot is overriding the controls
@@ -320,6 +326,9 @@ void Copter::autotune_run()
                 autotune_desired_yaw = ahrs.yaw_sensor;
             }
         }
+
+        // set motors to full range
+        motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
 
         // if pilot override call attitude controller
         if (autotune_state.pilot_override || autotune_state.mode != AUTOTUNE_MODE_TUNING) {
