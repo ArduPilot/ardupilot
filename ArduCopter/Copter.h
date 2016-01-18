@@ -762,7 +762,7 @@ private:
     void circle_run();
     bool drift_init(bool ignore_checks);
     void drift_run();
-    int16_t get_throttle_assist(float velz, int16_t pilot_throttle_scaled);
+    float get_throttle_assist(float velz, float pilot_throttle_scaled);
     bool flip_init(bool ignore_checks);
     void flip_run();
     bool guided_init(bool ignore_checks);
