@@ -69,5 +69,6 @@ for t in $TRAVIS_BUILD_TARGET; do
         $waf configure --board $t
         $waf clean
         $waf ${build_concurrency[$t]} build
+        [[ $t == linux ]] && $waf check
     fi
 done
