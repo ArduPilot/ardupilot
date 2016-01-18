@@ -17,5 +17,6 @@ def build(bld):
 
     ardupilotwaf.program(
         bld,
+        program_name='antennatracker',
         use=vehicle + '_libs',
     )
