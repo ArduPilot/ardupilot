@@ -5,7 +5,7 @@
 
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Frontend.h>
 
 /*
   parameter defaults for different types of vehicle. The
@@ -111,6 +111,7 @@
 #endif // APM_BUILD_DIRECTORY
 
 extern const AP_HAL::HAL& hal;
+extern GCS_Frontend &gcs;
 
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF2::var_info[] = {
@@ -487,7 +488,7 @@ bool NavEKF2::InitialiseFilter(void)
         }
 
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
             _enable.set(0);
             return false;
         }
@@ -495,7 +496,7 @@ bool NavEKF2::InitialiseFilter(void)
         core = new NavEKF2_core[num_cores];
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
             return false;
         }
 
