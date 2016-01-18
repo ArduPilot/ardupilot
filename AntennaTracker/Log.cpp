@@ -11,7 +11,7 @@ void Tracker::Log_Write_Attitude()
 {
     Vector3f targets;
     targets.y = nav_status.pitch;
-    targets.z = wrap_360_cd_float(nav_status.bearing);
+    targets.z = wrap_360_cd(nav_status.bearing);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
     DataFlash.Log_Write_EKF(ahrs,false);

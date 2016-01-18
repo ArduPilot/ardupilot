@@ -21,6 +21,8 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
+
+
 extern const AP_HAL::HAL& hal;
 
 //TODO: use higher precision datatypes to achieve more accuracy for matrix algebra operations
@@ -47,14 +49,6 @@ float* mat_mul(float *A, float *B, uint8_t n)
         }
     }
     return ret;
-}
-
-static inline void swap(float &a, float &b)
-{
-    float c;
-    c = a;
-    a = b;
-    b = c;
 }
 
 /*

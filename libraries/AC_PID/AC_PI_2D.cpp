@@ -73,7 +73,7 @@ void AC_PI_2D::filt_hz(float hz)
 void AC_PI_2D::set_input(const Vector2f &input)
 {
     // don't process inf or NaN
-    if (!isfinite(input.x) || !isfinite(input.y)) {
+    if (!std::isfinite(input.x) || !std::isfinite(input.y)) {
         return;
     }
 
@@ -173,6 +173,6 @@ void AC_PI_2D::calc_filt_alpha()
     }
   
     // calculate alpha
-    float rc = 1/(M_2PI_F*_filt_hz);
+    float rc = 1/(M_2_PI*_filt_hz);
     _filt_alpha = _dt / (_dt + rc);
 }

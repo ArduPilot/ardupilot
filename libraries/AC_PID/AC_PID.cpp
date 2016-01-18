@@ -83,7 +83,7 @@ void AC_PID::filt_hz(float hz)
 void AC_PID::set_input_filter_all(float input)
 {
     // don't process inf or NaN
-    if (!isfinite(input)) {
+    if (!std::isfinite(input)) {
         return;
     }
 
@@ -108,7 +108,7 @@ void AC_PID::set_input_filter_all(float input)
 void AC_PID::set_input_filter_d(float input)
 {
     // don't process inf or NaN
-    if (!isfinite(input)) {
+    if (!std::isfinite(input)) {
         return;
     }
 
@@ -209,6 +209,6 @@ float AC_PID::get_filt_alpha() const
     }
 
     // calculate alpha
-    float rc = 1/(M_2PI_F*_filt_hz);
+    float rc = 1/(M_2_PI*_filt_hz);
     return _dt / (_dt + rc);
 }
