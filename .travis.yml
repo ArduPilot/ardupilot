@@ -72,7 +72,7 @@ before_script:
 
 script:
   - python Tools/autotest/param_metadata/param_parse.py
-  - Tools/scripts/build_all_travis.sh
+  - Tools/scripts/build_ci.sh
 
 notifications:
   webhooks:
