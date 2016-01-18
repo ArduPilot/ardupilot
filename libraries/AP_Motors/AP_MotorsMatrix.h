@@ -42,6 +42,9 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min();
 
+    // output_to_motors - sends minimum values out to the motors
+    virtual void        output_to_motors();
+
     // add_motor using just position and yaw_factor (or prop direction)
     void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
 
