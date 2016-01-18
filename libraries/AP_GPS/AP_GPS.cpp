@@ -295,6 +295,11 @@ AP_GPS::detect_instance(uint8_t instance)
 			_broadcast_gps_type("SIRF", instance, dstate->last_baud);
 			new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
 		}
+        else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
+                 AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
+            _broadcast_gps_type("ERB", instance, dstate->last_baud);
+            new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
+        }
 		else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
 			// prevent false detection of NMEA mode in
 			// a MTK or UBLOX which has booted in NMEA mode
