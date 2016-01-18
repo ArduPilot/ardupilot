@@ -264,7 +264,7 @@ void RCInput_RPI::stop_dma()
 void RCInput_RPI::termination_handler(int signum)
 {
     stop_dma();
-    AP_HAL::panic("Interrupted");
+    AP_HAL::panic("Interrupted: %s", strsignal(signum));
 }
 
 
