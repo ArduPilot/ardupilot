@@ -38,5 +38,6 @@ def build(bld):
 
     ardupilotwaf.program(
         bld,
+        program_name='arducopter',
         use=vehicle + '_libs',
     )
