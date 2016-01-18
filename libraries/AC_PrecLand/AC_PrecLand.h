@@ -6,6 +6,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PI_2D.h>
 #include <AP_InertialNav/AP_InertialNav.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 // definitions
 #define AC_PRECLAND_SPEED_XY_DEFAULT            100.0f  // maximum horizontal speed
@@ -69,6 +70,9 @@ public:
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
+
+    // send GCS_MAVLink message
+    void send_landing_target(mavlink_channel_t chan) const;
 
 private:
 

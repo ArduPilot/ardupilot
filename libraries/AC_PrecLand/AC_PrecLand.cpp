@@ -184,7 +184,7 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     // convert earth-frame angles to earth-frame position offset
     _target_pos_offset.x = alt*tanf(_ef_angle_to_target.x);
     _target_pos_offset.y = alt*tanf(_ef_angle_to_target.y);
-    _target_pos_offset.z = 0;  // not used
+    _target_pos_offset.z = alt;  // not used
 
     _have_estimate = true;
 }
@@ -196,4 +196,21 @@ void AC_PrecLand::handle_msg(mavlink_message_t* msg)
     if (_backend != NULL) {
         _backend->handle_msg(msg);
     }
+}
+
+// send landing target mavlink message to ground station
+void AC_PrecLand::send_landing_target(mavlink_channel_t chan) const
+{
+    float angle_x = _ef_angle_to_target.x, angle_y = _ef_angle_to_target.y, distance = _target_pos_offset.z;
+    if (!_have_estimate) {
+        angle_x = 0;
+        angle_y = 0;
+        distance = 0;
+    }
+    mavlink_msg_landing_target_send(chan,
+        AP_HAL::micros64(),
+        _have_estimate,
+        MAV_FRAME_GLOBAL_TERRAIN_ALT,
+        angle_x, angle_y, distance, 0.0, 0.0);
+
 }
