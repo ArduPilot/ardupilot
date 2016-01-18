@@ -252,13 +252,6 @@ void AP_MotorsTri::output_armed_stabilizing()
     hal.rcout->push();
 }
 
-// output_disarmed - sends commands to the motors
-void AP_MotorsTri::output_disarmed()
-{
-    // Send minimum values to all motors
-    output_min();
-}
-
 // output_test - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
