@@ -1188,19 +1188,6 @@ void GCS_MAVLINK::send_param_value(const char *param_name, ap_var_type param_typ
         -1);
 }
 
-// the following send_.*all functions are here for compatability while
-// their use is discontinued.
-/*
-  send a statustext message to all active MAVLink connections
- */
-void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    gcs.send_text_fmt_active(severity, fmt, arg_list);
-    va_end(arg_list);
-}
-
 // report battery2 state
 void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
 {

@@ -212,13 +212,6 @@ public:
     void mavlink_msg_compassmot_status_send(int16_t, float, float, float, float, float);
 
     /*
-      send a statustext message to all active MAVLink
-      connections. This function is static so it can be called from
-      any library
-    */
-    static void send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...);
-
-    /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
     */
