@@ -43,6 +43,8 @@ static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
 
+static Empty::I2CDeviceManager i2c_mgr_instance;
+
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
@@ -71,6 +73,7 @@ HAL_PX4::HAL_PX4() :
         &uartCDriver,  /* uartC */
         &uartDDriver,  /* uartD */
         &uartEDriver,  /* uartE */
+        &i2c_mgr_instance,
         &i2cDriver, /* i2c */
         NULL,   /* only one i2c */
         NULL,   /* only one i2c */

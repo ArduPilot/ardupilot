@@ -51,6 +51,7 @@ HAL_FLYMAPLE::HAL_FLYMAPLE() :
         &uartCDriver,
         NULL,            /* no uartD */
         NULL,            /* no uartE */
+        NULL,
         &i2cDriver,
         NULL,   /* only 1 i2c */
         NULL,   /* only 1 i2c */
