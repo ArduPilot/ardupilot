@@ -8,7 +8,7 @@
 
 uint8_t eeprom[0x1000];
 
-struct EEPROM_header {
+struct PACKED EEPROM_header {
     uint8_t magic[2];
     uint8_t revision;
     uint8_t spare;

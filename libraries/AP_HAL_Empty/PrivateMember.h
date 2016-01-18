@@ -7,9 +7,9 @@
 
 #include "AP_HAL_Empty.h"
 
-class Empty::PrivateMember {
+class Empty::EmptyPrivateMember {
 public:
-    PrivateMember(uint16_t foo);
+    EmptyPrivateMember(uint16_t foo);
     void init();
 private:
     uint16_t _foo;

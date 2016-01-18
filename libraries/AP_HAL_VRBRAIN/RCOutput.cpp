@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "RCOutput.h"
@@ -16,12 +16,12 @@ extern const AP_HAL::HAL& hal;
 
 using namespace VRBRAIN;
 
-void VRBRAINRCOutput::init()
+void VRBRAINRCOutput::init(void* unused)
 {
     _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
     _pwm_fd = open(PWM_OUTPUT_DEVICE_PATH, O_RDWR);
     if (_pwm_fd == -1) {
-        AP_HAL::panic("Unable to open " PWM_OUTPUT_DEVICE_PATH);
+        hal.scheduler->panic("Unable to open " PWM_OUTPUT_DEVICE_PATH);
     }
     if (ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming\n");
@@ -149,12 +149,6 @@ void VRBRAINRCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
     }
 }
 
-bool VRBRAINRCOutput::force_safety_on(void)
-{
-    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
-    return (ret == OK);
-}
-
 void VRBRAINRCOutput::force_safety_off(void)
 {
     int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
@@ -182,6 +176,13 @@ void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
     }
 }
 
+void VRBRAINRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
+{
+    for (uint8_t i=0; i<len; i++) {
+        write(i, period_us[i]);
+    }
+}
+
 uint16_t VRBRAINRCOutput::read(uint8_t ch)
 {
     if (ch >= VRBRAIN_NUM_OUTPUT_CHANNELS) {
@@ -199,7 +200,7 @@ void VRBRAINRCOutput::read(uint16_t* period_us, uint8_t len)
 
 void VRBRAINRCOutput::_timer_tick(void)
 {
-    uint32_t now = AP_HAL::micros();
+    uint32_t now = hal.scheduler->micros();
 
     // always send at least at 20Hz, otherwise the IO board may think
     // we are dead

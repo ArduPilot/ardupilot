@@ -19,17 +19,16 @@
  *  Author: Andrew Tridgell, January 2013
  *
  */
-#include "AP_Scheduler.h"
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
+#include <AP_HAL.h>
+#include <AP_Scheduler.h>
+#include <AP_Param.h>
 
 extern const AP_HAL::HAL& hal;
 
 int8_t AP_Scheduler::current_task = -1;
 
-const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
+const AP_Param::GroupInfo AP_Scheduler::var_info[] PROGMEM = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
     // @Description: Set to non-zero to enable scheduler debug messages. When set to show "Slips" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.
@@ -61,7 +60,7 @@ void AP_Scheduler::tick(void)
  */
 void AP_Scheduler::run(uint16_t time_available)
 {
-    uint32_t run_started_usec = AP_HAL::micros();
+    uint32_t run_started_usec = hal.scheduler->micros();
     uint32_t now = run_started_usec;
 
     for (uint8_t i=0; i<_num_tasks; i++) {
@@ -74,9 +73,8 @@ void AP_Scheduler::run(uint16_t time_available)
             if (dt >= interval_ticks*2) {
                 // we've slipped a whole run of this task!
                 if (_debug > 1) {
-                    hal.console->printf("Scheduler slip task[%u-%s] (%u/%u/%u)\n",
-                                          (unsigned)i,
-                                          _tasks[i].name,
+                    hal.console->printf_P(PSTR("Scheduler slip task[%u] (%u/%u/%u)\n"), 
+                                          (unsigned)i, 
                                           (unsigned)dt,
                                           (unsigned)interval_ticks,
                                           (unsigned)_task_time_allowed);
@@ -86,8 +84,7 @@ void AP_Scheduler::run(uint16_t time_available)
             if (_task_time_allowed <= time_available) {
                 // run it
                 _task_time_started = now;
-                task_fn_t func;
-                pgm_read_block(&_tasks[i].function, &func, sizeof(func));
+                task_fn_t func = (task_fn_t)pgm_read_pointer(&_tasks[i].function);
                 current_task = i;
                 func();
                 current_task = -1;
@@ -97,15 +94,14 @@ void AP_Scheduler::run(uint16_t time_available)
                 _last_run[i] = _tick_counter;
                 
                 // work out how long the event actually took
-                now = AP_HAL::micros();
+                now = hal.scheduler->micros();
                 uint32_t time_taken = now - _task_time_started;
                 
                 if (time_taken > _task_time_allowed) {
                     // the event overran!
                     if (_debug > 2) {
-                        hal.console->printf("Scheduler overrun task[%u-%s] (%u/%u)\n",
-                                              (unsigned)i,
-                                              _tasks[i].name,
+                        hal.console->printf_P(PSTR("Scheduler overrun task[%u] (%u/%u)\n"), 
+                                              (unsigned)i, 
                                               (unsigned)time_taken,
                                               (unsigned)_task_time_allowed);
                     }
@@ -134,7 +130,7 @@ update_spare_ticks:
  */
 uint16_t AP_Scheduler::time_available_usec(void)
 {
-    uint32_t dt = AP_HAL::micros() - _task_time_started;
+    uint32_t dt = hal.scheduler->micros() - _task_time_started;
     if (dt > _task_time_allowed) {
         return 0;
     }

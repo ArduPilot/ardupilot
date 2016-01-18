@@ -2,13 +2,11 @@
 #ifndef __AP_HAL_LINUX_I2CDRIVER_H__
 #define __AP_HAL_LINUX_I2CDRIVER_H__
 
-#include "AP_HAL_Linux.h"
+#include <AP_HAL_Linux.h>
 
-class Linux::I2CDriver : public AP_HAL::I2CDriver {
+class Linux::LinuxI2CDriver : public AP_HAL::I2CDriver {
 public:
-    I2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
-    I2CDriver(AP_HAL::Semaphore* semaphore, const char * const devpaths[]);
-    ~I2CDriver();
+    LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
 
     void begin();
     void end();
@@ -41,17 +39,13 @@ public:
     uint8_t lockup_count();
 
     AP_HAL::Semaphore* get_semaphore() { return _semaphore; }
-    bool do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len,
-                     uint8_t *recv, uint32_t recv_len)override;
 
 private:
-    bool set_address(uint8_t addr);
-
     AP_HAL::Semaphore* _semaphore;
-    char *_device = NULL;
-    int _fd = -1;
+    bool set_address(uint8_t addr);
+    int _fd;
     uint8_t _addr;
-    bool _print_ioctl_error = true;
+    const char *_device;
 };
 
 #endif // __AP_HAL_LINUX_I2CDRIVER_H__

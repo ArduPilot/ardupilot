@@ -6,21 +6,20 @@
 #ifndef AC_ATTITUDECONTROL_HELI_H
 #define AC_ATTITUDECONTROL_HELI_H
 
-#include "AC_AttitudeControl.h"
-#include <AP_Motors/AP_MotorsHeli.h>
-#include <AC_PID/AC_HELI_PID.h>
-#include <Filter/Filter.h>
+#include <AC_AttitudeControl.h>
+#include <AC_HELI_PID.h>
+#include <Filter.h>
 
+#define AC_ATTITUDE_HELI_ROLL_FF                    0.0f
+#define AC_ATTITUDE_HELI_PITCH_FF                   0.0f
+#define AC_ATTITUDE_HELI_YAW_FF                     0.0f
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
-#define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
-#define AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER          10.0f
-#define AC_ATTITUDE_HELI_RATE_Y_AFF_FILTER          10.0f
-#define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
+#define AC_ATTITUDE_HELI_RATE_FF_FILTER             5.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Heli( AP_AHRS &ahrs,
-                        const AP_Vehicle::MultiCopter &aparm,
+                        const AP_Vehicle::VTOL &aparm,
                         AP_MotorsHeli& motors,
                         AC_P& p_angle_roll, AC_P& p_angle_pitch, AC_P& p_angle_yaw,
                         AC_HELI_PID& pid_rate_roll, AC_HELI_PID& pid_rate_pitch, AC_HELI_PID& pid_rate_yaw
@@ -28,53 +27,25 @@ public:
         AC_AttitudeControl(ahrs, aparm, motors,
                            p_angle_roll, p_angle_pitch, p_angle_yaw,
                            pid_rate_roll, pid_rate_pitch, pid_rate_yaw),
-        _passthrough_roll(0), _passthrough_pitch(0), _passthrough_yaw(0),
-        pitch_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
-        roll_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
-        yaw_velocity_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER),
-        yaw_acceleration_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_AFF_FILTER)
-        {
+        _passthrough_roll(0), _passthrough_pitch(0)
+		{
             AP_Param::setup_object_defaults(this, var_info);
-
-            // initialise flags
-            _flags_heli.limit_roll = false;
-            _flags_heli.limit_pitch = false;
-            _flags_heli.limit_yaw = false;
-            _flags_heli.leaky_i = true;
-            _flags_heli.flybar_passthrough = false;
-            _flags_heli.tail_passthrough = false;
-            _flags_heli.do_piro_comp = false;
-        }
+		}
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds);
-
-    // subclass non-passthrough too, for external gyro, no flybar
-    void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) override;
+    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf);
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
 	virtual void rate_controller_run();
 
-    // get lean angle max for pilot input that prioritises altitude hold over lean angle
-    // NOTE: returns centi-degrees
-    float get_althold_lean_angle_max() const;
-
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
     
-    // use_flybar_passthrough - controls whether we pass-through
-    // control inputs to swash-plate and tail
-    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) {  
-        _flags_heli.flybar_passthrough = passthrough; 
-        _flags_heli.tail_passthrough = tail_passthrough; 
-    }
-
-    // do_piro_comp - controls whether piro-comp is active or not
-    void do_piro_comp(bool piro_comp) { _flags_heli.do_piro_comp = piro_comp; }
-
-    // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
-    void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
+    // use_flybar_passthrough - controls whether we pass-through control inputs to swash-plate
+	void use_flybar_passthrough(bool passthrough) {  _flags_heli.flybar_passthrough = passthrough; }
+    
+    void update_feedforward_filter_rates(float time_step);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -88,50 +59,34 @@ private:
         uint8_t limit_yaw           :   1;  // 1 if we have requested larger yaw angle than tail servo can physically move
         uint8_t leaky_i             :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
         uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
-        uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
-        uint8_t do_piro_comp        :   1;  // 1 if we should do pirouette compensation on roll/pitch
     } _flags_heli;
 
     //
     // body-frame rate controller
     //
-	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
+	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in centi-degrees/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
-    void rate_bf_to_motor_roll_pitch(float rate_roll_target_rads, float rate_pitch_target_rads);
-    virtual float rate_bf_to_motor_yaw(float rate_yaw_rads);
+    void rate_bf_to_motor_roll_pitch(float rate_roll_target_cds, float rate_pitch_target_cds);
+    virtual float rate_bf_to_motor_yaw(float rate_yaw_cds);
 
     //
     // throttle methods
     //
 
-    // calculate total body frame throttle required to produce the given earth frame throttle
-    float get_boosted_throttle(float throttle_in);
+    // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
+    virtual int16_t get_angle_boost(int16_t throttle_pwm);
     
-    // pass through for roll and pitch
-    int16_t _passthrough_roll;
-    int16_t _passthrough_pitch;
-
-    // pass through for yaw if tail_passthrough is set
-    int16_t _passthrough_yaw;
-
-    // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_rad() { return constrain_float(radians(_hover_roll_trim_scalar * _hover_roll_trim * 0.01f), -radians(10.0f),radians(10.0f));}
-
-    // internal variables
-    float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim
-
-    // parameters
-    AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
-    AP_Int16        _hover_roll_trim;               // Angle in centi-degrees used to counter tail rotor thrust in hover
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
     // to jerks on rate change requests.
-    LowPassFilterFloat pitch_feedforward_filter;
-    LowPassFilterFloat roll_feedforward_filter;
-    LowPassFilterFloat yaw_velocity_feedforward_filter;
-    LowPassFilterFloat yaw_acceleration_feedforward_filter;
+    LowPassFilterInt32 pitch_feedforward_filter;
+    LowPassFilterInt32 roll_feedforward_filter;
+    LowPassFilterInt32 yaw_feedforward_filter;
 
+    // pass through for roll and pitch
+    int16_t _passthrough_roll;
+    int16_t _passthrough_pitch;
 };
 
 #endif //AC_ATTITUDECONTROL_HELI_H

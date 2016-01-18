@@ -17,11 +17,11 @@
   handle disk IO for terrain code
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
+#include <AP_HAL.h>
+#include <AP_Common.h>
+#include <AP_Math.h>
+#include <GCS_MAVLink.h>
+#include <GCS.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
@@ -41,7 +41,7 @@ extern const AP_HAL::HAL& hal;
  */
 void AP_Terrain::check_disk_read(void)
 {
-    for (uint16_t i=0; i<cache_size; i++) {
+    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
         if (cache[i].state == GRID_CACHE_DISKWAIT) {
             disk_block.block = cache[i].grid;
             disk_io_state = DiskIoWaitRead;
@@ -55,7 +55,7 @@ void AP_Terrain::check_disk_read(void)
  */
 void AP_Terrain::check_disk_write(void)
 {
-    for (uint16_t i=0; i<cache_size; i++) {
+    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
         if (cache[i].state == GRID_CACHE_DIRTY) {
             disk_block.block = cache[i].grid;
             disk_io_state = DiskIoWaitWrite;
@@ -69,13 +69,13 @@ void AP_Terrain::check_disk_write(void)
  */
 void AP_Terrain::schedule_disk_io(void)
 {
-    if (enable == 0 || !allocate()) {
+    if (enable == 0) {
         return;
     }
 
     if (!timer_setup) {
         timer_setup = true;
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Terrain::io_timer, void));
+        hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&AP_Terrain::io_timer));        
     }
 
     switch (disk_io_state) {
@@ -97,7 +97,7 @@ void AP_Terrain::schedule_disk_io(void)
                 cache[cache_idx].grid = disk_block.block;
             }
             cache[cache_idx].state = GRID_CACHE_VALID;
-            cache[cache_idx].last_access_ms = AP_HAL::millis();
+            cache[cache_idx].last_access_ms = hal.scheduler->millis();
         }
         disk_io_state = DiskIoIdle;
         break;
@@ -150,27 +150,11 @@ void AP_Terrain::open_file(void)
         // already open on right file
         return;
     }
-    if (file_path == NULL) {
-        const char* terrain_dir = hal.util->get_custom_terrain_directory();
-        if (terrain_dir == NULL) {
-            terrain_dir = HAL_BOARD_TERRAIN_DIRECTORY;
-        }
-        if (asprintf(&file_path, "%s/NxxExxx.DAT", terrain_dir) <= 0) {
-            io_failure = true;
-            file_path = NULL;
-            return;
-        }
-    }
-    if (file_path == NULL) {
-        io_failure = true;
-        return;
-    }
-    char *p = &file_path[strlen(file_path)-12];
-    if (*p != '/') {
-        io_failure = true;
-        return;        
-    }
-    snprintf(p, 13, "/%c%02u%c%03u.DAT",
+
+    // build the pathname to the degree file
+    char path[] = HAL_BOARD_TERRAIN_DIRECTORY "/NxxExxx.DAT";
+    char *p = &path[strlen(HAL_BOARD_TERRAIN_DIRECTORY)+1];
+    snprintf(p, 12, "%c%02u%c%03u.DAT",
              block.lat_degrees<0?'S':'N',
              abs(block.lat_degrees),
              block.lon_degrees<0?'W':'E',
@@ -178,20 +162,19 @@ void AP_Terrain::open_file(void)
 
     // create directory if need be
     if (!directory_created) {
-        *p = 0;
-        mkdir(file_path, 0755);
+        mkdir(HAL_BOARD_TERRAIN_DIRECTORY, 0755);
         directory_created = true;
-        *p = '/';
     }
 
     if (fd != -1) {
         ::close(fd);
     }
-    fd = ::open(file_path, O_RDWR|O_CREAT, 0644);
+    //BEV make certain we're not opening any files
+    //fd = ::open(path, O_RDWR|O_CREAT, 0644);
     if (fd == -1) {
 #if TERRAIN_DEBUG
         hal.console->printf("Open %s failed - %s\n",
-                            file_path, strerror(errno));
+                            path, strerror(errno));
 #endif
         io_failure = true;
         return;
@@ -221,7 +204,7 @@ void AP_Terrain::seek_offset(void)
 
     uint32_t file_offset = (east_blocks * block.grid_idx_x + 
                             block.grid_idx_y) * sizeof(union grid_io_block);
-    if (::lseek(fd, file_offset, SEEK_SET) != (off_t)file_offset) {
+    if (::lseek(fd, file_offset, SEEK_SET) != file_offset) {
 #if TERRAIN_DEBUG
         hal.console->printf("Seek %lu failed - %s\n",
                             (unsigned long)file_offset, strerror(errno));

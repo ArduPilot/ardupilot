@@ -2,11 +2,11 @@
 #ifndef __AP_HAL_EMPTY_I2CDRIVER_H__
 #define __AP_HAL_EMPTY_I2CDRIVER_H__
 
-#include "AP_HAL_Empty.h"
+#include <AP_HAL_Empty.h>
 
-class Empty::I2CDriver : public AP_HAL::I2CDriver {
+class Empty::EmptyI2CDriver : public AP_HAL::I2CDriver {
 public:
-    I2CDriver(AP_HAL::Semaphore* semaphore) : _semaphore(semaphore) {}
+    EmptyI2CDriver(AP_HAL::Semaphore* semaphore) : _semaphore(semaphore) {}
     void begin();
     void end();
     void setTimeout(uint16_t ms);

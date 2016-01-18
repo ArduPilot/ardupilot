@@ -15,7 +15,7 @@
  */
 
 #include "AP_RangeFinder_PulsedLightLRF.h"
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -109,10 +109,5 @@ bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
 */
 void AP_RangeFinder_PulsedLightLRF::update(void)
 {
-    if (get_reading(state.distance_cm)) {
-        // update range_valid state based on distance measured
-        update_status();
-    } else {
-        set_status(RangeFinder::RangeFinder_NoData);
-    }
+    state.healthy = get_reading(state.distance_cm);
 }

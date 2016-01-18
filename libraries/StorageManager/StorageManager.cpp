@@ -19,10 +19,9 @@
   Management for hal.storage to allow for backwards compatible mapping
   of storage offsets to available storage
  */
-#include "StorageManager.h"
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Progmem/AP_Progmem.h>
+#include <AP_HAL.h>
+#include <StorageManager.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -33,10 +32,11 @@ extern const AP_HAL::HAL& hal;
 
 /*
   layout for fixed wing and rovers
+  On APM2 this gives 167 waypoints, 10 rally points and 20 fence points
   On PX4v1 this gives 309 waypoints, 30 rally points and 52 fence points
   On Pixhawk this gives 724 waypoints, 50 rally points and 84 fence points
  */
-const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_AREAS] = {
+const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_AREAS] PROGMEM = {
     { StorageParam,   0,     1280}, // 0x500 parameter bytes
     { StorageMission, 1280,  2506},
     { StorageRally,   3786,   150}, // 10 rally points
@@ -58,11 +58,12 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
 
 
 /*
-  layout for copter.
+  layout for copter. 
+  On APM2 this gives 161 waypoints, 6 fence points and 6 rally points
   On PX4v1 this gives 303 waypoints, 26 rally points and 38 fence points
   On Pixhawk this gives 718 waypoints, 46 rally points and 70 fence points
  */
-const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREAS] = {
+const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREAS] PROGMEM = {
     { StorageParam,   0,     1536}, // 0x600 param bytes
     { StorageMission, 1536,  2422},
     { StorageRally,   3958,    90}, // 6 rally points
@@ -96,7 +97,7 @@ void StorageManager::erase(void)
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         uint16_t length = pgm_read_word(&area.length);
         uint16_t offset = pgm_read_word(&area.offset);
-        for (uint16_t ofs=0; ofs<length; ofs += sizeof(blk)) {
+        for (uint8_t ofs=0; length; ofs += sizeof(blk)) {
             uint8_t n = 16;
             if (ofs + n > length) {
                 n = length - ofs;
@@ -149,15 +150,15 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
         }
         hal.storage->read_block(b, addr+offset, count);
         n -= count;
+        addr += count;
+        b += count;
+
+        // adjust addr for next area
+        addr -= length;
 
         if (n == 0) {
             break;
         }
-
-        // move pointer after written bytes
-        b += count;
-        // continue writing at the beginning of next valid area
-        addr = 0;
     }
     return (n == 0);
 }
@@ -189,15 +190,15 @@ bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
         }
         hal.storage->write_block(addr+offset, b, count);
         n -= count;
+        addr += count;
+        b += count;
+
+        // adjust addr for next area
+        addr -= length;
 
         if (n == 0) {
             break;
         }
-
-        // move pointer after written bytes
-        b += count;
-        // continue writing at the beginning of next valid area
-        addr = 0;
     }
     return (n == 0);
 }

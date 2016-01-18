@@ -1,10 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include <AP_HAL/AP_HAL.h>
-#include "AC_Fence.h"
+#include <AP_HAL.h>
+#include <AC_Fence.h>
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AC_Fence::var_info[] = {
+const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
     // @Param: ENABLE
     // @DisplayName: Fence enable/disable
     // @Description: Allows you to enable (1) or disable (0) the fence functionality
@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 };
 
 /// Default constructor.
-AC_Fence::AC_Fence(const AP_InertialNav& inav) :
+AC_Fence::AC_Fence(const AP_InertialNav* inav) :
     _inav(inav),
     _alt_max_backup(0),
     _circle_radius_backup(0),
@@ -102,7 +102,7 @@ bool AC_Fence::pre_arm_check() const
     }
 
     // if we have horizontal limits enabled, check inertial nav position is ok
-    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE)!=0 && !_inav.get_filter_status().flags.horiz_pos_abs && !_inav.get_filter_status().flags.pred_horiz_pos_abs) {
+    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE)!=0 && !_inav->position_ok()) {
         return false;
     }
 
@@ -111,8 +111,7 @@ bool AC_Fence::pre_arm_check() const
 }
 
 /// check_fence - returns the fence type that has been breached (if any)
-///     curr_alt is the altitude above home in meters
-uint8_t AC_Fence::check_fence(float curr_alt)
+uint8_t AC_Fence::check_fence()
 {
     uint8_t ret = AC_FENCE_TYPE_NONE;
 
@@ -124,13 +123,16 @@ uint8_t AC_Fence::check_fence(float curr_alt)
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
-        if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
+        if ((hal.scheduler->millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
             return AC_FENCE_TYPE_NONE;
         } else {
             // recovery period has passed so reset manual recovery time and continue with fence breach checks
             _manual_recovery_start_ms = 0;
         }
     }
+
+    // get current altitude in meters
+    float curr_alt = _inav->get_altitude() * 0.01f;
 
     // altitude fence check
     if ((_enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
@@ -142,7 +144,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
             _alt_max_breach_distance = curr_alt - _alt_max;
 
             // check for a new breach or a breach of the backup fence
-            if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) == 0 || (!is_zero(_alt_max_backup) && curr_alt >= _alt_max_backup)) {
+            if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) == 0 || (_alt_max_backup != 0.0f && curr_alt >= _alt_max_backup)) {
 
                 // record that we have breached the upper limit
                 record_breach(AC_FENCE_TYPE_ALT_MAX);
@@ -171,7 +173,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
             _circle_breach_distance = _home_distance - _circle_radius;
 
             // check for a new breach or a breach of the backup fence
-            if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) == 0 || (!is_zero(_circle_radius_backup) && _home_distance >= _circle_radius_backup)) {
+            if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) == 0 || (_circle_radius_backup != 0.0f && _home_distance >= _circle_radius_backup)) {
 
                 // record that we have breached the circular distance limit
                 record_breach(AC_FENCE_TYPE_CIRCLE);
@@ -202,7 +204,7 @@ void AC_Fence::record_breach(uint8_t fence_type)
 {
     // if we haven't already breached a limit, update the breach time
     if (_breached_fences == AC_FENCE_TYPE_NONE) {
-        _breach_time = AP_HAL::millis();
+        _breach_time = hal.scheduler->millis();
     }
 
     // update breach count
@@ -237,7 +239,7 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
             return _circle_breach_distance;
             break;
         case AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE:
-            return MAX(_alt_max_breach_distance,_circle_breach_distance);
+            return max(_alt_max_breach_distance,_circle_breach_distance);
     }
 
     // we don't recognise the fence type so just return 0
@@ -254,5 +256,5 @@ void AC_Fence::manual_recovery_start()
     }
 
     // record time pilot began manual recovery
-    _manual_recovery_start_ms = AP_HAL::millis();
+    _manual_recovery_start_ms = hal.scheduler->millis();
 }

@@ -2,14 +2,14 @@
 #ifndef __AP_HAL_VRBRAIN_RCINPUT_H__
 #define __AP_HAL_VRBRAIN_RCINPUT_H__
 
-#include "AP_HAL_VRBRAIN.h"
+#include <AP_HAL_VRBRAIN.h>
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
 
 class VRBRAIN::VRBRAINRCInput : public AP_HAL::RCInput {
 public:
-    void init();
+    void init(void* machtnichts);
     bool new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);

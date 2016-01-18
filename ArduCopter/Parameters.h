@@ -1,9 +1,25 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+/*
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#include <AP_Common/AP_Common.h>
+#include <AP_Common.h>
 
 // Global parameter class.
 //
@@ -17,7 +33,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t        k_format_version = 120;
+    static const uint16_t        k_format_version = 4;
 
     // The parameter software_type is set up solely for ground station use
     // and identifies the software type (eg ArduPilotMega versus
@@ -52,12 +68,10 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type,
-        k_param_ins_old,                        // *** Deprecated, remove with next eeprom number change
         k_param_ins,                            // libraries/AP_InertialSensor variables
-        k_param_NavEKF2,
 
         // simulation
-        k_param_sitl = 10,
+        k_param_sitl = 5,
 
         // barometer object (needed for SITL)
         k_param_barometer,
@@ -65,209 +79,89 @@ public:
         // scheduler object (for debugging)
         k_param_scheduler,
 
-        // relay object
-        k_param_relay,
-
-        // EPM object
-        k_param_epm,
-
         // BoardConfig object
         k_param_BoardConfig,
 
         // GPS object
-        k_param_gps,
+        k_param_gps = 10,
 
-        // Parachute object
-        k_param_parachute,
-
-        // Landing gear object
-        k_param_landinggear,    // 18
-
-        // Input Management object
-        k_param_input_manager,  // 19
-
-        // Misc
-        //
-        k_param_log_bitmask_old = 20,           // Deprecated
-        k_param_log_last_filenumber,            // *** Deprecated - remove
-                                                // with next eeprom number
-                                                // change
-        k_param_toy_yaw_rate,                   // deprecated - remove
-        k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
-        k_param_rssi_pin,                   // unused, replaced by rssi_ library parameters
-        k_param_throttle_accel_enabled,     // deprecated - remove
-        k_param_wp_yaw_behavior,
-        k_param_acro_trainer,
+        k_param_rssi_pin,
         k_param_pilot_velocity_z_max,
-        k_param_circle_rate,                // deprecated - remove
-        k_param_sonar_gain,
-        k_param_ch8_option,
         k_param_arming_check,
-        k_param_sprayer,
         k_param_angle_max,
         k_param_gps_hdop_good,
         k_param_battery,
         k_param_fs_batt_mah,
-        k_param_angle_rate_max,         // remove
-        k_param_rssi_range,             // unused, replaced by rssi_ library parameters
+        k_param_rssi_range,
         k_param_rc_feel_rp,
         k_param_NavEKF,                 // Extended Kalman Filter Inertial Navigation Group
         k_param_mission,                // mission library
         k_param_rc_13,
         k_param_rc_14,
-        k_param_rally,
-        k_param_poshold_brake_rate,
-        k_param_poshold_brake_angle_max,
         k_param_pilot_accel_z,
-        k_param_serial0_baud,           // deprecated - remove
-        k_param_serial1_baud,           // deprecated - remove
-        k_param_serial2_baud,           // deprecated - remove
-        k_param_land_repositioning,
-        k_param_sonar, // sonar object
-        k_param_fs_ekf_thresh,
-        k_param_terrain,
+        k_param_serial0_baud,
+        k_param_serial1_baud,
+        k_param_serial2_baud,
+        //k_param_land_repositioning,
+        k_param_ekfcheck_thresh,
         k_param_acro_expo,
         k_param_throttle_deadzone,
-        k_param_optflow,
-        k_param_dcmcheck_thresh,        // deprecated - remove
+        k_param_dcmcheck_thresh,        // 41
         k_param_log_bitmask,
-        k_param_cli_enabled,
-        k_param_throttle_filt,
-        k_param_throttle_behavior,
-        k_param_pilot_takeoff_alt, // 64
 
-        // 65: AP_Limits Library
-        k_param_limits = 65,            // deprecated - remove
-        k_param_gpslock_limit,          // deprecated - remove
-        k_param_geofence_limit,         // deprecated - remove
-        k_param_altitude_limit,         // deprecated - remove
-        k_param_fence,
-        k_param_gps_glitch,             // deprecated
-        k_param_baro_glitch,            // 71 - deprecated
-
-        // AP_ADSB Library
-        k_param_adsb,                   // 72
-
-        // 74: precision landing object
-        k_param_precland = 74,
+        // 50: AP_Limits Library
+        k_param_gps_glitch = 45,
+        k_param_baro_glitch, //53
 
         //
-        // 75: Singlecopter, CoaxCopter
+        // 55: Motors
         //
-        k_param_single_servo_1 = 75,
-        k_param_single_servo_2,
-        k_param_single_servo_3,
-        k_param_single_servo_4, // 78
+        k_param_motors = 50,
 
         //
-        // 80: Heli
+        // 56: Inertial Nav
         //
-        k_param_heli_servo_1 = 80,
-        k_param_heli_servo_2,
-        k_param_heli_servo_3,
-        k_param_heli_servo_4,
-        k_param_heli_pitch_ff,      // remove
-        k_param_heli_roll_ff,       // remove
-        k_param_heli_yaw_ff,        // remove
-        k_param_heli_stab_col_min,  // remove
-        k_param_heli_stab_col_max,  // remove
-        k_param_heli_servo_rsc,     // 89 = full!
-
-        //
-        // 90: misc2
-        //
-        k_param_motors = 90,
-        k_param_disarm_delay,
-        k_param_fs_crash_check,
-
-        // 97: RSSI
-        k_param_rssi = 97,
-                
-        //
-        // 100: Inertial Nav
-        //
-        k_param_inertial_nav = 100, // deprecated
+        k_param_inertial_nav = 55,
         k_param_wp_nav,
         k_param_attitude_control,
         k_param_pos_control,
-        k_param_circle_nav,     // 104
+        k_param_circle_nav,     // 60
 
-        // 110: Telemetry control
+        // 62: Telemetry control
         //
-        k_param_gcs0 = 110,
+        k_param_gcs0 = 60,
         k_param_gcs1,
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
-        k_param_serial1_baud_old, // deprecated
         k_param_telem_delay,
         k_param_gcs2,
-        k_param_serial2_baud_old, // deprecated
-        k_param_serial2_protocol, // deprecated
-        k_param_serial_manager,
-        k_param_ch9_option,
-        k_param_ch10_option,
-        k_param_ch11_option,
-        k_param_ch12_option,
-        k_param_takeoff_trigger_dz,
-        k_param_gcs3,
-        k_param_gcs_pid_mask,    // 126
+        k_param_serial2_protocol, //68
 
         //
-        // 135 : reserved for Solo until features merged with master
+        // 70: Sensor parameters
         //
-        k_param_rtl_speed_cms = 135,
-        k_param_fs_batt_curr_rtl, // 136
-
-        //
-        // 140: Sensor parameters
-        //
-        k_param_imu = 140, // deprecated - can be deleted
-        k_param_battery_monitoring = 141,   // deprecated - can be deleted
-        k_param_volt_div_ratio, // deprecated - can be deleted
-        k_param_curr_amp_per_volt,  // deprecated - can be deleted
-        k_param_input_voltage,  // deprecated - can be deleted
-        k_param_pack_capacity,  // deprecated - can be deleted
-        k_param_compass_enabled,
+        k_param_compass_enabled = 70,
         k_param_compass,
-        k_param_sonar_enabled_old, // deprecated
         k_param_frame_orientation,
-        k_param_optflow_enabled,    // deprecated
         k_param_fs_batt_voltage,
-        k_param_ch7_option,
-        k_param_auto_slew_rate,     // deprecated - can be deleted
-        k_param_sonar_type_old,     // deprecated
-        k_param_super_simple = 155,
-        k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
-        k_param_copter_leds_mode,   // deprecated - remove with next eeprom number change
-        k_param_ahrs, // AHRS group // 159
+        k_param_ahrs, // AHRS group // 77
 
         //
-        // 160: Navigation parameters
+        // 80: Navigation parameters
         //
-        k_param_rtl_altitude = 160,
-        k_param_crosstrack_gain,	// deprecated - remove with next eeprom number change
-        k_param_rtl_loiter_time,
-        k_param_rtl_alt_final,
-        k_param_tilt_comp, 	//164	deprecated - remove with next eeprom number change
+        k_param_rtl_altitude = 80,
 
 
         //
         // Camera and mount parameters
         //
-        k_param_camera = 165,
-        k_param_camera_mount,
-        k_param_camera_mount2,      // deprecated
+        k_param_camera = 84,
+        k_param_camera_mount = 85,
 
         //
-        // Batery monitoring parameters
+        // 86: Radio settings
         //
-        k_param_battery_volt_pin = 168, // deprecated - can be deleted
-        k_param_battery_curr_pin,   // 169 deprecated - can be deleted
-
-        //
-        // 170: Radio settings
-        //
-        k_param_rc_1 = 170,
+        k_param_rc_1 = 86,
         k_param_rc_2,
         k_param_rc_3,
         k_param_rc_4,
@@ -278,85 +172,102 @@ public:
         k_param_rc_10,
         k_param_rc_11,
         k_param_throttle_min,
-        k_param_throttle_max,           // remove
+        k_param_throttle_max,
         k_param_failsafe_throttle,
-        k_param_throttle_fs_action,     // remove
         k_param_failsafe_throttle_value,
-        k_param_throttle_trim,          // remove
+        k_param_throttle_cruise,
         k_param_esc_calibrate,
-        k_param_radio_tuning,
-        k_param_radio_tuning_high,
-        k_param_radio_tuning_low,
-        k_param_rc_speed = 192,
+        k_param_rc_speed,
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,
-        k_param_failsafe_gps_enabled,   // remove
+        k_param_failsafe_gps_enabled,
         k_param_rc_9,
         k_param_rc_12,
         k_param_failsafe_gcs,
-        k_param_rcmap, // 199
 
         //
-        // 200: flight modes
+        // 115: flight modes
         //
-        k_param_flight_mode1 = 200,
+        k_param_flight_mode1 = 115,
         k_param_flight_mode2,
         k_param_flight_mode3,
         k_param_flight_mode4,
         k_param_flight_mode5,
         k_param_flight_mode6,
-        k_param_simple_modes,
 
         //
-        // 210: Waypoint data
+        // 125: Waypoint data
         //
-        k_param_waypoint_mode = 210, // remove
-        k_param_command_total,       // remove
-        k_param_command_index,       // remove
-        k_param_command_nav_index,   // remove
-        k_param_waypoint_radius,     // remove
-        k_param_circle_radius,       // remove
-        k_param_waypoint_speed_max,  // remove
-        k_param_land_speed,
-        k_param_auto_velocity_z_min, // remove
-        k_param_auto_velocity_z_max, // remove - 219
+        k_param_land_speed = 125,
 
         //
-        // 220: PI/D Controllers
+        // 130: PI/D Controllers
         //
-        k_param_acro_rp_p = 221,
-        k_param_axis_lock_p,    // remove
+        k_param_acro_rp_p = 126,
         k_param_pid_rate_roll,
         k_param_pid_rate_pitch,
         k_param_pid_rate_yaw,
         k_param_p_stabilize_roll,
         k_param_p_stabilize_pitch,
         k_param_p_stabilize_yaw,
-        k_param_p_pos_xy,
-        k_param_p_loiter_lon,       // remove
-        k_param_pid_loiter_rate_lat,    // remove
-        k_param_pid_loiter_rate_lon,    // remove
-        k_param_pid_nav_lat,        // remove
-        k_param_pid_nav_lon,        // remove
+        k_param_p_loiter_pos,
+        k_param_pid_loiter_rate_lat,
+        k_param_pid_loiter_rate_lon,
         k_param_p_alt_hold,
-        k_param_p_vel_z,
-        k_param_pid_optflow_roll,       // remove
-        k_param_pid_optflow_pitch,      // remove
-        k_param_acro_balance_roll_old,  // remove
-        k_param_acro_balance_pitch_old, // remove
-        k_param_pid_accel_z,
+        k_param_p_throttle_rate,
+        k_param_pid_throttle_accel,
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p,
-        k_param_autotune_axis_bitmask,
-        k_param_autotune_aggressiveness,
-        k_param_pi_vel_xy,
-        k_param_fs_ekf_action,
-        k_param_rtl_climb_min,
-        k_param_rpm_sensor,
-        k_param_autotune_min_d, // 251
-        k_param_pi_precland,    // 252
-        k_param_DataFlash = 253, // 253 - Logging Group
+
+        /***BEGIN PLANE PARAMS***/
+		// Misc
+		//
+		k_param_hil_servos = 145,
+		k_param_att_controller,
+		k_param_stab_pitch_down, //190
+
+		//BEV keys
+		k_param_key_pid = 150,
+		k_param_key_value,
+
+		// 160: Fly-by-wire control
+		//
+		k_param_airspeed_min = 160,
+		k_param_airspeed_max,
+		k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
+		k_param_flybywire_climb_rate,
+
+		//
+		// 170: elevons
+		//
+		k_param_rc_elevon_left = 170,
+		k_param_rc_elevon_right,
+
+		//
+		// 210: Navigation parameters
+		//
+		k_param_roll_limit_cd = 175,
+		k_param_pitch_limit_max_cd,
+		k_param_pitch_limit_min_cd,
+		k_param_throttle_slewrate,
+		k_param_plane_throttle_cruise,
+
+		//
+		// 230: Waypoint data
+		//
+		k_param_plane_loiter_radius = 190,
+
+		// other objects
+		k_param_rollController = 200,
+		k_param_pitchController,
+		k_param_yawController,
+		k_param_L1_controller,
+		k_param_SpdHgt_Controller,
+
+		//BEV our objects
+		k_param_transitionState = 210,
+        k_param_camera_gimbal,
 
         // 254,255: reserved
     };
@@ -368,41 +279,32 @@ public:
     //
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
-    AP_Int8         telem_delay;
-#if CLI_ENABLED == ENABLED
-    AP_Int8         cli_enabled;
+    AP_Int16        serial0_baud;
+    AP_Int16        serial1_baud;
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    AP_Int16        serial2_baud;
+    AP_Int8         serial2_protocol;
 #endif
-
-    AP_Float        throttle_filt;
-    AP_Int16        throttle_behavior;
-    AP_Int16        takeoff_trigger_dz;
-    AP_Float        pilot_takeoff_alt;
+    AP_Int8         telem_delay;
 
     AP_Int16        rtl_altitude;
-    AP_Int16        rtl_speed_cms;
-    AP_Float        sonar_gain;
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
 
+    AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
-    AP_Int8         super_simple;
-    AP_Int16        rtl_alt_final;
-    AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
 
-    AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
+    AP_Int8         rssi_pin;
+    AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
-
-    AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
-    AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
     
     // Waypoints
     //
-    AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
     AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
@@ -410,10 +312,16 @@ public:
     // Throttle
     //
     AP_Int16        throttle_min;
+    AP_Int16        throttle_max;
     AP_Int8         failsafe_throttle;
     AP_Int16        failsafe_throttle_value;
+    AP_Int16        throttle_cruise;
     AP_Int16        throttle_mid;
     AP_Int16        throttle_deadzone;
+
+    //BEV keys
+    AP_Int32 key_pid;
+    AP_Int32 key_value;
 
     // Flight modes
     //
@@ -423,65 +331,43 @@ public:
     AP_Int8         flight_mode4;
     AP_Int8         flight_mode5;
     AP_Int8         flight_mode6;
-    AP_Int8         simple_modes;
 
     // Misc
     //
     AP_Int32        log_bitmask;
     AP_Int8         esc_calibrate;
-    AP_Int8         radio_tuning;
-    AP_Int16        radio_tuning_high;
-    AP_Int16        radio_tuning_low;
     AP_Int8         frame_orientation;
-    AP_Int8         ch7_option;
-    AP_Int8         ch8_option;
-    AP_Int8         ch9_option;
-    AP_Int8         ch10_option;
-    AP_Int8         ch11_option;
-    AP_Int8         ch12_option;
     AP_Int8         arming_check;
-    AP_Int8         disarm_delay;
 
-    AP_Int8         land_repositioning;
-    AP_Int8         fs_ekf_action;
-    AP_Int8         fs_crash_check;
-    AP_Float        fs_ekf_thresh;
-    AP_Int16        gcs_pid_mask;
-
-#if FRAME_CONFIG ==     HELI_FRAME
-    // Heli
-    RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
-    RC_Channel      heli_servo_rsc;                                             // servo for rotor speed control output
-#endif
-#if FRAME_CONFIG ==     SINGLE_FRAME
-    // Single
-    RC_Channel      single_servo_1, single_servo_2, single_servo_3, single_servo_4;     // servos for four flaps
-#endif
-
-#if FRAME_CONFIG ==     COAX_FRAME
-    // Coax copter flaps
-    RC_Channel      single_servo_1, single_servo_2; // servos for two flaps
-#endif
+    //AP_Int8         land_repositioning;
+    AP_Float        ekfcheck_thresh;
+    AP_Float        dcmcheck_thresh;
 
     // RC channels
     RC_Channel              rc_1;
     RC_Channel              rc_2;
     RC_Channel              rc_3;
     RC_Channel              rc_4;
-    RC_Channel_aux          rc_5;
-    RC_Channel_aux          rc_6;
-    RC_Channel_aux          rc_7;
-    RC_Channel_aux          rc_8;
+    RC_Channel              rc_5;
+    RC_Channel              rc_6;
+    RC_Channel          rc_7;
+    RC_Channel          rc_8; //BEV changed from RC_Channel_aux
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    RC_Channel_aux          rc_9;
+    RC_Channel              rc_9; //BEV changed from RC_Channel_aux
 #endif
-    RC_Channel_aux          rc_10;
-    RC_Channel_aux          rc_11;
+    RC_Channel              rc_10; //BEV changed from RC_Channel_aux
+    RC_Channel              rc_11; //BEV changed from RC_Channel_aux
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    RC_Channel_aux          rc_12;
-    RC_Channel_aux          rc_13;
-    RC_Channel_aux          rc_14;
+    RC_Channel          rc_12;  //BEV changed from RC_Channel_aux
+    RC_Channel          rc_13;  //BEV changed from RC_Channel_aux
+    RC_Channel          rc_14;  //BEV changed from RC_Channel_aux
 #endif
+    //BEV creating rc channel objects for the left and right elevons.
+    //They are linked to ch 1 and 2 because they output on those pins.
+    //They do not read in from the radio, and are fundamentally different
+    //from the above rc_1 and 2 (roll and pitch inputs)
+    RC_Channel          rc_elevon_left;
+    RC_Channel          rc_elevon_right;
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
@@ -490,61 +376,43 @@ public:
     AP_Float                acro_yaw_p;
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
-    AP_Int8                 acro_trainer;
     AP_Float                acro_expo;
 
-    // PI/D controllers
-#if FRAME_CONFIG == HELI_FRAME
-    AC_HELI_PID             pid_rate_roll;
-    AC_HELI_PID             pid_rate_pitch;
-    AC_HELI_PID             pid_rate_yaw;
-#else
     AC_PID                  pid_rate_roll;
     AC_PID                  pid_rate_pitch;
     AC_PID                  pid_rate_yaw;
-#endif
-    AC_PI_2D                pi_vel_xy;
+    AC_PID                  pid_loiter_rate_lat;
+    AC_PID                  pid_loiter_rate_lon;
 
-    AC_P                    p_vel_z;
-    AC_PID                  pid_accel_z;
+    AC_P                    p_throttle_rate;
+    AC_PID                  pid_throttle_accel;
 
-#if PRECISION_LANDING == ENABLED
-    AC_PI_2D                pi_precland;
-#endif
-
-    AC_P                    p_pos_xy;
+    AC_P                    p_loiter_pos;
     AC_P                    p_stabilize_roll;
     AC_P                    p_stabilize_pitch;
     AC_P                    p_stabilize_yaw;
     AC_P                    p_alt_hold;
 
-    // Autotune
-    AP_Int8                 autotune_axis_bitmask;
-    AP_Float                autotune_aggressiveness;
-    AP_Float                autotune_min_d;
+    //BEV begin plane parameter additions
+    // Feed-forward gains
+    //
+    //AP_Float stab_pitch_down;
+
+    // Waypoints
+    //
+    AP_Int16 plane_loiter_radius;
+
+    // Fly-by-wire
+    //
+    AP_Int16 flybywire_climb_rate;
+
+    // Navigational maneuvering limits
+    //
+    AP_Int16 roll_limit_cd;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters() :
-
-#if FRAME_CONFIG ==     HELI_FRAME
-        heli_servo_1        (CH_1),
-        heli_servo_2        (CH_2),
-        heli_servo_3        (CH_3),
-        heli_servo_4        (CH_4),
-        heli_servo_rsc      (CH_8),
-#endif
-#if FRAME_CONFIG ==     SINGLE_FRAME
-        single_servo_1        (CH_1),
-        single_servo_2        (CH_2),
-        single_servo_3        (CH_3),
-        single_servo_4        (CH_4),
-#endif
-
-#if FRAME_CONFIG ==     COAX_FRAME
-        single_servo_1        (CH_1),
-        single_servo_2        (CH_2),
-#endif
 
         rc_1                (CH_1),
         rc_2                (CH_2),
@@ -565,30 +433,28 @@ public:
         rc_14               (CH_14),
 #endif
 
-        // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
-        //---------------------------------------------------------------------------------------------------------------------------------
-#if FRAME_CONFIG == HELI_FRAME
-        pid_rate_roll           (RATE_ROLL_P,     RATE_ROLL_I,      RATE_ROLL_D,    RATE_ROLL_IMAX,     RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS, RATE_ROLL_FF),
-        pid_rate_pitch          (RATE_PITCH_P,    RATE_PITCH_I,     RATE_PITCH_D,   RATE_PITCH_IMAX,    RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS, RATE_PITCH_FF),
-        pid_rate_yaw            (RATE_YAW_P,      RATE_YAW_I,       RATE_YAW_D,     RATE_YAW_IMAX,      RATE_YAW_FILT_HZ,   MAIN_LOOP_SECONDS, RATE_YAW_FF),
-#else
-        pid_rate_roll           (RATE_ROLL_P,     RATE_ROLL_I,      RATE_ROLL_D,    RATE_ROLL_IMAX,     RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS),
-        pid_rate_pitch          (RATE_PITCH_P,    RATE_PITCH_I,     RATE_PITCH_D,   RATE_PITCH_IMAX,    RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS),
-        pid_rate_yaw            (RATE_YAW_P,      RATE_YAW_I,       RATE_YAW_D,     RATE_YAW_IMAX,      RATE_YAW_FILT_HZ,   MAIN_LOOP_SECONDS),
-#endif
+        //BEV creating rc channel objects for the left and right elevons.
+        //They are linked to ch 1 and 2 because they output on those pins.
+        //They do not read in from the radio, and are fundamentally different
+        //from the above rc_1 and 2 (roll and pitch inputs)
+        rc_elevon_left      (CH_1),
+        rc_elevon_right     (CH_2),
 
-        pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
+        // PID controller	    initial P	            initial I		        initial D               initial imax
+        //----------------------------------------------------------------------------------------------------------
+        pid_rate_roll           (RATE_ROLL_P,           RATE_ROLL_I,            RATE_ROLL_D,            RATE_ROLL_IMAX),
+        pid_rate_pitch          (RATE_PITCH_P,          RATE_PITCH_I,           RATE_PITCH_D,           RATE_PITCH_IMAX),
+        pid_rate_yaw            (RATE_YAW_P,            RATE_YAW_I,             RATE_YAW_D,             RATE_YAW_IMAX),
 
-        p_vel_z                 (VEL_Z_P),
-        pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
+        pid_loiter_rate_lat     (LOITER_RATE_P,         LOITER_RATE_I,          LOITER_RATE_D,          LOITER_RATE_IMAX),
+        pid_loiter_rate_lon     (LOITER_RATE_P,         LOITER_RATE_I,          LOITER_RATE_D,          LOITER_RATE_IMAX),
 
-#if PRECISION_LANDING == ENABLED
-        pi_precland             (PRECLAND_P,      PRECLAND_I,                       PRECLAND_IMAX,      VEL_XY_FILT_HZ,     PRECLAND_UPDATE_TIME),
-#endif
+        p_throttle_rate         (THROTTLE_RATE_P),
+        pid_throttle_accel      (THROTTLE_ACCEL_P,      THROTTLE_ACCEL_I,       THROTTLE_ACCEL_D,       THROTTLE_ACCEL_IMAX),
 
         // P controller	        initial P
         //----------------------------------------------------------------------
-        p_pos_xy                (POS_XY_P),
+        p_loiter_pos            (LOITER_POS_P),
 
         p_stabilize_roll        (STABILIZE_ROLL_P),
         p_stabilize_pitch       (STABILIZE_PITCH_P),

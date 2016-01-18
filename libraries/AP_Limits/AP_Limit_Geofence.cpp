@@ -8,11 +8,11 @@
 ///         Andreas Antonopoulos
 
 #include "AP_Limit_Geofence.h"
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] = {
+const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
     // @Param: FNC_ON
     // @DisplayName: Enable Geofence
     // @Description: Setting this to Enabled(1) will enable the geofence. Setting this to Disabled(0) will disable the geofence

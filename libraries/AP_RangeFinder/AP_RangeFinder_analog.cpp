@@ -19,9 +19,9 @@
  *
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
+#include <AP_HAL.h>
+#include <AP_Common.h>
+#include <AP_Math.h>
 #include "RangeFinder.h"
 #include "AP_RangeFinder_analog.h"
 
@@ -38,12 +38,11 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder &_ranger, uint8_t insta
     source = hal.analogin->channel(ranger._pin[instance]);
     if (source == NULL) {
         // failed to allocate a ADC channel? This shouldn't happen
-        set_status(RangeFinder::RangeFinder_NotConnected);
+        state.healthy = false;
         return;
     }
     source->set_stop_pin((uint8_t)ranger._stop_pin[instance]);
     source->set_settle_time((uint16_t)ranger._settle_time_ms[instance]);
-    set_status(RangeFinder::RangeFinder_NoData);
 }
 
 /* 
@@ -107,8 +106,8 @@ void AP_RangeFinder_analog::update(void)
             dist_m = 0;
         }
         dist_m = scaling / (v - offset);
-        if (isinf(dist_m) || dist_m > max_distance_cm * 0.01f) {
-            dist_m = max_distance_cm * 0.01f;
+        if (isinf(dist_m) || dist_m > max_distance_cm) {
+            dist_m = max_distance_cm * 0.01;
         }
         break;
     }
@@ -117,7 +116,8 @@ void AP_RangeFinder_analog::update(void)
     }
     state.distance_cm = dist_m * 100.0f;  
 
-    // update range_valid state based on distance measured
-    update_status();
+    // we can't actually tell if an analog rangefinder is healthy, so
+    // always set as healthy
+    state.healthy = true;
 }
 

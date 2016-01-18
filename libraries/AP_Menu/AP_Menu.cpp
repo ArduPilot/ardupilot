@@ -4,9 +4,9 @@
 // Simple commandline menu system.
 //
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_Common.h>
+#include <AP_Progmem.h>
+#include <AP_HAL.h>
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -23,7 +23,7 @@ AP_HAL::BetterStream *Menu::_port;
 
 
 // constructor
-Menu::Menu(const char *prompt, const Menu::command *commands, uint8_t entries, preprompt ppfunc) :
+Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entries, preprompt ppfunc) :
     _prompt(prompt),
     _commands(commands),
     _entries(entries),
@@ -84,7 +84,7 @@ Menu::_check_for_input(void)
 void
 Menu::_display_prompt(void)
 {
-    _port->printf("%s] ", _prompt);
+    _port->printf_P(PSTR("%S] "), FPSTR(_prompt));    
 }
 
 // run the menu
@@ -106,7 +106,7 @@ Menu::_run_command(bool prompt_on_enter)
     // XXX should an empty line by itself back out of the current menu?
     while (argc <= _args_max) {
         _argv[argc].str = strtok_r(NULL, " ", &s);
-        if (_argv[argc].str == NULL || '\0' == _argv[argc].str[0])
+        if ('\0' == _argv[argc].str)
             break;
         _argv[argc].i = atol(_argv[argc].str);
         _argv[argc].f = atof(_argv[argc].str);      // calls strtod, > 700B !
@@ -135,7 +135,7 @@ Menu::_run_command(bool prompt_on_enter)
     bool cmd_found = false;
     // look for a command matching the first word (note that it may be empty)
     for (i = 0; i < _entries; i++) {
-        if (!strcasecmp(_argv[0].str, _commands[i].command)) {
+        if (!strcasecmp_P(_argv[0].str, _commands[i].command)) {
             ret = _call(i, argc);
             cmd_found=true;
             if (-2 == ret)
@@ -146,10 +146,10 @@ Menu::_run_command(bool prompt_on_enter)
     
     // implicit commands
     if (i == _entries) {
-        if (!strcmp(_argv[0].str, "?") || (!strcasecmp(_argv[0].str, "help"))) {
+        if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, PSTR("help")))) {
             _help();
             cmd_found=true;
-        } else if (!strcasecmp(_argv[0].str, "exit")) {
+        } else if (!strcasecmp_P(_argv[0].str, PSTR("exit"))) {
             // exit the menu
             return true;
         }
@@ -157,7 +157,7 @@ Menu::_run_command(bool prompt_on_enter)
 
     if (cmd_found==false)
     {
-        _port->println("Invalid command, type 'help'");
+        _port->println_P(PSTR("Invalid command, type 'help'"));
     }
 
     return false;
@@ -181,7 +181,7 @@ Menu::run(void)
     for (;;) {
 
         // run the pre-prompt function, if one is defined
-        if (_ppfunc) {
+        if (NULL != _ppfunc) {
             if (!_ppfunc())
                 return;
             _display_prompt();
@@ -228,10 +228,10 @@ Menu::_help(void)
 {
     int i;
 
-    _port->println("Commands:");
+    _port->println_P(PSTR("Commands:"));
     for (i = 0; i < _entries; i++) {
 		hal.scheduler->delay(10);
-        _port->printf("  %s\n", _commands[i].command);
+        _port->printf_P(PSTR("  %S\n"), FPSTR(_commands[i].command));
 	}
 }
 
@@ -241,7 +241,7 @@ Menu::_call(uint8_t n, uint8_t argc)
 {
     func fn;
 
-    pgm_read_block(&_commands[n].func, &fn, sizeof(fn));
+    fn = (func)pgm_read_pointer(&_commands[n].func);
     return(fn(argc, &_argv[0]));
 }
 

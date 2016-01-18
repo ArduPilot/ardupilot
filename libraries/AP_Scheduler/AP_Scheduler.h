@@ -23,48 +23,42 @@
 #ifndef AP_SCHEDULER_H
 #define AP_SCHEDULER_H
 
-#include <AP_Param/AP_Param.h>
-
-#define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+#include <AP_Param.h>
 
 /*
   A task scheduler for APM main loops
 
   Sketches should call scheduler.init() on startup, then call
-  scheduler.tick() at regular intervals (typically every 10ms).
+  scheduler.tick() at regular intervals (typically every 10ms). 
 
   To run tasks use scheduler.run(), passing the amount of time that
   the scheduler is allowed to use before it must return
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-
 class AP_Scheduler
 {
 public:
-    FUNCTOR_TYPEDEF(task_fn_t, void);
+	typedef void (*task_fn_t)(void);
 
-    struct Task {
-        task_fn_t function;
-        const char *name;
-        uint16_t interval_ticks;
-        uint16_t max_time_micros;
-    };
+	struct Task {
+		task_fn_t function;
+		uint16_t interval_ticks;
+		uint16_t max_time_micros;
+	};
 
-    // initialise scheduler
-    void init(const Task *tasks, uint8_t num_tasks);
+	// initialise scheduler
+	void init(const Task *tasks, uint8_t num_tasks);
 
-    // call when one tick has passed
-    void tick(void);
+	// call when one tick has passed
+	void tick(void);
 
-    // run the tasks. Call this once per 'tick'.
-    // time_available is the amount of time available to run
-    // tasks in microseconds
-    void run(uint16_t time_available);
+	// run the tasks. Call this once per 'tick'. 
+	// time_available is the amount of time available to run 
+	// tasks in microseconds
+	void run(uint16_t time_available);
 
-    // return the number of microseconds available for the current task
-    uint16_t time_available_usec(void);
+	// return the number of microseconds available for the current task
+	uint16_t time_available_usec(void);
 
     // return debug parameter
     uint8_t debug(void) { return _debug; }
@@ -74,33 +68,33 @@ public:
     // end of a run()
     float load_average(uint32_t tick_time_usec) const;
 
-    static const struct AP_Param::GroupInfo var_info[];
+	static const struct AP_Param::GroupInfo var_info[];
 
     // current running task, or -1 if none. Used to debug stuck tasks
     static int8_t current_task;
 
 private:
-    // used to enable scheduler debugging
-    AP_Int8 _debug;
+	// used to enable scheduler debugging
+	AP_Int8 _debug;
+	
+	// progmem list of tasks to run
+	const struct Task *_tasks;
+	
+	// number of tasks in _tasks list
+	uint8_t _num_tasks;
 
-    // progmem list of tasks to run
-    const struct Task *_tasks;
+	// number of 'ticks' that have passed (number of times that
+	// tick() has been called
+	uint16_t _tick_counter;
 
-    // number of tasks in _tasks list
-    uint8_t _num_tasks;
+	// tick counter at the time we last ran each task
+	uint16_t *_last_run;
 
-    // number of 'ticks' that have passed (number of times that
-    // tick() has been called
-    uint16_t _tick_counter;
+	// number of microseconds allowed for the current task
+	uint32_t _task_time_allowed;
 
-    // tick counter at the time we last ran each task
-    uint16_t *_last_run;
-
-    // number of microseconds allowed for the current task
-    uint32_t _task_time_allowed;
-
-    // the time in microseconds when the task started
-    uint32_t _task_time_started;
+	// the time in microseconds when the task started
+	uint32_t _task_time_started;
 
     // number of spare microseconds accumulated
     uint32_t _spare_micros;

@@ -1,29 +1,35 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 /*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  All APM Project credits from the original work are kept intact below as a
+ *  courtesy.
  */
 
 //	Code by Jon Challinger
 //  Modified by Paul Riseborough to implement a three loop autopilot
 //  topology
 //
-#include <AP_HAL/AP_HAL.h>
+#include <AP_Math.h>
+#include <AP_HAL.h>
 #include "AP_YawController.h"
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_YawController::var_info[] = {
+const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 
 	// @Param: SLIP
 	// @DisplayName: Sideslip control gain
@@ -33,7 +39,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 	AP_GROUPINFO("SLIP",    0, AP_YawController, _K_A,    0),
 
 	// @Param: INT
-	// @DisplayName: Sideslip control integrator
+	// @DisplayName: Sidelsip control integrator
 	// @Description: This is the integral gain from lateral acceleration error. This gain should only be non-zero if active control over sideslip is desired. If active control over sideslip is required then this can be set to 1.0 as a first try.
 	// @Range: 0 2
 	// @Increment: 0.25
@@ -72,7 +78,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 
 int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 {
-	uint32_t tnow = AP_HAL::millis();
+	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
 	if (_last_t == 0 || dt > 1000) {
 		dt = 0;
@@ -80,7 +86,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	_last_t = tnow;
 	
 
-    int16_t aspd_min = aparm.airspeed_min;
+    int16_t aspd_min = 10.0f; //BEV hardcoded in airspeed min
     if (aspd_min < 1) {
         aspd_min = 1;
     }
@@ -97,9 +103,9 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	}
 	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
+        aspeed = 13.0f;
 	}
-    rate_offset = (GRAVITY_MSS / MAX(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
+    rate_offset = (GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
     // Get body rate vector (radians/sec)
 	float omega_z = _ahrs.get_gyro().z;
@@ -131,10 +137,10 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 		{
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
-                _integrator += MAX(integ_in * delta_time , 0);
+                _integrator += max(integ_in * delta_time , 0);
             } else if (_last_out > 45) {
                 // prevent the integrator from decreasing if surface defln demand  is below the lower limit
-                _integrator += MIN(integ_in * delta_time , 0);
+                _integrator += min(integ_in * delta_time , 0);
 			} else {
                 _integrator += integ_in * delta_time;
             }
@@ -165,9 +171,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	// Save to last value before application of limiter so that integrator limiting
 	// can detect exceedance next frame
 	// Scale using inverse dynamic pressure (1/V^2)
-	_pid_info.I = _K_D * _integrator * scaler * scaler;
-	_pid_info.D = _K_D * (-rate_hp_out) * scaler * scaler;
-	_last_out =  _pid_info.I + _pid_info.D;
+	_last_out =  _K_D * (_integrator - rate_hp_out) * scaler * scaler;
 
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);

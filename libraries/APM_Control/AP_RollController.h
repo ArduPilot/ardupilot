@@ -1,18 +1,35 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+/*
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef __AP_ROLL_CONTROLLER_H__
 #define __AP_ROLL_CONTROLLER_H__
 
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include "AP_AutoTune.h"
-#include <DataFlash/DataFlash.h>
-#include <AP_Math/AP_Math.h>
+#include <AP_AHRS.h>
+#include <AP_Common.h>
+#include <AP_Vehicle.h>
+#include <AP_AutoTune.h>
+#include <DataFlash.h>
+#include <AP_Math.h>
 
 class AP_RollController {
 public:
-	AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
+	//BEV modified from FixedWing to VTOL
+	AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::VTOL &parms, DataFlash_Class &_dataflash) :
 		aparm(parms),
         autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash),
         _ahrs(ahrs)
@@ -28,18 +45,17 @@ public:
     void autotune_start(void) { autotune.start(); }
     void autotune_restore(void) { autotune.stop(); }
 
-    const       DataFlash_Class::PID_Info& get_pid_info(void) const { return _pid_info; }
-
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	const AP_Vehicle::FixedWing &aparm;
+	//BEV modified from FixedWing to VTOL
+	const AP_Vehicle::VTOL &aparm;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
 	uint32_t _last_t;
 	float _last_out;
 
-    DataFlash_Class::PID_Info _pid_info;
+	float _integrator;
 
 	int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator);
 

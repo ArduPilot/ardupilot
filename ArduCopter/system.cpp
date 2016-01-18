@@ -1,7 +1,4 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#include "Copter.h"
-
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
 *        We will determine later if we are actually on the ground and process a
@@ -9,42 +6,63 @@
 *
 *****************************************************************************/
 
+/*
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #if CLI_ENABLED == ENABLED
+// Functions called from the top-level menu
+static int8_t   process_logs(uint8_t argc, const Menu::arg *argv);      // in Log.pde
+static int8_t   setup_mode(uint8_t argc, const Menu::arg *argv);        // in setup.pde
+static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in test.cpp
+static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
-int8_t Copter::main_menu_help(uint8_t argc, const Menu::arg *argv)
+static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->printf("Commands:\n"
+    cliSerial->printf_P(PSTR("Commands:\n"
                          "  logs\n"
                          "  setup\n"
                          "  test\n"
                          "  reboot\n"
-                         "\n");
+                         "\n"));
     return(0);
 }
 
 // Command/function table for the top-level menu.
-const struct Menu::command main_menu_commands[] = {
+const struct Menu::command main_menu_commands[] PROGMEM = {
 //   command		function called
 //   =======        ===============
-    {"logs",                MENU_FUNC(process_logs)},
-    {"setup",               MENU_FUNC(setup_mode)},
-    {"test",                MENU_FUNC(test_mode)},
-    {"reboot",              MENU_FUNC(reboot_board)},
-    {"help",                MENU_FUNC(main_menu_help)},
+    {"logs",                process_logs},
+    {"setup",               setup_mode},
+    {"test",                test_mode},
+    {"reboot",              reboot_board},
+    {"help",                main_menu_help},
 };
 
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
-int8_t Copter::reboot_board(uint8_t argc, const Menu::arg *argv)
+static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 {
     hal.scheduler->reboot(false);
     return 0;
 }
 
 // the user wants the CLI. It never exits
-void Copter::run_cli(AP_HAL::UARTDriver *port)
+static void run_cli(AP_HAL::UARTDriver *port)
 {
     cliSerial = port;
     Menu::set_port(port);
@@ -69,18 +87,7 @@ void Copter::run_cli(AP_HAL::UARTDriver *port)
 
 #endif // CLI_ENABLED
 
-static void mavlink_delay_cb_static()
-{
-    copter.mavlink_delay_cb();
-}
-
-
-static void failsafe_check_static()
-{
-    copter.failsafe_check();
-}
-
-void Copter::init_ardupilot()
+static void init_ardupilot()
 {
     if (!hal.gpio->usb_connected()) {
         // USB is not connected, this means UART0 may be a Xbee, with
@@ -91,12 +98,44 @@ void Copter::init_ardupilot()
         delay(1000);
     }
 
-    // initialise serial port
-    serial_manager.init_console();
+    // Console serial port
+    //
+    // The console port buffers are defined to be sufficiently large to support
+    // the MAVLink protocol efficiently
+    //
+#if HIL_MODE != HIL_MODE_DISABLED
+    // we need more memory for HIL, as we get a much higher packet rate
+    hal.uartA->begin(map_baudrate(g.serial0_baud), 256, 256);
+#else
+    // use a bit less for non-HIL operation
+    hal.uartA->begin(map_baudrate(g.serial0_baud), 512, 128);
+#endif
 
-    cliSerial->printf("\n\nInit " FIRMWARE_STRING
-                         "\n\nFree RAM: %u\n",
+    // GPS serial port.
+    //
+#if GPS_PROTOCOL != GPS_PROTOCOL_IMU
+    // standard gps running. Note that we need a 256 byte buffer for some
+    // GPS types (eg. UBLOX)
+    hal.uartB->begin(38400, 256, 16);
+#endif
+
+#if GPS2_ENABLE
+    if (hal.uartE != NULL) {
+        hal.uartE->begin(38400, 256, 16);
+    }
+#endif
+
+    cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
+                         "\n\nFree RAM: %u\n"),
                         hal.util->available_memory());
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    /*
+      run the timer a bit slower on APM2 to reduce the interrupt load
+      on the CPU
+     */
+    hal.scheduler->set_timer_speed(500);
+#endif
 
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
@@ -108,124 +147,124 @@ void Copter::init_ardupilot()
 
     BoardConfig.init();
 
-    // initialise serial port
-    serial_manager.init();
+    bool enable_external_leds = true;
 
     // init EPM cargo gripper
 #if EPM_ENABLED == ENABLED
     epm.init();
+    enable_external_leds = !epm.enabled();
 #endif
 
     // initialise notify system
     // disable external leds if epm is enabled because of pin conflict on the APM
-    notify.init(true);
+    notify.init(enable_external_leds);
 
     // initialise battery monitor
     battery.init();
-
-    // Init RSSI
-    rssi.init();
     
+    rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
+
     barometer.init();
+
+    // init the GCS
+    gcs[0].init(hal.uartA);
 
     // Register the mavlink service callback. This will run
     // anytime there are more than 5ms remaining in a call to
     // hal.scheduler->delay.
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
     ap.usb_connected = true;
     check_usb_mux();
 
-    // init the GCS connected to the console
-    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+    // we have a 2nd serial port for telemetry on all boards except
+    // APM2. We actually do have one on APM2 but it isn't necessary as
+    // a MUX is used
+    gcs[1].setup_uart(hal.uartC, map_baudrate(g.serial1_baud), 128, 128);
+#endif
 
-    // init telemetry port
-    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
-
-    // setup serial port for telem2
-    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
-
-    // setup serial port for fourth telemetry port (not used by default)
-    gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // setup frsky
-    frsky_telemetry.init(serial_manager);
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    if (g.serial2_protocol == SERIAL2_FRSKY_DPORT || 
+        g.serial2_protocol == SERIAL2_FRSKY_SPORT) {
+        frsky_telemetry.init(hal.uartD, g.serial2_protocol);
+    } else {
+        gcs[2].setup_uart(hal.uartD, map_baudrate(g.serial2_baud), 128, 128);
+    }
 #endif
 
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
+    //bev this is ununsed and doesn't work wiht our generated mavlink headers for some reason
+    //mavlink_system.type = 2; //MAV_QUADROTOR;
 
 #if LOGGING_ENABLED == ENABLED
-    log_init();
+    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    if (!DataFlash.CardInserted()) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash inserted"));
+        g.log_bitmask.set(0);
+    } else if (DataFlash.NeedErase()) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+        do_erase_logs();
+        gcs[0].reset_cli_timeout();
+    }
 #endif
 
-    // update motor interlock state
-    update_using_interlock();
-
-#if FRAME_CONFIG == HELI_FRAME
-    // trad heli specific initialisation
-    heli_init();
-#endif
-    
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
 
     // initialise which outputs Servo and Relay events can use
-    ServoRelayEvents.set_channel_mask(~motors.get_motor_mask());
+    //ServoRelayEvents.set_channel_mask(~motors.get_motor_mask());
 
     relay.init();
+    //BEV init camera
+    camera.init();
+    //BEV init gimbal
+#if BEV_GIMBAL == ENABLED
+    camera_gimbal.init();
+#endif
+
+    //BEV init uORB communication objects
+    bev_key.init();
 
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
      */
-    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
+    hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
+
+ #if CONFIG_ADC == ENABLED
+    // begin filtering the ADC Gyros
+    apm1_adc.Init();           // APM ADC library initialization
+ #endif // CONFIG_ADC
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.init(&DataFlash);
 
     if(g.compass_enabled)
         init_compass();
-
-#if OPTFLOW == ENABLED
-    // make optflow available to AHRS
-    ahrs.set_optflow(&optflow);
-#endif
 
     // initialise attitude and position controllers
     attitude_control.set_dt(MAIN_LOOP_SECONDS);
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
-    // init the optical flow sensor
-    init_optflow();
-
-#if MOUNT == ENABLED
-    // initialise camera mount
-    camera_mount.init(serial_manager);
-#endif
-
-#if PRECISION_LANDING == ENABLED
-    // initialise precision landing
-    init_precland();
-#endif
+    // initialise inertial nav
+    inertial_nav.init();
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
 
 #if CLI_ENABLED == ENABLED
-    if (g.cli_enabled) {
-        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->println(msg);
-        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
-            gcs[1].get_uart()->println(msg);
-        }
-        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
-            gcs[2].get_uart()->println(msg);
-        }
+    const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+    cliSerial->println_P(msg);
+    if (gcs[1].initialised) {
+        hal.uartC->println_P(msg);
+    }
+    if (num_gcs > 2 && gcs[2].initialised) {
+        hal.uartD->println_P(msg);
     }
 #endif // CLI_ENABLED
 
@@ -233,55 +272,53 @@ void Copter::init_ardupilot()
     while (barometer.get_last_update() == 0) {
         // the barometer begins updating when we get the first
         // HIL_STATE message
-        gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
         delay(1000);
     }
-
-    // set INS to HIL mode
-    ins.set_hil_mode();
 #endif
 
     // read Baro pressure at ground
     //-----------------------------
     init_barometer(true);
 
-    // initialise sonar
-#if CONFIG_SONAR == ENABLED
-    init_sonar();
-#endif
-
-    // initialise AP_RPM library
-    rpm_sensor.init();
 
     // initialise mission library
     mission.init();
 
     // initialise the flight mode and aux switch
     // ---------------------------
-    reset_control_switch();
-    init_aux_switches();
+    //reset_control_switch();
+    //init_aux_switches();
 
-    startup_INS_ground();
+#if FRAME_CONFIG == HELI_FRAME
+    // trad heli specific initialisation
+    heli_init();
+#endif
 
-    // set landed flags
-    set_land_complete(true);
-    set_land_complete_maybe(true);
+    startup_ground(true);
+
+#if LOGGING_ENABLED == ENABLED
+    Log_Write_Startup();
+#endif
+
+    //BEV initialize uORB objects
+    bev_uorb_init();
+
+    //BEV camera gimbal
+    camera_gimbal.init();
+
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
-    serial_manager.set_blocking_writes_all(false);
+    hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
+    if (hal.uartD != NULL) {
+        hal.uartD->set_blocking_writes(false);
+    }
 
-    // enable CPU failsafe
-    failsafe_enable();
-
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
-
-    // init vehicle capabilties
-    init_capabilities();
-
-    cliSerial->print("\nReady to FLY ");
+    cliSerial->print_P(PSTR("\nReady to FLY "));
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -291,91 +328,49 @@ void Copter::init_ardupilot()
 //******************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //******************************************************************************
-void Copter::startup_INS_ground()
+static void startup_ground(bool force_gyro_cal)
 {
+    gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
+
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
     ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
 
-    // Warm up and calibrate gyro offsets
-    ins.init(ins_sample_rate);
-
-    // reset ahrs including gyro bias
-    ahrs.reset();
-}
-
-// calibrate gyros - returns true if succesfully calibrated
-bool Copter::calibrate_gyros()
-{
-    // gyro offset calibration
-    copter.ins.init_gyro();
+    // Warm up and read Gyro offsets
+    // -----------------------------
+    ins.init(force_gyro_cal?AP_InertialSensor::COLD_START:AP_InertialSensor::WARM_START,
+             ins_sample_rate);
+ #if CLI_ENABLED == ENABLED
+    report_ins();
+ #endif
 
     // reset ahrs gyro bias
-    if (copter.ins.gyro_calibrated_ok_all()) {
-        copter.ahrs.reset_gyro_drift();
+    if (force_gyro_cal) {
+        ahrs.reset_gyro_drift();
+    }
+
+    // setup fast AHRS gains to get right attitude
+    ahrs.set_fast_gains(true);
+
+    // set landed flag
+    set_land_complete(true);
+    set_land_complete_maybe(true);
+}
+
+// returns true if the GPS is ok and home position is set
+static bool GPS_ok()
+{
+    if (ap.home_is_set && gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+        !gps_glitch.glitching() && !failsafe.gps &&
+        !ekf_check_state.bad_compass && !failsafe.ekf) {
         return true;
-    }
-
-    return false;
-}
-
-// position_ok - returns true if the horizontal absolute position is ok and home position is set
-bool Copter::position_ok()
-{
-    // return false if ekf failsafe has triggered
-    if (failsafe.ekf) {
+    }else{
         return false;
     }
-
-    // check ekf position estimate
-    return (ekf_position_ok() || optflow_position_ok());
-}
-
-// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
-bool Copter::ekf_position_ok()
-{
-    if (!ahrs.have_inertial_nav()) {
-        // do not allow navigation with dcm position
-        return false;
-    }
-
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
-    // if disarmed we accept a predicted horizontal position
-    if (!motors.armed()) {
-        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
-    } else {
-        // once armed we require a good absolute position and EKF must not be in const_pos_mode
-        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
-    }
-}
-
-// optflow_position_ok - returns true if optical flow based position estimate is ok
-bool Copter::optflow_position_ok()
-{
-#if OPTFLOW != ENABLED
-    return false;
-#else
-    // return immediately if optflow is not enabled or EKF not used
-    if (!optflow.enabled() || !ahrs.have_inertial_nav()) {
-        return false;
-    }
-
-    // get filter status from EKF
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-
-    // if disarmed we accept a predicted horizontal relative position
-    if (!motors.armed()) {
-        return (filt_status.flags.pred_horiz_pos_rel);
-    } else {
-        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
-    }
-#endif
 }
 
 // update_auto_armed - update status of auto_armed flag
-void Copter::update_auto_armed()
+static void update_auto_armed()
 {
     // disarm checks
     if(ap.auto_armed){
@@ -385,34 +380,27 @@ void Copter::update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
+        if(manual_flight_mode(control_mode) && g.rc_3.control_in == 0 && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME 
-        // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
-        // so that rotor runup is checked again before attempting to take-off
-        if(ap.land_complete && !motors.rotor_runup_complete()) {
-            set_auto_armed(false);
-        }
-#endif // HELI_FRAME
     }else{
         // arm checks
         
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero && motors.rotor_runup_complete()) {
+        if(motors.armed() && g.rc_3.control_in != 0 && motors.motor_runup_complete()) {
             set_auto_armed(true);
         }
 #else
         // if motors are armed and throttle is above zero auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero) {
+        if(motors.armed() && g.rc_3.control_in != 0) {
             set_auto_armed(true);
         }
 #endif // HELI_FRAME
     }
 }
 
-void Copter::check_usb_mux(void)
+static void check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
     if (usb_check == ap.usb_connected) {
@@ -421,21 +409,35 @@ void Copter::check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     ap.usb_connected = usb_check;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    // the APM2 has a MUX setup where the first serial port switches
+    // between USB and a TTL serial connection. When on USB we use
+    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
+    // at SERIAL1_BAUD.
+    if (ap.usb_connected) {
+        hal.uartA->begin(map_baudrate(g.serial0_baud));
+    } else {
+        hal.uartA->begin(map_baudrate(g.serial1_baud));
+    }
+#endif
 }
 
-// frsky_telemetry_send - sends telemetry data using frsky telemetry
-//  should be called at 5Hz by scheduler
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Copter::frsky_telemetry_send(void)
+/*
+  send FrSky telemetry. Should be called at 5Hz by scheduler
+ */
+static void telemetry_send(void)
 {
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.send_frames((uint8_t)control_mode, 
+                                (AP_Frsky_Telem::FrSkyProtocol)g.serial2_protocol.get());
 #endif
+}
 
 /*
   should we log a message type now?
  */
-bool Copter::should_log(uint32_t mask)
+static bool should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
@@ -443,9 +445,29 @@ bool Copter::should_log(uint32_t mask)
     }
     bool ret = motors.armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
     if (ret && !DataFlash.logging_started() && !in_log_download) {
+        // we have to set in_mavlink_delay to prevent logging while
+        // writing headers
         start_logging();
     }
     return ret;
+#else
+    return false;
+#endif
+}
+
+//used for logging camera messages
+static bool can_force_log()
+{
+#if LOGGING_ENABLED == ENABLED
+    if (in_mavlink_delay) {
+        return false;
+    }
+    if (!DataFlash.logging_started() && !in_log_download) {
+        // we have to set in_mavlink_delay to prevent logging while
+        // writing headers
+        start_logging();
+    }
+    return true;
 #else
     return false;
 #endif

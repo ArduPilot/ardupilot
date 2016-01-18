@@ -8,22 +8,22 @@
 ///         Andreas Antonopoulos
 
 
-#include "AP_Limit_Module.h"
+#include <AP_Limit_Module.h>
 
-extern const char *get_module_name(enum moduleid i) {
+extern const prog_char_t *get_module_name(enum moduleid i) {
 
     switch (i) {
     case AP_LIMITS_GPSLOCK:
-        return "GPSLock Limit";
+        return PSTR("GPSLock Limit");
         break;
     case AP_LIMITS_GEOFENCE:
-        return "Geofence Limit";
+        return PSTR("Geofence Limit");
         break;
     case AP_LIMITS_ALTITUDE:
-        return "Altitude Limit";
+        return PSTR("Altitude Limit");
         break;
     default:
-        return "ERROR";
+        return PSTR("ERROR");
         break;
     }
 }

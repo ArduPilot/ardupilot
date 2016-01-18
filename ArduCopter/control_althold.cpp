@@ -1,161 +1,107 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include "Copter.h"
-
 
 /*
- * control_althold.pde - init and run calls for althold, flight mode
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
 // althold_init - initialise althold controller
-bool Copter::althold_init(bool ignore_checks)
+static bool althold_init(bool ignore_checks)
 {
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete
-    if (!ignore_checks && !motors.rotor_runup_complete()){
-        return false;
-    }
-#endif
-
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
-
-    // stop takeoff if running
-    takeoff_stop();
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
+    alt_hold_gs_des_alt = pos_control.get_alt_target();
 
     return true;
 }
 
 // althold_run - runs the althold controller
 // should be called at 100hz or more
-void Copter::althold_run()
+static void althold_run()
 {
-    AltHoldModeState althold_state;
-    float takeoff_climb_rate = 0.0f;
+    int16_t target_roll = 0, target_pitch = 0;
+    float target_yaw_rate = 0;
+    int16_t target_climb_rate = 0;
 
-    // initialize vertical speeds and acceleration
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-    pos_control.set_accel_z(g.pilot_accel_z);
-
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
-    // get pilot desired lean angles
-    float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
-
-    // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
-
-    // get pilot desired climb rate
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters are held on the ground until rotor speed runup has finished
-    bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()) && motors.rotor_runup_complete());
-#else
-    bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()));
-#endif
-
-    // Alt Hold State Machine Determination
+    // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
-        althold_state = AltHold_Disarmed;
-    } else if (!motors.get_interlock()){
-        althold_state = AltHold_MotorStop;
-    } else if (takeoff_state.running || takeoff_triggered){
-        althold_state = AltHold_Takeoff;
-    } else if (ap.land_complete){
-        althold_state = AltHold_Landed;
-    } else {
-        althold_state = AltHold_Flying;
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
+        attitude_control.set_throttle_out(0, false);
+        pos_control.set_alt_target_to_current_alt();
+        return;
     }
 
-    // Alt Hold State Machine
-    switch (althold_state) {
+    //pass target roll and pitch to is_transitioning. Will be set to desired values if indeed transitioning.
+    if(is_transitioning_get_angles(target_roll, target_pitch)) {
+        target_yaw_rate = 0.0f;
+        // attitude controller called below
+    } else {
+        //normal althold stuff
+        // get pilot desired lean angles
+        // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
 
-    case AltHold_Disarmed:
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
 
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+    // get pilot desired climb rate
+    target_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+
+    // check for pilot requested take-off
+    if (ap.land_complete && target_climb_rate > 0) {
+        // indicate we are taking off
+        set_land_complete(false);
+        // clear i term when we're taking off
+        set_throttle_takeoff();
+    }
+
+    // reset target lean angles and heading while landed
+    if (ap.land_complete) {
+        attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-        attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // Multicopter do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-#endif  // HELI_FRAME
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-        break;
-
-    case AltHold_MotorStop:
-
-#if FRAME_CONFIG == HELI_FRAME    
-        // helicopters are capable of flying even with the motor stopped, therefore we will attempt to keep flying
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-
-        // force descent rate and call position controller
-        pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-        pos_control.update_z_controller();
-#else   // Multicopter do not stabilize roll/pitch/yaw when motor are stopped
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-#endif  // HELI_FRAME
-        break;
-
-    case AltHold_Takeoff:
-
-        // initiate take-off
-        if (!takeoff_state.running) {
-            takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
-            // indicate we are taking off
-            set_land_complete(false);
-            // clear i terms
-            set_throttle_takeoff();
+        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(g.rc_3.control_in), false);
+        pos_control.set_alt_target_to_current_alt();
+        //BEV let it auto disarm on the ground
+#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
+        // disarm when the landing detector says we've landed and throttle is at minimum
+        if (g.rc_3.control_in == 0 || !throttle_input_valid()){
+            init_disarm_motors();
         }
-
-        // get take-off adjusted pilot and takeoff climb rates
-        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
-
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-
-        // call position controller
-        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
-        pos_control.update_z_controller();
-        break;
-
-    case AltHold_Landed:
-
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
-        attitude_control.set_yaw_target_to_current_heading();
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
-#else   // Multicopter do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
+#else
+        // disarm when the landing detector says we've landed
+        init_disarm_motors();
 #endif
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-        break;
-
-    case AltHold_Flying:
+    }else{
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-
-        // call throttle controller
-        if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-            // if sonar is ok, use surface tracking
-            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        // body-frame rate controller is run directly from 100hz loop
+        if(fabs(target_climb_rate) > 0.05) {
+            // call position controller
+            pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
+            pos_control.update_z_controller();
+            alt_hold_gs_des_alt = pos_control.get_alt_target();
+        } else {
+            pos_control.set_alt_target_with_slew(alt_hold_gs_des_alt, G_Dt);
+            pos_control.update_z_controller();
         }
-
-        // call position controller
-        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        pos_control.update_z_controller();
-        break;
     }
 }

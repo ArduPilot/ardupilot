@@ -1,28 +1,35 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 /*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  All APM Project credits from the original work are kept intact below as a
+ *  courtesy.
  */
 
 //	Initial Code by Jon Challinger
 //  Modified by Paul Riseborough
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_Math.h>
+#include <AP_HAL.h>
+#include <AP_Common.h>
 #include "AP_PitchController.h"
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_PitchController::var_info[] = {
+const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 
 	// @Param: TCONST
 	// @DisplayName: Pitch Time Constant
@@ -36,7 +43,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Param: P
 	// @DisplayName: Proportional Gain
 	// @Description: This is the gain from pitch angle to elevator. This gain works the same way as PTCH2SRV_P in the old PID controller and can be set to the same value.
-	// @Range: 0.1 3.0
+	// @Range: 0.1 2.0
 	// @Increment: 0.1
 	// @User: User
 	AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          0.4f),
@@ -55,7 +62,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Range: 0 0.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.04f),
+	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.0f),
 
 	// @Param: RMAX_UP
 	// @DisplayName: Pitch up max rate
@@ -85,19 +92,11 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
-	// @Description: This limits the number of centi-degrees of elevator over which the integrator will operate. At the default setting of 3000 centi-degrees, the integrator will be limited to +- 30 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 2/3rd of the total control throw which is adequate for most aircraft unless they are severely out of trim or have very limited elevator control effectiveness.
+	// @Description: This limits the number of centi-degrees of elevator over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 1/3rd of the total control throw which is adequate for most aircraft unless they are severely out of trim or have very limited elevator control effectiveness.
 	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("IMAX",      7, AP_PitchController, gains.imax,     3000),
-
-	// @Param: FF
-	// @DisplayName: Feed forward Gain
-	// @Description: This is the gain from demanded rate to elevator output. 
-	// @Range: 0.1 4.0
-	// @Increment: 0.1
-	// @User: User
-	AP_GROUPINFO("FF",        8, AP_PitchController, gains.FF,       0.0f),
+	AP_GROUPINFO("IMAX",      7, AP_PitchController, gains.imax,     1500),
 
 	AP_GROUPEND
 };
@@ -114,7 +113,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 */
 int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
 {
-	uint32_t tnow = AP_HAL::millis();
+	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
 	
 	if (_last_t == 0 || dt > 1000) {
@@ -137,56 +136,41 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!disable_integrator && gains.I > 0) {
         float ki_rate = gains.I * gains.tau;
+        //BEV modified to integrate even if airspeed sensor is not present. Must be very careful to set wind up guard small to prevent flips on takeoff
+        if (dt > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if (dt > 0 && aspeed > 0.5f*float(aparm.airspeed_min)) {
+		//if (dt > 0 && aspeed > 0.5f*float(aparm.airspeed_min)) {
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit
-				integrator_delta = MAX(integrator_delta , 0);
+				integrator_delta = max(integrator_delta , 0);
 			} else if (_last_out > 45) {
 				// prevent the integrator from decreasing if surface defln demand  is below the lower limit
-				integrator_delta = MIN(integrator_delta , 0);
+				integrator_delta = min(integrator_delta , 0);
 			}
-			_pid_info.I += integrator_delta;
+			_integrator += integrator_delta;
 		}
 	} else {
-		_pid_info.I = 0;
+		_integrator = 0;
 	}
 
     // Scale the integration limit
     float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
-    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
+    _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-    float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
-    float k_ff = gains.FF / eas2tas;
+	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / _ahrs.get_EAS2TAS();
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-    _pid_info.P = desired_rate * kp_ff * scaler;
-    _pid_info.FF = desired_rate * k_ff * scaler;
-    _pid_info.D = rate_error * gains.D * scaler;
-	_last_out = _pid_info.D + _pid_info.FF + _pid_info.P;
-    _pid_info.desired = desired_rate;
+	_last_out = ( (rate_error * gains.D) + (desired_rate * kp_ff) ) * scaler;
 
-    if (autotune.running && aspeed > aparm.airspeed_min) {
-        // let autotune have a go at the values 
-        // Note that we don't pass the integrator component so we get
-        // a better idea of how much the base PD controller
-        // contributed
-        autotune.update(desired_rate, achieved_rate, _last_out);
-        
-        // set down rate to rate up when auto-tuning
-        _max_rate_neg.set_and_save_ifchanged(gains.rmax);
-    }
-
-	_last_out += _pid_info.I;
+	_last_out += _integrator;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
@@ -207,7 +191,7 @@ int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
     float aspeed;
 	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+        aspeed = 13.0f;
 	}
     return _get_rate_out(desired_rate, scaler, false, aspeed);
 }
@@ -238,13 +222,15 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 	}
 	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+	    //BEV hardcoded airspeed estimate to 13 m/s (reasonable cruising airspeed)
+        aspeed = 13.0f;
 	}
     if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        //BEV hardcoded airspeed min to 10 m/s
+        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / max((aspeed * _ahrs.get_EAS2TAS()) , 10)) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
 	if (inverted) {
 		rate_offset = -rate_offset;
@@ -302,5 +288,5 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
 
 void AP_PitchController::reset_I()
 {
-	_pid_info.I = 0;
+	_integrator = 0;
 }

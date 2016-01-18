@@ -1,34 +1,41 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-/// @file    AP_Mission.h
-/// @brief   Handles the MAVLINK command mission stack.  Reads and writes mission to storage.
-
 /*
- *   The AP_Mission library:
- *   - responsible for managing a list of commands made up of "nav", "do" and "conditional" commands
- *   - reads and writes the mission commands to storage.
- *   - provides easy acces to current, previous and upcoming waypoints
- *   - calls main program's command execution and verify functions.
- *   - accounts for the DO_JUMP command
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
  *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+//BEV this entire file and AP_Mission.cpp were extensively modified to make them simpler
+//and fix the numerous bugs inherent
+
 #ifndef AP_Mission_h
 #define AP_Mission_h
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <StorageManager/StorageManager.h>
+#include <AP_HAL.h>
+#include <AP_Vehicle.h>
+#include <GCS_MAVLink.h>
+#include <AP_Math.h>
+#include <AP_Common.h>
+#include <AP_Param.h>
+#include <AP_AHRS.h>
+#include <../StorageManager/StorageManager.h>
 
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
 #define AP_MISSION_EEPROM_COMMAND_SIZE      15      // size in bytes of all mission commands
 
-#define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 15      // allow up to 15 do-jump commands
+#define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 15    // allow up to 15 do-jump commands all high speed CPUs
 
 #define AP_MISSION_JUMP_REPEAT_FOREVER      -1      // when do-jump command's repeat count is -1 this means endless repeat
 
@@ -51,76 +58,6 @@ public:
         int16_t num_times;      // num times to repeat.  -1 = repeat forever
     };
 
-    // condition delay command structure
-    struct PACKED Conditional_Delay_Command {
-        float seconds;          // period of delay in seconds
-    };
-
-    // condition delay command structure
-    struct PACKED Conditional_Distance_Command {
-        float meters;           // distance from next waypoint in meters
-    };
-
-    // condition yaw command structure
-    struct PACKED Yaw_Command {
-        float angle_deg;        // target angle in degrees (0=north, 90=east)
-        float turn_rate_dps;    // turn rate in degrees / second (0=use default)
-        int8_t direction;       // -1 = ccw, +1 = cw
-        uint8_t relative_angle; // 0 = absolute angle, 1 = relative angle
-    };
-
-    // change speed command structure
-    struct PACKED Change_Speed_Command {
-        uint8_t speed_type;     // 0=airspeed, 1=ground speed
-        float target_ms;        // target speed in m/s, -1 means no change
-        float throttle_pct;     // throttle as a percentage (i.e. 0 ~ 100), -1 means no change
-    };
-
-    // set relay command structure
-    struct PACKED Set_Relay_Command {
-        uint8_t num;            // relay number from 1 to 4
-        uint8_t state;          // on = 3.3V or 5V (depending upon board), off = 0V.  only used for do-set-relay, not for do-repeat-relay
-    };
-
-    // repeat relay command structure
-    struct PACKED Repeat_Relay_Command {
-        uint8_t num;            // relay number from 1 to 4
-        int16_t repeat_count;   // number of times to trigger the relay
-        float cycle_time;       // cycle time in seconds (the time between peaks or the time the relay is on and off for each cycle?)
-    };
-
-    // set servo command structure
-    struct PACKED Set_Servo_Command {
-        uint8_t channel;        // servo channel
-        uint16_t pwm;           // pwm value for servo
-    };
-
-    // repeat servo command structure
-    struct PACKED Repeat_Servo_Command {
-        uint8_t channel;        // servo channel
-        uint16_t pwm;           // pwm value for servo
-        int16_t repeat_count;   // number of times to move the servo (returns to trim in between)
-        float cycle_time;       // cycle time in seconds (the time between peaks or the time the servo is at the specified pwm value for each cycle?)
-    };
-
-    // mount control command structure
-    struct PACKED Mount_Control {
-        float pitch;            // pitch angle in degrees
-        float roll;             // roll angle in degrees
-        float yaw;              // yaw angle (relative to vehicle heading) in degrees
-    };
-
-    // digicam control command structure
-    struct PACKED Digicam_Configure {
-        uint8_t shooting_mode;  // ProgramAuto = 1, AV = 2, TV = 3, Man=4, IntelligentAuto=5, SuperiorAuto=6
-        uint16_t shutter_speed;
-        uint8_t aperture;       // F stop number * 10
-        uint16_t ISO;           // 80, 100, 200, etc
-        uint8_t exposure_type;
-        uint8_t cmd_id;
-        float engine_cutoff_time;   // seconds
-    };
-
     // digicam control command structure
     struct PACKED Digicam_Control {
         uint8_t session;        // 1 = on, 0 = off
@@ -136,75 +73,15 @@ public:
         float meters;           // distance
     };
 
-    // gripper command structure
-    struct PACKED Gripper_Command {
-        uint8_t num;            // gripper number
-        uint8_t action;         // action (0 = release, 1 = grab)
-    };
-
-    // high altitude balloon altitude wait
-    struct PACKED Altitude_Wait {
-        float altitude; // meters
-        float descent_rate; // m/s
-        uint8_t wiggle_time; // seconds
-    };
-
-    // nav guided command
-    struct PACKED Guided_Limits_Command {
-        // max time is held in p1 field
-        float alt_min;          // min alt below which the command will be aborted.  0 for no lower alt limit
-        float alt_max;          // max alt above which the command will be aborted.  0 for no upper alt limit
-        float horiz_max;        // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
-    };
-
     union PACKED Content {
         // jump structure
         Jump_Command jump;
-
-        // conditional delay
-        Conditional_Delay_Command delay;
-
-        // conditional distance
-        Conditional_Distance_Command distance;
-
-        // conditional yaw
-        Yaw_Command yaw;
-
-        // change speed
-        Change_Speed_Command speed;
-
-        // do-set-relay
-        Set_Relay_Command relay;
-
-        // do-repeat-relay
-        Repeat_Relay_Command repeat_relay;
-
-        // do-set-servo
-        Set_Servo_Command servo;
-
-        // do-repeate-servo
-        Repeat_Servo_Command repeat_servo;
-
-        // mount control
-        Mount_Control mount_control;
-
-        // camera configure
-        Digicam_Configure digicam_configure;
 
         // camera control
         Digicam_Control digicam_control;
 
         // cam trigg distance
         Cam_Trigg_Distance cam_trigg_dist;
-
-        // do-gripper
-        Gripper_Command gripper;
-
-        // do-guided-limits
-        Guided_Limits_Command guided_limits;
-
-        // cam trigg distance
-        Altitude_Wait altitude_wait;
 
         // location
         Location location;      // Waypoint location
@@ -221,15 +98,15 @@ public:
         Content content;
     };
 
-    // main program function pointers
-    FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
-    FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
+    typedef bool (*mission_cmd_fn_t)(const Mission_Command& cmd);
+    typedef void (*mission_complete_fn_t)(void);
 
     // mission state enumeration
     enum mission_state {
         MISSION_STOPPED=0,
         MISSION_RUNNING=1,
-        MISSION_COMPLETE=2
+        MISSION_RUNNING_FORCE_RESTART=2,
+        MISSION_COMPLETE=3
     };
 
     /// constructor
@@ -238,21 +115,18 @@ public:
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
-        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
-        _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
+        //_prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
         _last_change_time_ms(0)
     {
         // load parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
 
         // clear commands
-        _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-        _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+        _cmd.index = AP_MISSION_CMD_INDEX_NONE;
 
         // initialise other internal variables
         _flags.state = MISSION_STOPPED;
-        _flags.nav_cmd_loaded = false;
-        _flags.do_cmd_loaded = false;
+        _flags.cmd_loaded = false;
     }
 
     ///
@@ -317,23 +191,13 @@ public:
     static bool is_nav_cmd(const Mission_Command& cmd);
 
     /// get_current_nav_cmd - returns the current "navigation" command
-    const Mission_Command& get_current_nav_cmd() const { return _nav_cmd; }
+    const Mission_Command& get_current_nav_cmd() const { return _cmd; }
 
-    /// get_current_nav_index - returns the current "navigation" command index
+    /// get_current_nav_index - returns the current command index
     /// Note that this will return 0 if there is no command. This is
     /// used in MAVLink reporting of the mission command
     uint16_t get_current_nav_index() const { 
-        return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
-
-    /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
-    ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
-    ///     we do not return the entire command to save on RAM
-    uint16_t get_prev_nav_cmd_index() const { return _prev_nav_cmd_index; }
-
-    /// get_prev_nav_cmd_with_wp_index - returns the previous "navigation" commands index that contains a waypoint (i.e. position in the mission command list)
-    ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
-    ///     we do not return the entire command to save on RAM
-    uint16_t get_prev_nav_cmd_with_wp_index() const { return _prev_nav_cmd_wp_index; }
+        return _cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_cmd.index; }
 
     /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
     ///     returns true if found, false if not found (i.e. reached end of mission command list)
@@ -344,9 +208,6 @@ public:
     /// from 0 36000. Return default_angle if next navigation
     /// leg cannot be determined
     int32_t get_next_ground_course_cd(int32_t default_angle);
-
-    /// get_current_do_cmd - returns active "do" command
-    const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
 
     // set_current_cmd - jumps to command specified by index
     bool set_current_cmd(uint16_t index);
@@ -375,10 +236,8 @@ public:
     // return the last time the mission changed in milliseconds
     uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
 
-    // find the nearest landing sequence starting point (DO_LAND_START) and
-    // return its index.  Returns 0 if no appropriate DO_LAND_START point can
-    // be found.
-    uint16_t get_landing_sequence_start();
+    //BEV added this one
+    void start_loiter_at_home(uint32_t alt);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -388,9 +247,7 @@ private:
 
     struct Mission_Flags {
         mission_state state;
-        uint8_t nav_cmd_loaded  : 1; // true if a "navigation" command has been loaded into _nav_cmd
-        uint8_t do_cmd_loaded   : 1; // true if a "do"/"conditional" command has been loaded into _do_cmd
-        uint8_t do_cmd_all_done : 1; // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
+        uint8_t cmd_loaded  : 1; // true if a "navigation" command has been loaded into _cmd
     } _flags;
 
     ///
@@ -400,28 +257,17 @@ private:
     /// complete - mission is marked complete and clean-up performed including calling the mission_complete_fn
     void complete();
 
-    /// advance_current_nav_cmd - moves current nav command forward
+    /// advance_current_cmd - moves current nav command forward
     ///     do command will also be loaded
     ///     accounts for do-jump commands
     //      returns true if command is advanced, false if failed (i.e. mission completed)
-    bool advance_current_nav_cmd();
-
-    /// advance_current_do_cmd - moves current do command forward
-    ///     accounts for do-jump commands
-    ///     returns true if successfully advanced (can it ever be unsuccessful?)
-    void advance_current_do_cmd();
+    bool advance_current_cmd();
 
     /// get_next_cmd - gets next command found at or after start_index
     ///     returns true if found, false if not found (i.e. mission complete)
     ///     accounts for do_jump commands
     ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
     bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found);
-
-    /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
-    ///     returns true if found, false if not found
-    ///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
-    ///     accounts for do_jump commands but never increments the jump's num_times_run (get_next_nav_cmd is responsible for this)
-    bool get_next_do_cmd(uint16_t start_index, Mission_Command& cmd);
 
     ///
     /// jump handling methods
@@ -453,10 +299,7 @@ private:
     mission_complete_fn_t   _mission_complete_fn;   // pointer to function which will be called when mission completes
 
     // internal variables
-    struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
-    struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
-    uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
-    uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
+    struct Mission_Command  _cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
 
     // jump related variables
     struct jump_tracking_struct {

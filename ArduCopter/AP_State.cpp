@@ -1,31 +1,36 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+/*
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
-// set_home_state - update home state
-void Copter::set_home_state(enum HomeState new_home_state)
+void set_home_is_set(bool b)
 {
     // if no change, exit immediately
-    if (ap.home_state == new_home_state)
+    if( ap.home_is_set == b )
         return;
 
-    // update state
-    ap.home_state = new_home_state;
-
-    // log if home has been set
-    if (new_home_state == HOME_SET_NOT_LOCKED || new_home_state == HOME_SET_AND_LOCKED) {
+    ap.home_is_set 	= b;
+    if(b) {
         Log_Write_Event(DATA_SET_HOME);
     }
 }
 
-// home_is_set - returns true if home positions has been set (to GPS location, armed location or EKF origin)
-bool Copter::home_is_set()
-{
-    return (ap.home_state == HOME_SET_NOT_LOCKED || ap.home_state == HOME_SET_AND_LOCKED);
-}
-
 // ---------------------------------------------
-void Copter::set_auto_armed(bool b)
+void set_auto_armed(bool b)
 {
     // if no change, exit immediately
     if( ap.auto_armed == b )
@@ -38,27 +43,7 @@ void Copter::set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void Copter::set_simple_mode(uint8_t b)
-{
-    if(ap.simple_mode != b){
-        if(b == 0){
-            Log_Write_Event(DATA_SET_SIMPLE_OFF);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SIMPLE mode off");
-        }else if(b == 1){
-            Log_Write_Event(DATA_SET_SIMPLE_ON);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SIMPLE mode on");
-        }else{
-            // initialise super simple heading
-            update_super_simple_bearing(true);
-            Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SUPERSIMPLE mode on");
-        }
-        ap.simple_mode = b;
-    }
-}
-
-// ---------------------------------------------
-void Copter::set_failsafe_radio(bool b)
+static void set_failsafe_radio(bool b)
 {
     // only act on changes
     // -------------------
@@ -83,23 +68,86 @@ void Copter::set_failsafe_radio(bool b)
     }
 }
 
+// BEV added this one
+static void set_failsafe_rc_override(bool b)
+{
+    // only act on changes
+    // -------------------
+    if(failsafe.rc_override_fs != b) {
+
+        // store the value so we don't trip the gate twice
+        // -----------------------------------------------
+        failsafe.rc_override_fs = b;
+
+        if (failsafe.rc_override_fs == false) {
+            // We've regained radio contact
+            // ----------------------------
+            failsafe_rc_override_off_event();
+        }else{
+            // We've lost radio contact
+            // ------------------------
+            failsafe_rc_override_on_event();
+        }
+    }
+}
+
 
 // ---------------------------------------------
-void Copter::set_failsafe_battery(bool b)
+void set_failsafe_battery(bool b)
 {
     failsafe.battery = b;
     AP_Notify::flags.failsafe_battery = b;
 }
 
+
 // ---------------------------------------------
-void Copter::set_failsafe_gcs(bool b)
+static void set_failsafe_gps(bool b)
+{
+    failsafe.gps = b;
+
+    // update AP_Notify
+    AP_Notify::flags.failsafe_gps = b;
+}
+
+// ---------------------------------------------
+static void set_failsafe_gcs(bool b)
 {
     failsafe.gcs = b;
 }
 
 // ---------------------------------------------
+void set_land_complete(bool b)
+{
+    // if no change, exit immediately
+    if( ap.land_complete == b )
+        return;
 
-void Copter::set_pre_arm_check(bool b)
+    if(b){
+        Log_Write_Event(DATA_LAND_COMPLETE);
+    }else{
+        Log_Write_Event(DATA_NOT_LANDED);
+    }
+    ap.land_complete = b;
+}
+
+// ---------------------------------------------
+
+// set land complete maybe flag
+void set_land_complete_maybe(bool b)
+{
+    // if no change, exit immediately
+    if (ap.land_complete_maybe == b)
+        return;
+
+    if (b) {
+        Log_Write_Event(DATA_LAND_COMPLETE_MAYBE);
+    }
+    ap.land_complete_maybe = b;
+}
+
+// ---------------------------------------------
+
+void set_pre_arm_check(bool b)
 {
     if(ap.pre_arm_check != b) {
         ap.pre_arm_check = b;
@@ -107,34 +155,10 @@ void Copter::set_pre_arm_check(bool b)
     }
 }
 
-void Copter::set_pre_arm_rc_check(bool b)
+void set_pre_arm_rc_check(bool b)
 {
     if(ap.pre_arm_rc_check != b) {
         ap.pre_arm_rc_check = b;
     }
 }
 
-void Copter::update_using_interlock()
-{
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters are always using motor interlock
-    ap.using_interlock = true;
-#else
-    // check if we are using motor interlock control on an aux switch
-    ap.using_interlock = check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK);
-#endif
-}
-
-void Copter::set_motor_emergency_stop(bool b)
-{
-    if(ap.motor_emergency_stop != b) {
-        ap.motor_emergency_stop = b;
-    }
-
-    // Log new status
-    if (ap.motor_emergency_stop){
-        Log_Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
-    } else {
-        Log_Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);
-    }
-}

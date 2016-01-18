@@ -6,8 +6,8 @@
 #ifndef __RC_CHANNEL_H__
 #define __RC_CHANNEL_H__
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
+#include <AP_Common.h>
+#include <AP_Param.h>
 
 #define RC_CHANNEL_TYPE_ANGLE       0
 #define RC_CHANNEL_TYPE_RANGE       1
@@ -61,9 +61,6 @@ public:
     // get the channel number
     uint8_t     get_ch_out(void) const { return _ch_out; };
 
-    // get the center stick position expressed as a control_in value
-    int16_t     get_control_mid() const;
-
     // read input from APM_RC - create a control_in value
     void        set_pwm(int16_t pwm);
     static void set_pwm_all(void);
@@ -77,6 +74,9 @@ public:
 
     // call after first set_pwm
     void        trim();
+
+    // did our read come in 50µs below the min?
+    bool        get_failsafe(void);
 
     // value generated from PWM
     int16_t         control_in;
@@ -102,19 +102,7 @@ public:
 
     int16_t                                         pwm_to_angle_dz(uint16_t dead_zone);
     int16_t                                         pwm_to_angle();
-
-    /*
-      return a normalised input for a channel, in range -1 to 1,
-      centered around the channel trim. Ignore deadzone.
-     */
     float                                           norm_input();
-
-    /*
-      return a normalised input for a channel, in range -1 to 1,
-      centered around the channel trim. Take into account the deadzone
-    */
-    float                                           norm_input_dz();
-
     uint8_t                                         percent_input();
     float                                           norm_output();
     int16_t                                         angle_to_pwm();
@@ -134,8 +122,6 @@ public:
     static const struct AP_Param::GroupInfo         var_info[];
 
     static RC_Channel *rc_channel(uint8_t i);
-
-    bool in_trim_dz();
 
 private:
     AP_Int8         _reverse;

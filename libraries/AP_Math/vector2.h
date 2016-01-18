@@ -105,9 +105,6 @@ struct Vector2
     // check if any elements are infinity
     bool is_inf(void) const;
 
-    // check if all elements are zero
-    bool is_zero(void) const { return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON); }
-
     // zero the vector
     void zero()
     {

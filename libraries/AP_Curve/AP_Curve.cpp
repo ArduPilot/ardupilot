@@ -1,5 +1,5 @@
 
-#include "AP_Curve.h"
+#include <AP_Curve.h>
 
 
 // Constructor
@@ -18,7 +18,7 @@ void AP_Curve<T,SIZE>::clear() {
 	for( uint8_t i=0; i<SIZE; i++ ) {
 		_x[i] = 0;
 		_y[i] = 0;
-		_slope[i] = 0.0f;
+		_slope[i] = 0.0;
 	}
 	_num_points = 0;
 }
@@ -83,13 +83,13 @@ T AP_Curve<T,SIZE>::get_y( T x )
 template <class T, uint8_t SIZE>
 void AP_Curve<T,SIZE>::dump_curve(AP_HAL::BetterStream* s)
 {
-	s->println("Curve:");
+	s->println_P(PSTR("Curve:"));
 	for( uint8_t i = 0; i<_num_points; i++ ){
-		s->print("x:");
+		s->print_P(PSTR("x:"));
 		s->print(_x[i]);
-		s->print("\ty:");
+		s->print_P(PSTR("\ty:"));
 		s->print(_y[i]);
-		s->print("\tslope:");
+		s->print_P(PSTR("\tslope:"));
 		s->print(_slope[i],4);
 		s->println();
 	}

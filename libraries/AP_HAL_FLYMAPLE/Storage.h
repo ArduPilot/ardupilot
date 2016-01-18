@@ -19,12 +19,12 @@
 #ifndef __AP_HAL_FLYMAPLE_STORAGE_H__
 #define __AP_HAL_FLYMAPLE_STORAGE_H__
 
-#include "AP_HAL_FLYMAPLE.h"
+#include <AP_HAL_FLYMAPLE.h>
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEStorage : public AP_HAL::Storage {
 public:
     FLYMAPLEStorage();
-    void init();
+    void init(void *);
     void read_block(void *dst, uint16_t src, size_t n);
     void write_block(uint16_t dst, const void* src, size_t n);
 

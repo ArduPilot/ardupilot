@@ -1,6 +1,25 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  All APM Project credits from the original work are kept intact below as a
+ *  courtesy.
+ */
+
+/*
  * AP_Relay.h
  *
  *  Created on: Oct 2, 2011
@@ -13,9 +32,8 @@
 #ifndef __AP_RELAY_H__
 #define __AP_RELAY_H__
 
-#include <AP_Param/AP_Param.h>
 
-#define AP_RELAY_NUM_RELAYS 4
+#define AP_RELAY_NUM_RELAYS 2
 
 /// @class	AP_Relay
 /// @brief	Class to manage the APM relay
@@ -27,22 +45,19 @@ public:
     void        init();
 
     // activate the relay
-    void        on(uint8_t relay);
+    void        on();
 
     // de-activate the relay
-    void        off(uint8_t relay);
+    void        off();
 
     // see if the relay is enabled
-    bool        enabled(uint8_t relay) { return relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1; }
+    bool        enabled() { return true; }
 
     // toggle the relay status
-    void        toggle(uint8_t relay);
-
-    static const struct AP_Param::GroupInfo        var_info[];
+    void        toggle();
 
 private:
-    AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
-    AP_Int8 _default;
+
 };
 
 #endif /* AP_RELAY_H_ */

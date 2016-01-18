@@ -3,11 +3,9 @@
   hacked up DataFlash library for Desktop support
 */
 
-#include "DataFlash_SITL.h"
+#include <AP_HAL.h>
 
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -16,8 +14,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <assert.h>
-
-#pragma GCC diagnostic ignored "-Wunused-result"
+#include "DataFlash.h"
 
 #define DF_PAGE_SIZE 512
 #define DF_NUM_PAGES 16384
@@ -28,9 +25,9 @@ static int flash_fd;
 static uint8_t buffer[2][DF_PAGE_SIZE];
 
 // Public Methods //////////////////////////////////////////////////////////////
-void DataFlash_SITL::Init()
+void DataFlash_SITL::Init(const struct LogStructure *structure, uint8_t num_types)
 {
-    DataFlash_Backend::Init();
+    DataFlash_Class::Init(structure, num_types);
 	if (flash_fd == 0) {
 		flash_fd = open("dataflash.bin", O_RDWR, 0777);
 		if (flash_fd == -1) {
@@ -161,3 +158,5 @@ void DataFlash_SITL::ChipErase()
 
 
 #endif
+
+

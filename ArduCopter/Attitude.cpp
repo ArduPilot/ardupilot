@@ -1,63 +1,68 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
+/*
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
-// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth
+// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth
 //      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
-float Copter::get_smoothing_gain()
+float get_smoothing_gain()
 {
-    return (2.0f + (float)g.rc_feel_rp/10.0f);
+    //BEV hardcoded in 6.5, which works out to rc_feel_rp = 45
+    //this keeps users from accidentally setting 'dagnerous' parameters
+    return 6.5;
+    //return (2.0f + (float)g.rc_feel_rp/10.0f);
 }
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
-void Copter::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
+//BEV hard coded in 12 degrees roll, 12 deg nose up, 25 deg nose down
+static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
 {
-    // sanity check angle max parameter
-    aparm.angle_max = constrain_int16(aparm.angle_max,1000,8000);
+    // range check the input
+    roll_in = constrain_int16(roll_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
+    pitch_in = constrain_int16(pitch_in, -ROLL_PITCH_INPUT_MAX, ROLL_PITCH_INPUT_MAX);
 
-    // limit max lean angle
-    angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
-
-    // scale roll_in, pitch_in to ANGLE_MAX parameter range
-    float scaler = aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
-    roll_in *= scaler;
-    pitch_in *= scaler;
-
-    // do circular limit
-    float total_in = pythagorous2((float)pitch_in, (float)roll_in);
-    if (total_in > angle_max) {
-        float ratio = angle_max / total_in;
-        roll_in *= ratio;
-        pitch_in *= ratio;
+    // convert pilot input to lean angle
+    roll_out = (int16_t)((float)roll_in * 0.2666); //1200/4500 = 0.2666
+    if(pitch_in > 0) {
+        pitch_out = (int16_t)((float)pitch_in * 0.2666); //1200/4500 = 0.2666
+    } else {
+        pitch_out = (int16_t)((float)pitch_in * 0.4444); //2000/4500 = 0.4444
     }
-
-    // do lateral tilt to euler roll conversion
-    roll_in = (18000/M_PI_F) * atanf(cosf(pitch_in*(M_PI_F/18000))*tanf(roll_in*(M_PI_F/18000)));
-
-    // return
-    roll_out = roll_in;
-    pitch_out = pitch_in;
 }
 
-// get_pilot_desired_heading - transform pilot's yaw input into a
-// desired yaw rate
-// returns desired yaw rate in centi-degrees per second
-float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
+// get_pilot_desired_heading - transform pilot's yaw input into a desired heading
+// returns desired angle in centi-degrees
+// To-Do: return heading as a float?
+static float get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
+    int32_t roll2yawff = 0;
+
+    //BEV add in bank angle feed forward which will tend to turn vehicle into the wind
     // convert pilot input to the desired yaw rate
-    return stick_angle * g.acro_yaw_p;
-}
 
-// check for ekf yaw reset and adjust target heading
-void Copter::check_ekf_yaw_reset()
-{
-    float yaw_angle_change_rad = 0.0f;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
-        ekfYawReset_ms = new_ekfYawReset_ms;
+    //use 40% dead band on nav_roll when applying roll2yaw ff
+    if(nav_roll_cd > 480) { // 4.8 degrees
+        roll2yawff = nav_roll_cd - 480;
+    } else if (nav_roll_cd < -480) { //-4.8 degrees
+        roll2yawff = nav_roll_cd + 480;
     }
+
+    return stick_angle * g.acro_yaw_p + constrain_int32(3*roll2yawff,-2000,2000);
 }
 
 /*************************************************************
@@ -66,12 +71,12 @@ void Copter::check_ekf_yaw_reset()
 
 // get_roi_yaw - returns heading towards location held in roi_WP
 // should be called at 100hz
-float Copter::get_roi_yaw()
+static float get_roi_yaw()
 {
-    static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 100hz
+    static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 10hz
 
     roi_yaw_counter++;
-    if (roi_yaw_counter >= 4) {
+    if (roi_yaw_counter >= 10) {
         roi_yaw_counter = 0;
         yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
     }
@@ -79,13 +84,11 @@ float Copter::get_roi_yaw()
     return yaw_look_at_WP_bearing;
 }
 
-float Copter::get_look_ahead_yaw()
+static float get_look_ahead_yaw()
 {
-    const Vector3f& vel = inertial_nav.get_velocity();
-    float speed = pythagorous2(vel.x,vel.y);
     // Commanded Yaw to automatically look ahead.
-    if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
-        yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed_cm() > YAW_LOOK_AHEAD_MIN_SPEED) {
+        yaw_look_ahead_bearing = gps.ground_course_cd();
     }
     return yaw_look_ahead_bearing;
 }
@@ -94,15 +97,20 @@ float Copter::get_look_ahead_yaw()
  *  throttle control
  ****************************************************************/
 
-// update_thr_average - update estimated throttle required to hover (if necessary)
+// update_thr_cruise - update throttle cruise if necessary
 //  should be called at 100hz
-void Copter::update_thr_average()
+static void update_thr_cruise()
 {
-    // ensure throttle_average has been initialised
-    if( is_zero(throttle_average) ) {
-        throttle_average = g.throttle_mid;
+    //BEV only do this if full copter
+    if(is_plane_nav_active()) {
+        return;
+    }
+
+    // ensure throttle_avg has been initialised
+    if( fabs(throttle_avg)  < 0.01 ) {
+        throttle_avg = g.throttle_cruise;
         // update position controller
-        pos_control.set_throttle_hover(throttle_average);
+        pos_control.set_throttle_hover(throttle_avg);
     }
 
     // if not armed or landed exit
@@ -111,18 +119,20 @@ void Copter::update_thr_average()
     }
 
     // get throttle output
-    float throttle = motors.get_throttle();
+    int16_t throttle = g.rc_3.servo_out;
 
     // calc average throttle if we are in a level hover
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_average = throttle_average * 0.99f + throttle * 0.01f;
+        throttle_avg = throttle_avg * 0.99f + (float)throttle * 0.01f;
+        g.throttle_cruise = throttle_avg;
         // update position controller
-        pos_control.set_throttle_hover(throttle_average);
+        pos_control.set_throttle_hover(throttle_avg);
     }
 }
 
 // set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
-void Copter::set_throttle_takeoff()
+static void
+set_throttle_takeoff()
 {
     // tell position controller to reset alt target and reset I terms
     pos_control.init_takeoff();
@@ -134,23 +144,27 @@ void Copter::set_throttle_takeoff()
 // get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
 // used only for manual throttle modes
 // returns throttle output 0 to 1000
-int16_t Copter::get_pilot_desired_throttle(int16_t throttle_control)
+#define THROTTLE_IN_MIDDLE 500          // the throttle mid point
+static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 {
     int16_t throttle_out;
 
-    int16_t mid_stick = channel_throttle->get_control_mid();
+    // exit immediately in the simple cases
+    if( throttle_control == 0 || g.throttle_mid == 500) {
+        return throttle_control;
+    }
 
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    g.throttle_mid = constrain_int16(g.throttle_mid,300,700);
 
     // check throttle is above, below or in the deadband
-    if (throttle_control < mid_stick) {
+    if (throttle_control < THROTTLE_IN_MIDDLE) {
         // below the deadband
-        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(g.throttle_mid - g.throttle_min))/((float)(mid_stick-g.throttle_min));
-    }else if(throttle_control > mid_stick) {
+        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(g.throttle_mid - g.throttle_min))/((float)(500-g.throttle_min));
+    }else if(throttle_control > THROTTLE_IN_MIDDLE) {
         // above the deadband
-        throttle_out = g.throttle_mid + ((float)(throttle_control-mid_stick)) * (float)(1000-g.throttle_mid) / (float)(1000-mid_stick);
+        throttle_out = g.throttle_mid + ((float)(throttle_control-500))*(float)(1000-g.throttle_mid)/500.0f;
     }else{
         // must be in the deadband
         throttle_out = g.throttle_mid;
@@ -162,34 +176,33 @@ int16_t Copter::get_pilot_desired_throttle(int16_t throttle_control)
 // get_pilot_desired_climb_rate - transform pilot's throttle input to
 // climb rate in cm/s.  we use radio_in instead of control_in to get the full range
 // without any deadzone at the bottom
-float Copter::get_pilot_desired_climb_rate(float throttle_control)
+#define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+g.throttle_deadzone)  // top of the deadband
+#define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-g.throttle_deadzone)  // bottom of the deadband
+static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
 {
+    int16_t desired_rate = 0;
+
     // throttle failsafe check
-    if( failsafe.radio ) {
-        return 0.0f;
+    if(!throttle_input_valid() ) {
+        return 0;
     }
 
-    float desired_rate = 0.0f;
-    float mid_stick = channel_throttle->get_control_mid();
-    float deadband_top = mid_stick + g.throttle_deadzone;
-    float deadband_bottom = mid_stick - g.throttle_deadzone;
-
     // ensure a reasonable throttle value
-    throttle_control = constrain_float(throttle_control,g.throttle_min,1000.0f);
+    throttle_control = constrain_int16(throttle_control,0,1000);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
 
     // check throttle is above, below or in the deadband
-    if (throttle_control < deadband_bottom) {
+    if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
         // below the deadband
-        desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_bottom) / (deadband_bottom-g.throttle_min);
-    }else if (throttle_control > deadband_top) {
+        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - g.throttle_deadzone);
+    }else if (throttle_control > THROTTLE_IN_DEADBAND_TOP) {
         // above the deadband
-        desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_top) / (1000.0f-deadband_top);
+        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - g.throttle_deadzone);
     }else{
         // must be in the deadband
-        desired_rate = 0.0f;
+        desired_rate = 0;
     }
 
     // desired climb rate for logging
@@ -199,127 +212,241 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
 }
 
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
-float Copter::get_non_takeoff_throttle()
+static int16_t get_non_takeoff_throttle()
 {
-    return (g.throttle_mid / 2.0f);
-}
-
-float Copter::get_takeoff_trigger_throttle()
-{
-    return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
+    //BEV determined from analysis of many landings that 330 (33%) is a good number to put here.
+    return (330);
 }
 
 // get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off
 // used only for althold, loiter, hybrid flight modes
 // returns throttle output 0 to 1000
-float Copter::get_throttle_pre_takeoff(float input_thr)
+static int16_t get_throttle_pre_takeoff(int16_t throttle_control)
 {
-    // exit immediately if input_thr is zero
-    if (input_thr <= 0.0f) {
-        return 0.0f;
+    int16_t throttle_out;
+
+    // exit immediately if throttle_control is zero
+    if (throttle_control <= 0) {
+        return 0;
     }
 
-    // TODO: does this parameter sanity check really belong here?
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    // sanity check throttle input
+    throttle_control = constrain_int16(throttle_control,0,1000);
 
-    float in_min = g.throttle_min;
-    float in_max = get_takeoff_trigger_throttle();
+    // sanity check throttle_mid
+    g.throttle_mid = constrain_int16(g.throttle_mid,300,700);
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters swash will move from bottom to 1/2 of mid throttle
-    float out_min = 0;
-#else
-    // multicopters will output between spin-when-armed and 1/2 of mid throttle
-    float out_min = motors.get_throttle_warn();
-#endif
-    float out_max = get_non_takeoff_throttle();
-
-    if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
-        in_min = channel_throttle->get_control_mid();
+    // sanity check throttle_min vs throttle_mid
+    if (g.throttle_min > get_non_takeoff_throttle()) {
+        return g.throttle_min;
     }
 
-    float input_range = in_max-in_min;
-    float output_range = out_max-out_min;
-
-    // sanity check ranges
-    if (input_range <= 0.0f || output_range <= 0.0f) {
-        return 0.0f;
+    // check throttle is below top of deadband
+    if (throttle_control < THROTTLE_IN_DEADBAND_TOP) {
+        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(get_non_takeoff_throttle() - g.throttle_min))/((float)(THROTTLE_IN_DEADBAND_TOP-g.throttle_min));
+    }else{
+        // must be in the deadband
+        throttle_out = get_non_takeoff_throttle();
     }
 
-    return constrain_float(out_min + (input_thr-in_min)*output_range/input_range, out_min, out_max);
-}
-
-// get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
-//      returns climb rate (in cm/s) which should be passed to the position controller
-float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
-{
-    static uint32_t last_call_ms = 0;
-    float distance_error;
-    float velocity_correction;
-    float current_alt = inertial_nav.get_altitude();
-
-    uint32_t now = millis();
-
-    // reset target altitude if this controller has just been engaged
-    if (now - last_call_ms > SONAR_TIMEOUT_MS) {
-        target_sonar_alt = sonar_alt + current_alt_target - current_alt;
-    }
-    last_call_ms = now;
-
-    // adjust sonar target alt if motors have not hit their limits
-    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
-        target_sonar_alt += target_rate * dt;
-    }
-
-    // do not let target altitude get too far from current altitude above ground
-    // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
-    target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-pos_control.get_leash_down_z(),sonar_alt+pos_control.get_leash_up_z());
-
-    // calc desired velocity correction from target sonar alt vs actual sonar alt (remove the error already passed to Altitude controller to avoid oscillations)
-    distance_error = (target_sonar_alt - sonar_alt) - (current_alt_target - current_alt);
-    velocity_correction = distance_error * g.sonar_gain;
-    velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
-
-    // return combined pilot climb rate + rate to correct sonar alt error
-    return (target_rate + velocity_correction);
+    return throttle_out;
 }
 
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
-void Copter::set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
+static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_accel_z.set_integrator(pilot_throttle-throttle_average);
+    g.pid_throttle_accel.set_integrator(pilot_throttle-g.throttle_cruise);
 }
 
-// updates position controller's maximum altitude using fence and EKF limits
-void Copter::update_poscon_alt_max()
+/****************************************************/
+/***** BEGIN PLANE ATTITUDE ADDITIONS ***************/
+/****************************************************/
+/*
+  get a speed scaling number for control surfaces. This is applied to
+  PIDs to change the scaling of the PID with speed. At high speed we
+  move the surfaces less, and at low speeds we move them more.
+ */
+static float get_speed_scaler(void)
 {
-    float alt_limit_cm = 0.0f;  // interpreted as no limit if left as zero
+    //BEV just use throttle position. No airspeed sensor necessary
+    float speed_scaler;
 
-#if AC_FENCE == ENABLED
-    // set fence altitude limit in position controller
-    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        alt_limit_cm = pv_alt_above_origin(fence.get_safe_alt()*100.0f);
-    }
-#endif
+    speed_scaler = 1.667f - throttle_percentage() / 100.0f;
+    //bev constrained tighter to prevent wing rocking at low throttle settings
+    speed_scaler = constrain_float(speed_scaler, 0.667, 1.400);
 
-    // get alt limit from EKF (limited during optical flow flight)
-    float ekf_limit_cm = 0.0f;
-    if (inertial_nav.get_hgt_ctrl_limit(ekf_limit_cm)) {
-        if ((alt_limit_cm <= 0.0f) || (ekf_limit_cm < alt_limit_cm)) {
-            alt_limit_cm = ekf_limit_cm;
-        }
-    }
-
-    // pass limit to pos controller
-    pos_control.set_alt_max(alt_limit_cm);
+    return speed_scaler;
 }
 
-// rotate vector from vehicle's perspective to North-East frame
-void Copter::rotate_body_frame_to_NE(float &x, float &y)
+static void calc_nav_pitch()
 {
-    float ne_x = x*ahrs.cos_yaw() - y*ahrs.sin_yaw();
-    float ne_y = x*ahrs.sin_yaw() + y*ahrs.cos_yaw();
-    x = ne_x;
-    y = ne_y;
+    // Calculate the Pitch of the plane
+    // --------------------------------
+    nav_pitch_cd = SpdHgt_Controller.get_desired_pitch();
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
+}
+
+
+static void calc_nav_roll()
+{
+    nav_roll_cd = nav_controller->nav_roll_cd();
+    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
+}
+
+
+static void throttle_slew_limit(int16_t last_throttle)
+{
+    static uint32_t last_call_time = 0;
+    float dt = (last_call_time - hal.scheduler->millis()) * 0.001f;
+    if(dt > 0.1f) {
+        dt = 0.1f;
+    }
+
+    // limit throttle change by the given percentage per second
+    float temp = aparm.throttle_slewrate * dt;
+    // allow a minimum change of 1 per cycle
+    if (temp < 1.0f) {
+        temp = 1.0f;
+    }
+    channel_throttle_out = constrain_int16(channel_throttle_out, last_throttle - temp, last_throttle + temp);
+}
+
+/*
+  main stabilization function for all 3 axes
+ */
+static void plane_stabilize()
+{
+    float speed_scaler = get_speed_scaler();
+    //outputs to servos are done in plane_set_servos();
+    if(control_mode != ACRO) {
+        stabilize_roll(speed_scaler);
+        stabilize_pitch(speed_scaler);
+        stabilize_yaw(speed_scaler);
+    }
+
+    //zero integrators when on ground.
+    if (is_on_ground_maybe()) {
+        // This prevents integrator buildup pre-takeoff.
+        rollController.reset_I();
+        pitchController.reset_I();
+        yawController.reset_I();
+    }
+}
+
+static void calc_throttle()
+{
+    if(motors.armed()) {
+        //BEV get_desired_throttle is [0 100], but channel_throttle_out is [0 1000]. A factor of 10 fixes this
+        channel_throttle_out = SpdHgt_Controller.get_desired_throttle()*10;
+    } else {
+        channel_throttle_out = 0;
+    }
+}
+
+/*
+  this is the main roll stabilization function. It takes the
+  previously set nav_roll calculates roll servo_out to try to
+  stabilize the plane at the given roll
+ */
+static void stabilize_roll(float speed_scaler)
+{
+    channel_roll_out = rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor,
+                                                               speed_scaler,
+                                                               false); //bev don't disable the integrator
+}
+
+/*
+  this is the main pitch stabilization function. It takes the
+  previously set nav_pitch and calculates servo_out values to try to
+  stabilize the plane at the given attitude.
+ */
+static void stabilize_pitch(float speed_scaler)
+{
+    channel_pitch_out = pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
+                                                      speed_scaler,
+                                                      false); //bev don't disable integrator
+}
+
+static void stabilize_yaw(float speed_scaler)
+{
+    //only use the feedback yaw controller when airborn. Otherwise, go open loop
+    if(is_on_ground_maybe()) {
+        //open loop for maximum steerability when on ground
+        channel_rudder_out = g.rc_4.control_in;
+        yawController.reset_I();
+        return;
+    }
+
+    channel_rudder_out = yawController.get_servo_out(speed_scaler, false);
+
+    //BEV don't allow user input when operating in an antonomous mode
+    if(control_mode <= ALT_HOLD) {
+        channel_rudder_out += g.rc_4.control_in / 2; //add user yaw on top of controller output
+    }
+
+    //constrain
+    channel_rudder_out = constrain_int16(channel_rudder_out/2, -4500, 4500);
+}
+
+void set_target_altitude_current()
+{
+    alt_hold_gs_des_alt = inertial_nav.get_altitude();
+}
+
+
+/*
+  return throttle percentage from 0 to 100
+ */
+static uint8_t throttle_percentage(void)
+{
+    //Channel_throttle_out is [0 1000]. Multiply by 0.1 to get [0 100]
+    return channel_throttle_out*0.1;
+}
+
+//  handle CRUISE mode, locking heading to GPS course when we have
+//  sufficient ground speed, and no aileron input
+static void update_cruise()
+{
+    if (!cruise_state.locked_heading &&
+            g.rc_1.control_in == 0 &&
+            gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
+            gps.ground_speed() >= 3 &&
+            cruise_state.lock_timer_ms == 0)
+    {
+        // user wants to lock the heading - start the timer
+        cruise_state.lock_timer_ms = hal.scheduler->millis();
+    }
+    if (cruise_state.lock_timer_ms != 0 &&
+        (hal.scheduler->millis() - cruise_state.lock_timer_ms) > 500) {
+        // lock the heading after 0.5 seconds of zero heading input
+        // from user
+        cruise_state.locked_heading = true;
+        cruise_state.lock_timer_ms = 0;
+        cruise_state.locked_heading_cd = gps.ground_course_cd();
+        prev_WP_loc = current_loc;
+    }
+    if (cruise_state.locked_heading) {
+        next_WP_loc = prev_WP_loc;
+        // always look 1km ahead
+        location_update(next_WP_loc,
+                        cruise_state.locked_heading_cd*0.01f,
+                        get_distance(prev_WP_loc, current_loc) + 1000);
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+    }
+}
+
+static void setup_turn_angle(void)
+{
+    int32_t next_ground_course_cd = mission.get_next_ground_course_cd(-1);
+    if (next_ground_course_cd == -1) {
+        // the mission library can't determine a turn angle, assume 90 degrees
+        auto_state.next_turn_angle = 90.0f;
+    } else {
+        // get the heading of the current leg
+        int32_t ground_course_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+
+        // work out the angle we need to turn through
+        auto_state.next_turn_angle = wrap_180_cd(next_ground_course_cd - ground_course_cd) * 0.01f;
+    }
 }

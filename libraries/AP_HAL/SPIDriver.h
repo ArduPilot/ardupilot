@@ -7,8 +7,8 @@
 
 class AP_HAL::SPIDeviceManager {
 public:
-    virtual void init() = 0;
-    virtual AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice, uint8_t index = 0) = 0;
+    virtual void init(void *) = 0;
+    virtual AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice) = 0;
 };
 
 /**
@@ -20,7 +20,7 @@ class AP_HAL::SPIDeviceDriver {
 public:
     virtual void init() = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
-    virtual bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len) = 0;
+    virtual void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len) = 0;
 
     virtual void cs_assert() = 0;
     virtual void cs_release() = 0;
@@ -39,6 +39,7 @@ public:
     };
 
     virtual void set_bus_speed(enum bus_speed speed) {}
+    
 };
 
 #endif // __AP_HAL_SPI_DRIVER_H__

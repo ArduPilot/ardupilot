@@ -1,36 +1,48 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+/*
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef __AP_YAW_CONTROLLER_H__
 #define __AP_YAW_CONTROLLER_H__
 
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_AHRS.h>
+#include <AP_Common.h>
+#include <AP_Vehicle.h>
 #include <math.h>
 
 class AP_YawController {
 public:                      
-	AP_YawController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
+	//BEV modified from FixedWing to VTOL
+	AP_YawController(AP_AHRS &ahrs, const AP_Vehicle::VTOL &parms) :
 		aparm(parms),
         _ahrs(ahrs)
 	{
 		AP_Param::setup_object_defaults(this, var_info);
-		_pid_info.desired = 0;
-		_pid_info.FF = 0;
-		_pid_info.P = 0;
 	}
 
 	int32_t get_servo_out(float scaler, bool disable_integrator);
 
 	void reset_I();
 
-	const DataFlash_Class::PID_Info& get_pid_info(void) const {return _pid_info; }
-
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	const AP_Vehicle::FixedWing &aparm;
+	//BEV modified from FixedWing to VTOL
+	const AP_Vehicle::VTOL &aparm;
 	AP_Float _K_A;
 	AP_Float _K_I;
 	AP_Float _K_D;
@@ -44,8 +56,6 @@ private:
 	float _K_D_last;
 
 	float _integrator;
-
-	DataFlash_Class::PID_Info _pid_info;
 
 	AP_AHRS &_ahrs;
 };

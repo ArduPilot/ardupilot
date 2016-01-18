@@ -3,15 +3,15 @@
 #ifndef __AP_AIRSPEED_H__
 #define __AP_AIRSPEED_H__
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include "AP_Airspeed_Backend.h"
-#include "AP_Airspeed_analog.h"
-#include "AP_Airspeed_PX4.h"
-#include "AP_Airspeed_I2C.h"
+#include <AP_Common.h>
+#include <AP_HAL.h>
+#include <AP_Param.h>
+#include <GCS_MAVLink.h>
+#include <AP_Vehicle.h>
+#include <AP_Airspeed_Backend.h>
+#include <AP_Airspeed_analog.h>
+#include <AP_Airspeed_PX4.h>
+#include <AP_Airspeed_I2C.h>
 
 class Airspeed_Calibration {
 public:
@@ -44,7 +44,6 @@ public:
         _raw_airspeed(0.0f),
         _airspeed(0.0f),
         _last_pressure(0.0f),
-        _raw_pressure(0.0f),
         _EAS2TAS(1.0f),
         _healthy(false),
         _hil_set(false),
@@ -64,7 +63,7 @@ public:
 
     // calibrate the airspeed. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
-    void            calibrate(bool in_startup);
+    void            calibrate();
 
     // return the current airspeed in m/s
     float           get_airspeed(void) const {
@@ -96,7 +95,7 @@ public:
 
     // return true if airspeed is enabled, and airspeed use is set
     bool        use(void) const {
-        return _enable && _use;
+        return _enable && _use && fabsf(_offset) > 0 && _healthy;
     }
 
     // return true if airspeed is enabled
@@ -117,17 +116,7 @@ public:
     // return the differential pressure in Pascal for the last
     // airspeed reading. Used by the calibration code
     float get_differential_pressure(void) const {
-        return _last_pressure;
-    }
-
-    // return the current offset
-    float get_offset(void) const {
-        return _offset;
-    }
-
-    // return the current raw pressure
-    float get_raw_pressure(void) const {
-        return _raw_pressure;
+        return max(_last_pressure, 0);
     }
 
     // set the apparent to true airspeed ratio
@@ -147,9 +136,9 @@ public:
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
     // return health status of sensor
-    bool healthy(void) const { return _healthy && fabsf(_offset) > 0; }
+    bool healthy(void) const { return _healthy; }
 
-    void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; };
+    void setHIL(float pressure) { _hil_set=true; _hil_pressure=pressure; };
 
     // return time in ms of last update
     uint32_t last_update_ms(void) const { return _last_update_ms; }
@@ -170,11 +159,9 @@ private:
     AP_Int8         _pin;
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
-    AP_Int8         _skip_cal;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
-    float			_raw_pressure;
     float           _EAS2TAS;
     bool		    _healthy:1;
     bool		    _hil_set:1;
@@ -188,7 +175,7 @@ private:
     float get_pressure(void);
 
     AP_Airspeed_Analog analog;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Airspeed_PX4    digital;
 #else
     AP_Airspeed_I2C    digital;

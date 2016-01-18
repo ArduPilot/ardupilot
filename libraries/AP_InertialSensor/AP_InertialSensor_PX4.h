@@ -3,72 +3,57 @@
 #ifndef __AP_INERTIAL_SENSOR_PX4_H__
 #define __AP_INERTIAL_SENSOR_PX4_H__
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
+#include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
 #include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/sensor_combined.h>
 
-#include <Filter/Filter.h>
-#include <Filter/LowPassFilter2p.h>
-
-class AP_InertialSensor_PX4 : public AP_InertialSensor_Backend
+class AP_InertialSensor_PX4 : public AP_InertialSensor
 {
 public:
 
-    AP_InertialSensor_PX4(AP_InertialSensor &imu);
+    AP_InertialSensor_PX4() : 
+        AP_InertialSensor(),
+        _sample_time_usec(0),
+        _accel_fd(-1),
+        _gyro_fd(-1)
+        {}
 
-    /* update accel and gyro state */
-    bool update();
-
-    // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
-
-    // accumulate more samples
-    void accumulate(void) override { _get_sample(); }
+    /* Concrete implementation of AP_InertialSensor functions: */
+    bool            update();
+    float        	get_delta_time();
+    float           get_gyro_drift_rate();
+    bool            sample_available();
+    bool            wait_for_sample(uint16_t timeout_ms);
+    bool            healthy(void);
 
 private:
-    bool     _init_sensor(void);
+    uint16_t _init_sensor( Sample_rate sample_rate );
     void     _get_sample(void);
-    uint64_t _last_accel_timestamp[INS_MAX_INSTANCES];
-    uint64_t _last_gyro_timestamp[INS_MAX_INSTANCES];
-    float    _accel_sample_time[INS_MAX_INSTANCES];
-    float    _gyro_sample_time[INS_MAX_INSTANCES];
+    uint64_t _last_update_usec;
+    float    _delta_time;
+    Vector3f _accel_in;
+    Vector3f _gyro_in;
+    uint64_t _last_accel_timestamp;
+    uint64_t _last_gyro_timestamp;
+    uint64_t _last_sample_timestamp;
+    bool     _have_sample_available;
+    uint32_t _sample_time_usec;
 
-    void _new_accel_sample(uint8_t i, accel_report &accel_report);
-    void _new_gyro_sample(uint8_t i, gyro_report &gyro_report);
+    // support for updating filter at runtime
+    uint8_t _last_filter_hz;
+    uint8_t _default_filter_hz;
 
-    bool _get_gyro_sample(uint8_t i, struct gyro_report &gyro_report);
-    bool _get_accel_sample(uint8_t i, struct accel_report &accel_report);
-
-    // calculate right queue depth for a sensor
-    uint8_t _queue_depth(uint16_t sensor_sample_rate) const;
+    void _set_filter_frequency(uint8_t filter_hz);
 
     // accelerometer and gyro driver handles
-    uint8_t _num_accel_instances;
-    uint8_t _num_gyro_instances;
-
-    int _accel_fd[INS_MAX_INSTANCES];
-    int _gyro_fd[INS_MAX_INSTANCES];
-
-    // indexes in frontend object. Note that these could be different
-    // from the backend indexes
-    uint8_t _accel_instance[INS_MAX_INSTANCES];
-    uint8_t _gyro_instance[INS_MAX_INSTANCES];
-
-#ifdef AP_INERTIALSENSOR_PX4_DEBUG
-    uint32_t _gyro_meas_count[INS_MAX_INSTANCES];
-    uint32_t _accel_meas_count[INS_MAX_INSTANCES];
-
-    uint32_t _gyro_meas_count_start_us[INS_MAX_INSTANCES];
-    uint32_t _accel_meas_count_start_us[INS_MAX_INSTANCES];
-
-    float _gyro_dt_max[INS_MAX_INSTANCES];
-    float _accel_dt_max[INS_MAX_INSTANCES];
-#endif // AP_INERTIALSENSOR_PX4_DEBUG
+    int _accel_fd;
+    int _gyro_fd;
 };
-#endif // CONFIG_HAL_BOARD
+#endif
 #endif // __AP_INERTIAL_SENSOR_PX4_H__

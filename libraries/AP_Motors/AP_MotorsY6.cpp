@@ -1,17 +1,23 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 /*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
+ *
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  All APM Project credits from the original work are kept intact below as a
+ *  courtesy.
+ *
  */
 
 /*
@@ -28,21 +34,15 @@ void AP_MotorsY6::setup_motors()
     // call parent
     AP_MotorsMatrix::setup_motors();
 
-    if (_flags.frame_orientation >= AP_MOTORS_NEW_PLUS_FRAME) {
-        // Y6 motor definition with all top motors spinning clockwise, all bottom motors counter clockwise
-        add_motor_raw(AP_MOTORS_MOT_1, -1.0f,  0.500f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
-        add_motor_raw(AP_MOTORS_MOT_2, -1.0f,  0.500f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
-        add_motor_raw(AP_MOTORS_MOT_3,  0.0f, -1.000f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
-        add_motor_raw(AP_MOTORS_MOT_4,  0.0f, -1.000f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
-        add_motor_raw(AP_MOTORS_MOT_5,  1.0f,  0.500f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5);
-        add_motor_raw(AP_MOTORS_MOT_6,  1.0f,  0.500f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
-    }else{
-        // original Y6 motor definition
-        add_motor_raw(AP_MOTORS_MOT_1, -1.0f,  0.666f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
-        add_motor_raw(AP_MOTORS_MOT_2,  1.0f,  0.666f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5);
-        add_motor_raw(AP_MOTORS_MOT_3,  1.0f,  0.666f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
-        add_motor_raw(AP_MOTORS_MOT_4,  0.0f, -1.333f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
-        add_motor_raw(AP_MOTORS_MOT_5, -1.0f,  0.666f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
-        add_motor_raw(AP_MOTORS_MOT_6,  0.0f, -1.333f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
-    }
+    // call parent
+    AP_MotorsMatrix::setup_motors();
+
+    //BEV hardcoding in the FireFLY6 motor arrangement
+    //BEV temp CW <-> CCW to account for incorrectly assembled bird
+    add_motor_raw(AP_MOTORS_MOT_3,  0.0, -1.000, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1); //aft top (ccw)
+    add_motor_raw(AP_MOTORS_MOT_4, -1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2); //front right top (ccw)
+    add_motor_raw(AP_MOTORS_MOT_5,  1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3); //front left top (ccw)
+    add_motor_raw(AP_MOTORS_MOT_6,  0.0, -1.000, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4); //aft bottom (cw)
+    add_motor_raw(AP_MOTORS_MOT_7, -1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5); //front right bottom (cw)
+    add_motor_raw(AP_MOTORS_MOT_8,  1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6); //front left bottom (cw)
 }

@@ -19,8 +19,8 @@
 #define __TOSHIBA_LED_PX4_H__
 
 #include "ToshibaLED.h"
-#include <AP_Math/AP_Math.h>
-#include <AP_Math/vectorN.h>
+#include "AP_Math.h"
+#include "vectorN.h"
 
 class ToshibaLED_PX4 : public ToshibaLED
 {
@@ -30,19 +30,8 @@ public:
 private:
     int _rgbled_fd;
     void update_timer(void);
-
-    // use a union so that updates can be of a single 32 bit value,
-    // making it atomic on PX4
-    union rgb_value {
-        struct {
-            uint8_t r;
-            uint8_t g;
-            uint8_t b;
-        };
-        volatile uint32_t v;
-    };
     
-    union rgb_value last, next;
+    VectorN<uint8_t,3> last, next;
 };
 
 #endif // __TOSHIBA_LED_PX4_H__

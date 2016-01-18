@@ -37,17 +37,17 @@
 /* From: Id: printf_p_new.c,v 1.1.1.9 2002/10/15 20:10:28 joerg_wunsch Exp */
 /* $Id: vfprintf.c,v 1.18.2.1 2009/04/01 23:12:06 arcanum Exp $ */
 
-#include "print_vprintf.h"
 
+#include <AP_HAL.h>
+#include <AP_Progmem.h>
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Progmem/AP_Progmem.h>
-
 #include "ftoa_engine.h"
 #include "xtoa_fast.h"
+
+#include "print_vprintf.h"
 
 #define GETBYTE(flag, mask, pnt) ((flag)&(mask)?pgm_read_byte(pnt++):*pnt++)
 
@@ -59,7 +59,6 @@
 #define FL_WIDTH	0x20
 #define FL_PREC		0x40
 #define FL_LONG		0x80
-#define FL_LONGLONG	0x100
 
 #define FL_PGMSTRING	FL_LONG
 #define FL_NEGATIVE	FL_LONG
@@ -74,10 +73,10 @@
 void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt, va_list ap)
 {
         unsigned char c;        /* holds a char from the format string */
-        uint16_t flags;
+        unsigned char flags;
         unsigned char width;
         unsigned char prec;
-        unsigned char buf[23];
+        unsigned char buf[13];
 
         for (;;) {
 
@@ -148,9 +147,6 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 }
                                 if (c == 'h')
                                         continue;
-                        } else if ((flags & FL_LONG) && c == 'l') {
-                                flags |= FL_LONGLONG;
-                                continue;
                         }
             
                         break;
@@ -185,7 +181,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 flags |= FL_FLTFIX;
                         } else if (prec > 0)
                                 prec -= 1;
-                        if ((flags & FL_FLTFIX) && fabsf(value) > 9999999) {
+                        if ((flags & FL_FLTFIX) && fabs(value) > 9999999) {
                                 flags = (flags & ~FL_FLTFIX) | FL_FLTEXP;
                         }
 
@@ -223,10 +219,10 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 }
                                 if (sign)
                                         s->write(sign);
-                                const char *p = "inf";
+                                const prog_char_t *p = PSTR("inf");
                                 if (vtype & FTOA_NAN)
-                                        p = "nan";
-                                while ( (ndigs = pgm_read_byte((const char *)p)) != 0) {
+                                        p = PSTR("nan");
+                                while ( (ndigs = pgm_read_byte((const prog_char *)p)) != 0) {
                                         if (flags & FL_FLTUPP)
                                                 ndigs += 'I' - 'i';
                                         s->write(ndigs);
@@ -283,23 +279,22 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                         if (flags & FL_FLTFIX) {                /* 'f' format           */
 
                                 n = exp > 0 ? exp : 0;          /* exponent of left digit */
-                                unsigned char v = 0;
                                 do {
                                         if (n == -1)
                                                 s->write('.');
-                                        v = (n <= exp && n > exp - ndigs)
+                                        flags = (n <= exp && n > exp - ndigs)
                                                 ? buf[exp - n + 1] : '0';
-                                        if (--n < -prec || v == 0)
+                                        if (--n < -prec || flags == 0)
                                                 break;
-                                        s->write(v);
+                                        s->write(flags);
                                 } while (1);
                                 if (n == exp
                                     && (buf[1] > '5'
                                         || (buf[1] == '5' && !(vtype & FTOA_CARRY))) )
                                         {
-                                                v = '1';
+                                                flags = '1';
                                         }
-                                if (v) s->write(v);
+                                if (flags) s->write(flags);
         
                         } else {                                /* 'e(E)' format        */
 
@@ -357,7 +352,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                         case 'S':
                         // pgmstring: // not yet used
                                 pnt = va_arg (ap, char *);
-                                size = strnlen (pnt, (flags & FL_PREC) ? prec : ~0);
+                                size = strnlen_P (pnt, (flags & FL_PREC) ? prec : ~0);
                                 flags |= FL_PGMSTRING;
 
                         str_lpad:
@@ -380,23 +375,13 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                  * Handle integer formats variations for d/i, u, o, p, x, X.
                  */
                 if (c == 'd' || c == 'i') {
-                        if (flags & FL_LONGLONG) {
-                                int64_t x = va_arg(ap,long long);
-                                flags &= ~(FL_NEGATIVE | FL_ALT);
-                                if (x < 0) {
-                                        x = -x;
-                                        flags |= FL_NEGATIVE;
-                                }
-                                c = ulltoa_invert (x, (char *)buf, 10) - (char *)buf;
-                        } else {
-                                long x = (flags & FL_LONG) ? va_arg(ap,long) : va_arg(ap,int);
-                                flags &= ~(FL_NEGATIVE | FL_ALT);
-                                if (x < 0) {
-                                        x = -x;
-                                        flags |= FL_NEGATIVE;
-                                }
-                                c = ultoa_invert (x, (char *)buf, 10) - (char *)buf;
+                        long x = (flags & FL_LONG) ? va_arg(ap,long) : va_arg(ap,int);
+                        flags &= ~(FL_NEGATIVE | FL_ALT);
+                        if (x < 0) {
+                                x = -x;
+                                flags |= FL_NEGATIVE;
                         }
+                        c = ultoa_invert (x, (char *)buf, 10) - (char *)buf;
 
                 } else {
                         int base;
@@ -426,15 +411,10 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                         flags |= (FL_ALTHEX | FL_ALTUPP);
                                 base = 16 | XTOA_UPPER;
                         ultoa:
-                                if (flags & FL_LONGLONG) {
-                                        c = ulltoa_invert (va_arg(ap, unsigned long long),
-                                                           (char *)buf, base)  -  (char *)buf;
-                                } else {
-                                        c = ultoa_invert ((flags & FL_LONG)
-                                                          ? va_arg(ap, unsigned long)
-                                                          : va_arg(ap, unsigned int),
-                                                          (char *)buf, base)  -  (char *)buf;
-                                }
+                                c = ultoa_invert ((flags & FL_LONG)
+                                                    ? va_arg(ap, unsigned long)
+                                                    : va_arg(ap, unsigned int),
+                                                    (char *)buf, base)  -  (char *)buf;
                                 flags &= ~FL_NEGATIVE;
                                 break;
 

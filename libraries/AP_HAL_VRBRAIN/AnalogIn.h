@@ -3,22 +3,31 @@
 #ifndef __AP_HAL_VRBRAIN_ANALOGIN_H__
 #define __AP_HAL_VRBRAIN_ANALOGIN_H__
 
-#include "AP_HAL_VRBRAIN.h"
+#include <AP_HAL_VRBRAIN.h>
 #include <pthread.h>
 #include <uORB/uORB.h>
 
 #define VRBRAIN_ANALOG_MAX_CHANNELS 16
 
 
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRHERO_V10)
+#if  defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
+#define VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN     10
+#define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     11
+#elif  defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
+#define VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN     10
+#define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     11
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
+#define VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN     10
+#define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     11
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
 #define VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN     10
 #define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     11
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
 #define VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN     10
 #define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     -1
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
 #define VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN     10
-#define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     1
+#define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     11
 #endif
 
 class VRBRAIN::VRBRAINAnalogSource : public AP_HAL::AnalogSource {
@@ -56,7 +65,7 @@ private:
 class VRBRAIN::VRBRAINAnalogIn : public AP_HAL::AnalogIn {
 public:
     VRBRAINAnalogIn();
-    void init();
+    void init(void* implspecific);
     AP_HAL::AnalogSource* channel(int16_t pin);
     void _timer_tick(void);
     float board_voltage(void) { return _board_voltage; }

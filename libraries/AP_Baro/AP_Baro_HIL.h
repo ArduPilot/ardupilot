@@ -1,18 +1,26 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-/*
-  dummy backend for HIL (and SITL). This doesn't actually need to do
-  any work, as setHIL() is in the frontend
- */
-#pragma once
 
-#include "AP_Baro_Backend.h"
+#ifndef __AP_BARO__HIL_H__
+#define __AP_BARO__HIL_H__
 
-class AP_Baro_HIL : public AP_Baro_Backend
+#include "AP_Baro.h"
+
+class AP_Baro_HIL : public AP_Baro
 {
-public:
-    AP_Baro_HIL(AP_Baro &baro);
-    void update(void);
-
 private:
-    uint8_t _instance;
+    float Temp;
+    float Press;
+    float _pressure_sum;
+    float _temperature_sum;
+    volatile uint8_t _count;
+
+public:
+    bool init();
+    uint8_t read();
+    float get_pressure();
+    float get_temperature();
+    void setHIL(float altitude_msl);
+    void setHIL(float pressure, float temperature);
 };
+
+#endif //  __AP_BARO__HIL_H__

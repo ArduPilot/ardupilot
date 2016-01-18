@@ -23,7 +23,7 @@ AP_PerfMon::AP_PerfMon(uint8_t funcNum) : _funcNum(funcNum), _time_this_iteratio
 
     // check global start time
     if( allStartTime == 0 ) {
-        allStartTime = AP_HAL::micros();
+        allStartTime = hal.scheduler->micros();
     }
 
     // stop recording time from parent
@@ -81,13 +81,13 @@ uint8_t AP_PerfMon::recordFunctionName(const char funcName[])
 // stop recording time
 void AP_PerfMon::start()
 {
-    _startTime = AP_HAL::micros();  // start recording time spent in this function
+    _startTime = hal.scheduler->micros();  // start recording time spent in this function
 }
 
 // stop recording time
 void AP_PerfMon::stop()
 {
-    uint32_t temp_time = AP_HAL::micros()-_startTime;
+    uint32_t temp_time = hal.scheduler->micros()-_startTime;
     _time_this_iteration += temp_time;
     time[_funcNum] += temp_time;
 }
@@ -105,7 +105,7 @@ void AP_PerfMon::ClearAll()
     }
 
     // reset start time to now
-    allStartTime = AP_HAL::micros();
+    allStartTime = hal.scheduler->micros();
     allEndTime = 0;
 
     // reset start times of any active counters
@@ -129,7 +129,7 @@ void AP_PerfMon::DisplayResults()
 
     // record end time
     if( allEndTime == 0 ) {
-        allEndTime = AP_HAL::micros();
+        allEndTime = hal.scheduler->micros();
     }
 
     // turn off any time recording
@@ -161,8 +161,8 @@ void AP_PerfMon::DisplayResults()
     hal.console->set_blocking_writes(true);
 
     // print table of results
-    hal.console->printf("\nPerfMon elapsed:%lu(ms)\n",(unsigned long)totalTime/1000);
-    hal.console->printf("Fn:\t\tcpu\ttot(ms)\tavg(ms)\tmax(ms)\t#calls\tHz\n");
+    hal.console->printf_P(PSTR("\nPerfMon elapsed:%lu(ms)\n"),(unsigned long)totalTime/1000);
+    hal.console->printf_P(PSTR("Fn:\t\tcpu\ttot(ms)\tavg(ms)\tmax(ms)\t#calls\tHz\n"));
     for( i=0; i<nextFuncNum; i++ ) {
         j=order[i];
         sumOfTime += time[j];
@@ -175,13 +175,13 @@ void AP_PerfMon::DisplayResults()
         }
 
         hz = numCalls[j]/(totalTime/1000000);
-        pct = ((float)time[j] / (float)totalTime) * 100.0f;
-        hal.console->printf("%-10s\t%4.2f\t%lu\t%4.3f\t%4.3f\t%lu\t%4.1f\n",
+        pct = ((float)time[j] / (float)totalTime) * 100.0;
+        hal.console->printf_P(PSTR("%-10s\t%4.2f\t%lu\t%4.3f\t%4.3f\t%lu\t%4.1f\n"),
             functionNames[j],
             pct,
             (unsigned long)time[j]/1000,
-            (float)avgTime/1000.0f,
-            (float)maxTime[j]/1000.0f,
+            (float)avgTime/1000.0,
+            (float)maxTime[j]/1000.0,
             numCalls[j],
             hz);
     }
@@ -191,8 +191,8 @@ void AP_PerfMon::DisplayResults()
     } else {
         unExplainedTime = totalTime - sumOfTime;
     }
-    pct = ((float)unExplainedTime / (float)totalTime) * 100.0f;
-    hal.console->printf("unexpl:\t\t%4.2f\t%lu\n",pct,(unsigned long)unExplainedTime/1000);
+    pct = ((float)unExplainedTime / (float)totalTime) * 100.0;
+    hal.console->printf_P(PSTR("unexpl:\t\t%4.2f\t%lu\n"),pct,(unsigned long)unExplainedTime/1000);
 
     // restore to blocking writes if necessary
     hal.console->set_blocking_writes(false);
@@ -207,7 +207,7 @@ void AP_PerfMon::DisplayResults()
 // DisplayAndClear - will display results after this many milliseconds.  should be called regularly
 void AP_PerfMon::DisplayAndClear(uint32_t display_after_seconds)
 {
-    if( (AP_HAL::micros() - allStartTime) > (uint32_t)(display_after_seconds * 1000000) ) {
+    if( (hal.scheduler->micros() - allStartTime) > (uint32_t)(display_after_seconds * 1000000) ) {
         DisplayResults();
         ClearAll();
     }

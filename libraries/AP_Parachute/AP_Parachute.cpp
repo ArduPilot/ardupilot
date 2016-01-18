@@ -1,15 +1,15 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "AP_Parachute.h"
-#include <AP_Relay/AP_Relay.h>
-#include <AP_Math/AP_Math.h>
-#include <RC_Channel/RC_Channel.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_Parachute.h>
+#include <AP_Relay.h>
+#include <AP_Math.h>
+#include <RC_Channel.h>
+#include <AP_Notify.h>
+#include <AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_Parachute::var_info[] = {
+const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
 
     // @Param: ENABLED
     // @DisplayName: Parachute release enabled or disabled
@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     AP_GROUPINFO("SERVO_OFF", 3, AP_Parachute, _servo_off_pwm, AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT),
 
     // @Param: ALT_MIN
-    // @DisplayName: Parachute min altitude in meters above home
+    // @DisplayName: Parachute min altitude in cm above home
     // @Description: Parachute min altitude above home.  Parachute will not be released below this altitude.  0 to disable alt check.
     // @Range: 0 32000
     // @Units: Meters
@@ -73,9 +73,7 @@ void AP_Parachute::release()
     }
 
     // set release time to current system time
-    if (_release_time == 0) {
-        _release_time = AP_HAL::millis();
-    }
+    _release_time = hal.scheduler->millis();
 
     // update AP_Notify
     AP_Notify::flags.parachute_release = 1;
@@ -90,10 +88,10 @@ void AP_Parachute::update()
     }
 
     // calc time since release
-    uint32_t time_diff = AP_HAL::millis() - _release_time;
+    uint32_t time_diff = hal.scheduler->millis() - _release_time;
 
     // check if we should release parachute
-    if ((_release_time != 0) && !_release_in_progress) {
+    if ((_release_time != 0) && !_released) {
         if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
@@ -102,7 +100,6 @@ void AP_Parachute::update()
                 // set relay
                 _relay.on(_release_type);
             }
-            _release_in_progress = true;
             _released = true;
         }
     }else if ((_release_time == 0) || time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS + AP_PARACHUTE_RELEASE_DURATION_MS) {
@@ -114,7 +111,7 @@ void AP_Parachute::update()
             _relay.off(_release_type);
         }
         // reset released flag and release_time
-        _release_in_progress = false;
+        _released = false;
         _release_time = 0;
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;

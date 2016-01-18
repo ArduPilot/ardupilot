@@ -1,81 +1,113 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
-
-/**
+/*
+ *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
  *
- * ekf_check.pde - detects failures of the ekf or inertial nav system
- *                 triggers an alert to the pilot and helps take countermeasures
+ *  This program is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 3 as published
+ *  by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ *  Public License version 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License version
+ *  3 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
 #ifndef EKF_CHECK_ITERATIONS_MAX
- # define EKF_CHECK_ITERATIONS_MAX          10      // 1 second (ie. 10 iterations at 10hz) of bad variances signals a failure
+//BEV increased the number of bad iterations necessary because we were getting loads of triggers that were clearing 2 seconds later
+ # define EKF_CHECK_ITERATIONS_MAX          30      // 3 seconds (ie. 30 iterations at 10hz) of bad variances signals a failure
+ //# define EKF_CHECK_ITERATIONS_MAX          10      // 1 second (ie. 10 iterations at 10hz) of bad variances signals a failure
 #endif
 
 #ifndef EKF_CHECK_WARNING_TIME
  # define EKF_CHECK_WARNING_TIME            (30*1000)   // warning text messages are sent to ground no more than every 30 seconds
 #endif
 
+// Enumerator for types of check
+enum EKFCheckType {
+    CHECK_NONE = 0,
+    CHECK_DCM = 1,
+    CHECK_EKF = 2
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // EKF_check strucutre
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
-    uint8_t fail_count;         // number of iterations ekf or dcm have been out of tolerances
-    uint8_t bad_variance : 1;   // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
+    uint8_t fail_count_compass; 		// number of iterations ekf or dcm have been out of tolerances
+
+    uint8_t bad_compass : 1;    // true if dcm or ekf should be considered untrusted (fail_count_compass has exceeded EKF_CHECK_ITERATIONS_MAX)
+
     uint32_t last_warn_time;    // system time of last warning in milliseconds.  Used to throttle text warnings sent to GCS
 } ekf_check_state;
 
-// ekf_check - detects if ekf variance are out of tolerance and triggers failsafe
+// ekf_dcm_check - detects if ekf variances or dcm yaw errors that are out of tolerance and triggers failsafe
 // should be called at 10hz
-void Copter::ekf_check()
+void ekf_dcm_check()
 {
-    // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
-    Location temp_loc;
-    if (!ahrs.get_origin(temp_loc)) {
-        return;
+    EKFCheckType check_type = CHECK_NONE;
+
+    // decide if we should check ekf or dcm
+    if (ahrs.have_inertial_nav() && g.ekfcheck_thresh > 0.0f) {
+        check_type = CHECK_EKF;
+    } else if (g.dcmcheck_thresh > 0.0f) {
+        check_type = CHECK_DCM;
     }
 
     // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
-    if (!motors.armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
-        ekf_check_state.fail_count = 0;
-        ekf_check_state.bad_variance = false;
-        AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
+    if (!motors.armed() || ap.usb_connected || check_type == CHECK_NONE) {
+        ekf_check_state.fail_count_compass = 0;
+        ekf_check_state.bad_compass = false;
+        AP_Notify::flags.ekf_bad = ekf_check_state.bad_compass;
         failsafe_ekf_off_event();   // clear failsafe
         return;
     }
 
     // compare compass and velocity variance vs threshold
-    if (ekf_over_threshold()) {
+    if ((check_type == CHECK_EKF && ekf_over_threshold()) || (check_type == CHECK_DCM && dcm_over_threshold())) {
         // if compass is not yet flagged as bad
-        if (!ekf_check_state.bad_variance) {
+        if (!ekf_check_state.bad_compass) {
             // increase counter
-            ekf_check_state.fail_count++;
+            ekf_check_state.fail_count_compass++;
             // if counter above max then trigger failsafe
-            if (ekf_check_state.fail_count >= EKF_CHECK_ITERATIONS_MAX) {
+
+            //BEV compass isn't necessary to navigate in plane mode. Don't allow throwing a compass error when a plane
+            if(is_plane_nav_active() && ekf_check_state.fail_count_compass >= EKF_CHECK_ITERATIONS_MAX ) {
+                ekf_check_state.fail_count_compass = EKF_CHECK_ITERATIONS_MAX - 1;
+            }
+
+            if (ekf_check_state.fail_count_compass >= EKF_CHECK_ITERATIONS_MAX) {
                 // limit count from climbing too high
-                ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
-                ekf_check_state.bad_variance = true;
+                ekf_check_state.fail_count_compass = EKF_CHECK_ITERATIONS_MAX;
+                ekf_check_state.bad_compass = true;
                 // log an error in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_BAD_VARIANCE);
+                Log_Write_Error(ERROR_SUBSYSTEM_EKFINAV_CHECK, ERROR_CODE_EKFINAV_CHECK_BAD_VARIANCE);
                 // send message to gcs
-                if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs_send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
-                    ekf_check_state.last_warn_time = AP_HAL::millis();
+                if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
+                    if (check_type == CHECK_EKF) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
+                    } else {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("DCM bad heading"));
+                    }
+                    ekf_check_state.last_warn_time = hal.scheduler->millis();
                 }
                 failsafe_ekf_event();
             }
         }
     } else {
         // reduce counter
-        if (ekf_check_state.fail_count > 0) {
-            ekf_check_state.fail_count--;
+        if (ekf_check_state.fail_count_compass > 0) {
+            ekf_check_state.fail_count_compass--;
 
             // if compass is flagged as bad and the counter reaches zero then clear flag
-            if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
-                ekf_check_state.bad_variance = false;
+            if (ekf_check_state.bad_compass && ekf_check_state.fail_count_compass == 0) {
+                ekf_check_state.bad_compass = false;
                 // log recovery in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_VARIANCE_CLEARED);
+                Log_Write_Error(ERROR_SUBSYSTEM_EKFINAV_CHECK, ERROR_CODE_EKFINAV_CHECK_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
             }
@@ -83,22 +115,25 @@ void Copter::ekf_check()
     }
 
     // set AP_Notify flags
-    AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
+    AP_Notify::flags.ekf_bad = ekf_check_state.bad_compass;
 
     // To-Do: add ekf variances to extended status
 }
 
-// ekf_over_threshold - returns true if the ekf's variance are over the tolerance
-bool Copter::ekf_over_threshold()
+// dcm_over_threshold - returns true if the dcm yaw error is over the tolerance
+static bool dcm_over_threshold()
 {
-    // return false immediately if disabled
-    if (g.fs_ekf_thresh <= 0.0f) {
-        return false;
-    }
+    // return true if yaw error is over the threshold
+    return (g.dcmcheck_thresh > 0.0f && ahrs.get_error_yaw() > g.dcmcheck_thresh);
+}
 
-    // return true immediately if position is bad
-    if (!ekf_position_ok() && !optflow_position_ok()) {
-        return true;
+// ekf_over_threshold - returns true if the ekf's variance are over the tolerance
+static bool ekf_over_threshold()
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // return false immediately if disabled
+    if (g.ekfcheck_thresh <= 0.0f) {
+        return false;
     }
 
     // use EKF to get variance
@@ -107,29 +142,27 @@ bool Copter::ekf_over_threshold()
     Vector2f offset;
     float compass_variance;
     float vel_variance;
-    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_NavEKF().getVariances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
     compass_variance = magVar.length();
 
     // return true if compass and velocity variance over the threshold
-    return (compass_variance >= g.fs_ekf_thresh && vel_variance >= g.fs_ekf_thresh);
+    return (compass_variance >= g.ekfcheck_thresh && vel_variance >= g.ekfcheck_thresh);
+#else
+    return false;
+#endif
 }
 
 
 // failsafe_ekf_event - perform ekf failsafe
-void Copter::failsafe_ekf_event()
+static void failsafe_ekf_event()
 {
     // return immediately if ekf failsafe already triggered
     if (failsafe.ekf) {
         return;
     }
 
-    // do nothing if motors disarmed
-    if (!motors.armed()) {
-        return;
-    }
-
-    // do nothing if not in GPS flight mode and ekf-action is not land-even-stabilize
-    if (!mode_requires_GPS(control_mode) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
+    // do nothing if motors disarmed or not in flight mode that requires GPS
+    if (!motors.armed() || !mode_requires_GPS(control_mode)) {
         return;
     }
 
@@ -137,27 +170,19 @@ void Copter::failsafe_ekf_event()
     failsafe.ekf = true;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    // take action based on fs_ekf_action parameter
-    switch (g.fs_ekf_action) {
-        case FS_EKF_ACTION_ALTHOLD:
-            // AltHold
-            if (failsafe.radio || !set_mode(ALT_HOLD)) {
-                set_mode_land_with_pause();
-            }
-            break;
-        default:
-            set_mode_land_with_pause();
-            break;
+    // take action based on flight mode
+    if (mode_requires_GPS(control_mode)) {
+        set_mode_land_with_pause();
     }
 
-    // if flight mode is already LAND ensure it's not the GPS controlled LAND
+    // if flight mode is LAND ensure it's not the GPS controlled LAND
     if (control_mode == LAND) {
         land_do_not_use_GPS();
     }
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
-void Copter::failsafe_ekf_off_event(void)
+static void failsafe_ekf_off_event(void)
 {
     // return immediately if not in ekf failsafe
     if (!failsafe.ekf) {

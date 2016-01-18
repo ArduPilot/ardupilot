@@ -3,7 +3,7 @@
 #ifndef __AP_HAL_PX4_GPIO_H__
 #define __AP_HAL_PX4_GPIO_H__
 
-#include "AP_HAL_PX4.h"
+#include <AP_HAL_PX4.h>
 
 #define PX4_GPIO_PIEZO_PIN              110
 #define PX4_GPIO_EXT_FMU_RELAY1_PIN     111
@@ -12,12 +12,6 @@
 #define PX4_GPIO_EXT_IO_RELAY2_PIN      114
 #define PX4_GPIO_EXT_IO_ACC1_PIN        115
 #define PX4_GPIO_EXT_IO_ACC2_PIN        116
-
-/*
-  start servo channels used as GPIO at 50. Pin 50 is
-  the first FMU servo pin
- */
-#define PX4_GPIO_FMU_SERVO_PIN(n)       (n+50)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define HAL_GPIO_A_LED_PIN        27
@@ -46,15 +40,11 @@ public:
     /* return true if USB cable is connected */
     bool usb_connected(void);
 
-    // used by UART code to avoid a hw bug in the AUAV-X2
-    void set_usb_connected(void) { _usb_connected = true; }
-
 private:
-    int _led_fd = -1;
-    int _tone_alarm_fd = -1;
-    int _gpio_fmu_fd = -1;
-    int _gpio_io_fd = -1;
-    bool _usb_connected = false;
+    int _led_fd;
+    int _tone_alarm_fd;
+    int _gpio_fmu_fd;
+    int _gpio_io_fd;
 };
 
 class PX4::PX4DigitalSource : public AP_HAL::DigitalSource {

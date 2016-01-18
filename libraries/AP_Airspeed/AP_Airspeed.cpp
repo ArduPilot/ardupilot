@@ -18,17 +18,22 @@
  */
 
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_ADC/AP_ADC.h>
-#include "AP_Airspeed.h"
+#include <AP_HAL.h>
+#include <AP_Math.h>
+#include <AP_Common.h>
+#include <AP_ADC.h>
+#include <AP_Airspeed.h>
 
 extern const AP_HAL::HAL& hal;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+ #include <AP_ADC_AnalogSource.h>
+ #define ARSPD_DEFAULT_PIN 64
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ #define ARSPD_DEFAULT_PIN 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  #define ARSPD_DEFAULT_PIN 1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  #include <sys/stat.h>
  #include <sys/types.h>
  #include <fcntl.h>
@@ -36,19 +41,7 @@ extern const AP_HAL::HAL& hal;
  #include <systemlib/airspeed.h>
  #include <drivers/drv_airspeed.h>
  #include <uORB/topics/differential_pressure.h>
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
- #define ARSPD_DEFAULT_PIN 0
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
  #define ARSPD_DEFAULT_PIN 11
 #else
  #define ARSPD_DEFAULT_PIN 15
@@ -57,12 +50,32 @@ extern const AP_HAL::HAL& hal;
  #define ARSPD_DEFAULT_PIN 16
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
+ #define ARSPD_DEFAULT_PIN 0
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+ #define ARSPD_DEFAULT_PIN 1
+#else
+ #define ARSPD_DEFAULT_PIN 0
+#endif
+#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
+ #define ARSPD_DEFAULT_PIN 0
+#endif
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
 #else
  #define ARSPD_DEFAULT_PIN 0
 #endif
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
+const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
 
     // @Param: ENABLE
     // @DisplayName: Airspeed enable
@@ -96,7 +109,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: AUTOCAL
     // @DisplayName: Automatic airspeed ratio calibration
-    // @Description: If this is enabled then the APM will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%. This option should be enabled for a calibration flight then disabled again when calibration is complete. Leaving it enabled all the time is not recommended.
+    // @Description: If this is enabled then the APM will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%
     // @User: Advanced
     AP_GROUPINFO("AUTOCAL",  5, AP_Airspeed, _autocal, 0),
 
@@ -105,13 +118,6 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the top connector on the sensor needs to be the dynamic pressure. If set to 1 then the bottom connector needs to be the dynamic pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft it receiving excessive pressure on the static port, which would otherwise be seen as a positive airspeed.
     // @User: Advanced
     AP_GROUPINFO("TUBE_ORDER",  6, AP_Airspeed, _tube_order, 2),
-
-    // @Param: SKIP_CAL
-    // @DisplayName: Skip airspeed calibration on startup
-    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
-    // @Values: 0:Disable,1:Enable
-    // @User: Advanced
-    AP_GROUPINFO("SKIP_CAL",  7, AP_Airspeed, _skip_cal, 0),
 
     AP_GROUPEND
 };
@@ -168,14 +174,11 @@ bool AP_Airspeed::get_temperature(float &temperature)
 
 // calibrate the airspeed. This must be called at least once before
 // the get_airspeed() interface can be used
-void AP_Airspeed::calibrate(bool in_startup)
+void AP_Airspeed::calibrate()
 {
     float sum = 0;
     uint8_t count = 0;
     if (!_enable) {
-        return;
-    }
-    if (in_startup && _skip_cal) {
         return;
     }
     // discard first reading
@@ -190,7 +193,7 @@ void AP_Airspeed::calibrate(bool in_startup)
     }
     if (count == 0) {
         // unhealthy sensor
-        hal.console->println("Airspeed sensor unhealthy");
+        hal.console->println_P(PSTR("Airspeed sensor unhealthy"));
         _offset.set(0);
         return;
     }
@@ -208,9 +211,6 @@ void AP_Airspeed::read(void)
         return;
     }
     airspeed_pressure = get_pressure() - _offset;
-
-    // remember raw pressure for logging
-    _raw_pressure     = airspeed_pressure;
 
     /*
       we support different pitot tube setups so used can choose if
@@ -232,11 +232,11 @@ void AP_Airspeed::read(void)
         airspeed_pressure = fabsf(airspeed_pressure);
         break;
     }
-    airspeed_pressure       = MAX(airspeed_pressure, 0);
+    airspeed_pressure       = max(airspeed_pressure, 0);
     _last_pressure          = airspeed_pressure;
     _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
     _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
-    _last_update_ms         = AP_HAL::millis();
+    _last_update_ms         = hal.scheduler->millis();
 }
 
 void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
@@ -244,8 +244,5 @@ void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
     _raw_airspeed = airspeed;
     _airspeed = airspeed;
     _last_pressure = diff_pressure;
-    _last_update_ms = AP_HAL::millis();    
-    _hil_pressure = diff_pressure;
-    _hil_set = true;
-    _healthy = true;
+    _last_update_ms         = hal.scheduler->millis();    
 }

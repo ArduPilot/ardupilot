@@ -32,24 +32,37 @@
 #pragma GCC diagnostic ignored "-Wredundant-decls"
 
 // used to pack structures
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#define PACKED
+#else
 #define PACKED __attribute__((__packed__))
-
-// used to mark a function that may be unused in some builds
-#define UNUSED_FUNCTION __attribute__((unused))
+#endif
 
 // this can be used to optimize individual functions
 #define OPTIMIZE(level) __attribute__((optimize(level)))
 
-// sometimes we need to prevent inlining to prevent large stack usage
-#define NOINLINE __attribute__((noinline))
+// Make some dire warnings into errors
+//
+// Some warnings indicate questionable code; rather than let
+// these slide, we force them to become errors so that the
+// developer has to find a safer alternative.
+//
+//#pragma GCC diagnostic error "-Wfloat-equal"
 
-#define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
-#define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
+// The following is strictly for type-checking arguments to printf_P calls
+// in conjunction with a suitably modified Arduino IDE; never define for
+// production as it generates bad code.
+//
+#if PRINTF_FORMAT_WARNING_DEBUG
+ # undef PSTR
+ # define PSTR(_x)               _x             // help the compiler with printf_P
+ # define float double                  // silence spurious format warnings for %f
+#endif
+
+#define FPSTR(s) (wchar_t *)(s)
 
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
-
-#define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
 
 /*
   check if bit bitnumber is set in value, returned as a
@@ -60,14 +73,6 @@
 // get high or low bytes from 2 byte integer
 #define LOWBYTE(i) ((uint8_t)(i))
 #define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
-
-template <typename T, size_t N>
-char (&_ARRAY_SIZE_HELPER(T (&_arr)[N]))[N];
-
-template <typename T>
-char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
-
-#define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
 
 // @}
 
@@ -108,15 +113,6 @@ struct PACKED Location {
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
-/*
-  home states. Used to record if user has overridden home position.
-*/
-enum HomeState {
-    HOME_UNSET,                 // home is unset, no GPS positions yet received
-    HOME_SET_NOT_LOCKED,        // home is set to EKF origin or armed location (can be moved)
-    HOME_SET_AND_LOCKED         // home has been set by user, cannot be moved except by user initiated do-set-home command
-};
-
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -130,20 +126,28 @@ enum HomeState {
 /*  Product IDs for all supported products follow */
 
 #define AP_PRODUCT_ID_NONE                      0x00    // Hardware in the loop
+#define AP_PRODUCT_ID_APM1_1280         0x01    // APM1 with 1280 CPUs
+#define AP_PRODUCT_ID_APM1_2560         0x02    // APM1 with 2560 CPUs
 #define AP_PRODUCT_ID_SITL              0x03    // Software in the loop
 #define AP_PRODUCT_ID_PX4               0x04    // PX4 on NuttX
 #define AP_PRODUCT_ID_PX4_V2            0x05    // PX4 FMU2 on NuttX
-#define AP_PRODUCT_ID_PX4_V4            0x06    // PX4 FMU4 on NuttX
+#define AP_PRODUCT_ID_APM2ES_REV_C4 0x14        // APM2 with MPU6000ES_REV_C4
+#define AP_PRODUCT_ID_APM2ES_REV_C5     0x15    // APM2 with MPU6000ES_REV_C5
+#define AP_PRODUCT_ID_APM2ES_REV_D6     0x16    // APM2 with MPU6000ES_REV_D6
+#define AP_PRODUCT_ID_APM2ES_REV_D7     0x17    // APM2 with MPU6000ES_REV_D7
+#define AP_PRODUCT_ID_APM2ES_REV_D8     0x18    // APM2 with MPU6000ES_REV_D8
+#define AP_PRODUCT_ID_APM2_REV_C4       0x54    // APM2 with MPU6000_REV_C4
+#define AP_PRODUCT_ID_APM2_REV_C5       0x55    // APM2 with MPU6000_REV_C5
+#define AP_PRODUCT_ID_APM2_REV_D6       0x56    // APM2 with MPU6000_REV_D6
+#define AP_PRODUCT_ID_APM2_REV_D7       0x57    // APM2 with MPU6000_REV_D7
+#define AP_PRODUCT_ID_APM2_REV_D8       0x58    // APM2 with MPU6000_REV_D8
+#define AP_PRODUCT_ID_APM2_REV_D9       0x59    // APM2 with MPU6000_REV_D9
 #define AP_PRODUCT_ID_FLYMAPLE          0x100   // Flymaple with ITG3205, ADXL345, HMC5883, BMP085
 #define AP_PRODUCT_ID_L3G4200D          0x101   // Linux with L3G4200D and ADXL345
 #define AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE 0x102   // Linux with the PixHawk Fire Cape
-#define AP_PRODUCT_ID_MPU9250           0x103   // MPU9250
 #define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
 
-/*
-  Return true if value is between lower and upper bound inclusive.
-  False otherwise.
-*/
-bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
+// map from kbaud rate to baudrate
+uint32_t map_baudrate(int16_t rate);
 
 #endif // _AP_COMMON_H

@@ -19,7 +19,7 @@
 #ifndef __AP_HAL_FLYMAPLE_RCINPUT_H__
 #define __AP_HAL_FLYMAPLE_RCINPUT_H__
 
-#include "AP_HAL_FLYMAPLE.h"
+#include <AP_HAL_FLYMAPLE.h>
 
 #define FLYMAPLE_RC_INPUT_NUM_CHANNELS 8
 
@@ -28,7 +28,7 @@
 class AP_HAL_FLYMAPLE_NS::FLYMAPLERCInput : public AP_HAL::RCInput {
 public:
     FLYMAPLERCInput();
-    void init();
+    void init(void* machtnichts);
     bool new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);

@@ -6,10 +6,10 @@
  *
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
-#include "AP_Airspeed.h"
+#include <AP_HAL.h>
+#include <AP_Math.h>
+#include <AP_Common.h>
+#include <AP_Airspeed.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,6 +37,8 @@ void Airspeed_Calibration::init(float initial_ratio)
 /*
   update the state of the airspeed calibration - needs to be called
   once a second
+
+  On an AVR2560 this costs 1.9 milliseconds per call
  */
 float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
 {
@@ -96,9 +98,9 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
 	P.b.z = P.c.y = P23;
 
     // Constrain diagonals to be non-negative - protects against rounding errors
-    P.a.x = MAX(P.a.x, 0.0f);
-    P.b.y = MAX(P.b.y, 0.0f);
-    P.c.z = MAX(P.c.z, 0.0f);
+    P.a.x = max(P.a.x, 0.0f);
+    P.b.y = max(P.b.y, 0.0f);
+    P.c.z = max(P.c.z, 0.0f);
 
     state.x = constrain_float(state.x, -aparm.airspeed_max, aparm.airspeed_max);
     state.y = constrain_float(state.y, -aparm.airspeed_max, aparm.airspeed_max);

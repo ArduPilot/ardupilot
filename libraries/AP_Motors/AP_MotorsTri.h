@@ -6,23 +6,22 @@
 #ifndef __AP_MOTORS_TRI_H__
 #define __AP_MOTORS_TRI_H__
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>     // RC Channel Library
-#include "AP_MotorsMulticopter.h"
+#include <AP_Common.h>
+#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <RC_Channel.h>     // RC Channel Library
+#include "AP_Motors.h"
 
 // tail servo uses channel 7
 #define AP_MOTORS_CH_TRI_YAW    CH_7
 
 /// @class      AP_MotorsTri
-class AP_MotorsTri : public AP_MotorsMulticopter {
+class AP_MotorsTri : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsTri(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(loop_rate, speed_hz)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
+    AP_MotorsTri( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, RC_Channel& rc_tail, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
+        _rc_tail(rc_tail) {
     };
 
     // init
@@ -46,23 +45,12 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask();
 
-    // var_info for holding Parameter information
-    static const struct AP_Param::GroupInfo var_info[];
-
 protected:
     // output - sends commands to the motors
-    void                output_armed_stabilizing();
-    void                output_armed_not_stabilizing();
-    void                output_disarmed();
+    virtual void        output_armed();
+    virtual void        output_disarmed();
 
-    // calc_yaw_radio_output - calculate final radio output for yaw channel
-    int16_t             calc_yaw_radio_output();        // calculate radio output for yaw servo, typically in range of 1100-1900
-
-    // parameters
-    AP_Int8         _yaw_servo_reverse;                 // Yaw servo signal reversing
-    AP_Int16        _yaw_servo_trim;                    // Trim or center position of yaw servo
-    AP_Int16        _yaw_servo_min;                     // Minimum angle limit of yaw servo
-    AP_Int16        _yaw_servo_max;                     // Maximum angle limit of yaw servo
+    RC_Channel&         _rc_tail;       // REV parameter used from this channel to determine direction of tail servo movement
 };
 
 #endif  // AP_MOTORSTRI

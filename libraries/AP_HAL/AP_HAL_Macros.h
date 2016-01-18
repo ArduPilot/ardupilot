@@ -17,6 +17,4 @@
 # define constexpr const
 #endif
 
-#define NORETURN __attribute__ ((noreturn))
-
 #endif // __AP_HAL_MACROS_H__

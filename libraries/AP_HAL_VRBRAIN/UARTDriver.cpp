@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "UARTDriver.h"
@@ -16,7 +16,6 @@
 #include <termios.h>
 #include <drivers/drv_hrt.h>
 #include <assert.h>
-#include <AP_HAL/utility/RingBuffer.h>
 
 using namespace VRBRAIN;
 
@@ -26,10 +25,9 @@ VRBRAINUARTDriver::VRBRAINUARTDriver(const char *devpath, const char *perf_name)
 	_devpath(devpath),
     _fd(-1),
     _baudrate(57600),
+    _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
     _initialised(false),
     _in_timer(false),
-    _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
-    _os_start_auto_space(-1),
     _flow_control(FLOW_CONTROL_DISABLE)
 {
 }
@@ -111,6 +109,17 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		if (_fd == -1) {
 			return;
 		}
+
+        // work out the OS write buffer size by looking at how many
+        // bytes could be written when we first open the port
+        int nwrite = 0;
+        if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
+            _os_write_buffer_size = nwrite;
+            if (_os_write_buffer_size & 1) {
+                // it is reporting one short
+                _os_write_buffer_size += 1;
+            }
+        }
 	}
 
 	if (_baudrate != 0) {
@@ -129,6 +138,9 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		tcgetattr(_fd, &t);
 		t.c_cflag |= CRTS_IFLOW;
 		tcsetattr(_fd, TCSANOW, &t);
+
+		// reset _total_written to reset flow control auto check
+		_total_written = 0;
 	}
 
     if (_writebuf_size != 0 && _readbuf_size != 0 && _fd != -1) {
@@ -154,11 +166,6 @@ void VRBRAINUARTDriver::set_flow_control(enum flow_control flow_control)
         t.c_cflag &= ~CRTSCTS;
     }
     tcsetattr(_fd, TCSANOW, &t);
-    if (fcontrol == FLOW_CONTROL_AUTO) {
-        // reset flow control auto state machine
-        _total_written = 0;
-        _first_write_time = 0;
-    }
     _flow_control = flow_control;
 }
 
@@ -179,11 +186,11 @@ void VRBRAINUARTDriver::try_initialise(void)
     if (_initialised) {
         return;
     }
-    if ((AP_HAL::millis() - _last_initialise_attempt_ms) < 2000) {
+    if ((hal.scheduler->millis() - _last_initialise_attempt_ms) < 2000) {
         return;
     }
-    _last_initialise_attempt_ms = AP_HAL::millis();
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED || !hal.util->get_soft_armed()) {
+    _last_initialise_attempt_ms = hal.scheduler->millis();
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED) {
         begin(0);
     }
 }
@@ -226,6 +233,15 @@ void VRBRAINUARTDriver::set_blocking_writes(bool blocking)
 }
 
 bool VRBRAINUARTDriver::tx_pending() { return false; }
+
+/*
+  buffer handling macros
+ */
+#define BUF_AVAILABLE(buf) ((buf##_head > (_tail=buf##_tail))? (buf##_size - buf##_head) + _tail: _tail - buf##_head)
+#define BUF_SPACE(buf) (((_head=buf##_head) > buf##_tail)?(_head - buf##_tail) - 1:((buf##_size - buf##_tail) + _head) - 1)
+#define BUF_EMPTY(buf) (buf##_head == buf##_tail)
+#define BUF_ADVANCETAIL(buf, n) buf##_tail = (buf##_tail + n) % buf##_size
+#define BUF_ADVANCEHEAD(buf, n) buf##_head = (buf##_head + n) % buf##_size
 
 /*
   return number of bytes available to be read from the buffer
@@ -367,33 +383,19 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 
     // the FIONWRITE check is to cope with broken O_NONBLOCK behaviour
     // in NuttX on ttyACM0
-
-    // FIONWRITE is also used for auto flow control detection
-    // Assume output flow control is not working if:
-    //     port is configured for auto flow control
-    // and this is not the first write since flow control turned on
-    // and no data has been removed from the buffer since flow control turned on
-    // and more than .5 seconds elapsed after writing a total of > 5 characters
-    //
-    
     int nwrite = 0;
 
     if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
-        if (_flow_control == FLOW_CONTROL_AUTO) {
-            if (_first_write_time == 0) {
-                if (_total_written == 0) {
-                    // save the remaining buffer bytes for comparison next write
-                    _os_start_auto_space = nwrite;
-                }
-            } else {
-                if (_os_start_auto_space - nwrite + 1 >= _total_written &&
-                    (AP_HAL::micros64() - _first_write_time) > 500*1000UL) {
-                    // it doesn't look like hw flow control is working
-                    ::printf("disabling flow control on %s _total_written=%u\n", 
-                             _devpath, (unsigned)_total_written);
-                    set_flow_control(FLOW_CONTROL_DISABLE);
-                }
-            }
+        if (nwrite == 0 &&
+            _flow_control == FLOW_CONTROL_AUTO &&
+            _last_write_time != 0 &&
+            _total_written != 0 &&
+            _os_write_buffer_size == _total_written &&
+            hrt_elapsed_time(&_last_write_time) > 500*1000UL) {
+            // it doesn't look like hw flow control is working
+            ::printf("disabling flow control on %s _total_written=%u\n", 
+                     _devpath, (unsigned)_total_written);
+            set_flow_control(FLOW_CONTROL_DISABLE);
         }
         if (nwrite > n) {
             nwrite = n;
@@ -405,20 +407,17 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 
     if (ret > 0) {
         BUF_ADVANCEHEAD(_writebuf, ret);
-        _last_write_time = AP_HAL::micros64();
+        _last_write_time = hrt_absolute_time();
         _total_written += ret;
-        if (! _first_write_time && _total_written > 5) {
-            _first_write_time = _last_write_time;
-        }
         return ret;
     }
 
-    if (AP_HAL::micros64() - _last_write_time > 2000 &&
+    if (hrt_absolute_time() - _last_write_time > 2000 &&
         _flow_control == FLOW_CONTROL_DISABLE) {
 #if 0
         // this trick is disabled for now, as it sometimes blocks on
         // re-opening the ttyACM0 port, which would cause a crash
-        if (AP_HAL::micros64() - _last_write_time > 2000000) {
+        if (hrt_absolute_time() - _last_write_time > 2000000) {
             // we haven't done a successful write for 2 seconds - try
             // reopening the port        
             _initialised = false;
@@ -431,11 +430,11 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
                 return n;
             }
             
-            _last_write_time = AP_HAL::micros64();
+            _last_write_time = hrt_absolute_time();
             _initialised = true;
         }
 #else
-        _last_write_time = AP_HAL::micros64();
+        _last_write_time = hrt_absolute_time();
 #endif
         // we haven't done a successful write for 2ms, which means the 
         // port is running at less than 500 bytes/sec. Start
@@ -496,13 +495,13 @@ void VRBRAINUARTDriver::_timer_tick(void)
     uint16_t _tail;
     n = BUF_AVAILABLE(_writebuf);
     if (n > 0) {
-        uint16_t n1 = _writebuf_size - _writebuf_head;
         perf_begin(_perf_uart);
-        if (n1 >= n) {
+        if (_tail > _writebuf_head) {
             // do as a single write
             _write_fd(&_writebuf[_writebuf_head], n);
         } else {
             // split into two writes
+            uint16_t n1 = _writebuf_size - _writebuf_head;
             int ret = _write_fd(&_writebuf[_writebuf_head], n1);
             if (ret == n1 && n > n1) {
                 _write_fd(&_writebuf[_writebuf_head], n - n1);                
@@ -515,13 +514,13 @@ void VRBRAINUARTDriver::_timer_tick(void)
     uint16_t _head;
     n = BUF_SPACE(_readbuf);
     if (n > 0) {
-        uint16_t n1 = _readbuf_size - _readbuf_tail;
         perf_begin(_perf_uart);
-        if (n1 >= n) {
+        if (_readbuf_tail < _head) {
             // one read will do
             assert(_readbuf_tail+n <= _readbuf_size);
             _read_fd(&_readbuf[_readbuf_tail], n);
         } else {
+            uint16_t n1 = _readbuf_size - _readbuf_tail;
             assert(_readbuf_tail+n1 <= _readbuf_size);
             int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
             if (ret == n1 && n > n1) {

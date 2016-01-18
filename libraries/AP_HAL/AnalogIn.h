@@ -2,8 +2,6 @@
 #ifndef __AP_HAL_ANALOG_IN_H__
 #define __AP_HAL_ANALOG_IN_H__
 
-#include <inttypes.h>
-
 #include "AP_HAL_Namespace.h"
 
 class AP_HAL::AnalogSource {
@@ -41,7 +39,7 @@ public:
 
 class AP_HAL::AnalogIn {
 public:
-    virtual void init() = 0;
+    virtual void init(void* implspecific) = 0;
     virtual AP_HAL::AnalogSource* channel(int16_t n) = 0;
 
     // board 5V rail voltage in volts
