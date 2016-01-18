@@ -199,12 +199,30 @@ void GCS_Frontend::send_text_fmt_active(MAV_SEVERITY severity, const char *fmt, 
     send_text_fmt(severity, fmt, arg_list, true);
 }
 
+void GCS_Frontend::send_text_fmt_active(MAV_SEVERITY severity, const char *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    send_text_fmt(severity, fmt, arg_list, true);
+    va_end(arg_list);
+}
+
 void GCS_Frontend::send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
     va_list arg_list;
     va_start(arg_list, fmt);
     send_text_fmt(severity, fmt, arg_list);
     va_end(arg_list);
+}
+
+// send a message to all "active" GCS.
+void GCS_Frontend::send_text_active(MAV_SEVERITY severity, const char *str)
+{
+    FOR_EACH_ACTIVE_GCS(send_text(severity, str));
+
+#if LOGGING_ENABLED == ENABLED
+    _DataFlash.Log_Write_Message(str);
+#endif
 }
 
 /*

@@ -43,6 +43,9 @@ public:
 
     // send a text message to all active GCS.
     void send_text_fmt_active(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
+    void send_text_fmt_active(MAV_SEVERITY severity, const char *fmt, ...);
+    void send_text_active(MAV_SEVERITY severity, const char *str);
+
     // send a parameter value to all active GCS
     // note that this does not currently use the defered queuing mechanism
     void send_param_value_active(const char *param_name, ap_var_type param_type, float param_value);
