@@ -349,6 +349,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPEND
 };
 
+extern GCS_Frontend &gcs;
+
 QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
     ahrs(_ahrs)
 {
@@ -377,7 +379,7 @@ bool QuadPlane::setup(void)
 
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
+        gcs.send_text_active(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
         goto failed;
     }
 
@@ -464,14 +466,14 @@ bool QuadPlane::setup(void)
     
     transition_state = TRANSITION_DONE;
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane initialised");
+    gcs.send_text_active(MAV_SEVERITY_INFO, "QuadPlane initialised");
     initialised = true;
     return true;
     
 failed:
     initialised = false;
     enable.set(0);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane setup failed");
+    gcs.send_text_active(MAV_SEVERITY_INFO, "QuadPlane setup failed");
     return false;
 }
 
@@ -798,14 +800,14 @@ void QuadPlane::update_transition(void)
     case TRANSITION_AIRSPEED_WAIT: {
         // we hold in hover until the required airspeed is reached
         if (transition_start_ms == 0) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed wait");
+            gcs.send_text_active(MAV_SEVERITY_INFO, "Transition airspeed wait");
             transition_start_ms = millis();
         }
 
         if (have_airspeed && aspeed > plane.aparm.airspeed_min && !assisted_flight) {
             transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", aspeed);
+            gcs.send_text_fmt_active(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", aspeed);
         }
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
@@ -820,7 +822,7 @@ void QuadPlane::update_transition(void)
         // transition time, but continue to stabilize
         if (millis() - transition_start_ms > (unsigned)transition_time_ms) {
             transition_state = TRANSITION_DONE;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition done");
+            gcs.send_text_active(MAV_SEVERITY_INFO, "Transition done");
         }
         float throttle_scaled = last_throttle * (transition_time_ms - (millis() - transition_start_ms)) / (float)transition_time_ms;
         if (throttle_scaled < 0) {
@@ -918,7 +920,7 @@ bool QuadPlane::init_mode(void)
         return false;
     }
     if (!initialised) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");        
+        gcs.send_text_active(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");
         return false;
     }
     switch (plane.control_mode) {
@@ -943,29 +945,29 @@ bool QuadPlane::init_mode(void)
 bool QuadPlane::handle_do_vtol_transition(const mavlink_command_long_t &packet)
 {
     if (!available()) {
-        plane.gcs_frontend.send_text_fmt(MAV_SEVERITY_NOTICE, "VTOL not available");
+        gcs.send_text_fmt(MAV_SEVERITY_NOTICE, "VTOL not available");
         return MAV_RESULT_FAILED;
     }
     if (plane.control_mode != AUTO) {
-        plane.gcs_frontend.send_text_fmt(MAV_SEVERITY_NOTICE, "VTOL transition only in AUTO");
+        gcs.send_text_fmt(MAV_SEVERITY_NOTICE, "VTOL transition only in AUTO");
         return MAV_RESULT_FAILED;
     }
     switch ((uint8_t)packet.param1) {
     case MAV_VTOL_STATE_MC:
         if (!plane.auto_state.vtol_mode) {
-            plane.gcs_frontend.send_text_fmt(MAV_SEVERITY_NOTICE, "Entered VTOL mode");
+            gcs.send_text_fmt(MAV_SEVERITY_NOTICE, "Entered VTOL mode");
         }
         plane.auto_state.vtol_mode = true;
         return MAV_RESULT_ACCEPTED;
     case MAV_VTOL_STATE_FW:
         if (plane.auto_state.vtol_mode) {
-            plane.gcs_frontend.send_text_fmt(MAV_SEVERITY_NOTICE, "Exited VTOL mode");
+            gcs.send_text_fmt(MAV_SEVERITY_NOTICE, "Exited VTOL mode");
         }
         plane.auto_state.vtol_mode = false;
         return MAV_RESULT_ACCEPTED;
     }
 
-    plane.gcs_frontend.send_text_fmt(MAV_SEVERITY_NOTICE, "Invalid VTOL mode");
+    gcs.send_text_fmt(MAV_SEVERITY_NOTICE, "Invalid VTOL mode");
     return MAV_RESULT_FAILED;
 }
 
@@ -1220,7 +1222,7 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
     if (land_state == QLAND_POSITION &&
         plane.auto_state.wp_distance < 2) {
         land_state = QLAND_DESCEND;
-        plane.gcs_frontend.send_text(MAV_SEVERITY_INFO,"Land descend started");
+        gcs.send_text(MAV_SEVERITY_INFO,"Land descend started");
         plane.set_next_WP(cmd.content.location);        
     }
 
@@ -1233,7 +1235,7 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
         plane.current_loc.alt < plane.next_WP_loc.alt+land_final_alt*100) {
         land_state = QLAND_FINAL;
         pos_control->set_alt_target(inertial_nav.get_altitude());
-        plane.gcs_frontend.send_text(MAV_SEVERITY_INFO,"Land final started");
+        gcs.send_text(MAV_SEVERITY_INFO,"Land final started");
     }
 
     if (land_state == QLAND_FINAL &&
@@ -1241,7 +1243,7 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
          millis() - motors_lower_limit_start_ms > 5000)) {
         plane.disarm_motors();
         land_state = QLAND_COMPLETE;
-        plane.gcs_frontend.send_text(MAV_SEVERITY_INFO,"Land complete");
+        gcs.send_text(MAV_SEVERITY_INFO,"Land complete");
     }
     return false;
 }

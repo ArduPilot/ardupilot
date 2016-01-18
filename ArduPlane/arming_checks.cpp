@@ -18,6 +18,7 @@ const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
     AP_GROUPEND
 };
 
+extern GCS_Frontend &gcs;
 
 /*
   additional arming checks for plane
@@ -32,21 +33,21 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
 
     if (plane.g.roll_limit_cd < 300) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_ROLL_CD too small (%u)", plane.g.roll_limit_cd);
+            gcs.send_text_fmt_active(MAV_SEVERITY_CRITICAL, "PreArm: LIM_ROLL_CD too small (%u)", plane.g.roll_limit_cd);
         }
         ret = false;        
     }
 
     if (plane.aparm.pitch_limit_max_cd < 300) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_PITCH_MAX too small (%u)", plane.aparm.pitch_limit_max_cd);
+            gcs.send_text_fmt_active(MAV_SEVERITY_CRITICAL, "PreArm: LIM_PITCH_MAX too small (%u)", plane.aparm.pitch_limit_max_cd);
         }
         ret = false;        
     }
 
     if (plane.aparm.pitch_limit_min_cd > -300) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: LIM_PITCH_MIN too large (%u)", plane.aparm.pitch_limit_min_cd);
+            gcs.send_text_fmt_active(MAV_SEVERITY_CRITICAL, "PreArm: LIM_PITCH_MIN too large (%u)", plane.aparm.pitch_limit_min_cd);
         }
         ret = false;        
     }
@@ -56,7 +57,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         plane.g.throttle_fs_value < 
         plane.channel_throttle->radio_max) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Invalid THR_FS_VALUE for rev throttle");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "PreArm: Invalid THR_FS_VALUE for rev throttle");
         }
         ret = false;
     }
@@ -78,9 +79,9 @@ bool AP_Arming_Plane::ins_checks(bool report)
             if (report) {
                 const char *reason = ahrs.prearm_failure_reason();
                 if (reason) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
+                    gcs.send_text_fmt_active(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
                 } else {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
+                    gcs.send_text_active(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
                 }
             }
             return false;
