@@ -51,15 +51,15 @@ public:
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
 
-    // set_throttle_thr_mix - set desired throttle_thr_mix (actual throttle_thr_mix is slewed towards this value over 1~2 seconds)
+    // set_throttle_rpy_mix - set desired throttle_thr_mix (actual throttle_thr_mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
     //  has no effect when throttle is above hover throttle
-    void                set_throttle_mix_min() { _throttle_thr_mix_desired = _thr_mix_min; }
-    void                set_throttle_mix_mid() { _throttle_thr_mix_desired = AP_MOTORS_THR_MIX_MID_DEFAULT; }
-    void                set_throttle_mix_max() { _throttle_thr_mix_desired = _thr_mix_max; }
+    void                set_throttle_mix_min() { _throttle_rpy_mix_desired = _thr_mix_min; }
+    void                set_throttle_mix_mid() { _throttle_rpy_mix_desired = AP_MOTORS_THR_MIX_MID_DEFAULT; }
+    void                set_throttle_mix_max() { _throttle_rpy_mix_desired = _thr_mix_max; }
 
-    // get_throttle_thr_mix - get low throttle compensation value
-    bool                is_throttle_mix_min() const { return (_throttle_thr_mix < 1.25f*_thr_mix_min); }
+    // get_throttle_rpy_mix - get low throttle compensation value
+    bool                is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
     // returns warning throttle
     float               get_throttle_warn() const { return rel_pwm_to_thr_range(_spin_when_armed); }
@@ -119,8 +119,8 @@ protected:
     // update_battery_resistance - calculate battery resistance when throttle is above hover_out
     void                update_battery_resistance();
 
-    // update_throttle_thr_mix - updates thr_low_comp value towards the target
-    void                update_throttle_thr_mix();
+    // update_throttle_rpy_mix - updates thr_low_comp value towards the target
+    void                update_throttle_rpy_mix();
 
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
@@ -164,8 +164,8 @@ protected:
     // internal variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
     int16_t             _spin_when_armed_ramped;    // equal to _spin_when_armed parameter but slowly ramped up from zero
-    float               _throttle_thr_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
-    float               _throttle_thr_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
+    float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
+    float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _max_throttle;              // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)

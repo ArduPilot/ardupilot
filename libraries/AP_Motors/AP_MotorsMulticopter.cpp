@@ -105,8 +105,8 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
     _spin_when_armed_ramped(0),
-    _throttle_thr_mix_desired(AP_MOTORS_THR_LOW_CMP_DEFAULT),
-    _throttle_thr_mix(AP_MOTORS_THR_LOW_CMP_DEFAULT),
+    _throttle_rpy_mix_desired(AP_MOTORS_THR_LOW_CMP_DEFAULT),
+    _throttle_rpy_mix(AP_MOTORS_THR_LOW_CMP_DEFAULT),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
     _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
@@ -147,7 +147,7 @@ void AP_MotorsMulticopter::output()
     update_lift_max_from_batt_voltage();
 
     // move throttle_low_comp towards desired throttle low comp
-    update_throttle_thr_mix();
+    update_throttle_rpy_mix();
 
     if (_flags.armed) {
         if (!_flags.interlock) {
@@ -319,18 +319,18 @@ void AP_MotorsMulticopter::update_battery_resistance()
     }
 }
 
-// update_throttle_thr_mix - slew set_throttle_thr_mix to requested value
-void AP_MotorsMulticopter::update_throttle_thr_mix()
+// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
+void AP_MotorsMulticopter::update_throttle_rpy_mix()
 {
-    // slew _throttle_thr_mix to _throttle_thr_mix_desired
-    if (_throttle_thr_mix < _throttle_thr_mix_desired) {
+    // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
+    if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_thr_mix += MIN(2.0f/_loop_rate, _throttle_thr_mix_desired-_throttle_thr_mix);
-    } else if (_throttle_thr_mix > _throttle_thr_mix_desired) {
+        _throttle_rpy_mix += MIN(2.0f/_loop_rate, _throttle_rpy_mix_desired-_throttle_rpy_mix);
+    } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_thr_mix -= MIN(0.5f/_loop_rate, _throttle_thr_mix-_throttle_thr_mix_desired);
+        _throttle_rpy_mix -= MIN(0.5f/_loop_rate, _throttle_rpy_mix-_throttle_rpy_mix_desired);
     }
-    _throttle_thr_mix = constrain_float(_throttle_thr_mix, 0.1f, 1.0f);
+    _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
 }
 
 // get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
