@@ -434,7 +434,6 @@ private:
 #include "AP_InertialSensor_MPU9250.h"
 #include "AP_InertialSensor_L3G4200D.h"
 #include "AP_InertialSensor_Flymaple.h"
-#include "AP_InertialSensor_MPU9150.h"
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_SITL.h"
