@@ -39,6 +39,9 @@
  #define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   1       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 0.3 second)
 #endif
 
+// spool definition
+#define AP_MOTORS_SPOOL_UP_TIME         0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
+
 /// @class      AP_MotorsMulticopter
 class AP_MotorsMulticopter : public AP_Motors {
 public:
@@ -48,6 +51,9 @@ public:
 
     // output - sends commands to the motors
     virtual void        output();
+
+    // output_to_motors - sends commands to the motors
+    virtual void        output_to_motors(){};
 
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
@@ -72,6 +78,26 @@ public:
     // set_hover_throttle - sets the mid throttle which is close to the hover throttle of the copter
     // this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
     void                set_hover_throttle(uint16_t hov_thr) { _hover_out = hov_thr; }
+
+    // spool up states
+    enum spool_up_down_mode {
+        SHUT_DOWN = 0,                      // all motors stop
+        SPIN_WHEN_ARMED = 1,                // all motors at spin when armed
+        SPOOL_UP = 2,                       // increasing maximum throttle while stabilizing
+        THROTTLE_UNLIMITED = 3,                  // throttle is no longer constrained by start up procedure
+        SPOOL_DOWN = 4,                     // decreasing maximum throttle while stabilizing
+    };
+
+    // spool up states
+    enum spool_up_down_desired {
+        DESIRED_SHUT_DOWN = 0,              // all motors stop
+        DESIRED_SPIN_WHEN_ARMED = 1,        // all motors at spin when armed
+        DESIRED_SPIN_MIN_THROTTLE = 2,      // all motors at min throttle
+        DESIRED_THROTTLE_UNLIMITED = 3,          // throttle is no longer constrained by start up procedure
+    };
+
+    void                set_desired_spool_state(enum spool_up_down_desired spool) { _multicopter_flags.spool_desired = spool;}
+    void                output_logic();
 
     // slow_start - set to true to slew motors from current speed to maximum
     // Note: this must be set immediately before a step up in throttle
@@ -146,6 +172,8 @@ protected:
 
     // flag bitmask
     struct {
+        spool_up_down_mode     spool_mode       : 4;    // motor's current spool mode
+        spool_up_down_desired  spool_desired    : 2;    // caller's desired spool mode
         uint8_t slow_start         : 1;    // 1 if slow start is active
         uint8_t slow_start_low_end : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
     } _multicopter_flags;
@@ -170,6 +198,10 @@ protected:
     int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _max_throttle;              // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
+    float               _throttle_thrust_max;       // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
+
+    // spool variables
+    float               _throttle_low_end_pct;      // throttle percentage (0 ~ 1) between zero and throttle_min
 
     // battery voltage, current and air pressure compensation variables
     float               _batt_voltage_resting;  // battery voltage reading at minimum throttle
