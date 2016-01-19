@@ -70,7 +70,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(rpm_update,             10,    200),
     SCHED_TASK(airspeed_ratio_update,   1,   1000),
     SCHED_TASK(update_mount,           50,   1500),
-    SCHED_TASK(update_trigger,          1,   1500),
+    SCHED_TASK(update_trigger,         50,   1500),
     SCHED_TASK(log_perf_info,         0.1,   1000),
     SCHED_TASK(compass_save,        0.016,   2500),
     SCHED_TASK(update_logging1,        10,   1700),
@@ -209,12 +209,11 @@ void Plane::update_trigger(void)
 {
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
-    if(camera._camera_triggered == 0 && camera._feedback_pin != -1 && check_digital_pin(camera._feedback_pin) == 0){
-      gcs_send_message(MSG_CAMERA_FEEDBACK);
-      if (should_log(MASK_LOG_CAMERA)) {
-          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-      }
-      camera._camera_triggered = 1;
+    if (camera.check_trigger_pin()) {
+        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        if (should_log(MASK_LOG_CAMERA)) {
+            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+        }
     }    
 #endif
 }

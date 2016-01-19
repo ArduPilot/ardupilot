@@ -906,7 +906,6 @@ private:
     void update_notify();
     void resetPerfData(void);
     void check_usb_mux(void);
-    uint8_t check_digital_pin(uint8_t pin);    
     void print_comma(void);
     void servo_write(uint8_t ch, uint16_t pwm);
     bool should_log(uint32_t mask);
