@@ -1,16 +1,15 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_INERTIAL_SENSOR_L3G4200D_H__
-#define __AP_INERTIAL_SENSOR_L3G4200D_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include <pthread.h>
 
-#include "AP_InertialSensor.h"
 #include <Filter/Filter.h>
 #include <Filter/LowPassFilter2p.h>
+
+#include "AP_InertialSensor.h"
 
 class AP_InertialSensor_L3G4200D : public AP_InertialSensor_Backend
 {
@@ -37,4 +36,3 @@ private:
     uint8_t _accel_instance;
 };
 #endif
-#endif // __AP_INERTIAL_SENSOR_L3G4200D_H__
