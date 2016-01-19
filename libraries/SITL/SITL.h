@@ -63,6 +63,7 @@ public:
     AP_Float baro_drift;  // in metres per second
     AP_Float baro_glitch; // glitch in meters
     AP_Float gyro_noise;  // in degrees/second
+    AP_Vector3f gyro_scale;  // percentage
     AP_Float accel_noise; // in m/s/s
     AP_Float accel2_noise; // in m/s/s
     AP_Vector3f accel_bias; // in m/s/s
