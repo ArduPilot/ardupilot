@@ -51,6 +51,13 @@ public:
         return true;
     }
 
+    bool read_registers_multiple(uint8_t first_reg, uint8_t *recv,
+                                 uint32_t recv_len, uint8_t times)
+    {
+        return true;
+    }
+
+
     /* See AP_HAL::Device::set_speed() */
     bool set_speed(enum AP_HAL::Device::Speed speed) override { return true; }
 
