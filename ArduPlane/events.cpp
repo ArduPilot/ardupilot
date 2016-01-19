@@ -78,7 +78,6 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
         if(g.long_fs_action == 3) {
 #if PARACHUTE == ENABLED
             parachute_release();
-            disarm_motors();
 #endif
         } else if (g.long_fs_action == 2) {
             set_mode(FLY_BY_WIRE_A);
@@ -98,7 +97,6 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
         if(g.long_fs_action == 3) {
 #if PARACHUTE == ENABLED
             parachute_release();
-            disarm_motors();
 #endif
         } else if (g.long_fs_action == 2) {
             set_mode(FLY_BY_WIRE_A);
