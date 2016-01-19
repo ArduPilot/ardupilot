@@ -319,6 +319,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
 
+    // @Param: RTL_RADIUS
+    // @DisplayName: RTL loiter radius
+    // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used.
+    // @Units: Meters
+    // @Range: -32767 32767
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rtl_radius,             "RTL_RADIUS",  0),
+    
 #if GEOFENCE_ENABLED == ENABLED
     // @Param: FENCE_ACTION
     // @DisplayName: Action on geofence breach

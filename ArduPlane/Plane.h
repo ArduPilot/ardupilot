@@ -859,7 +859,7 @@ private:
     void navigate();
     void calc_airspeed_errors();
     void calc_gndspeed_undershoot();
-    void update_loiter();
+    void update_loiter(uint16_t radius);
     void update_cruise();
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
