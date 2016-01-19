@@ -74,3 +74,6 @@ for t in $TRAVIS_BUILD_TARGET; do
         fi
     fi
 done
+
+echo build OK
+exit 0
