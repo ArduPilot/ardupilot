@@ -137,9 +137,6 @@ void AP_MotorsMulticopter::output()
     // update throttle filter
     update_throttle_filter();
 
-    // update max throttle
-    update_max_throttle();
-
     // update battery resistance
     update_battery_resistance();
 
@@ -174,35 +171,6 @@ void AP_MotorsMulticopter::update_throttle_filter()
 
     // constrain throttle signal to 0-1000
     _throttle_control_input = constrain_float(_throttle_filter.get(),0.0f,1000.0f);
-}
-
-// update_max_throttle - updates the limits on _max_throttle if necessary taking into account slow_start_throttle flag
-void AP_MotorsMulticopter::update_max_throttle()
-{
-    // ramp up minimum spin speed if necessary
-    if (_multicopter_flags.slow_start_low_end) {
-        _spin_when_armed_ramped += AP_MOTOR_SLOW_START_LOW_END_INCREMENT;
-        if (_spin_when_armed_ramped >= _spin_when_armed) {
-            _spin_when_armed_ramped = _spin_when_armed;
-            _multicopter_flags.slow_start_low_end = false;
-        }
-    }
-
-    // implement slow start
-    if (_multicopter_flags.slow_start) {
-        // increase slow start throttle
-        _max_throttle += AP_MOTOR_SLOW_START_INCREMENT;
-
-        // turn off slow start if we've reached max throttle
-        if (_max_throttle >= _throttle_control_input) {
-            _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
-            _multicopter_flags.slow_start = false;
-        }
-        return;
-    }
-
-    // current limit throttle
-    current_limit_max_throttle();
 }
 
 // current_limit_max_throttle - limits maximum throttle based on current

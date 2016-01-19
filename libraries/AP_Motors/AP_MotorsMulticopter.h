@@ -101,9 +101,6 @@ protected:
     // update the throttle input filter
     virtual void        update_throttle_filter();
 
-    // update_max_throttle - updates the limits on _max_throttle for slow_start and current limiting flag
-    void                update_max_throttle();
-
     // current_limit_max_throttle - current limit maximum throttle (called from update_max_throttle)
     void                current_limit_max_throttle();
 
