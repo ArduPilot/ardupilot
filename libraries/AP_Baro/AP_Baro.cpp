@@ -67,6 +67,24 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Description: This selects which barometer will be the primary if multiple barometers are found
     // @Values: 0:FirstBaro,1:2ndBaro,2:3rdBaro
     AP_GROUPINFO("PRIMARY", 6, AP_Baro, _primary_baro, 0),
+
+    // @Param: SPEC_GRAV
+    // @DisplayName: ROV ONLY Specific Gravity
+    // @Description: This sets the specific gravity of the fluid when flying an underwater ROV. Set to 1.0 for freshwater or 1.024 for saltwater
+    // @Values: 1.0:Fresh Water, 1.024:Salt Water
+    AP_GROUPINFO("SPEC_GRAV", 7, AP_Baro, _specific_gravity, 1.0),
+
+    // @Param: BASE_PRESS
+    // @DisplayName: ROV ONLY Base Pressure
+    // @Description: Base diving pressure set this to zero to get new pressure on boot, set to value other than zero to set ground pressure for every boot thereafter.
+    // @Units: pascals
+    AP_GROUPINFO("BASE_PRESS", 8, AP_Baro, _base_pressure, 0.0),
+
+    // @Param: BASE_RESET
+    // @DisplayName: ROV ONLY Reset Base Pressure
+    // @Description: Set to 1 to reset base pressure on next boot
+    // @Values: 0:Keep, 1:Reset
+    AP_GROUPINFO("BASE_RESET", 9, AP_Baro, _reset_base_pressure, 0),
     
     AP_GROUPEND
 };
@@ -150,7 +168,15 @@ void AP_Baro::calibrate()
         if (count[i] == 0) {
             sensors[i].calibrated = false;
         } else {
-            sensors[i].ground_pressure.set_and_save(sum_pressure[i] / count[i]);
+        	if(sensors[i].type == BARO_TYPE_AIR) {
+        		sensors[i].ground_pressure.set_and_save(sum_pressure[i] / count[i]);
+        	} else { // for a water pressure sensor, we will only recalibrate on boot, if the BASE_RESET parameter is set
+        		if(_reset_base_pressure) {
+        			_base_pressure.set_and_save(sum_pressure[i] / count[i]);
+        			_reset_base_pressure.set_and_save(0);
+        		}
+        		sensors[i].ground_pressure.set_and_save(_base_pressure);
+        	}
             sensors[i].ground_temperature.set_and_save(sum_temperature[i] / count[i]);
         }
     }
@@ -378,7 +404,7 @@ void AP_Baro::update(void)
             } else if(sensors[i].type == BARO_TYPE_WATER) {
             	//101325Pa is sea level air pressure, 10052 Pascal/ m depth in water.
             	//No temperature or depth compensation for density of water.
-            	altitude = (sensors[i].ground_pressure - sensors[i].pressure) * sensors[i].precision_multiplier / 10052.0f;
+            	altitude = (sensors[i].ground_pressure - sensors[i].pressure) * sensors[i].precision_multiplier / 9800.0f / _specific_gravity;
             }
             // sanity check altitude
             sensors[i].alt_ok = !(isnan(altitude) || isinf(altitude));
