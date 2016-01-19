@@ -33,7 +33,7 @@ void Sub::sport_run()
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // if not armed or throttle at zero, set throttle to zero and exit immediately
-    if(!motors.armed() || ap.throttle_zero) {
+    if(!motors.armed()) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         return;

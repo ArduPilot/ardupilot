@@ -27,7 +27,7 @@ void Sub::acro_run()
     int16_t pilot_throttle_scaled;
 
     // if motors not running reset angle targets
-    if(!motors.armed() || ap.throttle_zero) {
+    if(!motors.armed()) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // slow start if landed
         if (ap.land_complete) {
