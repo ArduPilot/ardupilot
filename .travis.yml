@@ -4,7 +4,6 @@ sudo: false
 cache:
   directories:
     - $HOME/opt
-    - $HOME/.ccache
 
 addons:
   apt:
