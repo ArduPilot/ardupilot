@@ -177,6 +177,9 @@ bool AP_Arming::ins_checks(bool report)
         if (ins.get_accel_count() > 1) {
             const Vector3f &prime_accel_vec = ins.get_accel();
             for(uint8_t i=0; i<ins.get_accel_count(); i++) {
+                if (!ins.use_accel(i)) {
+                    continue;
+                }
                 // get next accel vector
                 const Vector3f &accel_vec = ins.get_accel(i);
                 Vector3f vec_diff = accel_vec - prime_accel_vec;
@@ -206,6 +209,9 @@ bool AP_Arming::ins_checks(bool report)
         if (ins.get_gyro_count() > 1) {
             const Vector3f &prime_gyro_vec = ins.get_gyro();
             for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
+                if (!ins.use_gyro(i)) {
+                    continue;
+                }
                 // get next gyro vector
                 const Vector3f &gyro_vec = ins.get_gyro(i);
                 Vector3f vec_diff = gyro_vec - prime_gyro_vec;
