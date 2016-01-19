@@ -43,8 +43,14 @@
 #include <vector>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 #include "Util.h"
+
+/* Workaround broken header from i2c-tools */
+#ifndef I2C_RDRW_IOCTL_MAX_MSGS
+#define I2C_RDRW_IOCTL_MAX_MSGS 42
+#endif
 
 namespace Linux {
 
@@ -152,6 +158,50 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     } while (r < 0 && retries-- > 0);
 
     return r >= 0;
+}
+
+bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
+                                        uint32_t recv_len, uint8_t times)
+{
+    const uint8_t max_times = I2C_RDRW_IOCTL_MAX_MSGS / 2;
+
+    while (times > 0) {
+        uint8_t n = MIN(times, max_times);
+        struct i2c_msg msgs[2 * n];
+        struct i2c_rdwr_ioctl_data i2c_data = { };
+
+        memset(msgs, 0, 2 * n * sizeof(*msgs));
+
+        i2c_data.msgs = msgs;
+        i2c_data.nmsgs = 2 * n;
+
+        for (uint8_t i = 0; i < i2c_data.nmsgs; i += 2) {
+            msgs[i].addr = _address;
+            msgs[i].flags = 0;
+            msgs[i].buf = &first_reg;
+            msgs[i].len = 1;
+            msgs[i + 1].addr = _address;
+            msgs[i + 1].flags = I2C_M_RD;
+            msgs[i + 1].buf = recv;
+            msgs[i + 1].len = recv_len;
+
+            recv += recv_len;
+        };
+
+        int r = -EINVAL;
+        unsigned retries = _retries;
+        do {
+            r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
+        } while (r < 0 && retries-- > 0);
+
+        if (r < 0) {
+            return false;
+        }
+
+        times -= n;
+    }
+
+    return true;
 }
 
 AP_HAL::Semaphore *I2CDevice::get_semaphore()
