@@ -80,6 +80,7 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('gbenchmark')
+    cfg.load('gtest')
     cfg.load('static_linking')
 
     cfg.start_msg('Benchmarks')
@@ -88,12 +89,11 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
-    cfg.env.HAS_GTEST = cfg.check_cxx(
-        lib='gtest',
-        mandatory=False,
-        uselib_store='GTEST',
-        errmsg='not found, unit tests disabled',
-    )
+    cfg.start_msg('Unit tests')
+    if cfg.env.HAS_GTEST:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
@@ -117,6 +117,7 @@ def list_boards(ctx):
     print(*boards.get_boards_names())
 
 def build(bld):
+    bld.load('gtest')
 
     #generate mavlink headers
     bld(
@@ -187,6 +188,6 @@ class CheckContext(BuildContext):
     '''executes tests after build'''
     cmd = 'check'
 
-copter = ardupilotwaf.build_shortcut(targets='bin/ArduCopter')
-plane = ardupilotwaf.build_shortcut(targets='bin/ArduPlane')
-rover = ardupilotwaf.build_shortcut(targets='bin/APMrover2')
+copter = ardupilotwaf.build_shortcut(targets='bin/arducopter')
+plane = ardupilotwaf.build_shortcut(targets='bin/arduplane')
+rover = ardupilotwaf.build_shortcut(targets='bin/ardurover')

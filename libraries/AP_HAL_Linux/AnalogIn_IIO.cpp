@@ -38,7 +38,7 @@ void AnalogSource_IIO::init_pins(void)
     for (int i=0; i < IIO_ANALOG_IN_COUNT; i++) {
         // Construct the path by appending strings
         strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
-        strncat(buf, AnalogSource_IIO::analog_sources[i], sizeof(buf));
+        strncat(buf, AnalogSource_IIO::analog_sources[i], sizeof(buf) - strlen(buf) -1);
 
         fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK);
         if (fd_analog_sources[i] == -1) {
@@ -79,7 +79,7 @@ void AnalogSource_IIO::reopen_pin(void)
 
     // Construct the path by appending strings
     strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
-    strncat(buf, AnalogSource_IIO::analog_sources[_pin], sizeof(buf));
+    strncat(buf, AnalogSource_IIO::analog_sources[_pin], sizeof(buf) - strlen(buf) - 1);
 
     fd_analog_sources[_pin] = open(buf, O_RDONLY | O_NONBLOCK);
     if (fd_analog_sources[_pin] == -1) {

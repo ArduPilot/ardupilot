@@ -600,13 +600,18 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Plane::verify_loiter_unlim()
 {
-    update_loiter();
+    if (g.rtl_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
+    update_loiter(abs(g.rtl_radius));
     return false;
 }
 
 bool Plane::verify_loiter_time()
 {
-    update_loiter();
+    update_loiter(0);
     if (loiter.start_time_ms == 0) {
         if (nav_controller->reached_loiter_target()) {
             // we've reached the target, start the timer
@@ -621,7 +626,7 @@ bool Plane::verify_loiter_time()
 
 bool Plane::verify_loiter_turns()
 {
-    update_loiter();
+    update_loiter(0);
     if (loiter.sum_cd > loiter.total_cd) {
         loiter.total_cd = 0;
         gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
@@ -638,7 +643,7 @@ bool Plane::verify_loiter_turns()
  */
 bool Plane::verify_loiter_to_alt() 
 {
-    update_loiter();
+    update_loiter(0);
 
     //has target altitude been reached?
     if (condition_value != 0) {
@@ -705,7 +710,12 @@ bool Plane::verify_loiter_to_alt()
 
 bool Plane::verify_RTL()
 {
-    update_loiter();
+    if (g.rtl_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
+    update_loiter(abs(g.rtl_radius));
 	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
         nav_controller->reached_loiter_target()) {
 			gcs_send_text(MAV_SEVERITY_INFO,"Reached HOME");

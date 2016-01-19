@@ -10,6 +10,9 @@ set -ex
 # CXX and CC are exported by default by travis
 unset CXX CC
 
+export BUILDROOT=/tmp/travis.build.$$
+rm -rf $BUILDROOT
+
 # If TRAVIS_BUILD_TARGET is not set, default to all of them
 if [ -z "$TRAVIS_BUILD_TARGET" ]; then
     TRAVIS_BUILD_TARGET="sitl linux navio raspilot minlure bebop px4-v2 px4-v4"
@@ -66,5 +69,6 @@ for t in $TRAVIS_BUILD_TARGET; do
         $waf configure --board $t
         $waf clean
         $waf ${build_concurrency[$t]} build
+        [[ $t == linux ]] && $waf check
     fi
 done

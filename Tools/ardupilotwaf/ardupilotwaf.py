@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from waflib import Logs, Options, Utils
+import os.path
 
 SOURCE_EXTS = [
     '*.S',
@@ -93,11 +94,12 @@ def program(bld, blddestdir='bin',
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
-    target = blddestdir + '/' + program_name
+    name = os.path.join(blddestdir, program_name)
+    target = bld.bldnode.find_or_declare(name)
 
     bld.program(
         target=target,
-        name=target,
+        name=name,
         **kw
     )
 
@@ -231,6 +233,8 @@ def test_summary(bld):
 
     for filename in fails:
         Logs.error('    %s' % filename)
+
+    bld.fatal('check: some tests failed')
 
 def build_shortcut(targets=None):
     def build_fn(bld):

@@ -36,6 +36,11 @@ public:
 
     // register a high priority timer task
     virtual void     register_timer_process(AP_HAL::MemberProc) = 0;
+    virtual bool     register_timer_process(AP_HAL::MemberProc proc, uint8_t freq_div)
+    {
+        register_timer_process(proc);
+        return false;
+    }
 
     // register a low priority IO task
     virtual void     register_io_process(AP_HAL::MemberProc) = 0;

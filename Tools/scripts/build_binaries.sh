@@ -191,7 +191,8 @@ build_arduplane() {
             return
         }
 	copyit ArduPlane-v1.px4 $ddir $tag &&
-	copyit ArduPlane-v2.px4 $ddir $tag
+	copyit ArduPlane-v2.px4 $ddir $tag &&
+	test ! -f ArduPlane-v4.px4 || copyit ArduPlane-v4.px4 $ddir $tag
         if [ "$tag" = "latest" ]; then
 	    copyit px4io-v1.bin $binaries/PX4IO/$hdate/PX4IO $tag
 	    copyit px4io-v1.elf $binaries/PX4IO/$hdate/PX4IO $tag
@@ -247,7 +248,8 @@ build_arducopter() {
             continue
         }
 	copyit ArduCopter-v1.px4 $ddir $tag &&
-	copyit ArduCopter-v2.px4 $ddir $tag
+	copyit ArduCopter-v2.px4 $ddir $tag &&
+	test ! -f ArduCopter-v4.px4 || copyit ArduCopter-v4.px4 $ddir $tag
     done
     checkout ArduCopter "latest" "" ""
     popd
@@ -289,7 +291,8 @@ build_rover() {
             return
         }
 	copyit APMrover2-v1.px4 $binaries/Rover/$hdate/PX4 $tag &&
-	copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag 
+	copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag &&
+	test ! -f APMrover2-v4.px4 || copyit APMrover2-v4.px4 $binaries/Rover/$hdate/PX4 $tag 
     }
     checkout APMrover2 "latest" "" ""
     popd
@@ -331,7 +334,8 @@ build_antennatracker() {
             return
         }
 	copyit AntennaTracker-v1.px4 $binaries/AntennaTracker/$hdate/PX4 $tag &&
-	copyit AntennaTracker-v2.px4 $binaries/AntennaTracker/$hdate/PX4 $tag 
+	copyit AntennaTracker-v2.px4 $binaries/AntennaTracker/$hdate/PX4 $tag &&
+	test ! -f AntennaTracker-v4.px4 || copyit AntennaTracker-v4.px4 $binaries/AntennaTracker/$hdate/PX4 $tag 
     }
     checkout AntennaTracker "latest" "" ""
     popd

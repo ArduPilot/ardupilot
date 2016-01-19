@@ -728,7 +728,8 @@ void Plane::update_navigation()
     // wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS
     // ------------------------------------------------------------------------
 
-    // distance and bearing calcs only
+    uint16_t radius = 0;
+    
     switch(control_mode) {
     case AUTO:
         update_commands();
@@ -756,16 +757,24 @@ void Plane::update_navigation()
             auto_state.checked_for_autoland = true;
         }
         // fall through to LOITER
-
-    case LOITER:
-    case GUIDED:
-        // allow loiter direction to be changed in flight
-        if (g.loiter_radius < 0) {
+        if (g.rtl_radius < 0) {
             loiter.direction = -1;
         } else {
             loiter.direction = 1;
         }
-        update_loiter();
+        radius = abs(g.rtl_radius);
+
+    case LOITER:
+    case GUIDED:
+        // allow loiter direction to be changed in flight
+        if (radius == 0) {
+            if (g.loiter_radius < 0) {
+                loiter.direction = -1;
+            } else {
+                loiter.direction = 1;
+            }
+        }
+        update_loiter(abs(radius));
         break;
 
     case CRUISE:

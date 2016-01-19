@@ -828,6 +828,11 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     } else {
         _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
     }
+
+    // apply temporary pitch limit and clear
+    _PITCHmaxf = constrain_float(_PITCHmaxf, -90, _pitch_max_limit);
+    _pitch_max_limit = 90;
+    
     if (_pitch_min >= 0) {
         _PITCHminf = aparm.pitch_limit_min_cd * 0.01f;
     } else {

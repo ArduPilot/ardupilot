@@ -127,9 +127,11 @@ void Plane::calc_gndspeed_undershoot()
     }
 }
 
-void Plane::update_loiter()
+void Plane::update_loiter(uint16_t radius)
 {
-    int16_t radius = abs(g.loiter_radius);
+    if (radius == 0) {
+        radius = abs(g.loiter_radius);
+    }
 
     if (loiter.start_time_ms == 0 &&
         control_mode == AUTO &&

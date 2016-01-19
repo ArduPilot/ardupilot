@@ -104,7 +104,7 @@ private:
     float _L1_xtrack_i = 0;
     AP_Float _L1_xtrack_i_gain;
     float _L1_xtrack_i_gain_prev = 0;
-
+    uint32_t _last_update_waypoint_us;
 };
 
 
