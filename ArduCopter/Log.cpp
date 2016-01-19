@@ -50,7 +50,6 @@ bool Copter::print_log_menu(void)
         PLOG(COMPASS);
         PLOG(CAMERA);
         PLOG(PID);
-        PLOG(TRIGGER);        
 #undef PLOG
     }
 
@@ -133,7 +132,6 @@ int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(COMPASS);
         TARG(CAMERA);
         TARG(PID);
-        TARG(TRIGGER);
  #undef TARG
     }
 

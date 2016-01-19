@@ -127,7 +127,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(gcs_send_deferred,     50,    550),
     SCHED_TASK(gcs_data_stream_send,  50,    550),
     SCHED_TASK(update_mount,          50,     75),
-    SCHED_TASK(update_trigger,         8,     75),
+    SCHED_TASK(update_trigger,        50,     75),
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(fifty_hz_logging_loop, 50,    110),
     SCHED_TASK(full_rate_logging_loop,400,    100),
@@ -347,12 +347,11 @@ void Copter::update_trigger(void)
 {
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
-    if(camera._camera_triggered == 0 && camera._feedback_pin != -1 && check_digital_pin(camera._feedback_pin) == 0){
-      gcs_send_message(MSG_CAMERA_FEEDBACK);
-      if (should_log(MASK_LOG_CAMERA)) {
-          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-      }
-      camera._camera_triggered = 1;
+    if (camera.check_trigger_pin()) {
+        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        if (should_log(MASK_LOG_CAMERA)) {
+            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+        }
     }    
 #endif
 }
