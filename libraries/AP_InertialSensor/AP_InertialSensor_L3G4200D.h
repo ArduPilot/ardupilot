@@ -14,7 +14,6 @@
 class AP_InertialSensor_L3G4200D : public AP_InertialSensor_Backend
 {
 public:
-
     AP_InertialSensor_L3G4200D(AP_InertialSensor &imu);
     ~AP_InertialSensor_L3G4200D();
 
@@ -25,11 +24,11 @@ public:
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
     // return product ID
-    int16_t product_id(void) const { return AP_PRODUCT_ID_L3G4200D; }
+    int16_t product_id() const { return AP_PRODUCT_ID_L3G4200D; }
 
 private:
-    bool            _init_sensor(void);
-    void            _accumulate(void);
+    bool _init_sensor();
+    void _accumulate();
 
     // gyro and accel instances
     uint8_t _gyro_instance;

@@ -85,7 +85,7 @@ const extern AP_HAL::HAL& hal;
 #define L3G4200D_REG_AUTO_INCREMENT		           0x80
 
 // L3G4200D Gyroscope scaling
-// running at 2000 DPS full range, 16 bit signed data, datasheet 
+// running at 2000 DPS full range, 16 bit signed data, datasheet
 // specifies 70 mdps per bit
 #define L3G4200D_GYRO_SCALE_R_S (DEG_TO_RAD * 70.0f * 0.001f)
 
@@ -116,7 +116,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_L3G4200D::detect(AP_InertialSensor 
     return sensor;
 }
 
-bool AP_InertialSensor_L3G4200D::_init_sensor(void) 
+bool AP_InertialSensor_L3G4200D::_init_sensor(void)
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
@@ -150,8 +150,8 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
     hal.scheduler->delay(5);
 
     // enable FIFO in stream mode. This will allow us to read the accelerometers much less frequently
-    hal.i2c->writeRegister(ADXL345_ACCELEROMETER_ADDRESS, 
-                           ADXL345_ACCELEROMETER_ADXLREG_FIFO_CTL, 
+    hal.i2c->writeRegister(ADXL345_ACCELEROMETER_ADDRESS,
+                           ADXL345_ACCELEROMETER_ADXLREG_FIFO_CTL,
                            ADXL345_ACCELEROMETER_ADXLREG_FIFO_CTL_STREAM);
 
     // Init the Gyro
@@ -161,36 +161,36 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
         AP_HAL::panic("AP_InertialSensor_L3G4200D: could not find L3G4200D gyro sensor");
 
     // setup for 800Hz sampling with 110Hz filter
-    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS, 
-                           L3G4200D_REG_CTRL_REG1, 
+    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS,
+                           L3G4200D_REG_CTRL_REG1,
                            L3G4200D_REG_CTRL_REG1_DRBW_800_110 |
                            L3G4200D_REG_CTRL_REG1_PD |
                            L3G4200D_REG_CTRL_REG1_XYZ_ENABLE);
     hal.scheduler->delay(1);
 
-    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS, 
-                           L3G4200D_REG_CTRL_REG1, 
+    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS,
+                           L3G4200D_REG_CTRL_REG1,
                            L3G4200D_REG_CTRL_REG1_DRBW_800_110 |
                            L3G4200D_REG_CTRL_REG1_PD |
                            L3G4200D_REG_CTRL_REG1_XYZ_ENABLE);
     hal.scheduler->delay(1);
 
-    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS, 
-                           L3G4200D_REG_CTRL_REG1, 
+    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS,
+                           L3G4200D_REG_CTRL_REG1,
                            L3G4200D_REG_CTRL_REG1_DRBW_800_110 |
                            L3G4200D_REG_CTRL_REG1_PD |
                            L3G4200D_REG_CTRL_REG1_XYZ_ENABLE);
     hal.scheduler->delay(1);
 
     // setup for 2000 degrees/sec full range
-    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS, 
-                           L3G4200D_REG_CTRL_REG4, 
+    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS,
+                           L3G4200D_REG_CTRL_REG4,
                            L3G4200D_REG_CTRL_REG4_FS_2000);
     hal.scheduler->delay(1);
 
     // enable FIFO
-    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS, 
-                           L3G4200D_REG_CTRL_REG5, 
+    hal.i2c->writeRegister(L3G4200D_I2C_ADDRESS,
+                           L3G4200D_REG_CTRL_REG5,
                            L3G4200D_REG_CTRL_REG5_FIFO_EN);
     hal.scheduler->delay(1);
 
@@ -199,7 +199,7 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
                            L3G4200D_REG_FIFO_CTL,
                            L3G4200D_REG_FIFO_CTL_STREAM);
     hal.scheduler->delay(1);
-                           
+
 
     // give back i2c semaphore
     i2c_sem->give();
@@ -217,7 +217,7 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
 /*
   copy filtered data to the frontend
  */
-bool AP_InertialSensor_L3G4200D::update(void) 
+bool AP_InertialSensor_L3G4200D::update(void)
 {
     update_gyro(_gyro_instance);
     update_accel(_accel_instance);
@@ -257,7 +257,7 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
     if (num_samples_available > 0) {
         // read all the entries in one go, using AUTO_INCREMENT. This saves a lot of time on I2C setup
         int16_t buffer[num_samples_available][3];
-        if (hal.i2c->readRegisters(L3G4200D_I2C_ADDRESS, L3G4200D_REG_XL | L3G4200D_REG_AUTO_INCREMENT, 
+        if (hal.i2c->readRegisters(L3G4200D_I2C_ADDRESS, L3G4200D_REG_XL | L3G4200D_REG_AUTO_INCREMENT,
                                    sizeof(buffer), (uint8_t *)&buffer[0][0]) == 0) {
             for (uint8_t i=0; i<num_samples_available; i++) {
                 Vector3f gyro = Vector3f(buffer[i][0], -buffer[i][1], -buffer[i][2]);
@@ -278,8 +278,8 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
     // read the samples and apply the filter
     if (num_samples_available > 0) {
         int16_t buffer[num_samples_available][3];
-        if (hal.i2c->readRegistersMultiple(ADXL345_ACCELEROMETER_ADDRESS, 
-                                           ADXL345_ACCELEROMETER_ADXLREG_DATAX0, 
+        if (hal.i2c->readRegistersMultiple(ADXL345_ACCELEROMETER_ADDRESS,
+                                           ADXL345_ACCELEROMETER_ADXLREG_DATAX0,
                                            sizeof(buffer[0]), num_samples_available,
                                            (uint8_t *)&buffer[0][0]) == 0) {
             for (uint8_t i=0; i<num_samples_available; i++) {
@@ -296,5 +296,4 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
     i2c_sem->give();
 }
 
-#endif // CONFIG_HAL_BOARD
-
+#endif
