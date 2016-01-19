@@ -48,7 +48,6 @@ bool Rover::print_log_menu(void)
 		PLOG(COMPASS);
 		PLOG(CAMERA);
 		PLOG(STEERING);
-        PLOG(TRIGGER);
 		#undef PLOG
 	}
 
@@ -128,7 +127,6 @@ int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(COMPASS);
 		TARG(CAMERA);
 		TARG(STEERING);
-        TARG(TRIGGER);
 		#undef TARG
 	}
 
