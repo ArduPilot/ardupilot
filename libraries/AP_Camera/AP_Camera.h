@@ -45,9 +45,6 @@ public:
     // pin number for accurate camera feedback messages
     AP_Int8         _feedback_pin;
     
-    // this is set to 1 when camera really has been triggered    
-    AP_Int8         _camera_triggered;
-    
     // single entry point to take pictures
     //  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
     void            trigger_pic(bool send_mavlink_msg);
@@ -70,6 +67,12 @@ public:
     // Update location of vehicle and return true if a picture should be taken
     bool update_location(const struct Location &loc, const AP_AHRS &ahrs);
 
+    // check if trigger pin has fired
+    bool check_trigger_pin(void);
+
+    // return true if we are using a feedback pin
+    bool using_feedback_pin(void) const { return _feedback_pin > 0; }
+    
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
@@ -83,7 +86,8 @@ private:
 
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
-
+    void            feedback_pin_timer();
+    
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
     AP_Int16        _max_roll;          // Maximum acceptable roll angle when trigging camera
@@ -91,6 +95,9 @@ private:
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
 
+    // this is set to 1 when camera trigger pin has fired
+    volatile bool   _camera_triggered;
+    bool            _timer_installed:1;
 };
 
 #endif /* AP_CAMERA_H */
