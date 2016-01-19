@@ -101,6 +101,16 @@ void AP_InertialSensor_SITL::timer_update(void)
     Vector3f gyro0 = Vector3f(p1, q1, r1) + _imu.get_gyro_offsets(0);
     Vector3f gyro1 = Vector3f(p2, q2, r2) + _imu.get_gyro_offsets(1);
 
+    // add in gyro scaling
+    Vector3f scale = sitl->gyro_scale;
+    gyro0.x *= (1 + scale.x*0.01);
+    gyro0.y *= (1 + scale.y*0.01);
+    gyro0.z *= (1 + scale.z*0.01);
+
+    gyro1.x *= (1 + scale.x*0.01);
+    gyro1.y *= (1 + scale.y*0.01);
+    gyro1.z *= (1 + scale.z*0.01);
+    
     _notify_new_gyro_raw_sample(gyro_instance[0], gyro0);
     _notify_new_gyro_raw_sample(gyro_instance[1], gyro1);
 }
