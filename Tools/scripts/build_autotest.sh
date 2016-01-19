@@ -40,7 +40,7 @@ lock_file() {
 
         if test -f "$lck" && kill -0 $pid 2> /dev/null; then
 	    LOCKAGE=$(($(date +%s) - $(stat -c '%Y' "build.lck")))
-	    test $LOCKAGE -gt 7200 && {
+	    test $LOCKAGE -gt 30000 && {
                 echo "old lock file $lck is valid for $pid with age $LOCKAGE seconds"
 	    }
             return 1
