@@ -75,7 +75,12 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
     case CRUISE:
     case TRAINING:
     case CIRCLE:
-        if(g.long_fs_action == 2) {
+        if(g.long_fs_action == 3) {
+#if PARACHUTE == ENABLED
+            parachute_release();
+            disarm_motors();
+#endif
+        } else if (g.long_fs_action == 2) {
             set_mode(FLY_BY_WIRE_A);
         } else {
             set_mode(RTL);
@@ -90,7 +95,12 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
     case AUTO:
     case GUIDED:
     case LOITER:
-        if(g.long_fs_action == 2) {
+        if(g.long_fs_action == 3) {
+#if PARACHUTE == ENABLED
+            parachute_release();
+            disarm_motors();
+#endif
+        } else if (g.long_fs_action == 2) {
             set_mode(FLY_BY_WIRE_A);
         } else if (g.long_fs_action == 1) {
             set_mode(RTL);
