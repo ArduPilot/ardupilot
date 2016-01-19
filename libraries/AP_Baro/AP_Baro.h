@@ -163,6 +163,9 @@ private:
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
     bool                                _hil_mode:1;
+    AP_Float							_specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
+    AP_Float							_base_pressure; // the ground_pressure for a water pressure sensor is persistent
+    AP_Int8								_reset_base_pressure; // reset the _base_pressure for a water pressure sensor on next boot
 
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
