@@ -157,9 +157,9 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	} else if ( mode & (1 << 5) ) {
 		init_disarm_motors();
 	} else if ( mode & (1 << 0) ) {
-		camTilt = constrain_float(camTilt-20,800,2200);
-	} else if ( mode & (1 << 1) ) {
 		camTilt = constrain_float(camTilt+20,800,2200);
+	} else if ( mode & (1 << 1) ) {
+		camTilt = constrain_float(camTilt-20,800,2200);
 	}
 
 	channels[0] = 1500;                           // pitch
