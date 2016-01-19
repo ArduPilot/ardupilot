@@ -113,6 +113,12 @@ AP_Camera::relay_pic()
 void
 AP_Camera::trigger_pic(bool send_mavlink_msg)
 {
+    if (_feedback_pin > 0 && !_timer_installed) {
+        // install a 1kHz timer to check feedback pin
+        _timer_installed = true;
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
+    }
+
     _image_index++;
     switch (_trigger_type)
     {
@@ -283,4 +289,36 @@ bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
         _last_photo_time = tnow;
         return true;
     }
+}
+
+/*
+  check if feedback pin is high
+ */
+void AP_Camera::feedback_pin_timer(void)
+{
+    int8_t dpin = hal.gpio->analogPinToDigitalPin(_feedback_pin);
+    if (dpin == -1) {
+        return;
+    }
+    // ensure we are in input mode
+    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
+
+    // enable pullup
+    hal.gpio->write(dpin, 1);
+
+    if (hal.gpio->read(dpin) != 0) {
+        _camera_triggered = true;
+    }
+}
+
+/*
+  check if camera has triggered
+ */
+bool AP_Camera::check_trigger_pin(void)
+{
+    if (_camera_triggered) {
+        _camera_triggered = false;
+        return true;
+    }
+    return false;
 }
