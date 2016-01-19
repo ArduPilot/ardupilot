@@ -27,34 +27,12 @@ Datasheets:
   ADXL345 Accelerometer http://www.analog.com/static/imported-files/data_sheets/ADXL345.pdf
   L3G4200D gyro http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/CD00265057.pdf
 */
-
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include <AP_Math/AP_Math.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_L3G4200D.h"
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <sched.h>
-#include <linux/rtc.h>
-#include <stdio.h>
-#include <time.h>
-#include <math.h>
-#include <sched.h>
-#include <linux/rtc.h>
-#include <pthread.h>
-#include <sys/ioctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/mman.h>
+
+#include <inttypes.h>
 
 const extern AP_HAL::HAL& hal;
 
