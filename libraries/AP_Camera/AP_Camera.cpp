@@ -74,11 +74,18 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
  
     // @Param: FEEDBACK_PIN
     // @DisplayName: Camera feedback pin
-    // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection.
+    // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection. See also the CAM_FEEDBACK_POL option
     // @Values: -1:Disabled, 0-8:APM FeedbackPin, 50-55:PixHawk FeedbackPin
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_PIN",  8, AP_Camera, _feedback_pin, AP_CAMERA_FEEDBACK_DEFAULT_FEEDBACK_PIN),
 
+    // @Param: FEEDBACK_POL
+    // @DisplayName: Camera feedback pin polarity
+    // @Description: Polarity for feedback pin. If this is 1 then the feedback pin should go high on trigger. If set to 0 then it should go low
+    // @Values: 0:TriggerLow,1:TriggerHigh
+    // @User: Standard
+    AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
+    
     AP_GROUPEND
 };
 
@@ -306,9 +313,13 @@ void AP_Camera::feedback_pin_timer(void)
     // enable pullup
     hal.gpio->write(dpin, 1);
 
-    if (hal.gpio->read(dpin) != 0) {
+    uint8_t pin_state = hal.gpio->read(dpin);
+    uint8_t trigger_polarity = _feedback_polarity==0?0:1;
+    if (pin_state == trigger_polarity &&
+        _last_pin_state != trigger_polarity) {
         _camera_triggered = true;
     }
+    _last_pin_state = pin_state;
 }
 
 /*
