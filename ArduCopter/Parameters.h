@@ -153,10 +153,10 @@ public:
         //
         // 75: Singlecopter, CoaxCopter
         //
-        k_param_single_servo_1 = 75,
-        k_param_single_servo_2,
-        k_param_single_servo_3,
-        k_param_single_servo_4, // 78
+        k_param_single_servo_1 = 75,    // remove
+        k_param_single_servo_2,         // remove
+        k_param_single_servo_3,         // remove
+        k_param_single_servo_4,         // 78 - remove
 
         //
         // 80: Heli
@@ -463,11 +463,6 @@ public:
     RC_Channel      single_servo_1, single_servo_2, single_servo_3, single_servo_4;     // servos for four flaps
 #endif
 
-#if FRAME_CONFIG ==     COAX_FRAME
-    // Coax copter flaps
-    RC_Channel      single_servo_1, single_servo_2, single_servo_3, single_servo_4;     // servos for four flaps
-#endif
-
     // RC channels
     RC_Channel              rc_1;
     RC_Channel              rc_2;
@@ -532,13 +527,6 @@ public:
         heli_servo_rsc      (CH_8),
 #endif
 #if FRAME_CONFIG ==     SINGLE_FRAME
-        single_servo_1        (CH_1),
-        single_servo_2        (CH_2),
-        single_servo_3        (CH_3),
-        single_servo_4        (CH_4),
-#endif
-
-#if FRAME_CONFIG ==     COAX_FRAME
         single_servo_1        (CH_1),
         single_servo_2        (CH_2),
         single_servo_3        (CH_3),
