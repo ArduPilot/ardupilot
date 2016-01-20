@@ -755,6 +755,8 @@ void QuadPlane::update_transition(void)
     if (transition_state < TRANSITION_TIMER) {
         // set a single loop pitch limit in TECS
         plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
+    } else if (transition_state < TRANSITION_DONE) {
+        plane.TECS_controller.set_pitch_max_limit((transition_pitch_max+1)*2);
     }
     
     switch (transition_state) {
