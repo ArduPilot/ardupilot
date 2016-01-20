@@ -113,9 +113,6 @@ void AP_MotorsTri::enable()
 // output_min - sends minimum values out to the motors
 void AP_MotorsTri::output_min()
 {
-    // set lower limit flag
-    limit.throttle_lower = true;
-
     // send minimum value to each motor
     hal.rcout->cork();
     rc_write(AP_MOTORS_MOT_1, _throttle_radio_min);
