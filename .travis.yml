@@ -6,12 +6,6 @@ cache:
     - $HOME/opt
 
 addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - g++-4.8
-    - gcc-4.8
   coverity_scan:
     project:
       name: "diydrones/ardupilot"
