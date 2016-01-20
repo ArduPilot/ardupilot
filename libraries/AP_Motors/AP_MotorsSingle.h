@@ -70,4 +70,21 @@ protected:
     RC_Channel&         _servo2;
     RC_Channel&         _servo3;
     RC_Channel&         _servo4;
+    AP_Int8             _servo_1_reverse;    // Roll servo signal reversing
+    AP_Int16            _servo_1_trim;       // Trim or center position of roll servo
+    AP_Int16            _servo_1_min;        // Minimum angle limit of roll servo
+    AP_Int16            _servo_1_max;        // Maximum angle limit of roll servo
+    AP_Int8             _servo_2_reverse;   // Pitch servo signal reversing
+    AP_Int16            _servo_2_trim;      // Trim or center position of pitch servo
+    AP_Int16            _servo_2_min;       // Minimum angle limit of pitch servo
+    AP_Int16            _servo_2_max;       // Maximum angle limit of pitch servo
+    AP_Int8             _servo_3_reverse;   // Pitch servo signal reversing
+    AP_Int16            _servo_3_trim;      // Trim or center position of pitch servo
+    AP_Int16            _servo_3_min;       // Minimum angle limit of pitch servo
+    AP_Int16            _servo_3_max;       // Maximum angle limit of pitch servo
+    AP_Int8             _servo_4_reverse;   // Pitch servo signal reversing
+    AP_Int16            _servo_4_trim;      // Trim or center position of pitch servo
+    AP_Int16            _servo_4_min;       // Minimum angle limit of pitch servo
+    AP_Int16            _servo_4_max;       // Maximum angle limit of pitch servo
+
 };
