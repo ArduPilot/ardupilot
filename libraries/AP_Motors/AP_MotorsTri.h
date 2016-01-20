@@ -52,11 +52,16 @@ protected:
     void                output_armed_stabilizing();
 
     // calc_yaw_radio_output - calculate final radio output for yaw channel
-    int16_t             calc_yaw_radio_output();        // calculate radio output for yaw servo, typically in range of 1100-1900
+    int16_t             calc_yaw_radio_output(float yaw_input, float yaw_input_max);        // calculate radio output for yaw servo, typically in range of 1100-1900
 
     // parameters
     AP_Int8         _yaw_reverse;                       // Reverse yaw output
     AP_Int16        _yaw_servo_trim;                    // Trim or center position of yaw servo
     AP_Int16        _yaw_servo_min;                     // Minimum angle limit of yaw servo
     AP_Int16        _yaw_servo_max;                     // Maximum angle limit of yaw servo
+    float           _pivot_angle_max = radians(30.0f);  // Maximum angle of yaw pivot
+    float           _pivot_angle;                       // Angle of yaw pivot
+    float           _thrust_right;
+    float           _thrust_rear;
+    float           _thrust_left;
 };
