@@ -13,6 +13,8 @@
 #define AP_MOTORS_COAX_POSITIVE      1
 #define AP_MOTORS_COAX_NEGATIVE     -1
 
+#define NUM_ACTUATORS 4
+
 #define AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS 250 // update rate for digital servos
 #define AP_MOTORS_SINGLE_SPEED_ANALOG_SERVOS 125  // update rate for analog servos
 
@@ -61,6 +63,9 @@ protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
 
+    // calc_yaw_radio_output - calculate final radio output for yaw channel
+    int16_t             calc_pivot_radio_output(float yaw_input, int16_t servo_min, int16_t servo_trim, int16_t servo_max);        // calculate radio output for yaw servo, typically in range of 1100-1900
+
     // We shouldn't need roll, pitch, and yaw reversing with servo reversing.
     AP_Int8             _roll_reverse;  // Reverse roll output
     AP_Int8             _pitch_reverse; // Reverse pitch output
@@ -89,4 +94,7 @@ protected:
     AP_Int16            _servo_4_min;       // Minimum angle limit of pitch servo
     AP_Int16            _servo_4_max;       // Maximum angle limit of pitch servo
 
+    float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
+    float               _thrust_yt_ccw;
+    float               _thrust_yt_cw;
 };
