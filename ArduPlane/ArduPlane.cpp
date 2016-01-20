@@ -866,6 +866,19 @@ void Plane::update_alt()
     geofence_check(true);
 
     update_flight_stage();
+
+    if (auto_throttle_mode && !throttle_suppressed) {        
+        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
+                                                 target_airspeed_cm,
+                                                 flight_stage,
+                                                 auto_state.takeoff_pitch_cd,
+                                                 throttle_nudge,
+                                                 tecs_hgt_afe(),
+                                                 aerodynamic_load_factor);
+        if (should_log(MASK_LOG_TECS)) {
+            Log_Write_TECS_Tuning();
+        }
+    }
 }
 
 /*
@@ -906,17 +919,6 @@ void Plane::update_flight_stage(void)
             }
         } else {
             set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
-        }
-
-        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
-                                                 target_airspeed_cm,
-                                                 flight_stage,
-                                                 auto_state.takeoff_pitch_cd,
-                                                 throttle_nudge,
-                                                 tecs_hgt_afe(),
-                                                 aerodynamic_load_factor);
-        if (should_log(MASK_LOG_TECS)) {
-            Log_Write_TECS_Tuning();
         }
     } else if (control_mode == QSTABILIZE ||
                control_mode == QHOVER ||
