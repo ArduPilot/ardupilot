@@ -167,7 +167,7 @@ bool GCS_Backend_Copter::send_VFR_HUD()
 }
 
 
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
+const AP_Param::GroupInfo GCS_Backend_Copter::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
     // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_PRESSURE, and SENSOR_OFFSETS to ground station
@@ -250,6 +250,11 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  0),
     AP_GROUPEND
 };
+
+const AP_Param::GroupInfo *GCS_Backend_Copter::get_var_info()
+{
+    return var_info;
+}
 
 
 // see if we should send a stream now. Called at 50Hz

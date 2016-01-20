@@ -10,6 +10,9 @@ public:
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
     void handleMessage(mavlink_message_t* msg) override;
 
+    const AP_Param::GroupInfo *get_var_info() override;
+    static const struct AP_Param::GroupInfo        var_info[];
+
 protected:
 
     AP_GPS &_gps() const override;
