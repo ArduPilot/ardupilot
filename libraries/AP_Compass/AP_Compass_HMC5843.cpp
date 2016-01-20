@@ -241,6 +241,11 @@ void AP_Compass_HMC5843::accumulate()
    Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
    raw_field *= _gain_scale;
 
+   // rotate to the desired orientation
+   if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
+       raw_field.rotate(ROTATION_YAW_90);
+   }
+
    // rotate raw_field from sensor frame to body frame
    rotate_field(raw_field, _compass_instance);
 
@@ -292,12 +297,6 @@ void AP_Compass_HMC5843::read()
 
     _accum_count = 0;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-
-    // rotate to the desired orientation
-    // FIXME: wrong way to rotate compass
-    if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
-        field.rotate(ROTATION_YAW_90);
-    }
 
     publish_filtered_field(field, _compass_instance);
 }
