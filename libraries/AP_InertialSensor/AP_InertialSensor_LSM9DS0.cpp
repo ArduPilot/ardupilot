@@ -18,6 +18,8 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_LSM9DS0.h"
 
+#include <utility>
+
 #include <AP_HAL_Linux/GPIO.h>
 
 extern const AP_HAL::HAL &hal;
@@ -369,31 +371,31 @@ extern const AP_HAL::HAL &hal;
 #define ACT_DUR                                       0x3F
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
-                                                     int                drdy_pin_num_a,
-                                                     int                drdy_pin_num_g) :
-    AP_InertialSensor_Backend(imu),
-    _drdy_pin_a(NULL),
-    _drdy_pin_g(NULL),
-    _drdy_pin_num_a(drdy_pin_num_a),
-    _drdy_pin_num_g(drdy_pin_num_g)
+                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
+                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                     int drdy_pin_num_a,
+                                                     int drdy_pin_num_g)
+    : AP_InertialSensor_Backend(imu)
+    , _dev_gyro(std::move(dev_gyro))
+    , _dev_accel(std::move(dev_accel))
+    , _drdy_pin_num_a(drdy_pin_num_a)
+    , _drdy_pin_num_g(drdy_pin_num_g)
 {
     _product_id = AP_PRODUCT_ID_NONE;
 }
 
-AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::detect(AP_InertialSensor &_imu)
+AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,
+                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
+                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel)
 {
     int drdy_pin_num_a = -1, drdy_pin_num_g = -1;
 
     AP_InertialSensor_LSM9DS0 *sensor =
-        new AP_InertialSensor_LSM9DS0(_imu, drdy_pin_num_a, drdy_pin_num_g);
-
-    if (sensor == NULL) {
-        return NULL;
-    }
-
-    if (!sensor->_init_sensor()) {
+        new AP_InertialSensor_LSM9DS0(_imu, std::move(dev_gyro), std::move(dev_accel),
+                                      drdy_pin_num_a, drdy_pin_num_g);
+    if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
 
     return sensor;
@@ -401,160 +403,130 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::detect(AP_InertialSensor &
 
 bool AP_InertialSensor_LSM9DS0::_init_sensor()
 {
-    _gyro_spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0_G);
-    _accel_spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0_AM);
-    _spi_sem = _gyro_spi->get_semaphore(); /* same semaphore for both */
+    /*
+     * Same semaphore for both since they necessarily share the same bus (with
+     * different CS)
+     */
+    _spi_sem = _dev_gyro->get_semaphore();
 
     if (_drdy_pin_num_a >= 0) {
         _drdy_pin_a = hal.gpio->channel(_drdy_pin_num_a);
-        if (_drdy_pin_a == NULL) {
+        if (_drdy_pin_a == nullptr) {
             AP_HAL::panic("LSM9DS0: null accel data-ready GPIO channel\n");
         }
     }
 
     if (_drdy_pin_num_g >= 0) {
         _drdy_pin_g = hal.gpio->channel(_drdy_pin_num_g);
-        if (_drdy_pin_g == NULL) {
+        if (_drdy_pin_g == nullptr) {
             AP_HAL::panic("LSM9DS0: null gyro data-ready GPIO channel\n");
         }
     }
 
     hal.scheduler->suspend_timer_procs();
+    bool success = _hardware_init();
+    hal.scheduler->resume_timer_procs();
+
+#if LSM9DS0_DEBUG
+    _dump_registers();
+#endif
+
+    return success;
+}
+
+bool AP_InertialSensor_LSM9DS0::_hardware_init()
+{
+    if (!_spi_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
 
     uint8_t whoami;
-
-    bool whoami_ok = true;
+    uint8_t tries;
 
     whoami = _register_read_g(WHO_AM_I_G);
     if (whoami != LSM9DS0_G_WHOAMI) {
         hal.console->printf("LSM9DS0: unexpected gyro WHOAMI 0x%x\n", (unsigned)whoami);
-        whoami_ok = false;
+        goto fail_whoami;
     }
 
     whoami = _register_read_xm(WHO_AM_I_XM);
     if (whoami != LSM9DS0_XM_WHOAMI) {
         hal.console->printf("LSM9DS0: unexpected acc/mag  WHOAMI 0x%x\n", (unsigned)whoami);
-        whoami_ok = false;
+        goto fail_whoami;
     }
 
-    if (!whoami_ok) return false;
+    for (tries = 0; tries < 5; tries++) {
+        _dev_gyro->set_speed(AP_HAL::Device::SPEED_LOW);
+        _dev_accel->set_speed(AP_HAL::Device::SPEED_LOW);
 
-    uint8_t tries = 0;
-    bool a_ready = false;
-    bool g_ready = false;
-    do {
-        bool success = _hardware_init();
-        if (success) {
-            hal.scheduler->delay(10);
-            if (!_spi_sem->take(100)) {
-                hal.console->printf("LSM9DS0: Unable to get semaphore\n");
-                return false;
-            }
-            if (!a_ready) {
-                a_ready = _accel_data_ready();
-            }
-            if (!g_ready) {
-                g_ready = _gyro_data_ready();
-            }
-            if (a_ready && g_ready) {
-                _spi_sem->give();
-                break;
-            } else {
-                hal.console->printf("LSM9DS0 startup failed: no data ready\n");
-            }
-            _spi_sem->give();
-        }
-        if (tries++ > 5) {
-            hal.console->printf("failed to boot LSM9DS0 5 times\n");
-            return false;
-        }
-    } while (1);
+        _gyro_init();
+        _accel_init();
 
-    hal.scheduler->resume_timer_procs();
+        _dev_gyro->set_speed(AP_HAL::Device::SPEED_HIGH);
+        _dev_accel->set_speed(AP_HAL::Device::SPEED_HIGH);
+
+        hal.scheduler->delay(10);
+        if (_accel_data_ready() && _gyro_data_ready()) {
+            break;
+        }
+
+#if LSM9DS0_DEBUG
+        _dump_registers();
+#endif
+    }
+    if (tries == 5) {
+        hal.console->println("Failed to boot LSM9DS0 5 times\n");
+        goto fail_tries;
+    }
+
+    _spi_sem->give();
 
     _gyro_instance = _imu.register_gyro(760);
     _accel_instance = _imu.register_accel(800);
 
     _set_accel_max_abs_offset(_accel_instance, 5.0f);
 
-#if LSM9DS0_DEBUG
-    _dump_registers();
-#endif
-
     /* start the timer process to read samples */
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, void));
 
     return true;
-}
 
-bool AP_InertialSensor_LSM9DS0::_hardware_init()
-{
-    if (!_spi_sem->take(100)) {
-        hal.console->printf("LSM9DS0: Unable to get semaphore\n");
-        return false;
-    }
-
-    _gyro_spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-    _accel_spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-
-    _gyro_init();
-    _accel_init();
-
-    _gyro_spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
-    _accel_spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
-
+fail_tries:
+fail_whoami:
     _spi_sem->give();
-
-    return true;
+    return false;
 }
 
-uint8_t AP_InertialSensor_LSM9DS0::_register_read_xm( uint8_t reg )
+uint8_t AP_InertialSensor_LSM9DS0::_register_read_xm(uint8_t reg)
 {
-    uint8_t addr = reg | 0x80; /* set read bit */
+    uint8_t val = 0;
 
-    uint8_t tx[2];
-    uint8_t rx[2];
+    /* set read bit */
+    reg |= 0x80;
+    _dev_accel->read_registers(reg, &val, 1);
 
-    tx[0] = addr;
-    tx[1] = 0;
-    _accel_spi->transaction(tx, rx, 2);
-
-    return rx[1];
+    return val;
 }
 
-uint8_t AP_InertialSensor_LSM9DS0::_register_read_g( uint8_t reg )
+uint8_t AP_InertialSensor_LSM9DS0::_register_read_g(uint8_t reg)
 {
-    uint8_t addr = reg | 0x80; /* set read bit */
+    uint8_t val = 0;
 
-    uint8_t tx[2];
-    uint8_t rx[2];
+    /* set read bit */
+    reg |= 0x80;
+    _dev_gyro->read_registers(reg, &val, 1);
 
-    tx[0] = addr;
-    tx[1] = 0;
-    _gyro_spi->transaction(tx, rx, 2);
-
-    return rx[1];
+    return val;
 }
-
 
 void AP_InertialSensor_LSM9DS0::_register_write_xm(uint8_t reg, uint8_t val)
 {
-    uint8_t tx[2];
-    uint8_t rx[2];
-
-    tx[0] = reg;
-    tx[1] = val;
-    _accel_spi->transaction(tx, rx, 2);
+    _dev_accel->write_register(reg, val);
 }
 
 void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val)
 {
-    uint8_t tx[2];
-    uint8_t rx[2];
-
-    tx[0] = reg;
-    tx[1] = val;
-    _gyro_spi->transaction(tx, rx, 2);
+    _dev_gyro->write_register(reg, val);
 }
 
 void AP_InertialSensor_LSM9DS0::_gyro_init()
@@ -625,8 +597,10 @@ void AP_InertialSensor_LSM9DS0::_set_gyro_scale(gyro_scale scale)
         break;
     }
 
-    _gyro_scale /= 1000; /* convert mdps/digit to dps/digit */
-    _gyro_scale *= DEG_TO_RAD; /* convert dps/digit to (rad/s)/digit */
+    /* convert mdps/digit to dps/digit */
+    _gyro_scale /= 1000;
+    /* convert dps/digit to (rad/s)/digit */
+    _gyro_scale *= DEG_TO_RAD;
 }
 
 void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
@@ -638,9 +612,11 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
      */
     _accel_scale = (((float) scale + 1.0f) * 2.0f) / 32768.0f;
     if (scale == A_SCALE_16G) {
-        _accel_scale = 0.000732; /* the datasheet shows an exception for +-16G */
+        /* the datasheet shows an exception for +-16G */
+        _accel_scale = 0.000732;
     }
-    _accel_scale *= GRAVITY_MSS; /* convert to G/LSB to (m/s/s)/LSB */
+    /* convert to G/LSB to (m/s/s)/LSB */
+    _accel_scale *= GRAVITY_MSS;
 }
 
 /**
@@ -653,12 +629,6 @@ void AP_InertialSensor_LSM9DS0::_poll_data()
     bool accel_ready;
 
     if (drdy_is_from_reg && !_spi_sem->take_nonblocking()) {
-        /*
-         *  the semaphore being busy is an expected condition when the
-         *  mainline code is calling wait_for_sample() which will
-         *  grab the semaphore. We return now and rely on the mainline
-         *  code grabbing the latest sample.
-         */
         return;
     }
 
@@ -685,50 +655,33 @@ void AP_InertialSensor_LSM9DS0::_poll_data()
 
 bool AP_InertialSensor_LSM9DS0::_accel_data_ready()
 {
-    if (_drdy_pin_a != NULL) {
+    if (_drdy_pin_a != nullptr) {
         return _drdy_pin_a->read() != 0;
-    } else {
-        uint8_t status = _register_read_xm(STATUS_REG_A);
-        return status & STATUS_REG_A_ZYXADA;
     }
+
+    uint8_t status = _register_read_xm(STATUS_REG_A);
+    return status & STATUS_REG_A_ZYXADA;
 }
 
 bool AP_InertialSensor_LSM9DS0::_gyro_data_ready()
 {
-    if (_drdy_pin_g != NULL) {
+    if (_drdy_pin_g != nullptr) {
         return _drdy_pin_g->read() != 0;
-    } else {
-        uint8_t status = _register_read_xm(STATUS_REG_G);
-        return status & STATUS_REG_G_ZYXDA;
     }
-}
 
-void AP_InertialSensor_LSM9DS0::_accel_raw_data(struct sensor_raw_data *raw_data)
-{
-    struct __attribute__((packed)) {
-        uint8_t reg;
-        struct sensor_raw_data data;
-    } tx = {.reg = OUT_X_L_A | 0xC0, .data = {}}, rx;
-
-    _accel_spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, 7);
-    *raw_data = rx.data;
-}
-
-void AP_InertialSensor_LSM9DS0::_gyro_raw_data(struct sensor_raw_data *raw_data)
-{
-    struct __attribute__((packed)) {
-        uint8_t reg;
-        struct sensor_raw_data data;
-    } tx = {.reg = OUT_X_L_G | 0xC0, .data = {}}, rx;
-
-    _gyro_spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, 7);
-    *raw_data = rx.data;
+    uint8_t status = _register_read_xm(STATUS_REG_G);
+    return status & STATUS_REG_G_ZYXDA;
 }
 
 void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
 {
-    struct sensor_raw_data raw_data;
-    _accel_raw_data(&raw_data);
+    struct sensor_raw_data raw_data = { };
+    const uint8_t reg = OUT_X_L_A | 0xC0;
+
+    if (!_dev_accel->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
+        hal.console->printf("LSM9DS0: error reading accelerometer\n");
+        return;
+    }
 
     Vector3f accel_data(raw_data.x, -raw_data.y, -raw_data.z);
     accel_data *= _accel_scale;
@@ -742,8 +695,13 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
  */
 void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
 {
-    struct sensor_raw_data raw_data;
-    _gyro_raw_data(&raw_data);
+    struct sensor_raw_data raw_data = { };
+    const uint8_t reg = OUT_X_L_G | 0xC0;
+
+    if (!_dev_gyro->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
+        hal.console->printf("LSM9DS0: error reading gyroscope\n");
+        return;
+    }
 
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
     gyro_data *= _gyro_scale;
