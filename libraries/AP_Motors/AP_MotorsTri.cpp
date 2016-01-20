@@ -136,58 +136,7 @@ uint16_t AP_MotorsTri::get_motor_mask()
         (1U << AP_MOTORS_CH_TRI_YAW);
 }
 
-void AP_MotorsTri::output_armed_not_stabilizing()
-{
-    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
-    int16_t out_min = _throttle_radio_min + _min_throttle;
-    int16_t out_max = _throttle_radio_max;
-    int16_t motor_out[AP_MOTORS_MOT_4+1];
-
-    // initialize limits flags
-    limit.roll_pitch = true;
-    limit.yaw = true;
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
-
-    int16_t thr_in_min = rel_pwm_to_thr_range(_spin_when_armed_ramped);
-    if (_throttle_control_input <= thr_in_min) {
-        _throttle_control_input = thr_in_min;
-        limit.throttle_lower = true;
-    }
-
-    if (_throttle_control_input >= _hover_out) {
-        _throttle_control_input = _hover_out;
-        limit.throttle_upper = true;
-    }
-
-    throttle_radio_output = calc_throttle_radio_output();
-
-    motor_out[AP_MOTORS_MOT_1] = throttle_radio_output;
-    motor_out[AP_MOTORS_MOT_2] = throttle_radio_output;
-    motor_out[AP_MOTORS_MOT_4] = throttle_radio_output;
-
-    if(throttle_radio_output >= out_min) {
-        // adjust for thrust curve and voltage scaling
-        motor_out[AP_MOTORS_MOT_1] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_1], out_min, out_max);
-        motor_out[AP_MOTORS_MOT_2] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_2], out_min, out_max);
-        motor_out[AP_MOTORS_MOT_4] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_4], out_min, out_max);
-    }
-
-    hal.rcout->cork();
-
-    // send output to each motor
-    rc_write(AP_MOTORS_MOT_1, motor_out[AP_MOTORS_MOT_1]);
-    rc_write(AP_MOTORS_MOT_2, motor_out[AP_MOTORS_MOT_2]);
-    rc_write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4]);
-
-    // send centering signal to yaw servo
-    rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
-
-    hal.rcout->push();
-}
-
 // sends commands to the motors
-// TODO pull code that is common to output_armed_not_stabilizing into helper functions
 void AP_MotorsTri::output_armed_stabilizing()
 {
     int16_t roll_pwm;                                               // roll pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
