@@ -17,6 +17,7 @@
 using namespace Linux;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
@@ -29,6 +30,7 @@ static Util utilInstance;
 // 3 serial ports on Linux for now
 static UARTDriver uartADriver(true);
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 static SPIUARTDriver uartBDriver;
 #else
@@ -82,6 +84,8 @@ static Empty::AnalogIn analogIn;
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI  || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 static AnalogIn_IIO analogIn;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
+static AnalogIn_Navio2 analogIn;
 #else
 static AnalogIn analogIn;
 #endif
@@ -104,6 +108,7 @@ static GPIO_BBB gpioDriver;
   use the RPI gpio driver on Navio
  */
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
@@ -137,6 +142,8 @@ static RCInput_UDP  rcinDriver;
 static RCInput_UART rcinDriver("/dev/ttyS2");
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 static RCInput_DSM rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
+static RCInput_Navio2 rcinDriver;
 #else
 static RCInput rcinDriver;
 #endif
@@ -156,6 +163,8 @@ static RCOutput_AioPRU rcoutDriver;
 static RCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, true, 3, RPI_GPIO_27);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 static RCOutput_PCA9685 rcoutDriver(PCA9685_QUATENARY_ADDRESS, false, 0, RPI_GPIO_4);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+static RCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, true, 3, RPI_GPIO_27);
 /*
  use the STM32 based RCOutput driver on Raspilot
  */
@@ -169,6 +178,8 @@ static RCOutput_Bebop rcoutDriver;
 static RCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, false, 0, MINNOW_GPIO_S5_1);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 static RCOutput_QFLIGHT rcoutDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
+static RCOutput_Sysfs rcoutDriver(0, 14);
 #else
 static Empty::RCOutput rcoutDriver;
 #endif
