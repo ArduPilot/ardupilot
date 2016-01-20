@@ -557,6 +557,8 @@ void AP_InertialSensor_MPU6000::start()
     _product_id = _register_read(MPUREG_PRODUCT_ID);
     //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
 
+    // TODO: should be changed to 16G once we have a way to override the
+    // previous offsets
     if ((_product_id == MPU6000ES_REV_C4) ||
         (_product_id == MPU6000ES_REV_C5) ||
         (_product_id == MPU6000_REV_C4)   ||
