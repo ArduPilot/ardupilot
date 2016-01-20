@@ -39,19 +39,19 @@ const AP_Param::GroupInfo AP_MotorsCoax::var_info[] = {
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
     // @Values: -1:Reversed,1:Normal
-    AP_GROUPINFO("ROLL_SV_REV", 40, AP_MotorsCoax, _rev_roll, AP_MOTORS_COAX_POSITIVE),
+    AP_GROUPINFO("ROLL_SV_REV", 40, AP_MotorsCoax, _roll_reverse, AP_MOTORS_COAX_POSITIVE),
 
     // @Param: PITCH_SV_REV
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
     // @Values: -1:Reversed,1:Normal
-    AP_GROUPINFO("PITCH_SV_REV", 41, AP_MotorsCoax, _rev_pitch, AP_MOTORS_COAX_POSITIVE),
+    AP_GROUPINFO("PITCH_SV_REV", 41, AP_MotorsCoax, _pitch_reverse, AP_MOTORS_COAX_POSITIVE),
 
 	// @Param: YAW_SV_REV
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
     // @Values: -1:Reversed,1:Normal
-    AP_GROUPINFO("YAW_SV_REV", 42, AP_MotorsCoax, _rev_yaw, AP_MOTORS_COAX_POSITIVE),
+    AP_GROUPINFO("YAW_SV_REV", 42, AP_MotorsCoax, _yaw_reverse, AP_MOTORS_COAX_POSITIVE),
 
 	// @Param: SV_SPEED
     // @DisplayName: Servo speed 

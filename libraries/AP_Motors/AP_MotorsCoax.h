@@ -60,9 +60,10 @@ protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
 
-    AP_Int8             _rev_roll;      // REV Roll feedback
-    AP_Int8             _rev_pitch;     // REV pitch feedback
-    AP_Int8             _rev_yaw;       // REV yaw feedback
+    // We shouldn't need roll, pitch, and yaw reversing with servo reversing.
+    AP_Int8             _roll_reverse;  // Reverse roll output
+    AP_Int8             _pitch_reverse; // Reverse pitch output
+    AP_Int8             _yaw_reverse;   // Reverse yaw output
     AP_Int16            _servo_speed;   // servo speed
     RC_Channel&         _servo1;
     RC_Channel&         _servo2;
