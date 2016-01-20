@@ -147,59 +147,124 @@ uint16_t AP_MotorsSingle::get_motor_mask()
 // sends commands to the motors
 void AP_MotorsSingle::output_armed_stabilizing()
 {
-    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
-    int16_t out_min = _throttle_radio_min + _min_throttle;
+    uint8_t i;                          // general purpose counter
+    float   roll_thrust;                // roll thrust input value, +/- 1.0
+    float   pitch_thrust;               // pitch thrust input value, +/- 1.0
+    float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
+    float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+    float   thrust_min_rp;              // the minimum throttle setting that will not limit the roll and pitch output
+    float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+    float   throttle_thrust_hover = get_hover_throttle_as_high_end_pct();   // throttle hover thrust value, 0.0 - 1.0
+    float   throttle_thrust_rpy_mix;    // partial calculation of throttle_thrust_best_rpy
+    float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
+    float   actuator_allowed = 0.0f;    // amount of yaw we can fit in
+    float   actuator[NUM_ACTUATORS];    // combined roll, pitch and yaw thrusts for each actuator
+    float   actuator_max = 0.0f;        // maximum actuator value
 
-    // initialize limits flags
-    limit.roll_pitch = false;
-    limit.yaw = false;
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
+    // apply voltage and air pressure compensation
+    // todo: we shouldn't need input reversing with servo reversing
+    roll_thrust = _roll_reverse * get_roll_thrust() * get_compensation_gain();
+    pitch_thrust = _pitch_reverse * get_pitch_thrust() * get_compensation_gain();
+    yaw_thrust = _yaw_reverse * get_yaw_thrust() * get_compensation_gain();
+    throttle_thrust = get_throttle() * get_compensation_gain();
 
-    // Throttle is 0 to 1000 only
-    int16_t thr_in_min = rel_pwm_to_thr_range(_min_throttle);
-    if (_throttle_control_input <= thr_in_min) {
-        _throttle_control_input = thr_in_min;
+    // sanity check throttle is above zero and below current limited throttle
+    if (throttle_thrust <= 0.0f) {
+        throttle_thrust = 0.0f;
             limit.throttle_lower = true;
         }
-    if (_throttle_control_input >= _max_throttle) {
-        _throttle_control_input = _max_throttle;
+    // convert throttle_max from 0~1000 to 0~1 range
+    if (throttle_thrust >= _throttle_thrust_max) {
+        throttle_thrust = _throttle_thrust_max;
         limit.throttle_upper = true;
     }
+    throttle_thrust_rpy_mix = MAX(throttle_thrust, throttle_thrust*MAX(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
 
-    // calculate throttle PWM
-    throttle_radio_output = calc_throttle_radio_output();
+    // calculate how much roll and pitch must be scaled to leave enough range for the minimum yaw
+    if (is_zero(MAX(roll_thrust, pitch_thrust))) {
+        rpy_scale = 1.0f;
+    } else {
+        rpy_scale = (1.0f - MIN(yaw_thrust, (float)_yaw_headroom/1000.0f)) / MAX(roll_thrust, pitch_thrust);
+    }
+    if(rpy_scale < 1.0f){
+        limit.roll_pitch = true;
+    }else{
+        rpy_scale = 1.0f;
+    }
+    actuator_allowed = 1.0f - rpy_scale * MAX((roll_thrust), (pitch_thrust));
+    if(fabsf(yaw_thrust) > actuator_allowed){
+        yaw_thrust = constrain_float(yaw_thrust, -actuator_allowed, actuator_allowed);
+        limit.yaw = true;
+    }
 
-    // adjust for thrust curve and voltage scaling
-    throttle_radio_output = apply_thrust_curve_and_volt_scaling(throttle_radio_output, out_min, _throttle_radio_max);
-
-    // ensure motor doesn't drop below a minimum value and stop
-    throttle_radio_output = MAX(throttle_radio_output, out_min);
-
-    // TODO: set limits.roll_pitch and limits.yaw
-
+    // combine roll, pitch and yaw on each actuator
     // front servo
-    _servo1.servo_out = _rev_roll*_roll_control_input + _rev_yaw*_yaw_control_input;
+    actuator[0] = rpy_scale * roll_thrust + yaw_thrust;
     // right servo
-    _servo2.servo_out = _rev_pitch*_pitch_control_input + _rev_yaw*_yaw_control_input;
+    actuator[1] = rpy_scale * pitch_thrust + yaw_thrust;
     // rear servo
-    _servo3.servo_out = -_rev_roll*_roll_control_input + _rev_yaw*_yaw_control_input;
+    actuator[2] = -rpy_scale * roll_thrust + yaw_thrust;
     // left servo
-    _servo4.servo_out = -_rev_pitch*_pitch_control_input + _rev_yaw*_yaw_control_input;
+    actuator[3] = -rpy_scale * pitch_thrust + yaw_thrust;
 
-    _servo1.calc_pwm();
-    _servo2.calc_pwm();
-    _servo3.calc_pwm();
-    _servo4.calc_pwm();
+    // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
+    thrust_min_rp = MAX(MAX((actuator[1]), (actuator[2])), MAX((actuator[3]), (actuator[4])));
 
-    // send output to each motor
-    hal.rcout->cork();
-    rc_write(AP_MOTORS_MOT_1, _servo1.radio_out);
-    rc_write(AP_MOTORS_MOT_2, _servo2.radio_out);
-    rc_write(AP_MOTORS_MOT_3, _servo3.radio_out);
-    rc_write(AP_MOTORS_MOT_4, _servo4.radio_out);
-    rc_write(AP_MOTORS_MOT_7, throttle_radio_output);
-    hal.rcout->push();
+    thr_adj = throttle_thrust - throttle_thrust_rpy_mix;
+    if(thr_adj < -(throttle_thrust_rpy_mix - thrust_min_rp)){
+        // Throttle can't be reduced to the desired level because this would mean roll or pitch control
+        // would not be able to reach the desired level because of lack of thrust.
+        thr_adj = -(throttle_thrust_rpy_mix - thrust_min_rp);
+        limit.throttle_lower = true;
+        if(thrust_min_rp > throttle_thrust_rpy_mix + thr_adj){
+            // todo: add limits for roll and pitch separately
+            limit.yaw = true;
+            limit.roll_pitch = true;
+        }
+    }
+
+    // calculate the throttle setting for the lift fan
+    _thrust_out = throttle_thrust_rpy_mix + thr_adj;
+
+    if(is_zero((throttle_thrust_rpy_mix + thr_adj))){
+        limit.roll_pitch = true;
+        limit.yaw = true;
+        for (i=0; i<NUM_ACTUATORS; i++) {
+            if(actuator[1] < 0.0f){
+                _actuator_out[i] = -1.0f;
+            }else if(actuator[i] > 0.0f){
+                _actuator_out[i] = 1.0f;
+            }else{
+                _actuator_out[i] = 0.0f;
+            }
+        }
+    }else{
+        // calculate the maximum allowed actuator output and maximum requested actuator output
+        actuator_allowed = (throttle_thrust_rpy_mix + thr_adj);
+        for (i=0; i<NUM_ACTUATORS; i++) {
+            if(actuator_max > (actuator[i])){
+                actuator_max = (actuator[i]);
+            }
+        }
+        if(actuator_max > actuator_allowed){
+            // roll, pitch and yaw request can not be achieved at full servo defection
+            // reduce roll, pitch and yaw to reduce the requested defection to maximum
+            limit.roll_pitch = true;
+            limit.yaw = true;
+            rpy_scale = actuator_allowed/actuator_max;
+        }else{
+            rpy_scale = 1.0f;
+        }
+        // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
+        // static thrust is proportional to the airflow velocity squared
+        // therefore the torque of the roll and pitch actuators should be approximately proportional to
+        // the angle of attack multiplied by the static thrust.
+        for (i=0; i<NUM_ACTUATORS; i++) {
+            if(actuator_max > (_actuator_out[i])){
+                _actuator_out[i] = constrain_float(rpy_scale*actuator[i]/(throttle_thrust_rpy_mix + thr_adj), -1.0f, 1.0f);
+            }
+        }
+    }
 }
 
 // output_test - spin a motor at the pwm value specified
