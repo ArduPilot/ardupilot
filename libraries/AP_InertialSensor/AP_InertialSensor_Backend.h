@@ -21,10 +21,16 @@
   Note that drivers can implement just gyros or just accels, and can
   also provide multiple gyro/accel instances.
  */
-#ifndef __AP_INERTIALSENSOR_BACKEND_H__
-#define __AP_INERTIALSENSOR_BACKEND_H__
+#pragma once
+
+#include <inttypes.h>
+
+#include <AP_Math/AP_Math.h>
+
+#include "AP_InertialSensor.h"
 
 class AuxiliaryBus;
+class DataFlash_Class;
 
 class AP_InertialSensor_Backend
 {
@@ -36,7 +42,7 @@ public:
     // override with a custom destructor if need be.
     virtual ~AP_InertialSensor_Backend(void) {}
 
-    /* 
+    /*
      * Update the sensor data. Called by the frontend to transfer
      * accumulated sensor readings to the frontend structure via the
      * _publish_gyro() and _publish_accel() functions
@@ -129,8 +135,8 @@ protected:
     uint16_t get_sample_rate_hz(void) const;
 
     // access to frontend dataflash
-    DataFlash_Class *get_dataflash(void) const { 
-        return _imu._log_raw_data? _imu._dataflash : NULL; 
+    DataFlash_Class *get_dataflash(void) const {
+        return _imu._log_raw_data? _imu._dataflash : NULL;
     }
 
     // common gyro update function for all backends
@@ -138,14 +144,12 @@ protected:
 
     // common accel update function for all backends
     void update_accel(uint8_t instance);
-    
+
     // support for updating filter at runtime
     int8_t _last_accel_filter_hz[INS_MAX_INSTANCES];
     int8_t _last_gyro_filter_hz[INS_MAX_INSTANCES];
-    
+
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
 };
-
-#endif // __AP_INERTIALSENSOR_BACKEND_H__

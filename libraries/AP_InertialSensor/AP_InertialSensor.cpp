@@ -2,13 +2,24 @@
 
 #include <assert.h>
 
-#include "AP_InertialSensor.h"
-
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Math/AP_Math.h>
+
+#include "AP_InertialSensor.h"
+#include "AP_InertialSensor_Backend.h"
+#include "AP_InertialSensor_Flymaple.h"
+#include "AP_InertialSensor_HIL.h"
+#include "AP_InertialSensor_L3G4200D.h"
+#include "AP_InertialSensor_LSM9DS0.h"
+#include "AP_InertialSensor_MPU6000.h"
+#include "AP_InertialSensor_MPU9250.h"
+#include "AP_InertialSensor_PX4.h"
+#include "AP_InertialSensor_QURT.h"
+#include "AP_InertialSensor_SITL.h"
+#include "AP_InertialSensor_qflight.h"
 
 /*
   enable TIMING_DEBUG to track down scheduling issues with the main
@@ -45,7 +56,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: PRODUCT_ID
     // @DisplayName: IMU Product ID
-    // @Description: Which type of IMU is installed (read-only). 
+    // @Description: Which type of IMU is installed (read-only).
     // @User: Advanced
     // @Values: 0:Unknown,1:APM1-1280,2:APM1-2560,88:APM2,3:SITL,4:PX4v1,5:PX4v2,256:Flymaple,257:Linux
     AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _product_id,   0),
@@ -339,7 +350,7 @@ AP_InertialSensor::AP_InertialSensor() :
         AP_HAL::panic("Too many inertial sensors");
     }
     _s_instance = this;
-    AP_Param::setup_object_defaults(this, var_info);        
+    AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
         _backends[i] = NULL;
     }
@@ -551,13 +562,13 @@ AP_InertialSensor::detect_backends(void)
 /*
   _calculate_trim - calculates the x and y trim angles. The
   accel_sample must be correctly scaled, offset and oriented for the
-  board 
+  board
 */
 bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
 {
     trim_pitch = atan2f(accel_sample.x, pythagorous2(accel_sample.y, accel_sample.z));
     trim_roll = atan2f(-accel_sample.y, -accel_sample.z);
-    if (fabsf(trim_roll) > radians(10) || 
+    if (fabsf(trim_roll) > radians(10) ||
         fabsf(trim_pitch) > radians(10)) {
         hal.console->println("trim over maximum of 10 degrees");
         return false;
@@ -682,7 +693,7 @@ bool AP_InertialSensor::calibrate_trim(float &trim_roll, float &trim_pitch)
 
 failed:
     _calibrating = false;
-    return false;    
+    return false;
 }
 
 /*
@@ -918,7 +929,7 @@ void AP_InertialSensor::update(void)
         }
 
         // adjust health status if a sensor has a non-zero error count
-        // but another sensor doesn't. 
+        // but another sensor doesn't.
         bool have_zero_accel_error_count = false;
         bool have_zero_gyro_error_count = false;
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
@@ -961,10 +972,10 @@ void AP_InertialSensor::update(void)
 
 /*
   wait for a sample to be available. This is the function that
-  determines the timing of the main loop in ardupilot. 
+  determines the timing of the main loop in ardupilot.
 
   Ideally this function would return at exactly the rate given by the
-  sample_rate argument given to AP_InertialSensor::init(). 
+  sample_rate argument given to AP_InertialSensor::init().
 
   The key output of this function is _delta_time, which is the time
   over which the gyro and accel integration will happen for this
@@ -999,7 +1010,7 @@ void AP_InertialSensor::wait_for_sample(void)
             timing_printf("shortsleep %u\n", (unsigned)(_next_sample_usec-now2));
         }
         if (now2 > _next_sample_usec+400) {
-            timing_printf("longsleep %u wait_usec=%u\n", 
+            timing_printf("longsleep %u wait_usec=%u\n",
                           (unsigned)(now2-_next_sample_usec),
                           (unsigned)wait_usec);
         }
@@ -1056,7 +1067,7 @@ check_sample:
         if (counter++ == 400) {
             counter = 0;
             hal.console->printf("now=%lu _delta_time_sum=%lu diff=%ld\n",
-                                (unsigned long)now, 
+                                (unsigned long)now,
                                 (unsigned long)delta_time_sum,
                                 (long)(now - delta_time_sum));
         }
@@ -1070,7 +1081,7 @@ check_sample:
 /*
   get delta angles
  */
-bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const 
+bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const
 {
     if (_delta_angle_valid[i]) {
         delta_angle = _delta_angle[i];
@@ -1284,7 +1295,7 @@ void AP_InertialSensor::acal_init()
 }
 
 // update accel calibrator
-void AP_InertialSensor::acal_update() 
+void AP_InertialSensor::acal_update()
 {
     if(_acal == NULL) {
         return;
@@ -1346,10 +1357,10 @@ void AP_InertialSensor::_acal_save_calibrations()
             /* no break */
     }
 
-    if (fabsf(_trim_roll) > radians(10) || 
+    if (fabsf(_trim_roll) > radians(10) ||
         fabsf(_trim_pitch) > radians(10)) {
         hal.console->print("ERR: Trim over maximum of 10 degrees!!");
-        _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers 
+        _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers
     }
 
     _accel_cal_requires_reboot = true;
@@ -1364,7 +1375,7 @@ void AP_InertialSensor::_acal_event_failure()
 }
 
 /*
-    Returns true if new valid trim values are available and passes them to reference vars    
+    Returns true if new valid trim values are available and passes them to reference vars
 */
 bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
 {
@@ -1377,7 +1388,7 @@ bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
     return false;
 }
 
-/*    
+/*
     Returns body fixed accelerometer level data averaged during accel calibration's first step
 */
 bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const
@@ -1390,7 +1401,7 @@ bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vec
     return true;
 }
 
-/*    
+/*
     Returns Primary accelerometer level data averaged during accel calibration's first step
 */
 bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const
