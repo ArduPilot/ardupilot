@@ -23,10 +23,12 @@ class AP_MotorsCoax : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsCoax(RC_Channel& servo1, RC_Channel& servo2, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+    AP_MotorsCoax(RC_Channel& servo1, RC_Channel& servo2, RC_Channel& servo3, RC_Channel& servo4, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMulticopter(loop_rate, speed_hz),
         _servo1(servo1),
-        _servo2(servo2)
+        _servo2(servo2),
+        _servo3(servo3),
+        _servo4(servo4)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -50,8 +52,7 @@ public:
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    //  for coax copter, output channels 1 to 4 are used
-    virtual uint16_t    get_motor_mask() { return 0x000F; }
+    virtual uint16_t    get_motor_mask();
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -65,6 +66,27 @@ protected:
     AP_Int8             _pitch_reverse; // Reverse pitch output
     AP_Int8             _yaw_reverse;   // Reverse yaw output
     AP_Int16            _servo_speed;   // servo speed
+    // Allow the use of a 4 servo output to make it easy to test coax and single using same airframe
     RC_Channel&         _servo1;
     RC_Channel&         _servo2;
+    RC_Channel&         _servo3;
+    RC_Channel&         _servo4;
+
+    AP_Int8             _servo_1_reverse;    // Roll servo signal reversing
+    AP_Int16            _servo_1_trim;       // Trim or center position of roll servo
+    AP_Int16            _servo_1_min;        // Minimum angle limit of roll servo
+    AP_Int16            _servo_1_max;        // Maximum angle limit of roll servo
+    AP_Int8             _servo_2_reverse;   // Pitch servo signal reversing
+    AP_Int16            _servo_2_trim;      // Trim or center position of pitch servo
+    AP_Int16            _servo_2_min;       // Minimum angle limit of pitch servo
+    AP_Int16            _servo_2_max;       // Maximum angle limit of pitch servo
+    AP_Int8             _servo_3_reverse;   // Pitch servo signal reversing
+    AP_Int16            _servo_3_trim;      // Trim or center position of pitch servo
+    AP_Int16            _servo_3_min;       // Minimum angle limit of pitch servo
+    AP_Int16            _servo_3_max;       // Maximum angle limit of pitch servo
+    AP_Int8             _servo_4_reverse;   // Pitch servo signal reversing
+    AP_Int16            _servo_4_trim;      // Trim or center position of pitch servo
+    AP_Int16            _servo_4_min;       // Minimum angle limit of pitch servo
+    AP_Int16            _servo_4_max;       // Maximum angle limit of pitch servo
+
 };

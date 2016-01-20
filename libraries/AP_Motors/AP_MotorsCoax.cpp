@@ -64,18 +64,25 @@ const AP_Param::GroupInfo AP_MotorsCoax::var_info[] = {
 // init
 void AP_MotorsCoax::Init()
 {
-    // set update rate for the 2 motors (but not the servo on channel 1&2)
+    // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 
-    // set the motor_enabled flag so that the ESCs can be calibrated like other frame types
-    motor_enabled[AP_MOTORS_MOT_3] = true;
-    motor_enabled[AP_MOTORS_MOT_4] = true;
+    // set the motor_enabled flag so that the main ESC can be calibrated like other frame types
+    motor_enabled[AP_MOTORS_MOT_5] = true;
+    motor_enabled[AP_MOTORS_MOT_6] = true;
 
-    // set ranges for fin servos
+    // we set four servos to angle
     _servo1.set_type(RC_CHANNEL_TYPE_ANGLE);
     _servo2.set_type(RC_CHANNEL_TYPE_ANGLE);
+    _servo3.set_type(RC_CHANNEL_TYPE_ANGLE);
+    _servo4.set_type(RC_CHANNEL_TYPE_ANGLE);
     _servo1.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
     _servo2.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo3.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+    _servo4.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+
+    // disable CH7 from being used as an aux output (i.e. for camera gimbal, etc)
+    RC_Channel_aux::disable_aux_channel(CH_7);
 }
 
 // set update rate to motors - a value in hertz
@@ -84,17 +91,17 @@ void AP_MotorsCoax::set_update_rate( uint16_t speed_hz )
     // record requested speed
     _speed_hz = speed_hz;
 
-    // set update rate for the two motors
-    uint32_t mask2 =
+    // set update rate for the 4 servos and 2 motors
+    uint32_t mask =
+        1U << AP_MOTORS_MOT_1 |
+        1U << AP_MOTORS_MOT_2 |
         1U << AP_MOTORS_MOT_3 |
         1U << AP_MOTORS_MOT_4 ;
-    rc_set_freq(mask2, _speed_hz);
-
-    // set update rate for the two servos
-    uint32_t mask =
-      1U << AP_MOTORS_MOT_1 |
-      1U << AP_MOTORS_MOT_2 ;
     rc_set_freq(mask, _servo_speed);
+    uint32_t mask2 =
+        1U << AP_MOTORS_MOT_5 |
+        1U << AP_MOTORS_MOT_6 ;
+    rc_set_freq(mask2, _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
@@ -105,6 +112,8 @@ void AP_MotorsCoax::enable()
     rc_enable_ch(AP_MOTORS_MOT_2);
     rc_enable_ch(AP_MOTORS_MOT_3);
     rc_enable_ch(AP_MOTORS_MOT_4);
+    rc_enable_ch(AP_MOTORS_MOT_5);
+    rc_enable_ch(AP_MOTORS_MOT_6);
 }
 
 // output_min - sends minimum values out to the motor and trim values to the servos
@@ -114,9 +123,25 @@ void AP_MotorsCoax::output_min()
     hal.rcout->cork();
     rc_write(AP_MOTORS_MOT_1, _servo1.radio_trim);
     rc_write(AP_MOTORS_MOT_2, _servo2.radio_trim);
-    rc_write(AP_MOTORS_MOT_3, _throttle_radio_min);
-    rc_write(AP_MOTORS_MOT_4, _throttle_radio_min);
+    rc_write(AP_MOTORS_MOT_3, _servo3.radio_trim);
+    rc_write(AP_MOTORS_MOT_4, _servo4.radio_trim);
+    rc_write(AP_MOTORS_MOT_5, _throttle_radio_min);
+    rc_write(AP_MOTORS_MOT_6, _throttle_radio_min);
     hal.rcout->push();
+}
+
+// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint16_t AP_MotorsCoax::get_motor_mask()
+{
+    uint32_t mask =
+        1U << AP_MOTORS_MOT_1 |
+        1U << AP_MOTORS_MOT_2 |
+        1U << AP_MOTORS_MOT_3 |
+        1U << AP_MOTORS_MOT_4 |
+        1U << AP_MOTORS_MOT_5 |
+        1U << AP_MOTORS_MOT_6;
+    return rc_map_mask(mask);
 }
 
 // sends commands to the motors
@@ -199,12 +224,20 @@ void AP_MotorsCoax::output_test(uint8_t motor_seq, int16_t pwm)
             rc_write(AP_MOTORS_MOT_2, pwm);
             break;
         case 3:
-            // motor 1
+            // flap servo 3
             rc_write(AP_MOTORS_MOT_3, pwm);
             break;
         case 4:
-            // motor 2
+            // flap servo 4
             rc_write(AP_MOTORS_MOT_4, pwm);
+            break;
+        case 5:
+            // motor 1
+            rc_write(AP_MOTORS_MOT_5, pwm);
+            break;
+        case 6:
+            // motor 2
+            rc_write(AP_MOTORS_MOT_6, pwm);
             break;
         default:
             // do nothing
