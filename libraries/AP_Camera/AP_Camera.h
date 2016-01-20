@@ -42,9 +42,6 @@ public:
         _apm_relay = obj_relay;
     }
 
-    // pin number for accurate camera feedback messages
-    AP_Int8         _feedback_pin;
-    
     // single entry point to take pictures
     //  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
     void            trigger_pic(bool send_mavlink_msg);
@@ -95,9 +92,14 @@ private:
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
 
+    // pin number for accurate camera feedback messages
+    AP_Int8         _feedback_pin;
+    AP_Int8         _feedback_polarity;
+
     // this is set to 1 when camera trigger pin has fired
     volatile bool   _camera_triggered;
     bool            _timer_installed:1;
+    uint8_t         _last_pin_state;
 };
 
 #endif /* AP_CAMERA_H */
