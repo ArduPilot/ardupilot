@@ -80,6 +80,7 @@ class GCS_Frontend;
 ///
 class GCS_MAVLINK
 {
+    friend class GCS_Backend_Copter; // for access to streamRates[]
 
 public:
     GCS_MAVLINK();
@@ -104,6 +105,7 @@ public:
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
     static const struct AP_Param::GroupInfo        var_info[];
+    virtual const AP_Param::GroupInfo *get_var_info();
 
     // set to true if this GCS link is ready
     bool            initialised;
