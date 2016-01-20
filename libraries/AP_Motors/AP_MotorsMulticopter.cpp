@@ -554,3 +554,12 @@ void AP_MotorsMulticopter::throttle_pass_through(int16_t pwm)
         hal.rcout->push();
     }
 }
+
+// set_radio_passthrough used to pass radio inputs directly to outputs
+void AP_MotorsMulticopter::set_radio_passthrough(float radio_roll_input, float radio_pitch_input, float radio_throttle_input, float radio_yaw_input)
+{
+    _roll_radio_passthrough = radio_roll_input;
+    _pitch_radio_passthrough = radio_pitch_input;
+    _throttle_radio_passthrough = radio_throttle_input;
+    _yaw_radio_passthrough = radio_yaw_input;
+}

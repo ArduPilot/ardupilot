@@ -173,6 +173,9 @@ protected:
     // spin when armed as a percentage of the 0~1 range from 0 to throttle_min
     float               spin_when_armed_low_end_pct() { return (float)_spin_when_armed.get() / _min_throttle; }
 
+    // spin when armed as a percentage of the 0~1 range from 0 to throttle_min
+    void               set_radio_passthrough(float radio_roll_input, float radio_pitch_input, float radio_throttle_input, float radio_yaw_input);
+
     // flag bitmask
     struct {
         spool_up_down_mode     spool_mode       : 4;    // motor's current spool mode
@@ -214,4 +217,10 @@ protected:
     int16_t             _batt_timer;            // timer used in battery resistance calcs
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
+
+    // pass through variables
+    float           _roll_radio_passthrough = 0;     // roll control PWM direct from radio, used for manual control
+    float           _pitch_radio_passthrough = 0;    // pitch control PWM direct from radio, used for manual control
+    float           _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
+    float           _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
 };
