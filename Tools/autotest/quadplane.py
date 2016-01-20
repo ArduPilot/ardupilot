@@ -54,7 +54,7 @@ def fly_QuadPlane(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL('ArduPlane', model='quadplane', wipe=True, home=HOME_LOCATION, speedup=20,
+    sil = util.start_SIL('ArduPlane', model='quadplane', wipe=True, home=HOME_LOCATION, speedup=10,
                          defaults_file=os.path.join(testdir, 'quadplane.parm'))
     mavproxy = util.start_MAVProxy_SIL('QuadPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
