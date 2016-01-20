@@ -13,6 +13,7 @@
 #include <Filter/LowPassFilter2p.h>
 
 #include "AP_InertialSensor.h"
+#include "AP_InertialSensor_Backend.h"
 #include "AuxiliaryBus.h"
 
 // enable debug to see a register dump on startup
