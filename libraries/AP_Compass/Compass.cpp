@@ -427,6 +427,9 @@ void Compass::_detect_backends(void)
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
     _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c, true));
     _add_backend(AP_Compass_LSM303D::detect_spi(*this));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+    _add_backend(AP_Compass_HMC5843::detect_mpu6000(*this));
+    _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c, true));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BH
     // detect_mpu9250() failed will cause panic if no actual mpu9250 backend,
     // in BH, only one compass should be detected
