@@ -38,13 +38,25 @@ popd
 
 mkdir -p $HOME/bin
 
-ln -sf /usr/bin/gcc-4.8 $HOME/bin/gcc
-ln -sf /usr/bin/g++-4.8 $HOME/bin/g++
+# configure ccache
+ln -s /usr/bin/ccache ~/bin/g++
+ln -s /usr/bin/ccache ~/bin/gcc
+ln -s /usr/bin/ccache ~/bin/arm-none-eabi-g++
+ln -s /usr/bin/ccache ~/bin/arm-none-eabi-gcc
+ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-g++
+ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-gcc
 
-exportline="export PATH=$HOME/bin:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin:\
-$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:\$PATH"
+exportline="export PATH=$HOME/bin:"
+exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin:"
+exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:"
+exportline="${exportline}:\$PATH"
 
-if grep -Fxq "$exportline" ~/.profile; then echo nothing to do ; else echo $exportline >> ~/.profile; fi
+if grep -Fxq "$exportline" ~/.profile; then
+    echo nothing to do;
+else
+    echo $exportline >> ~/.profile;
+fi
+
 . ~/.profile
 
 popd
