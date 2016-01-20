@@ -133,58 +133,7 @@ uint16_t AP_MotorsSingle::get_motor_mask()
     return rc_map_mask(1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << 6);
 }
 
-void AP_MotorsSingle::output_armed_not_stabilizing()
-{
-    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
-    int16_t out_min = _throttle_radio_min + _min_throttle;
-
-    // initialize limits flags
-    limit.roll_pitch = true;
-    limit.yaw = true;
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
-
-    int16_t thr_in_min = rel_pwm_to_thr_range(_spin_when_armed_ramped);
-    if (_throttle_control_input <= thr_in_min) {
-        _throttle_control_input = thr_in_min;
-        limit.throttle_lower = true;
-    }
-    if (_throttle_control_input >= _max_throttle) {
-        _throttle_control_input = _max_throttle;
-        limit.throttle_upper = true;
-    }
-
-    throttle_radio_output = calc_throttle_radio_output();
-
-    // front servo
-    _servo1.servo_out = 0;
-    // right servo
-    _servo2.servo_out = 0;
-    // rear servo
-    _servo3.servo_out = 0;
-    // left servo
-    _servo4.servo_out = 0;
-
-    _servo1.calc_pwm();
-    _servo2.calc_pwm();
-    _servo3.calc_pwm();
-    _servo4.calc_pwm();
-
-    if (throttle_radio_output >= out_min) {
-        throttle_radio_output = apply_thrust_curve_and_volt_scaling(throttle_radio_output, out_min, _throttle_radio_max);
-    }
-
-    hal.rcout->cork();
-    rc_write(AP_MOTORS_MOT_1, _servo1.radio_out);
-    rc_write(AP_MOTORS_MOT_2, _servo2.radio_out);
-    rc_write(AP_MOTORS_MOT_3, _servo3.radio_out);
-    rc_write(AP_MOTORS_MOT_4, _servo4.radio_out);
-    rc_write(AP_MOTORS_MOT_7, throttle_radio_output);
-    hal.rcout->push();
-}
-
 // sends commands to the motors
-// TODO pull code that is common to output_armed_not_stabilizing into helper functions
 void AP_MotorsSingle::output_armed_stabilizing()
 {
     int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
