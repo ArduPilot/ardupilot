@@ -39,7 +39,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _throttle_filter(),
     _batt_voltage(0.0f),
     _batt_current(0.0f),
-    _air_density_ratio(1.0f)
+    _air_density_ratio(1.0f),
+    _motor_map_mask(0)
 {
     // init other flags
     _flags.armed = false;
