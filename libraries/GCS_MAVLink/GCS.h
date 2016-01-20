@@ -227,7 +227,7 @@ private:
     uint16_t        waypoint_count;
     uint32_t        waypoint_timelast_receive; // milliseconds
     uint32_t        waypoint_timelast_request; // milliseconds
-    const uint16_t  waypoint_receive_timeout; // milliseconds
+    const uint16_t  waypoint_receive_timeout = 8000; // milliseconds
 
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
