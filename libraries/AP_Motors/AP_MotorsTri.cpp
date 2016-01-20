@@ -122,6 +122,41 @@ void AP_MotorsTri::output_min()
     hal.rcout->push();
 }
 
+void AP_MotorsTri::output_to_motors()
+{
+    switch (_multicopter_flags.spool_mode) {
+        case SHUT_DOWN:
+            // sends minimum values out to the motors
+            hal.rcout->cork();
+            rc_write(AP_MOTORS_MOT_1, _throttle_radio_min);
+            rc_write(AP_MOTORS_MOT_2, _throttle_radio_min);
+            rc_write(AP_MOTORS_MOT_4, _throttle_radio_min);
+            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
+            hal.rcout->push();
+            break;
+        case SPIN_WHEN_ARMED:
+            // sends output to motors when armed but not flying
+            hal.rcout->cork();
+            rc_write(AP_MOTORS_MOT_1, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_2, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_4, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
+            hal.rcout->push();
+            break;
+        case SPOOL_UP:
+        case THROTTLE_UNLIMITED:
+        case SPOOL_DOWN:
+            // set motor output based on thrust requests
+            hal.rcout->cork();
+            rc_write(AP_MOTORS_MOT_1, calc_thrust_to_pwm(_thrust_right));
+            rc_write(AP_MOTORS_MOT_2, calc_thrust_to_pwm(_thrust_left));
+            rc_write(AP_MOTORS_MOT_4, calc_thrust_to_pwm(_thrust_rear));
+            rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, _pivot_angle_max));
+            hal.rcout->push();
+            break;
+    }
+}
+
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsTri::get_motor_mask()
@@ -305,22 +340,13 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
 }
 
 // calc_yaw_radio_output - calculate final radio output for yaw channel
-int16_t AP_MotorsTri::calc_yaw_radio_output()
+int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max)
 {
     int16_t ret;
-
-    if (_yaw_servo_reverse < 0) {
-        if (_yaw_control_input >= 0){
-            ret = (_yaw_servo_trim - (_yaw_control_input/4500 * (_yaw_servo_trim - _yaw_servo_min)));
-        } else {
-            ret = (_yaw_servo_trim - (_yaw_control_input/4500 * (_yaw_servo_max - _yaw_servo_trim)));
-        }
+    if (yaw_input >= 0){
+        ret = (_yaw_servo_trim + (yaw_input/yaw_input_max * (_yaw_servo_max - _yaw_servo_trim)));
     } else {
-        if (_yaw_control_input >= 0){
-            ret = ((_yaw_control_input/4500 * (_yaw_servo_max - _yaw_servo_trim)) + _yaw_servo_trim);
-        } else {
-            ret = ((_yaw_control_input/4500 * (_yaw_servo_trim - _yaw_servo_min)) + _yaw_servo_trim);
-        }
+        ret = (_yaw_servo_trim + (yaw_input/yaw_input_max * (_yaw_servo_trim - _yaw_servo_min)));
     }
 
     return ret;
