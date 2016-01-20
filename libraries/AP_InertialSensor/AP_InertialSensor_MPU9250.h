@@ -1,13 +1,14 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_INERTIAL_SENSOR_MPU9250_H__
-#define __AP_INERTIAL_SENSOR_MPU9250_H__
+#pragma once
 
 #include <stdint.h>
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>
 #include <Filter/LowPassFilter2p.h>
+
+#include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor.h"
 #include "AuxiliaryBus.h"
 
@@ -164,5 +165,3 @@ private:
 
     uint8_t _ext_sens_data = 0;
 };
-
-#endif // __AP_INERTIAL_SENSOR_MPU9250_H__

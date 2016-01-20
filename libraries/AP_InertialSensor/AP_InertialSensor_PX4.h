@@ -1,12 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_INERTIAL_SENSOR_PX4_H__
-#define __AP_INERTIAL_SENSOR_PX4_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include "AP_InertialSensor.h"
+#include "AP_InertialSensor_Backend.h"
 #include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h>
 #include <uORB/uORB.h>
@@ -70,5 +69,4 @@ private:
     float _accel_dt_max[INS_MAX_INSTANCES];
 #endif // AP_INERTIALSENSOR_PX4_DEBUG
 };
-#endif // CONFIG_HAL_BOARD
-#endif // __AP_INERTIAL_SENSOR_PX4_H__
+#endif

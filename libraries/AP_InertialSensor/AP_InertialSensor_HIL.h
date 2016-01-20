@@ -1,9 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_INERTIALSENSOR_HIL_H__
-#define __AP_INERTIALSENSOR_HIL_H__
+#pragma once
 
 #include "AP_InertialSensor.h"
+#include "AP_InertialSensor_Backend.h"
 
 class AP_InertialSensor_HIL : public AP_InertialSensor_Backend
 {
@@ -19,5 +18,3 @@ public:
 private:
     bool _init_sensor(void);
 };
-
-#endif // __AP_INERTIALSENSOR_HIL_H__
