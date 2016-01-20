@@ -168,18 +168,21 @@ void NavEKF2_core::SelectVelPosFusion()
     // Select height data to be fused from the available baro, range finder and GPS sources
     selectHeightForFusion();
 
-    // If we are operating without any aiding, fuse in the last known position and zero velocity
+    // If we are operating without any aiding, fuse in the last known position
     // to constrain tilt drift. This assumes a non-manoeuvring vehicle
     // Do this to coincide with the height fusion
     if (fuseHgtData && PV_AidingMode == AID_NONE) {
         gpsDataDelayed.vel.zero();
-        // only fuse synthetic measurements when rate of change of velocity is less than 1g to reduce attitude errors due to launch acceleration
-        if (accNavMag < 9.8f) {
-            fuseVelData = true;
+        gpsDataDelayed.pos.x = lastKnownPositionNE.x;
+        gpsDataDelayed.pos.y = lastKnownPositionNE.y;
+        // when in flight only fuse synthetic measurements when rate of change of velocity is less than 1.1g
+        // to reduce attitude errors due to launch acceleration
+        if (accNavMag < 1.1f * GRAVITY_MSS || motorsArmed) {
+            fusePosData = true;
         } else {
-            fuseVelData = false;
+            fusePosData = false;
         }
-        fusePosData = false;
+        fuseVelData = false;
     }
 
     // perform fusion
@@ -242,17 +245,19 @@ void NavEKF2_core::FuseVelPosNED()
         posErr = frontend->gpsPosVarAccScale * accNavMag;
 
         // estimate the GPS Velocity, GPS horiz position and height measurement variances.
-        // Use different errors if operating without external aiding using an assumed velocity of zero
+        // Use different errors if operating without external aiding using an assumed position or velocity of zero
         if (PV_AidingMode == AID_NONE) {
             if (tiltAlignComplete && motorsArmed) {
             // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
-                R_OBS[0] = sq(constrain_float(frontend->_noaidHorizVelNoise, 0.5f, 25.0f));
+                R_OBS[0] = sq(constrain_float(frontend->_noaidHorizNoise, 0.5f, 50.0f));
             } else {
                 // Use a smaller value to give faster initial alignment
                 R_OBS[0] = sq(0.5f);
             }
             R_OBS[1] = R_OBS[0];
             R_OBS[2] = R_OBS[0];
+            R_OBS[3] = R_OBS[0];
+            R_OBS[4] = R_OBS[0];
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
         } else {
             if (gpsSpdAccuracy > 0.0f) {
@@ -268,10 +273,10 @@ void NavEKF2_core::FuseVelPosNED()
             // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
             // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
             // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
+            R_OBS[3] = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+            R_OBS[4] = R_OBS[3];
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
         }
-        R_OBS[3] = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
-        R_OBS[4] = R_OBS[3];
         R_OBS[5] = posDownObsNoise;
         for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
@@ -305,7 +310,10 @@ void NavEKF2_core::FuseVelPosNED()
             // declare a timeout condition if we have been too long without data or not aiding
             posTimeout = (((imuSampleTime_ms - lastPosPassTime_ms) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // use position data if healthy or timed out
-            if (posHealth || posTimeout) {
+            if (PV_AidingMode == AID_NONE) {
+                posHealth = true;
+                lastPosPassTime_ms = imuSampleTime_ms;
+            } else if (posHealth || posTimeout) {
                 posHealth = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
                 // if timed out or outside the specified uncertainty radius, reset to the GPS
@@ -487,12 +495,6 @@ void NavEKF2_core::FuseVelPosNED()
                 } else {
                     Kfusion[22] = 0.0f;
                     Kfusion[23] = 0.0f;
-                }
-
-                // inhibit position state modification if we are not aiding
-                if (PV_AidingMode == AID_NONE) {
-                    Kfusion[6] = 0.0f;
-                    Kfusion[7] = 0.0f;
                 }
 
                 // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion

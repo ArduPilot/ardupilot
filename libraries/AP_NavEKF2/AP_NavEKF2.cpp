@@ -420,12 +420,12 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     AP_GROUPINFO("CHECK_SCALE", 34, NavEKF2, _gpsCheckScaler, CHECK_SCALER_DEFAULT),
 
     // @Param: NOAID_NOISE
-    // @DisplayName: Non-GPS operation velocity change (m/s)
-    // @Description: This sets the amount of velocity change that the EKF allows for when operating without external measurements (eg GPs or optical flow). Increasing this parameter makes the EKF attitude estimate less affected by changes in vehicle velocity but also makes the EKF attitude estimate more affected by IMU errors.
-    // @Range: 0.5 25.0
+    // @DisplayName: Non-GPS operation position uncertainty (m)
+    // @Description: This sets the amount of position variation that the EKF allows for when operating without external measurements (eg GPS or optical flow). Increasing this parameter makes the EKF attitude estimate less sensitive to vehicle manoeuvres but more sensitive to IMU errors.
+    // @Range: 0.5 50.0
     // @User: Advanced
     // @Units: m/s
-    AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizVelNoise, 10.0f),
+    AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizNoise, 10.0f),
 
     AP_GROUPEND
 };
