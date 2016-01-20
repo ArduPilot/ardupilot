@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @Description: Yaw servo reversing. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
     // @Values: -1:Reversed,1:Normal
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_REV", 31,     AP_MotorsTri,  _yaw_servo_reverse, 1),
+    AP_GROUPINFO("YAW_SV_REV", 31,     AP_MotorsTri,  _yaw_reverse, 1),
 
     // @Param: YAW_SV_TRIM
     // @DisplayName: Yaw Servo Trim/Center
