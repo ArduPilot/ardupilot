@@ -109,6 +109,9 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
 
     // and init the gcs instance
     init(uart, mav_chan);
+
+    // load signing key
+    load_signing_key();
 }
 
 /**

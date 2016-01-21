@@ -309,6 +309,7 @@ private:
     static DataFlash_Class *dataflash_p;
     
     mavlink_signing_t signing;
+    static StorageAccess _signing_storage;
 
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
@@ -352,4 +353,9 @@ private:
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
+
+    void handle_setup_signing(const mavlink_message_t *msg);
+    bool signing_key_save(const struct SigningKey &key);
+    bool signing_key_load(struct SigningKey &key);
+    void load_signing_key(void);
 };
