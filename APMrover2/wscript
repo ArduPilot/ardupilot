@@ -5,7 +5,7 @@ import ardupilotwaf
 
 def build(bld):
     vehicle = bld.path.name
-    ardupilotwaf.vehicle_stlib(
+    ardupilotwaf.ap_stlib(
         bld,
         name=vehicle + '_libs',
         vehicle=vehicle,

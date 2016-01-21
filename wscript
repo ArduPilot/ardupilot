@@ -137,7 +137,7 @@ def build(bld):
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider
     # split into smaller pieces with well defined boundaries.
-    ardupilotwaf.vehicle_stlib(
+    ardupilotwaf.ap_stlib(
         bld,
         name='ap',
         vehicle='UNKNOWN',
