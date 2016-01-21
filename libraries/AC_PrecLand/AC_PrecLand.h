@@ -7,6 +7,7 @@
 #include <AC_PID/AC_PI_2D.h>
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <stdint.h>
 
 // definitions
 #define AC_PRECLAND_SPEED_XY_DEFAULT            100.0f  // maximum horizontal speed
@@ -97,6 +98,8 @@ private:
 
     // internal variables
     float                       _dt;                // time difference (in seconds) between calls from the main program
+    uint32_t                    _last_updated;  //epoch time in millisecond when update is called
+    uint32_t                    _last_consumed; //epoch time in millisecond when  get_target_shift is called;
 
     // output from sensor (stored for logging)
     Vector2f                    _angle_to_target;   // last raw sensor angle to target
