@@ -43,7 +43,7 @@ public:
 
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
-    float get_pressure(uint8_t instance) const { return sensors[instance].pressure * sensors[instance].precision_multiplier; }
+    float get_pressure(uint8_t instance) const { return sensors[instance].pressure; }
 
     // temperature in degrees C
     float get_temperature(void) const { return get_temperature(_primary); }
@@ -88,7 +88,7 @@ public:
     // ground pressure in Pascal
     // the ground values are only valid after calibration
     float get_ground_pressure(void) const { return get_ground_pressure(_primary); }
-    float get_ground_pressure(uint8_t i)  const { return sensors[i].ground_pressure.get() * sensors[i].precision_multiplier; }
+    float get_ground_pressure(uint8_t i)  const { return sensors[i].ground_pressure.get(); }
 
     // set the temperature to be used for altitude calibration. This
     // allows an external temperature source (such as a digital
