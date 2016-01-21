@@ -124,13 +124,13 @@ def common_features(bld):
         features.append('static_linking')
     return features
 
-def vehicle_stlib(bld, **kw):
+def ap_stlib(bld, **kw):
     if 'name' not in kw:
-        bld.fatal('Missing name for vehicle_stlib')
+        bld.fatal('Missing name for ap_stlib')
     if 'vehicle' not in kw:
-        bld.fatal('Missing vehicle for vehicle_stlib')
+        bld.fatal('Missing vehicle for ap_stlib')
     if 'libraries' not in kw:
-        bld.fatal('Missing libraries for vehicle_stlib')
+        bld.fatal('Missing libraries for ap_stlib')
 
     sources = []
     libraries = kw['libraries'] + bld.env.AP_LIBRARIES
