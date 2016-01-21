@@ -63,6 +63,8 @@ public:
     void                set_pitch(int16_t pitch_in) { _pitch_control_input = pitch_in; };               // range -4500 ~ 4500
     void                set_yaw(int16_t yaw_in) { _yaw_control_input = yaw_in; };                       // range -4500 ~ 4500
     void                set_throttle(float throttle_in) { _throttle_in = constrain_float(throttle_in,0.0f,1.0f); };   // range 0 ~ 1
+    void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
+
     void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
@@ -75,8 +77,6 @@ public:
     float               get_roll_thrust() const { return _roll_control_input / 4500.0f; }
     float               get_pitch_thrust() const { return _pitch_control_input / 4500.0f; }
     float               get_yaw_thrust() const { return _yaw_control_input / 4500.0f; }
-
-    void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
     //
     // voltage, current and air pressure compensation or limiting features - multicopters only
