@@ -119,6 +119,9 @@ public:
     // get_throttle_limit - throttle limit ratio - for logging purposes only
     float               get_throttle_limit() const { return _throttle_limit; }
 
+    // returns maximum thrust in the range 0 to 1
+    float               get_throttle_thrust_max() const { return _throttle_thrust_max; }
+
     // return true if spool up is complete
     bool spool_up_complete() const { return _multicopter_flags.spool_mode == THROTTLE_UNLIMITED; }
 
