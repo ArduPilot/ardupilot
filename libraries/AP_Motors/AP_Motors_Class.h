@@ -156,8 +156,6 @@ protected:
     float               _yaw_control_input;         // desired yaw control from attitude controller, +/- 4500
     uint16_t            _loop_rate;                 // rate at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
-    int16_t             _throttle_radio_min;        // minimum radio channel pwm
-    int16_t             _throttle_radio_max;        // maximum radio channel pwm
     float               _throttle_in;               // last throttle input from set_throttle caller
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
 
