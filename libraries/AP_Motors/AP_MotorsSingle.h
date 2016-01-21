@@ -25,12 +25,9 @@ class AP_MotorsSingle : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsSingle(RC_Channel& servo1, RC_Channel& servo2, RC_Channel& servo3, RC_Channel& servo4, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+    AP_MotorsSingle(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMulticopter(loop_rate, speed_hz),
-        _servo1(servo1),
-        _servo2(servo2),
-        _servo3(servo3),
-        _servo4(servo4)
+        _servo1(CH_1), _servo2(CH_2), _servo3(CH_3), _servo4(CH_4)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -66,36 +63,21 @@ protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
 
-    // calc_yaw_radio_output - calculate final radio output for yaw channel
-    int16_t             calc_pivot_radio_output(float yaw_input, int16_t servo_min, int16_t servo_trim, int16_t servo_max);        // calculate radio output for yaw servo, typically in range of 1100-1900
+    // calc_yaw_radio_output - calculate final pwm output for yaw channel
+    int16_t             calc_pivot_radio_output(float yaw_input, const RC_Channel& servo);
 
     // We shouldn't need roll, pitch, and yaw reversing with servo reversing.
     AP_Int8             _roll_reverse;  // Reverse roll output
     AP_Int8             _pitch_reverse; // Reverse pitch output
     AP_Int8             _yaw_reverse;   // Reverse yaw output
     AP_Int16            _servo_speed;   // servo speed
-    RC_Channel&         _servo1;
-    RC_Channel&         _servo2;
-    RC_Channel&         _servo3;
-    RC_Channel&         _servo4;
-    int16_t             _throttle_radio_output;   // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
-    AP_Int8             _servo_1_reverse;    // Roll servo signal reversing
-    AP_Int16            _servo_1_trim;       // Trim or center position of roll servo
-    AP_Int16            _servo_1_min;        // Minimum angle limit of roll servo
-    AP_Int16            _servo_1_max;        // Maximum angle limit of roll servo
-    AP_Int8             _servo_2_reverse;   // Pitch servo signal reversing
-    AP_Int16            _servo_2_trim;      // Trim or center position of pitch servo
-    AP_Int16            _servo_2_min;       // Minimum angle limit of pitch servo
-    AP_Int16            _servo_2_max;       // Maximum angle limit of pitch servo
-    AP_Int8             _servo_3_reverse;   // Pitch servo signal reversing
-    AP_Int16            _servo_3_trim;      // Trim or center position of pitch servo
-    AP_Int16            _servo_3_min;       // Minimum angle limit of pitch servo
-    AP_Int16            _servo_3_max;       // Maximum angle limit of pitch servo
-    AP_Int8             _servo_4_reverse;   // Pitch servo signal reversing
-    AP_Int16            _servo_4_trim;      // Trim or center position of pitch servo
-    AP_Int16            _servo_4_min;       // Minimum angle limit of pitch servo
-    AP_Int16            _servo_4_max;       // Maximum angle limit of pitch servo
 
+    RC_Channel          _servo1;
+    RC_Channel          _servo2;
+    RC_Channel          _servo3;
+    RC_Channel          _servo4;
+
+    int16_t             _throttle_radio_output;   // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
     float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     float               _thrust_out;
 };
