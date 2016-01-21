@@ -140,11 +140,17 @@ void GCS_MAVLINK::load_signing_key(void)
  */
 void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec)
 {
-    uint64_t signing_timestamp = (timestamp_usec / 1000*1000UL);
+    uint64_t signing_timestamp = (timestamp_usec / (1000*1000ULL));
+    // this is the offset from 1/1/1970 to 1/1/2015
     const uint64_t epoch_offset = 1420070400;
     if (signing_timestamp > epoch_offset) {
         signing_timestamp -= epoch_offset;
     }
+
+    // convert to 10usec units
+    signing_timestamp *= 100 * 1000ULL;
+
+    // increase signing timestamp on any links that have signing
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + i);
         mavlink_status_t *status = mavlink_get_channel_status(chan);
