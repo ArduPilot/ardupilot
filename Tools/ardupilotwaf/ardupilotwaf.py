@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from waflib import Logs, Options, Utils
+from waflib.Configure import conf
 import os.path
 
 SOURCE_EXTS = [
@@ -63,6 +64,7 @@ IGNORED_AP_LIBRARIES = [
     'GCS_Console',
 ]
 
+@conf
 def get_all_libraries(bld):
     libraries = []
     for lib_node in bld.srcnode.ant_glob('libraries/*', dir=True):
@@ -75,6 +77,11 @@ def get_all_libraries(bld):
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
     return libraries
 
+@conf
+def common_vehicle_libraries(bld):
+    return COMMON_VEHICLE_DEPENDENT_LIBRARIES
+
+@conf
 def ap_program(bld, blddestdir='bin',
             use_legacy_defines=True,
             program_name=None,
@@ -103,6 +110,7 @@ def ap_program(bld, blddestdir='bin',
         **kw
     )
 
+@conf
 def example(bld, **kw):
     kw['blddestdir'] = 'examples'
     ap_program(bld, **kw)
@@ -124,6 +132,7 @@ def common_features(bld):
         features.append('static_linking')
     return features
 
+@conf
 def ap_stlib(bld, **kw):
     if 'name' not in kw:
         bld.fatal('Missing name for ap_stlib')
@@ -149,6 +158,7 @@ def ap_stlib(bld, **kw):
 
     bld.stlib(**kw)
 
+@conf
 def find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
         return
@@ -174,6 +184,7 @@ def find_tests(bld, use=[]):
             use_legacy_defines=False,
         )
 
+@conf
 def find_benchmarks(bld, use=[]):
     if not bld.env.HAS_GBENCHMARK:
         return
