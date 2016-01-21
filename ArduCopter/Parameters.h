@@ -458,10 +458,6 @@ public:
     RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
     RC_Channel      heli_servo_rsc;                                             // servo for rotor speed control output
 #endif
-#if FRAME_CONFIG ==     SINGLE_FRAME
-    // Single
-    RC_Channel      single_servo_1, single_servo_2, single_servo_3, single_servo_4;     // servos for four flaps
-#endif
 
     // RC channels
     RC_Channel              rc_1;
@@ -525,12 +521,6 @@ public:
         heli_servo_3        (CH_3),
         heli_servo_4        (CH_4),
         heli_servo_rsc      (CH_8),
-#endif
-#if FRAME_CONFIG ==     SINGLE_FRAME
-        single_servo_1        (CH_1),
-        single_servo_2        (CH_2),
-        single_servo_3        (CH_3),
-        single_servo_4        (CH_4),
 #endif
 
         rc_1                (CH_1),

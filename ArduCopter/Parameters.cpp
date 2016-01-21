@@ -1001,18 +1001,6 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
 
 #elif FRAME_CONFIG == SINGLE_FRAME
-    // @Group: SS1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_1,    "SS1_", RC_Channel),
-    // @Group: SS2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_2,    "SS2_", RC_Channel),
-    // @Group: SS3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_3,    "SS3_", RC_Channel),
-    // @Group: SS4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_4,    "SS4_", RC_Channel),
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_MotorsSingle.cpp
     GOBJECT(motors, "MOT_",           AP_MotorsSingle),
