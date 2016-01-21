@@ -450,7 +450,12 @@ void Plane::update_GPS_10Hz(void)
                 init_home();
 
                 // set system clock for log timestamps
-                hal.util->set_system_clock(gps.time_epoch_usec());
+                uint64_t gps_timestamp = gps.time_epoch_usec();
+                
+                hal.util->set_system_clock(gps_timestamp);
+
+                // update signing timestamp
+                GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically
