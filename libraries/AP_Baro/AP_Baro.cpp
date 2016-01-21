@@ -76,7 +76,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 
     // @Param: BASE_PRESS
     // @DisplayName: ROV ONLY Base Pressure
-    // @Description: Base diving pressure set this to zero to get new pressure on boot, set to value other than zero to set ground pressure for every boot thereafter.
+    // @Description: Base diving pressure. This is the ambient air pressure at launch site, and is persistent between boots.
     // @Units: pascals
     AP_GROUPINFO("BASE_PRESS", 8, AP_Baro, _base_pressure, 0.0),
 
@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @DisplayName: ROV ONLY Reset Base Pressure
     // @Description: Set to 1 to reset base pressure on next boot
     // @Values: 0:Keep, 1:Reset
-    AP_GROUPINFO("BASE_RESET", 9, AP_Baro, _reset_base_pressure, 0),
+    AP_GROUPINFO("BASE_RESET", 9, AP_Baro, _reset_base_pressure, 1),
     
     AP_GROUPEND
 };
@@ -402,7 +402,7 @@ void AP_Baro::update(void)
             if(sensors[i].type == BARO_TYPE_AIR) {
             	altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
             } else if(sensors[i].type == BARO_TYPE_WATER) {
-            	//101325Pa is sea level air pressure, 10052 Pascal/ m depth in water.
+            	//101325Pa is sea level air pressure, 9800 Pascal/ m depth in water.
             	//No temperature or depth compensation for density of water.
             	altitude = (sensors[i].ground_pressure - sensors[i].pressure) * sensors[i].precision_multiplier / 9800.0f / _specific_gravity;
             }
