@@ -245,7 +245,7 @@ void Sub::init_ardupilot()
 	//We have an external MS58XX pressure sensor connected
 		for(int i = 1; i < barometer.num_instances(); i++) {
 			barometer.set_type(i, BARO_TYPE_WATER); //Altitude (depth) is calculated differently underwater
-			barometer.set_precision_multiplier(i, 10); //The MS58XX values reported need to be multiplied by 10 to match units everywhere else
+			barometer.set_precision_multiplier(i, 40); //The MS58XX values reported need to be multiplied by 10 to match units everywhere else
 		}
 		barometer.set_primary_baro(1); //Set the primary baro to external MS58XX
 
