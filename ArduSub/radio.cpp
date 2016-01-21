@@ -148,18 +148,24 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	float throttleScale = 0.8;
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1500-500*throttleScale;
+	int16_t mode;
 
-	uint16_t mode = buttons;
 	static int16_t camTilt = 1500;
 
-	if ( mode & (1 << 4) ) {
+	if ( buttons & (1 << 4) ) {
 		init_arm_motors(true);
-	} else if ( mode & (1 << 5) ) {
+	} else if ( buttons & (1 << 5) ) {
 		init_disarm_motors();
-	} else if ( mode & (1 << 0) ) {
+	} else if ( buttons & (1 << 0) ) {
 		camTilt = constrain_float(camTilt+20,800,2200);
-	} else if ( mode & (1 << 1) ) {
+	} else if ( buttons & (1 << 1) ) {
 		camTilt = constrain_float(camTilt-20,800,2200);
+	}
+
+	if ( buttons & (1 << 14) ) {
+		mode = 2000;
+	} else if ( buttons & (1 << 12)) {
+		mode = 1000;
 	}
 
 	channels[0] = 1500;                           // pitch
