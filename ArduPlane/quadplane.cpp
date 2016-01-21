@@ -691,13 +691,16 @@ void QuadPlane::set_armed(bool armed)
  */
 float QuadPlane::assist_climb_rate_cms(void)
 {
+    float climb_rate;
     if (plane.auto_throttle_mode) {
-        // ask TECS for its desired climb rate
-        return plane.TECS_controller.get_height_rate_demand()*100;
+        // use altitude_error_cm, spread over 10s interval
+        climb_rate = plane.altitude_error_cm / 10;
+    } else {
+        // otherwise estimate from pilot input
+        climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(float)plane.aparm.pitch_limit_max_cd);
+        climb_rate *= plane.channel_throttle->control_in;
     }
-    // otherwise estimate from pilot input
-    float climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(float)plane.aparm.pitch_limit_max_cd);
-    climb_rate *= plane.channel_throttle->control_in;
+    climb_rate = constrain_float(climb_rate, -wp_nav->get_speed_down(), wp_nav->get_speed_up());
     return climb_rate;
 }
 
@@ -752,6 +755,8 @@ void QuadPlane::update_transition(void)
     if (transition_state < TRANSITION_TIMER) {
         // set a single loop pitch limit in TECS
         plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
+    } else if (transition_state < TRANSITION_DONE) {
+        plane.TECS_controller.set_pitch_max_limit((transition_pitch_max+1)*2);
     }
     
     switch (transition_state) {
@@ -1068,10 +1073,12 @@ void QuadPlane::control_auto(const Location &loc)
 
     switch (plane.mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_VTOL_LAND:
-        if (land_state > QLAND_POSITION && land_state < QLAND_FINAL) {
-            pos_control->set_alt_target_from_climb_rate(-wp_nav->get_speed_down(), plane.G_Dt, true);            
+        if (land_state == QLAND_POSITION) {
+            pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false); 
+        } else if (land_state > QLAND_POSITION && land_state < QLAND_FINAL) {
+            pos_control->set_alt_target_from_climb_rate(-wp_nav->get_speed_down(), plane.G_Dt, true);
         } else {
-            pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);            
+            pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
         }
         break;
     case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -1145,6 +1152,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     target.y = diff2d.y * 100;
     target.z = plane.next_WP_loc.alt - origin.alt;
     wp_nav->set_wp_origin_and_destination(inertial_nav.get_position(), target);
+    pos_control->set_alt_target(inertial_nav.get_altitude());
     
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);

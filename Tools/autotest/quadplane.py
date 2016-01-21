@@ -26,14 +26,14 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('mode AUTO\n')
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 9, max_dist=60):
+    if not wait_waypoint(mav, 1, 9, max_dist=60, timeout=1200):
         return False
     mavproxy.expect('DISARMED')
     # wait for blood sample here
     mavproxy.send('wp set 10\n')
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
-    if not wait_waypoint(mav, 10, 18, max_dist=60):
+    if not wait_waypoint(mav, 10, 18, max_dist=60, timeout=1200):
         return False
     mavproxy.expect('DISARMED')
     print("Mission OK")
@@ -54,7 +54,7 @@ def fly_QuadPlane(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL('ArduPlane', model='quadplane', wipe=True, home=HOME_LOCATION, speedup=20,
+    sil = util.start_SIL('ArduPlane', model='quadplane', wipe=True, home=HOME_LOCATION, speedup=10,
                          defaults_file=os.path.join(testdir, 'quadplane.parm'))
     mavproxy = util.start_MAVProxy_SIL('QuadPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
