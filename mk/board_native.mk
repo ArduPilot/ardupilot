@@ -19,7 +19,9 @@ WARNFLAGSCXX    = \
         -Werror=unused-but-set-variable \
         -Werror=uninitialized \
         -Werror=init-self \
-        -Wfatal-errors
+        -Wfatal-errors \
+        -Wundef
+
 DEPFLAGS        =   -MD -MP -MT $@
 
 CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char
