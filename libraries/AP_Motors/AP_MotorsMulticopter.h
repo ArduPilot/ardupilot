@@ -133,9 +133,6 @@ protected:
     // update the throttle input filter
     virtual void        update_throttle_filter();
 
-    // current_limit_max_throttle - current limit maximum throttle (called from update_max_throttle)
-    void                current_limit_max_throttle();
-
     // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
     float               get_current_limit_max_throttle();
 

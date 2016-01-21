@@ -163,40 +163,6 @@ void AP_MotorsMulticopter::update_throttle_filter()
     }
 }
 
-// current_limit_max_throttle - limits maximum throttle based on current
-void AP_MotorsMulticopter::current_limit_max_throttle()
-{
-    // return maximum if current limiting is disabled
-    if (_batt_current_max <= 0) {
-        _throttle_limit = 1.0f;
-        _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
-        return;
-    }
-
-    // remove throttle limit if throttle is at zero or disarmed
-    if(_throttle_in <= 0.0f || !_flags.armed) {
-        _throttle_limit = 1.0f;
-    }
-
-    // limit throttle if over current
-    if (_batt_current > _batt_current_max*1.25f) {
-        // Fast drop for extreme over current (1 second)
-        _throttle_limit -= 1.0f/_loop_rate;
-    } else if(_batt_current > _batt_current_max) {
-        // Slow drop for extreme over current (5 second)
-        _throttle_limit -= 0.2f/_loop_rate;
-    } else {
-        // Increase throttle limit (2 second)
-        _throttle_limit += 0.5f/_loop_rate;
-    }
-
-    // throttle limit drops to 20% between hover and full throttle
-    _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
-
-    // limit max throttle
-    _max_throttle = _hover_out + ((1000-_hover_out)*_throttle_limit);
-}
-
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
 //todo: replace this with a variable P term
 float AP_MotorsMulticopter::get_current_limit_max_throttle()
@@ -204,14 +170,12 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
     // return maximum if current limiting is disabled
     if (_batt_current_max <= 0) {
         _throttle_limit = 1.0f;
-        _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
         return 1.0f;
     }
 
-    // remove throttle limit if throttle is at zero or disarmed
-    if(_throttle_in <= 0.0f || !_flags.armed) {
+    // remove throttle limit if disarmed
+    if (!_flags.armed) {
         _throttle_limit = 1.0f;
-        _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
         return 1.0f;
     }
 
