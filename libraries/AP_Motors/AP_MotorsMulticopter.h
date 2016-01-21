@@ -174,6 +174,8 @@ protected:
     float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
+    int16_t             _throttle_radio_min;        // minimum radio channel pwm
+    int16_t             _throttle_radio_max;        // maximum radio channel pwm
     float               _throttle_thrust_max;       // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
 
     // spool variables

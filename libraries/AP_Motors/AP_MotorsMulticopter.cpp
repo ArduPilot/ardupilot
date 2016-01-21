@@ -108,6 +108,8 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     _throttle_rpy_mix(AP_MOTORS_THR_LOW_CMP_DEFAULT),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
+    _throttle_radio_min(1100),
+    _throttle_radio_max(1900),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
