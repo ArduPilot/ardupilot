@@ -129,9 +129,29 @@ void GCS_MAVLINK::load_signing_key(void)
     signing.timestamp = key.timestamp;
     signing.flags = MAVLINK_SIGNING_FLAG_SIGN_OUTGOING;
     signing.accept_unsigned_callback = accept_unsigned_callback;
+
+    // if timestamp and key are all zero then we disable signing
+    bool all_zero = (signing.timestamp == 0);
+    for (uint8_t i=0; i<sizeof(key.secret_key); i++) {
+        if (signing.secret_key[i] != 0) {
+            all_zero = false;
+        }
+    }
     
-    status->signing = &signing;
-    status->signing_streams = &signing_streams;
+    // enable signing on all channels
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        mavlink_status_t *cstatus = mavlink_get_channel_status((mavlink_channel_t)(MAVLINK_COMM_0 + i));
+        if (cstatus != NULL) {
+            if (all_zero) {
+                // disable signing
+                cstatus->signing = NULL;
+                cstatus->signing_streams = NULL;
+            } else {
+                cstatus->signing = &signing;
+                cstatus->signing_streams = &signing_streams;
+            }
+        }
+    }
 }
 
 /*
