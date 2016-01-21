@@ -75,7 +75,7 @@ def get_all_libraries(bld):
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
     return libraries
 
-def program(bld, blddestdir='bin',
+def ap_program(bld, blddestdir='bin',
             use_legacy_defines=True,
             program_name=None,
             **kw):
@@ -105,7 +105,7 @@ def program(bld, blddestdir='bin',
 
 def example(bld, **kw):
     kw['blddestdir'] = 'examples'
-    program(bld, **kw)
+    ap_program(bld, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
 # compilation is independent by providing different index for each.
@@ -163,7 +163,7 @@ def find_tests(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/tests/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        program(
+        ap_program(
             bld,
             features=features,
             includes=includes,
@@ -181,7 +181,7 @@ def find_benchmarks(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/benchmarks/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        program(
+        ap_program(
             bld,
             features=common_features(bld) + ['gbenchmark'],
             includes=includes,
