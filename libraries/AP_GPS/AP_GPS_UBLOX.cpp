@@ -449,7 +449,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             (unsigned)_buffer.gnss.numTrkChHw,
             (unsigned)_buffer.gnss.numTrkChUse,
             (unsigned)_buffer.gnss.numConfigBlocks);
-#if UBLOX_DEBUG
+#if UBLOX_DEBUGGING
         for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
             Debug("  %u %u %u 0x%08x\n",
             (unsigned)_buffer.gnss.configBlock[i].gnssId,
