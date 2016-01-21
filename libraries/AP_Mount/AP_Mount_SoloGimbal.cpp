@@ -9,10 +9,6 @@
 #include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#if MOUNT_DEBUG
-#include <stdio.h>
-#endif
-
 extern const AP_HAL::HAL& hal;
 
 AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
