@@ -34,6 +34,9 @@ struct SigningKey {
     uint8_t secret_key[32];
 };
 
+// shared signing_streams structure
+mavlink_signing_streams_t GCS_MAVLINK::signing_streams;
+
 bool GCS_MAVLINK::signing_key_save(const struct SigningKey &key)
 {
     if (_signing_storage.size() < sizeof(key)) {
@@ -75,6 +78,36 @@ void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t *msg)
 
 
 /*
+  callback to accept unsigned (or incorrectly signed) packets
+ */
+extern "C" {
+
+static const struct {
+    uint8_t dialect;
+    uint16_t msgId;
+} accept_list[] = {
+    { MAVLINK_MSG_ID_RADIO_STATUS_TUPLE }
+};
+    
+static bool accept_unsigned_callback(const mavlink_status_t *status,
+                                     uint8_t dialect, uint16_t msgId)
+{
+    if (status == mavlink_get_channel_status(MAVLINK_COMM_0)) {
+        // always accept channel 0, assumed to be secure channel. This
+        // is USB on PX4 boards
+        return true;
+    }
+    for (uint8_t i=0; i<ARRAY_SIZE(accept_list); i++) {
+        if (accept_list[i].dialect == dialect &&
+            accept_list[i].msgId == msgId) {
+            return true;
+        }
+    }
+    return false;
+}
+}
+
+/*
   load signing key
  */
 void GCS_MAVLINK::load_signing_key(void)
@@ -93,6 +126,8 @@ void GCS_MAVLINK::load_signing_key(void)
     signing.link_id = (uint8_t)chan;
     signing.timestamp = 1;
     signing.flags = MAVLINK_SIGNING_FLAG_SIGN_OUTGOING;
+    signing.accept_unsigned_callback = accept_unsigned_callback;
     
     status->signing = &signing;
+    status->signing_streams = &signing_streams;
 }
