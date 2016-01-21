@@ -111,6 +111,7 @@ public:
     // HIL (and SITL) interface, setting pressure and temperature
     void setHIL(uint8_t instance, float pressure, float temperature);
 
+    void set_primary_baro(uint8_t primary) { _primary_baro.set_and_save(primary); };
     void set_type(uint8_t instance, uint8_t type) { sensors[instance].type = type; };
     void set_precision_multiplier(uint8_t instance, uint8_t multiplier) { sensors[instance].precision_multiplier = multiplier; };
     
