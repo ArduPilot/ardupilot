@@ -27,7 +27,7 @@ def build(bld):
         use='mavlink',
     )
 
-    ardupilotwaf.program(
+    ardupilotwaf.ap_program(
         bld,
         program_name='ardurover',
         use=vehicle + '_libs',
