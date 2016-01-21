@@ -17,6 +17,7 @@ bool Sub::althold_init(bool ignore_checks)
 #endif
 
     // initialize vertical speeds and leash lengths
+    // sets the maximum speed up and down returned by position controller
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
@@ -62,18 +63,18 @@ void Sub::althold_run()
     bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()));
 #endif
 
-    // Alt Hold State Machine Determination
-    if(!ap.auto_armed) {
-        althold_state = AltHold_Disarmed;
-    } else if (!motors.get_interlock()){
-        althold_state = AltHold_MotorStop;
-    } else if (takeoff_state.running || takeoff_triggered){
-        althold_state = AltHold_Takeoff;
-    } else if (ap.land_complete){
-        althold_state = AltHold_Landed;
-    } else {
+//    // Alt Hold State Machine Determination
+//    if(!ap.auto_armed) {
+//        althold_state = AltHold_Disarmed;
+//    } else if (!motors.get_interlock()){
+//        althold_state = AltHold_MotorStop;
+//    } else if (takeoff_state.running || takeoff_triggered){
+//        althold_state = AltHold_Takeoff;
+//    } else if (ap.land_complete){
+//        althold_state = AltHold_Landed;
+//    } else {
         althold_state = AltHold_Flying;
-    }
+//    }
 
     // Alt Hold State Machine
     switch (althold_state) {
