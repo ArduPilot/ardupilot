@@ -21,6 +21,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if MAVLINK_PROTOCOL_VERSION >= 2
+
 // storage object
 StorageAccess GCS_MAVLINK::_signing_storage(StorageManager::StorageKeys);
 
@@ -124,10 +126,34 @@ void GCS_MAVLINK::load_signing_key(void)
     }
     memcpy(signing.secret_key, key.secret_key, 32);
     signing.link_id = (uint8_t)chan;
-    signing.timestamp = 1;
+    signing.timestamp = key.timestamp;
     signing.flags = MAVLINK_SIGNING_FLAG_SIGN_OUTGOING;
     signing.accept_unsigned_callback = accept_unsigned_callback;
     
     status->signing = &signing;
     status->signing_streams = &signing_streams;
 }
+
+/*
+  update signing timestamp. This is called when we get GPS lock
+  timestamp_usec is since 1/1/1970 (the epoch)
+ */
+void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec)
+{
+    uint64_t signing_timestamp = (timestamp_usec / 1000*1000UL);
+    const uint64_t epoch_offset = 1420070400;
+    if (signing_timestamp > epoch_offset) {
+        signing_timestamp -= epoch_offset;
+    }
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + i);
+        mavlink_status_t *status = mavlink_get_channel_status(chan);
+        if (status && status->signing && status->signing->timestamp < signing_timestamp) {
+            status->signing->timestamp = signing_timestamp;
+        }
+    }
+}
+
+#else
+void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec) {}
+#endif // MAVLINK_PROTOCOL_VERSION

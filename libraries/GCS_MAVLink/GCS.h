@@ -203,6 +203,9 @@ public:
     static void set_dataflash(DataFlash_Class *dataflash) {
         dataflash_p = dataflash;
     }
+
+    // update signing timestamp on GPS lock
+    static void update_signing_timestamp(uint64_t timestamp_usec);
     
 private:
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
@@ -356,8 +359,14 @@ private:
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
 
+#if MAVLINK_PROTOCOL_VERSION >= 2
+    mavlink_signing_t signing;
+    static mavlink_signing_streams_t signing_streams;
+    
+    static StorageAccess _signing_storage;
     void handle_setup_signing(const mavlink_message_t *msg);
     bool signing_key_save(const struct SigningKey &key);
     bool signing_key_load(struct SigningKey &key);
     void load_signing_key(void);
+#endif // MAVLINK_PROTOCOL_VERSION
 };
