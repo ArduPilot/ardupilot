@@ -66,11 +66,8 @@ protected:
     // calc_yaw_radio_output - calculate final pwm output for yaw channel
     int16_t             calc_pivot_radio_output(float yaw_input, const RC_Channel& servo);
 
-    // We shouldn't need roll, pitch, and yaw reversing with servo reversing.
-    AP_Int8             _roll_reverse;  // Reverse roll output
-    AP_Int8             _pitch_reverse; // Reverse pitch output
-    AP_Int8             _yaw_reverse;   // Reverse yaw output
-    AP_Int16            _servo_speed;   // servo speed
+    // servo speed
+    AP_Int16            _servo_speed;
 
     // Allow the use of a 4 servo output to make it easy to test coax and single using same airframe
     RC_Channel          _servo1;
