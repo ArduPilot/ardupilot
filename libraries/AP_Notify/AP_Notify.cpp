@@ -25,6 +25,7 @@
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm_Linux.h"
 #include "ToneAlarm_PX4.h"
+#include "ToneAlarm_PX4_Solo.h"
 #include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
 #include "ToshibaLED_PX4.h"
@@ -57,9 +58,14 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;
     ToshibaLED_PX4 toshibaled;
-    ToneAlarm_PX4 tonealarm;
 
-#ifdef OREOLED_ENABLED
+#if AP_NOTIFY_SOLO_TONES == 1
+    ToneAlarm_PX4_Solo tonealarm;
+#else
+    ToneAlarm_PX4 tonealarm;
+#endif
+
+#if AP_NOTIFY_OREOLED == 1
     OreoLED_PX4 oreoled;
     NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled};
 #else
