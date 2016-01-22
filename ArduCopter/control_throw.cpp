@@ -11,7 +11,7 @@ bool Copter::throw_init(bool ignore_checks)
     return false;
 #endif
 
-    // do not enter the mode when already armed
+    // do not enter the mode when already armed or when flying
     if (motors.armed()) {
         return false;
     }
