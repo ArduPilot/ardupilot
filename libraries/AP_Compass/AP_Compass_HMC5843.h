@@ -18,7 +18,8 @@ class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 private:
     static AP_Compass_Backend *_detect(Compass &compass,
-                                       AP_HMC5843_SerialBus *bus);
+                                       AP_HMC5843_SerialBus *bus,
+                                       bool force_external);
 
     AP_HMC5843_SerialBus *_bus;
     AP_HAL::Semaphore *_bus_sem = nullptr;
@@ -49,15 +50,19 @@ private:
 
     uint8_t             _compass_instance;
     uint8_t             _product_id;
+    bool                _force_external;
 
     float               _gain_multiple;
 public:
     // detect the sensor
     static AP_Compass_Backend *detect_i2c(Compass &compass,
-                                          AP_HAL::I2CDriver *i2c);
+                                          AP_HAL::I2CDriver *i2c,
+                                          bool force_external=false);
     static AP_Compass_Backend *detect_mpu6000(Compass &compass);
 
-    AP_Compass_HMC5843(Compass &compass, AP_HMC5843_SerialBus *bus);
+    AP_Compass_HMC5843(Compass &compass,
+                       AP_HMC5843_SerialBus *bus,
+                       bool force_external);
     ~AP_Compass_HMC5843();
 
     bool        init(void);

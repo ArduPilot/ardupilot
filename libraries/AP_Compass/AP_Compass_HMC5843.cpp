@@ -59,7 +59,9 @@ extern const AP_HAL::HAL& hal;
 #define DataOutputRate_75HZ   0x06
 
 // constructor
-AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_SerialBus *bus) :
+AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass,
+                                       AP_HMC5843_SerialBus *bus,
+                                       bool force_external) :
     AP_Compass_Backend(compass),
     _bus(bus),
     _retry_time(0),
@@ -72,7 +74,8 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_SerialBus *b
     _accum_count(0),
     _last_accum_time(0),
     _compass_instance(0),
-    _product_id(0)
+    _product_id(0),
+    _force_external(force_external)
 {}
 
 AP_Compass_HMC5843::~AP_Compass_HMC5843()
@@ -82,12 +85,13 @@ AP_Compass_HMC5843::~AP_Compass_HMC5843()
 
 // detect the sensor
 AP_Compass_Backend *AP_Compass_HMC5843::detect_i2c(Compass &compass,
-                                                   AP_HAL::I2CDriver *i2c)
+                                                   AP_HAL::I2CDriver *i2c,
+                                                   bool force_external)
 {
     AP_HMC5843_SerialBus *bus = new AP_HMC5843_SerialBus_I2C(i2c, HMC5843_I2C_ADDR);
     if (!bus)
         return nullptr;
-    return _detect(compass, bus);
+    return _detect(compass, bus, force_external);
 }
 
 AP_Compass_Backend *AP_Compass_HMC5843::detect_mpu6000(Compass &compass)
@@ -96,13 +100,16 @@ AP_Compass_Backend *AP_Compass_HMC5843::detect_mpu6000(Compass &compass)
     AP_HMC5843_SerialBus *bus = new AP_HMC5843_SerialBus_MPU6000(ins, HMC5843_I2C_ADDR);
     if (!bus)
         return nullptr;
-    return _detect(compass, bus);
+    return _detect(compass, bus, false);
 }
 
 AP_Compass_Backend *AP_Compass_HMC5843::_detect(Compass &compass,
-                                                AP_HMC5843_SerialBus *bus)
+                                                AP_HMC5843_SerialBus *bus,
+                                                bool force_external)
 {
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass,
+                                                        bus,
+                                                        force_external);
     if (!sensor) {
         delete bus;
         return nullptr;
@@ -331,9 +338,9 @@ AP_Compass_HMC5843::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _product_id);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    set_external(_compass_instance, true);
-#endif
+    if (_force_external) {
+        set_external(_compass_instance, true);
+    }
 
     return true;
 
