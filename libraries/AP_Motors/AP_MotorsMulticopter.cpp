@@ -233,8 +233,8 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 // update_battery_resistance - calculate battery resistance when throttle is above hover_out
 void AP_MotorsMulticopter::update_battery_resistance()
 {
-    // if motors are stopped, reset resting voltage and current
-    if (get_throttle() <= 0.0f || !_flags.armed) {
+    // if disarmed reset resting voltage and current
+    if (!_flags.armed) {
         _batt_voltage_resting = _batt_voltage;
         _batt_current_resting = _batt_current;
         _batt_timer = 0;
