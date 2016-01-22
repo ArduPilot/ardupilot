@@ -141,7 +141,7 @@ def build(bld):
     bld.ap_stlib(
         name='ap',
         vehicle='UNKNOWN',
-        libraries=bld.get_all_libraries(),
+        libraries=bld.ap_get_all_libraries(),
         use='mavlink',
     )
     # TODO: Currently each vehicle also generate its own copy of the

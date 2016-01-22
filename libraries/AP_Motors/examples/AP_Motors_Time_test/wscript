@@ -5,6 +5,6 @@ def build(bld):
     # TODO: Test code doesn't build. Fix or delete the test.
     return
 
-    bld.example(
+    bld.ap_example(
         use='ap',
     )

@@ -6,7 +6,7 @@ def build(bld):
     bld.ap_stlib(
         name=vehicle + '_libs',
         vehicle=vehicle,
-        libraries=bld.common_vehicle_libraries() + [
+        libraries=bld.ap_common_vehicle_libraries() + [
             'AP_ADSB',
             'AC_AttitudeControl',
             'AC_Fence',

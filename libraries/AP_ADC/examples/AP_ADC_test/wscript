@@ -5,6 +5,6 @@ def build(bld):
     if bld.env.BOARD in ['sitl']:
         return
 
-    bld.example(
+    bld.ap_example(
         use='ap',
     )

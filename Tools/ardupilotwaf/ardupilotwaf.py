@@ -65,7 +65,7 @@ IGNORED_AP_LIBRARIES = [
 ]
 
 @conf
-def get_all_libraries(bld):
+def ap_get_all_libraries(bld):
     libraries = []
     for lib_node in bld.srcnode.ant_glob('libraries/*', dir=True):
         name = lib_node.name
@@ -78,7 +78,7 @@ def get_all_libraries(bld):
     return libraries
 
 @conf
-def common_vehicle_libraries(bld):
+def ap_common_vehicle_libraries(bld):
     return COMMON_VEHICLE_DEPENDENT_LIBRARIES
 
 @conf
@@ -111,7 +111,7 @@ def ap_program(bld, blddestdir='bin',
     )
 
 @conf
-def example(bld, **kw):
+def ap_example(bld, **kw):
     kw['blddestdir'] = 'examples'
     ap_program(bld, **kw)
 
@@ -159,7 +159,7 @@ def ap_stlib(bld, **kw):
     bld.stlib(**kw)
 
 @conf
-def find_tests(bld, use=[]):
+def ap_find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
         return
 
@@ -185,7 +185,7 @@ def find_tests(bld, use=[]):
         )
 
 @conf
-def find_benchmarks(bld, use=[]):
+def ap_find_benchmarks(bld, use=[]):
     if not bld.env.HAS_GBENCHMARK:
         return
 
