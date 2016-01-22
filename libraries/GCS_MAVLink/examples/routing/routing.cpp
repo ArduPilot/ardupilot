@@ -8,23 +8,19 @@
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#include "GCS_Backend.h"
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
-
+GCS_Backend_RoutingExample _gcs;
 extern mavlink_system_t mavlink_system;
-
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
-    AP_GROUPEND
-};
 
 static MAVLink_routing routing;
 
 void setup(void)
 {
     hal.console->println("routing test startup...");
-    gcs[0].init(hal.uartA, MAVLINK_COMM_0);
+    _gcs.init(hal.uartA, MAVLINK_COMM_0);
 }
 
 void loop(void)
