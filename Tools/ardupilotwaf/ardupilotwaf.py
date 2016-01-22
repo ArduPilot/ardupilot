@@ -51,11 +51,11 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'StorageManager',
 ]
 
-def _get_legacy_defines(name):
+def _get_legacy_defines(sketch_name):
     return [
-        'APM_BUILD_DIRECTORY=' + name,
-        'SKETCH="' + name + '"',
-        'SKETCHNAME="' + name + '"',
+        'APM_BUILD_DIRECTORY=APM_BUILD_' + sketch_name,
+        'SKETCH="' + sketch_name + '"',
+        'SKETCHNAME="' + sketch_name + '"',
     ]
 
 IGNORED_AP_LIBRARIES = [
@@ -97,7 +97,7 @@ def ap_program(bld, blddestdir='bin',
         program_name = bld.path.name
 
     if use_legacy_defines:
-        kw['defines'].extend(_get_legacy_defines(program_name))
+        kw['defines'].extend(_get_legacy_defines(bld.path.name))
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
