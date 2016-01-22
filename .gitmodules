@@ -1,6 +1,6 @@
 [submodule "modules/PX4Firmware"]
 	path = modules/PX4Firmware
-	url = git://github.com/diydrones/PX4Firmware.git
+	url = git://github.com/3drobotics/PX4Firmware-solo.git
 [submodule "modules/PX4NuttX"]
 	path = modules/PX4NuttX
 	url = git://github.com/diydrones/PX4NuttX.git
