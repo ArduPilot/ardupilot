@@ -81,6 +81,8 @@ def ap_get_all_libraries(bld):
 def ap_common_vehicle_libraries(bld):
     return COMMON_VEHICLE_DEPENDENT_LIBRARIES
 
+_grouped_programs = {}
+
 @conf
 def ap_program(bld, blddestdir='bin',
             use_legacy_defines=True,
@@ -104,11 +106,12 @@ def ap_program(bld, blddestdir='bin',
     name = os.path.join(blddestdir, program_name)
     target = bld.bldnode.find_or_declare(name)
 
-    bld.program(
+    tg = bld.program(
         target=target,
         name=name,
         **kw
     )
+    _grouped_programs.setdefault(blddestdir, []).append(tg)
 
 @conf
 def ap_example(bld, **kw):
@@ -258,3 +261,40 @@ def build_shortcut(targets=None):
         Options.commands = ['build'] + Options.commands
 
     return build_fn
+
+def _select_programs_from_group(bld):
+    groups = bld.options.program_group
+    if not groups:
+        if bld.targets:
+            groups = []
+        else:
+            groups = ['bin']
+
+    if 'all' in groups:
+        groups = _grouped_programs.keys()
+
+    for group in groups:
+        if group not in _grouped_programs:
+            bld.fatal('Group %s not found' % group)
+
+        tg = _grouped_programs[group][0]
+        if bld.targets:
+            bld.targets += ',' + tg.name
+        else:
+            bld.targets = tg.name
+
+        for tg in _grouped_programs[group][1:]:
+            bld.targets += ',' + tg.name
+
+def options(opt):
+    g = opt.add_option_group('Ardupilot build options')
+    g.add_option('--program-group',
+        action='append',
+        default=[],
+        help='Select all programs that go in <PROGRAM_GROUP>/ for the ' +
+             'build. Example: `waf --program-group examples` builds all ' +
+             'examples. The special group "all" selects all programs.',
+    )
+
+def build(bld):
+    bld.add_pre_fun(_select_programs_from_group)
