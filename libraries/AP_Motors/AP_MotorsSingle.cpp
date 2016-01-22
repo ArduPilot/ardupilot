@@ -35,23 +35,9 @@ const AP_Param::GroupInfo AP_MotorsSingle::var_info[] = {
     // parameters 30 ~ 39 reserved for tricopter
     // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
 
-    // @Param: ROLL_SV_REV
-    // @DisplayName: Reverse roll feedback 
-    // @Description: Ensure the feedback is negative
-    // @Values: -1:Reversed,1:Normal
-    AP_GROUPINFO("ROLL_SV_REV", 40, AP_MotorsSingle, _roll_reverse, AP_MOTORS_SING_POSITIVE),
-
-    // @Param: PITCH_SV_REV
-    // @DisplayName: Reverse pitch feedback 
-    // @Description: Ensure the feedback is negative
-    // @Values: -1:Reversed,1:Normal
-    AP_GROUPINFO("PITCH_SV_REV", 41, AP_MotorsSingle, _pitch_reverse, AP_MOTORS_SING_POSITIVE),
-
-	// @Param: YAW_SV_REV
-    // @DisplayName: Reverse yaw feedback 
-    // @Description: Ensure the feedback is negative
-    // @Values: -1:Reversed,1:Normal
-    AP_GROUPINFO("YAW_SV_REV", 42, AP_MotorsSingle, _yaw_reverse, AP_MOTORS_SING_POSITIVE),
+    // 40 was ROLL_SV_REV
+    // 41 was PITCH_SV_REV
+	// 42 was YAW_SV_REV
 
 	// @Param: SV_SPEED
     // @DisplayName: Servo speed 
@@ -216,10 +202,9 @@ void AP_MotorsSingle::output_armed_stabilizing()
     float   actuator_max = 0.0f;        // maximum actuator value
 
     // apply voltage and air pressure compensation
-    // todo: we shouldn't need input reversing with servo reversing
-    roll_thrust = _roll_reverse * get_roll_thrust() * get_compensation_gain();
-    pitch_thrust = _pitch_reverse * get_pitch_thrust() * get_compensation_gain();
-    yaw_thrust = _yaw_reverse * get_yaw_thrust() * get_compensation_gain();
+    roll_thrust = get_roll_thrust() * get_compensation_gain();
+    pitch_thrust = get_pitch_thrust() * get_compensation_gain();
+    yaw_thrust = get_yaw_thrust() * get_compensation_gain();
     throttle_thrust = get_throttle() * get_compensation_gain();
 
     // sanity check throttle is above zero and below current limited throttle
