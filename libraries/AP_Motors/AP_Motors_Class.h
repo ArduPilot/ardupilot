@@ -59,24 +59,19 @@ public:
     bool                get_interlock() const { return _flags.interlock; };
 
     // set_roll, set_pitch, set_yaw, set_throttle
-    void                set_roll(int16_t roll_in) { _roll_control_input = roll_in; };                   // range -4500 ~ 4500
-    void                set_pitch(int16_t pitch_in) { _pitch_control_input = pitch_in; };               // range -4500 ~ 4500
-    void                set_yaw(int16_t yaw_in) { _yaw_control_input = yaw_in; };                       // range -4500 ~ 4500
+    void                set_roll(float roll_in) { _roll_in = roll_in; };        // range -1 ~ +1
+    void                set_pitch(float pitch_in) { _pitch_in = pitch_in; };    // range -1 ~ +1
+    void                set_yaw(float yaw_in) { _yaw_in = yaw_in; };            // range -1 ~ +1
     void                set_throttle(float throttle_in) { _throttle_in = constrain_float(throttle_in,0.0f,1.0f); };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
     void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
-    float               get_roll() const { return _roll_control_input; }
-    float               get_pitch() const { return _pitch_control_input; }
-    float               get_yaw() const { return _yaw_control_input; }
+    float               get_roll() const { return _roll_in; }
+    float               get_pitch() const { return _pitch_in; }
+    float               get_yaw() const { return _yaw_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
-
-    // accessors for roll, pitch, yaw to motors within the range -1 ~ +1
-    float               get_roll_thrust() const { return _roll_control_input / 4500.0f; }
-    float               get_pitch_thrust() const { return _pitch_control_input / 4500.0f; }
-    float               get_yaw_thrust() const { return _yaw_control_input / 4500.0f; }
 
     //
     // voltage, current and air pressure compensation or limiting features - multicopters only
@@ -151,11 +146,11 @@ protected:
     } _flags;
 
     // internal variables
-    float               _roll_control_input;        // desired roll control from attitude controllers, +/- 4500
-    float               _pitch_control_input;       // desired pitch control from attitude controller, +/- 4500
-    float               _yaw_control_input;         // desired yaw control from attitude controller, +/- 4500
     uint16_t            _loop_rate;                 // rate at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
+    float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
+    float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
+    float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
 
