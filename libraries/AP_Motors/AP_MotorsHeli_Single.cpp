@@ -527,9 +527,9 @@ void AP_MotorsHeli_Single::servo_test()
 
     // over-ride servo commands to move servos through defined ranges
     _throttle_in = _collective_test;
-    _roll_control_input = _roll_test;
-    _pitch_control_input = _pitch_test;
-    _yaw_control_input = _yaw_test;
+    _roll_in = _roll_test;
+    _pitch_in = _pitch_test;
+    _yaw_in = _yaw_test;
 }
 
 // parameter_check - check if helicopter specific parameters are sensible
