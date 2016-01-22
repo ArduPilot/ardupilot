@@ -623,12 +623,12 @@ Compass::get_declination() const
   calculate a compass heading given the attitude from DCM and the mag vector
  */
 float
-Compass::calculate_heading(const Matrix3f &dcm_matrix) const
+Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 {
     float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
-    const Vector3f &field = get_field();
+    const Vector3f &field = get_field(i);
 
     float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
