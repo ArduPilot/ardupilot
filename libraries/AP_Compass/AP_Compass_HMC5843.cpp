@@ -88,9 +88,11 @@ extern const AP_HAL::HAL& hal;
 
 #define HMC5843_REG_DATA_OUTPUT_X_MSB 0x03
 
-AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus)
+AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
+                                       bool force_external)
     : AP_Compass_Backend(compass)
     , _bus(bus)
+    , _force_external(force_external)
 {
 }
 
@@ -100,14 +102,15 @@ AP_Compass_HMC5843::~AP_Compass_HMC5843()
 }
 
 AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                              bool force_external)
 {
     AP_HMC5843_BusDriver *bus = new AP_HMC5843_BusDriver_HALDevice(std::move(dev));
     if (!bus) {
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, force_external);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -127,7 +130,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(Compass &compass)
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, false);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -181,10 +184,9 @@ bool AP_Compass_HMC5843::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _product_id);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    // FIXME: wrong way to force external compass
-    set_external(_compass_instance, true);
-#endif
+    if (_force_external) {
+        set_external(_compass_instance, true);
+    }
 
     return true;
 
