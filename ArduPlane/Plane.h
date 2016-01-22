@@ -720,6 +720,11 @@ private:
 
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // the crc of the last created PX4Mixer
+    int32_t last_mixer_crc = -1;
+#endif // CONFIG_HAL_BOARD
     
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
@@ -864,7 +869,7 @@ private:
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
     bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);
-    bool create_mixer(char *buf, uint16_t buf_size, const char *filename);
+    uint16_t create_mixer(char *buf, uint16_t buf_size, const char *filename);
     bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
