@@ -242,6 +242,8 @@ private:
             uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop    : 1; // 21      // motor estop switch, shuts off motors when enabled
             uint8_t land_repo_active        : 1; // 22      // true if the pilot is overriding the landing position
+            uint8_t motor_interlock_switch : 1; // 23      // true if pilot is requesting motor interlock enable
+            uint8_t in_arming_delay         : 1; // 24      // true while we are armed but waiting to spin motors
         };
         uint32_t value;
     } ap;
@@ -380,8 +382,7 @@ private:
     Vector3f flip_orig_attitude;         // original copter attitude before flip
 
     // Throw
-    bool throw_early_exit_interlock = true; // value of the throttle interlock that must be restored when exiting throw mode early
-    bool throw_flight_commenced = false;    // true when the throw has been detected and the motors and control loops are running
+    ThrowModeState throw_state = Throw_Disarmed;
     uint32_t throw_free_fall_start_ms = 0;  // system time free fall was detected
     float throw_free_fall_start_velz = 0.0f;// vertical velocity when free fall was detected
 
@@ -464,6 +465,8 @@ private:
     uint16_t mainLoop_count;
     // Loiter timer - Records how long we have been in loiter
     uint32_t rtl_loiter_start_time;
+    // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
+    uint32_t arm_time_ms;
 
     // Used to exit the roll and pitch auto trim function
     uint8_t auto_trim_counter;
@@ -813,11 +816,11 @@ private:
 
     // Throw to launch functionality
     bool throw_init(bool ignore_checks);
-    void throw_exit();
     void throw_run();
     bool throw_detected();
     bool throw_attitude_good();
     bool throw_height_good();
+    bool throw_motor_stop();
 
     bool rtl_init(bool ignore_checks);
     void rtl_run();

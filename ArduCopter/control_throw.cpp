@@ -11,34 +11,29 @@ bool Copter::throw_init(bool ignore_checks)
     return false;
 #endif
 
-    // do not enter the mode when already armed
+    // do not enter the mode when already armed or when flying
     if (motors.armed()) {
         return false;
     }
 
     // this mode needs a position reference
     if (position_ok()) {
+        throw_state = Throw_Disarmed;
         return true;
     } else {
         return false;
     }
 }
 
-// clean up when exiting throw mode
-void Copter::throw_exit()
+bool Copter::throw_motor_stop()
 {
-    // If exiting throw mode before commencing flight, restore the throttle interlock to the value last set by the switch
-    if (!throw_flight_commenced) {
-        motors.set_interlock(throw_early_exit_interlock);
-    }
+    return control_mode == THROW && (throw_state == Throw_Disarmed || throw_state == Throw_Detecting) && g.throw_motor_start != 1;
 }
 
 // runs the throw to start controller
 // should be called at 100hz or more
 void Copter::throw_run()
 {
-    static ThrowModeState throw_state = Throw_Disarmed;
-
     /* Throw State Machine
     Throw_Disarmed - motors are off
     Throw_Detecting -  motors are on and we are waiting for the throw
@@ -47,36 +42,15 @@ void Copter::throw_run()
     Throw_PosHold - the copter is kept at a constant position and height
     */
 
-    // Don't enter THROW mode if interlock will prevent motors running
-    if (!motors.armed() && motors.get_interlock()) {
-        // state machine entry is always from a disarmed state
+    bool motors_unlocked = (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
+
+    if (!motors.armed() || (throw_state == Throw_Detecting && !motors_unlocked)) {
+        // switch to Throw_Disarmed if the vehicle is disarmed, or if the motors become locked during detection
         throw_state = Throw_Disarmed;
-
-        // remember the current value of the motor interlock so that this condition can be restored if we exit the throw mode before starting motors
-        throw_early_exit_interlock = true;
-
-        // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == 1) {
-            motors.set_interlock(true);
-        } else {
-            motors.set_interlock(false);
-        }
-
-        // status to let system know flight control has not started which means the interlock setting needs to restored if we exit to another flight mode
-        // this is necessary because throw mode uses the interlock to achieve a post arm motor start.
-        throw_flight_commenced = false;
-
-    } else if (throw_state == Throw_Disarmed && motors.armed()) {
+    } else if (throw_state == Throw_Disarmed && motors.armed() && motors_unlocked) {
+        // switch to Throw_Detecting once the motors are armed and unlocked
         gcs_send_text(MAV_SEVERITY_INFO,"waiting for throw");
         throw_state = Throw_Detecting;
-
-        // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == 1) {
-            motors.set_interlock(true);
-        } else {
-            motors.set_interlock(false);
-        }
-
     } else if (throw_state == Throw_Detecting && throw_detected()){
         gcs_send_text(MAV_SEVERITY_INFO,"throw detected - uprighting");
         throw_state = Throw_Uprighting;
@@ -86,10 +60,6 @@ void Copter::throw_run()
 
         // reset the interlock
         motors.set_interlock(true);
-
-        // status to let system know flight control has started which means the entry interlock setting will not restored if we exit to another flight mode
-        throw_flight_commenced = true;
-
     } else if (throw_state == Throw_Uprighting && throw_attitude_good()) {
         gcs_send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         throw_state = Throw_HgtStabilise;

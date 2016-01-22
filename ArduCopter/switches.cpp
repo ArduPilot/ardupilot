@@ -565,17 +565,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_MOTOR_INTERLOCK:
             // Turn on when above LOW, because channel will also be used for speed
             // control signal in tradheli
-            motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
-
-            // remember the current value of the motor interlock so that this condition can be restored if we exit the throw mode early
-            throw_early_exit_interlock = motors.get_interlock();
-
-            // Log new status
-            if (motors.get_interlock()){
-                Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
-            } else {
-                Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
-            }
+            ap.motor_interlock_switch = (ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
             break;
 
         case AUXSW_BRAKE:
