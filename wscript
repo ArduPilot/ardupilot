@@ -39,6 +39,7 @@ def init(ctx):
             variant = env.BOARD
 
 def options(opt):
+    opt.load('ardupilotwaf')
     boards_names = boards.get_boards_names()
 
     opt.load('compiler_cxx compiler_c waf_unit_test python')
