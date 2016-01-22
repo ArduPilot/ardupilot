@@ -104,6 +104,12 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
 #if MAVLINK_PROTOCOL_VERSION >= 2
     // load signing key
     load_signing_key();
+
+    mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status && status->signing == NULL) {
+        // if signing is off start by sending MAVLink1
+        status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+    }    
 #endif
 }
 
@@ -926,6 +932,15 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
             if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
                 mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
             }
+#if MAVLINK_PROTOCOL_VERSION >= 2
+            if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
+                (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+                mavlink_status_t *cstatus = mavlink_get_channel_status(chan);
+                if (cstatus != NULL) {
+                    cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+                }
+            }
+#endif
             // if a snoop handler has been setup then use it
             if (msg_snoop != NULL) {
                 msg_snoop(&msg);
