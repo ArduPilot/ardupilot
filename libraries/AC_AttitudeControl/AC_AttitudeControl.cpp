@@ -513,11 +513,11 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_rads)
         integrator = _pid_rate_roll.get_i();
     }
 
-    // Compute output
-    float output = _pid_rate_roll.get_p() + integrator + _pid_rate_roll.get_d();
+    // Compute output in range -1 ~ +1
+    float output = (_pid_rate_roll.get_p() + integrator + _pid_rate_roll.get_d()) / 4500.0f;
 
     // Constrain output
-    return constrain_float(output, -AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
+    return constrain_float(output, -1.0f, 1.0f);
 }
 
 float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_rads)
@@ -536,11 +536,11 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_rads)
         integrator = _pid_rate_pitch.get_i();
     }
 
-    // Compute output
-    float output = _pid_rate_pitch.get_p() + integrator + _pid_rate_pitch.get_d();
+    // Compute output in range -1 ~ +1
+    float output = (_pid_rate_pitch.get_p() + integrator + _pid_rate_pitch.get_d()) / 4500.0f;
 
     // Constrain output
-    return constrain_float(output, -AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
+    return constrain_float(output, -1.0f, 1.0f);
 }
 
 float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_rads)
@@ -559,11 +559,11 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_rads)
         integrator = _pid_rate_yaw.get_i();
     }
 
-    // Compute output
-    float output = _pid_rate_yaw.get_p() + integrator + _pid_rate_yaw.get_d();
+    // Compute output in range -1 ~ +1
+    float output = (_pid_rate_yaw.get_p() + integrator + _pid_rate_yaw.get_d()) / 4500.0f;
 
     // Constrain output
-    return constrain_float(output, -AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX);
+    return constrain_float(output, -1.0f, 1.0f);
 }
 
 void AC_AttitudeControl::accel_limiting(bool enable_limits)
