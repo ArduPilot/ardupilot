@@ -108,12 +108,9 @@
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 
-
-// AP_HAL to Arduino compatibility layer
 // Configuration
 #include "defines.h"
 #include "config.h"
-#include "config_channels.h"
 
 // Local modules
 #include "Parameters.h"
