@@ -2,6 +2,6 @@
 # encoding: utf-8
 
 def build(bld):
-    bld.find_benchmarks(
+    bld.ap_find_benchmarks(
         use='ap',
     )

@@ -2,6 +2,6 @@
 # encoding: utf-8
 
 def build(bld):
-    bld.example(
+    bld.ap_example(
         use='ap',
     )
