@@ -200,9 +200,9 @@ void AP_MotorsCoax::output_armed_stabilizing()
 
     // apply voltage and air pressure compensation
     // todo: we shouldn't need input reversing with servo reversing
-    roll_thrust = get_roll_thrust() * get_compensation_gain();
-    pitch_thrust = get_pitch_thrust() * get_compensation_gain();
-    yaw_thrust = get_yaw_thrust() * get_compensation_gain();
+    roll_thrust = _roll_in * get_compensation_gain();
+    pitch_thrust = _pitch_in * get_compensation_gain();
+    yaw_thrust = _yaw_in * get_compensation_gain();
     throttle_thrust = get_throttle() * get_compensation_gain();
 
     // assuming maximum actuator defection the maximum roll and pitch torque is approximately proportional to thrust
