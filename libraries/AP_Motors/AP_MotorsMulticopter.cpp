@@ -158,6 +158,13 @@ void AP_MotorsMulticopter::update_throttle_filter()
 {
     if (armed()) {
         _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
+        // constrain filtered throttle
+        if (_throttle_filter.get() < 0.0f) {
+            _throttle_filter.reset(0.0f);
+        }
+        if (_throttle_filter.get() > 1.0f) {
+            _throttle_filter.reset(1.0f);
+        }
     } else {
         _throttle_filter.reset(0.0f);
     }
