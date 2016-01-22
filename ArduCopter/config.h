@@ -59,6 +59,10 @@
 # define MAIN_LOOP_SECONDS 0.0025f
 # define MAIN_LOOP_MICROS  2500
 
+#ifndef ARMING_DELAY_SEC
+    # define ARMING_DELAY_SEC 0.0f
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // FRAME_CONFIG
 //
