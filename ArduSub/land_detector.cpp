@@ -24,7 +24,7 @@ void Sub::update_land_and_crash_detectors()
 // called at MAIN_LOOP_RATE
 void Sub::update_land_detector()
 {
-	if(barometer.get_altitude() > SURFACE_END_DEPTH && ap.throttle_zero) {
+	if(barometer.num_instances() > 1 && barometer.get_altitude() > SURFACE_END_DEPTH && ap.throttle_zero) {
 		set_land_complete(true);
 	} else {
 		set_land_complete(false);
