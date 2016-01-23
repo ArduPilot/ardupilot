@@ -11,7 +11,6 @@ class AP_AccelCal_Client;
 class AP_AccelCal {
 public:
     AP_AccelCal():
-    _num_clients(0),
     _started(false),
     _saving(false)
     { update_status(); }
@@ -25,18 +24,19 @@ public:
     // Run an iteration of all registered calibrations
     void update();
 
-    // interface to the clients for registration
-    void register_client(AP_AccelCal_Client* client);
-
     // get the status of the calibrator server as a whole
     accel_cal_status_t get_status() { return _status; }
+
+    // interface to the clients for registration
+    static void register_client(AP_AccelCal_Client* client);
 
 private:
     GCS_MAVLINK *_gcs;
     uint8_t _step;
     accel_cal_status_t _status;
-    uint8_t _num_clients;
-    AP_AccelCal_Client* _clients[AP_ACCELCAL_MAX_NUM_CLIENTS];
+
+    static uint8_t _num_clients;
+    static AP_AccelCal_Client* _clients[AP_ACCELCAL_MAX_NUM_CLIENTS];
 
     // called on calibration success
     void success();

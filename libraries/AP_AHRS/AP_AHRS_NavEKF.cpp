@@ -515,6 +515,52 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
     }
 }
 
+// returns the expected NED magnetic field
+bool AP_AHRS_NavEKF::get_mag_field_NED(Vector3f &vec) const
+{
+    switch (active_EKF_type()) {
+        case EKF_TYPE_NONE:
+            return false;
+
+        case EKF_TYPE1:
+        default:
+            EKF1.getMagNED(vec);
+            return true;
+
+        case EKF_TYPE2:
+            EKF2.getMagNED(-1,vec);
+            return true;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            return false;
+#endif
+    }
+}
+
+// returns the estimated magnetic field offsets in body frame
+bool AP_AHRS_NavEKF::get_mag_field_correction(Vector3f &vec) const
+{
+    switch (active_EKF_type()) {
+        case EKF_TYPE_NONE:
+            return false;
+
+        case EKF_TYPE1:
+        default:
+            EKF1.getMagXYZ(vec);
+            return true;
+
+        case EKF_TYPE2:
+            EKF2.getMagXYZ(-1,vec);
+            return true;
+
+            #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            return false;
+            #endif
+    }
+}
+
 // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
 // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
 bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity)

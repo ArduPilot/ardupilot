@@ -4,8 +4,9 @@
   MAVLink enabled mount backend class
  */
 
-#ifndef __AP_MOUNT_MAVLINK_H__
-#define __AP_MOUNT_MAVLINK_H__
+#ifndef __AP_MOUNT_SOLOGIMBAL_H__
+#define __AP_MOUNT_SOLOGIMBAL_H__
+
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -17,14 +18,15 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <RC_Channel/RC_Channel.h>
 #include "AP_Mount_Backend.h"
-#include "AP_Gimbal.h"
+#include "SoloGimbal.h"
 
-class AP_Mount_MAVLink : public AP_Mount_Backend
+
+class AP_Mount_SoloGimbal : public AP_Mount_Backend
 {
 
 public:
     // Constructor
-    AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
+    AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
     // init - performs any required initialisation for this instance
     virtual void init(const AP_SerialManager& serial_manager);
@@ -43,17 +45,26 @@ public:
 
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg);
+    virtual void handle_gimbal_torque_report(mavlink_channel_t chan, mavlink_message_t *msg);
+    virtual void handle_param_value(mavlink_message_t *msg);
 
     // send a GIMBAL_REPORT message to the GCS
     virtual void send_gimbal_report(mavlink_channel_t chan);
+
+    virtual void update_fast();
 
 private:
     // internal variables
     bool _initialised;              // true once the driver has been initialised
 
-    AP_Gimbal _gimbal;
+    // Write a gimbal measurament and estimation data packet
+    void Log_Write_Gimbal(SoloGimbal &gimbal);
+
+    bool _params_saved;
+
+    SoloGimbal _gimbal;
 };
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
-#endif // __AP_MOUNT_MAVLINK_H__
+#endif // __AP_MOUNT_SOLOGIMBAL_H__
