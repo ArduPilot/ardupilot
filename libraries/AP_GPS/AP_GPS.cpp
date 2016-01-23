@@ -580,3 +580,16 @@ AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
         drivers[1]->send_mavlink_gps_rtk(chan);
     }
 }
+
+// are all GPS instance configured
+bool AP_GPS::all_detected_devices_are_configured(void) const
+{
+    bool is_all_configured = true;
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        if (drivers[i] != NULL) {
+            is_all_configured &= drivers[i]->is_configured();
+        }
+    }
+    return is_all_configured;
+}
+

@@ -43,6 +43,9 @@ public:
     // Allows external system to identify type of receiver connected.
     virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
 
+    // assume configured unless the GPS driver overrides with additional configuration states
+    virtual bool is_configured(void) { return true; }
+
     //MAVLink methods
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan) { return ; }
 
