@@ -175,13 +175,7 @@ void NavEKF2_core::SelectVelPosFusion()
         gpsDataDelayed.vel.zero();
         gpsDataDelayed.pos.x = lastKnownPositionNE.x;
         gpsDataDelayed.pos.y = lastKnownPositionNE.y;
-        // when in flight only fuse synthetic measurements when rate of change of velocity is less than 1.1g
-        // to reduce attitude errors due to launch acceleration
-        if (accNavMag < 1.1f * GRAVITY_MSS || motorsArmed) {
-            fusePosData = true;
-        } else {
-            fusePosData = false;
-        }
+        fusePosData = true;
         fuseVelData = false;
     }
 
