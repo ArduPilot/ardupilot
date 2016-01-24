@@ -254,8 +254,8 @@ void Sub::init_disarm_motors()
 #endif
 
     // we are not in the air
-    set_land_complete(true);
-    set_land_complete_maybe(true);
+//    set_land_complete(true);// We will let the land detector decide this in sub
+//    set_land_complete_maybe(true);
 
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
