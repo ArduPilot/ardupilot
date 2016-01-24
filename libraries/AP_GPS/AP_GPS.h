@@ -270,6 +270,9 @@ public:
         return last_fix_time_ms(primary_instance);
     }
 
+    // is GPS configured
+    bool all_detected_devices_are_configured(void) const;
+
     // the time we last processed a message in milliseconds. This is
     // used to indicate that we have new GPS data to process
     uint32_t last_message_time_ms(uint8_t instance) const {

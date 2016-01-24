@@ -60,7 +60,8 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     next_fix(AP_GPS::NO_FIX),
     rate_update_step(0),
     _last_5hz_time(0),
-    noReceivedHdop(true)
+    noReceivedHdop(true),
+    _needs_configuring(ubx_config_bitmask::BITMASK_CFG_ALL)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, NULL, 0);
@@ -433,10 +434,13 @@ AP_GPS_UBLOX::_parse_gps(void)
             _buffer.nav_settings.mask |= 2;
         }
         if (_buffer.nav_settings.mask != 0) {
+            _needs_configuring |= ubx_config_bitmask::BITMASK_CFG_NAV_SETTINGS; // needs to be verified
             _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS,
                           &_buffer.nav_settings,
                           sizeof(_buffer.nav_settings));
             _cfg_saved = false;     //save configuration
+        } else {
+            _needs_configuring &= ~ubx_config_bitmask::BITMASK_CFG_NAV_SETTINGS; // verified configured
         }
         return false;
     }
@@ -483,6 +487,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             }
         }
         _send_message(CLASS_CFG, MSG_CFG_GNSS, &_buffer.gnss, 4 + (8 * _buffer.gnss.numConfigBlocks));
+        _needs_configuring &= ~ubx_config_bitmask::BITMASK_CFG_GNSS; // unable to verify, assume verified configured
         return false;
     }
 #endif
@@ -496,10 +501,13 @@ AP_GPS_UBLOX::_parse_gps(void)
               (unsigned)_buffer.sbas.scanmode1);
         if (_buffer.sbas.mode != gps._sbas_mode) {
             _buffer.sbas.mode = gps._sbas_mode;
+            _needs_configuring |= ubx_config_bitmask::BITMASK_CFG_SBAS; // needs to be verified
             _send_message(CLASS_CFG, MSG_CFG_SBAS,
                           &_buffer.sbas,
                           sizeof(_buffer.sbas));
             _cfg_saved = false;
+        } else {
+            _needs_configuring &= ~ubx_config_bitmask::BITMASK_CFG_SBAS; // verified configured
         }
     }
 
@@ -769,6 +777,7 @@ AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t
     msg.msg_id    = msg_id;
     msg.rate          = rate;
     _send_message(CLASS_CFG, MSG_CFG_SET_RATE, &msg, sizeof(msg));
+    _needs_configuring &= ~ubx_config_bitmask::BITMASK_CFG_SET_RATE; // unable to verify, assume verified configured
 }
 
 /*
@@ -782,6 +791,7 @@ AP_GPS_UBLOX::_configure_navigation_rate(uint16_t rate_ms)
     msg.nav_rate        = 1;
     msg.timeref         = 0;     // UTC time
     _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
+    _needs_configuring &= ~ubx_config_bitmask::BITMASK_CFG_RATE; // unable to verify, assume verified configured
 }
 
 /*
@@ -798,7 +808,10 @@ AP_GPS_UBLOX::_configure_gps(void)
     // ask for the current navigation settings
 	Debug("Asking for engine setting\n");
     _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
+    _needs_configuring &= ~ubx_config_bitmask::BITMASK_CFG_NAV_SETTINGS; // assume configured for 1-way connections. Periodically gets verified
+
     _send_message(CLASS_CFG, MSG_CFG_GNSS, NULL, 0);
+    _needs_configuring &= ~ubx_config_bitmask::BITMASK_CFG_GNSS; // unable to verify, assume verified configured
 }
 
 /*
