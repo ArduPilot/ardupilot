@@ -72,6 +72,8 @@ public:
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
+    bool is_configured(void) { return (_needs_configuring == 0); }
+
 private:
     // u-blox UBX protocol essentials
     struct PACKED ubx_header {
@@ -386,6 +388,15 @@ private:
         UBLOX_7,
         UBLOX_M8
     };
+    enum ubx_config_bitmask {
+        BITMASK_CFG_PRT             = 0x0001,
+        BITMASK_CFG_RATE            = 0x0002,
+        BITMASK_CFG_SET_RATE        = 0x0004,
+        BITMASK_CFG_NAV_SETTINGS    = 0x0008,
+        BITMASK_CFG_SBAS            = 0x0010,
+        BITMASK_CFG_GNSS            = 0x0020,
+        BITMASK_CFG_ALL             = 0x003F,
+    };
 
     // Packet checksum accumulators
     uint8_t         _ck_a;
@@ -426,6 +437,9 @@ private:
     uint32_t _last_5hz_time;
 
     bool noReceivedHdop;
+
+    // config settings that still need to be set where 0 means all verified as configured. Bitmask definition is UBLOX_BITMASK_CFG_xxxx
+    uint8_t _needs_configuring;
 
     void 	    _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
