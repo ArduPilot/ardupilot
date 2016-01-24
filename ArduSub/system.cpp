@@ -249,6 +249,11 @@ void Sub::init_ardupilot()
 		}
 		barometer.set_primary_baro(1); //Set the primary baro to external MS58XX
 
+		EKF.set_baro_alt_noise(0.1f);
+		EKF2.set_baro_alt_noise(0.1f);
+	} else { //We only have onboard baro
+		EKF.set_baro_alt_noise(10.0f);
+		EKF2.set_baro_alt_noise(10.0f);
 	}
 	// read Baro pressure at ground
 	//-----------------------------
@@ -273,8 +278,7 @@ void Sub::init_ardupilot()
     startup_INS_ground();
 
     // set landed flags
-    set_land_complete(true);
-    set_land_complete_maybe(true);
+    set_land_complete(false);
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
