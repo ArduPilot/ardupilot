@@ -446,6 +446,7 @@ struct PACKED log_Mode {
     uint64_t time_us;
     uint8_t mode;
     uint8_t mode_num;
+    uint8_t mode_reason;
 };
 
 /*
@@ -734,7 +735,7 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
+      "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QCC",         "TimeUS,Dist1,Dist2" }, \
     { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \

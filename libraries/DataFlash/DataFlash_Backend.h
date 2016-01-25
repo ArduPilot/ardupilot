@@ -89,7 +89,8 @@ public:
     bool Log_Write_Message(const char *message);
     bool Log_Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    bool Log_Write_Mode(uint8_t mode);;
+    bool Log_Write_Mode(uint8_t mode);
+    bool Log_Write_Mode(uint8_t mode, uint8_t reason);
     bool Log_Write_Parameter(const char *name, float value);
     bool Log_Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
