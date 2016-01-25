@@ -250,7 +250,7 @@ void Copter::exit_mission()
     if(!ap.land_complete) {
         // try to enter loiter but if that fails land
         if(!auto_loiter_start()) {
-            set_mode(LAND);
+            set_mode(LAND, MODE_REASON_MISSION_END);
         }
     }else{
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
