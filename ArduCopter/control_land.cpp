@@ -8,7 +8,7 @@ static uint32_t land_start_time;
 static bool land_pause;
 
 // land_init - initialise land controller
-bool Copter::land_init(bool ignore_checks)
+bool Copter::land_init(mode_reason_t reason, bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
     land_with_gps = position_ok();
@@ -28,7 +28,10 @@ bool Copter::land_init(bool ignore_checks)
 
     land_start_time = millis();
 
-    land_pause = false;
+    land_pause = (reason == MODE_REASON_RADIO_FAILSAFE ||
+                  reason == MODE_REASON_BATTERY_FAILSAFE ||
+                  reason == MODE_REASON_GCS_FAILSAFE ||
+                  reason == MODE_REASON_EKF_FAILSAFE);
 
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     ap.land_repo_active = false;
@@ -90,8 +93,8 @@ void Copter::land_gps_run()
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
-            if (!set_mode(LOITER)) {
-                set_mode(ALT_HOLD);
+            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
+                set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
             }
         }
 
@@ -159,7 +162,7 @@ void Copter::land_nogps_run()
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
-            set_mode(ALT_HOLD);
+            set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
         }
 
         if (g.land_repositioning) {
@@ -242,17 +245,6 @@ float Copter::get_land_descent_speed()
 void Copter::land_do_not_use_GPS()
 {
     land_with_gps = false;
-}
-
-// set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
-//  this is always called from a failsafe so we trigger notification to pilot
-void Copter::set_mode_land_with_pause()
-{
-    set_mode(LAND);
-    land_pause = true;
-
-    // alert pilot to mode change
-    AP_Notify::events.failsafe_mode_change = 1;
 }
 
 // landing_with_GPS - returns true if vehicle is landing using GPS

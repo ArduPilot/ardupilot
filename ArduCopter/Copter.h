@@ -249,6 +249,7 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
     control_mode_t control_mode;
+    mode_reason_t control_mode_reason;
 
     // Structure used to detect changes in the flight mode control switch
     struct {
@@ -788,13 +789,12 @@ private:
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     void guided_limit_init_time_and_pos();
     bool guided_limit_check();
-    bool land_init(bool ignore_checks);
+    bool land_init(mode_reason_t reason, bool ignore_checks);
     void land_run();
     void land_gps_run();
     void land_nogps_run();
     float get_land_descent_speed();
     void land_do_not_use_GPS();
-    void set_mode_land_with_pause();
     bool landing_with_GPS();
     bool loiter_init(bool ignore_checks);
     void loiter_run();
@@ -850,14 +850,13 @@ private:
     void failsafe_battery_event(void);
     void failsafe_gcs_check();
     void failsafe_gcs_off_event(void);
-    void set_mode_RTL_or_land_with_pause();
     void update_events();
     void failsafe_enable();
     void failsafe_disable();
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
-    bool set_mode(control_mode_t mode);
-    bool gcs_set_mode(uint8_t mode) { return set_mode((control_mode_t)mode); }
+    bool set_mode(control_mode_t mode, mode_reason_t reason);
+    bool gcs_set_mode(uint8_t mode) { return set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND); }
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
     bool mode_requires_GPS(control_mode_t mode);
