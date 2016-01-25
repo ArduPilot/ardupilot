@@ -111,7 +111,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         exit_mode(control_mode, (control_mode_t)mode);
         control_mode = (control_mode_t)mode;
         control_mode_reason = reason;
-        DataFlash.Log_Write_Mode(control_mode);
+        DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 
 #if AC_FENCE == ENABLED
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
