@@ -3,12 +3,8 @@
 #include "AP_HAL_Linux.h"
 #include <AP_ADC/AP_ADC.h>
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
 #define IIO_ANALOG_IN_COUNT 8
@@ -16,8 +12,10 @@
 #define IIO_ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
 #define BBB_VOLTAGE_SCALING 0.00142602816
 #else
-#define IIO_ANALOG_IN_COUNT 8
+#define IIO_ANALOG_IN_COUNT 1
 #define IIO_ANALOG_IN_DIR "/sys/bus/iio/devices/iio:device0/"
+// BeagleBone ADC without voltage divider (1.8V with 12 bit resolution)
+#define BBB_VOLTAGE_SCALING 1.8/4096.0
 #endif
 
 class AnalogSource_IIO : public AP_HAL::AnalogSource {
@@ -36,13 +34,11 @@ private:
     float       _value;
     float       _latest;
     float       _sum_value;
-    // float       _value_ratiometric;
     uint8_t     _sum_count;
     int16_t     _pin;
     int         _pin_fd;
     int         fd_analog_sources[IIO_ANALOG_IN_COUNT];
 
-    void reopen_pin(void);
     void init_pins(void);
     void select_pin(void);
 

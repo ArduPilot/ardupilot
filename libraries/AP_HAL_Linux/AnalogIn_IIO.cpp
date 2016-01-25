@@ -42,7 +42,7 @@ void AnalogSource_IIO::init_pins(void)
 
         fd_analog_sources[i] = open(buf, O_RDONLY | O_NONBLOCK);
         if (fd_analog_sources[i] == -1) {
-            ::printf("Failed to open analog pin %s\n", buf);
+            hal.console->printf("Failed to open analog pin %s\n", buf);
         }
     }
 }
@@ -52,39 +52,6 @@ void AnalogSource_IIO::init_pins(void)
  */
 void AnalogSource_IIO::select_pin(void)
 {
-    _pin_fd = fd_analog_sources[_pin];
-}
-
-/*
-  reopens an analog source (by closing and opening it again) and selects it
- */
-void AnalogSource_IIO::reopen_pin(void)
-{
-    char buf[100];
-
-    if (fd_analog_sources[_pin] != -1) {
-        close(fd_analog_sources[_pin]);
-        fd_analog_sources[_pin] = -1;
-        _pin_fd = -1;
-    }
-
-    if (_pin < 0) {
-        return;
-    }
-
-    if (_pin > IIO_ANALOG_IN_COUNT) {
-        // invalid pin
-        return;
-    }
-
-    // Construct the path by appending strings
-    strncpy(buf, IIO_ANALOG_IN_DIR, sizeof(buf));
-    strncat(buf, AnalogSource_IIO::analog_sources[_pin], sizeof(buf) - strlen(buf) - 1);
-
-    fd_analog_sources[_pin] = open(buf, O_RDONLY | O_NONBLOCK);
-    if (fd_analog_sources[_pin] == -1) {
-        ::printf("Failed to open analog pin %s\n", buf);
-    }
     _pin_fd = fd_analog_sources[_pin];
 }
 
@@ -115,11 +82,7 @@ float AnalogSource_IIO::read_latest()
 
     memset(sbuf, 0, sizeof(sbuf));
     pread(_pin_fd, sbuf, sizeof(sbuf)-1, 0);
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     _latest = atoi(sbuf) * BBB_VOLTAGE_SCALING;
-#else
-    _latest = atoi(sbuf);
-#endif
     _sum_value += _latest;
     _sum_count++;
 
@@ -147,12 +110,10 @@ void AnalogSource_IIO::set_pin(uint8_t pin)
     hal.scheduler->suspend_timer_procs();
     _pin = pin;
     _sum_value = 0;
-    // _sum_ratiometric = 0;
     _sum_count = 0;
     _latest = 0;
     _value = 0;
     select_pin();
-    // _value_ratiometric = 0;
     hal.scheduler->resume_timer_procs();
 }
 
