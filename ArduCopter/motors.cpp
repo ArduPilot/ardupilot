@@ -194,7 +194,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     Log_Write_Event(DATA_ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
-    DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 
     // reenable failsafe
     failsafe_enable();
