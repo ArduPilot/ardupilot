@@ -11,7 +11,7 @@
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was succesfully set
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
-bool Copter::set_mode(control_mode_t mode)
+bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 {
     // boolean to record if flight mode could be set
     bool success = false;
@@ -19,6 +19,7 @@ bool Copter::set_mode(control_mode_t mode)
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
+        control_mode_reason = reason;
         return true;
     }
 
@@ -60,7 +61,7 @@ bool Copter::set_mode(control_mode_t mode)
             break;
 
         case LAND:
-            success = land_init(ignore_checks);
+            success = land_init(reason, ignore_checks);
             break;
 
         case RTL:
@@ -109,6 +110,7 @@ bool Copter::set_mode(control_mode_t mode)
         // perform any cleanup required by previous flight mode
         exit_mode(control_mode, (control_mode_t)mode);
         control_mode = (control_mode_t)mode;
+        control_mode_reason = reason;
         DataFlash.Log_Write_Mode(control_mode);
 
 #if AC_FENCE == ENABLED

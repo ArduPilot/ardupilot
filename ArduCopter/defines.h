@@ -108,6 +108,20 @@ enum control_mode_t {
     THROW =        18   // throw to launch mode using inertial/GPS system, no pilot input
 };
 
+enum mode_reason_t {
+    MODE_REASON_UNKNOWN=0,
+    MODE_REASON_TX_COMMAND,
+    MODE_REASON_GCS_COMMAND,
+    MODE_REASON_RADIO_FAILSAFE,
+    MODE_REASON_BATTERY_FAILSAFE,
+    MODE_REASON_GCS_FAILSAFE,
+    MODE_REASON_EKF_FAILSAFE,
+    MODE_REASON_GPS_GLITCH,
+    MODE_REASON_MISSION_END,
+    MODE_REASON_THROTTLE_LAND_ESCAPE,
+    MODE_REASON_FENCE_BREACH
+};
+
 // Tuning enumeration
 enum tuning_func {
     TUNING_NONE =                        0, //

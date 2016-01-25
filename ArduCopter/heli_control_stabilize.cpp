@@ -8,7 +8,7 @@
  */
 
 // stabilize_init - initialise stabilize controller
-bool Copter::heli_stabilize_init(bool ignore_checks)
+bool Copter::heli_stabilize_init(mode_reason_t reason, bool ignore_checks)
 {
     // set target altitude to zero for reporting
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
