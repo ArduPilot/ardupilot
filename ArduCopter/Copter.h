@@ -248,7 +248,7 @@ private:
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
-    int8_t control_mode;
+    control_mode_t control_mode;
 
     // Structure used to detect changes in the flight mode control switch
     struct {
@@ -856,13 +856,14 @@ private:
     void failsafe_disable();
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
-    bool set_mode(uint8_t mode);
+    bool set_mode(control_mode_t mode);
+    bool gcs_set_mode(uint8_t mode) { return set_mode((control_mode_t)mode); }
     void update_flight_mode();
-    void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode);
-    bool mode_requires_GPS(uint8_t mode);
-    bool mode_has_manual_throttle(uint8_t mode);
-    bool mode_allows_arming(uint8_t mode, bool arming_from_gcs);
-    void notify_flight_mode(uint8_t mode);
+    void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
+    bool mode_requires_GPS(control_mode_t mode);
+    bool mode_has_manual_throttle(control_mode_t mode);
+    bool mode_allows_arming(control_mode_t mode, bool arming_from_gcs);
+    void notify_flight_mode(control_mode_t mode);
     void heli_init();
     void check_dynamic_flight(void);
     void update_heli_control_dynamics(void);
