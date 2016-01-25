@@ -1220,19 +1220,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 
         case MAV_CMD_NAV_LOITER_UNLIM:
-            if (copter.set_mode(LOITER)) {
+            if (copter.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
 
         case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-            if (copter.set_mode(RTL)) {
+            if (copter.set_mode(RTL, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
 
         case MAV_CMD_NAV_LAND:
-            if (copter.set_mode(LAND)) {
+            if (copter.set_mode(LAND, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1350,7 +1350,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_MISSION_START:
-            if (copter.motors.armed() && copter.set_mode(AUTO)) {
+            if (copter.motors.armed() && copter.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
                 copter.set_auto_armed(true);
                 if (copter.mission.state() != AP_Mission::MISSION_RUNNING) {
                     copter.mission.start_or_resume();

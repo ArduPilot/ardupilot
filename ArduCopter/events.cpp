@@ -22,9 +22,9 @@ void Copter::failsafe_radio_on_event()
             // continue landing
         } else {
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause();
+                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             } else {
-                set_mode_RTL_or_land_with_pause();
+                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             }
         }
     }
@@ -57,9 +57,9 @@ void Copter::failsafe_battery_event(void)
             init_disarm_motors();
         } else {
             if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
-                set_mode_RTL_or_land_with_pause();
+                set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             } else {
-                set_mode_land_with_pause();
+                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             }
         }
     }
@@ -118,7 +118,7 @@ void Copter::failsafe_gcs_check()
         if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
             // continue mission
         } else if (g.failsafe_gcs != FS_GCS_DISABLED) {
-            set_mode_RTL_or_land_with_pause();
+            set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
         }
     }
 }
@@ -132,12 +132,12 @@ void Copter::failsafe_gcs_off_event(void)
 
 // set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
-void Copter::set_mode_RTL_or_land_with_pause()
+void Copter::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
 {
     // attempt to switch to RTL, if this fails then switch to Land
-    if (!set_mode(RTL)) {
+    if (!set_mode(RTL, reason)) {
         // set mode to land will trigger mode change notification to pilot
-        set_mode_land_with_pause();
+        set_mode_land_with_pause(reason);
     } else {
         // alert pilot to mode change
         AP_Notify::events.failsafe_mode_change = 1;
