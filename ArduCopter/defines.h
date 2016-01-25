@@ -420,6 +420,11 @@ enum ThrowModeState {
 #define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
 #define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
 
+// GCS failsafe definitions (FS_GCS_ENABLE parameter)
+#define FS_GCS_DISABLED                     0
+#define FS_GCS_ENABLED_ALWAYS_RTL           1
+#define FS_GCS_ENABLED_CONTINUE_MISSION     2
+
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
 #define FS_EKF_ACTION_ALTHOLD               2       // switch to ALTHOLD mode on EKF failsafe
