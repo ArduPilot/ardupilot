@@ -234,14 +234,14 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 void AP_MotorsMulticopter::update_battery_resistance()
 {
     // if motors are stopped, reset resting voltage and current
-    if (_throttle_control_input <= 0 || !_flags.armed) {
+    if (get_throttle() <= 0.0f || !_flags.armed) {
         _batt_voltage_resting = _batt_voltage;
         _batt_current_resting = _batt_current;
         _batt_timer = 0;
     } else {
         // update battery resistance when throttle is over hover throttle
         if ((_batt_timer < 400) && ((_batt_current_resting*2.0f) < _batt_current)) {
-            if (_throttle_control_input >= _hover_out) {
+            if (get_throttle() >= _hover_out) {
                 // filter reaches 90% in 1/4 the test time
                 _batt_resistance += 0.05f*(( (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting) ) - _batt_resistance);
                 _batt_timer += 1;
