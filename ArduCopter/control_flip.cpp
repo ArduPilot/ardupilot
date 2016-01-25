@@ -33,7 +33,7 @@
 #define FLIP_PITCH_FORWARD  -1      // used to set flip_dir
 
 FlipState flip_state;               // current state of flip
-uint8_t   flip_orig_control_mode;   // flight mode when flip was initated
+control_mode_t   flip_orig_control_mode;   // flight mode when flip was initated
 uint32_t  flip_start_time;          // time since flip began
 int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
 int8_t    flip_pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)

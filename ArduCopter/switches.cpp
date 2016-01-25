@@ -43,7 +43,7 @@ void Copter::read_control_switch()
 
     if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged) {
         // set flight mode and simple mode setting
-        if (set_mode(flight_modes[switch_position])) {
+        if (set_mode((control_mode_t)flight_modes[switch_position].get())) {
             // play a tone
             if (control_switch_state.debounced_switch_position != -1) {
                 // alert user to mode change failure (except if autopilot is just starting up)

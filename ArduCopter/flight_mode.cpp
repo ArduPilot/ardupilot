@@ -11,7 +11,7 @@
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was succesfully set
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
-bool Copter::set_mode(uint8_t mode)
+bool Copter::set_mode(control_mode_t mode)
 {
     // boolean to record if flight mode could be set
     bool success = false;
@@ -107,8 +107,8 @@ bool Copter::set_mode(uint8_t mode)
     // update flight mode
     if (success) {
         // perform any cleanup required by previous flight mode
-        exit_mode(control_mode, mode);
-        control_mode = mode;
+        exit_mode(control_mode, (control_mode_t)mode);
+        control_mode = (control_mode_t)mode;
         DataFlash.Log_Write_Mode(control_mode);
 
 #if AC_FENCE == ENABLED
@@ -218,7 +218,7 @@ void Copter::update_flight_mode()
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
-void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
+void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode)
 {
 #if AUTOTUNE_ENABLED == ENABLED
     if (old_control_mode == AUTOTUNE) {
@@ -273,7 +273,7 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
 }
 
 // returns true or false whether mode requires GPS
-bool Copter::mode_requires_GPS(uint8_t mode) {
+bool Copter::mode_requires_GPS(control_mode_t mode) {
     switch(mode) {
         case AUTO:
         case GUIDED:
@@ -293,7 +293,7 @@ bool Copter::mode_requires_GPS(uint8_t mode) {
 }
 
 // mode_has_manual_throttle - returns true if the flight mode has a manual throttle (i.e. pilot directly controls throttle)
-bool Copter::mode_has_manual_throttle(uint8_t mode) {
+bool Copter::mode_has_manual_throttle(control_mode_t mode) {
     switch(mode) {
         case ACRO:
         case STABILIZE:
@@ -307,7 +307,7 @@ bool Copter::mode_has_manual_throttle(uint8_t mode) {
 
 // mode_allows_arming - returns true if vehicle can be armed in the specified mode
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
-bool Copter::mode_allows_arming(uint8_t mode, bool arming_from_gcs) {
+bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs) {
     if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && mode == GUIDED)) {
         return true;
     }
@@ -315,7 +315,7 @@ bool Copter::mode_allows_arming(uint8_t mode, bool arming_from_gcs) {
 }
 
 // notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device
-void Copter::notify_flight_mode(uint8_t mode) {
+void Copter::notify_flight_mode(control_mode_t mode) {
     switch(mode) {
         case AUTO:
         case GUIDED:
