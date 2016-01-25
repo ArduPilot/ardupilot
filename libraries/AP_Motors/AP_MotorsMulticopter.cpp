@@ -104,11 +104,9 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 // Constructor
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
-    _spin_when_armed_ramped(0),
     _throttle_rpy_mix_desired(AP_MOTORS_THR_LOW_CMP_DEFAULT),
     _throttle_rpy_mix(AP_MOTORS_THR_LOW_CMP_DEFAULT),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
-    _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
@@ -290,16 +288,6 @@ float AP_MotorsMulticopter::get_compensation_gain() const
     return ret;
 }
 
-float AP_MotorsMulticopter::rel_pwm_to_thr_range(float pwm) const
-{
-    return pwm/_throttle_pwm_scalar;
-}
-
-float AP_MotorsMulticopter::thr_range_to_rel_pwm(float thr) const
-{
-    return _throttle_pwm_scalar*thr;
-}
-
 int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 {
     return constrain_int16((_throttle_radio_min + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
@@ -312,9 +300,7 @@ void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t rad
 {
     _throttle_radio_min = radio_min;
     _throttle_radio_max = radio_max;
-    _throttle_pwm_scalar = (_throttle_radio_max - _throttle_radio_min) / 1000.0f;
-    _min_throttle = (float)min_throttle * _throttle_pwm_scalar;
-    _rpy_pwm_scalar = (_throttle_radio_max - (_throttle_radio_min + _min_throttle)) / 9000.0f;
+    _min_throttle = (float)min_throttle * ((_throttle_radio_max - _throttle_radio_min) / 1000.0f);
 }
 
 void AP_MotorsMulticopter::output_logic()
@@ -480,9 +466,6 @@ void AP_MotorsMulticopter::slow_start(bool true_false)
 {
     // set slow_start flag
     _multicopter_flags.slow_start = true;
-
-    // initialise maximum throttle to current throttle
-    _max_throttle = constrain_int16(_throttle_control_input, 0, AP_MOTORS_DEFAULT_MAX_THROTTLE);
 }
 
 // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs

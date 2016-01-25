@@ -12,7 +12,6 @@
 
 #define AP_MOTORS_DEFAULT_MIN_THROTTLE  130
 #define AP_MOTORS_DEFAULT_MID_THROTTLE  500
-#define AP_MOTORS_DEFAULT_MAX_THROTTLE  1000
 
 #define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
@@ -27,17 +26,6 @@
 #define AP_MOTORS_THR_MIX_MIN_DEFAULT   0.1f    // minimum throttle mix
 #define AP_MOTORS_THR_MIX_MID_DEFAULT   0.5f    // manual throttle mix
 #define AP_MOTORS_THR_MIX_MAX_DEFAULT   0.5f    // maximum throttle mix default
-
-// To-Do: replace this hard coded counter with a timer
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- // slow start increments - throttle increase per (100hz) iteration.  i.e. 5 = full speed in 2 seconds
- #define AP_MOTOR_SLOW_START_INCREMENT           10      // max throttle ramp speed (i.e. motors can reach full throttle in 1 second)
- #define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   2       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 1 second)
-#else
- // slow start increments - throttle increase per (400hz) iteration.  i.e. 1 = full speed in 2.5 seconds
- #define AP_MOTOR_SLOW_START_INCREMENT           3       // max throttle ramp speed (i.e. motors can reach full throttle in 0.8 seconds)
- #define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   1       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 0.3 second)
-#endif
 
 // spool definition
 #define AP_MOTORS_SPOOL_UP_TIME         0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
@@ -67,9 +55,6 @@ public:
 
     // get_throttle_rpy_mix - get low throttle compensation value
     bool                is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
-
-    int16_t             throttle_max() const { return _max_throttle; }
-    int16_t             throttle_min() const { return rel_pwm_to_thr_range(_min_throttle); }
 
     // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
     // also sets throttle channel minimum and maximum pwm
@@ -154,18 +139,6 @@ protected:
     // get_hover_throttle_as_high_end_pct - return hover throttle in the 0 to 1 range
     float               get_hover_throttle_as_high_end_pct() const;
 
-    float               rel_pwm_to_thr_range(float pwm) const;
-    float               thr_range_to_rel_pwm(float thr) const;
-
-    // convert RPY and Throttle servo ranges from legacy controller scheme back into PWM values
-    // RPY channels typically +/-45 degrees servo travel between +/-400 PWM
-    // Throttle channel typically 0-1000 range converts to 1100-1900 PWM for final output signal to motors
-    // ToDo: this should all be handled as floats +/- 1.0 instead of PWM and fake angle ranges
-    float               calc_roll_pwm() { return (_roll_control_input * _rpy_pwm_scalar); }
-    float               calc_pitch_pwm() { return (_pitch_control_input * _rpy_pwm_scalar); }
-    float               calc_yaw_pwm() { return (_yaw_control_input * _rpy_pwm_scalar); }
-    int16_t             calc_throttle_radio_output() { return (_throttle_control_input * _throttle_pwm_scalar) + _throttle_radio_min;}
-
     // convert thrust (0~1) range back to pwm range
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
 
@@ -197,11 +170,9 @@ protected:
 
     // internal variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
-    int16_t             _spin_when_armed_ramped;    // equal to _spin_when_armed parameter but slowly ramped up from zero
     float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
     float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
-    int16_t             _max_throttle;              // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
     float               _throttle_thrust_max;       // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
 
