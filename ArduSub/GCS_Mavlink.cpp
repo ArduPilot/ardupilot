@@ -1043,6 +1043,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_PARAM_VALUE:
+    {
+        sub.camera_mount.handle_param_value(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST: // MAV ID: 38
     {
         handle_mission_write_partial_list(sub.mission, msg);
