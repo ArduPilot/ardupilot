@@ -1177,6 +1177,14 @@ void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
     }
 }
 
+bool AP_AHRS_NavEKF::getGpsGlitchStatus()
+{
+    nav_filter_status ekf_status;
+    get_filter_status(ekf_status);
+
+    return ekf_status.flags.gps_glitching;
+}
+
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
