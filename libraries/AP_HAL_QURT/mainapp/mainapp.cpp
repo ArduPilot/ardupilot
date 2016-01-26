@@ -23,6 +23,8 @@ static uint64_t start_time;
 #define STORAGE_DIR "/var/APM"
 #define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 
+extern const char *get_ipv4_broadcast(void);
+
 // time since startup in microseconds
 static uint64_t micros64()
 {
@@ -82,6 +84,7 @@ static void get_storage(void)
  */
 static void socket_check(void)
 {
+    static const char *bcast = NULL;
     uint8_t buf[300];
     ssize_t ret = sock.recv(buf, sizeof(buf), 0);
     if (ret > 0) {
@@ -99,9 +102,16 @@ static void socket_check(void)
         }
     }
     uint32_t nbytes;
+    if (bcast == NULL) {
+        bcast = get_ipv4_broadcast();
+        if (bcast == NULL) {
+            bcast = "255.255.255.255";
+        }
+        printf("Broadcasting to %s\n", bcast);
+    }
     if (ardupilot_socket_check(buf, sizeof(buf), &nbytes) == 0) {
         if (!connected) {
-            sock.sendto(buf, nbytes, "255.255.255.255", 14550);
+            sock.sendto(buf, nbytes, bcast, 14550);
         } else {
             sock.send(buf, nbytes);
         }

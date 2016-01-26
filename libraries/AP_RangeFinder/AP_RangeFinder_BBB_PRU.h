@@ -11,6 +11,7 @@
 #define PRU0_IRAM_SIZE 0x2000
 
 #define PRU0_DRAM_BASE 0x4a300000
+#define PRU0_DRAM_SIZE 0x2000
 
 struct range {
         uint32_t distance;

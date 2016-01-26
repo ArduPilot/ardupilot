@@ -25,10 +25,12 @@ done
     set -x
     git submodule init || {
         echo "git submodule init failed"
+        git submodule status
         exit 1
     }
     git submodule update || {
         echo "git submodule update failed"        
+        git submodule status
         exit 1
     }
 cat <<EOF

@@ -117,6 +117,7 @@ def list_boards(ctx):
     print(*boards.get_boards_names())
 
 def build(bld):
+    bld.load('ardupilotwaf')
     bld.load('gtest')
 
     #generate mavlink headers
@@ -137,11 +138,10 @@ def build(bld):
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider
     # split into smaller pieces with well defined boundaries.
-    ardupilotwaf.vehicle_stlib(
-        bld,
+    bld.ap_stlib(
         name='ap',
         vehicle='UNKNOWN',
-        libraries=ardupilotwaf.get_all_libraries(bld),
+        libraries=bld.ap_get_all_libraries(),
         use='mavlink',
     )
     # TODO: Currently each vehicle also generate its own copy of the

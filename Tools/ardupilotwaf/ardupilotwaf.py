@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from waflib import Logs, Options, Utils
+from waflib.Configure import conf
 import os.path
 
 SOURCE_EXTS = [
@@ -50,11 +51,11 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'StorageManager',
 ]
 
-def _get_legacy_defines(name):
+def _get_legacy_defines(sketch_name):
     return [
-        'APM_BUILD_DIRECTORY=' + name,
-        'SKETCH="' + name + '"',
-        'SKETCHNAME="' + name + '"',
+        'APM_BUILD_DIRECTORY=APM_BUILD_' + sketch_name,
+        'SKETCH="' + sketch_name + '"',
+        'SKETCHNAME="' + sketch_name + '"',
     ]
 
 IGNORED_AP_LIBRARIES = [
@@ -63,7 +64,8 @@ IGNORED_AP_LIBRARIES = [
     'GCS_Console',
 ]
 
-def get_all_libraries(bld):
+@conf
+def ap_get_all_libraries(bld):
     libraries = []
     for lib_node in bld.srcnode.ant_glob('libraries/*', dir=True):
         name = lib_node.name
@@ -75,7 +77,12 @@ def get_all_libraries(bld):
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
     return libraries
 
-def program(bld, blddestdir='bin',
+@conf
+def ap_common_vehicle_libraries(bld):
+    return COMMON_VEHICLE_DEPENDENT_LIBRARIES
+
+@conf
+def ap_program(bld, blddestdir='bin',
             use_legacy_defines=True,
             program_name=None,
             **kw):
@@ -90,7 +97,7 @@ def program(bld, blddestdir='bin',
         program_name = bld.path.name
 
     if use_legacy_defines:
-        kw['defines'].extend(_get_legacy_defines(program_name))
+        kw['defines'].extend(_get_legacy_defines(bld.path.name))
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
@@ -103,9 +110,10 @@ def program(bld, blddestdir='bin',
         **kw
     )
 
-def example(bld, **kw):
+@conf
+def ap_example(bld, **kw):
     kw['blddestdir'] = 'examples'
-    program(bld, **kw)
+    ap_program(bld, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
 # compilation is independent by providing different index for each.
@@ -124,13 +132,14 @@ def common_features(bld):
         features.append('static_linking')
     return features
 
-def vehicle_stlib(bld, **kw):
+@conf
+def ap_stlib(bld, **kw):
     if 'name' not in kw:
-        bld.fatal('Missing name for vehicle_stlib')
+        bld.fatal('Missing name for ap_stlib')
     if 'vehicle' not in kw:
-        bld.fatal('Missing vehicle for vehicle_stlib')
+        bld.fatal('Missing vehicle for ap_stlib')
     if 'libraries' not in kw:
-        bld.fatal('Missing libraries for vehicle_stlib')
+        bld.fatal('Missing libraries for ap_stlib')
 
     sources = []
     libraries = kw['libraries'] + bld.env.AP_LIBRARIES
@@ -149,7 +158,8 @@ def vehicle_stlib(bld, **kw):
 
     bld.stlib(**kw)
 
-def find_tests(bld, use=[]):
+@conf
+def ap_find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
         return
 
@@ -163,7 +173,7 @@ def find_tests(bld, use=[]):
     includes = [bld.srcnode.abspath() + '/tests/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        program(
+        ap_program(
             bld,
             features=features,
             includes=includes,
@@ -174,14 +184,15 @@ def find_tests(bld, use=[]):
             use_legacy_defines=False,
         )
 
-def find_benchmarks(bld, use=[]):
+@conf
+def ap_find_benchmarks(bld, use=[]):
     if not bld.env.HAS_GBENCHMARK:
         return
 
     includes = [bld.srcnode.abspath() + '/benchmarks/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        program(
+        ap_program(
             bld,
             features=common_features(bld) + ['gbenchmark'],
             includes=includes,

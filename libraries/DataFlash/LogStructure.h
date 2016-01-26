@@ -99,6 +99,44 @@ struct PACKED log_Vibe {
     uint32_t clipping_0, clipping_1, clipping_2;
 };
 
+struct PACKED log_Gimbal1 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    float delta_time;
+    float delta_angles_x;
+    float delta_angles_y;
+    float delta_angles_z;
+    float delta_velocity_x;
+    float delta_velocity_y;
+    float delta_velocity_z;
+    float joint_angles_x;
+    float joint_angles_y;
+    float joint_angles_z;
+};
+
+struct PACKED log_Gimbal2 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t  est_sta;
+    float est_x;
+    float est_y;
+    float est_z;
+    float rate_x;
+    float rate_y;
+    float rate_z;
+    float target_x;
+    float target_y;
+    float target_z;
+};
+
+struct PACKED log_Gimbal3 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t rl_torque_cmd;
+    int16_t el_torque_cmd;
+    int16_t az_torque_cmd;
+};
+
 struct PACKED log_RCIN {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -814,7 +852,13 @@ Format characters in the format string for binary log messages
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
       "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
-      "RPM",  "Qff", "TimeUS,rpm1,rpm2" }
+      "RPM",  "Qff", "TimeUS,rpm1,rpm2" }, \
+    { LOG_GIMBAL1_MSG, sizeof(log_Gimbal1), \
+      "GMB1", "Iffffffffff", "TimeMS,dt,dax,day,daz,dvx,dvy,dvz,jx,jy,jz" }, \
+    { LOG_GIMBAL2_MSG, sizeof(log_Gimbal2), \
+      "GMB2", "IBfffffffff", "TimeMS,es,ex,ey,ez,rx,ry,rz,tx,ty,tz" }, \
+    { LOG_GIMBAL3_MSG, sizeof(log_Gimbal3), \
+      "GMB3", "Ihhh", "TimeMS,rl_torque_cmd,el_torque_cmd,az_torque_cmd" }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -922,6 +966,10 @@ enum LogMessages {
     LOG_MSG_SBPRAW1,
     LOG_MSG_SBPRAW2,
     LOG_MSG_SBPRAWx,
+
+    LOG_GIMBAL1_MSG,
+    LOG_GIMBAL2_MSG,
+    LOG_GIMBAL3_MSG,
 
 // message types 211 to 220 reversed for autotune use
 

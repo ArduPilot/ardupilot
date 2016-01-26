@@ -368,6 +368,8 @@ AP_InertialSensor::AP_InertialSensor() :
     }
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
+
+    AP_AccelCal::register_client(this);
 }
 
 /*
@@ -1279,8 +1281,6 @@ void AP_InertialSensor::acal_init()
     if (_accel_calibrator == NULL) {
         _accel_calibrator = new AccelCalibrator[INS_MAX_INSTANCES];
     }
-
-    _acal->register_client(this);
 }
 
 // update accel calibrator
@@ -1334,7 +1334,7 @@ void AP_InertialSensor::_acal_save_calibrations()
                 // determine trim from aligned sample vs misaligned sample
                 Vector3f cross = (misaligned_sample%aligned_sample);
                 float dot = (misaligned_sample*aligned_sample);
-                Quaternion q(sqrt(sq(misaligned_sample.length())*sq(aligned_sample.length()))+dot, cross.x, cross.y, cross.z);
+                Quaternion q(safe_sqrt(sq(misaligned_sample.length())*sq(aligned_sample.length()))+dot, cross.x, cross.y, cross.z);
                 q.normalize();
                 _trim_roll = q.get_euler_roll();
                 _trim_pitch = q.get_euler_pitch();
@@ -1343,7 +1343,7 @@ void AP_InertialSensor::_acal_save_calibrations()
             break;
         default:
             _new_trim = false;
-            //noop
+            /* no break */
     }
 
     if (fabsf(_trim_roll) > radians(10) || 
