@@ -23,14 +23,14 @@
 // setup_motors - configures the motors for the BlueROV
 void AP_MotorsBlueROV::setup_motors()
 {
-    // call parent
-    AP_Motors6DOF::setup_motors();
+  // call parent
+  AP_Motors6DOF::setup_motors();
 
 #define BLUEROV_VERSION 2
 
 #if ( BLUEROV_VERSION == 1)
-    // hard coded config for BlueROV
-    float
+  // hard coded config for BlueROV
+  float
 		//Front left downward facing
 		MOT_1_ROLL_FACTOR = -0.5,
 		MOT_1_PITCH_FACTOR = 0.5,
@@ -79,21 +79,21 @@ void AP_MotorsBlueROV::setup_motors()
 		MOT_6_FORWARD_FACTOR = 0.0,
 		MOT_6_STRAFE_FACTOR = 1.0;
 #elif ( BLUEROV_VERSION == 2 )
-    //For a vectored configuration, the numbers would look something like this.
-    float
+  //For a vectored configuration, the numbers would look something like this:
+	float
 		//Front left
 		MOT_1_ROLL_FACTOR = 0.0,
 		MOT_1_PITCH_FACTOR = 0.0,
 		MOT_1_YAW_FACTOR = -1.0,
 		MOT_1_THROTTLE_FACTOR = 0.0,
-		MOT_1_FORWARD_FACTOR = -0.5,
-		MOT_1_STRAFE_FACTOR = -0.5,
+		MOT_1_FORWARD_FACTOR = -1,
+		MOT_1_STRAFE_FACTOR = -1,
 
 		//Left, facing up
 		MOT_2_ROLL_FACTOR = -1.0,
 		MOT_2_PITCH_FACTOR = 0.0,
 		MOT_2_YAW_FACTOR = 0.0,
-		MOT_2_THROTTLE_FACTOR = -0.5,
+		MOT_2_THROTTLE_FACTOR = -1,
 		MOT_2_FORWARD_FACTOR = 0.0,
 		MOT_2_STRAFE_FACTOR = 0.0,
 
@@ -102,22 +102,22 @@ void AP_MotorsBlueROV::setup_motors()
 		MOT_3_PITCH_FACTOR = 0,
 		MOT_3_YAW_FACTOR = 1.0,
 		MOT_3_THROTTLE_FACTOR = 0.0,
-		MOT_3_FORWARD_FACTOR = 0.5,
-		MOT_3_STRAFE_FACTOR = -0.5,
+		MOT_3_FORWARD_FACTOR = 1,
+		MOT_3_STRAFE_FACTOR = -1,
 
 		//Back right
 		MOT_4_ROLL_FACTOR = 0,
 		MOT_4_PITCH_FACTOR = 0,
 		MOT_4_YAW_FACTOR = -1.0,
 		MOT_4_THROTTLE_FACTOR = 0.0,
-		MOT_4_FORWARD_FACTOR = 0.5,
-		MOT_4_STRAFE_FACTOR = -0.5,
+		MOT_4_FORWARD_FACTOR = 1,
+		MOT_4_STRAFE_FACTOR = -1,
 
 		//Right, facing up
 		MOT_5_ROLL_FACTOR = 1.0,
 		MOT_5_PITCH_FACTOR = 0.0,
 		MOT_5_YAW_FACTOR = 0.0,
-		MOT_5_THROTTLE_FACTOR = -0.5,
+		MOT_5_THROTTLE_FACTOR = -1,
 		MOT_5_FORWARD_FACTOR = 0.0,
 		MOT_5_STRAFE_FACTOR = 0.0,
 
@@ -126,9 +126,8 @@ void AP_MotorsBlueROV::setup_motors()
 		MOT_6_PITCH_FACTOR = 0.0,
 		MOT_6_YAW_FACTOR = 1.0,
 		MOT_6_THROTTLE_FACTOR = 0.0,
-		MOT_6_FORWARD_FACTOR = -0.5,
-		MOT_6_STRAFE_FACTOR = -0.5;
-
+		MOT_6_FORWARD_FACTOR = -1,
+		MOT_6_STRAFE_FACTOR = -1;
 #endif
 
     add_motor_raw_6dof(AP_MOTORS_MOT_1, MOT_1_ROLL_FACTOR, MOT_1_PITCH_FACTOR, MOT_1_YAW_FACTOR, MOT_1_THROTTLE_FACTOR, MOT_1_FORWARD_FACTOR, MOT_1_STRAFE_FACTOR,1);
