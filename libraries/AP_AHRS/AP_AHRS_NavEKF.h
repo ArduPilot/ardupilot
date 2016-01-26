@@ -206,6 +206,8 @@ public:
     void setTakeoffExpected(bool val);
     void setTouchdownExpected(bool val);
 
+    bool getGpsGlitchStatus();
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
                    EKF_TYPE1=1,
