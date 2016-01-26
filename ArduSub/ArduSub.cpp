@@ -290,6 +290,9 @@ void Sub::fast_loop()
     // check if we've landed or crashed
     update_land_and_crash_detectors();
 
+    // camera mount's fast update
+    camera_mount.update_fast();
+
     // log sensor health
     if (should_log(MASK_LOG_ANY)) {
         Log_Sensor_Health();
