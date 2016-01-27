@@ -251,6 +251,9 @@ private:
     control_mode_t control_mode;
     mode_reason_t control_mode_reason;
 
+    control_mode_t prev_control_mode;
+    mode_reason_t prev_control_mode_reason;
+
     // Structure used to detect changes in the flight mode control switch
     struct {
         int8_t debounced_switch_position;   // currently used switch position
