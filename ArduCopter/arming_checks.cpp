@@ -22,17 +22,25 @@ uint32_t Copter::get_ready_to_arm_mode_mask(void)
 // performs pre-arm checks. expects to be called at 1hz.
 void Copter::update_arming_checks(void)
 {
-    // perform pre-arm checks & display failures every 30 seconds
-    static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
-    pre_arm_display_counter++;
-    bool display_fail = false;
-    if (pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
-        display_fail = true;
-        pre_arm_display_counter = 0;
-    }
+    if (!motors.armed()) {
+        // perform pre-arm checks & display failures every 30 seconds
+        static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
+        pre_arm_display_counter++;
+        bool display_fail = false;
+        if (pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
+            display_fail = true;
+            pre_arm_display_counter = 0;
+        }
 
-    if (pre_arm_checks(display_fail)) {
-        set_pre_arm_check(true);
+        if (pre_arm_checks(display_fail)) {
+            set_pre_arm_check(true);
+        }
+
+        if (display_fail && ap.pre_arm_check) {
+            // pre-arm checks have passed, run arming checks in order to display failures
+            // this is a HACK that allows the GCS to display arming failures without attempting to arm
+            arm_checks(true,true);
+        }
     }
 }
 
