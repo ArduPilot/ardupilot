@@ -136,6 +136,51 @@ void Copter::failsafe_gcs_off_event(void)
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
+void Copter::failsafe_gps_glitch_check() {
+    bool glitch = ahrs.getGpsGlitchStatus();
+
+    if (glitch && !failsafe.gps_glitch) {
+        failsafe.gps_glitch = true;
+
+        bool in_action_mode = false;
+        switch(control_mode) {
+            case LAND:
+                in_action_mode = true;
+                break;
+            case RTL:
+                in_action_mode = (rtl_state == RTL_Land);
+                break;
+            case GUIDED: // GUIDED for solo because shots modes use GUIDED
+            case LOITER:
+            case DRIFT:
+            case BRAKE:
+            case POSHOLD:
+                in_action_mode = true;
+                break;
+            default:
+                break;
+        }
+
+        if (motors.armed() && in_action_mode) {
+            if (should_disarm_on_failsafe()) {
+                init_disarm_motors();
+            } else if (!failsafe.radio) {
+                set_mode(ALT_HOLD, MODE_REASON_GPS_GLITCH);
+            }
+        }
+    } else if (!glitch && failsafe.gps_glitch) {
+        failsafe.gps_glitch = false;
+
+        if (control_mode_reason == MODE_REASON_GPS_GLITCH) {
+            if (failsafe.radio) {
+                failsafe_radio_on_event();
+            } else {
+                set_mode(LOITER, MODE_REASON_GPS_GLITCH_RECOVERED);
+            }
+        }
+    }
+}
+
 bool Copter::should_disarm_on_failsafe() {
     if (ap.in_arming_delay) {
         return true;
