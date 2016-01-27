@@ -266,9 +266,13 @@ def _process_build_shortcut(bld):
         else:
             bld.targets = targets
 
-def build_shortcut(name, targets=None):
+    program_group_list = Utils.to_list(params['program_group_list'])
+    bld.options.program_group.extend(program_group_list)
+
+def build_shortcut(name, targets=None, program_group_list=[]):
     _build_shortcuts[name] = dict(
         targets=targets,
+        program_group_list=program_group_list,
     )
 
     class context_class(BuildContext):
