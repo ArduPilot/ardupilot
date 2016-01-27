@@ -605,7 +605,12 @@ bool Plane::verify_loiter_unlim()
     } else {
         loiter.direction = 1;
     }
-    update_loiter(abs(g.rtl_radius));
+
+    if (mission.get_current_nav_cmd().p1 == 0) {
+        update_loiter(abs(g.rtl_radius));
+    } else {
+        update_loiter(mission.get_current_nav_cmd().p1);
+    }
     return false;
 }
 
@@ -626,7 +631,7 @@ bool Plane::verify_loiter_time()
 
 bool Plane::verify_loiter_turns()
 {
-    update_loiter(0);
+    update_loiter(HIGHBYTE(mission.get_current_nav_cmd().p1));
     if (loiter.sum_cd > loiter.total_cd) {
         loiter.total_cd = 0;
         gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
@@ -643,7 +648,7 @@ bool Plane::verify_loiter_turns()
  */
 bool Plane::verify_loiter_to_alt() 
 {
-    update_loiter(0);
+    update_loiter(HIGHBYTE(mission.get_current_nav_cmd().p1));
 
     //has target altitude been reached?
     if (condition_value != 0) {
