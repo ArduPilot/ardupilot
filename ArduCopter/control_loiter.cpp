@@ -16,7 +16,7 @@ bool Copter::loiter_init(bool ignore_checks)
     }
 #endif
 
-    if (position_ok() || ignore_checks) {
+    if ((position_ok() && !failsafe.gps_glitch) || ignore_checks) {
 
         // set target to current position
         wp_nav.init_loiter_target();

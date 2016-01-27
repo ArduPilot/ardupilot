@@ -22,7 +22,7 @@
 // auto_init - initialise auto controller
 bool Copter::auto_init(bool ignore_checks)
 {
-    if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
+    if ((position_ok() && mission.num_commands() > 1 && !failsafe.gps_glitch) || ignore_checks) {
         auto_mode = Auto_Loiter;
 
         // stop ROI from carrying over from previous runs of the mission
