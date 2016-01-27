@@ -218,10 +218,10 @@ void Aircraft::add_noise(float throttle)
 {
     gyro += Vector3f(rand_normal(0, 1),
                      rand_normal(0, 1),
-                     rand_normal(0, 1)) * gyro_noise * throttle;
+                     rand_normal(0, 1)) * gyro_noise * fabsf(throttle);
     accel_body += Vector3f(rand_normal(0, 1),
                            rand_normal(0, 1),
-                           rand_normal(0, 1)) * accel_noise * throttle;
+                           rand_normal(0, 1)) * accel_noise * fabsf(throttle);
 }
 
 /*
