@@ -187,9 +187,10 @@ def build(bld):
             bld.fatal('check: gtest library is required')
         bld.add_post_fun(ardupilotwaf.test_summary)
 
-class CheckContext(BuildContext):
-    '''executes tests after build'''
-    cmd = 'check'
+ardupilotwaf.build_shortcut('check',
+    program_group_list='all',
+    doc='builds all programs and run tests',
+)
 
 ardupilotwaf.build_shortcut('copter',
     targets='bin/arducopter',
