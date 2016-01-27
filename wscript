@@ -187,26 +187,26 @@ def build(bld):
             bld.fatal('check: gtest library is required')
         bld.add_post_fun(ardupilotwaf.test_summary)
 
-ardupilotwaf.build_shortcut('check',
+ardupilotwaf.build_command('check',
     program_group_list='all',
     doc='builds all programs and run tests',
 )
 
-ardupilotwaf.build_shortcut('copter',
+ardupilotwaf.build_command('copter',
     targets='bin/arducopter',
     doc='builds arducopter',
 )
-ardupilotwaf.build_shortcut('plane',
+ardupilotwaf.build_command('plane',
     targets='bin/arduplane',
     doc='builds arduplane',
 )
-ardupilotwaf.build_shortcut('rover',
+ardupilotwaf.build_command('rover',
     targets='bin/ardurover',
     doc='builds ardurover',
 )
 
 for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
-    ardupilotwaf.build_shortcut(program_group,
+    ardupilotwaf.build_command(program_group,
         program_group_list=program_group,
         doc='builds all programs of %s group' % program_group,
     )

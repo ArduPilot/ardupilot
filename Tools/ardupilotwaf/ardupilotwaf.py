@@ -251,13 +251,13 @@ def test_summary(bld):
 
     bld.fatal('check: some tests failed')
 
-_build_shortcuts = {}
+_build_commands = {}
 
-def _process_build_shortcut(bld):
-    if bld.cmd not in _build_shortcuts:
+def _process_build_command(bld):
+    if bld.cmd not in _build_commands:
         return
 
-    params = _build_shortcuts[bld.cmd]
+    params = _build_commands[bld.cmd]
 
     targets = params['targets']
     if targets:
@@ -269,11 +269,11 @@ def _process_build_shortcut(bld):
     program_group_list = Utils.to_list(params['program_group_list'])
     bld.options.program_group.extend(program_group_list)
 
-def build_shortcut(name,
+def build_command(name,
                    targets=None,
                    program_group_list=[],
                    doc='build shortcut'):
-    _build_shortcuts[name] = dict(
+    _build_commands[name] = dict(
         targets=targets,
         program_group_list=program_group_list,
     )
@@ -317,5 +317,5 @@ def options(opt):
     )
 
 def build(bld):
-    bld.add_pre_fun(_process_build_shortcut)
+    bld.add_pre_fun(_process_build_command)
     bld.add_pre_fun(_select_programs_from_group)
