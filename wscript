@@ -123,6 +123,10 @@ def build(bld):
     bld.load('ardupilotwaf')
     bld.load('gtest')
 
+    if bld.cmd == 'check-all':
+        bld.options.all_tests = True
+        bld.cmd = 'check'
+
     #generate mavlink headers
     bld(
         features='mavgen',
@@ -190,6 +194,10 @@ def build(bld):
 ardupilotwaf.build_command('check',
     program_group_list='all',
     doc='builds all programs and run tests',
+)
+ardupilotwaf.build_command('check-all',
+    program_group_list='all',
+    doc='shortcut for `waf check --alltests`',
 )
 
 ardupilotwaf.build_command('copter',
