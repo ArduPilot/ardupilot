@@ -75,8 +75,8 @@ void Copter::brake_run()
 
     if (brake_timeout_ms != 0 && millis()-brake_timeout_start >= brake_timeout_ms)
     {
-        if(!set_mode(LOITER)) {
-            set_mode(ALT_HOLD);
+        if(!set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
+            set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
         }
     }
 }
