@@ -68,7 +68,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Starting waf build for board ${t}..."
         $waf configure --board $t
         $waf clean
-        $waf ${build_concurrency[$t]} build
+        $waf ${build_concurrency[$t]} all
         if [[ $t == linux ]]; then
             $waf check
         fi
