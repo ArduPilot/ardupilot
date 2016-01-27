@@ -269,7 +269,10 @@ def _process_build_shortcut(bld):
     program_group_list = Utils.to_list(params['program_group_list'])
     bld.options.program_group.extend(program_group_list)
 
-def build_shortcut(name, targets=None, program_group_list=[]):
+def build_shortcut(name,
+                   targets=None,
+                   program_group_list=[],
+                   doc='build shortcut'):
     _build_shortcuts[name] = dict(
         targets=targets,
         program_group_list=program_group_list,
@@ -277,6 +280,7 @@ def build_shortcut(name, targets=None, program_group_list=[]):
 
     class context_class(BuildContext):
         cmd = name
+    context_class.__doc__ = doc
 
 def _select_programs_from_group(bld):
     groups = bld.options.program_group
