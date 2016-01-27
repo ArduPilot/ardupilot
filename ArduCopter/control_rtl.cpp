@@ -12,7 +12,7 @@
 // rtl_init - initialise rtl controller
 bool Copter::rtl_init(bool ignore_checks)
 {
-    if (position_ok() || ignore_checks) {
+    if ((position_ok() && !failsafe.gps_glitch) || ignore_checks) {
         rtl_build_path();
         rtl_climb_start();
         return true;

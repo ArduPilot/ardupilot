@@ -9,7 +9,7 @@
 // brake_init - initialise brake controller
 bool Copter::brake_init(bool ignore_checks)
 {
-    if (position_ok() || ignore_checks) {
+    if ((position_ok() && !failsafe.gps_glitch) || ignore_checks) {
 
         // set desired acceleration to zero
         wp_nav.clear_pilot_desired_acceleration();

@@ -11,7 +11,7 @@ static bool land_pause;
 bool Copter::land_init(mode_reason_t reason, bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
-    land_with_gps = position_ok();
+    land_with_gps = position_ok() && !failsafe.gps_glitch;
     if (land_with_gps) {
         // set target to stopping point
         Vector3f stopping_point;
