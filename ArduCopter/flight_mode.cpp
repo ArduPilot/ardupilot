@@ -19,6 +19,9 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
+        prev_control_mode = control_mode;
+        prev_control_mode_reason = control_mode_reason;
+
         control_mode_reason = reason;
         return true;
     }
@@ -109,6 +112,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     if (success) {
         // perform any cleanup required by previous flight mode
         exit_mode(control_mode, (control_mode_t)mode);
+        
+        prev_control_mode = control_mode;
+        prev_control_mode_reason = control_mode_reason;
+
         control_mode = (control_mode_t)mode;
         control_mode_reason = reason;
         DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
