@@ -223,6 +223,9 @@ void Copter::update_flight_mode()
         case THROW:
             throw_run();
             break;
+
+        default:
+            break;
     }
 }
 
