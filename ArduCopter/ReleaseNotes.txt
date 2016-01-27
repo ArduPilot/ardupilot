@@ -1,5 +1,10 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3.3-rc2 27-Jan-2016
+Changes from 3.3.3-rc1
+1) bug fix to Guided mode's velocity controller to run at 400hz
+2) bug fix to MAVLink routing to allow camera messages to reach MAVLink enabled cameras and gimbals (including SToRM32)
+------------------------------------------------------------------
 Copter 3.3.3-rc1 4-Jan-2016
 Changes from 3.3.2
 1) Restrict mode changes in helicopter when rotor is not at speed
