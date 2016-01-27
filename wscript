@@ -194,3 +194,6 @@ class CheckContext(BuildContext):
 ardupilotwaf.build_shortcut('copter', targets='bin/arducopter')
 ardupilotwaf.build_shortcut('plane', targets='bin/arduplane')
 ardupilotwaf.build_shortcut('rover', targets='bin/ardurover')
+
+for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
+    ardupilotwaf.build_shortcut(program_group, program_group_list=program_group)
