@@ -330,6 +330,8 @@ void Copter::throttle_loop()
 #if GNDEFFECT_COMPENSATION == ENABLED
     update_ground_effect_detector();
 #endif // GNDEFFECT_COMPENSATION == ENABLED
+
+    failsafe_gps_glitch_check();
 }
 
 // update_mount - update camera mount position
