@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from waflib import Logs, Options, Utils
+from waflib.Build import BuildContext
 from waflib.Configure import conf
 import os.path
 
@@ -250,17 +251,28 @@ def test_summary(bld):
 
     bld.fatal('check: some tests failed')
 
-def build_shortcut(targets=None):
-    def build_fn(bld):
-        if targets:
-            if Options.options.targets:
-                Options.options.targets += ',' + targets
-            else:
-                Options.options.targets = targets
+_build_shortcuts = {}
 
-        Options.commands = ['build'] + Options.commands
+def _process_build_shortcut(bld):
+    if bld.cmd not in _build_shortcuts:
+        return
 
-    return build_fn
+    params = _build_shortcuts[bld.cmd]
+
+    targets = params['targets']
+    if targets:
+        if bld.targets:
+            bld.targets += ',' + targets
+        else:
+            bld.targets = targets
+
+def build_shortcut(name, targets=None):
+    _build_shortcuts[name] = dict(
+        targets=targets,
+    )
+
+    class context_class(BuildContext):
+        cmd = name
 
 def _select_programs_from_group(bld):
     groups = bld.options.program_group
@@ -297,4 +309,5 @@ def options(opt):
     )
 
 def build(bld):
+    bld.add_pre_fun(_process_build_shortcut)
     bld.add_pre_fun(_select_programs_from_group)
