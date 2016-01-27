@@ -191,6 +191,6 @@ class CheckContext(BuildContext):
     '''executes tests after build'''
     cmd = 'check'
 
-copter = ardupilotwaf.build_shortcut(targets='bin/arducopter')
-plane = ardupilotwaf.build_shortcut(targets='bin/arduplane')
-rover = ardupilotwaf.build_shortcut(targets='bin/ardurover')
+ardupilotwaf.build_shortcut('copter', targets='bin/arducopter')
+ardupilotwaf.build_shortcut('plane', targets='bin/arduplane')
+ardupilotwaf.build_shortcut('rover', targets='bin/ardurover')
