@@ -11,7 +11,8 @@ import ardupilotwaf
 import boards
 
 from waflib import ConfigSet, Utils
-from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
+from waflib.Build import BuildContext
+import waflib.Context
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
@@ -34,9 +35,10 @@ def init(ctx):
         return
 
     # define the variant build commands according to the board
-    for c in (BuildContext, CleanContext, InstallContext, UninstallContext, CheckContext):
-        class context(c):
-            variant = env.BOARD
+    for c in waflib.Context.classes:
+        if not issubclass(c, BuildContext):
+            continue
+        c.variant = env.BOARD
 
 def options(opt):
     opt.load('ardupilotwaf')
