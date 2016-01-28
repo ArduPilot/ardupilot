@@ -242,7 +242,8 @@ void AP_Compass_HMC5843::accumulate()
    raw_field *= _gain_scale;
 
    // rotate to the desired orientation
-   if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
+   if (is_external(_compass_instance) &&
+       _product_id == AP_COMPASS_TYPE_HMC5883L) {
        raw_field.rotate(ROTATION_YAW_90);
    }
 
