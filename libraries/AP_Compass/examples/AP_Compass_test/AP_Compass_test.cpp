@@ -16,9 +16,7 @@ void setup() {
     hal.console->println("Compass library test");
 
     if (!compass.init()) {
-        hal.console->println("compass initialisation failed!");
-        while (1)
-            ;
+        AP_HAL::panic("compass initialisation failed!");
     }
     hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
@@ -64,26 +62,14 @@ void loop()
             const Vector3f &mag = compass.get_field(i);
 
             // capture min
-            if (mag.x < min[i][0]) {
-                min[i][0] = mag.x;
-            }
-            if (mag.y < min[i][1]) {
-                min[i][1] = mag.y;
-            }
-            if (mag.z < min[i][2]) {
-                min[i][2] = mag.z;
-            }
+            min[i][0] = MIN(mag.x, min[i][0]);
+            min[i][1] = MIN(mag.y, min[i][1]);
+            min[i][2] = MIN(mag.z, min[i][2]);
 
             // capture max
-            if (mag.x > max[i][0]) {
-                max[i][0] = mag.x;
-            }
-            if (mag.y > max[i][1]) {
-                max[i][1] = mag.y;
-            }
-            if (mag.z > max[i][2]) {
-                max[i][2] = mag.z;
-            }
+            max[i][0] = MAX(mag.x, max[i][0]);
+            max[i][1] = MAX(mag.y, max[i][1]);
+            max[i][2] = MAX(mag.z, max[i][2]);
 
             // calculate offsets
             offset[i][0] = -(max[i][0] + min[i][0]) / 2;
