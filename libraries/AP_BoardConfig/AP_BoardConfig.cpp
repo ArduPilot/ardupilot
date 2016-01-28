@@ -93,12 +93,31 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    // @Param: SMBUS_EN
+    // @DisplayName:  Enable use of SMBUS batteries
+    // @Description: Enabling this option on a Pixhawk enables SMBUS batteries, e.g. 3DR Solo's battery
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("SMBUS_EN", 7, AP_BoardConfig, _smbus_enable, 0),
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    // @Param: OREOLED_EN
+    // @DisplayName:  Enable use of OREOLED devices
+    // @Description: Enabling this option on a Pixhawk enables OREOLED devices, e.g. 3DR Solo's LEDs
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("OREOLED_EN", 8, AP_BoardConfig, _oreoled_enable, 0),
+#endif
     
     AP_GROUPEND
 };
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 extern "C" int uavcan_main(int argc, const char *argv[]);
+extern "C" int batt_smbus_main(int argc, const char *argv[]);
+extern "C" int oreoled_main(int argc, const char *argv[]);
+extern "C" int oreoledbl_main(int argc, const char *argv[]);
 #endif
 
 void AP_BoardConfig::init()
@@ -151,6 +170,36 @@ void AP_BoardConfig::init()
             hal.console->printf("UAVCAN: started\n");            
             // give some time for CAN bus initialisation
             hal.scheduler->delay(500);
+        }
+    }
+#endif
+
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+if (_oreoled_enable == 1) {
+    const char *oreoledbl_args[] = { "oreoledbl", "-t", "auto", "update", NULL };
+    int ret = oreoledbl_main(5, oreoledbl_args);
+    if (ret != 0) {
+        hal.console->printf("oreoled: failed to boot\n");
+    } else {
+        const char *oreoled_args[] = { "oreoled", "start", NULL };
+        ret = oreoled_main(3, oreoled_args);
+        if (ret != 0) {
+            hal.console->printf("oreoled: failed to start\n");
+        } else {
+            hal.console->printf("oreoled: started\n");
+        }
+    }
+}
+#endif
+
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    if (_smbus_enable == 1) {
+        const char *args[] = { "batt_smbus", "-b", "2", "start", NULL };
+        int ret = batt_smbus_main(5, args);
+        if (ret != 0) {
+            hal.console->printf("batt_smbus: failed to start\n");
+        } else {
+            hal.console->printf("batt_smbus: started\n");
         }
     }
 #endif
