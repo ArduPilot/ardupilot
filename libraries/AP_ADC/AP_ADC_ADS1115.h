@@ -1,14 +1,12 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AP_ADC_ADS1115_H__
-#define __AP_ADC_ADS1115_H__
-
+#pragma once
 
 #include <inttypes.h>
 #include "AP_ADC.h"
 #include <AP_HAL/AP_HAL.h>
 
 
-struct adc_report_s 
+struct adc_report_s
 {
     uint8_t id;
     float data;
@@ -22,7 +20,7 @@ public:
     bool init();
     size_t read(adc_report_s *report, size_t length) const;
 
-    uint8_t get_channels_number() const 
+    uint8_t get_channels_number() const
     {
         return _channels_number;
     }
@@ -43,5 +41,3 @@ private:
 
     float _convert_register_data_to_mv(int16_t word) const;
 };
-
-#endif

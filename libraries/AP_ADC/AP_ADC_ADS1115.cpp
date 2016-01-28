@@ -84,19 +84,18 @@
 #define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #define error(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
-#define debug(fmt, args ...)  
-#define error(fmt, args ...)  
+#define debug(fmt, args ...)
+#define error(fmt, args ...)
 #endif
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 #define ADS1115_CHANNELS_COUNT           6
 
 const uint8_t AP_ADC_ADS1115::_channels_number  = ADS1115_CHANNELS_COUNT;
 
 /* Only two differential channels used */
-static const uint16_t mux_table[ADS1115_CHANNELS_COUNT] = 
-{
+static const uint16_t mux_table[ADS1115_CHANNELS_COUNT] = {
     ADS1115_MUX_P1_N3,
     ADS1115_MUX_P2_N3,
     ADS1115_MUX_P0_NG,
@@ -117,7 +116,7 @@ bool AP_ADC_ADS1115::init()
 {
     hal.scheduler->suspend_timer_procs();
 
-    _gain = ADS1115_PGA_4P096; 
+    _gain = ADS1115_PGA_4P096;
     _i2c_sem = hal.i2c->get_semaphore();
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, void));
@@ -133,7 +132,7 @@ bool AP_ADC_ADS1115::_start_conversion(uint8_t channel)
         uint8_t b[2];
     } config;
 
-    config.w = ADS1115_OS_ACTIVE | _gain | mux_table[channel] | 
+    config.w = ADS1115_OS_ACTIVE | _gain | mux_table[channel] |
     ADS1115_MODE_SINGLESHOT | ADS1115_COMP_QUE_DISABLE | ADS1115_RATE_250;
 
     config.w = config.b[0] << 8 | config.b[1];
@@ -161,41 +160,41 @@ float AP_ADC_ADS1115::_convert_register_data_to_mv(int16_t word) const
     float pga;
 
     switch (_gain) {
-        case ADS1115_PGA_6P144:  
-            pga = ADS1115_MV_6P144;
-            break;
-        case ADS1115_PGA_4P096:  
-            pga = ADS1115_MV_4P096;
-            break;
-        case ADS1115_PGA_2P048:  
-            pga = ADS1115_MV_2P048;
-            break;
-        case ADS1115_PGA_1P024:  
-            pga = ADS1115_MV_1P024;
-            break;
-        case ADS1115_PGA_0P512:  
-            pga = ADS1115_MV_0P512;
-            break;
-        case ADS1115_PGA_0P256:  
-            pga = ADS1115_MV_0P256;
-            break;
-        case ADS1115_PGA_0P256B: 
-            pga = ADS1115_MV_0P256B;
-            break;
-        case ADS1115_PGA_0P256C:
-            pga = ADS1115_MV_0P256C;
-            break;
-        default:
-            pga = 0.0f;
-            hal.console->printf("Wrong gain");
-            AP_HAL::panic("ADS1115: wrong gain selected");
-            break;
+    case ADS1115_PGA_6P144:
+        pga = ADS1115_MV_6P144;
+        break;
+    case ADS1115_PGA_4P096:
+        pga = ADS1115_MV_4P096;
+        break;
+    case ADS1115_PGA_2P048:
+        pga = ADS1115_MV_2P048;
+        break;
+    case ADS1115_PGA_1P024:
+        pga = ADS1115_MV_1P024;
+        break;
+    case ADS1115_PGA_0P512:
+        pga = ADS1115_MV_0P512;
+        break;
+    case ADS1115_PGA_0P256:
+        pga = ADS1115_MV_0P256;
+        break;
+    case ADS1115_PGA_0P256B:
+        pga = ADS1115_MV_0P256B;
+        break;
+    case ADS1115_PGA_0P256C:
+        pga = ADS1115_MV_0P256C;
+        break;
+    default:
+        pga = 0.0f;
+        hal.console->printf("Wrong gain");
+        AP_HAL::panic("ADS1115: wrong gain selected");
+        break;
     }
 
     return (float) word * pga;
 }
 
-void AP_ADC_ADS1115::_update() 
+void AP_ADC_ADS1115::_update()
 {
     /* TODO: make update rate configurable */
     if (AP_HAL::micros() - _last_update_timestamp < 100000) {
