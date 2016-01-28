@@ -917,9 +917,15 @@ const AP_Param::Info Plane::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: OVERRIDE_CHAN
     // @DisplayName: PX4IO override channel
-    // @Description: If set to a non-zero value then this is an RC input channel number to use for testing manual control in case the main FMU microcontroller on a PX4 or Pixhawk fails. When this RC input channel goes above 1750 the FMU will stop sending servo controls to the PX4IO board, which will trigger the PX4IO board to start using its failsafe override behaviour, which should give you manual control of the aircraft. That allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is normally only set to a non-zero value for ground testing purposes. When the override channel is used it also forces the PX4 safety switch into an armed state. This allows it to be used as a way to re-arm a plane after an in-flight reboot. Use in that way is considered a developer option, for people testing unstable developer code. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get PX4IO based override when in flight mode 6. Note that when override is triggered the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
+    // @Description: If set to a non-zero value then this is an RC input channel number to use for giving PX4IO manual control in case the main FMU microcontroller on a PX4 or Pixhawk fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the PX4IO microcontroller will directly control the servos. Note that PX4IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Please also see the docs on OVERRIDE_SAFETY. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get PX4IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
     // @User: Advanced
     GSCALAR(override_channel,      "OVERRIDE_CHAN",  0),
+
+    // @Param: OVERRIDE_SAFETY
+    // @DisplayName: PX4IO override safety switch
+    // @Description: This controls whether the safety switch is turned off when you activate override with OVERRIDE_CHAN. When set to 1 the safety switch is de-activated (activating the servos) then a PX4IO override is triggered. In that case the safety remains de-activated after override is disabled. If OVERRIDE_SAFETTY is set to 0 then the safety switch state does not change. Note that regardless of the value of this parameter the servos will be active while override is active.
+    // @User: Advanced
+    GSCALAR(override_safety,      "OVERRIDE_SAFETY",  1),
 #endif
 
     // @Param: INVERTEDFLT_CH
