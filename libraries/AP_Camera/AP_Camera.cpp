@@ -210,11 +210,14 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     GCS_MAVLINK::send_to_components(&msg);
 }
 
-void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
+    bool ret = false;
+    
     // take picture
     if (is_equal(shooting_cmd,1.0f)) {
         trigger_pic(false);
+        ret = true;
     }
 
     mavlink_message_t msg;
@@ -234,6 +237,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
+    return ret;
 }
 
 /*

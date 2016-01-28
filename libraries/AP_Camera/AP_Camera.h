@@ -56,7 +56,8 @@ public:
 
     // Command processing
     void            configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
-    void            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
+    // handle camera control. Return true if picture was triggered
+    bool            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
     // set camera trigger distance in a mission
     void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
