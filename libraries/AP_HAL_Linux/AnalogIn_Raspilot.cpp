@@ -46,12 +46,12 @@ float AnalogSource_Raspilot::voltage_average_ratiometric()
 
 extern const AP_HAL::HAL& hal;
 
-RaspilotAnalogIn::RaspilotAnalogIn()
+AnalogIn_Raspilot::AnalogIn_Raspilot()
 {
     _channels_number = RASPILOT_ADC_MAX_CHANNELS;
 }
 
-float RaspilotAnalogIn::board_voltage(void)
+float AnalogIn_Raspilot::board_voltage(void)
 {
     _vcc_pin_analog_source->set_pin(4);
 
@@ -59,7 +59,7 @@ float RaspilotAnalogIn::board_voltage(void)
     //return _vcc_pin_analog_source->voltage_average() * 2.0;
 }
 
-AP_HAL::AnalogSource* RaspilotAnalogIn::channel(int16_t pin)
+AP_HAL::AnalogSource* AnalogIn_Raspilot::channel(int16_t pin)
 {
     for (uint8_t j = 0; j < _channels_number; j++) {
         if (_channels[j] == NULL) {
@@ -72,7 +72,7 @@ AP_HAL::AnalogSource* RaspilotAnalogIn::channel(int16_t pin)
     return NULL;
 }
 
-void RaspilotAnalogIn::init()
+void AnalogIn_Raspilot::init()
 {
     _vcc_pin_analog_source = channel(4);
 
@@ -86,11 +86,11 @@ void RaspilotAnalogIn::init()
     }
 
     hal.scheduler->suspend_timer_procs();
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&RaspilotAnalogIn::_update, void));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AnalogIn_Raspilot::_update, void));
     hal.scheduler->resume_timer_procs();
 }
 
-void RaspilotAnalogIn::_update()
+void AnalogIn_Raspilot::_update()
 {
     if (AP_HAL::micros() - _last_update_timestamp < 100000) {
         return;
