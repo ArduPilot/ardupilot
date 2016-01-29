@@ -84,7 +84,7 @@ def ap_common_vehicle_libraries(bld):
 _grouped_programs = {}
 
 @conf
-def ap_program(bld, blddestdir='bin',
+def ap_program(bld, program_group='bin',
             use_legacy_defines=True,
             program_name=None,
             **kw):
@@ -103,7 +103,7 @@ def ap_program(bld, blddestdir='bin',
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
-    name = os.path.join(blddestdir, program_name)
+    name = os.path.join(program_group, program_name)
     target = bld.bldnode.find_or_declare(name)
 
     tg = bld.program(
@@ -111,11 +111,11 @@ def ap_program(bld, blddestdir='bin',
         name=name,
         **kw
     )
-    _grouped_programs.setdefault(blddestdir, []).append(tg)
+    _grouped_programs.setdefault(program_group, []).append(tg)
 
 @conf
 def ap_example(bld, **kw):
-    kw['blddestdir'] = 'examples'
+    kw['program_group'] = 'examples'
     ap_program(bld, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
@@ -183,7 +183,7 @@ def ap_find_tests(bld, use=[]):
             source=[f],
             use=use,
             program_name=f.change_ext('').name,
-            blddestdir='tests',
+            program_group='tests',
             use_legacy_defines=False,
         )
 
@@ -202,7 +202,7 @@ def ap_find_benchmarks(bld, use=[]):
             source=[f],
             use=use,
             program_name=f.change_ext('').name,
-            blddestdir='benchmarks',
+            program_group='benchmarks',
             use_legacy_defines=False,
         )
 
