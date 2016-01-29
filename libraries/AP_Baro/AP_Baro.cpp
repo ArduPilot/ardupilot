@@ -28,6 +28,8 @@
 #include "AP_Baro_HIL.h"
 #include "AP_Baro_MS5611.h"
 #include "AP_Baro_PX4.h"
+#include "AP_Baro_qflight.h"
+#include "AP_Baro_QURT.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -325,6 +327,16 @@ void AP_Baro::init(void)
         AP_SerialBus *bus = new AP_SerialBus_I2C(HAL_BARO_MS5611_I2C_POINTER,
                                                  HAL_BARO_MS5611_I2C_ADDR);
         drivers[0] = new AP_Baro_MS5637(*this, bus, true);
+        _num_drivers = 1;
+    }
+#elif HAL_BARO_DEFAULT == HAL_BARO_QFLIGHT
+    {
+        drivers[0] = new AP_Baro_QFLIGHT(*this);
+        _num_drivers = 1;
+    }
+#elif HAL_BARO_DEFAULT == HAL_BARO_QURT
+    {
+        drivers[0] = new AP_Baro_QURT(*this);
         _num_drivers = 1;
     }
 #endif

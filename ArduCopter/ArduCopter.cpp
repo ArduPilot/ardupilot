@@ -75,12 +75,7 @@
 
 #include "Copter.h"
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
-    .function = FUNCTOR_BIND(&copter, &Copter::func, void),\
-    AP_SCHEDULER_NAME_INITIALIZER(func)\
-    .interval_ticks = _interval_ticks,\
-    .max_time_micros = _max_time_micros,\
-}
+#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Copter, &copter, func, rate_hz, max_time_micros)
 
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
@@ -99,70 +94,72 @@
   
  */
 const AP_Scheduler::Task Copter::scheduler_tasks[] = {
-    SCHED_TASK(rc_loop,                4,    130),
-    SCHED_TASK(throttle_loop,          8,     75),
-    SCHED_TASK(update_GPS,             8,    200),
+    SCHED_TASK(rc_loop,              100,    130),
+    SCHED_TASK(throttle_loop,         50,     75),
+    SCHED_TASK(update_GPS,            50,    200),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,    2,    160),
+    SCHED_TASK(update_optical_flow,  200,    160),
 #endif
-    SCHED_TASK(update_batt_compass,   40,    120),
-    SCHED_TASK(read_aux_switches,     40,     50),
-    SCHED_TASK(arm_motors_check,      40,     50),
-    SCHED_TASK(auto_disarm_check,     40,     50),
-    SCHED_TASK(auto_trim,             40,     75),
-    SCHED_TASK(update_altitude,       40,    140),
-    SCHED_TASK(run_nav_updates,        8,    100),
-    SCHED_TASK(update_thr_average,     4,     90),
-    SCHED_TASK(three_hz_loop,        133,     75),
-    SCHED_TASK(compass_accumulate,     4,    100),
-    SCHED_TASK(barometer_accumulate,   8,     90),
+    SCHED_TASK(update_batt_compass,   10,    120),
+    SCHED_TASK(read_aux_switches,     10,     50),
+    SCHED_TASK(arm_motors_check,      10,     50),
+    SCHED_TASK(auto_disarm_check,     10,     50),
+    SCHED_TASK(auto_trim,             10,     75),
+    SCHED_TASK(update_altitude,       10,    140),
+    SCHED_TASK(run_nav_updates,       50,    100),
+    SCHED_TASK(update_thr_average,   100,     90),
+    SCHED_TASK(three_hz_loop,          3,     75),
+    SCHED_TASK(compass_accumulate,   100,    100),
+    SCHED_TASK(barometer_accumulate,  50,     90),
 #if PRECISION_LANDING == ENABLED
-    SCHED_TASK(update_precland,        8,     50),
+    SCHED_TASK(update_precland,       50,     50),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
-    SCHED_TASK(check_dynamic_flight,   8,     75),
+    SCHED_TASK(check_dynamic_flight,  50,     75),
 #endif
-    SCHED_TASK(update_notify,          8,     90),
-    SCHED_TASK(one_hz_loop,          400,    100),
-    SCHED_TASK(ekf_check,             40,     75),
-    SCHED_TASK(landinggear_update,    40,     75),
-    SCHED_TASK(lost_vehicle_check,    40,     50),
-    SCHED_TASK(gcs_check_input,        1,    180),
-    SCHED_TASK(gcs_send_heartbeat,   400,    110),
-    SCHED_TASK(gcs_send_deferred,      8,    550),
-    SCHED_TASK(gcs_data_stream_send,   8,    550),
-    SCHED_TASK(update_mount,           8,     75),
-    SCHED_TASK(ten_hz_logging_loop,   40,    350),
-    SCHED_TASK(fifty_hz_logging_loop,  8,    110),
-    SCHED_TASK(full_rate_logging_loop, 1,    100),
-    SCHED_TASK(dataflash_periodic,     1,    300),
-    SCHED_TASK(perf_update,         4000,     75),
-    SCHED_TASK(read_receiver_rssi,    40,     75),
-    SCHED_TASK(rpm_update,            40,    200),
-    SCHED_TASK(compass_cal_update,    4,    100),
+    SCHED_TASK(update_notify,         50,     90),
+    SCHED_TASK(one_hz_loop,            1,    100),
+    SCHED_TASK(ekf_check,             10,     75),
+    SCHED_TASK(landinggear_update,    10,     75),
+    SCHED_TASK(lost_vehicle_check,    10,     50),
+    SCHED_TASK(gcs_check_input,      400,    180),
+    SCHED_TASK(gcs_send_heartbeat,     1,    110),
+    SCHED_TASK(gcs_send_deferred,     50,    550),
+    SCHED_TASK(gcs_data_stream_send,  50,    550),
+    SCHED_TASK(update_mount,          50,     75),
+    SCHED_TASK(update_trigger,        50,     75),
+    SCHED_TASK(ten_hz_logging_loop,   10,    350),
+    SCHED_TASK(fifty_hz_logging_loop, 50,    110),
+    SCHED_TASK(full_rate_logging_loop,400,    100),
+    SCHED_TASK(dataflash_periodic,    400,    300),
+    SCHED_TASK(perf_update,           0.1,    75),
+    SCHED_TASK(read_receiver_rssi,    10,     75),
+    SCHED_TASK(rpm_update,            10,    200),
+    SCHED_TASK(compass_cal_update,   100,    100),
+    SCHED_TASK(accel_cal_update,      10,    100),
 #if ADSB_ENABLED == ENABLED
-    SCHED_TASK(adsb_update,          400,    100),
+    SCHED_TASK(adsb_update,            1,    100),
 #endif
 #if FRSKY_TELEM_ENABLED == ENABLED
-    SCHED_TASK(frsky_telemetry_send,  80,     75),
+    SCHED_TASK(frsky_telemetry_send,   5,     75),
 #endif
 #if EPM_ENABLED == ENABLED
-    SCHED_TASK(epm_update,            40,     75),
+    SCHED_TASK(epm_update,            10,     75),
 #endif
 #ifdef USERHOOK_FASTLOOP
-    SCHED_TASK(userhook_FastLoop,      4,     75),
+    SCHED_TASK(userhook_FastLoop,    100,     75),
 #endif
 #ifdef USERHOOK_50HZLOOP
-    SCHED_TASK(userhook_50Hz,          8,     75),
+    SCHED_TASK(userhook_50Hz,         50,     75),
 #endif
 #ifdef USERHOOK_MEDIUMLOOP
-    SCHED_TASK(userhook_MediumLoop,   40,     75),
+    SCHED_TASK(userhook_MediumLoop,   10,     75),
 #endif
 #ifdef USERHOOK_SLOWLOOP
-    SCHED_TASK(userhook_SlowLoop,     120,    75),
+    SCHED_TASK(userhook_SlowLoop,     3.3,    75),
 #endif
 #ifdef USERHOOK_SUPERSLOWLOOP
-    SCHED_TASK(userhook_SuperSlowLoop, 400,   75),
+    SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
 #endif
 };
 
@@ -288,6 +285,11 @@ void Copter::fast_loop()
     // check if we've landed or crashed
     update_land_and_crash_detectors();
 
+#if MOUNT == ENABLED
+    // camera mount's fast update
+    camera_mount.update_fast();
+#endif
+
     // log sensor health
     if (should_log(MASK_LOG_ANY)) {
         Log_Sensor_Health();
@@ -324,6 +326,10 @@ void Copter::throttle_loop()
     // update trad heli swash plate movement
     heli_update_landing_swash();
 #endif
+
+#if GNDEFFECT_COMPENSATION == ENABLED
+    update_ground_effect_detector();
+#endif // GNDEFFECT_COMPENSATION == ENABLED
 }
 
 // update_mount - update camera mount position
@@ -334,9 +340,19 @@ void Copter::update_mount()
     // update camera mount's position
     camera_mount.update();
 #endif
+}
 
+// update camera trigger
+void Copter::update_trigger(void)
+{
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
+    if (camera.check_trigger_pin()) {
+        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        if (should_log(MASK_LOG_CAMERA)) {
+            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+        }
+    }    
 #endif
 }
 
@@ -469,15 +485,7 @@ void Copter::one_hz_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
-    // perform pre-arm checks & display failures every 30 seconds
-    static uint8_t pre_arm_display_counter = 15;
-    pre_arm_display_counter++;
-    if (pre_arm_display_counter >= 30) {
-        pre_arm_checks(true);
-        pre_arm_display_counter = 0;
-    }else{
-        pre_arm_checks(false);
-    }
+    update_arming_checks();
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
@@ -551,7 +559,7 @@ void Copter::update_GPS(void)
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
 
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc) == true) {
+            if (camera.update_location(current_loc, copter.ahrs) == true) {
                 do_take_picture();
             }
 #endif

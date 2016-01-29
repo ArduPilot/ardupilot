@@ -9,12 +9,21 @@
 #include "Util.h"
 #include "SPIUARTDriver.h"
 #include "RPIOUARTDriver.h"
+#include <algorithm>
 #include <poll.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <sys/mman.h>
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+#include <rpcmem.h>
+#include <AP_HAL_Linux/qflight/qflight_util.h>
+#include <AP_HAL_Linux/qflight/qflight_dsp.h>
+#include <AP_HAL_Linux/qflight/qflight_buffer.h>
+#endif
+
 
 using namespace Linux;
 
@@ -27,7 +36,10 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_TONEALARM_PRIORITY    11
 #define APM_LINUX_IO_PRIORITY           10
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||    \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #define APM_LINUX_UART_PERIOD           10000
 #define APM_LINUX_RCIN_PERIOD           500
 #define APM_LINUX_TONEALARM_PERIOD      10000
@@ -37,7 +49,7 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_RCIN_PERIOD           10000
 #define APM_LINUX_TONEALARM_PERIOD      10000
 #define APM_LINUX_IO_PERIOD             20000
-#endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#endif // CONFIG_HAL_BOARD_SUBTYPE
 
 
 
@@ -184,6 +196,69 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     }
 }
 
+bool Scheduler::register_timer_process(AP_HAL::MemberProc proc,
+                                       uint8_t freq_div)
+{
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    if (freq_div > 1) {
+        return _register_timesliced_proc(proc, freq_div);
+    }
+    /* fallback to normal timer process */
+#endif
+    register_timer_process(proc);
+    return false;
+}
+
+bool Scheduler::_register_timesliced_proc(AP_HAL::MemberProc proc,
+                                          uint8_t freq_div)
+{
+    unsigned int i, j;
+    uint8_t distance, min_distance, best_distance;
+    uint8_t best_timeslot;
+
+    if (_num_timesliced_procs > LINUX_SCHEDULER_MAX_TIMESLICED_PROCS) {
+        hal.console->printf("Out of timesliced processes\n");
+        return false;
+    }
+
+    /* if max_freq_div increases, update the timeslots accordingly */
+    if (freq_div > _max_freq_div) {
+        for (i = 0; i < _num_timesliced_procs; i++) {
+            _timesliced_proc[i].timeslot =  _timesliced_proc[i].timeslot
+                                            / _max_freq_div * freq_div;
+        }
+        _max_freq_div = freq_div;
+    }
+
+    best_distance = 0;
+    best_timeslot = 0;
+
+    /* Look for the timeslot that maximizes the min distance with other timeslots */
+    for (i = 0; i < _max_freq_div; i++) {
+        min_distance = _max_freq_div;
+        for (j = 0; j < _num_timesliced_procs; j++) {
+            distance = std::min(i - _timesliced_proc[j].timeslot,
+                            _max_freq_div + _timesliced_proc[j].timeslot - i);
+            if (distance < min_distance) {
+                min_distance = distance;
+                if (min_distance == 0) {
+                    break;
+                }
+            }
+        }
+        if (min_distance > best_distance) {
+            best_distance = min_distance;
+            best_timeslot = i;
+        }
+    }
+
+    _timesliced_proc[_num_timesliced_procs].proc = proc;
+    _timesliced_proc[_num_timesliced_procs].timeslot = best_timeslot;
+    _timesliced_proc[_num_timesliced_procs].freq_div = freq_div;
+    _num_timesliced_procs++;
+    return true;
+}
+
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
@@ -219,6 +294,8 @@ void Scheduler::resume_timer_procs()
 
 void Scheduler::_run_timers(bool called_from_timer_thread)
 {
+    int i;
+
     if (_in_timer_proc) {
         return;
     }
@@ -228,7 +305,7 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
         printf("Failed to take timer semaphore in _run_timers\n");
     }
     // now call the timer based drivers
-    for (int i = 0; i < _num_timer_procs; i++) {
+    for (i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i]) {
             _timer_proc[i]();
         }
@@ -241,6 +318,20 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
         ((RPIOUARTDriver *)hal.uartC)->_timer_tick();
     }
 #endif
+
+    for (i = 0; i < _num_timesliced_procs; i++) {
+        if ((_timeslices_count + _timesliced_proc[i].timeslot)
+            % _timesliced_proc[i].freq_div == 0) {
+            _timesliced_proc[i].proc();
+        }
+    }
+
+    if (_max_freq_div != 0) {
+        _timeslices_count++;
+        if (_timeslices_count == _max_freq_div) {
+            _timeslices_count = 0;
+        }
+    }
 
     _timer_semaphore.give();
 
@@ -259,7 +350,13 @@ void *Scheduler::_timer_thread(void* arg)
     while (sched->system_initializing()) {
         poll(NULL, 0, 1);
     }
-    /*
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+    printf("Initialising rpcmem\n");
+    rpcmem_init();
+#endif
+    
+/*
       this aims to run at an average of 1kHz, so that it can be used
       to drive 1kHz processes without drift
      */
@@ -275,6 +372,16 @@ void *Scheduler::_timer_thread(void* arg)
         next_run_usec += 1000;
         // run registered timers
         sched->_run_timers(true);
+
+#if HAL_LINUX_UARTS_ON_TIMER_THREAD
+        /*
+          some boards require that UART calls happen on the same
+          thread as other calls of the same time. This impacts the
+          QFLIGHT calls where UART output is an RPC call to the DSPs
+         */
+        _run_uarts();
+        RCInput::from(hal.rcin)->_timer_tick();
+#endif
     }
     return NULL;
 }
@@ -304,9 +411,31 @@ void *Scheduler::_rcin_thread(void *arg)
     }
     while (true) {
         sched->_microsleep(APM_LINUX_RCIN_PERIOD);
+#if !HAL_LINUX_UARTS_ON_TIMER_THREAD
         RCInput::from(hal.rcin)->_timer_tick();
+#endif
     }
     return NULL;
+}
+
+
+/*
+  run timers for all UARTs
+ */
+void Scheduler::_run_uarts(void)
+{
+    // process any pending serial bytes
+    UARTDriver::from(hal.uartA)->_timer_tick();
+    UARTDriver::from(hal.uartB)->_timer_tick();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    //SPI UART not use SPI
+    if (RPIOUARTDriver::from(hal.uartC)->isExternal()) {
+        RPIOUARTDriver::from(hal.uartC)->_timer_tick();
+    }
+#else
+    UARTDriver::from(hal.uartC)->_timer_tick();
+#endif
+    UARTDriver::from(hal.uartE)->_timer_tick();
 }
 
 void *Scheduler::_uart_thread(void* arg)
@@ -318,19 +447,9 @@ void *Scheduler::_uart_thread(void* arg)
     }
     while (true) {
         sched->_microsleep(APM_LINUX_UART_PERIOD);
-
-        // process any pending serial bytes
-        UARTDriver::from(hal.uartA)->_timer_tick();
-        UARTDriver::from(hal.uartB)->_timer_tick();
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-        //SPI UART not use SPI
-        if (RPIOUARTDriver::from(hal.uartC)->isExternal()) {
-            RPIOUARTDriver::from(hal.uartC)->_timer_tick();
-        }
-#else
-        UARTDriver::from(hal.uartC)->_timer_tick();
+#if !HAL_LINUX_UARTS_ON_TIMER_THREAD
+        _run_uarts();
 #endif
-        UARTDriver::from(hal.uartE)->_timer_tick();
     }
     return NULL;
 }

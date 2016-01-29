@@ -21,7 +21,6 @@
 
 Rover::Rover(void) :
     param_loader(var_info),
-    ins_sample_rate(AP_InertialSensor::RATE_50HZ),
     channel_steer(NULL),
     channel_throttle(NULL),
     channel_learn(NULL),

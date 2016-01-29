@@ -94,11 +94,12 @@ protected:
     volatile uint32_t        _s_D1, _s_D2;
     uint8_t                  _state;
     uint32_t                 _last_timer;
+    bool                     _timesliced;
 
     bool _use_timer;
 
     // Internal calibration registers
-    uint16_t                 _C1,_C2,_C3,_C4,_C5,_C6;
+    uint16_t                 _c1,_c2,_c3,_c4,_c5,_c6;
     float                    _D1,_D2;
     uint8_t _instance;
 };

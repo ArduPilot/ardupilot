@@ -21,12 +21,7 @@
 
 #include "Tracker.h"
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
-    .function = FUNCTOR_BIND(&tracker, &Tracker::func, void),\
-    AP_SCHEDULER_NAME_INITIALIZER(func)\
-    .interval_ticks = _interval_ticks,\
-    .max_time_micros = _max_time_micros,\
-}
+#define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros)
 
 /*
   scheduler table - all regular tasks apart from the fast_loop()
@@ -35,21 +30,24 @@
   microseconds)
  */
 const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
-    SCHED_TASK(update_ahrs,             1,   1000),
-    SCHED_TASK(read_radio,              1,    200),
-    SCHED_TASK(update_tracking,         1,   1000),
-    SCHED_TASK(update_GPS,              5,   4000),
-    SCHED_TASK(update_compass,          5,   1500),
-    SCHED_TASK(update_barometer,        5,   1500),
-    SCHED_TASK(gcs_update,              1,   1700),
-    SCHED_TASK(gcs_data_stream_send,    1,   3000),
-    SCHED_TASK(compass_accumulate,      1,   1500),
-    SCHED_TASK(barometer_accumulate,    1,    900),
-    SCHED_TASK(update_notify,           1,    100),
-    SCHED_TASK(check_usb_mux,           5,    300),
-    SCHED_TASK(gcs_retry_deferred,      1,   1000),
-    SCHED_TASK(one_second_loop,        50,   3900),
-    SCHED_TASK(compass_cal_update,      1,    100),
+    SCHED_TASK(update_ahrs,            50,   1000),
+    SCHED_TASK(read_radio,             50,    200),
+    SCHED_TASK(update_tracking,        50,   1000),
+    SCHED_TASK(update_GPS,             10,   4000),
+    SCHED_TASK(update_compass,         10,   1500),
+    SCHED_TASK(update_barometer,       10,   1500),
+    SCHED_TASK(gcs_update,             50,   1700),
+    SCHED_TASK(gcs_data_stream_send,   50,   3000),
+    SCHED_TASK(compass_accumulate,     50,   1500),
+    SCHED_TASK(barometer_accumulate,   50,    900),
+    SCHED_TASK(ten_hz_logging_loop,    10,    300),
+    SCHED_TASK(dataflash_periodic,     50,    300),
+    SCHED_TASK(update_notify,          50,    100),
+    SCHED_TASK(check_usb_mux,          10,    300),
+    SCHED_TASK(gcs_retry_deferred,     50,   1000),
+    SCHED_TASK(one_second_loop,         1,   3900),
+    SCHED_TASK(compass_cal_update,     50,    100),
+    SCHED_TASK(accel_cal_update,       10,    100)
 };
 
 /**
@@ -88,6 +86,11 @@ void Tracker::loop()
     scheduler.run(19900UL);
 }
 
+void Tracker::dataflash_periodic(void)
+{
+    DataFlash.periodic_tasks();
+}
+
 void Tracker::one_second_loop()
 {
     // send a heartbeat
@@ -109,6 +112,23 @@ void Tracker::one_second_loop()
             compass.save_offsets();
         }
         one_second_counter = 0;
+    }
+}
+
+void Tracker::ten_hz_logging_loop()
+{
+    if (should_log(MASK_LOG_IMU)) {
+        DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMUDT(ins);
+    }
+    if (should_log(MASK_LOG_ATTITUDE)) {
+        Log_Write_Attitude();
+    }
+    if (should_log(MASK_LOG_RCIN)) {
+        DataFlash.Log_Write_RCIN();
+    }
+    if (should_log(MASK_LOG_RCOUT)) {
+        DataFlash.Log_Write_RCOUT();
     }
 }
 

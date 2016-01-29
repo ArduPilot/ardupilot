@@ -6,9 +6,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
 
-class HALSITL::SITLEEPROMStorage : public AP_HAL::Storage {
+class HALSITL::EEPROMStorage : public AP_HAL::Storage {
 public:
-    SITLEEPROMStorage() {
+    EEPROMStorage() {
         _eeprom_fd = -1;
     }
     void init() {}

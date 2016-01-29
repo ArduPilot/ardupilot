@@ -319,6 +319,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
 
+    // @Param: RTL_RADIUS
+    // @DisplayName: RTL loiter radius
+    // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used.
+    // @Units: Meters
+    // @Range: -32767 32767
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rtl_radius,             "RTL_RADIUS",  0),
+    
 #if GEOFENCE_ENABLED == ENABLED
     // @Param: FENCE_ACTION
     // @DisplayName: Action on geofence breach
@@ -433,7 +442,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FBWB_CLIMB_RATE
     // @DisplayName: Fly By Wire B altitude change rate
     // @Description: This sets the rate in m/s at which FBWB and CRUISE modes will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.
-    // @Range: 1-10
+    // @Range: 1 10
+    // @Units: m/s
 	// @Increment: 0.1
     // @User: Standard
     GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  2.0f),
@@ -548,8 +558,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_LONG_ACTN
     // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. 
-    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide
+    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTION is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). 
+    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute
     // @User: Standard
     GSCALAR(long_fs_action,         "FS_LONG_ACTN",   LONG_FAILSAFE_ACTION),
 
@@ -907,9 +917,15 @@ const AP_Param::Info Plane::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: OVERRIDE_CHAN
     // @DisplayName: PX4IO override channel
-    // @Description: If set to a non-zero value then this is an RC input channel number to use for testing manual control in case the main FMU microcontroller on a PX4 or Pixhawk fails. When this RC input channel goes above 1750 the FMU will stop sending servo controls to the PX4IO board, which will trigger the PX4IO board to start using its failsafe override behaviour, which should give you manual control of the aircraft. That allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is normally only set to a non-zero value for ground testing purposes. When the override channel is used it also forces the PX4 safety switch into an armed state. This allows it to be used as a way to re-arm a plane after an in-flight reboot. Use in that way is considered a developer option, for people testing unstable developer code. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get PX4IO based override when in flight mode 6. Note that when override is triggered the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
+    // @Description: If set to a non-zero value then this is an RC input channel number to use for giving PX4IO manual control in case the main FMU microcontroller on a PX4 or Pixhawk fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the PX4IO microcontroller will directly control the servos. Note that PX4IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Please also see the docs on OVERRIDE_SAFETY. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get PX4IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
     // @User: Advanced
     GSCALAR(override_channel,      "OVERRIDE_CHAN",  0),
+
+    // @Param: OVERRIDE_SAFETY
+    // @DisplayName: PX4IO override safety switch
+    // @Description: This controls whether the safety switch is turned off when you activate override with OVERRIDE_CHAN. When set to 1 the safety switch is de-activated (activating the servos) then a PX4IO override is triggered. In that case the safety remains de-activated after override is disabled. If OVERRIDE_SAFETTY is set to 0 then the safety switch state does not change. Note that regardless of the value of this parameter the servos will be active while override is active.
+    // @User: Advanced
+    GSCALAR(override_safety,      "OVERRIDE_SAFETY",  1),
 #endif
 
     // @Param: INVERTEDFLT_CH
@@ -957,6 +973,14 @@ const AP_Param::Info Plane::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Standard
     GSCALAR(trim_rc_at_start,     "TRIM_RC_AT_START",    0), 
+
+    // @Param: CRASH_ACC_THRESH
+    // @DisplayName: Crash Deceleration Threshold
+    // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensative (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
+    // @Units: m/s/s
+    // @Values: 10 127
+    // @User: Advanced
+    GSCALAR(crash_accel_threshold,          "CRASH_ACC_THRESH",   0),
 
     // @Param: CRASH_DETECT
     // @DisplayName: Crash Detection
@@ -1026,6 +1050,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
     GOBJECT(adsb,                "ADSB_", AP_ADSB),
 
+    // @Group: Q_
+    // @Path: quadplane.cpp
+    GOBJECT(quadplane,           "Q_", QuadPlane),
+    
     // RC channel
     //-----------
     // @Group: RC1_
@@ -1060,7 +1088,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC9_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
@@ -1084,7 +1111,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: RC14_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_14,                    "RC14_", RC_Channel_aux),
-#endif
 
     // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
@@ -1214,6 +1240,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),
 
+    // @Group: NTF_
+    // @Path: ../libraries/AP_Notify/AP_Notify.cpp
+    GOBJECT(notify, "NTF_",  AP_Notify),
+
     AP_VAREND
 };
 
@@ -1272,11 +1302,11 @@ void Plane::load_parameters(void)
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
         cliSerial->println("done.");
-    } else {
-        uint32_t before = micros();
-        // Load all auto-loaded EEPROM variables
-        AP_Param::load_all();
-        AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-        cliSerial->printf("load_all took %uus\n", micros() - before);
     }
+
+    uint32_t before = micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
+    cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

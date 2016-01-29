@@ -13,16 +13,14 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_GPS.h"
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Progmem/AP_Progmem.h>
 
-#include "AP_GPS.h"
-
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
@@ -82,7 +80,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: INJECT_TO
     // @DisplayName: Destination for GPS_INJECT_DATA MAVLink packets
     // @Description: The GGS can send raw serial packets to inject data to multiple GPSes.
-    // @Values: 0:send to first GPS, 1:send to 2nd GPS, 127:send to all
+    // @Values: 0:send to first GPS,1:send to 2nd GPS,127:send to all
     AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, GPS_RTK_INJECT_TO_ALL),
 
     // @Param: SBP_LOGMASK
@@ -103,7 +101,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: GNSS system configuration
     // @Description: Bitmask for what GNSS system to use (all unchecked or zero to leave GPS as configured)
     // @Values: 0:Leave as currently configured, 1:GPS-NoSBAS, 3:GPS+SBAS, 4:Galileo-NoSBAS, 6:Galileo+SBAS, 8:Beidou, 51:GPS+IMES+QZSS+SBAS (Japan Only), 64:GLONASS, 66:GLONASS+SBAS, 67:GPS+GLONASS+SBAS
-    // @Bitmask: 0:GPS, 1:SBAS, 2:Galileo, 3:Beidou, 4:IMES, 5:QZSS, 6:GLOSNASS
+    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLOSNASS
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("GNSS_MODE", 10, AP_GPS, _gnss_mode, 0),
@@ -166,7 +164,7 @@ void AP_GPS::send_blob_update(uint8_t instance)
             space = initblob_state[instance].remaining;
         }
         while (space > 0) {
-            _port[instance]->write(pgm_read_byte(initblob_state[instance].blob));
+            _port[instance]->write(*initblob_state[instance].blob);
             initblob_state[instance].blob++;
             space--;
             initblob_state[instance].remaining--;
@@ -196,6 +194,14 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+    if (_type[instance] == GPS_TYPE_QURT) {
+        hal.console->print(" QURTGPS ");
+        new_gps = new AP_GPS_QURT(*this, state[instance], _port[instance]);
+        goto found_gps;
+    }
+#endif
+    
     if (_port[instance] == NULL) {
         // UART not available
         return;
@@ -226,7 +232,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
 		}
-		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
+		uint32_t baudrate = _baudrates[dstate->last_baud];
 		_port[instance]->begin(baudrate);
 		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
@@ -251,7 +257,7 @@ AP_GPS::detect_instance(uint8_t instance)
           for.
         */
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
-            pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
+            _baudrates[dstate->last_baud] >= 38400 &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print(" ublox ");
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
@@ -288,7 +294,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		}
 	}
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 found_gps:
 #endif
 	if (new_gps != NULL) {
@@ -422,6 +428,7 @@ AP_GPS::update(void)
 
 	// update notify with gps status. We always base this on the primary_instance
     AP_Notify::flags.gps_status = state[primary_instance].status;
+    AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
 }
 
 /*

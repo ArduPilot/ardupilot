@@ -280,9 +280,10 @@ struct PACKED log_Nav_Tuning {
     int16_t airspeed_cm;
     float   altitude;
     uint32_t groundspeed_cm;
+    float   xtrack_error;
 };
 
-// Write a navigation tuning packe
+// Write a navigation tuning packet
 void Plane::Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
@@ -295,7 +296,8 @@ void Plane::Log_Write_Nav_Tuning()
         altitude_error_cm   : (int16_t)altitude_error_cm,
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
         altitude            : barometer.get_altitude(),
-        groundspeed_cm      : (uint32_t)(gps.ground_speed()*100)
+        groundspeed_cm      : (uint32_t)(gps.ground_speed()*100),
+        xtrack_error        : nav_controller->crosstrack_error()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -310,6 +312,7 @@ struct PACKED log_Status {
     bool is_crashed;
     bool is_still;
     uint8_t stage;
+    bool impact;
 };
 
 void Plane::Log_Write_Status()
@@ -324,6 +327,7 @@ void Plane::Log_Write_Status()
         ,is_crashed  : crash_state.is_crashed
         ,is_still    : plane.ins.is_still()
         ,stage       : flight_stage
+        ,impact      : crash_state.impact_detected
         };
 
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -481,7 +485,7 @@ static const struct LogStructure log_structure[] = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "QCfccccfI",   "TimeUS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
+      "NTUN", "QCfccccfIf",  "TimeUS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM,XT" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QHfffBBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
@@ -489,7 +493,7 @@ static const struct LogStructure log_structure[] = {
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P" },
     { LOG_STATUS_MSG, sizeof(log_Status),
-      "STAT", "QBfBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage" },
+      "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },

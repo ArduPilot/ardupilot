@@ -2,6 +2,10 @@
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/diydrones/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+[![Build SemaphoreCI](https://semaphoreci.com/api/v1/projects/4d28a40d-b6a6-4bfb-9780-95d92aabb178/667563/badge.svg)](https://semaphoreci.com/diydrones/ardupilot)
+
+[![Build Travis](https://travis-ci.org/diydrones/ardupilot.svg?branch=master)](https://travis-ci.org/diydrones/ardupilot)
+
 ### The ArduPilot project is made up of: ###
 >>ArduCopter (or APM:Copter) : [code](https://github.com/diydrones/ardupilot/tree/master/ArduCopter), [wiki](http://copter.ardupilot.com)
 
@@ -80,7 +84,7 @@
 >> - [Michael du Breuil](https://github.com/WickedShell)
 >>   - ***Subsystem***: uBlox GPS
 >> - [Víctor Mayoral Vilches](https://github.com/vmayoral)
->>   - ***Board***: PXF
+>>   - ***Board***: PXF, Erle-Brain 2, PXFmini
 >> - [Mirko Denecke](https://github.com/mirkix)
 >>   - ***Board***: BBBmini
 >> - [Georgii Staroselskii](https://github.com/staroselskii)
@@ -91,6 +95,10 @@
 >>   - ***Board***: VRBrain
 >> - [Mike McCauley](#)
 >>   - ***Board***: Flymaple
+>> - [Julien BERAUD](https://github.com/jberaud)
+>>   - ***Board***: Bebop & Bebop 2
+>> - [Pritam Ghanghas](https://github.com/pritamghanghas)
+>>   - ***Board***: Raspilot
 >> - [Jonathan Challinger] (https://github.com/3drobotics/ardupilot-solo)
 >>   - ***Vehicle***: 3DRobotics Solo ArduPilot maintainer
 >> - [Gustavo José de Sousa](https://github.com/guludo)

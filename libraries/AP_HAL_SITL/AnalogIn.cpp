@@ -55,10 +55,10 @@ void ADCSource::set_pin(uint8_t pin) {
     _pin = pin;
 }
 
-void SITLAnalogIn::init() {
+void AnalogIn::init() {
 }
 
-AP_HAL::AnalogSource* SITLAnalogIn::channel(int16_t pin) {
+AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin) {
     return new ADCSource(_sitlState, pin);
 }
 

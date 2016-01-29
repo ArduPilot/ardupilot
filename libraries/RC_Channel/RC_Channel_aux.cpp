@@ -12,7 +12,7 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] = {
     // @Param: FUNCTION
     // @DisplayName: Servo out function
     // @Description: Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function
-    // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:Flap_auto,4:Aileron,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoiler1,17:DifferentialSpoiler2,18:AileronWithInput,19:Elevator,20:ElevatorWithInput,21:Rudder,24:Flaperon1,25:Flaperon2,26:GroundSteering,27:Parachute,28:EPM,29:LandingGear,30:EngineRunEnable
+    // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:Flap_auto,4:Aileron,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoiler1,17:DifferentialSpoiler2,18:AileronWithInput,19:Elevator,20:ElevatorWithInput,21:Rudder,24:Flaperon1,25:Flaperon2,26:GroundSteering,27:Parachute,28:EPM,29:LandingGear,30:EngineRunEnable,31:HeliRSC,32:HeliTailRSC
     // @User: Standard
     AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function, 0),
 
@@ -20,7 +20,8 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] = {
 };
 
 RC_Channel_aux *RC_Channel_aux::_aux_channels[RC_AUX_MAX_CHANNELS];
-uint32_t RC_Channel_aux::_function_mask;
+uint64_t RC_Channel_aux::_function_mask;
+bool RC_Channel_aux::_initialised;
 
 /// map a function to a servo channel and output it
 void
@@ -34,6 +35,9 @@ RC_Channel_aux::output_ch(void)
     case k_manual:              // manual
         radio_out = radio_in;
         break;
+    case k_motor1 ... k_motor8:
+        // handled by AP_Motors::rc_write()
+        return;
     }
     hal.rcout->write(_ch_out, radio_out);
 }
@@ -78,6 +82,44 @@ RC_Channel_aux::Aux_servo_function_t RC_Channel_aux::channel_function(uint8_t ch
     return RC_Channel_aux::k_none;
 }
 
+/* 
+   setup a channels aux servo function
+*/
+void RC_Channel_aux::aux_servo_function_setup(void)
+{
+    switch (function) {
+    case RC_Channel_aux::k_flap:
+    case RC_Channel_aux::k_flap_auto:
+    case RC_Channel_aux::k_egg_drop:
+        set_range_out(0,100);
+        break;
+    case RC_Channel_aux::k_heli_rsc:
+    case RC_Channel_aux::k_heli_tail_rsc:
+        set_range_out(0,1000);
+        break;
+    case RC_Channel_aux::k_aileron_with_input:
+    case RC_Channel_aux::k_elevator_with_input:
+        set_angle(4500);
+        break;
+    case RC_Channel_aux::k_aileron:
+    case RC_Channel_aux::k_elevator:
+    case RC_Channel_aux::k_dspoiler1:
+    case RC_Channel_aux::k_dspoiler2:
+    case RC_Channel_aux::k_rudder:
+    case RC_Channel_aux::k_steering:
+    case RC_Channel_aux::k_flaperon1:
+    case RC_Channel_aux::k_flaperon2:
+        set_angle_out(4500);
+        break;
+    default:
+        break;
+    }
+
+    if (function < k_nr_aux_servo_functions) {
+        _function_mask |= (1ULL<<(uint8_t)function);
+    }
+}
+
 /// Update the _aux_channels array of pointers to rc_x channels
 /// This is to be done before rc_init so that the channels get correctly initialized.
 /// It also should be called periodically because the user might change the configuration and
@@ -87,44 +129,16 @@ RC_Channel_aux::Aux_servo_function_t RC_Channel_aux::channel_function(uint8_t ch
 /// (do not call this twice with different parameters, the second call will reset the effect of the first call)
 void RC_Channel_aux::update_aux_servo_function(void)
 {
+    _function_mask = 0;
+
     // set auxiliary ranges
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] == NULL) continue;
-		RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
-		switch (function) {
-		case RC_Channel_aux::k_flap:
-		case RC_Channel_aux::k_flap_auto:
-		case RC_Channel_aux::k_egg_drop:
-			_aux_channels[i]->set_range(0,100);
-			break;
-		case RC_Channel_aux::k_aileron:
-		case RC_Channel_aux::k_aileron_with_input:
-		case RC_Channel_aux::k_elevator:
-		case RC_Channel_aux::k_elevator_with_input:
-		case RC_Channel_aux::k_dspoiler1:
-		case RC_Channel_aux::k_dspoiler2:
-		case RC_Channel_aux::k_rudder:
-		case RC_Channel_aux::k_steering:
-		case RC_Channel_aux::k_flaperon1:
-		case RC_Channel_aux::k_flaperon2:
-		    _aux_channels[i]->set_angle(4500);
-			break;
-		default:
-			break;
-		}
+        _aux_channels[i]->aux_servo_function_setup();
 	}
-
-    // create a function mask to make updates master
-    _function_mask = 0;
-    for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
-        if (_aux_channels[i]) {
-            RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
-            if (function < k_nr_aux_servo_functions) {
-                _function_mask |= (1UL<<(uint8_t)function);
-            }
-		}
-	}
+    _initialised = true;
 }
+
 
 /// Should be called after the the servo functions have been initialized
 void RC_Channel_aux::enable_aux_servos()
@@ -339,7 +353,7 @@ bool
 RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t function)
 {
     if (function < k_nr_aux_servo_functions) {
-        return (_function_mask & (1UL<<function)) != 0;
+        return (_function_mask & (1ULL<<function)) != 0;
     }
 	return false;
 }
@@ -363,4 +377,52 @@ RC_Channel_aux::move_servo(RC_Channel_aux::Aux_servo_function_t function,
 			_aux_channels[i]->output();
 		}
 	}
+}
+
+/*
+  set the default channel an auxillary output function should be on
+ */
+bool RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::Aux_servo_function_t function, uint8_t channel)
+{
+    if (function_assigned(function)) {
+        // already assigned
+        return true;
+    }
+    for (uint8_t i=0; i<RC_AUX_MAX_CHANNELS; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->_ch_out == channel) {
+            if (_aux_channels[i]->function != k_none) {
+                if (_aux_channels[i]->function == function) {
+                    return true;
+                }
+                hal.console->printf("Channel %u already assigned %u\n",
+                                    (unsigned)channel,
+                                    (unsigned)_aux_channels[i]->function);
+                return false;
+            }
+            _aux_channels[i]->function.set(function);
+            _aux_channels[i]->aux_servo_function_setup();
+            return true;
+        }
+    }
+    hal.console->printf("AUX channel %u not available\n",
+                        (unsigned)channel);
+    return false;    
+}
+
+// find first channel that a function is assigned to
+bool RC_Channel_aux::find_channel(RC_Channel_aux::Aux_servo_function_t function, uint8_t &chan)
+{
+    if (!_initialised) {
+        update_aux_servo_function();
+    }
+    if (!function_assigned(function)) {
+        return false;
+    }
+    for (uint8_t i=0; i<RC_AUX_MAX_CHANNELS; i++) {
+        if (_aux_channels[i] && _aux_channels[i]->function == function) {
+            chan = _aux_channels[i]->_ch_out;
+            return true;
+        }
+    }
+    return false;
 }

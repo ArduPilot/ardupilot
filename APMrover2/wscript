@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-import ardupilotwaf
-
 def build(bld):
     vehicle = bld.path.name
-    ardupilotwaf.vehicle_stlib(
-        bld,
+    bld.ap_stlib(
         name=vehicle + '_libs',
         vehicle=vehicle,
-        libraries=ardupilotwaf.COMMON_VEHICLE_DEPENDENT_LIBRARIES + [
+        libraries=bld.ap_common_vehicle_libraries() + [
             'APM_Control',
             'AP_Arming',
             'AP_Camera',
@@ -24,9 +21,10 @@ def build(bld):
             'AP_ServoRelayEvents',
             'PID',
         ],
+        use='mavlink',
     )
 
-    ardupilotwaf.program(
-        bld,
+    bld.ap_program(
+        program_name='ardurover',
         use=vehicle + '_libs',
     )

@@ -21,9 +21,7 @@
 
 #include <stdio.h>
 
-namespace SITL {
-
-Motor m(90,  false,  1);
+using namespace SITL;
 
 static const Motor quad_plus_motors[4] =
 {
@@ -88,7 +86,7 @@ static const Motor octa_quad_motors[8] =
 /*
   table of supported frame types
  */
-static const Frame supported_frames[] =
+static Frame supported_frames[] =
 {
     Frame("+",         4, quad_plus_motors),
     Frame("quad",      4, quad_plus_motors),
@@ -100,12 +98,23 @@ static const Frame supported_frames[] =
     Frame("octa-quad", 8, octa_quad_motors)
 };
 
+void Frame::init(float _mass, float hover_throttle, float _terminal_velocity, float _terminal_rotation_rate)
+{
+    mass = _mass;
+
+    /*
+       scaling from total motor power to Newtons. Allows the copter
+       to hover against gravity when each motor is at hover_throttle
+    */
+    thrust_scale = (mass * GRAVITY_MSS) / (num_motors * hover_throttle);
+
+    terminal_velocity = _terminal_velocity;
+    terminal_rotation_rate = _terminal_rotation_rate;
+}
+
 MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
-    frame(NULL),
-    hover_throttle(0.51),
-    terminal_velocity(15.0),
-    terminal_rotation_rate(4*radians(360.0))
+    frame(NULL)
 {
     for (uint8_t i=0; i < ARRAY_SIZE(supported_frames); i++) {
         if (strcasecmp(frame_str, supported_frames[i].name) == 0) {
@@ -116,25 +125,20 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
         printf("Frame '%s' not found", frame_str);
         exit(1);
     }
-    /*
-       scaling from total motor power to Newtons. Allows the copter
-       to hover against gravity when each motor is at hover_throttle
-    */
-    mass = 1.5;
-    thrust_scale = (mass * GRAVITY_MSS) / (frame->num_motors * hover_throttle);
-
+    frame->init(1.5, 0.51, 15, 4*radians(360));
     frame_height = 0.1;
 }
 
-/*
-  update the multicopter simulation by one time step
- */
-void MultiCopter::update(const struct sitl_input &input)
+// calculate rotational and linear accelerations
+void Frame::calculate_forces(const Aircraft &aircraft,
+                             const Aircraft::sitl_input &input,
+                             Vector3f &rot_accel,
+                             Vector3f &body_accel)
 {
-    float motor_speed[frame->num_motors];
+    float motor_speed[num_motors];
 
-    for (uint8_t i=0; i<frame->num_motors; i++) {
-        uint16_t servo = input.servos[frame->motors[i].servo-1];
+    for (uint8_t i=0; i<num_motors; i++) {
+        uint16_t servo = input.servos[motors[i].servo-1];
         // assume 1000 to 2000 PWM range
         if (servo <= 1000) {
             motor_speed[i] = 0;
@@ -143,17 +147,13 @@ void MultiCopter::update(const struct sitl_input &input)
         }
     }
 
-    // how much time has passed?
-    float delta_time = frame_time_us * 1.0e-6f;
-
     // rotational acceleration, in rad/s/s, in body frame
-    Vector3f rot_accel;
     float thrust = 0.0f; // newtons
 
-    for (uint8_t i=0; i<frame->num_motors; i++) {
-        rot_accel.x  += -radians(5000.0) * sinf(radians(frame->motors[i].angle)) * motor_speed[i];
-        rot_accel.y  +=  radians(5000.0) * cosf(radians(frame->motors[i].angle)) * motor_speed[i];
-        if (frame->motors[i].clockwise) {
+    for (uint8_t i=0; i<num_motors; i++) {
+        rot_accel.x  += -radians(5000.0) * sinf(radians(motors[i].angle)) * motor_speed[i];
+        rot_accel.y  +=  radians(5000.0) * cosf(radians(motors[i].angle)) * motor_speed[i];
+        if (motors[i].clockwise) {
             rot_accel.z -= motor_speed[i] * radians(400.0);
         } else {
             rot_accel.z += motor_speed[i] * radians(400.0);
@@ -162,67 +162,58 @@ void MultiCopter::update(const struct sitl_input &input)
     }
 
     // rotational air resistance
-    rot_accel.x -= gyro.x * radians(5000.0) / terminal_rotation_rate;
-    rot_accel.y -= gyro.y * radians(5000.0) / terminal_rotation_rate;
-    rot_accel.z -= gyro.z * radians(400.0)  / terminal_rotation_rate;
-
-    // update rotational rates in body frame
-    gyro += rot_accel * delta_time;
-
-    // update attitude
-    dcm.rotate(gyro * delta_time);
-    dcm.normalize();
+    const Vector3f &gyro = aircraft.get_gyro();
+    rot_accel.x -= gyro.x * radians(400.0) / terminal_rotation_rate;
+    rot_accel.y -= gyro.y * radians(400.0) / terminal_rotation_rate;
+    rot_accel.z -= gyro.z * radians(400.0) / terminal_rotation_rate;
 
     // air resistance
-    Vector3f air_resistance = -velocity_ef * (GRAVITY_MSS/terminal_velocity);
+    Vector3f air_resistance = -aircraft.get_velocity_ef() * (GRAVITY_MSS/terminal_velocity);
 
-    accel_body = Vector3f(0, 0, -thrust / mass);
-    Vector3f accel_earth = dcm * accel_body;
-
-    accel_earth += Vector3f(0, 0, GRAVITY_MSS);
-    accel_earth += air_resistance;
-
-    // if we're on the ground, then our vertical acceleration is limited
-    // to zero. This effectively adds the force of the ground on the aircraft
-    if (on_ground(position) && accel_earth.z > 0) {
-        accel_earth.z = 0;
-    }
-
-    // work out acceleration as seen by the accelerometers. It sees the kinematic
-    // acceleration (ie. real movement), plus gravity
-    accel_body = dcm.transposed() * (accel_earth + Vector3f(0, 0, -GRAVITY_MSS));
+    body_accel = Vector3f(0, 0, -thrust / mass);
+    body_accel += aircraft.get_dcm().transposed() * air_resistance;    
 
     // add some noise
-    add_noise(thrust / (thrust_scale * frame->num_motors));
+    const float gyro_noise = radians(0.1);
+    const float accel_noise = 0.3;
+    const float noise_scale = thrust / (thrust_scale * num_motors);
+    rot_accel += Vector3f(aircraft.rand_normal(0, 1),
+                          aircraft.rand_normal(0, 1),
+                          aircraft.rand_normal(0, 1)) * gyro_noise * noise_scale;
+    body_accel += Vector3f(aircraft.rand_normal(0, 1),
+                           aircraft.rand_normal(0, 1),
+                           aircraft.rand_normal(0, 1)) * accel_noise * noise_scale;
+}
 
-    // new velocity vector
-    velocity_ef += accel_earth * delta_time;
+// calculate rotational and linear accelerations
+void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
+{
+    frame->calculate_forces(*this, input, rot_accel, body_accel);
+}
+    
+/*
+  update the multicopter simulation by one time step
+ */
+void MultiCopter::update(const struct sitl_input &input)
+{
+    // how much time has passed?
+    Vector3f rot_accel;
 
-    // new position vector
-    Vector3f old_position = position;
-    position += velocity_ef * delta_time;
+    calculate_forces(input, rot_accel, accel_body);
 
-    // assume zero wind for now
-    airspeed = velocity_ef.length();
+    update_dynamics(rot_accel);
 
-    // constrain height to the ground
     if (on_ground(position)) {
-        if (!on_ground(old_position)) {
-            printf("Hit ground at %f m/s\n", velocity_ef.z);
+        // zero roll/pitch, but keep yaw
+        float r, p, y;
+        dcm.to_euler(&r, &p, &y);
+        dcm.from_euler(0, 0, y);
 
-            velocity_ef.zero();
-
-            // zero roll/pitch, but keep yaw
-            float r, p, y;
-            dcm.to_euler(&r, &p, &y);
-            dcm.from_euler(0, 0, y);
-
-            position.z = -(ground_level + frame_height - home.alt*0.01f);
-        }
+        position.z = -(ground_level + frame_height - home.alt*0.01f);
     }
-
+    
     // update lat/lon/altitude
     update_position();
 }
 
-} // namespace SITL
+

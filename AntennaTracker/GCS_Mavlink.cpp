@@ -5,9 +5,6 @@
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS)
 
-// use this to prevent recursion during sensor init
-static bool in_mavlink_delay;
-
 /*
  *  !!NOTE!!
  *
@@ -178,6 +175,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        tracker.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();
         tracker.send_heartbeat(chan);
         return true;
 
@@ -428,7 +426,7 @@ GCS_MAVLINK::data_stream_send(void)
         }
     }
 
-    if (in_mavlink_delay) {
+    if (tracker.in_mavlink_delay) {
         // don't send any other stream types while in the delay callback
         return;
     }
@@ -540,12 +538,23 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     //  Note: this doesn't check success for all sends meaning it's not guaranteed the vehicle's positions will be sent at 1hz
     for (uint8_t i=0; i < num_gcs; i++) {
         if (gcs[i].initialised) {
+            // request position
             if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_DATA_STREAM_LEN) {
                 mavlink_msg_request_data_stream_send(
                     (mavlink_channel_t)i,
                     msg->sysid,
                     msg->compid,
                     MAV_DATA_STREAM_POSITION,
+                    1,  // 1hz
+                    1); // start streaming
+            }
+            // request air pressure
+            if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_DATA_STREAM_LEN) {
+                mavlink_msg_request_data_stream_send(
+                    (mavlink_channel_t)i,
+                    msg->sysid,
+                    msg->compid,
+                    MAV_DATA_STREAM_RAW_SENSORS,
                     1,  // 1hz
                     1); // start streaming
             }
@@ -622,18 +631,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (is_equal(packet.param4,1.0f)) {
                     // Cant trim radio
                 } else if (is_equal(packet.param5,1.0f)) {
-                    float trim_roll, trim_pitch;
-                    AP_InertialSensor_UserInteract_MAVLink interact(this);
+                    result = MAV_RESULT_ACCEPTED;
                     // start with gyro calibration
                     tracker.ins.init_gyro();
                     // reset ahrs gyro bias
                     if (tracker.ins.gyro_calibrated_ok_all()) {
                         tracker.ahrs.reset_gyro_drift();
+                    } else {
+                        result = MAV_RESULT_FAILED;
                     }
-                    if(tracker.ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
-                        // reset ahrs's trim to suggested values from calibration routine
-                        tracker.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                    }
+                    // start accel cal
+                    tracker.ins.acal_init();
+                    tracker.ins.get_acal()->start(this);
                 } else if (is_equal(packet.param5,2.0f)) {
                     // start with gyro calibration
                     tracker.ins.init_gyro();
@@ -874,6 +883,26 @@ mission_failed:
         break;
     }
 
+    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
+    case MAVLINK_MSG_ID_LOG_ERASE:
+        tracker.in_log_download = true;
+        /* no break */
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
+        if (!tracker.in_mavlink_delay) {
+            handle_log_message(msg, tracker.DataFlash);
+        }
+        break;
+    case MAVLINK_MSG_ID_LOG_REQUEST_END:
+        tracker.in_log_download = false;
+        if (!tracker.in_mavlink_delay) {
+            handle_log_message(msg, tracker.DataFlash);
+        }
+        break;
+
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+        tracker.DataFlash.remote_log_block_status_msg(chan, msg);
+        break;
+
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, tracker.gps);
         break;
@@ -901,7 +930,7 @@ void Tracker::mavlink_delay_cb()
     static uint32_t last_1hz, last_50hz, last_5s;
     if (!gcs[0].initialised) return;
 
-    in_mavlink_delay = true;
+    tracker.in_mavlink_delay = true;
 
     uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
@@ -919,7 +948,7 @@ void Tracker::mavlink_delay_cb()
         last_5s = tnow;
         gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
-    in_mavlink_delay = false;
+    tracker.in_mavlink_delay = false;
 }
 
 /*

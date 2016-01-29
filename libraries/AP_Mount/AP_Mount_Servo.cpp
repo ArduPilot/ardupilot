@@ -130,7 +130,7 @@ void AP_Mount_Servo::stabilize()
         Matrix3f m;                         ///< holds 3 x 3 matrix, var is used as temp in calcs
         Matrix3f cam;                       ///< Rotation matrix earth to camera. Desired camera from input.
         Matrix3f gimbal_target;             ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
-        m = _frontend._ahrs.get_dcm_matrix();
+        m = _frontend._ahrs.get_rotation_body_to_ned();
         m.transpose();
         cam.from_euler(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z);
         gimbal_target = m * cam;
@@ -180,8 +180,6 @@ int16_t AP_Mount_Servo::closest_limit(int16_t angle, int16_t angle_min, int16_t 
     while (angle_min >= 1800) angle_min -= 3600;
     while (angle_max < -1800) angle_max += 3600;
     while (angle_max >= 1800) angle_max -= 3600;
-    // TODO call this function somehow, otherwise this will never work
-    //set_range(min, max);
 
     // If the angle is outside servo limits, saturate the angle to the closest limit
     // On a circle the closest angular position must be carefully calculated to account for wrap-around

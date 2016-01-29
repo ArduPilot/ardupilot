@@ -226,6 +226,14 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 
+    // @Param: LOG_BITMASK
+    // @DisplayName: Log bitmask
+    // @Description: 4 byte bitmap of log types to enable
+    // @Values: 63:Default,0:Disabled
+    // @Bitmask: 0:ATTITUDE,1:GPS,2:RCIN,3:IMU,4:RCOUT,5:COMPASS
+    // @User: Standard
+    GSCALAR(log_bitmask, "LOG_BITMASK", DEFAULT_LOG_BITMASK),
+
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,                    "INS_", AP_InertialSensor),
@@ -248,6 +256,10 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group: GPS_
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS_", AP_GPS),
+
+    // @Group: NTF_
+    // @Path: ../libraries/AP_Notify/AP_Notify.cpp
+    GOBJECT(notify, "NTF_",  AP_Notify),
 
     // RC channel
     //-----------
@@ -290,10 +302,10 @@ void Tracker::load_parameters(void)
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
         hal.console->println("done.");
-    } else {
-        uint32_t before = AP_HAL::micros();
-        // Load all auto-loaded EEPROM variables
-        AP_Param::load_all();
-        hal.console->printf("load_all took %luus\n", (unsigned long)(AP_HAL::micros() - before));
     }
+
+    uint32_t before = AP_HAL::micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    hal.console->printf("load_all took %luus\n", (unsigned long)(AP_HAL::micros() - before));
 }

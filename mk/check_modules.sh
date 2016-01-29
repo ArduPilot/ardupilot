@@ -2,7 +2,7 @@
 
 echo "Checking modules"
 
-MODULE_LIST="PX4Firmware PX4NuttX uavcan"
+MODULE_LIST="PX4Firmware PX4NuttX uavcan mavlink"
 
 NEED_INIT=0
 
@@ -10,12 +10,12 @@ cd $(dirname "$0")/.. || exit 1
 
 for m in $MODULE_LIST; do
     [ -d modules/$m ] || {
-        echo "module/$m missing - need module init"
+        echo "modules/$m missing - need module init"
         NEED_INIT=1
         break
     }
     [ -f modules/$m/.git ] || {
-        echo "module/$m/.git missing - need module init"
+        echo "modules/$m/.git missing - need module init"
         NEED_INIT=1
         break
     }
@@ -25,10 +25,12 @@ done
     set -x
     git submodule init || {
         echo "git submodule init failed"
+        git submodule status
         exit 1
     }
     git submodule update || {
         echo "git submodule update failed"        
+        git submodule status
         exit 1
     }
 cat <<EOF

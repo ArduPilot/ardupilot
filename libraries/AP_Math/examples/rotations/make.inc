@@ -1,5 +1,4 @@
 LIBRARIES += AP_Common
-LIBRARIES += AP_Progmem
 LIBRARIES += AP_Param
 LIBRARIES += AP_Math
 LIBRARIES += Filter
@@ -8,6 +7,7 @@ LIBRARIES += AP_Compass
 LIBRARIES += AP_Baro
 LIBRARIES += AP_Notify
 LIBRARIES += AP_InertialSensor
+LIBRARIES += AP_AccelCal
 LIBRARIES += AP_GPS
 LIBRARIES += DataFlash
 LIBRARIES += GCS_MAVLink

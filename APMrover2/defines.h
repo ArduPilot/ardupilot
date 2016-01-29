@@ -93,6 +93,7 @@ enum mode {
 #define MASK_LOG_WHEN_DISARMED  (1UL<<16)
 #define MASK_LOG_IMU_RAW        (1UL<<19)
 
+
 // Waypoint Modes
 // ----------------
 #define ABS_WP 0

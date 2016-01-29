@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Param: FLYBAR_MODE
     // @DisplayName: Flybar Mode Selector
     // @Description: Flybar present or not.  Affects attitude controller used during ACRO flight mode
-    // @Range: 0:NoFlybar 1:Flybar
+    // @Values: 0:NoFlybar 1:Flybar
     // @User: Standard
     AP_GROUPINFO("FLYBAR_MODE", 9, AP_MotorsHeli_Single, _flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
   
@@ -131,23 +131,19 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
         1U << AP_MOTORS_MOT_2 |
         1U << AP_MOTORS_MOT_3 |
         1U << AP_MOTORS_MOT_4;
-    hal.rcout->set_freq(mask, _speed_hz);
+    rc_set_freq(mask, _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors and servos
 void AP_MotorsHeli_Single::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(AP_MOTORS_MOT_1);    // swash servo 1
-    hal.rcout->enable_ch(AP_MOTORS_MOT_2);    // swash servo 2
-    hal.rcout->enable_ch(AP_MOTORS_MOT_3);    // swash servo 3
-    hal.rcout->enable_ch(AP_MOTORS_MOT_4);    // yaw
-    hal.rcout->enable_ch(AP_MOTORS_HELI_SINGLE_AUX);                                 // output for gyro gain or direct drive variable pitch tail motor
-    hal.rcout->enable_ch(AP_MOTORS_HELI_SINGLE_RSC);                                 // output for main rotor esc
-
-    // disable channels 7 and 8 from being used by RC_Channel_aux
-    RC_Channel_aux::disable_aux_channel(AP_MOTORS_HELI_SINGLE_AUX);
-    RC_Channel_aux::disable_aux_channel(AP_MOTORS_HELI_SINGLE_RSC);
+    rc_enable_ch(AP_MOTORS_MOT_1);    // swash servo 1
+    rc_enable_ch(AP_MOTORS_MOT_2);    // swash servo 2
+    rc_enable_ch(AP_MOTORS_MOT_3);    // swash servo 3
+    rc_enable_ch(AP_MOTORS_MOT_4);    // yaw
+    rc_enable_ch(AP_MOTORS_HELI_SINGLE_AUX);                                 // output for gyro gain or direct drive variable pitch tail motor
+    rc_enable_ch(AP_MOTORS_HELI_SINGLE_RSC);                                 // output for main rotor esc
 }
 
 // init_outputs - initialise Servo/PWM ranges and endpoints
@@ -179,15 +175,15 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
     switch (motor_seq) {
         case 1:
             // swash servo 1
-            hal.rcout->write(AP_MOTORS_MOT_1, pwm);
+            rc_write(AP_MOTORS_MOT_1, pwm);
             break;
         case 2:
             // swash servo 2
-            hal.rcout->write(AP_MOTORS_MOT_2, pwm);
+            rc_write(AP_MOTORS_MOT_2, pwm);
             break;
         case 3:
             // swash servo 3
-            hal.rcout->write(AP_MOTORS_MOT_3, pwm);
+            rc_write(AP_MOTORS_MOT_3, pwm);
             break;
         case 4:
             // external gyro & tail servo
@@ -198,11 +194,11 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
                     write_aux(_ext_gyro_gain_std);
                 }
             }
-            hal.rcout->write(AP_MOTORS_MOT_4, pwm);
+            rc_write(AP_MOTORS_MOT_4, pwm);
             break;
         case 5:
             // main rotor
-            hal.rcout->write(AP_MOTORS_HELI_SINGLE_RSC, pwm);
+            rc_write(AP_MOTORS_HELI_SINGLE_RSC, pwm);
             break;
         default:
             // do nothing
@@ -320,7 +316,7 @@ void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
 uint16_t AP_MotorsHeli_Single::get_motor_mask()
 {
     // heli uses channels 1,2,3,4,7 and 8
-    return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_SINGLE_AUX | 1U << AP_MOTORS_HELI_SINGLE_RSC);
+    return rc_map_mask(1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_SINGLE_AUX | 1U << AP_MOTORS_HELI_SINGLE_RSC);
 }
 
 // update_motor_controls - sends commands to motor controllers
@@ -442,9 +438,9 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     hal.rcout->cork();
 
     // actually move the servos
-    hal.rcout->write(AP_MOTORS_MOT_1, _swash_servo_1.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_2, _swash_servo_2.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_3, _swash_servo_3.radio_out);
+    rc_write(AP_MOTORS_MOT_1, _swash_servo_1.radio_out);
+    rc_write(AP_MOTORS_MOT_2, _swash_servo_2.radio_out);
+    rc_write(AP_MOTORS_MOT_3, _swash_servo_3.radio_out);
 
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
@@ -463,7 +459,7 @@ void AP_MotorsHeli_Single::move_yaw(int16_t yaw_out)
 
     _yaw_servo.calc_pwm();
 
-    hal.rcout->write(AP_MOTORS_MOT_4, _yaw_servo.radio_out);
+    rc_write(AP_MOTORS_MOT_4, _yaw_servo.radio_out);
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
@@ -484,7 +480,7 @@ void AP_MotorsHeli_Single::write_aux(int16_t servo_out)
 {
     _servo_aux.servo_out = servo_out;
     _servo_aux.calc_pwm();
-    hal.rcout->write(AP_MOTORS_HELI_SINGLE_AUX, _servo_aux.radio_out);
+    rc_write(AP_MOTORS_HELI_SINGLE_AUX, _servo_aux.radio_out);
 }
 
 // servo_test - move servos through full range of movement

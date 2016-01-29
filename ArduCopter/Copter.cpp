@@ -22,7 +22,6 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Copter::Copter(void) :
-    ins_sample_rate(AP_InertialSensor::RATE_400HZ),
     flight_modes(&g.flight_mode1),
     sonar_enabled(true),
     mission(ahrs, 
@@ -50,7 +49,6 @@ Copter::Copter(void) :
     guided_mode(Guided_TakeOff),
     rtl_state(RTL_InitialClimb),
     rtl_state_complete(false),
-    rtl_alt(0.0f),
     circle_pilot_yaw_override(false),
     simple_cos_yaw(1.0f),
     simple_sin_yaw(0.0f),
@@ -72,6 +70,7 @@ Copter::Copter(void) :
     baro_alt(0),
     baro_climbrate(0.0f),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
+    rc_throttle_control_in_filter(1.0f),
     auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
     yaw_look_at_WP_bearing(0.0f),
     yaw_look_at_heading(0),
@@ -116,7 +115,7 @@ Copter::Copter(void) :
     terrain(ahrs, mission, rally),
 #endif
 #if PRECISION_LANDING == ENABLED
-    precland(ahrs, inertial_nav, g.pi_precland, MAIN_LOOP_SECONDS),
+    precland(ahrs, inertial_nav, MAIN_LOOP_SECONDS),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
     // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4

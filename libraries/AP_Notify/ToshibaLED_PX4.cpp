@@ -42,7 +42,7 @@ bool ToshibaLED_PX4::hw_init()
         return false;
     }
     ioctl(_rgbled_fd, RGBLED_SET_MODE, (unsigned long)RGBLED_MODE_ON);
-    last.v = 0;
+    last.v = 1;		// This is necessary so rgb value is written for the first time
     next.v = 0;
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&ToshibaLED_PX4::update_timer, void));
     return true;

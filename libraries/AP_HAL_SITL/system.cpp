@@ -8,7 +8,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-using HALSITL::SITLScheduler;
+using HALSITL::Scheduler;
 
 namespace AP_HAL {
 
@@ -45,7 +45,7 @@ uint32_t millis()
 
 uint64_t micros64()
 {
-    const SITLScheduler* scheduler = SITLScheduler::from(hal.scheduler);
+    const HALSITL::Scheduler* scheduler = HALSITL::Scheduler::from(hal.scheduler);
     uint64_t stopped_usec = scheduler->stopped_clock_usec();
     if (stopped_usec) {
         return stopped_usec;
@@ -61,7 +61,7 @@ uint64_t micros64()
 
 uint64_t millis64()
 {
-    const SITLScheduler* scheduler = SITLScheduler::from(hal.scheduler);
+    const HALSITL::Scheduler* scheduler = HALSITL::Scheduler::from(hal.scheduler);
     uint64_t stopped_usec = scheduler->stopped_clock_usec();
     if (stopped_usec) {
         return stopped_usec / 1000;

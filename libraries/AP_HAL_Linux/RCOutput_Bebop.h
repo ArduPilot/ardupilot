@@ -4,10 +4,10 @@
 #include "AP_HAL_Linux.h"
 
 enum bebop_bldc_motor {
-    BEBOP_BLDC_RIGHT_FRONT = 0,
-    BEBOP_BLDC_LEFT_FRONT,
-    BEBOP_BLDC_LEFT_BACK,
-    BEBOP_BLDC_RIGHT_BACK,
+    BEBOP_BLDC_MOTOR_1 = 0,
+    BEBOP_BLDC_MOTOR_2,
+    BEBOP_BLDC_MOTOR_3,
+    BEBOP_BLDC_MOTOR_4,
     BEBOP_BLDC_MOTORS_NUM,
 };
 
@@ -47,6 +47,17 @@ public:
     uint8_t temperature;
 };
 
+struct bldc_info {
+    uint8_t version_maj;
+    uint8_t version_min;
+    uint8_t type;
+    uint8_t n_motors;
+    uint16_t n_flights;
+    uint16_t last_flight_time;
+    uint32_t total_flight_time;
+    uint8_t last_error;
+}__attribute__((packed));
+
 class Linux::RCOutput_Bebop : public AP_HAL::RCOutput {
 public:
     RCOutput_Bebop();
@@ -78,11 +89,13 @@ private:
     uint16_t _max_pwm;
     uint8_t  _state;
     bool     _corking = false;
+    uint16_t _max_rpm;
 
     uint8_t _checksum(uint8_t *data, unsigned int len);
     void _start_prop();
     void _toggle_gpio(uint8_t mask);
     void _set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM]);
+    bool _get_info(struct bldc_info *info);
     void _stop_prop();
     void _clear_error();
     void _play_sound(uint8_t sound);

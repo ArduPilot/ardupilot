@@ -20,16 +20,15 @@
 #include "GCS.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
-uint16_t GCS_MAVLINK::_parameter_count;
 
-GCS_MAVLINK::GCS_MAVLINK() :
-    waypoint_receive_timeout(5000)
+GCS_MAVLINK::GCS_MAVLINK()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -100,22 +99,6 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
 
     // and init the gcs instance
     init(uart, mav_chan);
-}
-
-uint16_t
-GCS_MAVLINK::_count_parameters()
-{
-    // if we haven't cached the parameter count yet...
-    if (0 == _parameter_count) {
-        AP_Param  *vp;
-        AP_Param::ParamToken token;
-
-        vp = AP_Param::first(&token, NULL);
-        do {
-            _parameter_count++;
-        } while (NULL != (vp = AP_Param::next_scalar(&token, NULL)));
-    }
-    return _parameter_count;
 }
 
 /**
@@ -377,7 +360,7 @@ void GCS_MAVLINK::handle_mission_clear_all(AP_Mission &mission, mavlink_message_
         mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_RESULT_ACCEPTED);
     }else{
         // send nack
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, 1);
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
     }
 }
 
@@ -513,13 +496,13 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
-        send_text(MAV_SEVERITY_WARNING, sysid);
+        send_text(MAV_SEVERITY_INFO, sysid);
     }
 
     // Start sending parameters - next call to ::update will kick the first one out
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
     _queued_parameter_index = 0;
-    _queued_parameter_count = _count_parameters();
+    _queued_parameter_count = AP_Param::count_parameters();
 }
 
 void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
@@ -554,7 +537,7 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
         param_name,
         value,
         mav_var_type(p_type),
-        _count_parameters(),
+        AP_Param::count_parameters(),
         packet.param_index);
 }
 
@@ -605,7 +588,9 @@ GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
         comm_get_txspace(chan) >= 
         MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_STATUSTEXT_LEN) {
         // send immediately
-        mavlink_msg_statustext_send(chan, severity, str);
+        char msg[50] {};
+        strncpy(msg, str, sizeof(msg));
+        mavlink_msg_statustext_send(chan, severity, msg);
     } else {
         // send via the deferred queuing system
         mavlink_statustext_t *s = &pending_status;
@@ -664,8 +649,8 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     mavlink_msg_mission_item_decode(msg, &packet);
 
     // convert mavlink packet to mission command
-    if (!AP_Mission::mavlink_to_mission_cmd(packet, cmd)) {
-        result = MAV_MISSION_INVALID;
+    result = AP_Mission::mavlink_to_mission_cmd(packet, cmd);
+    if (result != MAV_MISSION_ACCEPTED) {
         goto mission_ack;
     }
 
@@ -1156,7 +1141,7 @@ void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ..
         if ((1U<<i) & mavlink_active) {
             mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
             if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
-                char msg2[50];
+                char msg2[50] {};
                 va_list arg_list;
                 va_start(arg_list, fmt);
                 hal.util->vsnprintf((char *)msg2, sizeof(msg2), fmt, arg_list);
@@ -1183,7 +1168,7 @@ void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type p
                     param_name,
                     param_value,
                     mav_var_type(param_type),
-                    _count_parameters(),
+                    AP_Param::count_parameters(),
                     -1);
             }
         }

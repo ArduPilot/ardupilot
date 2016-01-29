@@ -84,7 +84,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
     report_compass();
 
     // we need the AHRS initialised for this test
-    ins.init(ins_sample_rate);
+    ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
     int16_t counter = 0;
     float heading = 0;
@@ -106,7 +106,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
             if(medium_loopCounter == 5) {
                 if (compass.read()) {
                     // Calculate heading
-                    const Matrix3f &m = ahrs.get_dcm_matrix();
+                    const Matrix3f &m = ahrs.get_rotation_body_to_ned();
                     heading = compass.calculate_heading(m);
                     compass.learn_offsets();
                 }
@@ -119,7 +119,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
                     const Vector3f &mag_ofs = compass.get_offsets();
                     const Vector3f &mag = compass.get_field();
                     cliSerial->printf("Heading: %d, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
-                                        (wrap_360_cd(ToDeg(heading) * 100)) /100,
+                                      (int)(wrap_360_cd(ToDeg(heading) * 100)) /100,
                                         (double)mag.x,
                                         (double)mag.y,
                                         (double)mag.z,
@@ -152,7 +152,7 @@ int8_t Copter::test_ins(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     ahrs.init();
-    ins.init(ins_sample_rate);
+    ins.init(scheduler.get_loop_rate_hz());
     cliSerial->printf("...done\n");
 
     delay(50);

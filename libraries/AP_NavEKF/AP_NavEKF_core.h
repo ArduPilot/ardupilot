@@ -21,9 +21,19 @@
 #ifndef AP_NavEKF_core
 #define AP_NavEKF_core
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_NavEKF/AP_NavEKF.h>
 
 #pragma GCC optimize("O3")
+
+/*
+  avoid a hang in the optimiser in clang++
+ */
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#define OPT_MATHS __attribute__ ((optnone))
+#else
+#define OPT_MATHS
+#endif
 
 // #define MATH_CHECK_INDEXES 1
 // #define EKF_DISABLE_INTERRUPTS 1

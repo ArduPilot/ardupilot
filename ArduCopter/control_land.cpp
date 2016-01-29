@@ -59,7 +59,7 @@ void Copter::land_gps_run()
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -87,6 +87,14 @@ void Copter::land_gps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (!set_mode(LOITER)) {
+                set_mode(ALT_HOLD);
+            }
+        }
+
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
@@ -119,7 +127,7 @@ void Copter::land_gps_run()
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // pause 4 seconds before beginning land descent
     float cmb_rate;
@@ -148,6 +156,12 @@ void Copter::land_nogps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            set_mode(ALT_HOLD);
+        }
+
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
@@ -164,7 +178,7 @@ void Copter::land_nogps_run()
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -185,7 +199,7 @@ void Copter::land_nogps_run()
     }
 
     // call attitude controller
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // pause 4 seconds before beginning land descent
     float cmb_rate;

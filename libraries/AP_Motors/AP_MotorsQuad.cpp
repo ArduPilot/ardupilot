@@ -88,6 +88,12 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
         add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
         add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+    } else if ( _flags.frame_orientation == AP_MOTORS_QUADPLANE ) {
+        // quadplane frame set-up, X arrangement on motors 5 to 8
+        add_motor(AP_MOTORS_MOT_5,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+        add_motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+        add_motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+        add_motor(AP_MOTORS_MOT_8,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
     }else{
         // X frame set-up
         add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);

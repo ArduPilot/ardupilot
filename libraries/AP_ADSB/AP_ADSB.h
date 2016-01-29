@@ -27,8 +27,8 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define VEHICLE_THREAT_RADIUS_M         200
-#define VEHICLE_LIST_LENGTH             25      // # of ADS-B vehicles to remember. Additional ones are ignored
+#define VEHICLE_THREAT_RADIUS_M         1000
+#define VEHICLE_LIST_LENGTH             25      // # of ADS-B vehicles to remember at any given time
 #define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
 
 class AP_ADSB
@@ -37,12 +37,19 @@ public:
     enum ADSB_BEHAVIOR {
         ADSB_BEHAVIOR_NONE = 0,
         ADSB_BEHAVIOR_LOITER = 1,
-        ADSB_BEHAVIOR_LOITER_AND_DESCEND = 2
+        ADSB_BEHAVIOR_LOITER_AND_DESCEND = 2,
+        ADSB_BEHAVIOR_GUIDED = 3
+    };
+
+    enum ADSB_THREAT_LEVEL {
+        ADSB_THREAT_LOW = 0,
+        ADSB_THREAT_HIGH = 1
     };
 
     struct adsb_vehicle_t {
-        mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 42
+        mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
+        ADSB_THREAT_LEVEL threat_level;   // basic threat level
     };
 
 
@@ -62,11 +69,12 @@ public:
     // add or update vehicle_list from inbound mavlink msg
     void update_vehicle(const mavlink_message_t* msg);
 
-    bool get_another_vehicle_within_radius()  { return _enabled && _another_vehicle_within_radius; }
+    bool get_possible_threat()  { return _enabled && _another_vehicle_within_radius; }
 
     ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(_behavior.get()); }
     bool get_is_evading_threat()  { return _enabled && _is_evading_threat; }
     void set_is_evading_threat(bool is_evading) { if (_enabled) { _is_evading_threat = is_evading; } }
+    uint16_t get_vehicle_count() { return _vehicle_count; }
 
 private:
 
@@ -98,9 +106,15 @@ private:
     AP_Int8     _behavior;
     adsb_vehicle_t *_vehicle_list;
     uint16_t    _vehicle_count = 0;
-    uint16_t    _furthest_vehicle_index = 0;
-    float       _furthest_vehicle_distance = 0;
     bool        _another_vehicle_within_radius = false;
     bool        _is_evading_threat = false;
+
+    // index of and distance to vehicle with lowest threat
+    uint16_t    _lowest_threat_index = 0;
+    float       _lowest_threat_distance = 0;
+
+    // index of and distance to vehicle with highest threat
+    uint16_t    _highest_threat_index = 0;
+    float       _highest_threat_distance = 0;
 };
 #endif // AP_ADSB_H

@@ -87,6 +87,21 @@ public:
         return _land_sink;
     }
 
+    // return height rate demand, in m/s
+    float get_height_rate_demand(void) const {
+        return _hgt_rate_dem;
+    }
+
+    // set path_proportion
+    void set_path_proportion(float path_proportion) {
+        _path_proportion = constrain_float(path_proportion, 0.0f, 1.0f);
+    }
+
+    // set pitch max limit in degrees
+    void set_pitch_max_limit(int8_t pitch_limit) {
+        _pitch_max_limit = pitch_limit;
+    }
+    
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -145,6 +160,9 @@ private:
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
 
+    // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
+    int8_t _pitch_max_limit = 90;
+    
     // current height estimate (above field elevation)
     float _height;
 
@@ -265,6 +283,9 @@ private:
 
     // counter for demanded sink rate on land final
     uint8_t _flare_counter;
+
+    // percent traveled along the previous and next waypoints
+    float _path_proportion;
 
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);

@@ -32,6 +32,7 @@
 #define AP_MOTORS_NEW_X_FRAME       11
 #define AP_MOTORS_NEW_V_FRAME       12
 #define AP_MOTORS_NEW_H_FRAME       13   // same as X frame but motors spin in opposite direction
+#define AP_MOTORS_QUADPLANE         14   // motors on 5..8
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
@@ -129,7 +130,11 @@ protected:
     virtual void        output_armed_not_stabilizing()=0;
     virtual void        output_armed_zero_throttle() { output_min(); }
     virtual void        output_disarmed()=0;
-
+    virtual void        rc_write(uint8_t chan, uint16_t pwm);
+    virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
+    virtual void        rc_enable_ch(uint8_t chan);
+    virtual uint32_t    rc_map_mask(uint32_t mask) const;
+    
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;
 
@@ -159,5 +164,9 @@ protected:
     float               _batt_voltage;          // latest battery voltage reading
     float               _batt_current;          // latest battery current reading
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
+
+    // mapping to output channels
+    uint8_t             _motor_map[AP_MOTORS_MAX_NUM_MOTORS];
+    uint16_t            _motor_map_mask;
 };
 #endif  // __AP_MOTORS_CLASS_H__

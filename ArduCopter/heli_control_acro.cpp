@@ -62,7 +62,7 @@ void Copter::heli_acro_run()
         }
 
         // run attitude controller
-        attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+        attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
     }else{
         /*
           for fly-bar passthrough use control_in values with no

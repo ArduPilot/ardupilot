@@ -68,7 +68,6 @@
 #define WGS84_E (sqrt(2*WGS84_F - WGS84_F*WGS84_F))
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
-AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
 // are two floats equal
@@ -115,6 +114,9 @@ bool                    inverse3x3(float m[], float invOut[]);
 // invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
 bool                    inverse4x4(float m[],float invOut[]);
 
+// matrix multiplication of two NxN matrices
+float* mat_mul(float *A, float *B, uint8_t n);
+
 // see if location is past a line perpendicular to
 // the line between point1 and point2. If point1 is
 // our previous waypoint and point2 is our target waypoint
@@ -156,6 +158,11 @@ float wrap_180_cd_float(float angle);
   wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
  */
 float wrap_PI(float angle_in_radians);
+
+/*
+  wrap an angle defined in radians to the interval [0,2*PI)
+ */
+float wrap_2PI(float angle);
 
 /*
  * check if lat and lng match. Ignore altitude and options
@@ -244,15 +251,16 @@ static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one :
 
 #define NSEC_PER_SEC 1000000000ULL
 #define NSEC_PER_USEC 1000ULL
+#define USEC_PER_SEC 1000000ULL
 
 inline uint32_t hz_to_nsec(uint32_t freq)
 {
     return NSEC_PER_SEC / freq;
 }
 
-inline uint32_t nsec_to_hz(uint32_t usec)
+inline uint32_t nsec_to_hz(uint32_t nsec)
 {
-    return NSEC_PER_SEC / usec;
+    return NSEC_PER_SEC / nsec;
 }
 
 inline uint32_t usec_to_nsec(uint32_t usec)
@@ -263,6 +271,16 @@ inline uint32_t usec_to_nsec(uint32_t usec)
 inline uint32_t nsec_to_usec(uint32_t nsec)
 {
     return nsec / NSEC_PER_USEC;
+}
+
+inline uint32_t hz_to_usec(uint32_t freq)
+{
+    return USEC_PER_SEC / freq;
+}
+
+inline uint32_t usec_to_hz(uint32_t usec)
+{
+    return USEC_PER_SEC / usec;
 }
 
 #undef INLINE

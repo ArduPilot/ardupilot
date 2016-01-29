@@ -122,8 +122,8 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: LAND_THR
     // @DisplayName: Cruise throttle during landing approach (percentage)
-    // @Description: Use this parameter instead of LAND_ASPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If it is negative if TECS_LAND_ASPD is in use then this value is not used during landing.
-    // @Range: -1 to 100
+    // @Description: Use this parameter instead of LAND_ARSPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If this value is negative then it is disabled and TECS_LAND_ARSPD is used instead.
+    // @Range: -1 100
     // @Increment: 0.1
     // @User: User
     AP_GROUPINFO("LAND_THR", 13, AP_TECS, _landThrottle, -1),
@@ -272,7 +272,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 
     // Update and average speed rate of change
     // Get DCM
-    const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
+    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Calculate speed rate of change
     float temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
     // take 5 point moving average
@@ -454,7 +454,9 @@ void AP_TECS::_update_height_demand(void)
 
 void AP_TECS::_detect_underspeed(void)
 {
-    if (((_integ5_state < _TASmin * 0.9f) &&
+    if (_flight_stage == AP_TECS::FLIGHT_VTOL) {
+        _underspeed = false;
+    } else if (((_integ5_state < _TASmin * 0.9f) &&
             (_throttle_dem >= _THRmaxf * 0.95f) &&
             _flight_stage != AP_TECS::FLIGHT_LAND_FINAL) ||
             ((_height < _hgt_dem_adj) && _underspeed))
@@ -535,7 +537,7 @@ void AP_TECS::_update_throttle(void)
         // Calculate feed-forward throttle
         float ff_throttle = 0;
         float nomThr = aparm.throttle_cruise * 0.01f;
-        const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
+        const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
         // Use the demanded rate of change of total energy as the feed-forward demand, but add
         // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
         // drag increase during turns.
@@ -619,7 +621,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
     }
 
     // Calculate additional throttle for turn drag compensation including throttle nudging
-    const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
+    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Use the demanded rate of change of total energy as the feed-forward demand, but add
     // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
     // drag increase during turns.
@@ -667,7 +669,13 @@ void AP_TECS::_update_pitch(void)
     } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         SKE_weighting = 2.0f;
     } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
-        SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+        if (_spdWeightLand < 0) {
+            // use sliding scale from normal weight down to zero at landing
+            float scaled_weight = _spdWeight * (1.0f - _path_proportion);
+            SKE_weighting = constrain_float(scaled_weight, 0.0f, 2.0f);
+        } else {
+            SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+        }
     }
 
     float SPE_weighting = 2.0f - SKE_weighting;
@@ -820,6 +828,11 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     } else {
         _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
     }
+
+    // apply temporary pitch limit and clear
+    _PITCHmaxf = constrain_float(_PITCHmaxf, -90, _pitch_max_limit);
+    _pitch_max_limit = 90;
+    
     if (_pitch_min >= 0) {
         _PITCHminf = aparm.pitch_limit_min_cd * 0.01f;
     } else {

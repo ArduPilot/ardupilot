@@ -54,6 +54,7 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 
     // publish delta angle
     _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
+    _imu._delta_angle_dt[instance] = _imu._delta_angle_acc_dt[instance];
     _imu._delta_angle_valid[instance] = true;
 }
 
@@ -87,6 +88,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     // referenced paper, but in simulation little difference was found between
     // integrating together and integrating separately (see examples/coning.py)
     _imu._delta_angle_acc[instance] += delta_angle + delta_coning;
+    _imu._delta_angle_acc_dt[instance] += dt;
 
     // save previous delta angle for coning correction
     _imu._last_delta_angle[instance] = delta_angle;
@@ -130,6 +132,25 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     _imu._delta_velocity[instance] = _imu._delta_velocity_acc[instance];
     _imu._delta_velocity_dt[instance] = _imu._delta_velocity_acc_dt[instance];
     _imu._delta_velocity_valid[instance] = true;
+
+
+    if (_imu._accel_calibrator != NULL && _imu._accel_calibrator[instance].get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
+        Vector3f cal_sample = _imu._delta_velocity[instance];
+
+        //remove rotation
+        cal_sample.rotate_inverse(_imu._board_orientation);
+
+        // remove scale factors
+        const Vector3f &accel_scale = _imu._accel_scale[instance].get();
+        cal_sample.x /= accel_scale.x;
+        cal_sample.y /= accel_scale.y;
+        cal_sample.z /= accel_scale.z;
+
+        //remove offsets
+        cal_sample += _imu._accel_offset[instance].get() * _imu._delta_velocity_dt[instance] ;
+
+        _imu._accel_calibrator[instance].new_sample(cal_sample, _imu._delta_velocity_dt[instance]);
+    }
 }
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
@@ -154,6 +175,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     if (_imu._accel_filtered[instance].is_nan() || _imu._accel_filtered[instance].is_inf()) {
         _imu._accel_filter[instance].reset();
     }
+
+    _imu.set_accel_peak_hold(instance, _imu._accel_filtered[instance]);
 
     _imu._new_accel_data[instance] = true;
 

@@ -50,7 +50,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>         // ArduPilot Mega Magnetometer Library
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <AP_Curve/AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
+#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_NavEKF/AP_NavEKF.h>
@@ -108,12 +108,9 @@
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 
-
-// AP_HAL to Arduino compatibility layer
 // Configuration
 #include "defines.h"
 #include "config.h"
-#include "config_channels.h"
 
 // Local modules
 #include "Parameters.h"
@@ -166,9 +163,6 @@ private:
     // Dataflash
     DataFlash_Class DataFlash{FIRMWARE_STRING};
 
-    // the rate we run the main loop at
-    const AP_InertialSensor::Sample_rate ins_sample_rate;
-
     AP_GPS gps;
 
     // flight modes convenience array
@@ -199,7 +193,7 @@ private:
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow;
+    OpticalFlow optflow{ahrs};
 #endif
 
     // gnd speed limit required to observe optical flow sensor limits
@@ -343,7 +337,15 @@ private:
     // RTL
     RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
     bool rtl_state_complete; // set to true if the current state is completed
-    float rtl_alt;     // altitude the vehicle is returning at
+
+    struct {
+        // NEU w/ origin-relative altitude
+        Vector3f origin_point;
+        Vector3f climb_target;
+        Vector3f return_target;
+        Vector3f descent_target;
+        bool land;
+    } rtl_path;
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
@@ -389,6 +391,9 @@ private:
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
+
+    // filtered pilot's throttle input used to cancel landing if throttle held high
+    LowPassFilterFloat rc_throttle_control_in_filter;
 
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
@@ -543,6 +548,16 @@ private:
     } heli_flags;
 #endif
 
+#if GNDEFFECT_COMPENSATION == ENABLED
+    // ground effect detector
+    struct {
+        bool takeoff_expected;
+        bool touchdown_expected;
+        uint32_t takeoff_time_ms;
+        float takeoff_alt_cm;
+    } gndeffect_state;
+#endif // GNDEFFECT_COMPENSATION == ENABLED
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -555,6 +570,7 @@ private:
     void rc_loop();
     void throttle_loop();
     void update_mount();
+    void update_trigger(void);
     void update_batt_compass(void);
     void ten_hz_logging_loop();
     void fifty_hz_logging_loop();
@@ -649,6 +665,7 @@ private:
     void Log_Write_Heli(void);
 #endif
     void Log_Write_Precland();
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
@@ -795,7 +812,8 @@ private:
     void rtl_descent_run();
     void rtl_land_start();
     void rtl_land_run();
-    float get_RTL_alt();
+    void rtl_build_path();
+    float rtl_compute_return_alt_above_origin(float rtl_return_dist);
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
@@ -811,6 +829,7 @@ private:
     void esc_calibration_startup_check();
     void esc_calibration_passthrough();
     void esc_calibration_auto();
+    bool should_disarm_on_failsafe();
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
     void failsafe_battery_event(void);
@@ -845,6 +864,9 @@ private:
     void update_land_and_crash_detectors();
     void update_land_detector();
     void update_throttle_thr_mix();
+#if GNDEFFECT_COMPENSATION == ENABLED
+    void update_ground_effect_detector(void);
+#endif // GNDEFFECT_COMPENSATION == ENABLED
     void landinggear_update();
     void update_notify();
     void motor_test_output();
@@ -854,6 +876,8 @@ private:
     void arm_motors_check();
     void auto_disarm_check();
     bool init_arm_motors(bool arming_from_gcs);
+    void update_arming_checks(void);
+    bool all_arming_checks_passing(bool arming_from_gcs);
     bool pre_arm_checks(bool display_failure);
     void pre_arm_rc_checks();
     bool pre_arm_gps_checks(bool display_failure);
@@ -992,6 +1016,7 @@ private:
     void run_cli(AP_HAL::UARTDriver *port);
     void init_capabilities(void);
     void dataflash_periodic(void);
+    void accel_cal_update(void);
 
 public:
     void mavlink_delay_cb();

@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_SITL_SCHEDULER_H__
-#define __AP_HAL_SITL_SCHEDULER_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -10,11 +8,11 @@
 #define SITL_SCHEDULER_MAX_TIMER_PROCS 4
 
 /* Scheduler implementation: */
-class HALSITL::SITLScheduler : public AP_HAL::Scheduler {
+class HALSITL::Scheduler : public AP_HAL::Scheduler {
 public:
-    SITLScheduler(SITL_State *sitlState);
-    static SITLScheduler *from(AP_HAL::Scheduler *scheduler) {
-        return static_cast<SITLScheduler*>(scheduler);
+    Scheduler(SITL_State *sitlState);
+    static Scheduler *from(AP_HAL::Scheduler *scheduler) {
+        return static_cast<HALSITL::Scheduler*>(scheduler);
     }
 
     /* AP_HAL::Scheduler methods */
@@ -78,7 +76,8 @@ private:
     bool _initialized;
     uint64_t _stopped_clock_usec;
 };
-#endif
-#endif // __AP_HAL_SITL_SCHEDULER_H__
+#endif // CONFIG_HAL_BOARD
+
+
 
 

@@ -8,6 +8,9 @@
 set -e
 set -x
 
+export BUILDROOT="/tmp/all.build"
+rm -rf $BUILDROOT
+
 echo "Testing ArduPlane build"
 pushd ArduPlane
 for b in sitl linux; do
@@ -56,7 +59,7 @@ done
 
 test -d ../libmaple && {
 echo "Testing flymaple build"
-for d in ArduPlane APMrover2; do
+for d in APMrover2; do
     pushd $d
     make clean
     make flymaple -j4

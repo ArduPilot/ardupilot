@@ -39,6 +39,9 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     case FLY_BY_WIRE_A:
     case AUTOTUNE:
     case FLY_BY_WIRE_B:
+    case QSTABILIZE:
+    case QHOVER:
+    case QLOITER:
     case CRUISE:
         base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
@@ -169,6 +172,9 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     case STABILIZE:
     case FLY_BY_WIRE_A:
     case AUTOTUNE:
+    case QSTABILIZE:
+    case QHOVER:
+    case QLOITER:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
         break;
@@ -1196,13 +1202,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_DIGICAM_CONTROL:
-            plane.camera.control(packet.param1,
-                                 packet.param2,
-                                 packet.param3,
-                                 packet.param4,
-                                 packet.param5,
-                                 packet.param6);
-
+            if (plane.camera.control(packet.param1,
+                                     packet.param2,
+                                     packet.param3,
+                                     packet.param4,
+                                     packet.param5,
+                                     packet.param6)) {
+                plane.log_picture();
+            }
             result = MAV_RESULT_ACCEPTED;
             break;
 #endif // CAMERA == ENABLED
@@ -1219,6 +1226,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
+            if(hal.util->get_soft_armed()) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
             plane.in_calibration = true;
             if (is_equal(packet.param1,1.0f)) {
                 plane.ins.init_gyro();
@@ -1238,21 +1249,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.trim_radio();
                 result = MAV_RESULT_ACCEPTED;
             } else if (is_equal(packet.param5,1.0f)) {
-                float trim_roll, trim_pitch;
-                AP_InertialSensor_UserInteract_MAVLink interact(this);
+                result = MAV_RESULT_ACCEPTED;
                 // start with gyro calibration
                 plane.ins.init_gyro();
                 // reset ahrs gyro bias
                 if (plane.ins.gyro_calibrated_ok_all()) {
                     plane.ahrs.reset_gyro_drift();
-                }
-                if(plane.ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
-                    // reset ahrs's trim to suggested values from calibration routine
-                    plane.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                    result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
+                plane.ins.acal_init();
+                plane.ins.get_acal()->start(this);
+
             } else if (is_equal(packet.param5,2.0f)) {
                 // start with gyro calibration
                 plane.ins.init_gyro();
@@ -1383,9 +1391,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             //Not allowing go around at FLIGHT_LAND_FINAL stage on purpose --
             //if plane is close to the ground a go around coudld be dangerous.
             if (plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-                //Just tell the autopilot we're done landing so it will 
-                //proceed to the next mission item.  If there is no next mission
-                //item the plane will head to home point and loiter.
+                // Initiate an aborted landing. This will trigger a pitch-up and
+                // climb-out to a safe altitude holding heading then one of the
+                // following actions will occur, check for in this order:
+                // - If MAV_CMD_CONTINUE_AND_CHANGE_ALT is next command in mission,
+                //      increment mission index to execute it
+                // - else if DO_LAND_START is available, jump to it
+                // - else decrement the mission index to repeat the landing approach
+
+                if (!is_zero(packet.param1)) {
+                    plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
+                }
                 plane.auto_state.commanded_go_around = true;
                
                 result = MAV_RESULT_ACCEPTED;
@@ -1508,6 +1524,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 #endif
 
+        case MAV_CMD_DO_VTOL_TRANSITION:
+            result = plane.quadplane.handle_do_vtol_transition(packet);
+            break;
+            
         default:
             break;
         }
@@ -1520,7 +1540,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         break;
     }
-
 
     case MAVLINK_MSG_ID_SET_MODE:
     {

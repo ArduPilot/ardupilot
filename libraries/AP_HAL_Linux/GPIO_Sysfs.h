@@ -64,6 +64,10 @@ public:
      */
     bool usb_connected() override;
 
+protected:
+    void _pinMode(unsigned int pin, uint8_t output);
+    int _open_pin_value(unsigned int pin, int flags);
+
     /*
      * Make pin available for use. This function should be called before
      * calling functions that use the pin number as parameter.
@@ -72,22 +76,7 @@ public:
      *
      * Note: the pin is ignored if already exported.
      */
-    static bool export_pin(uint8_t vpin);
-
-    /*
-     * Make pins available for use. This function should be called before
-     * calling functions that use pin number as parameter.
-     *
-     * If all pins are exported successfully, true is returned. If there is an
-     * error for one of them, false is returned.
-     *
-     * Note: pins already exported are ignored.
-     */
-    static bool export_pins(uint8_t vpins[], size_t num_vpins);
-
-protected:
-    void _pinMode(unsigned int pin, uint8_t output);
-    int _open_pin_value(unsigned int pin, int flags);
+    static bool _export_pin(uint8_t vpin);
 };
 
 #endif

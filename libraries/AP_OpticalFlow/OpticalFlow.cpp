@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "OpticalFlow.h"
+#include "AP_OpticalFlow_Onboard.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -40,11 +41,14 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
 };
 
 // default constructor
-OpticalFlow::OpticalFlow(void) :
+OpticalFlow::OpticalFlow(AP_AHRS_NavEKF& ahrs) :
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     backend(new AP_OpticalFlow_PX4(*this)),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     backend(new AP_OpticalFlow_HIL(*this)),
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+    backend(new AP_OpticalFlow_Onboard(*this, ahrs)),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     backend(new AP_OpticalFlow_Linux(*this)),
 #else

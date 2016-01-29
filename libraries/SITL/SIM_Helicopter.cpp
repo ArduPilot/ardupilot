@@ -54,10 +54,7 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
  */
 void Helicopter::update(const struct sitl_input &input)
 {
-    // how much time has passed?
-    float delta_time = frame_time_us * 1.0e-6f;
-
-    float rsc = (input.servos[7]-1000) / 1000.0f;
+    float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
     // ignition only for gas helis
     bool ignition_enabled = gas_heli?(input.servos[5] > 1500):true;
 
@@ -147,13 +144,6 @@ void Helicopter::update(const struct sitl_input &input)
     // torque effect on tail
     rot_accel.z += torque_effect_accel;
 
-    // update rotational rates in body frame
-    gyro += rot_accel * delta_time;
-
-    // update attitude
-    dcm.rotate(gyro * delta_time);
-    dcm.normalize();
-
     // air resistance
     Vector3f air_resistance = -velocity_ef * (GRAVITY_MSS/terminal_velocity);
 
@@ -161,47 +151,21 @@ void Helicopter::update(const struct sitl_input &input)
     thrust *= thrust_scale;
 
     accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, -thrust / mass);
-    Vector3f accel_earth = dcm * accel_body;
-    accel_earth += Vector3f(0, 0, GRAVITY_MSS);
-    accel_earth += air_resistance;
+    accel_body += dcm * air_resistance;
 
-    // if we're on the ground, then our vertical acceleration is limited
-    // to zero. This effectively adds the force of the ground on the aircraft
-    if (on_ground(position) && accel_earth.z > 0) {
-        accel_earth.z = 0;
-    }
-
-    // work out acceleration as seen by the accelerometers. It sees the kinematic
-    // acceleration (ie. real movement), plus gravity
-    accel_body = dcm.transposed() * (accel_earth + Vector3f(0, 0, -GRAVITY_MSS));
-
-    // add some noise
-    add_noise(thrust / thrust_scale);
-
-    // new velocity vector
-    velocity_ef += accel_earth * delta_time;
-
-    // new position vector
-    Vector3f old_position = position;
-    position += velocity_ef * delta_time;
-
-    // assume zero wind for now
-    airspeed = velocity_ef.length();
-
+    bool was_on_ground = on_ground(position);
+    
+    update_dynamics(rot_accel);
+    
     // constrain height to the ground
-    if (on_ground(position)) {
-        if (!on_ground(old_position)) {
-            printf("Hit ground at %f m/s\n", velocity_ef.z);
-
-            velocity_ef.zero();
-
-            // zero roll/pitch, but keep yaw
-            float r, p, y;
-            dcm.to_euler(&r, &p, &y);
-            dcm.from_euler(0, 0, y);
-
-            position.z = -(ground_level + frame_height - home.alt*0.01f);
-        }
+    if (on_ground(position) && !was_on_ground) {
+        // zero roll/pitch, but keep yaw
+        float r, p, y;
+        dcm.to_euler(&r, &p, &y);
+        dcm.from_euler(0, 0, y);
+        
+        position.z = -(ground_level + frame_height - home.alt*0.01f);
+        velocity_ef.zero();
     }
 
     // update lat/lon/altitude

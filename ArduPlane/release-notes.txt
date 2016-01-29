@@ -1,3 +1,112 @@
+Release 3.5.0beta1, 9th January 2016
+------------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.0beta1 of APM:Plane. This is a major release with a lot of
+changes so please read the notes carefully!
+
+The biggest changes in this release are:
+
+ - switch to new EKF2 kalman filter for attitude and position estimation
+ - added support for parachutes
+ - added support for QuadPlanes
+ - support for 4 new flight boards, the QualComm Flight, the BHAT,
+   the PXFmini and the Pixracer
+ - support for arming on moving platforms
+
+New Kalman Filter
+
+The 3.4 release series was the first where APM:Plane used a Kalman
+Filter by default for attitude and position estimation. It works very
+well, but Paul Riseborough has been working hard recently on a new
+EKF variant which fixes many issues seen with the old estimator. The
+key improvements are:
+
+  - support for separate filters on each IMU for multi-IMU boards
+    (such as the Pixhawk), giving a high degree of redundency
+  - much better handling of gyro drift estimation, especially on
+    startup
+  - much faster recovery from attitude estimation errors
+
+After extensive testing of the new EKF code we decided to make it the
+default for this release. You can still use the old EKF if you want to
+by setting AHRS_EKF_TYPE to 1, although it is recommended that the new
+EKF be used for all aircraft.
+
+Parachute Support
+
+This is the first release with support for parachute landings on
+plane. The configuration and use of a parachute is the same as the
+existing copter parachute support. See
+http://copter.ardupilot.com/wiki/parachute/
+
+Note that parachute support is considered experimental in planes.
+
+QuadPlane Support
+
+This release includes support for hybrid plane/multi-rotors called
+QuadPlanes. More details are available in this blog post:
+http://diydrones.com/profiles/blogs/quadplane-support-in-apm-plane-3-5-0
+
+Support for 4 new Flight Boards
+
+The porting of ArduPilot to more flight boards continues, with support
+for 3 new flight boards in this release. They are:
+
+ - the BHAT board
+ - the PXFmini
+ - the QualComm Flight
+ - the Pixracer
+
+More information about the list of supported boards is available here:
+http://dev.ardupilot.com/wiki/supported-autopilot-controller-boards/
+
+Startup on a moving platform
+
+One of the benefits of the new EKF2 estimator is that it allows for
+rapid estimation of gyro offset without doing a gyro calibration on
+startup. This makes it possible to startup and arm on a moving
+platform by setting the INS_GYR_CAL parameter to zero (to disable gyro
+calibration on boot). This should be a big help when flying off boats.
+
+That is just a taste of all of the improvements in this release. In
+total the release includes over 1500 patches. Some of the other more
+significant changes include:
+
+- RPM logging
+- new waf build system
+- new async accel calibrator
+- SITL support for quadplanes
+- improved land approach logic
+- better rangefinder power control
+- ADSB adapter support
+- dataflash over mavlink support
+- settable main loop rate
+- hideable parameters
+- improved crash detection logic
+- added optional smooth speed weighting for landing
+- improved logging for dual-GPS setups
+- improvements to multiple RTK GPS drivers
+- numerous HAL_Linux improvements
+- improved logging of CAM messages
+- added support for IMU heaters in HAL_Linux
+- support for RCInput over UDP in HAL_Linux
+- improved EKF startup checks for GPS accuracy
+- added raw IMU logging for all platforms
+- added BRD_CAN_ENABLE parameter
+- support FlightGear visualisation in SITL
+- configurable RGB LED brightness
+
+Many thanks to everyone who contributed to this release! The
+development team is growing at a fast pace, with 57 people
+contributing changes over this release cycle.
+
+I'd like to make special mention of Tom Pittenger and Michael du
+Breuil who have been doing extensive testing of the plane development
+code, and also contributing a great deal of their own
+improvements. Thanks!
+
+
 Release 3.4.0, 24th September 2015
 ----------------------------------
 

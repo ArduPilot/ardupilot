@@ -1,0 +1,15 @@
+#include "AEEStdDef.idl"
+
+interface qflight {
+    // sensor calls
+    long get_imu_data(rout sequence<uint8> outdata);
+    long get_mag_data(rout sequence<uint8> outdata);
+    long get_baro_data(rout sequence<uint8> outdata);
+
+    // UART control
+    long UART_open(in string device, rout int32 fd);
+    long UART_set_baudrate(in int32 fd, in uint32 baudrate);
+    long UART_read(in int32 fd, rout sequence<uint8> buf, rout int32 nread);
+    long UART_write(in int32 fd, in sequence<uint8> buf, rout int32 nwritten);
+    long UART_close(in int32 fd);
+};

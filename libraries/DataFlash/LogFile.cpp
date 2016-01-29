@@ -9,7 +9,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include "DataFlash.h"
 #include "DataFlash_SITL.h"
@@ -36,9 +35,11 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
         DFMessageWriter_DFLogStart *message_writer =
             new DFMessageWriter_DFLogStart(_firmware_string);
         if (message_writer != NULL)  {
+#if HAL_OS_POSIX_IO
             backends[_next_backend] = new DataFlash_File(*this,
                                                          message_writer,
                                                          HAL_BOARD_LOG_DIRECTORY);
+#endif
         }
         if (backends[_next_backend] == NULL) {
             hal.console->printf("Unable to open DataFlash_File");
@@ -327,8 +328,6 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
     return -1;
 }
 
-#define PGM_UINT8(addr) pgm_read_byte((const char *)addr)
-
 /*
   read and print a log entry using the format strings from the given structure
  */
@@ -510,10 +509,8 @@ void DataFlash_Block::_print_log_formats(AP_HAL::BetterStream *port)
 {
     for (uint8_t i=0; i<num_types(); i++) {
         const struct LogStructure *s = structure(i);
-        port->printf("FMT, %u, %u, %s, %s, %s\n",
-                       (unsigned)PGM_UINT8(&s->msg_type),
-                       (unsigned)PGM_UINT8(&s->msg_len),
-                       s->name, s->format, s->labels);
+        port->printf("FMT, %u, %u, %s, %s, %s\n", s->msg_type,  s->msg_len,
+                     s->name, s->format, s->labels);
     }
 }
 
@@ -658,8 +655,8 @@ void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log
     pkt.head1 = HEAD_BYTE1;
     pkt.head2 = HEAD_BYTE2;
     pkt.msgid = LOG_FORMAT_MSG;
-    pkt.type = PGM_UINT8(&s->msg_type);
-    pkt.length = PGM_UINT8(&s->msg_len);
+    pkt.type = s->msg_type;
+    pkt.length = s->msg_len;
     strncpy(pkt.name, s->name, sizeof(pkt.name));
     strncpy(pkt.format, s->format, sizeof(pkt.format));
     strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
@@ -700,26 +697,6 @@ bool DataFlash_Backend::Log_Write_Parameter(const AP_Param *ap,
     char name[16];
     ap->copy_name_token(token, &name[0], sizeof(name), true);
     return Log_Write_Parameter(name, ap->cast_to_float(type));
-}
-
-/*
-  write all parameters to the log - used when starting a new log so
-  the log file has a full record of the parameters
- */
-void DataFlash_Class::Log_Write_Parameters(void)
-{
-    AP_Param::ParamToken token;
-    AP_Param *ap;
-    enum ap_var_type type;
-
-    for (ap=AP_Param::first(&token, &type);
-         ap;
-         ap=AP_Param::next_scalar(&token, &type)) {
-        Log_Write_Parameter(ap, token, type);
-        // slow down the parameter dump to prevent saturating
-        // the dataflash write bandwidth
-        hal.scheduler->delay(1);
-    }
 }
 
 // Write an GPS packet
@@ -1026,24 +1003,6 @@ void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
         clipping_2  : ins.get_accel_clip_count(2)
     };
     WriteBlock(&pkt, sizeof(pkt));
-}
-
-void DataFlash_Class::Log_Write_SysInfo(const char *firmware_string)
-{
-    Log_Write_Message(firmware_string);
-
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-    Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
-#endif
-
-    // write system identifier as well if available
-    char sysid[40];
-    if (hal.util->get_system_id(sysid)) {
-        Log_Write_Message(sysid);
-    }
-
-    // Write all current parameters
-    Log_Write_Parameters();
 }
 
 // Write a mission command. Total length : 36 bytes
@@ -1579,9 +1538,9 @@ void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet)
 }
 
 // Write a Camera packet
-void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc)
+void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc)
 {
-    int32_t altitude, altitude_rel;
+    int32_t altitude, altitude_rel, altitude_gps;
     if (current_loc.flags.relative_alt) {
         altitude = current_loc.alt+ahrs.get_home().alt;
         altitude_rel = current_loc.alt;
@@ -1589,9 +1548,14 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
         altitude = current_loc.alt;
         altitude_rel = current_loc.alt - ahrs.get_home().alt;
     }
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        altitude_gps = gps.location().alt;
+    } else {
+        altitude_gps = 0;
+    }
 
     struct log_Camera pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
+        LOG_PACKET_HEADER_INIT(msg),
         time_us     : AP_HAL::micros64(),
         gps_time    : gps.time_week_ms(),
         gps_week    : gps.time_week(),
@@ -1599,11 +1563,24 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
         longitude   : current_loc.lng,
         altitude    : altitude,
         altitude_rel: altitude_rel,
+        altitude_gps: altitude_gps,
         roll        : (int16_t)ahrs.roll_sensor,
         pitch       : (int16_t)ahrs.pitch_sensor,
         yaw         : (uint16_t)ahrs.yaw_sensor
     };
     WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+// Write a Camera packet
+void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc)
+{
+    Log_Write_CameraInfo(LOG_CAMERA_MSG, ahrs, gps, current_loc);
+}
+
+// Write a Trigger packet
+void DataFlash_Class::Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc)
+{
+    Log_Write_CameraInfo(LOG_TRIGGER_MSG, ahrs, gps, current_loc);
 }
 
 // Write an attitude packet

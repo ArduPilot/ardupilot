@@ -1,5 +1,4 @@
 LIBRARIES += AP_Common
-LIBRARIES += AP_Progmem
 LIBRARIES += AP_Param
 LIBRARIES += StorageManager
 LIBRARIES += AP_GPS
@@ -7,6 +6,7 @@ LIBRARIES += AP_Baro
 LIBRARIES += AP_Compass
 LIBRARIES += AP_Math
 LIBRARIES += AP_ADC
+LIBRARIES += AP_AccelCal
 LIBRARIES += AP_InertialSensor
 LIBRARIES += AP_AHRS
 LIBRARIES += Filter
@@ -30,3 +30,7 @@ LIBRARIES += RC_Channel
 LIBRARIES += AP_BoardConfig
 LIBRARIES += AP_OpticalFlow
 LIBRARIES += AP_RangeFinder
+LIBRARIES += AP_Mount
+LIBRARIES += AP_RSSI
+LIBRARIES += AP_RPM
+

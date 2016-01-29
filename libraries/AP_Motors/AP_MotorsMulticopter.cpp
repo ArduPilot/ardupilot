@@ -333,10 +333,12 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 
     float ret = 1.0f / _lift_max;
 
+#if AP_MOTORS_DENSITY_COMP == 1
     // air density ratio is increasing in density / decreasing in altitude
     if (_air_density_ratio > 0.3f && _air_density_ratio < 1.5f) {
         ret *= 1.0f / constrain_float(_air_density_ratio,0.5f,1.25f);
     }
+#endif
     return ret;
 }
 
@@ -381,7 +383,7 @@ void AP_MotorsMulticopter::throttle_pass_through(int16_t pwm)
         hal.rcout->cork();
         for (uint16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                hal.rcout->write(i, pwm);
+                rc_write(i, pwm);
             }
         }
         hal.rcout->push();

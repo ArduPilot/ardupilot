@@ -26,6 +26,14 @@ COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
 
 ASOPTS          =   -x assembler-with-cpp 
 
+# features: TODO detect dependecy and make them optional
+HAVE_LTTNG=
+
+ifeq ($(HAVE_LTTNG),1)
+DEFINES        += -DPERF_LTTNG=1
+LIBS           += -llttng-ust -ldl
+endif
+
 # disable as this breaks distcc
 #ifneq ($(SYSTYPE),Darwin)
 #LISTOPTS        =   -adhlns=$(@:.o=.lst)
@@ -47,7 +55,7 @@ ifneq ($(SYSTYPE),Darwin)
 LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
-LIBS ?= -lm -lpthread
+LIBS ?= -lm -pthread
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
 LIBS += -lwinmm
 endif
@@ -101,6 +109,9 @@ print-%:
 # fetch dependency info from a previous build if any of it exists
 -include $(ALLDEPS)
 
+ifeq ($(HAL_BOARD_SUBTYPE),HAL_BOARD_SUBTYPE_LINUX_QFLIGHT)
+include $(MK_DIR)/board_qflight.mk
+else
 # Link the final object
 $(SKETCHELF): $(SKETCHOBJS) $(LIBOBJS)
 	@echo "Building $(SKETCHELF)"
@@ -108,6 +119,7 @@ $(SKETCHELF): $(SKETCHOBJS) $(LIBOBJS)
 	$(v)$(LD) $(LDFLAGS) -o $@ $(SKETCHOBJS) $(LIBOBJS) $(LIBS)
 	$(v)cp $(SKETCHELF) .
 	@echo "Firmware is in $(BUILDELF)"
+endif
 
 SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES)
 SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES)

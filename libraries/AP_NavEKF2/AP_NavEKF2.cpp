@@ -21,7 +21,7 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.001f
 #define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    3.5E-05f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
 #define VEL_GATE_DEFAULT        200
@@ -120,7 +120,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This enables EKF2. Enabling EKF2 only makes the maths run, it does not mean it will be used for flight control. To use it for flight control set AHRS_EKF_TYPE=2. A reboot or restart will need to be performed after changing the value of EK2_ENABLE for it to take effect.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("ENABLE", 0, NavEKF2, _enable, 0),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF2, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
     // GPS measurement parameters
 
@@ -286,7 +286,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: RNG_GATE
     // @DisplayName: Range finder measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the range finder innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 100 - 1000
+    // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("RNG_GATE", 19, NavEKF2, _rngInnovGate, 500),
@@ -296,7 +296,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: MAX_FLOW
     // @DisplayName: Maximum valid optical flow rate
     // @Description: This sets the magnitude maximum optical flow rate in rad/sec that will be accepted by the filter
-    // @Range: 1.0 - 4.0
+    // @Range: 1.0 4.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: rad/s
@@ -305,7 +305,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: FLOW_NOISE
     // @DisplayName: Optical flow measurement noise (rad/s)
     // @Description: This is the RMS value of noise and errors in optical flow measurements. Increasing it reduces the weighting on these measurements.
-    // @Range: 0.05 - 1.0
+    // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
     // @Units: rad/s
@@ -314,7 +314,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: FLOW_GATE
     // @DisplayName: Optical Flow measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the optical flow innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 100 - 1000
+    // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("FLOW_GATE", 22, NavEKF2, _flowInnovGate, FLOW_GATE_DEFAULT),
@@ -322,7 +322,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
-    // @Range: 0 - 250
+    // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
     // @Units: msec
@@ -409,7 +409,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: 1 byte bitmap of IMUs to use in EKF2. A separate instance of EKF2 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF2 will fail to start.
     // @Range: 1 127
     // @User: Advanced
-    AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 1),
+    AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 3),
     
     // @Param: CHECK_SCALE
     // @DisplayName: GPS accuracy check scaler (%)
@@ -418,6 +418,14 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @Units: %
     AP_GROUPINFO("CHECK_SCALE", 34, NavEKF2, _gpsCheckScaler, CHECK_SCALER_DEFAULT),
+
+    // @Param: NOAID_NOISE
+    // @DisplayName: Non-GPS operation velocity change (m/s)
+    // @Description: This sets the amount of velocity change that the EKF allows for when operating without external measurements (eg GPs or optical flow). Increasing this parameter makes the EKF attitude estimate less affected by changes in vehicle velocity but also makes the EKF attitude estimate more affected by IMU errors.
+    // @Range: 0.5 25.0
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizVelNoise, 10.0f),
 
     AP_GROUPEND
 };
@@ -465,6 +473,11 @@ bool NavEKF2::InitialiseFilter(void)
     }
     if (core == nullptr) {
 
+        // don't run multiple filters for 1 IMU
+        const AP_InertialSensor &ins = _ahrs->get_ins();
+        uint8_t mask = (1U<<ins.get_accel_count())-1;
+        _imuMask.set(_imuMask.get() & mask);
+        
         // count IMUs from mask
         num_cores = 0;
         for (uint8_t i=0; i<7; i++) {

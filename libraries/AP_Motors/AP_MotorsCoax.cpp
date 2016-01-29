@@ -88,23 +88,23 @@ void AP_MotorsCoax::set_update_rate( uint16_t speed_hz )
     uint32_t mask2 =
         1U << AP_MOTORS_MOT_3 |
         1U << AP_MOTORS_MOT_4 ;
-    hal.rcout->set_freq(mask2, _speed_hz);
+    rc_set_freq(mask2, _speed_hz);
 
     // set update rate for the two servos
     uint32_t mask =
       1U << AP_MOTORS_MOT_1 |
       1U << AP_MOTORS_MOT_2 ;
-    hal.rcout->set_freq(mask, _servo_speed);
+    rc_set_freq(mask, _servo_speed);
 }
 
 // enable - starts allowing signals to be sent to motors
 void AP_MotorsCoax::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(AP_MOTORS_MOT_1);
-    hal.rcout->enable_ch(AP_MOTORS_MOT_2);
-    hal.rcout->enable_ch(AP_MOTORS_MOT_3);
-    hal.rcout->enable_ch(AP_MOTORS_MOT_4);
+    rc_enable_ch(AP_MOTORS_MOT_1);
+    rc_enable_ch(AP_MOTORS_MOT_2);
+    rc_enable_ch(AP_MOTORS_MOT_3);
+    rc_enable_ch(AP_MOTORS_MOT_4);
 }
 
 // output_min - sends minimum values out to the motor and trim values to the servos
@@ -112,10 +112,10 @@ void AP_MotorsCoax::output_min()
 {
     // send minimum value to each motor
     hal.rcout->cork();
-    hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_trim);
-    hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_trim);
-    hal.rcout->write(AP_MOTORS_MOT_3, _throttle_radio_min);
-    hal.rcout->write(AP_MOTORS_MOT_4, _throttle_radio_min);
+    rc_write(AP_MOTORS_MOT_1, _servo1.radio_trim);
+    rc_write(AP_MOTORS_MOT_2, _servo2.radio_trim);
+    rc_write(AP_MOTORS_MOT_3, _throttle_radio_min);
+    rc_write(AP_MOTORS_MOT_4, _throttle_radio_min);
     hal.rcout->push();
 }
 
@@ -157,10 +157,10 @@ void AP_MotorsCoax::output_armed_not_stabilizing()
     }
 
     hal.rcout->cork();
-    hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_3, motor_out);
-    hal.rcout->write(AP_MOTORS_MOT_4, motor_out);
+    rc_write(AP_MOTORS_MOT_1, _servo1.radio_out);
+    rc_write(AP_MOTORS_MOT_2, _servo2.radio_out);
+    rc_write(AP_MOTORS_MOT_3, motor_out);
+    rc_write(AP_MOTORS_MOT_4, motor_out);
     hal.rcout->push();
 }
 
@@ -217,10 +217,10 @@ void AP_MotorsCoax::output_armed_stabilizing()
 
     // send output to each motor
     hal.rcout->cork();
-    hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_3, motor_out[AP_MOTORS_MOT_3]);
-    hal.rcout->write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4]);
+    rc_write(AP_MOTORS_MOT_1, _servo1.radio_out);
+    rc_write(AP_MOTORS_MOT_2, _servo2.radio_out);
+    rc_write(AP_MOTORS_MOT_3, motor_out[AP_MOTORS_MOT_3]);
+    rc_write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4]);
     hal.rcout->push();
 }
 
@@ -245,19 +245,19 @@ void AP_MotorsCoax::output_test(uint8_t motor_seq, int16_t pwm)
     switch (motor_seq) {
         case 1:
             // flap servo 1
-            hal.rcout->write(AP_MOTORS_MOT_1, pwm);
+            rc_write(AP_MOTORS_MOT_1, pwm);
             break;
         case 2:
             // flap servo 2
-            hal.rcout->write(AP_MOTORS_MOT_2, pwm);
+            rc_write(AP_MOTORS_MOT_2, pwm);
             break;
         case 3:
             // motor 1
-            hal.rcout->write(AP_MOTORS_MOT_3, pwm);
+            rc_write(AP_MOTORS_MOT_3, pwm);
             break;
         case 4:
             // motor 2
-            hal.rcout->write(AP_MOTORS_MOT_4, pwm);
+            rc_write(AP_MOTORS_MOT_4, pwm);
             break;
         default:
             // do nothing

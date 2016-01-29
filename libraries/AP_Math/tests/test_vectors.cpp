@@ -8,10 +8,15 @@ TEST(VectorTest, Rotations)
 {
     unsigned rotation_count = 0;
 
-#define TEST_ROTATION(rotation, x, y, z) { \
+#define TEST_ROTATION(rotation, _x, _y, _z) { \
+    const float accuracy = 1.0e-6; \
     Vector3f v(1, 1, 1); \
     v.rotate(rotation); \
-    EXPECT_EQ(Vector3f(x, y, z), v); \
+    Vector3f expected(_x, _y, _z); \
+    EXPECT_NEAR(expected.length(), v.length(), accuracy); \
+    EXPECT_FLOAT_EQ(expected.x, v.x); \
+    EXPECT_FLOAT_EQ(expected.y, v.y); \
+    EXPECT_FLOAT_EQ(expected.z, v.z); \
     rotation_count++; \
 }
 
@@ -53,7 +58,7 @@ TEST(VectorTest, Rotations)
     TEST_ROTATION(ROTATION_ROLL_270_PITCH_270, 1, 1, 1);
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_180_YAW_90, 1, -1, -1);
     TEST_ROTATION(ROTATION_ROLL_90_YAW_270, -1, -1, 1);
-    TEST_ROTATION(ROTATION_YAW_293_PITCH_68_ROLL_90, -0.4118548f, -1.58903555f, -0.55257726f);
+    TEST_ROTATION(ROTATION_ROLL_90_PITCH_68_YAW_293, -0.4066309f, -1.5839677f, -0.5706992f);
 
     EXPECT_EQ(ROTATION_MAX, rotation_count) << "All rotations are expect to be tested";
 }

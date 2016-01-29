@@ -28,6 +28,7 @@
 #include "UDPDevice.h"
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
+#include "UARTQFlight.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -87,6 +88,15 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             break;
         }
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+        case DEVICE_QFLIGHT:
+        {
+            _qflight_start_connection();
+            _flow_control = FLOW_CONTROL_DISABLE;
+            break;
+        }
+#endif
+        
         case DEVICE_SERIAL:
         {
             if (!_serial_start_connection()) {
@@ -192,6 +202,10 @@ UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
         return DEVICE_SERIAL;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+    } else if (strncmp(arg, "qflight:", 8) == 0) {
+        return DEVICE_QFLIGHT;
+#endif
     } else if (strncmp(arg, "tcp:", 4) != 0 && 
                strncmp(arg, "udp:", 4) != 0) {
         return DEVICE_UNKNOWN;
@@ -258,6 +272,17 @@ bool UARTDriver::_serial_start_connection()
 
     return true;
 }
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+bool UARTDriver::_qflight_start_connection()
+{
+    _device = new QFLIGHTDevice(device_path);
+    _connected = _device->open();
+    _flow_control = FLOW_CONTROL_DISABLE;
+
+    return true;
+}
+#endif
 
 /*
   start a UDP connection for the serial port
@@ -496,6 +521,25 @@ bool UARTDriver::_write_pending_bytes(void)
     uint16_t _tail;
     uint16_t available_bytes = BUF_AVAILABLE(_writebuf);
     n = available_bytes;
+    if (_packetise && n > 0 && _writebuf[_writebuf_head] != 254) {
+        /*
+          we have a non-mavlink packet at the start of the
+          buffer. Look ahead for a MAVLink start byte, up to 256 bytes
+          ahead
+         */
+        uint16_t limit = n>256?256:n;
+        uint16_t i;
+        for (i=0; i<limit; i++) {
+            if (_writebuf[(_writebuf_head + i) % _writebuf_size] == 254) {
+                n = i;
+                break;
+            }
+        }
+        // if we didn't find a MAVLink marker then limit the send size to 256
+        if (i == limit) {
+            n = limit;
+        }
+    }
     if (_packetise && n > 0 && _writebuf[_writebuf_head] == 254) {
         // this looks like a MAVLink packet - try to write on
         // packet boundaries when possible

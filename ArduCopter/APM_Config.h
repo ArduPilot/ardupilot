@@ -39,6 +39,9 @@
 // features below are disabled by default on all boards
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define PRECISION_LANDING     ENABLED             // enable precision landing using companion computer or IRLock sensor
+//#define GNDEFFECT_COMPENSATION ENABLED            // enable ground effect compensation for barometer (if propwash interferes with the barometer on the ground)
+//#define CAL_ALWAYS_REBOOT                         // flight controller will reboot after compass or accelerometer calibration completes
+//#define DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE   // disable mode changes from GCS during Radio failsafes.  Avoids a race condition for vehicle like Solo in which the RC and telemetry travel along the same link
 
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)

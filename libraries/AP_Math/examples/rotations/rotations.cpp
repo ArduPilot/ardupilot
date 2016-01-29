@@ -79,6 +79,26 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
     }
 }
 
+static void test_rotate_inverse(void)
+{
+    hal.console->println("\nrotate inverse test(Vector (1,1,1)):");
+    Vector3f vec(1.0f,1.0f,1.0f), cmp_vec(1.0f,1.0f,1.0f);
+    for (enum Rotation r=ROTATION_NONE; 
+         r<ROTATION_MAX;
+         r = (enum Rotation)((uint8_t)r+1)) {
+        hal.console->printf("\nROTATION(%d) ",r);
+        vec.rotate(r);
+        print_vector(vec);
+
+        hal.console->printf("INV_ROTATION(%d)",r);
+        vec.rotate_inverse(r);
+        print_vector(vec);
+        if((vec - cmp_vec).length() > 1e-5) {
+            hal.console->printf("Rotation Test Failed!!! %.8f\n",(vec - cmp_vec).length());
+            return;
+        }
+    }
+}
 static void test_eulers(void)
 {
     hal.console->println("euler tests");
@@ -120,7 +140,7 @@ static void test_eulers(void)
     test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);    
     test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);    
     test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);
-    test_euler(ROTATION_YAW_293_PITCH_68_ROLL_90,90,68.8,293.3);
+    test_euler(ROTATION_ROLL_90_PITCH_68_YAW_293,90,68.8,293.3);
 }
 
 static bool have_rotation(const Matrix3f &m)
@@ -164,6 +184,7 @@ void setup(void)
     test_rotation_accuracy();
     test_eulers();
     missing_rotations();
+    test_rotate_inverse();
     hal.console->println("rotation unit tests done\n");
 }
 

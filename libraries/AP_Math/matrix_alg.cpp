@@ -1,263 +1,232 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+ * matrix3.cpp
+ * Copyright (C) Siddharth Bharat Purohit, 3DRobotics Inc. 2015
+ *
+ * This file is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #pragma GCC optimize("O3")
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-
+#include <stdio.h>
 extern const AP_HAL::HAL& hal;
 
+//TODO: use higher precision datatypes to achieve more accuracy for matrix algebra operations
+
 /*
- *    generic matrix inverse code
+ *    Does matrix multiplication of two regular/square matrices
  *
- *    @param     x,     input nxn matrix
- *    @param     n,     dimension of square matrix
- *    @returns   determinant of square matrix
- *    Known Issues/ Possible Enhancements:
- *                -more efficient method should be available, following is code generated from matlab
+ *    @param     A,           Matrix A
+ *    @param     B,           Matrix B
+ *    @param     n,           dimemsion of square matrices
+ *    @returns                multiplied matrix i.e. A*B
  */
-float detnxn(const float C[],const uint8_t n)
+
+float* mat_mul(float *A, float *B, uint8_t n)
 {
-  float f;
-  float *A = new float[n*n];
-  if( A == NULL) {
-      return 0;
-  }
-  int8_t *ipiv = new int8_t[n];
-  if(ipiv == NULL) {
-      delete[] A;
-      return 0;
-  }
-  int32_t i0;
-  int32_t j;
-  int32_t c;
-  int32_t iy;
-  int32_t ix;
-  float smax;
-  int32_t jy;
-  float s;
-  int32_t b_j;
-  int32_t ijA;
-  bool isodd;
+    float* ret = new float[n*n];
+    memset(ret,0.0f,n*n*sizeof(float));
 
-  memcpy(&A[0], &C[0], n*n * sizeof(float));
-  for (i0 = 0; i0 < n; i0++) {
-    ipiv[i0] = (int8_t)(1 + i0);
-  }
-
-  for (j = 0; j < n-1; j++) {
-    c = j * (n+1);
-    iy = 0;
-    ix = c;
-    smax = fabs(A[c]);
-    for (jy = 2; jy <= n - 1 - j; jy++) {
-      ix++;
-      s = fabs(A[ix]);
-      if (s > smax) {
-        iy = jy - 1;
-        smax = s;
-      }
-    }
-
-    if (!is_zero(A[c + iy])) {
-      if (iy != 0) {
-        ipiv[j] = (int8_t)((j + iy) + 1);
-        ix = j;
-        iy += j;
-        for (jy = 0; jy < n; jy++) {
-          smax = A[ix];
-          A[ix] = A[iy];
-          A[iy] = smax;
-          ix += n;
-          iy += n;
+    for(uint8_t i = 0; i < n; i++) {
+        for(uint8_t j = 0; j < n; j++) {
+            for(uint8_t k = 0;k < n; k++) {
+                ret[i*n + j] += A[i*n + k] * B[k*n + j];
+            }
         }
-      }
-
-      i0 = (c - j) + n;
-      for (iy = c + 1; iy + 1 <= i0; iy++) {
-        A[iy] /= A[c];
-      }
     }
-
-    iy = c;
-    jy = c + n;
-    for (b_j = 1; b_j <= n - 1 - j; b_j++) {
-      smax = A[jy];
-      if (!is_zero(A[jy])) {
-        ix = c + 1;
-        i0 = (iy - j) + (2*n);
-        for (ijA = n + 1 + iy; ijA + 1 <= i0; ijA++) {
-          A[ijA] += A[ix] * -smax;
-          ix++;
-        }
-      }
-
-      jy += n;
-      iy += n;
-    }
-  }
-
-  f = A[0];
-  isodd = false;
-  for (jy = 0; jy < (n-1); jy++) {
-    f *= A[(jy + n * (1 + jy)) + 1];
-    if (ipiv[jy] > 1 + jy) {
-      isodd = !isodd;
-    }
-  }
-
-  if (isodd) {
-    f = -f;
-  }
-  delete[] A;
-  delete[] ipiv;
-  return f;
+    return ret;
 }
-/*
- *    generic matrix inverse code
- *
- *    @param     x,     input nxn matrix
- *    @param     y,     Output inverted nxn matrix
- *    @param     n,     dimension of square matrix
- *    @returns          false = matrix is Singular, true = matrix inversion successful
- *    Known Issues/ Possible Enhancements:
- *                -more efficient method should be available, following is code generated from matlab
- */
 
-bool inversenxn(const float x[], float y[], const uint8_t n)
+static inline void swap(float &a, float &b)
 {
-    if (is_zero(detnxn(x,n))) {
-        return false;
-    }
-
-    float *A = new float[n*n];
-    if( A == NULL ){
-        return false;
-    }
-    int32_t i0;
-    int32_t *ipiv = new int32_t[n];
-    if(ipiv == NULL) {
-        delete[] A;
-        return false;
-    }
-    int32_t j;
-    int32_t c;
-    int32_t pipk;
-    int32_t ix;
-    float smax;
-    int32_t k;
-    float s;
-    int32_t jy;
-    int32_t ijA;
-    int32_t *p = new int32_t[n];
-    if(p == NULL) {
-        delete[] A;
-        delete[] ipiv;
-        return false;
-    }
-    
-    for (i0 = 0; i0 < n*n; i0++) {
-        A[i0] = x[i0];
-        y[i0] = 0.0f;
-    }
-
-    for (i0 = 0; i0 < n; i0++) {
-        ipiv[i0] = (int32_t)(1 + i0);
-    }
-
-    for (j = 0; j < (n-1); j++) {
-        c = j * (n+1);
-        pipk = 0;
-        ix = c;
-        smax = fabsf(A[c]);
-        for (k = 2; k <= (n-1) - j; k++) {
-            ix++;
-            s = fabsf(A[ix]);
-            if (s > smax) {
-                pipk = k - 1;
-                smax = s;
-            }
-        }
-
-        if (!is_zero(A[c + pipk])) {
-            if (pipk != 0) {
-                ipiv[j] = (int32_t)((j + pipk) + 1);
-                ix = j;
-                pipk += j;
-                for (k = 0; k < n; k++) {
-                    smax = A[ix];
-                    A[ix] = A[pipk];
-                    A[pipk] = smax;
-                    ix += n;
-                    pipk += n;
-                }
-            }
-
-            i0 = (c - j) + n;
-            for (jy = c + 1; jy + 1 <= i0; jy++) {
-                A[jy] /= A[c];
-            }
-        }
-
-        pipk = c;
-        jy = c + n;
-        for (k = 1; k <= (n-1) - j; k++) {
-            smax = A[jy];
-            if (!is_zero(A[jy])) {
-                ix = c + 1;
-                i0 = (pipk - j) + (2*n);
-                for (ijA = (n+1) + pipk; ijA + 1 <= i0; ijA++) {
-                    A[ijA] += A[ix] * -smax;
-                    ix++;
-                }
-            }
-
-            jy += n;
-            pipk += n;
-        }
-    }
-
-    for (i0 = 0; i0 < n; i0++) {
-        p[i0] = (int32_t)(1 + i0);
-    }
-
-    for (k = 0; k < (n-1); k++) {
-        if (ipiv[k] > 1 + k) {
-            pipk = p[ipiv[k] - 1];
-            p[ipiv[k] - 1] = p[k];
-            p[k] = (int32_t)pipk;
-        }
-    }
-
-    for (k = 0; k < n; k++) {
-        y[k + n * (p[k] - 1)] = 1.0;
-        for (j = k; j + 1 < (n+1); j++) {
-            if (!is_zero(y[j + n * (p[k] - 1)])) {
-                for (jy = j + 1; jy + 1 < (n+1); jy++) {
-                    y[jy + n * (p[k] - 1)] -= y[j + n * (p[k] - 1)] * A[jy + n * j];
-                }
-            }
-        }
-    }
-
-    for (j = 0; j < n; j++) {
-        c = n * j;
-        for (k = (n-1); k > -1; k += -1) {
-            pipk = n * k;
-            if (!is_zero(y[k + c])) {
-                y[k + c] /= A[k + pipk];
-                for (jy = 0; jy + 1 <= k; jy++) {
-                    y[jy + c] -= y[k + c] * A[jy + pipk];
-                }
-            }
-        }
-    }
-    delete[] A;
-    delete[] ipiv;
-    delete[] p;
-    return true;
+    float c;
+    c = a;
+    a = b;
+    b = c;
 }
 
 /*
- *    matrix inverse code only for 3x3 square matrix
+ *    calculates pivot matrix such that all the larger elements in the row are on diagonal
+ *
+ *    @param     A,           input matrix matrix
+ *    @param     pivot
+ *    @param     n,           dimenstion of square matrix
+ *    @returns                false = matrix is Singular or non positive definite, true = matrix inversion successful
+ */
+
+void mat_pivot(float* A, float* pivot, uint8_t n)
+{
+    for(uint8_t i = 0;i<n;i++){
+        for(uint8_t j=0;j<n;j++) {
+            pivot[i*n+j] = (i==j);
+        }
+    }
+
+    for(uint8_t i = 0;i < n; i++) {
+        uint8_t max_j = i;
+        for(uint8_t j=i;j<n;j++){
+            if(fabsf(A[j*n + i]) > fabsf(A[max_j*n + i])) {
+                max_j = j;
+            }
+        }
+
+        if(max_j != i) {
+            for(uint8_t k = 0; k < n; k++) {
+                swap(pivot[i*n + k], pivot[max_j*n + k]);
+            }
+        }
+    }
+}
+
+/*
+ *    calculates matrix inverse of Lower trangular matrix using forward substitution
+ *
+ *    @param     L,           lower triangular matrix
+ *    @param     out,         Output inverted lower triangular matrix
+ *    @param     n,           dimension of matrix
+ */
+
+void mat_forward_sub(float *L, float *out, uint8_t n)
+{
+    // Forward substitution solve LY = I
+    for(int i = 0; i < n; i++) {
+        out[i*n + i] = 1/L[i*n + i];
+        for (int j = i+1; j < n; j++) {
+            for (int k = i; k < j; k++) {
+                out[j*n + i] -= L[j*n + k] * out[k*n + i];
+            }
+            out[j*n + i] /= L[j*n + j];
+        }
+    }
+}
+
+/*
+ *    calculates matrix inverse of Upper trangular matrix using backward substitution
+ *
+ *    @param     U,           upper triangular matrix
+ *    @param     out,         Output inverted upper triangular matrix
+ *    @param     n,           dimension of matrix
+ */
+
+void mat_back_sub(float *U, float *out, uint8_t n)
+{
+    // Backward Substitution solve UY = I
+    for(int i = n-1; i >= 0; i--) {
+        out[i*n + i] = 1/U[i*n + i];
+        for (int j = i - 1; j >= 0; j--) {
+            for (int k = i; k > j; k--) {
+                out[j*n + i] -= U[j*n + k] * out[k*n + i];
+            }
+            out[j*n + i] /= U[j*n + j];
+        }
+    }
+}
+
+/*
+ *    Decomposes square matrix into Lower and Upper triangular matrices such that
+ *    A*P = L*U, where P is the pivot matrix
+ *    ref: http://rosettacode.org/wiki/LU_decomposition
+ *    @param     U,           upper triangular matrix
+ *    @param     out,         Output inverted upper triangular matrix
+ *    @param     n,           dimension of matrix
+ */
+
+void mat_LU_decompose(float* A, float* L, float* U, float *P, uint8_t n)
+{
+    memset(L,0,n*n*sizeof(float));
+    memset(U,0,n*n*sizeof(float));
+    memset(P,0,n*n*sizeof(float));
+    mat_pivot(A,P,n);
+
+    float *APrime = mat_mul(P,A,n);
+    for(uint8_t i = 0; i < n; i++) {
+        L[i*n + i] = 1;
+    }
+    for(uint8_t i = 0; i < n; i++) {
+        for(uint8_t j = 0; j < n; j++) {
+            if(j <= i) {    
+                U[j*n + i] = APrime[j*n + i];
+                for(uint8_t k = 0; k < j; k++) {
+                    U[j*n + i] -= L[j*n + k] * U[k*n + i]; 
+                }
+            }
+            if(j >= i) {
+                L[j*n + i] = APrime[j*n + i];
+                for(uint8_t k = 0; k < i; k++) {
+                    L[j*n + i] -= L[j*n + k] * U[k*n + i]; 
+                }
+                L[j*n + i] /= U[i*n + i];
+            }
+        }
+    }
+    free(APrime);
+}
+
+/*
+ *    matrix inverse code for any square matrix using LU decomposition
+ *    inv = inv(U)*inv(L)*P, where L and U are triagular matrices and P the pivot matrix
+ *    ref: http://www.cl.cam.ac.uk/teaching/1314/NumMethods/supporting/mcmaster-kiruba-ludecomp.pdf
+ *    @param     m,           input 4x4 matrix
+ *    @param     inv,      Output inverted 4x4 matrix
+ *    @param     n,           dimension of square matrix
+ *    @returns                false = matrix is Singular, true = matrix inversion successful
+ */
+bool mat_inverse(float* A, float* inv, uint8_t n)
+{
+    float *L, *U, *P;
+    bool ret = true;
+    L = new float[n*n];
+    U = new float[n*n];
+    P = new float[n*n];
+    mat_LU_decompose(A,L,U,P,n);
+
+    float *L_inv = new float[n*n];
+    float *U_inv = new float[n*n];
+
+    memset(L_inv,0,n*n*sizeof(float));
+    mat_forward_sub(L,L_inv,n);
+
+    memset(U_inv,0,n*n*sizeof(float));
+    mat_back_sub(U,U_inv,n);
+
+    // decomposed matrices no loger required
+    free(L);
+    free(U);
+
+    float *inv_unpivoted = mat_mul(U_inv,L_inv,n);
+    float *inv_pivoted = mat_mul(inv_unpivoted, P, n);
+
+    //check sanity of results
+    for(uint8_t i = 0; i < n; i++) {
+        for(uint8_t j = 0; j < n; j++) {
+            if(isnan(inv_pivoted[i*n+j]) || isinf(inv_pivoted[i*n+j])){
+                ret = false;
+            }
+        }
+    }
+    memcpy(inv,inv_pivoted,n*n*sizeof(float));
+
+    //free memory
+    free(inv_pivoted);
+    free(inv_unpivoted);
+    free(P);
+    return ret;
+}
+
+/*
+ *    fast matrix inverse code only for 3x3 square matrix
  *
  *    @param     m,           input 4x4 matrix
  *    @param     invOut,      Output inverted 4x4 matrix
@@ -280,7 +249,7 @@ bool inverse3x3(float m[], float invOut[])
     inv[0] = (m[4] * m[8] - m[7] * m[5]) * invdet;
     inv[1] = (m[2] * m[7] - m[1] * m[8]) * invdet;
     inv[2] = (m[1] * m[5] - m[2] * m[4]) * invdet;
-    inv[3] = (m[5] * m[6] - m[5] * m[8]) * invdet;
+    inv[3] = (m[5] * m[6] - m[3] * m[8]) * invdet;
     inv[4] = (m[0] * m[8] - m[2] * m[6]) * invdet;
     inv[5] = (m[3] * m[2] - m[0] * m[5]) * invdet;
     inv[6] = (m[3] * m[7] - m[6] * m[4]) * invdet;
@@ -295,9 +264,8 @@ bool inverse3x3(float m[], float invOut[])
 }
 
 /*
- *    matrix inverse code only for 4x4 square matrix copied from
- *    gluInvertMatrix implementation in
- *    opengl for 4x4 matrices.
+ *    fast matrix inverse code only for 4x4 square matrix copied from
+ *    gluInvertMatrix implementation in opengl for 4x4 matrices.
  *
  *    @param     m,           input 4x4 matrix
  *    @param     invOut,      Output inverted 4x4 matrix
@@ -447,6 +415,6 @@ bool inverse(float x[], float y[], uint16_t dim)
     switch(dim){
         case 3: return inverse3x3(x,y);
         case 4: return inverse4x4(x,y);
-        default: return inversenxn(x,y,dim);
+        default: return mat_inverse(x,y,dim);
     }
 }

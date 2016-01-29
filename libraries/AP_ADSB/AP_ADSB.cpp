@@ -60,8 +60,8 @@ void AP_ADSB::init(void)
         }
     }
     _vehicle_count = 0;
-    _furthest_vehicle_index = 0;
-    _furthest_vehicle_distance = 0;
+    _lowest_threat_distance = 0;
+    _highest_threat_distance = 0;
     _another_vehicle_within_radius = false;
     _is_evading_threat = false;
 }
@@ -107,6 +107,7 @@ void AP_ADSB::update(void)
     }
 
     perform_threat_detection();
+    //hal.console->printf("ADSB: cnt %u, lowT %.0f, highT %.0f\r", _vehicle_count, _lowest_threat_distance, _highest_threat_distance);
 }
 
 /*
@@ -119,28 +120,53 @@ void AP_ADSB::perform_threat_detection(void)
         _ahrs.get_position(my_loc) == false) {
         // nothing to do or current location is unknown so we can't calculate any collisions
         _another_vehicle_within_radius = false;
+        _lowest_threat_distance = 0; // 0 means invalid
+        _highest_threat_distance = 0; // 0 means invalid
         return;
     }
 
-    bool no_threat_within_radius = true;
+    // TODO: compute lowest_threat using the 3D flight vector with respect to
+    // time-to-collision and probability of collision instead of furthest 2D distance
+
+    // TODO: compute highest_threat using the 3D flight vector with respect to
+    // time-to-collision and probability of collision instead of closest 2D distance
+
+    float min_distance = 0;
+    float max_distance = 0;
+    uint16_t min_distance_index = 0;
+    uint16_t max_distance_index = 0;
+
     for (uint16_t index = 0; index < _vehicle_count; index++) {
-        // TODO: perform more advanced threat detection
-        Location vehicle_loc = get_location(_vehicle_list[index]);
+        float distance = get_distance(my_loc, get_location(_vehicle_list[index]));
+        if (min_distance > distance || index == 0) {
+            min_distance = distance;
+            min_distance_index = index;
+        }
+        if (max_distance < distance || index == 0) {
+            max_distance = distance;
+            max_distance_index = index;
+        }
 
-        // if within radius, set flag and enforce a double radius to clear flag
-        float threat_distance = get_distance(vehicle_loc, my_loc);
-        if (threat_distance <= 2*VEHICLE_THREAT_RADIUS_M) {
-            no_threat_within_radius = false;
-            if (threat_distance <= VEHICLE_THREAT_RADIUS_M) {
-                _another_vehicle_within_radius = true;
-            }
-        } // if get
-    } // for
+        if (distance <= VEHICLE_THREAT_RADIUS_M) {
+            _vehicle_list[index].threat_level = ADSB_THREAT_HIGH;
+        } else {
+            _vehicle_list[index].threat_level = ADSB_THREAT_LOW;
+        }
+    } // for index
 
-    if (no_threat_within_radius) {
+    _highest_threat_index = min_distance_index;
+    _highest_threat_distance = min_distance;
+
+    _lowest_threat_index = max_distance_index;
+    _lowest_threat_distance = max_distance;
+
+    // if within radius, set flag and enforce a double radius to clear flag
+    if (is_zero(_highest_threat_distance) ||  // 0 means invalid
+            _highest_threat_distance > 2*VEHICLE_THREAT_RADIUS_M) {
         _another_vehicle_within_radius = false;
+    } else if (_highest_threat_distance <= VEHICLE_THREAT_RADIUS_M) {
+        _another_vehicle_within_radius = true;
     }
-
 }
 
 /*
@@ -149,7 +175,7 @@ void AP_ADSB::perform_threat_detection(void)
 Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
     Location loc {};
-    loc.alt = vehicle.info.altitude * 100;
+    loc.alt = vehicle.info.altitude * 0.1f; // convert mm to cm.
     loc.lat = vehicle.info.lat;
     loc.lng = vehicle.info.lon;
     loc.flags.relative_alt = false;
@@ -163,9 +189,18 @@ Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 void AP_ADSB::delete_vehicle(uint16_t index)
 {
     if (index < _vehicle_count) {
+        // if the vehicle is the lowest/highest threat, invalidate it
+        if (index == _lowest_threat_index) {
+            _lowest_threat_distance = 0;
+        }
+        if (index == _highest_threat_index) {
+            _highest_threat_distance = 0;
+        }
+
         if (index != _vehicle_count-1) {
             _vehicle_list[index] = _vehicle_list[_vehicle_count-1];
         }
+        // TODO: is memset needed? When we decrement the index we essentially forget about it
         memset(&_vehicle_list[_vehicle_count-1], 0, sizeof(adsb_vehicle_t));
         _vehicle_count--;
     }
@@ -200,19 +235,48 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
 
     uint16_t index;
     adsb_vehicle_t vehicle {};
-
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
 
     if (find_index(vehicle, &index)) {
+
         // found, update it
         set_vehicle(index, vehicle);
+
     } else if (_vehicle_count < VEHICLE_LIST_LENGTH-1) {
-        // not found, add it if there's room
+
+        // not found and there's room, add it to the end of the list
         set_vehicle(_vehicle_count, vehicle);
         _vehicle_count++;
+
     } else {
-        // TODO: buffer is full, delete the vehicle that is furthest away since it is probably not a useful threat to monitor
-    }
+
+        // buffer is full, replace the vehicle with lowest threat as long as it's not further away
+        Location my_loc;
+        if (!is_zero(_lowest_threat_distance) && // nonzero means it is valid
+            _ahrs.get_position(my_loc)) {       // true means my_loc is valid
+
+            float distance = get_distance(my_loc, get_location(vehicle));
+            if (distance < _lowest_threat_distance) { // is closer than the furthest
+
+                 // overwrite the lowest_threat/furthest
+                index = _lowest_threat_index;
+                set_vehicle(index, vehicle);
+
+                // this is now invalid because the vehicle was overwritten, need
+                // to run perform_threat_detection() to determine new one because
+                // we aren't keeping track of the second-furthest vehicle.
+                _lowest_threat_distance = 0;
+
+                // is it the nearest? Then it's the highest threat. That's an easy check
+                // that we don't need to run perform_threat_detection() to determine
+                if (_highest_threat_distance > distance) {
+                    _highest_threat_distance = distance;
+                    _highest_threat_index = index;
+                }
+            } // if distance
+
+        } // if !zero
+    } // if buffer full
 }
 
 /*

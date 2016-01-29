@@ -19,17 +19,25 @@
 ///				libraries.
 ///
 
-#ifndef __AP_COMMON_H__
-#define __AP_COMMON_H__
+#pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
 #pragma GCC diagnostic warning "-Wall"
 #pragma GCC diagnostic warning "-Wextra"
 #pragma GCC diagnostic warning "-Wlogical-op"
 #pragma GCC diagnostic ignored "-Wredundant-decls"
+#else
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wgnu-variable-sized-type-not-at-end"
+#pragma GCC diagnostic ignored "-Wgnu-designator"
+#pragma GCC diagnostic ignored "-Wabsolute-value"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
 
 // used to pack structures
 #define PACKED __attribute__((__packed__))
@@ -146,4 +154,7 @@ enum HomeState {
 */
 bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 
-#endif // _AP_COMMON_H
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#include <AP_HAL_QURT/replace.h>
+#endif
+

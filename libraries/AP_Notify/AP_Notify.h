@@ -20,6 +20,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Param/AP_Param.h>
 #include "AP_BoardLED.h"
 #include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
@@ -31,18 +32,32 @@
 #include "Buzzer.h"
 #include "VRBoard_LED.h"
 #include "OreoLED_PX4.h"
+#include "RCOutputRGBLed.h"
+#include "Display.h"
+#include "Display_SSD1306_I2C.h"
 
 #ifndef OREOLED_ENABLED
  # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
 #endif
 
+// Device parameters values
+#define RGB_LED_OFF     0
+#define RGB_LED_LOW     1
+#define RGB_LED_MEDIUM  2
+#define RGB_LED_HIGH    3
+
 class AP_Notify
 {
+    friend class RGBLed;    // RGBLed needs access to notify parameters
 public:
+    // Constructor
+    AP_Notify();
+
     /// notify_flags_type - bitmask of notification flags
     struct notify_flags_type {
         uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
         uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
+        uint32_t gps_num_sats       : 6;    // number of sats
         uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
         uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
@@ -93,8 +108,12 @@ public:
     // handle a LED_CONTROL message
     static void handle_led_control(mavlink_message_t* msg);
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
     static NotifyDevice* _devices[];
+
+    AP_Int8 _rgb_led_brightness;
 };
 
 #endif    // __AP_NOTIFY_H__

@@ -23,6 +23,7 @@ public:
         ARMING_CHECK_BATTERY    = 0x0100,
         ARMING_CHECK_AIRSPEED   = 0x0200,
         ARMING_CHECK_LOGGING    = 0x0400,
+        ARMING_CHECK_SWITCH     = 0x0800,
     };
 
     enum ArmingMethod {
@@ -68,6 +69,7 @@ protected:
     AP_Int8                 require;
     AP_Int8                 rudder_arming_value;
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
+    AP_Float                accel_error_threshold;
 
     // references
     const AP_AHRS           &ahrs;

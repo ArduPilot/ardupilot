@@ -48,10 +48,10 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
     return _gyro_estimate;
 }
 
-const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
+const Matrix3f &AP_AHRS_NavEKF::get_rotation_body_to_ned(void) const
 {
     if (!active_EKF_type()) {
-        return AP_AHRS_DCM::get_dcm_matrix();
+        return AP_AHRS_DCM::get_rotation_body_to_ned();
     }
     return _dcm_matrix;
 }
@@ -109,7 +109,8 @@ void AP_AHRS_NavEKF::update_EKF1(void)
         if (start_time_ms == 0) {
             start_time_ms = AP_HAL::millis();
         }
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+        // slight extra delay on EKF1 to prioritise EKF2 for memory
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms + 100U) {
             ekf1_started = EKF1.InitialiseFilterDynamic();
         }
     }
@@ -511,6 +512,52 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
         return true;
     }
 #endif
+    }
+}
+
+// returns the expected NED magnetic field
+bool AP_AHRS_NavEKF::get_mag_field_NED(Vector3f &vec) const
+{
+    switch (active_EKF_type()) {
+        case EKF_TYPE_NONE:
+            return false;
+
+        case EKF_TYPE1:
+        default:
+            EKF1.getMagNED(vec);
+            return true;
+
+        case EKF_TYPE2:
+            EKF2.getMagNED(-1,vec);
+            return true;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            return false;
+#endif
+    }
+}
+
+// returns the estimated magnetic field offsets in body frame
+bool AP_AHRS_NavEKF::get_mag_field_correction(Vector3f &vec) const
+{
+    switch (active_EKF_type()) {
+        case EKF_TYPE_NONE:
+            return false;
+
+        case EKF_TYPE1:
+        default:
+            EKF1.getMagXYZ(vec);
+            return true;
+
+        case EKF_TYPE2:
+            EKF2.getMagXYZ(-1,vec);
+            return true;
+
+            #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            return false;
+            #endif
     }
 }
 
@@ -1094,6 +1141,38 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
         tasVar = 0;
         offset.zero();
         return true;
+#endif
+    }
+}
+
+void AP_AHRS_NavEKF::setTakeoffExpected(bool val)
+{
+    switch (ekf_type()) {
+        case EKF_TYPE1:
+            EKF1.setTakeoffExpected(val);
+            break;
+        case EKF_TYPE2:
+            EKF2.setTakeoffExpected(val);
+            break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            break;
+#endif
+    }
+}
+
+void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
+{
+    switch (ekf_type()) {
+        case EKF_TYPE1:
+            EKF1.setTouchdownExpected(val);
+            break;
+        case EKF_TYPE2:
+            EKF2.setTouchdownExpected(val);
+            break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            break;
 #endif
     }
 }

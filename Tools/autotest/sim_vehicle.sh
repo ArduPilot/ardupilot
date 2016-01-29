@@ -23,11 +23,11 @@ REVERSE_THROTTLE=0
 NO_REBUILD=0
 START_HIL=0
 EXTRA_ARGS=""
-EXTERNAL_SIM=0
 MODEL=""
 BREAKPOINT=""
 OVERRIDE_BUILD_TARGET=""
 DELAY_START=0
+DEFAULTS_PATH=""
 
 usage()
 {
@@ -58,7 +58,6 @@ Options:
     -b BUILD_TARGET  override SITL build target
     -j NUM_PROC      number of processors to use during build (default 1)
     -H               start HIL
-    -e               use external simulator
     -S SPEEDUP       set simulation speedup (1 for wall clock time)
     -d TIME          delays the start of mavproxy by the number of seconds
 
@@ -147,9 +146,6 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:d:" opt; do
     w)
       WIPE_EEPROM=1
       ;;
-    e)
-      EXTERNAL_SIM=1
-      ;;
     b)
       OVERRIDE_BUILD_TARGET="$OPTARG"
       ;;
@@ -190,7 +186,6 @@ trap kill_tasks SIGINT
 MAVLINK_PORT="tcp:127.0.0.1:"$((5760+10*$INSTANCE))
 SIMIN_PORT="127.0.0.1:"$((5502+10*$INSTANCE))
 SIMOUT_PORT="127.0.0.1:"$((5501+10*$INSTANCE))
-FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 
 [ -z "$VEHICLE" ] && {
     CDIR="$PWD"
@@ -238,42 +233,55 @@ EOF
 }
 
 
+autotest="../Tools/autotest"
+[ -d "$autotest" ] || {
+    # we are not running from one of the standard vehicle directories. Use 
+    # the location of the sim_vehicle.sh script to find the path
+    autotest=$(dirname $(readlink -e $0))
+}
+
 # modify build target based on copter frame type
 case $FRAME in
     +|quad)
 	BUILD_TARGET="sitl"
         MODEL="+"
+        DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
     X)
 	BUILD_TARGET="sitl"
         EXTRA_PARM="param set FRAME 1;"
         MODEL="X"
+        DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
     octa*)
 	BUILD_TARGET="sitl-octa"
         MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
     heli*)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/Helicopter.parm"
 	;;
     heli-dual)
-  BUILD_TARGET="sitl-heli-dual"
+        BUILD_TARGET="sitl-heli-dual"
         EXTRA_SIM="$EXTRA_SIM --frame=heli-dual"
         MODEL="heli-dual"
-  ;;
+        ;;
     heli-compound)
-  BUILD_TARGET="sitl-heli-compound"
+        BUILD_TARGET="sitl-heli-compound"
         EXTRA_SIM="$EXTRA_SIM --frame=heli-compound"
         MODEL="heli-compound"
-  ;;
+        ;;
     IrisRos)
 	BUILD_TARGET="sitl"
+        DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
     Gazebo)
 	BUILD_TARGET="sitl"
         EXTRA_SIM="$EXTRA_SIM --frame=Gazebo"
         MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
     CRRCSim|last_letter*)
 	BUILD_TARGET="sitl"
@@ -283,10 +291,17 @@ case $FRAME in
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
         check_jsbsim_version
+        DEFAULTS_PATH="$autotest/ArduPlane.parm"
+	;;
+    quadplane*)
+	BUILD_TARGET="sitl"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/quadplane.parm"
 	;;
     *-heli)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/Helicopter.parm"
 	;;
     *)
         MODEL="$FRAME"
@@ -301,12 +316,6 @@ if [ -n "$OVERRIDE_BUILD_TARGET" ]; then
     BUILD_TARGET="$OVERRIDE_BUILD_TARGET"
 fi
 
-autotest="../Tools/autotest"
-[ -d "$autotest" ] || {
-    # we are not running from one of the standard vehicle directories. Use 
-    # the location of the sim_vehicle.sh script to find the path
-    autotest=$(dirname $(readlink -e $0))
-}
 VEHICLEDIR="$autotest/../../$VEHICLE"
 [ -d "$VEHICLEDIR" ] || {
     VEHICLEDIR=$(dirname $(readlink -e $VEHICLEDIR))
@@ -338,7 +347,7 @@ popd
 
 # get the location information
 if [ -z $CUSTOM_LOCATION ]; then
-    SIMHOME=$(cat $autotest/locations.txt | grep -i "^$LOCATION=" | cut -d= -f2)
+    SIMHOME=$(cat $autotest/locations.txt | grep -i "^$LOCATION=" | head -1 | cut -d= -f2)
 else
     SIMHOME=$CUSTOM_LOCATION
     LOCATION="Custom_Location"
@@ -402,6 +411,11 @@ if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     cmd="$cmd --gimbal"
 fi
 
+if [ -n "$DEFAULTS_PATH" ]; then
+    echo "Using defaults from $DEFAULTS_PATH"
+    cmd="$cmd --defaults $DEFAULTS_PATH"
+fi
+
 if [ $START_HIL == 0 ]; then
 if [ $USE_VALGRIND == 1 ]; then
     echo "Using valgrind"
@@ -439,9 +453,6 @@ options="$options --out 10.0.2.2:14550"
 fi
 options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
 extra_cmd1=""
-if [ $WIPE_EEPROM == 1 ]; then
-    extra_cmd="param forceload $autotest/$PARMS; $EXTRA_PARM; param fetch"
-fi
 if [ $START_ANTENNA_TRACKER == 1 ]; then
     options="$options --load-module=tracker"
     extra_cmd="$extra_cmd module load map; tracker set port $TRACKER_UARTA; tracker start;"

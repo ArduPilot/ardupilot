@@ -13,6 +13,7 @@
 bool Copter::rtl_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
+        rtl_build_path();
         rtl_climb_start();
         return true;
     }else{
@@ -34,10 +35,10 @@ void Copter::rtl_run()
             rtl_loiterathome_start();
             break;
         case RTL_LoiterAtHome:
-            if (g.rtl_alt_final > 0 && !failsafe.radio) {
-                rtl_descent_start();
-            }else{
+            if (rtl_path.land || failsafe.radio) {
                 rtl_land_start();
+            }else{
+                rtl_descent_start();
             }
             break;
         case RTL_FinalDescent:
@@ -79,7 +80,6 @@ void Copter::rtl_climb_start()
 {
     rtl_state = RTL_InitialClimb;
     rtl_state_complete = false;
-    rtl_alt = get_RTL_alt();
 
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
@@ -89,22 +89,8 @@ void Copter::rtl_climb_start()
         wp_nav.set_speed_xy(g.rtl_speed_cms);
     }
 
-    // get horizontal stopping point
-    Vector3f destination;
-    wp_nav.get_wp_stopping_point_xy(destination);
-
-#if AC_RALLY == ENABLED
-    // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, rtl_alt+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = MAX(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    destination.z = pv_alt_above_origin(rally_point.alt);
-#else
-    destination.z = pv_alt_above_origin(rtl_alt);
-#endif
-
     // set the destination
-    wp_nav.set_wp_destination(destination);
+    wp_nav.set_wp_destination(rtl_path.climb_target);
     wp_nav.set_fast_waypoint(true);
 
     // hold current yaw during initial climb
@@ -117,19 +103,7 @@ void Copter::rtl_return_start()
     rtl_state = RTL_ReturnHome;
     rtl_state_complete = false;
 
-    // set target to above home/rally point
-#if AC_RALLY == ENABLED
-    // rally_point will be the nearest rally point or home.  uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, rtl_alt+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = MAX(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    Vector3f destination = pv_location_to_vector(rally_point);
-#else
-    Vector3f destination = pv_location_to_vector(ahrs.get_home());
-    destination.z = pv_alt_above_origin(rtl_alt);
-#endif
-
-    wp_nav.set_wp_destination(destination);
+    wp_nav.set_wp_destination(rtl_path.return_target);
 
     // initialise yaw to point home (maybe)
     set_auto_yaw_mode(get_default_auto_yaw_mode(true));
@@ -143,7 +117,7 @@ void Copter::rtl_climb_return_run()
     if(!ap.auto_armed || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         // reset attitude control targets
@@ -172,10 +146,10 @@ void Copter::rtl_climb_return_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
+        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
     }
 
     // check if we've completed this stage of RTL
@@ -205,7 +179,7 @@ void Copter::rtl_loiterathome_run()
     if(!ap.auto_armed || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         // reset attitude control targets
@@ -234,10 +208,10 @@ void Copter::rtl_loiterathome_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
+        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
     }
 
     // check if we've completed this stage of RTL
@@ -281,7 +255,7 @@ void Copter::rtl_descent_run()
     if(!ap.auto_armed || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -293,6 +267,14 @@ void Copter::rtl_descent_run()
 
     // process pilot's input
     if (!failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (!set_mode(LOITER)) {
+                set_mode(ALT_HOLD);
+            }
+        }
+
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
@@ -313,14 +295,14 @@ void Copter::rtl_descent_run()
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call z-axis position controller
-    pos_control.set_alt_target_with_slew(pv_alt_above_origin(g.rtl_alt_final), G_Dt);
+    pos_control.set_alt_target_with_slew(rtl_path.descent_target.z, G_Dt);
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // check if we've reached within 20cm of final altitude
-    rtl_state_complete = fabsf(pv_alt_above_origin(g.rtl_alt_final) - inertial_nav.get_altitude()) < 20.0f;
+    rtl_state_complete = fabsf(rtl_path.descent_target.z - inertial_nav.get_altitude()) < 20.0f;
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
@@ -349,7 +331,7 @@ void Copter::rtl_land_run()
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -381,6 +363,14 @@ void Copter::rtl_land_run()
 
     // process pilot's input
     if (!failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (!set_mode(LOITER)) {
+                set_mode(ALT_HOLD);
+            }
+        }
+
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
@@ -409,19 +399,56 @@ void Copter::rtl_land_run()
     desired_climb_rate = cmb_rate;
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // check if we've completed this stage of RTL
     rtl_state_complete = ap.land_complete;
 }
 
-// get_RTL_alt - return altitude which vehicle should return home at
-//      altitude is in cm above home
-float Copter::get_RTL_alt()
+void Copter::rtl_build_path()
+{
+    // origin point is our stopping point
+    pos_control.get_stopping_point_xy(rtl_path.origin_point);
+    pos_control.get_stopping_point_z(rtl_path.origin_point);
+
+    // set return target to nearest rally point or home position
+#if AC_RALLY == ENABLED
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, 0);
+    rtl_path.return_target = pv_location_to_vector(rally_point);
+#else
+    rtl_path.return_target = pv_location_to_vector(ahrs.get_home());
+#endif
+
+    Vector3f return_vector = rtl_path.return_target-rtl_path.origin_point;
+
+    float rtl_return_dist = pythagorous2(return_vector.x, return_vector.y);
+
+    // compute return altitude
+    rtl_path.return_target.z = rtl_compute_return_alt_above_origin(rtl_return_dist);
+
+    // climb target is above our origin point at the return altitude
+    rtl_path.climb_target.x = rtl_path.origin_point.x;
+    rtl_path.climb_target.y = rtl_path.origin_point.y;
+    rtl_path.climb_target.z = rtl_path.return_target.z;
+
+    // descent target is below return target at rtl_alt_final
+    rtl_path.descent_target.x = rtl_path.return_target.x;
+    rtl_path.descent_target.y = rtl_path.return_target.y;
+    rtl_path.descent_target.z = pv_alt_above_origin(g.rtl_alt_final);
+
+    // set land flag
+    rtl_path.land = g.rtl_alt_final <= 0;
+}
+
+// return altitude in cm above origin at which vehicle should return home
+float Copter::rtl_compute_return_alt_above_origin(float rtl_return_dist)
 {
     // maximum of current altitude + climb_min and rtl altitude
-    float ret = MAX(current_loc.alt + MAX(0, g.rtl_climb_min), g.rtl_altitude);
-    ret = MAX(ret, RTL_ALT_MIN);
+    float ret = MAX(current_loc.alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN));
+
+    if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) { // don't allow really shallow slopes
+        ret = MAX(current_loc.alt, MIN(ret, MAX(rtl_return_dist*g.rtl_cone_slope, current_loc.alt+RTL_ABS_MIN_CLIMB)));
+    }
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
@@ -430,6 +457,13 @@ float Copter::get_RTL_alt()
     }
 #endif
 
-    return ret;
-}
+#if AC_RALLY == ENABLED
+    // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, ret+ahrs.get_home().alt);
+    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
+    rally_point.alt = MAX(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
+    ret = rally_point.alt;
+#endif
 
+    return pv_alt_above_origin(ret);
+}

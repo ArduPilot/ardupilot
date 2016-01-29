@@ -38,6 +38,7 @@
 #include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
+#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -112,9 +113,6 @@ private:
     // variables
     AP_Param param_loader;
 
-    // the rate we run the main loop at
-    const AP_InertialSensor::Sample_rate ins_sample_rate;
-
     // all settable parameters
     Parameters g;
 
@@ -169,7 +167,9 @@ private:
     // Mission library
     AP_Mission mission;
 
-    OpticalFlow optflow;
+#if AP_AHRS_NAVEKF_AVAILABLE
+    OpticalFlow optflow{ahrs};
+#endif
     
     // RSSI 
     AP_RSSI rssi;          
@@ -364,7 +364,6 @@ private:
     // Loiter control
     uint16_t loiter_time_max; // How long we should loiter at the nav_waypoint (time in seconds)
     uint32_t loiter_time;     // How long have we been loitering - The start time in millis
-
     float distance_past_wp; // record the distance we have gone past the wp
 
     // time that rudder/steering arming has been running
@@ -381,6 +380,7 @@ private:
     // private member functions
     void ahrs_update();
     void mount_update(void);
+    void update_trigger(void);    
     void update_alt();
     void gcs_failsafe_check(void);
     void compass_accumulate(void);
@@ -523,7 +523,7 @@ private:
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool motor_active();
     void update_home();
-
+    void accel_cal_update(void);
 public:
     bool print_log_menu(void);
     int8_t dump_log(uint8_t argc, const Menu::arg *argv);

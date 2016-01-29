@@ -24,8 +24,8 @@ extern const AP_HAL::HAL& hal;
 // init_servo - servo initialization on start-up
 void AP_MotorsHeli_RSC::init_servo()
 {
-    // set servo range
-    _servo_output.set_range(0,1000);
+    // setup RSC on specified channel by default
+    RC_Channel_aux::set_aux_channel_default(_aux_fn, _default_channel);
 }
 
 // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
@@ -170,9 +170,6 @@ void AP_MotorsHeli_RSC::write_rsc(int16_t servo_out)
         // ToDo: We should probably use RC_Channel_Aux to avoid this problem
         return;
     } else {
-        _servo_output.servo_out = servo_out;
-        _servo_output.calc_pwm();
-
-        hal.rcout->write(_servo_output_channel, _servo_output.radio_out);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_heli_rsc, servo_out);
     }
 }

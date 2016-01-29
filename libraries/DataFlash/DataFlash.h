@@ -88,8 +88,7 @@ public:
 
     void StartNewLog(void);
     void EnableWrites(bool enable);
-    void Log_Write_SysInfo(const char *firmware_string);
-    void Log_Write_Format(const struct LogStructure *structure);
+
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
     void Log_Write_RFND(const RangeFinder &rangefinder);
@@ -110,14 +109,15 @@ public:
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
     void Log_Write_Message(const char *message);
+    void Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
+    void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);    
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
     void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
-    void Log_Write_Parameters(void);
 
     void Log_Write_EntireMission(const AP_Mission &mission);
     void Log_Write_Mission_Cmd(const AP_Mission &mission,
@@ -151,11 +151,6 @@ public:
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
-    // this is out here for the trickle-startup-messages logging.
-    // Think before calling.
-    bool Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
-                             enum ap_var_type type);
-
     vehicle_startup_message_Log_Writer _vehicle_messages;
 
     // parameter support
@@ -168,10 +163,6 @@ public:
     const struct LogStructure *structure(uint16_t num) const;
 
 protected:
-    void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
-
-    void WroteStartupFormat();
-    void WroteStartupParam();
 
     const struct LogStructure *_structures;
     uint8_t _num_types;

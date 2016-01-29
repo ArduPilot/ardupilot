@@ -30,21 +30,27 @@ bool Copter::print_log_menu(void)
     if (0 == g.log_bitmask) {
         cliSerial->printf("none");
     }else{
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST) cliSerial->printf(" ATTITUDE_FAST");
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) cliSerial->printf(" ATTITUDE_MED");
-        if (g.log_bitmask & MASK_LOG_GPS) cliSerial->printf(" GPS");
-        if (g.log_bitmask & MASK_LOG_PM) cliSerial->printf(" PM");
-        if (g.log_bitmask & MASK_LOG_CTUN) cliSerial->printf(" CTUN");
-        if (g.log_bitmask & MASK_LOG_NTUN) cliSerial->printf(" NTUN");
-        if (g.log_bitmask & MASK_LOG_RCIN) cliSerial->printf(" RCIN");
-        if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf(" IMU");
-        if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf(" CMD");
-        if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf(" CURRENT");
-        if (g.log_bitmask & MASK_LOG_RCOUT) cliSerial->printf(" RCOUT");
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf(" OPTFLOW");
-        if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf(" COMPASS");
-        if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf(" CAMERA");
-        if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf(" PID");
+        // Macro to make the following code a bit easier on the eye.
+        // Pass it the capitalised name of the log option, as defined
+        // in defines.h but without the LOG_ prefix.  It will check for
+        // the bit being set and print the name of the log option to suit.
+#define PLOG(_s) if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", # _s)
+        PLOG(ATTITUDE_FAST);
+        PLOG(ATTITUDE_MED);
+        PLOG(GPS);
+        PLOG(PM);
+        PLOG(CTUN);
+        PLOG(NTUN);
+        PLOG(RCIN);
+        PLOG(IMU);
+        PLOG(CMD);
+        PLOG(CURRENT);
+        PLOG(RCOUT);
+        PLOG(OPTFLOW);
+        PLOG(COMPASS);
+        PLOG(CAMERA);
+        PLOG(PID);
+#undef PLOG
     }
 
     cliSerial->println();
@@ -354,7 +360,7 @@ void Copter::Log_Write_Performance()
 // Write an attitude packet
 void Copter::Log_Write_Attitude()
 {
-    Vector3f targets = attitude_control.angle_ef_targets();
+    Vector3f targets = attitude_control.get_att_target_euler_cd();
     targets.z = wrap_360_cd_float(targets.z);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
@@ -719,6 +725,36 @@ void Copter::Log_Write_Precland()
  #endif     // PRECISION_LANDING == ENABLED
 }
 
+// precision landing logging
+struct PACKED log_GuidedTarget {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t type;
+    float pos_target_x;
+    float pos_target_y;
+    float pos_target_z;
+    float vel_target_x;
+    float vel_target_y;
+    float vel_target_z;
+};
+
+// Write a Guided mode target
+void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
+{
+    struct log_GuidedTarget pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
+        time_us         : AP_HAL::micros64(),
+        type            : target_type,
+        pos_target_x    : pos_target.x,
+        pos_target_y    : pos_target.y,
+        pos_target_z    : pos_target.z,
+        vel_target_x    : vel_target.x,
+        vel_target_y    : vel_target.y,
+        vel_target_z    : vel_target.z
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
@@ -761,6 +797,8 @@ const struct LogStructure Copter::log_structure[] = {
       "HELI",  "Qhh",         "TimeUS,DRRPM,ERRPM" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
       "PL",    "QBffffff",    "TimeUS,Heal,bX,bY,eX,eY,pX,pY" },
+    { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
+      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
 };
 
 #if CLI_ENABLED == ENABLED
@@ -854,6 +892,7 @@ void Copter::Log_Write_Baro(void) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
 void Copter::Log_Write_Home_And_Origin() {}
 void Copter::Log_Sensor_Health() {}
+void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {};
 
 #if FRAME_CONFIG == HELI_FRAME
 void Copter::Log_Write_Heli() {}

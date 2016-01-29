@@ -105,12 +105,17 @@ def pexpect_drain(p):
     except pexpect.TIMEOUT:
         pass
 
-def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1):
+def start_SIL(atype, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
     '''launch a SIL instance'''
     import pexpect
     cmd=""
     if valgrind and os.path.exists('/usr/bin/valgrind'):
         cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
+    if gdb:
+        f = open("/tmp/x.gdb", "w")
+        f.write("r\n");
+        f.close()
+        cmd += 'xterm -e gdb -x /tmp/x.gdb --args '
     executable = reltopdir('tmp/%s.build/%s.elf' % (atype, atype))
     if not os.path.exists(executable):
         executable = '/tmp/%s.build/%s.elf' % (atype, atype)
@@ -125,11 +130,15 @@ def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None
         cmd += ' --model=%s' % model
     if speedup != 1:
         cmd += ' --speedup=%f' % speedup
+    if defaults_file is not None:
+        cmd += ' --defaults=%s' % defaults_file
     print("Running: %s" % cmd)
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
-    ret.expect('Waiting for connection')
+    # give time for parameters to properly setup
+    time.sleep(3)
+    ret.expect('Waiting for connection',timeout=300)
     return ret
 
 def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',

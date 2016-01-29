@@ -82,7 +82,8 @@ HAL_PX4::HAL_PX4() :
         &rcinDriver,  /* rcinput */
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
-        &utilInstance) /* util */
+        &utilInstance, /* util */
+        NULL)    /* no onboard optical flow */
 {}
 
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */

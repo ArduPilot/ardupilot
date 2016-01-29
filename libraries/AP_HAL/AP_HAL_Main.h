@@ -20,7 +20,7 @@
 #define AP_HAL_MAIN() extern "C" { \
     int AP_MAIN(void); \
     int AP_MAIN(void) { \
-        AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
+        AP_HAL::HAL::FunCallbacks callbacks(setup, loop);       \
         hal.run(0, NULL, &callbacks); \
         return 0; \
     } \

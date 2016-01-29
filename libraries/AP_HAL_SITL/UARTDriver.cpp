@@ -44,19 +44,12 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-bool SITLUARTDriver::_console;
+bool UARTDriver::_console;
 
 /* UARTDriver method implementations */
 
-void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
+void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
-    if (txSpace != 0) {
-        _txSpace = txSpace;
-    }
-    if (rxSpace != 0) {
-        _rxSpace = rxSpace;
-    }
-
     const char *path = _sitlState->_uart_path[_portNumber];
 
     if (strcmp(path, "GPS1") == 0) {
@@ -99,13 +92,15 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         }
         free(s);
     }
+
+    _set_nonblocking(_fd);
 }
 
-void SITLUARTDriver::end()
+void UARTDriver::end()
 {
 }
 
-int16_t SITLUARTDriver::available(void)
+int16_t UARTDriver::available(void)
 {
     _check_connection();
 
@@ -113,109 +108,61 @@ int16_t SITLUARTDriver::available(void)
         return 0;
     }
 
-    if (_select_check(_fd)) {
-#ifdef FIONREAD
-        // use FIONREAD to get exact value if possible
-        int num_ready;
-        if (ioctl(_fd, FIONREAD, &num_ready) == 0) {
-            if (num_ready > _rxSpace) {
-                return _rxSpace;
-            }
-            if (num_ready == 0) {
-                // EOF is reached
-                fprintf(stdout, "Closed connection on serial port %u\n", _portNumber);
-                close(_fd);
-                _connected = false;
-                return 0;
-            }
-            return num_ready;
-        }
-#endif
-        return 1; // best we can do is say 1 byte available
+    return _readbuffer.available();
+}
+
+
+
+int16_t UARTDriver::txspace(void)
+{
+    _check_connection();
+    if (!_connected) {
+        return 0;
     }
-    return 0;
+    return _writebuffer.space();
 }
 
-
-
-int16_t SITLUARTDriver::txspace(void)
+int16_t UARTDriver::read(void)
 {
-    // always claim there is space available
-    return _txSpace;
-}
-
-int16_t SITLUARTDriver::read(void)
-{
-    char c;
-
     if (available() <= 0) {
         return -1;
     }
-
-    if (_portNumber == 1 || _portNumber == 4) {
-        if (_sitlState->gps_read(_fd, &c, 1) == 1) {
-            return (uint8_t)c;
-        }
-        return -1;
-    }
-
-    if (!_use_send_recv) {
-        int fd = _console?0:_fd;
-        if (::read(fd, &c, 1) != 1) {
-            return -1;
-        }
-        return (uint8_t)c;
-    }
-
-    int n = recv(_fd, &c, 1, MSG_DONTWAIT);
-    if (n <= 0) {
-        // the socket has reached EOF
-        close(_fd);
-        _connected = false;
-        fprintf(stdout, "Closed connection on serial port %u\n", _portNumber);
-        fflush(stdout);
-        return -1;
-    }
-    if (n == 1) {
-        return (uint8_t)c;
-    }
-    return -1;
+    uint8_t c;
+    _readbuffer.read(&c, 1);
+    return c;
 }
 
-void SITLUARTDriver::flush(void)
+void UARTDriver::flush(void)
 {
 }
 
-size_t SITLUARTDriver::write(uint8_t c)
+size_t UARTDriver::write(uint8_t c)
 {
-    int flags = 0;
-    _check_connection();
-    if (!_connected) {
+    if (txspace() <= 0) {
         return 0;
     }
-    if (_nonblocking_writes) {
-        flags |= MSG_DONTWAIT;
-    }
-    if (!_use_send_recv) {
-        return ::write(_fd, &c, 1);
-    }
-    return send(_fd, &c, 1, flags);
+    _writebuffer.write(&c, 1);
+    return 1;
 }
 
-size_t SITLUARTDriver::write(const uint8_t *buffer, size_t size)
+size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    size_t n = 0;
-    while (size--) {
-        n += write(*buffer++);
+    if (txspace() <= (ssize_t)size) {
+        size = txspace();
     }
-    return n;
+    if (size <= 0) {
+        return 0;
+    }
+    _writebuffer.write(buffer, size);
+    return size;
 }
 
+    
 /*
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects
  */
-void SITLUARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
+void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
     int one=1;
     struct sockaddr_in sockaddr;
@@ -303,7 +250,7 @@ void SITLUARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connecti
 /*
   start a TCP client connection for the serial port. 
  */
-void SITLUARTDriver::_tcp_start_client(const char *address, uint16_t port)
+void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 {
     int one=1;
     struct sockaddr_in sockaddr;
@@ -354,7 +301,7 @@ void SITLUARTDriver::_tcp_start_client(const char *address, uint16_t port)
 /*
   start a UART connection for the serial port
  */
-void SITLUARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
+void UARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
 {
     struct termios t {};
     if (!_connected) {
@@ -391,7 +338,7 @@ void SITLUARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
 /*
   see if a new connection is coming in
  */
-void SITLUARTDriver::_check_connection(void)
+void UARTDriver::_check_connection(void)
 {
     if (_connected) {
         // we only want 1 connection at a time
@@ -412,7 +359,7 @@ void SITLUARTDriver::_check_connection(void)
 /*
   use select() to see if something is pending
  */
-bool SITLUARTDriver::_select_check(int fd)
+bool UARTDriver::_select_check(int fd)
 {
     fd_set fds;
     struct timeval tv;
@@ -430,10 +377,61 @@ bool SITLUARTDriver::_select_check(int fd)
     return false;
 }
 
-void SITLUARTDriver::_set_nonblocking(int fd)
+void UARTDriver::_set_nonblocking(int fd)
 {
     unsigned v = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, v | O_NONBLOCK);
 }
 
-#endif
+void UARTDriver::_timer_tick(void)
+{
+    if (!_connected) {
+        return;
+    }
+    uint32_t navail;
+    ssize_t nwritten;
+
+    const uint8_t *readptr = _writebuffer.readptr(navail);
+    if (readptr && navail > 0) {
+        if (!_use_send_recv) {
+            nwritten = ::write(_fd, readptr, navail);
+        } else {
+            nwritten = send(_fd, readptr, navail, MSG_DONTWAIT);
+        }
+        if (nwritten > 0) {
+            _writebuffer.advance(nwritten);
+        }
+    }
+
+    uint32_t space = _readbuffer.space();
+    if (space == 0) {
+        return;
+    }
+    
+    char buf[space];
+    ssize_t nread = 0;
+    if (!_use_send_recv) {
+        int fd = _console?0:_fd;
+        nread = ::read(fd, buf, space);
+    } else {
+        if (_select_check(_fd)) {
+            nread = recv(_fd, buf, space, MSG_DONTWAIT);
+            if (nread <= 0) {
+                // the socket has reached EOF
+                close(_fd);
+                _connected = false;
+                fprintf(stdout, "Closed connection on serial port %u\n", _portNumber);
+                fflush(stdout);
+                return;
+            }
+        } else {
+            nread = 0;
+        }
+    }
+    if (nread > 0) {
+        _readbuffer.write((uint8_t *)buf, nread);
+    }
+}
+
+#endif // CONFIG_HAL_BOARD
+

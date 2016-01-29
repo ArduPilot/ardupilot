@@ -1,2 +1,2 @@
-BUILD_VEHICLE = rover
-include ../Makefile.waf
+all:
+	@$(MAKE) -C ../ -f Makefile.waf rover

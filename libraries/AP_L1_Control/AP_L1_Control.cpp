@@ -11,21 +11,21 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @DisplayName: L1 control period
     // @Description: Period in seconds of L1 tracking loop. This parameter is the primary control for agressiveness of turns in auto mode. This needs to be larger for less responsive airframes. The default of 20 is quite conservative, but for most RC aircraft will lead to reasonable flight. For smaller more agile aircraft a value closer to 15 is appropriate, or even as low as 10 for some very agile aircraft. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.
 	// @Units: seconds
-	// @Range: 1-60
+	// @Range: 1 60
 	// @Increment: 1
     AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 20),
 	
     // @Param: DAMPING
     // @DisplayName: L1 control damping ratio
     // @Description: Damping ratio for L1 control. Increase this in increments of 0.05 if you are getting overshoot in path tracking. You should not need a value below 0.7 or above 0.85.
-	// @Range: 0.6-1.0
+	// @Range: 0.6 1.0
 	// @Increment: 0.05
     AP_GROUPINFO("DAMPING",   1, AP_L1_Control, _L1_damping, 0.75f),
 
     // @Param: XTRACK_I
     // @DisplayName: L1 control crosstrack integrator gain
     // @Description: Crosstrack error integrator gain. This gain is applied to the crosstrack error to ensure it converges to zero. Set to zero to disable. Smaller values converge slower, higher values will cause crosstrack error oscillation.
-    // @Range: 0 to 0.1
+    // @Range: 0 0.1
     // @Increment: 0.01
     AP_GROUPINFO("XTRACK_I",   2, AP_L1_Control, _L1_xtrack_i_gain, 0.02),
 
@@ -142,7 +142,14 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float Nu;
 	float xtrackVel;
 	float ltrackVel;
-	
+
+    uint32_t now = AP_HAL::micros();
+    float dt = (now - _last_update_waypoint_us) * 1.0e-6f;
+    if (dt > 0.1) {
+        dt = 0.1;
+    }
+    _last_update_waypoint_us = now;
+    
 	// Calculate L1 gain required for specified damping
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
@@ -220,8 +227,6 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		    _L1_xtrack_i = 0;
 		    _L1_xtrack_i_gain_prev = _L1_xtrack_i_gain;
 		} else if (fabsf(Nu1) < radians(5)) {
-
-            const float dt = 0.1f; // 10Hz
             _L1_xtrack_i += Nu1 * _L1_xtrack_i_gain * dt;
 
             // an AHRS_TRIM_X=0.1 will drift to about 0.08 so 0.1 is a good worst-case to clip at

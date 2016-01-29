@@ -89,25 +89,45 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
 void
 RC_Channel::set_range(int16_t low, int16_t high)
 {
-    _type           = RC_CHANNEL_TYPE_RANGE;
-    _high           = high;
-    _low            = low;
-    _high_out       = high;
-    _low_out        = low;
+    set_range_in(low, high);
+    set_range_out(low, high);
 }
 
 void
 RC_Channel::set_range_out(int16_t low, int16_t high)
 {
+    _type_out       = RC_CHANNEL_TYPE_RANGE;
     _high_out       = high;
     _low_out        = low;
 }
 
 void
+RC_Channel::set_range_in(int16_t low, int16_t high)
+{
+    _type_in       = RC_CHANNEL_TYPE_RANGE;
+    _high_in       = high;
+    _low_in        = low;
+}
+
+void
 RC_Channel::set_angle(int16_t angle)
 {
-    _type   = RC_CHANNEL_TYPE_ANGLE;
-    _high   = angle;
+    set_angle_in(angle);
+    set_angle_out(angle);
+}
+
+void
+RC_Channel::set_angle_out(int16_t angle)
+{
+    _type_out   = RC_CHANNEL_TYPE_ANGLE;
+    _high_out   = angle;
+}
+
+void
+RC_Channel::set_angle_in(int16_t angle)
+{
+    _type_in   = RC_CHANNEL_TYPE_ANGLE;
+    _high_in   = angle;
 }
 
 void
@@ -135,7 +155,20 @@ RC_Channel::get_reverse(void) const
 void
 RC_Channel::set_type(uint8_t t)
 {
-    _type = t;
+    set_type_in(t);
+    set_type_out(t);
+}
+
+void
+RC_Channel::set_type_in(uint8_t t)
+{
+    _type_in  = t;
+}
+
+void
+RC_Channel::set_type_out(uint8_t t)
+{
+    _type_out = t;
 }
 
 // call after first read
@@ -151,7 +184,7 @@ RC_Channel::set_pwm(int16_t pwm)
 {
     radio_in = pwm;
 
-    if (_type == RC_CHANNEL_TYPE_RANGE) {
+    if (_type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range();
     } else {
         //RC_CHANNEL_TYPE_ANGLE, RC_CHANNEL_TYPE_ANGLE_RAW
@@ -180,7 +213,7 @@ RC_Channel::set_pwm_no_deadzone(int16_t pwm)
 {
     radio_in = pwm;
 
-    if (_type == RC_CHANNEL_TYPE_RANGE) {
+    if (_type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range_dz(0);
     } else {
         //RC_CHANNEL_ANGLE, RC_CHANNEL_ANGLE_RAW
@@ -191,18 +224,18 @@ RC_Channel::set_pwm_no_deadzone(int16_t pwm)
 int16_t
 RC_Channel::control_mix(float value)
 {
-    return (1 - abs(control_in / _high)) * value + control_in;
+    return (1 - abs(control_in / _high_in)) * value + control_in;
 }
 
 // returns just the PWM without the offset from radio_min
 void
 RC_Channel::calc_pwm(void)
 {
-    if(_type == RC_CHANNEL_TYPE_RANGE) {
+    if(_type_out == RC_CHANNEL_TYPE_RANGE) {
         pwm_out         = range_to_pwm();
         radio_out       = (_reverse >= 0) ? (radio_min + pwm_out) : (radio_max - pwm_out);
 
-    }else if(_type == RC_CHANNEL_TYPE_ANGLE_RAW) {
+    }else if(_type_out == RC_CHANNEL_TYPE_ANGLE_RAW) {
         pwm_out         = (float)servo_out * 0.1f;
         int16_t reverse_mul = (_reverse==-1?-1:1);
         radio_out       = (pwm_out * reverse_mul) + radio_trim;
@@ -222,7 +255,7 @@ RC_Channel::calc_pwm(void)
  */
 int16_t
 RC_Channel::get_control_mid() const {
-    if (_type == RC_CHANNEL_TYPE_RANGE) {
+    if (_type_in == RC_CHANNEL_TYPE_RANGE) {
         int16_t r_in = (radio_min.get()+radio_max.get())/2;
 
         if (_reverse == -1) {
@@ -231,7 +264,7 @@ RC_Channel::get_control_mid() const {
 
         int16_t radio_trim_low  = radio_min + _dead_zone;
 
-        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+        return (_low_in + ((int32_t)(_high_in - _low_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
     } else {
         return 0;
     }
@@ -279,10 +312,10 @@ RC_Channel::update_min_max()
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
+RC_Channel::pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t _trim)
 {
-    int16_t radio_trim_high = radio_trim + dead_zone;
-    int16_t radio_trim_low  = radio_trim - dead_zone;
+    int16_t radio_trim_high = _trim + dead_zone;
+    int16_t radio_trim_low  = _trim - dead_zone;
 
     // prevent div by 0
     if ((radio_trim_low - radio_min) == 0 || (radio_max - radio_trim_high) == 0)
@@ -290,11 +323,21 @@ RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
 
     int16_t reverse_mul = (_reverse==-1?-1:1);
     if(radio_in > radio_trim_high) {
-        return reverse_mul * ((int32_t)_high * (int32_t)(radio_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
+        return reverse_mul * ((int32_t)_high_in * (int32_t)(radio_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
     }else if(radio_in < radio_trim_low) {
-        return reverse_mul * ((int32_t)_high * (int32_t)(radio_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
+        return reverse_mul * ((int32_t)_high_in * (int32_t)(radio_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
     }else
         return 0;
+}
+
+/*
+  return an "angle in centidegrees" (normally -4500 to 4500) from
+  the current radio_in value using the specified dead_zone
+ */
+int16_t
+RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
+{
+    return pwm_to_angle_dz_trim(dead_zone, radio_trim);
 }
 
 /*
@@ -313,9 +356,9 @@ RC_Channel::angle_to_pwm()
 {
     int16_t reverse_mul = (_reverse==-1?-1:1);
     if((servo_out * reverse_mul) > 0) {
-        return reverse_mul * ((int32_t)servo_out * (int32_t)(radio_max - radio_trim)) / (int32_t)_high;
+        return reverse_mul * ((int32_t)servo_out * (int32_t)(radio_max - radio_trim)) / (int32_t)_high_out;
     } else {
-        return reverse_mul * ((int32_t)servo_out * (int32_t)(radio_trim - radio_min)) / (int32_t)_high;
+        return reverse_mul * ((int32_t)servo_out * (int32_t)(radio_trim - radio_min)) / (int32_t)_high_out;
     }
 }
 
@@ -335,11 +378,11 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
     int16_t radio_trim_low  = radio_min + dead_zone;
 
     if (r_in > radio_trim_low)
-        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+        return (_low_in + ((int32_t)(_high_in - _low_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
     else if (dead_zone > 0)
         return 0;
     else
-        return _low;
+        return _low_in;
 }
 
 /*

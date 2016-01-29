@@ -52,7 +52,7 @@ navio: all
 raspilot: HAL_BOARD = HAL_BOARD_LINUX
 raspilot: TOOLCHAIN = RPI
 raspilot: all
- 
+
 erlebrain2: HAL_BOARD = HAL_BOARD_LINUX
 erlebrain2: TOOLCHAIN = RPI
 erlebrain2: all
@@ -61,9 +61,25 @@ bbbmini: HAL_BOARD = HAL_BOARD_LINUX
 bbbmini: TOOLCHAIN = BBONE
 bbbmini: all
 
+bhat: HAL_BOARD = HAL_BOARD_LINUX
+bhat: TOOLCHAIN = RPI
+bhat: all
+
+qflight: HAL_BOARD = HAL_BOARD_LINUX
+qflight: TOOLCHAIN = QFLIGHT
+qflight: all
+
 empty: HAL_BOARD = HAL_BOARD_EMPTY
 empty: TOOLCHAIN = AVR
 empty: all
+
+qurt: HAL_BOARD = HAL_BOARD_QURT
+qurt: TOOLCHAIN = QURT
+qurt: all
+
+pxfmini: HAL_BOARD = HAL_BOARD_LINUX
+pxfmini: TOOLCHAIN = RPI
+pxfmini: all
 
 # cope with HIL targets
 %-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
@@ -84,7 +100,7 @@ empty: all
 
 # cope with copter and hil targets
 FRAMES = quad tri hexa y6 octa octa-quad heli single coax obc nologging
-BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v4 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52 vrhero-v10 erle pxf navio raspilot bbbmini minlure erlebrain2
+BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v4 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52 vrhero-v10 erle pxf navio raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
 
 define frame_template
 $(1)-$(2) : EXTRAFLAGS += "-DFRAME_CONFIG=$(shell echo $(2) | tr a-z A-Z | sed s/-/_/g)_FRAME "
@@ -124,3 +140,4 @@ clean:
 	@rm -fr $(BUILDROOT)
 
 include $(MK_DIR)/modules.mk
+include $(MK_DIR)/mavgen.mk

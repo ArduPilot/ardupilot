@@ -64,3 +64,52 @@ void AP_Motors::armed(bool arm)
     _flags.armed = arm;
     AP_Notify::flags.armed = arm;
 };
+
+/*
+  write to an output channel
+ */
+void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
+{
+    if (_motor_map_mask & (1U<<chan)) {
+        // we have a mapped motor number for this channel
+        chan = _motor_map[chan];
+    }
+    hal.rcout->write(chan, pwm);
+}
+
+/*
+  set frequency of a set of channels
+ */
+void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
+{
+    hal.rcout->set_freq(rc_map_mask(mask), freq_hz);
+}
+
+void AP_Motors::rc_enable_ch(uint8_t chan)
+{
+    if (_motor_map_mask & (1U<<chan)) {
+        // we have a mapped motor number for this channel
+        chan = _motor_map[chan];
+    }
+    hal.rcout->enable_ch(chan);
+}
+
+/*
+  map an internal motor mask to real motor mask
+ */
+uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
+{
+    uint32_t mask2 = 0;
+    for (uint8_t i=0; i<32; i++) {
+        uint32_t bit = 1UL<<i;
+        if (mask & bit) {
+            if (_motor_map_mask & bit) {
+                // we have a mapped motor number for this channel
+                mask2 |= (1UL << _motor_map[i]);
+            } else {
+                mask2 |= bit;
+            }
+        }
+    }
+    return mask2;
+}

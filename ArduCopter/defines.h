@@ -65,7 +65,10 @@ enum aux_sw_func {
     AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
     AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
     AUXSW_MOTOR_INTERLOCK =     32, // Motor On/Off switch
-    AUXSW_BRAKE =               33  // Brake flight mode
+    AUXSW_BRAKE =               33, // Brake flight mode
+	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
+    AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
+    AUXSW_RELAY4 =              36  // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
 };
 
 // Frame types
@@ -95,7 +98,6 @@ enum autopilot_modes {
     RTL =           6,  // automatic return to launching point
     CIRCLE =        7,  // automatic circular flight with automatic throttle
     LAND =          9,  // automatic landing with horizontal position control
-    OF_LOITER =    10,  // deprecated
     DRIFT =        11,  // semi-automous position, yaw and throttle control
     SPORT =        13,  // manual earth-frame angular rate control with manual throttle
     FLIP =         14,  // automatically flip the vehicle on the roll axis
@@ -254,6 +256,7 @@ enum FlipState {
 #define LOG_PARAMTUNE_MSG               0x1F
 #define LOG_HELI_MSG                    0x20
 #define LOG_PRECLAND_MSG                0x21
+#define LOG_GUIDEDTARGET_MSG            0x22
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -330,6 +333,7 @@ enum FlipState {
 #define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
 #define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
 #define DATA_EKF_ALT_RESET                  60
+#define DATA_LAND_CANCELLED_BY_PILOT        61
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -420,5 +424,6 @@ enum FlipState {
 
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
+#define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
 
 #endif // _DEFINES_H

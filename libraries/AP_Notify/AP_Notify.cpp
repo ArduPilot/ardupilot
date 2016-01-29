@@ -16,6 +16,25 @@
 
 #include "AP_Notify.h"
 
+// table of user settable parameters
+const AP_Param::GroupInfo AP_Notify::var_info[] = {
+
+    // @Param: LED_BRIGHT
+    // @DisplayName: LED Brightness
+    // @Description: Select the RGB LED brightness level. When USB is connected brightness will never be higher than low regardless of the setting.
+    // @Values: 0:Off,1:Low,2:Medium,3:High
+    // @User: Advanced
+    AP_GROUPINFO("LED_BRIGHT", 0, AP_Notify, _rgb_led_brightness, RGB_LED_HIGH),
+
+    AP_GROUPEND
+};
+
+// Default constructor
+AP_Notify::AP_Notify()
+{
+	AP_Param::setup_object_defaults(this, var_info);
+}
+
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_flags_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
@@ -47,17 +66,22 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         ToshibaLED_I2C toshibaled;
         NotifyDevice *AP_Notify::_devices[] = {&boardled, &navioled, &toshibaled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-        ToshibaLED_I2C toshibaled;
-        NotifyDevice *AP_Notify::_devices[] = {&toshibaled};
+        Display_SSD1306_I2C display;
+        NotifyDevice *AP_Notify::_devices[] = {&display};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
         ToshibaLED_I2C toshibaled;
         ToneAlarm_Linux tonealarm;
         NotifyDevice *AP_Notify::_devices[] = {&toshibaled, &tonealarm};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
         NotifyDevice *AP_Notify::_devices[0];
-    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
         AP_BoardLED boardled;
         NotifyDevice *AP_Notify::_devices[] = {&boardled};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+        AP_BoardLED boardled;
+        RCOutputRGBLed bhled(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &bhled};
     #else
         AP_BoardLED boardled;
         ToshibaLED_I2C toshibaled;
@@ -82,6 +106,7 @@ void AP_Notify::init(bool enable_external_leds)
     AP_Notify::flags.external_leds = enable_external_leds;
 
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+        _devices[i]->pNotify = this;
         _devices[i]->init();
     }
 }

@@ -14,13 +14,12 @@ AP_InertialSensor ins;
 
 static void display_offsets_and_scaling();
 static void run_test();
-static void run_calibration();
 
 void setup(void)
 {
     hal.console->println("AP_InertialSensor startup...");
 
-    ins.init(AP_InertialSensor::RATE_100HZ);
+    ins.init(100);
 
     // display initial values
     display_offsets_and_scaling();
@@ -34,7 +33,6 @@ void loop(void)
     hal.console->println();
     hal.console->println(
     "Menu:\r\n"
-    "    c calibrate accelerometers\r\n"
     "    d) display offsets and scaling\r\n"
     "    l) level (capture offsets from level)\r\n"
     "    t) test\r\n"
@@ -49,11 +47,6 @@ void loop(void)
     while( hal.console->available() ) {
         user_input = hal.console->read();
 
-        if( user_input == 'c' || user_input == 'C' ) {
-            run_calibration();
-            display_offsets_and_scaling();
-        }
-
         if( user_input == 'd' || user_input == 'D' ) {
             display_offsets_and_scaling();
         }
@@ -66,19 +59,6 @@ void loop(void)
 			hal.scheduler->reboot(false);
         }
     }
-}
-
-static void run_calibration()
-{
-    float roll_trim, pitch_trim;
-    // clear off any other characters (like line feeds,etc)
-    while( hal.console->available() ) {
-        hal.console->read();
-    }
-
-
-    AP_InertialSensor_UserInteractStream interact(hal.console);
-    ins.calibrate_accel(&interact, roll_trim, pitch_trim);
 }
 
 static void display_offsets_and_scaling()

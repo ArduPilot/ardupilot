@@ -6,7 +6,7 @@
 set -e
 set -x
 
-targets="clean navio"
+targets="navio"
 
 [ $# -gt 0 ] && {
     targets="$*"
@@ -15,6 +15,9 @@ targets="clean navio"
 export PATH=/usr/lib/ccache:$PATH
 
 TESTS=$(find libraries -name 'Makefile' | grep -v FLYMAPLE | xargs -i dirname '{}')
+
+export BUILDROOT="/tmp/examples.build"
+rm -rf $BUILDROOT
 
 for b in $TESTS; do
     echo "TESTING $b"

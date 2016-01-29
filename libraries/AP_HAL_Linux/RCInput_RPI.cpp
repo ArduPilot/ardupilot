@@ -1,6 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||        \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 ||   \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH ||           \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #include "GPIO.h"
 #include "RCInput_RPI.h"
 #include "Util_RPI.h"
@@ -28,7 +31,11 @@
 #define RCIN_RPI_SAMPLE_FREQ     500
 #define RCIN_RPI_DMA_CHANNEL     0
 #define RCIN_RPI_MAX_COUNTER     1300
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+#define PPM_INPUT_RPI RPI_GPIO_5
+#else
 #define PPM_INPUT_RPI RPI_GPIO_4
+#endif
 #define RCIN_RPI_MAX_SIZE_LINE   50
 
 //Memory Addresses
@@ -245,7 +252,7 @@ void RCInput_RPI::stop_dma()
 void RCInput_RPI::termination_handler(int signum)
 {
     stop_dma();
-    AP_HAL::panic("Interrupted");
+    AP_HAL::panic("Interrupted: %s", strsignal(signum));
 }
 
 

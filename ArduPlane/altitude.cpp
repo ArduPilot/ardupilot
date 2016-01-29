@@ -64,6 +64,7 @@ void Plane::setup_glide_slope(void)
     auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
+    SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
 
     /*
       work out if we will gradually change altitude, or try to get to
@@ -561,7 +562,7 @@ void Plane::rangefinder_height_update(void)
         }
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
-        height_estimate = distance * ahrs.get_dcm_matrix().c.z;
+        height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
 
         // we consider ourselves to be fully in range when we have 10
         // good samples (0.2s) that are different by 5% of the maximum

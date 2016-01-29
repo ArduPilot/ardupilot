@@ -12,6 +12,7 @@
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "system.h"
+#include "OpticalFlow.h"
 
 class AP_HAL::HAL {
 public:
@@ -31,7 +32,8 @@ public:
         AP_HAL::RCInput*    _rcin,
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler,
-        AP_HAL::Util*       _util)
+        AP_HAL::Util*       _util,
+        AP_HAL::OpticalFlow *_opticalflow)
         :
         uartA(_uartA),
         uartB(_uartB),
@@ -49,7 +51,8 @@ public:
         rcin(_rcin),
         rcout(_rcout),
         scheduler(_scheduler),
-        util(_util)
+        util(_util),
+        opticalflow(_opticalflow)
     {
         AP_HAL::init();
     }
@@ -88,7 +91,8 @@ public:
     AP_HAL::RCInput*    rcin;
     AP_HAL::RCOutput*   rcout;
     AP_HAL::Scheduler*  scheduler;
-    AP_HAL::Util*       util;
+    AP_HAL::Util        *util;
+    AP_HAL::OpticalFlow *opticalflow;
 };
 
 #endif // __AP_HAL_HAL_H__

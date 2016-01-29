@@ -11,19 +11,11 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include "RCOutput_Bebop.h"
+#include "Util.h"
 
 /* BEBOP BLDC motor controller address and registers description */
 #define BEBOP_BLDC_I2C_ADDR 0x08
 #define BEBOP_BLDC_STARTPROP 0x40
-#define BEBOP_BLDC_CLOCKWISE 1
-#define BEBOP_BLDC_COUNTERCLOCKWISE 0
-
-static const uint8_t bebop_motors_bitmask = (BEBOP_BLDC_COUNTERCLOCKWISE  <<
-    (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_BACK)) |
-    (BEBOP_BLDC_CLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_BACK))|
-    (BEBOP_BLDC_COUNTERCLOCKWISE  << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_FRONT))|
-    (BEBOP_BLDC_CLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_FRONT));
-
 
 #define BEBOP_BLDC_SETREFSPEED 0x02
 struct bldc_ref_speed_data {
@@ -57,23 +49,12 @@ struct bldc_obs_data {
 
 #define BEBOP_BLDC_GET_INFO 0xA0
 
-/* Bebop is a Quad X so the channels are :
- * 1 = Front Right
- * 2 = Back Left
- * 3 = Front Left
- * 4 = Back Right
- *
- * but the channels start at 0 so it is channel num - 1
-*/
-static const uint8_t bebop_bldc_motors[BEBOP_BLDC_MOTORS_NUM] = { BEBOP_BLDC_RIGHT_FRONT,
-                                                                  BEBOP_BLDC_LEFT_BACK,
-                                                                  BEBOP_BLDC_LEFT_FRONT,
-                                                                  BEBOP_BLDC_RIGHT_BACK };
-
 #define BEBOP_BLDC_MIN_PERIOD_US 1100
 #define BEBOP_BLDC_MAX_PERIOD_US 1900
 #define BEBOP_BLDC_MIN_RPM 3000
-#define BEBOP_BLDC_MAX_RPM 11000
+/* the max rpm speed is different on Bebop 2 */
+#define BEBOP_BLDC_MAX_RPM_1 11000
+#define BEBOP_BLDC_MAX_RPM_2 12200
 
 /* Priority of the thread controlling the BLDC via i2c
  * set to 14, which is the same as the UART 
@@ -145,6 +126,21 @@ void RCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, sizeof(data), (uint8_t *)&data);
 
     _i2c_sem->give();
+}
+
+bool RCOutput_Bebop::_get_info(struct bldc_info *info)
+{
+    if (info == NULL) {
+        return false;
+    }
+    memset(info, 0, sizeof(struct bldc_info));
+    if (!_i2c_sem->take(0)) {
+        return false;
+    }
+    hal.i2c1->readRegisters(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_GET_INFO,
+                            sizeof(struct bldc_info), (uint8_t *)info);
+    _i2c_sem->give();
+    return true;
 }
 
 int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
@@ -233,7 +229,7 @@ uint16_t RCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
     float period_us_fl = period_us;
 
     float rpm_fl = (period_us_fl - _min_pwm)/(_max_pwm - _min_pwm) *
-                    (BEBOP_BLDC_MAX_RPM - BEBOP_BLDC_MIN_RPM) + BEBOP_BLDC_MIN_RPM;
+                    (_max_rpm - BEBOP_BLDC_MIN_RPM) + BEBOP_BLDC_MIN_RPM;
 
     return (uint16_t)rpm_fl;
 }
@@ -373,8 +369,49 @@ void RCOutput_Bebop::_run_rcout()
     uint8_t i;
     int ret;
     struct timespec ts;
+    struct bldc_info info;
+    uint8_t bebop_bldc_channels[BEBOP_BLDC_MOTORS_NUM];
+    uint8_t bebop_bldc_right_front, bebop_bldc_left_front,
+            bebop_bldc_left_back, bebop_bldc_right_back;
+    int hw_version;
 
     memset(current_period_us, 0, sizeof(current_period_us));
+
+    if (!_get_info(&info)) {
+        AP_HAL::panic("failed to get BLDC info");
+    }
+
+    /* Set motor order depending on BLDC version.On bebop 1 with version 1
+     * keep current order. The order changes from version 2 on bebop 1 and
+     * remains the same as this for bebop 2
+     */
+    if (info.version_maj == 1) {
+        bebop_bldc_right_front = BEBOP_BLDC_MOTOR_1;
+        bebop_bldc_left_front  = BEBOP_BLDC_MOTOR_2;
+        bebop_bldc_left_back   = BEBOP_BLDC_MOTOR_3;
+        bebop_bldc_right_back  = BEBOP_BLDC_MOTOR_4;
+    } else {
+        bebop_bldc_right_front = BEBOP_BLDC_MOTOR_2;
+        bebop_bldc_left_front  = BEBOP_BLDC_MOTOR_1;
+        bebop_bldc_left_back   = BEBOP_BLDC_MOTOR_4;
+        bebop_bldc_right_back  = BEBOP_BLDC_MOTOR_3;
+    }
+
+    bebop_bldc_channels[0] = bebop_bldc_right_front;
+    bebop_bldc_channels[1] = bebop_bldc_left_back;
+    bebop_bldc_channels[2] = bebop_bldc_left_front;
+    bebop_bldc_channels[3] = bebop_bldc_right_back;
+
+    hw_version = Util::from(hal.util)->get_hw_arm32();
+    if (hw_version == UTIL_HARDWARE_BEBOP) {
+        _max_rpm = BEBOP_BLDC_MAX_RPM_1;
+    } else if (hw_version == UTIL_HARDWARE_BEBOP2) {
+        _max_rpm = BEBOP_BLDC_MAX_RPM_2;
+    } else if (hw_version < 0) {
+        AP_HAL::panic("failed to get hw version %s", strerror(hw_version));
+    } else {
+        AP_HAL::panic("unsupported hw version %d", hw_version);
+    }
 
     while (true) {
         pthread_mutex_lock(&_mutex);
@@ -402,7 +439,7 @@ void RCOutput_Bebop::_run_rcout()
         for (i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
             if (current_period_us[i] <= _min_pwm + 50)
                 break;
-            _rpm[bebop_bldc_motors[i]] = _period_us_to_rpm(current_period_us[i]);
+            _rpm[bebop_bldc_channels[i]] = _period_us_to_rpm(current_period_us[i]);
         }
 
         if (i < BEBOP_BLDC_MOTORS_NUM) {

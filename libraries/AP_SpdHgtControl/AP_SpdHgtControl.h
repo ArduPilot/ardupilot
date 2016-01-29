@@ -31,9 +31,10 @@ public:
 	enum FlightStage {
 		FLIGHT_NORMAL        = 1,
 		FLIGHT_TAKEOFF       = 2,
-		FLIGHT_LAND_APPROACH = 3,
-        FLIGHT_LAND_FINAL    = 4,
-        FLIGHT_LAND_ABORT    = 5
+        FLIGHT_VTOL          = 3,
+		FLIGHT_LAND_APPROACH = 4,
+        FLIGHT_LAND_FINAL    = 5,
+        FLIGHT_LAND_ABORT    = 6
 	};
 
 	// Update of the pitch and throttle demands
@@ -68,6 +69,9 @@ public:
 
 	// return landing sink rate
 	virtual float get_land_sinkrate(void) const = 0;
+
+	// set path_proportion accessor
+    virtual void set_path_proportion(float path_proportion) = 0;
 
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the

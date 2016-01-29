@@ -94,9 +94,12 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
+    // init vehicle capabilties
+    init_capabilities();
+
     cliSerial->printf("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n",
-                        hal.util->available_memory());
+                      (unsigned)hal.util->available_memory());
 
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
@@ -204,7 +207,7 @@ void Copter::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(serial_manager);
+    camera_mount.init(&DataFlash, serial_manager);
 #endif
 
 #if PRECISION_LANDING == ENABLED
@@ -278,9 +281,6 @@ void Copter::init_ardupilot()
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
 
-    // init vehicle capabilties
-    init_capabilities();
-
     cliSerial->print("\nReady to FLY ");
 
     // flag that initialisation has completed
@@ -298,7 +298,7 @@ void Copter::startup_INS_ground()
     ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
 
     // Warm up and calibrate gyro offsets
-    ins.init(ins_sample_rate);
+    ins.init(scheduler.get_loop_rate_hz());
 
     // reset ahrs including gyro bias
     ahrs.reset();

@@ -170,7 +170,7 @@ build_arduplane() {
             continue
         }
         extension=$(board_extension $b)
-	copyit $TMPDIR/ArduPlane.build/ArduPlane.$extension $ddir $tag
+	copyit $BUILDROOT/ArduPlane.$extension $ddir $tag
 	touch $binaries/Plane/$tag
     done
     echo "Building ArduPlane PX4 binaries"
@@ -191,7 +191,8 @@ build_arduplane() {
             return
         }
 	copyit ArduPlane-v1.px4 $ddir $tag &&
-	copyit ArduPlane-v2.px4 $ddir $tag
+	copyit ArduPlane-v2.px4 $ddir $tag &&
+	test ! -f ArduPlane-v4.px4 || copyit ArduPlane-v4.px4 $ddir $tag
         if [ "$tag" = "latest" ]; then
 	    copyit px4io-v1.bin $binaries/PX4IO/$hdate/PX4IO $tag
 	    copyit px4io-v1.elf $binaries/PX4IO/$hdate/PX4IO $tag
@@ -226,7 +227,7 @@ build_arducopter() {
                 continue
             }
             extension=$(board_extension $b)
-	    copyit $TMPDIR/ArduCopter.build/ArduCopter.$extension $ddir $tag
+	    copyit $BUILDROOT/ArduCopter.$extension $ddir $tag
 	    touch $binaries/Copter/$tag
         done
     done
@@ -247,7 +248,8 @@ build_arducopter() {
             continue
         }
 	copyit ArduCopter-v1.px4 $ddir $tag &&
-	copyit ArduCopter-v2.px4 $ddir $tag
+	copyit ArduCopter-v2.px4 $ddir $tag &&
+	test ! -f ArduCopter-v4.px4 || copyit ArduCopter-v4.px4 $ddir $tag
     done
     checkout ArduCopter "latest" "" ""
     popd
@@ -270,7 +272,7 @@ build_rover() {
             continue
         }
         extension=$(board_extension $b)
-	copyit $TMPDIR/APMrover2.build/APMrover2.$extension $ddir $tag
+	copyit $BUILDROOT/APMrover2.$extension $ddir $tag
 	touch $binaries/Rover/$tag
     done
     echo "Building APMrover2 PX4 binaries"
@@ -289,7 +291,8 @@ build_rover() {
             return
         }
 	copyit APMrover2-v1.px4 $binaries/Rover/$hdate/PX4 $tag &&
-	copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag 
+	copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag &&
+	test ! -f APMrover2-v4.px4 || copyit APMrover2-v4.px4 $binaries/Rover/$hdate/PX4 $tag 
     }
     checkout APMrover2 "latest" "" ""
     popd
@@ -312,7 +315,7 @@ build_antennatracker() {
             continue
         }
         extension=$(board_extension $b)
-	copyit $TMPDIR/AntennaTracker.build/AntennaTracker.$extension $ddir $tag
+	copyit $BUILDROOT/AntennaTracker.$extension $ddir $tag
 	touch $binaries/AntennaTracker/$tag
     done
     echo "Building AntennaTracker PX4 binaries"
@@ -331,7 +334,8 @@ build_antennatracker() {
             return
         }
 	copyit AntennaTracker-v1.px4 $binaries/AntennaTracker/$hdate/PX4 $tag &&
-	copyit AntennaTracker-v2.px4 $binaries/AntennaTracker/$hdate/PX4 $tag 
+	copyit AntennaTracker-v2.px4 $binaries/AntennaTracker/$hdate/PX4 $tag &&
+	test ! -f AntennaTracker-v4.px4 || copyit AntennaTracker-v4.px4 $binaries/AntennaTracker/$hdate/PX4 $tag 
     }
     checkout AntennaTracker "latest" "" ""
     popd
@@ -341,6 +345,9 @@ build_antennatracker() {
     git submodule init
     git submodule update
 }
+
+export BUILDROOT="$TMPDIR/binaries.build"
+rm -rf $BUILDROOT
 
 # make sure PX4 is rebuilt from scratch
 for d in ArduPlane ArduCopter APMrover2 AntennaTracker; do

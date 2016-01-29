@@ -328,7 +328,8 @@ void AP_MPU6000_BusDriver_I2C::start(bool &fifo_mode, uint8_t &max_samples)
     fifo_mode = true;
     write8(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
                            BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN);
-    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_SIG_COND_RESET);
+    write8(MPUREG_USER_CTRL, 0);
+    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET);
     write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN);
     /* maximum number of samples read by a burst
      * a sample is an array containing :
@@ -379,13 +380,13 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
 
     n_samples = bytes_read / MPU6000_SAMPLE_SIZE;
 
-    if(n_samples > 3) {
+    if(n_samples > MPU6000_MAX_FIFO_SAMPLES) {
         hal.console->printf("bytes_read = %d, n_samples %d > 3, dropping samples\n",
                                    bytes_read, n_samples);
 
         /* Too many samples, do a FIFO RESET */
         write8(MPUREG_USER_CTRL, 0);
-        write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_SIG_COND_RESET);
+        write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET);
         write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN);
         n_samples = 0;
         return;

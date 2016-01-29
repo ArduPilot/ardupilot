@@ -8,6 +8,7 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
+    // @Param: ENABLED
     // @DisplayName: Precision Land enabled/disabled and behaviour
     // @Description: Precision Land enabled/disabled and behaviour
     // @Values: 0:Disabled, 1:Enabled Always Land, 2:Enabled Strict
@@ -28,6 +29,26 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SPEED",   2, AC_PrecLand, _speed_xy, AC_PRECLAND_SPEED_XY_DEFAULT),
 
+     // @Param: VEL_P
+     // @DisplayName: Precision landing velocity controller P gain
+     // @Description: Precision landing velocity controller P gain
+     // @Range: 0.100 5.000
+     // @User: Advanced
+
+     // @Param: VEL_I
+     // @DisplayName: Precision landing velocity controller I gain
+     // @Description: Precision landing velocity controller I gain
+     // @Range: 0.100 5.000
+     // @User: Advanced
+
+     // @Param: VEL_IMAX
+     // @DisplayName: Precision landing velocity controller I gain maximum
+     // @Description: Precision landing velocity controller I gain maximum
+     // @Range: 0 1000
+     // @Units: cm/s
+     // @User: Standard
+     AP_SUBGROUPINFO(_pi_vel_xy, "VEL_", 3, AC_PrecLand, AC_PI_2D),
+
     AP_GROUPEND
 };
 
@@ -35,11 +56,10 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav,
-                         AC_PI_2D& pi_precland_xy, float dt) :
+AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav, float dt) :
     _ahrs(ahrs),
     _inav(inav),
-    _pi_precland_xy(pi_precland_xy),
+    _pi_vel_xy(PRECLAND_P, PRECLAND_I, PRECLAND_IMAX, PRECLAND_FILT_HZ, dt),
     _dt(dt),
     _have_estimate(false),
     _backend(NULL)

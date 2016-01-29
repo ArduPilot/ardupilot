@@ -9,7 +9,9 @@ sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
 import boards
-import waflib
+
+from waflib import ConfigSet, Utils
+from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
@@ -18,26 +20,28 @@ import waflib
 # pastable. Add the 'export waf="$PWD/waf"' trick to be copy-pastable
 # as well.
 
-# TODO: add support for unit tests.
-
 # TODO: replace defines with the use of a generated config.h file
 # this makes recompilation at least when defines change. which might
 # be sufficient.
 
 # TODO: set git version as part of build preparation.
 
-# TODO: Check if we should simply use the signed 'waf' "binary" (after
-# verifying it) instead of generating it ourselves from the sources.
+def init(ctx):
+    env = ConfigSet.ConfigSet()
+    try:
+        env.load('build/c4che/_cache.py')
+    except:
+        return
 
-# TODO: evaluate if we need shortcut commands for the common targets
-# (vehicles). currently using waf --targets=NAME the target name must
-# contain the board extension so make it less convenient, maybe hook
-# to support automatic filling this extension?
+    # define the variant build commands according to the board
+    for c in (BuildContext, CleanContext, InstallContext, UninstallContext, CheckContext):
+        class context(c):
+            variant = env.BOARD
 
 def options(opt):
     boards_names = boards.get_boards_names()
 
-    opt.load('compiler_cxx compiler_c waf_unit_test')
+    opt.load('compiler_cxx compiler_c waf_unit_test python')
     opt.add_option('--board',
                    action='store',
                    choices=boards_names,
@@ -50,23 +54,9 @@ def options(opt):
                  help='Output all test programs')
 
 def configure(cfg):
-    cfg.load('compiler_cxx compiler_c')
-    cfg.load('clang_compilation_database')
-    cfg.load('waf_unit_test')
-    cfg.load('gbenchmark')
-
-    cfg.start_msg('Benchmarks')
-    if cfg.env.HAS_GBENCHMARK:
-        cfg.end_msg('enabled')
-    else:
-        cfg.end_msg('disabled', color='YELLOW')
-
-    cfg.env.HAS_GTEST = cfg.check_cxx(
-        lib='gtest',
-        mandatory=False,
-        uselib_store='GTEST',
-        errmsg='not found, unit tests disabled',
-    )
+    cfg.env.BOARD = cfg.options.board
+    # use a different variant for each board
+    cfg.setenv(cfg.env.BOARD)
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
@@ -84,8 +74,29 @@ def configure(cfg):
         else:
             cfg.env.prepend_value(k, val)
 
+    cfg.load('toolchain')
+    cfg.load('compiler_cxx compiler_c')
+    cfg.load('clang_compilation_database')
+    cfg.load('waf_unit_test')
+    cfg.load('mavgen')
+    cfg.load('gbenchmark')
+    cfg.load('gtest')
+    cfg.load('static_linking')
+
+    cfg.start_msg('Benchmarks')
+    if cfg.env.HAS_GBENCHMARK:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.start_msg('Unit tests')
+    if cfg.env.HAS_GTEST:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
     cfg.env.prepend_value('INCLUDES', [
-        cfg.srcnode.abspath() + '/libraries/'
+        cfg.srcnode.abspath() + '/libraries/',
     ])
 
     # TODO: Investigate if code could be changed to not depend on the
@@ -96,7 +107,7 @@ def configure(cfg):
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
-    globs = waflib.Utils.to_list(globs)
+    globs = Utils.to_list(globs)
     for g in globs:
         for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
             dirs.append(d.parent.relpath())
@@ -106,17 +117,33 @@ def list_boards(ctx):
     print(*boards.get_boards_names())
 
 def build(bld):
+    bld.load('ardupilotwaf')
+    bld.load('gtest')
+
+    #generate mavlink headers
+    bld(
+        features='mavgen',
+        source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
+        output_dir='libraries/GCS_MAVLink/include/mavlink/v1.0/',
+        name='mavlink',
+        # this below is not ideal, mavgen tool should set this, but that's not
+        # currently possible
+        export_includes=[
+            bld.bldnode.make_node('libraries').abspath(),
+            bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
+        ],
+    )
+
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider
     # split into smaller pieces with well defined boundaries.
-    ardupilotwaf.vehicle_stlib(
-        bld,
+    bld.ap_stlib(
         name='ap',
         vehicle='UNKNOWN',
-        libraries=ardupilotwaf.get_all_libraries(bld),
+        libraries=bld.ap_get_all_libraries(),
+        use='mavlink',
     )
-
     # TODO: Currently each vehicle also generate its own copy of the
     # libraries. Fix this, or at least reduce the amount of
     # vehicle-dependent libraries.
@@ -152,10 +179,15 @@ def build(bld):
         bld.recurse(d)
 
     if bld.cmd == 'check':
+        bld.options.clear_failed_tests = True
         if not bld.env.HAS_GTEST:
             bld.fatal('check: gtest library is required')
         bld.add_post_fun(ardupilotwaf.test_summary)
 
-class CheckContext(waflib.Build.BuildContext):
+class CheckContext(BuildContext):
     '''executes tests after build'''
     cmd = 'check'
+
+copter = ardupilotwaf.build_shortcut(targets='bin/arducopter')
+plane = ardupilotwaf.build_shortcut(targets='bin/arduplane')
+rover = ardupilotwaf.build_shortcut(targets='bin/ardurover')

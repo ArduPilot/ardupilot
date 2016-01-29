@@ -1,5 +1,13 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 0.7.5 27-Dec-2015
+Changes from 0.7.4
+1) Add dataflash logging
+------------------------------------------------------------------
+AntennaTracker 0.7.4 23-Dec-2015
+Changes from 0.7.2
+1) Request baro pressure from vehicle at 1hz
+------------------------------------------------------------------
 AntennaTracker 0.7.2 1-Aug-2015
 Changes from 0.7.1
 1) Fixed Pitch
