@@ -1,5 +1,5 @@
 /*
- *  AP_Notify Library. 
+ *  AP_Notify Library.
  * based upon a prototype library by David "Buzz" Bussenschutt.
  */
 
@@ -17,9 +17,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __TOSHIBA_LED_H__
-#define __TOSHIBA_LED_H__
+#pragma once
 
 #include "RGBLed.h"
 
@@ -27,5 +25,3 @@ class ToshibaLED: public RGBLed {
 public:
     ToshibaLED();
 };
-
-#endif // __TOSHIBA_LED_H__

@@ -15,9 +15,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "NavioLED_I2C.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "NavioLED_I2C.h"
 
 #define PCA9685_ADDRESS 0x40
 #define PCA9685_PWM 0x6

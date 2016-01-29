@@ -16,10 +16,11 @@
  */
 
 /* Notify display driver for 128 x 64 pixel displays */
+#include "Display.h"
 
 #include "AP_Notify.h"
+
 #include <AP_GPS/AP_GPS.h>
-#include "Display.h"
 
 static const uint8_t _font[] = {
     0x00, 0x00, 0x00, 0x00, 0x00,

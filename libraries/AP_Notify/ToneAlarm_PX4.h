@@ -15,8 +15,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __TONE_ALARM_PX4_H__
-#define __TONE_ALARM_PX4_H__
+#pragma once
 
 #include "NotifyDevice.h"
 
@@ -69,5 +68,3 @@ private:
 
     const static Tone _tones[];
 };
-
-#endif // __TONE_ALARM_PX4_H__
