@@ -14,9 +14,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "ExternalLED.h"
+
+#include "AP_Notify.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Notify.h"
 
 #if (defined(EXTERNAL_LED_ARMED) && defined(EXTERNAL_LED_GPS) && \
     defined(EXTERNAL_LED_MOTOR1) && defined(EXTERNAL_LED_MOTOR2))
