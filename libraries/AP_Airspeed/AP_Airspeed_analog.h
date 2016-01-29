@@ -1,19 +1,19 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_AIRSPEED_ANALOG_H__
-#define __AP_AIRSPEED_ANALOG_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+
 #include "AP_Airspeed_Backend.h"
 
 class AP_Airspeed_Analog : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_Analog(const AP_Int8 &pin) : 
-        _source(NULL),
-        _pin(pin),
-        _last_pin(-1)
-    {}
+    AP_Airspeed_Analog(const AP_Int8 &pin)
+        : _source(NULL)
+        , _pin(pin)
+        , _last_pin(-1)
+    { }
 
     // probe and initialise the sensor
     bool init(void);
@@ -29,5 +29,3 @@ private:
     const AP_Int8 &_pin;
     int8_t _last_pin;
 };
-
-#endif // __AP_AIRSPEED_ANALOG_H__

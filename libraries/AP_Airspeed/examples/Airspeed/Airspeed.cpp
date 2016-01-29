@@ -15,13 +15,13 @@
  */
 
 /*
- *   Airspeed.pde - airspeed example sketch
+ *   Airspeed.cpp - airspeed example sketch
  *
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_HAL/AP_HAL.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
