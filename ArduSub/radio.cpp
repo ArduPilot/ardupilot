@@ -148,6 +148,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	float throttleScale = 0.8;
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1500-500*throttleScale;
+	int16_t rollTrim = 0;
 	static int16_t mode;
 
 	static int16_t camTilt = 1500;
@@ -156,10 +157,18 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 		init_arm_motors(true);
 	} else if ( buttons & (1 << 5) ) {
 		init_disarm_motors();
-	} else if ( buttons & (1 << 0) ) {
+	}
+
+	if ( buttons & (1 << 0) ) {
 		camTilt = constrain_float(camTilt+20,800,2200);
 	} else if ( buttons & (1 << 1) ) {
 		camTilt = constrain_float(camTilt-20,800,2200);
+	}
+
+	if ( (buttons & ( 1 << 14 )) && rollTrim > -200 ) {
+		rollTrim -= 10;
+	} else if ( (buttons & ( 1 << 15 )) && rollTrim < 200 ) {
+		rollTrim += 10;
 	}
 
 	if ( buttons & (1 << 14) ) {
@@ -169,7 +178,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	}
 
 	channels[0] = 1500;                           // pitch
-	channels[1] = 1500;                           // roll
+	channels[1] = 1500 + rollTrim;                // roll
 	channels[2] = z*throttleScale+throttleBase;   // throttle
 	channels[3] = r*rpyScale+rpyCenter;           // yaw
 	channels[4] = mode;                           // for testing only
