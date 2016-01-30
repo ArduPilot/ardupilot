@@ -178,6 +178,7 @@ public:
         k_param_acro_roll_rate,
         k_param_acro_pitch_rate,
         k_param_acro_locking,
+        k_param_use_reverse_thrust = 129,
 
         //
         // 130: Sensor parameters
@@ -201,6 +202,8 @@ public:
         k_param_mission, // mission library
         k_param_serial_manager, // serial manager library
         k_param_NavEKF2,  // EKF2
+        k_param_land_pre_flare_alt,
+        k_param_land_pre_flare_airspeed = 149,
 
         //
         // 150: Navigation parameters
@@ -225,6 +228,7 @@ public:
         k_param_camera_mount2,      // unused
         k_param_adsb,
         k_param_notify,
+        k_param_land_pre_flare_sec = 165,
 
         //
         // Battery monitoring parameters
@@ -410,6 +414,7 @@ public:
     AP_Int8 throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_nudge;
+    AP_Int16 use_reverse_thrust;
 
     // Failsafe
     AP_Int8 short_fs_action;
@@ -459,6 +464,8 @@ public:
     AP_Float land_flare_alt;
     AP_Int8 land_disarm_delay;
     AP_Int8 land_abort_throttle_enable;
+    AP_Float land_pre_flare_alt;
+    AP_Float land_pre_flare_sec;
     AP_Int32 min_gndspeed_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
