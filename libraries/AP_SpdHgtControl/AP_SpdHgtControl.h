@@ -29,12 +29,13 @@ public:
 	   prioritise height or speed
 	 */
 	enum FlightStage {
-		FLIGHT_NORMAL        = 1,
-		FLIGHT_TAKEOFF       = 2,
-        FLIGHT_VTOL          = 3,
+		FLIGHT_TAKEOFF       = 1,
+        FLIGHT_VTOL          = 2,
+        FLIGHT_NORMAL        = 3,
 		FLIGHT_LAND_APPROACH = 4,
-        FLIGHT_LAND_FINAL    = 5,
-        FLIGHT_LAND_ABORT    = 6
+		FLIGHT_LAND_PREFLARE = 5,
+        FLIGHT_LAND_FINAL    = 6,
+        FLIGHT_LAND_ABORT    = 7
 	};
 
 	// Update of the pitch and throttle demands
