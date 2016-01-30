@@ -12,8 +12,12 @@ namespace AP_HAL {
 
     /* Toplevel class names for drivers: */
     class UARTDriver;
+    class I2CDevice;
+    class I2CDeviceManager;
     class I2CDriver;
+    class Device;
 
+    class SPIDevice;
     class SPIDeviceDriver;
     class SPIDeviceManager;
 
@@ -47,7 +51,7 @@ namespace AP_HAL {
      * Global names for all of the existing SPI devices on all platforms.
      */
 
-    enum SPIDevice {
+    enum SPIDeviceType {
         SPIDevice_Dataflash         = 0,
         SPIDevice_ADS7844           = 1,
         SPIDevice_MS5611            = 2,
