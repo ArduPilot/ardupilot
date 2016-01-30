@@ -753,9 +753,9 @@ void Plane::frsky_telemetry_send(void)
 
 
 /*
-  return throttle percentage from 0 to 100
+  return throttle percentage from 0 to 100 for normal use and -100 to 100 when using reverse thrust
  */
-uint8_t Plane::throttle_percentage(void)
+int8_t Plane::throttle_percentage(void)
 {
     if (auto_state.vtol_mode) {
         return quadplane.throttle_percentage();
