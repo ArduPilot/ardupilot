@@ -47,13 +47,14 @@ public:
     void update_pitch_throttle(int32_t hgt_dem_cm,
                                int32_t EAS_dem_cm,
                                enum FlightStage flight_stage,
+                               uint8_t mission_cmd_id,
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
                                float load_factor);
 
     // demanded throttle in percentage
-    // should return 0 to 100
+    // should return -100 to 100, usually positive unless reverse thrust is enabled via _THRminf < 0
     int32_t get_throttle_demand(void) {
         return int32_t(_throttle_dem * 100.0f);
     }
@@ -159,6 +160,7 @@ private:
     AP_Int8  _pitch_max;
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
+    AP_Float _maxSinkRate_approach;
 
     // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
     int8_t _pitch_max_limit = 90;
@@ -166,7 +168,7 @@ private:
     // current height estimate (above field elevation)
     float _height;
 
-    // throttle demand in the range from 0.0 to 1.0
+    // throttle demand in the range from -1.0 to 1.0, usually positive unless reverse thrust is enabled via _THRminf < 0
     float _throttle_dem;
 
     // pitch angle demand in radians
@@ -247,8 +249,11 @@ private:
     // Bad descent condition caused by unachievable airspeed demand
     bool _badDescent;
 
-    // climbout mode
+    // auto mode flightstage
     enum FlightStage _flight_stage;
+
+    // auto mode mission item
+    uint8_t _mission_cmd_id;
 
     // pitch demand before limiting
     float _pitch_dem_unc;
@@ -325,6 +330,9 @@ private:
 
     // current time constant
     float timeConstant(void) const;
+
+    // return true if on landing approach
+    bool is_on_land_approach(bool include_segment_between_NORMAL_and_APPROACH);
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
