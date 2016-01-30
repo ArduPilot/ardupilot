@@ -93,6 +93,7 @@ void Plane::update_is_flying_5Hz(void)
                 }
                 break;
 
+            case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
                 break;
 
@@ -218,6 +219,7 @@ void Plane::crash_detection_update(void)
             // a crash into a tree would be caught here.
             break;
 
+        case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
         case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
             // We should be nice and level-ish in this flight stage. If not, we most
             // likely had a crazy landing. Throttle is inhibited already at the flare

@@ -217,7 +217,9 @@ void Plane::stabilize_yaw(float speed_scaler)
         // are below the GROUND_STEER_ALT
         steering_control.ground_steering = (channel_roll->control_in == 0 && 
                                             fabsf(relative_altitude()) < g.ground_steer_alt);
-        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        if (control_mode == AUTO &&
+                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
             // don't use ground steering on landing approach
             steering_control.ground_steering = false;
         }
@@ -987,6 +989,7 @@ void Plane::set_servos(void)
                 }
                 break;
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+            case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
                 if (g.land_flap_percent != 0) {
                     auto_flap_percent = g.land_flap_percent;
