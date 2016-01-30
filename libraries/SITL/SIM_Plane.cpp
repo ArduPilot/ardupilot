@@ -35,6 +35,10 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     */
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
+
+    if (strstr(frame_str, "-revthrust")) {
+        reverse_thrust = true;
+    }
 }
 
 /*
@@ -190,7 +194,13 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float aileron  = (input.servos[0]-1500)/500.0f;
     float elevator = (input.servos[1]-1500)/500.0f;
     float rudder   = (input.servos[3]-1500)/500.0f;
-    float throttle = constrain_float((input.servos[2]-1000)/1000.0f, 0, 1);
+    float throttle;
+
+    if (reverse_thrust) {
+        throttle = constrain_float((input.servos[2]-1500)/500.0f, -1, 1);
+    } else {
+        throttle = constrain_float((input.servos[2]-1000)/1000.0f, 0, 1);
+    }
     
     float thrust     = throttle;
 
@@ -211,7 +221,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     accel_body += force;
 
     // add some noise
-    add_noise(thrust / thrust_scale);
+    add_noise(fabsf(thrust) / thrust_scale);
 }
     
 /*
