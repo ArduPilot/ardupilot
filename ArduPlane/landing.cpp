@@ -314,6 +314,7 @@ float Plane::tecs_hgt_afe(void)
     */
     float hgt_afe;
     if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();
