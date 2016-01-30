@@ -910,7 +910,7 @@ private:
     void servo_write(uint8_t ch, uint16_t pwm);
     bool should_log(uint32_t mask);
     void frsky_telemetry_send(void);
-    uint8_t throttle_percentage(void);
+    int8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);
     bool arm_motors(AP_Arming::ArmingMethod method);
