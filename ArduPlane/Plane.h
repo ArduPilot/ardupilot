@@ -427,6 +427,9 @@ private:
         // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
         bool land_complete:1;
 
+        // Flag to indicate if we have triggered pre-flare. This occurs when we have reached LAND_PF_ALT
+        bool land_pre_flare:1;
+
         // should we fly inverted?
         bool inverted_flight:1;
 
@@ -946,6 +949,7 @@ private:
     void stabilize();
     void set_servos_idle(void);
     void set_servos();
+    bool allow_reverse_thrust(void);
     void update_aux();
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);

@@ -16,6 +16,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     if (AP_Mission::is_nav_cmd(cmd)) {
         // set land_complete to false to stop us zeroing the throttle
         auto_state.land_complete = false;
+        auto_state.land_pre_flare = false;
         auto_state.sink_rate = 0;
 
         // set takeoff_complete to true so we don't add extra evevator
