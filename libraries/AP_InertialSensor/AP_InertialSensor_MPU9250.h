@@ -28,6 +28,8 @@ public:
     virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
     virtual bool read_data_transaction(uint8_t* samples,
                                        uint8_t &n_samples) = 0;
+    virtual bool read_fifo_data_transaction(uint8_t* samples,
+                                            uint8_t &n_bytes) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
     virtual bool has_auxiliary_bus() = 0;
 };
@@ -39,7 +41,7 @@ class AP_InertialSensor_MPU9250 : public AP_InertialSensor_Backend
 
 public:
 
-    AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus);
+    AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus, bool use_fifo = false);
 
     /* update accel and gyro state */
     bool update();
@@ -68,6 +70,10 @@ private:
     uint8_t              _register_read( uint8_t reg );
     void                 _register_write( uint8_t reg, uint8_t val );
     bool                 _hardware_init(void);
+    void                 _configure_fifo();
+    void                 _reset_fifo();
+    void                 _disable_fifo();
+    void                 _read_fifo_data_transaction();
 
     AP_MPU9250_BusDriver *_bus;
     AP_HAL::Semaphore *_bus_sem;
@@ -80,6 +86,13 @@ private:
     // The default rotation for the IMU, its value depends on how the IMU is
     // placed by default on the system
     enum Rotation _default_rotation;
+
+    // use FIFO for accelerometer and gyroscope
+    bool _use_fifo;
+
+    // read only even accelerometer values, because of frequency difference
+    // (2 times) between accelerometer rate and sample rate
+    bool _fifo_count_even;
 
 #if MPU9250_DEBUG
     static void _dump_registers();
@@ -96,6 +109,7 @@ public:
     void read_block(uint8_t reg, uint8_t *val, uint8_t count);
     void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
     bool read_data_transaction(uint8_t* samples, uint8_t &n_samples);
+    bool read_fifo_data_transaction(uint8_t *samples, uint8_t &n_bytes) override;
     AP_HAL::Semaphore* get_semaphore();
     bool has_auxiliary_bus();
 
@@ -113,6 +127,7 @@ public:
     void read_block(uint8_t reg, uint8_t *val, uint8_t count);
     void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) {};
     bool read_data_transaction(uint8_t* samples, uint8_t &n_samples);
+    bool read_fifo_data_transaction(uint8_t *samples, uint8_t &n_bytes) override;
     AP_HAL::Semaphore* get_semaphore();
     bool has_auxiliary_bus();
 
