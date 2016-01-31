@@ -2,7 +2,7 @@
 
 echo "Checking modules"
 
-MODULE_LIST="PX4Firmware PX4NuttX uavcan mavlink"
+MODULE_LIST="PX4Firmware PX4NuttX mavlink uavcan uavcan/dsdl uavcan/libuavcan/dsdl_compiler/pyuavcan"
 
 NEED_INIT=0
 
@@ -28,7 +28,12 @@ done
         git submodule status
         exit 1
     }
-    git submodule update || {
+    (cd modules/uavcan && git submodule init) || {
+        echo "init of uavcan failed"
+        git submodule status
+        exit 1
+    }
+    git submodule update --recursive || {
         echo "git submodule update failed"        
         git submodule status
         exit 1
