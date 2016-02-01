@@ -209,6 +209,6 @@ float AC_PID::get_filt_alpha() const
     }
 
     // calculate alpha
-    float rc = 1/(M_2PI_F*_filt_hz);
+    float rc = 1/(M_2PI*_filt_hz);
     return _dt / (_dt + rc);
 }

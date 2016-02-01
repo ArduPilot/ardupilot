@@ -643,10 +643,10 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix) const
     if( fabsf(_declination) > 0.0f )
     {
         heading = heading + _declination;
-        if (heading > PI)    // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0f * PI);
-        else if (heading < -PI)
-            heading += (2.0f * PI);
+        if (heading > M_PI)    // Angle normalization (-180 deg, 180 deg)
+            heading -= (2.0f * M_PI);
+        else if (heading < -M_PI)
+            heading += (2.0f * M_PI);
     }
 
     return heading;

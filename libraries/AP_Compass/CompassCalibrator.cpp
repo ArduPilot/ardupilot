@@ -365,7 +365,7 @@ void CompassCalibrator::thin_samples() {
 bool CompassCalibrator::accept_sample(const Vector3f& sample)
 {
     static const uint16_t faces = (2 * COMPASS_CAL_NUM_SAMPLES - 4);
-    static const float a = (4.0f * M_PI_F / (3.0f * faces)) + M_PI_F / 3.0f;
+    static const float a = (4.0f * M_PI / (3.0f * faces)) + M_PI / 3.0f;
     static const float theta = 0.5f * acosf(cosf(a) / (1.0f - cosf(a)));
 
     if(_sample_buffer == NULL) {

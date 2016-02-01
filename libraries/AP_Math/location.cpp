@@ -209,12 +209,12 @@ float wrap_180_cd_float(float angle)
  */
 float wrap_PI(float angle_in_radians)
 {
-    if (angle_in_radians > 10*PI || angle_in_radians < -10*PI) {
+    if (angle_in_radians > 10*M_PI || angle_in_radians < -10*M_PI) {
         // for very large numbers use modulus
-        angle_in_radians = fmodf(angle_in_radians, 2*PI);
+        angle_in_radians = fmodf(angle_in_radians, 2*M_PI);
     }
-    while (angle_in_radians > PI) angle_in_radians -= 2*PI;
-    while (angle_in_radians < -PI) angle_in_radians += 2*PI;
+    while (angle_in_radians > M_PI) angle_in_radians -= 2*M_PI;
+    while (angle_in_radians < -M_PI) angle_in_radians += 2*M_PI;
     return angle_in_radians;
 }
 
@@ -223,12 +223,12 @@ float wrap_PI(float angle_in_radians)
  */
 float wrap_2PI(float angle)
 {
-    if (angle > 10*PI || angle < -10*PI) {
+    if (angle > 10*M_PI || angle < -10*M_PI) {
         // for very large numbers use modulus
-        angle = fmodf(angle, 2*PI);
+        angle = fmodf(angle, 2*M_PI);
     }
-    while (angle > 2*PI) angle -= 2*PI;
-    while (angle < 0) angle += 2*PI;
+    while (angle > 2*M_PI) angle -= 2*M_PI;
+    while (angle < 0) angle += 2*M_PI;
     return angle;
 }
 

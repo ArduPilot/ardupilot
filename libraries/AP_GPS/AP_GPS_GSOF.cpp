@@ -296,8 +296,8 @@ AP_GPS_GSOF::process_message(void)
             }
             else if (output_type == 2) // position
             {
-                state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(gsof_msg.data, a)) * 1e7);
-                state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(gsof_msg.data, a + 8)) * 1e7);
+                state.location.lat = (int32_t)(RAD_TO_DEG * (SwapDouble(gsof_msg.data, a)) * 1e7);
+                state.location.lng = (int32_t)(RAD_TO_DEG * (SwapDouble(gsof_msg.data, a + 8)) * 1e7);
                 state.location.alt = (int32_t)(SwapDouble(gsof_msg.data, a + 16) * 1e2);
 
                 state.last_gps_time_ms = state.time_week_ms;
