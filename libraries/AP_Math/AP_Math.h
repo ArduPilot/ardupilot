@@ -388,6 +388,5 @@ inline uint32_t usec_to_hz(uint32_t usec)
     return USEC_PER_SEC / usec;
 }
 
-#undef INLINE
 #endif // AP_MATH_H
 
