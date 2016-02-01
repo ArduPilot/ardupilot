@@ -35,6 +35,7 @@
 #include "RCOutputRGBLed.h"
 #include "Display.h"
 #include "Display_SSD1306_I2C.h"
+#include "Navio2LED.h"
 
 #ifndef OREOLED_ENABLED
  # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
