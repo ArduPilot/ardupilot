@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from waflib import Logs, Options, Utils
+from waflib.Build import BuildContext
 from waflib.Configure import conf
 import os.path
 
@@ -81,8 +82,10 @@ def ap_get_all_libraries(bld):
 def ap_common_vehicle_libraries(bld):
     return COMMON_VEHICLE_DEPENDENT_LIBRARIES
 
+_grouped_programs = {}
+
 @conf
-def ap_program(bld, blddestdir='bin',
+def ap_program(bld, program_group='bin',
             use_legacy_defines=True,
             program_name=None,
             **kw):
@@ -101,18 +104,19 @@ def ap_program(bld, blddestdir='bin',
 
     kw['features'] = common_features(bld) + kw.get('features', [])
 
-    name = os.path.join(blddestdir, program_name)
+    name = os.path.join(program_group, program_name)
     target = bld.bldnode.find_or_declare(name)
 
-    bld.program(
+    tg = bld.program(
         target=target,
         name=name,
         **kw
     )
+    _grouped_programs.setdefault(program_group, []).append(tg)
 
 @conf
 def ap_example(bld, **kw):
-    kw['blddestdir'] = 'examples'
+    kw['program_group'] = 'examples'
     ap_program(bld, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
@@ -180,7 +184,7 @@ def ap_find_tests(bld, use=[]):
             source=[f],
             use=use,
             program_name=f.change_ext('').name,
-            blddestdir='tests',
+            program_group='tests',
             use_legacy_defines=False,
         )
 
@@ -199,7 +203,7 @@ def ap_find_benchmarks(bld, use=[]):
             source=[f],
             use=use,
             program_name=f.change_ext('').name,
-            blddestdir='benchmarks',
+            program_group='benchmarks',
             use_legacy_defines=False,
         )
 
@@ -247,14 +251,71 @@ def test_summary(bld):
 
     bld.fatal('check: some tests failed')
 
-def build_shortcut(targets=None):
-    def build_fn(bld):
-        if targets:
-            if Options.options.targets:
-                Options.options.targets += ',' + targets
-            else:
-                Options.options.targets = targets
+_build_commands = {}
 
-        Options.commands = ['build'] + Options.commands
+def _process_build_command(bld):
+    if bld.cmd not in _build_commands:
+        return
 
-    return build_fn
+    params = _build_commands[bld.cmd]
+
+    targets = params['targets']
+    if targets:
+        if bld.targets:
+            bld.targets += ',' + targets
+        else:
+            bld.targets = targets
+
+    program_group_list = Utils.to_list(params['program_group_list'])
+    bld.options.program_group.extend(program_group_list)
+
+def build_command(name,
+                   targets=None,
+                   program_group_list=[],
+                   doc='build shortcut'):
+    _build_commands[name] = dict(
+        targets=targets,
+        program_group_list=program_group_list,
+    )
+
+    class context_class(BuildContext):
+        cmd = name
+    context_class.__doc__ = doc
+
+def _select_programs_from_group(bld):
+    groups = bld.options.program_group
+    if not groups:
+        if bld.targets:
+            groups = []
+        else:
+            groups = ['bin']
+
+    if 'all' in groups:
+        groups = _grouped_programs.keys()
+
+    for group in groups:
+        if group not in _grouped_programs:
+            bld.fatal('Group %s not found' % group)
+
+        tg = _grouped_programs[group][0]
+        if bld.targets:
+            bld.targets += ',' + tg.name
+        else:
+            bld.targets = tg.name
+
+        for tg in _grouped_programs[group][1:]:
+            bld.targets += ',' + tg.name
+
+def options(opt):
+    g = opt.add_option_group('Ardupilot build options')
+    g.add_option('--program-group',
+        action='append',
+        default=[],
+        help='Select all programs that go in <PROGRAMS_GROUP>/ for the ' +
+             'build. Example: `waf --program-group examples` builds all ' +
+             'examples. The special group "all" selects all programs.',
+    )
+
+def build(bld):
+    bld.add_pre_fun(_process_build_command)
+    bld.add_pre_fun(_select_programs_from_group)
