@@ -25,7 +25,6 @@
 #include "quaternion.h"
 #include "polygon.h"
 #include "edc.h"
-#include "float.h"
 #include <AP_Param/AP_Param.h>
 
 #ifndef M_PI_F
