@@ -19,7 +19,6 @@
 #include "quaternion.h"
 #include "polygon.h"
 #include "edc.h"
-#include "float.h"
 #include <AP_Param/AP_Param.h>
 #include "location.h"
 
