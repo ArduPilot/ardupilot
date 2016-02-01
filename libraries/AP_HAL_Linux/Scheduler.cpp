@@ -137,7 +137,7 @@ void Scheduler::init()
                                 iter->start_routine);
 }
 
-void Scheduler::_microsleep(uint32_t usec)
+void Scheduler::microsleep(uint32_t usec)
 {
     struct timespec ts;
     ts.tv_sec = 0;
@@ -154,7 +154,7 @@ void Scheduler::delay(uint16_t ms)
 
     while ((AP_HAL::millis64() - start) < ms) {
         // this yields the CPU to other apps
-        _microsleep(1000);
+        microsleep(1000);
         if (_min_delay_cb_ms <= ms) {
             if (_delay_cb) {
                 _delay_cb();
@@ -168,7 +168,7 @@ void Scheduler::delay_microseconds(uint16_t us)
     if (_stopped_clock_usec) {
         return;
     }
-    _microsleep(us);
+    microsleep(us);
 }
 
 void Scheduler::register_delay_callback(AP_HAL::Proc proc,
@@ -365,7 +365,7 @@ void *Scheduler::_timer_thread(void* arg)
             // we've lost sync - restart
             next_run_usec = AP_HAL::micros64();
         } else {
-            sched->_microsleep(dt);
+            sched->microsleep(dt);
         }
         next_run_usec += 1000;
         // run registered timers
@@ -408,7 +408,7 @@ void *Scheduler::_rcin_thread(void *arg)
         poll(NULL, 0, 1);
     }
     while (true) {
-        sched->_microsleep(APM_LINUX_RCIN_PERIOD);
+        sched->microsleep(APM_LINUX_RCIN_PERIOD);
 #if !HAL_LINUX_UARTS_ON_TIMER_THREAD
         RCInput::from(hal.rcin)->_timer_tick();
 #endif
@@ -444,7 +444,7 @@ void *Scheduler::_uart_thread(void* arg)
         poll(NULL, 0, 1);
     }
     while (true) {
-        sched->_microsleep(APM_LINUX_UART_PERIOD);
+        sched->microsleep(APM_LINUX_UART_PERIOD);
 #if !HAL_LINUX_UARTS_ON_TIMER_THREAD
         _run_uarts();
 #endif
@@ -460,7 +460,7 @@ void *Scheduler::_tonealarm_thread(void* arg)
         poll(NULL, 0, 1);
     }
     while (true) {
-        sched->_microsleep(APM_LINUX_TONEALARM_PERIOD);
+        sched->microsleep(APM_LINUX_TONEALARM_PERIOD);
 
         // process tone command
         Util::from(hal.util)->_toneAlarm_timer_tick();
@@ -476,7 +476,7 @@ void *Scheduler::_io_thread(void* arg)
         poll(NULL, 0, 1);
     }
     while (true) {
-        sched->_microsleep(APM_LINUX_IO_PERIOD);
+        sched->microsleep(APM_LINUX_IO_PERIOD);
 
         // process any pending storage writes
         Storage::from(hal.storage)->_timer_tick();

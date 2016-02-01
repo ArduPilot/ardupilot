@@ -49,9 +49,10 @@ public:
 
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
+    void microsleep(uint32_t usec);
+
 private:
     void _timer_handler(int signum);
-    void _microsleep(uint32_t usec);
 
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
