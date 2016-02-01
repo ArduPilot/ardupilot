@@ -52,11 +52,53 @@ static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf
 // is a float is zero
 static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
 
-// a varient of asin() that always gives a valid answer.
-float           safe_asin(float v);
+/*
+ * A varient of asin() that checks the input ranges and ensures a
+ * valid angle as output. If nan is given as input then zero is returned.
+ */
+template <class FloatType>
+FloatType safe_asin(const FloatType &v) {
+    static_assert(std::is_floating_point<FloatType>::value, "ERROR - safe_asin(): template parameter not of type float\n");
 
-// a varient of sqrt() that always gives a valid answer.
-float           safe_sqrt(float v);
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
+    if (std::isnan(v)) {
+        return 0.0f;
+    }
+#else
+    if (isnan(v)) {
+        return 0.0f;
+    }
+#endif
+    if (v >= 1.0f) {
+        return M_PI_2;
+    }
+    if (v <= -1.0f) {
+        return -M_PI_2;
+    }
+    return asinf(v);
+}
+
+/* 
+ * A varient of sqrt() that checks the input ranges and ensures a 
+ * valid value as output. If a negative number is given then 0 is returned. 
+ * The reasoning is that a negative number for sqrt() in our 
+ * code is usually caused by small numerical rounding errors, so the 
+ * real input should have been zero
+ */
+template <class T>
+float safe_sqrt(const T &v) {
+    float ret = std::sqrt(static_cast<float>(v));
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
+    if (std::isnan(ret)) {
+        return 0;
+    }
+#else
+    if (isnan(ret)) {
+        return 0;
+    }
+#endif
+    return ret;
+}
 
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
