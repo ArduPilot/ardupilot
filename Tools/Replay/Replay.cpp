@@ -538,6 +538,7 @@ bool Replay::find_log_info(struct log_information &info)
                 if (smallest_delta == 0 || delta < smallest_delta) {
                     smallest_delta = delta;
                 }
+                prev = reader.last_clock_timestamp;
                 samplecount++;
             }
         }
