@@ -46,8 +46,16 @@ namespace std {
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
-// are two floats equal
-static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+/* 
+ * @brief: Checks whether two floats are equal
+ */
+template <class FloatOne, class FloatTwo>
+inline bool is_equal(const FloatOne fVal1, const FloatTwo fVal2) {
+    static_assert((std::is_floating_point<FloatOne>::value || std::is_base_of<FloatOne,AP_Float>::value), "ERROR - is_equal(): template parameters not of type float\n");
+    static_assert((std::is_floating_point<FloatTwo>::value || std::is_base_of<FloatTwo,AP_Float>::value), "ERROR - is_equal(): template parameters not of type float\n");
+    
+    return fabsf(fVal1 - fVal2) < std::numeric_limits<decltype(fVal1 - fVal2)>::epsilon() ? true : false; 
+}
 
 // is a float is zero
 static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
