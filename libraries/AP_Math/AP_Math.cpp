@@ -10,10 +10,10 @@ float safe_asin(float v)
         return 0.0f;
     }
     if (v >= 1.0f) {
-        return PI/2;
+        return M_PI/2;
     }
     if (v <= -1.0f) {
-        return -PI/2;
+        return -M_PI/2;
     }
     return asinf(v);
 }
