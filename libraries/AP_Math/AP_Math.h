@@ -201,19 +201,30 @@ static inline float degrees(float rad) {
 	return rad * RAD_TO_DEG;
 }
 
-// square
-static inline float sq(float v) {
-	return v*v;
+/*
+ * WE COULD MAKE AP_MATH BETTER! PLZ take care about the types in ArduPilot,
+ * and we can make these functions auto
+ * 
+ * Calculate the squared distance as sum of each squared parameter
+ * @return: Return type currently forced to be float, 
+ * because AP_Int/AP_Float types yield a compile time error.
+ */
+template<class T>
+float sq(const T &val) {
+    return std::pow(static_cast<float>(val), 2);
 }
 
-// 2D vector length
-static inline float pythagorous2(float a, float b) {
-	return sqrtf(sq(a)+sq(b));
+template<class T, class... Params>
+float sq(const T &first, const Params&... parameters) {
+    return sq(first) + sq(parameters...);
 }
 
-// 3D vector length
-static inline float pythagorous3(float a, float b, float c) {
-	return sqrtf(sq(a)+sq(b)+sq(c));
+/*
+ * Calculates the norm: sqrt(val1²+val2²+val3²+..)
+ */
+template<class T, class... Params>
+auto norm(const T &first, const Params&... parameters) -> decltype(std::sqrt(sq(first, parameters...))) {
+    return std::sqrt(sq(first, parameters...));
 }
 
 template<typename A, typename B>
