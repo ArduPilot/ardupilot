@@ -43,6 +43,13 @@ public:
 protected:
     static void *_run_trampoline(void *arg);
 
+    /*
+     * Run the task assigned in the constructor. May be overriden in case it's
+     * preferred to use Thread as an interface or when user wants to aggregate
+     * some initialization or teardown for the thread.
+     */
+    virtual bool _run();
+
     task_t _task;
     bool _started;
     pthread_t _ctx;
