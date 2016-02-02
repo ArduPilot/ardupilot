@@ -33,10 +33,20 @@ namespace Linux {
 void *Thread::run_trampoline(void *arg)
 {
     Thread *thread = static_cast<Thread *>(arg);
-
-    thread->_task();
+    thread->run();
 
     return nullptr;
+}
+
+bool Thread::run()
+{
+    if (!_task) {
+        return false;
+    }
+
+    _task();
+
+    return true;
 }
 
 bool Thread::start(const char *name, int policy, int prio)

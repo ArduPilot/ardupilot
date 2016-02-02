@@ -38,6 +38,13 @@ public:
 
     virtual ~Thread() { }
 
+    /*
+     * Run the task assigned in the constructor. May be overriden in case it's
+     * preferred to use Thread as an interface or when user wants to aggregate
+     * some initialization or teardown for the thread.
+     */
+    virtual bool run();
+
     bool start(const char *name, int policy, int prio);
 
 protected:
