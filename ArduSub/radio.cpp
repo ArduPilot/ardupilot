@@ -185,7 +185,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	channels[5] = x*rpyScale+rpyCenter;           // forward for ROV
 	channels[6] = y*rpyScale+rpyCenter;           // strafe for ROV
 	channels[7] = camTilt;                        // camera tilt
-	channels[8] = camTilt;
+	channels[8] = 0;
 	channels[9] = 0;
 
 	// record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
