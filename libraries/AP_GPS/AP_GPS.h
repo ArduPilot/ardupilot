@@ -96,6 +96,10 @@ public:
         GPS_ENGINE_AIRBORNE_4G = 8
     };
 
+   enum GPS_Config {
+       GPS_ALL_CONFIGURED = 255
+   };
+
     /*
       The GPS_State structure is filled in by the backend driver as it
       parses each message from the GPS.
@@ -317,8 +321,9 @@ public:
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
-    AP_Int8 _gnss_mode;
+    AP_Int8 _gnss_mode[2];
     AP_Int8 _save_config;
+    AP_Int8 _auto_config;
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
@@ -337,6 +342,9 @@ public:
 
     void send_mavlink_gps_rtk(mavlink_channel_t chan);
     void send_mavlink_gps2_rtk(mavlink_channel_t chan);
+
+    // Returns the index of the first unconfigured GPS (returns GPS_ALL_CONFIGURED if all instances report as being configured)
+    uint8_t first_unconfigured_gps(void) const;
 
 private:
     struct GPS_timing {
