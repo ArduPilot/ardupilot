@@ -73,15 +73,6 @@ public:
         SPOOL_DOWN = 4,                     // decreasing maximum throttle while stabilizing
     };
 
-    // spool up states
-    enum spool_up_down_desired {
-        DESIRED_SHUT_DOWN = 0,              // all motors stop
-        DESIRED_SPIN_WHEN_ARMED = 1,        // all motors at spin when armed
-        DESIRED_SPIN_MIN_THROTTLE = 2,      // all motors at min throttle
-        DESIRED_THROTTLE_UNLIMITED = 3,          // throttle is no longer constrained by start up procedure
-    };
-
-    void                set_desired_spool_state(enum spool_up_down_desired spool) { _multicopter_flags.spool_desired = spool;}
     void                output_logic();
 
     // slow_start - set to true to slew motors from current speed to maximum
@@ -151,7 +142,6 @@ protected:
     // flag bitmask
     struct {
         spool_up_down_mode     spool_mode       : 4;    // motor's current spool mode
-        spool_up_down_desired  spool_desired    : 2;    // caller's desired spool mode
         uint8_t slow_start         : 1;    // 1 if slow start is active
         uint8_t slow_start_low_end : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
     } _multicopter_flags;
