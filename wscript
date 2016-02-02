@@ -151,38 +151,48 @@ def build(bld):
         libraries=bld.ap_get_all_libraries(),
         use='mavlink',
     )
-    # TODO: Currently each vehicle also generate its own copy of the
-    # libraries. Fix this, or at least reduce the amount of
-    # vehicle-dependent libraries.
-    vehicles = collect_dirs_to_recurse(bld, '*')
+
+    common_dirs_patterns = [
+        # TODO: Currently each vehicle also generate its own copy of the
+        # libraries. Fix this, or at least reduce the amount of
+        # vehicle-dependent libraries.
+        '*',
+        'Tools/*',
+        'libraries/*/examples/*',
+        '**/tests',
+        '**/benchmarks',
+    ]
+
+    common_dirs_excl = [
+        'modules',
+        'libraries/AP_HAL_*',
+        'libraries/SITL',
+    ]
+
+    hal_dirs_patterns = [
+        'libraries/%s/**/tests',
+        'libraries/%s/**/benchmarks',
+        'libraries/%s/examples/*',
+    ]
+
+    dirs_to_recurse = collect_dirs_to_recurse(
+        bld,
+        common_dirs_patterns,
+        excl=common_dirs_excl,
+    )
+
+    for p in hal_dirs_patterns:
+        dirs_to_recurse += collect_dirs_to_recurse(
+            bld,
+            [p % l for l in bld.env.AP_LIBRARIES],
+        )
 
     # NOTE: we need to sort to ensure the repeated sources get the
     # same index, and random ordering of the filesystem doesn't cause
     # recompilation.
-    vehicles.sort()
+    dirs_to_recurse.sort()
 
-    tools = collect_dirs_to_recurse(bld, 'Tools/*')
-    examples = collect_dirs_to_recurse(bld,
-                                       'libraries/*/examples/*',
-                                       excl='libraries/AP_HAL_* libraries/SITL')
-
-    tests = collect_dirs_to_recurse(bld,
-                                    '**/tests',
-                                    excl='modules Tools libraries/AP_HAL_* libraries/SITL')
-    board_tests = ['libraries/%s/**/tests' % l for l in bld.env.AP_LIBRARIES]
-    tests.extend(collect_dirs_to_recurse(bld, board_tests))
-
-    benchmarks = collect_dirs_to_recurse(bld,
-                                         '**/benchmarks',
-                                         excl='modules Tools libraries/AP_HAL_* libraries/SITL')
-    board_benchmarks = ['libraries/%s/**/benchmarks' % l for l in bld.env.AP_LIBRARIES]
-    benchmarks.extend(collect_dirs_to_recurse(bld, board_benchmarks))
-
-    hal_examples = []
-    for l in bld.env.AP_LIBRARIES:
-        hal_examples.extend(collect_dirs_to_recurse(bld, 'libraries/' + l + '/examples/*'))
-
-    for d in vehicles + tools + examples + hal_examples + tests + benchmarks:
+    for d in dirs_to_recurse:
         bld.recurse(d)
 
     if bld.cmd == 'check':
