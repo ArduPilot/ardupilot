@@ -7,6 +7,11 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+
+#include <limits>
+#include <type_traits>
+#include <cmath>
+
 #include <math.h>
 #include <stdint.h>
 
@@ -22,6 +27,21 @@
 #include <AP_Param/AP_Param.h>
 #include "location.h"
 
+
+/*
+ * There is a macro mismatch and the std::function doesn't exist @PX4
+ * We create our own std::standard function for PX4
+ */
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#undef isfinite
+namespace std {
+    template<class T>
+    bool isfinite(const T& val) {
+        static_assert(std::is_floating_point<T>::value, "ERROR - isfinite(): template parameter not of type float\n");
+        return (isnan(val) || isinf(val)) ? false : true;
+    }
+};
+#endif
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
@@ -69,23 +89,81 @@ bool                    inverse4x4(float m[],float invOut[]);
 // matrix multiplication of two NxN matrices
 float* mat_mul(float *A, float *B, uint8_t n);
 
-/*
-  wrap an angle in centi-degrees
+/* 
+ * @brief: Constrains an euler angle to be within the range: -180 to 180 degrees
  */
-int32_t wrap_360_cd(int32_t error);
-int32_t wrap_180_cd(int32_t error);
-float wrap_360_cd_float(float angle);
-float wrap_180_cd_float(float angle);
+template <class T>
+auto wrap_180(const T &angle, float unit_mod = 1) -> decltype(std::fmod(angle + 180.f*unit_mod, 360.f*unit_mod)) {
+    static_assert(std::is_floating_point<T>::value || std::is_integral<T>::value, "ERROR - wrap_180(): template parameter not of type float or int\n");
+    
+    const auto ang_180 = 180.f*unit_mod;
+    const auto ang_360 = 360.f*unit_mod;
+    auto res = std::fmod(angle + ang_180, ang_360);
+    if (res < 0.f) {
+        res += (decltype(res))ang_360;
+    }
+    res -= (decltype(res))ang_180;
+    return res;
+}
+
+/* 
+ * @brief: Constrains an euler angle to be within the range: 0 to 360 degrees
+ * The second parameter changes the units. Standard: 1 == degrees, 10 == dezi, 100 == centi ..
+ */
+template <class T>
+auto wrap_360(const T &angle, float unit_mod = 1) -> decltype(std::fmod(angle, 360.f*unit_mod)) {
+    static_assert(std::is_floating_point<T>::value || std::is_integral<T>::value, "ERROR - wrap_360(): template parameter not of type float or int\n");
+    
+    const auto ang_360 = 360.f*unit_mod;
+    auto res = std::fmod(angle, ang_360);
+    if (res < 0.f) {
+        res += (decltype(res))ang_360;
+    }
+    return res;
+}
+
+/*
+ * Wrap an angle in centi-degrees
+ */
+template <class T>
+auto wrap_360_cd(const T &angle) -> decltype(wrap_360(angle, 100.f)) {
+    return wrap_360(angle, 100.f);
+}
+
+/*
+ * Wrap an angle in centi-degrees
+ */
+template <class T>
+auto wrap_180_cd(const T &angle) -> decltype(wrap_180(angle, 100.f)) {
+    return wrap_180(angle, 100.f);
+}
 
 /*
   wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
  */
-float wrap_PI(float angle_in_radians);
+template <class T>
+auto wrap_PI(const T &radian) -> decltype(std::fmod(radian + static_cast<float>(M_PI), static_cast<float>(M_2_PI))) {
+    static_assert(std::is_floating_point<T>::value || std::is_integral<T>::value, "ERROR - wrap_PI(): template parameter not of type float or int\n");
+    auto res = std::fmod(radian + static_cast<float>(M_PI), static_cast<float>(M_2_PI));
+    if (res < 0.f) {
+        res += (decltype(res))M_2_PI;
+    }
+    res -= (decltype(res))M_PI;
+    return res;
+}
 
 /*
-  wrap an angle defined in radians to the interval [0,2*PI)
+ * wrap an angle in radians to 0..2PI
  */
-float wrap_2PI(float angle);
+template <class T>
+auto wrap_2PI(const T &radian) -> decltype(std::fmod(radian, static_cast<float>(M_2_PI))) {
+    static_assert(std::is_floating_point<T>::value || std::is_integral<T>::value, "ERROR - wrap_2PI(): template parameter not of type float or int\n");
+    auto res = std::fmod(radian, static_cast<float>(M_2_PI));
+    if (res < 0.f) {
+        res += (decltype(res))M_2_PI;
+    }
+    return res;
+}
 
 // constrain a value
 // constrain a value
