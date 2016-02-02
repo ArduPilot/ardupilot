@@ -31,7 +31,7 @@
 /*
   handle periodic adsb database maintenance and handle threats
  */
-void Copter::adsb_update(void)
+void Sub::adsb_update(void)
 {
     adsb.update();
     adsb_handle_vehicle_threats();
@@ -40,7 +40,7 @@ void Copter::adsb_update(void)
 /*
  * Handle ADS-B based threats which are platform dependent
  */
-void Copter::adsb_handle_vehicle_threats(void)
+void Sub::adsb_handle_vehicle_threats(void)
 {
     // handle clearing of threat
     if (adsb.get_is_evading_threat() && !adsb.get_another_vehicle_within_radius()) {
