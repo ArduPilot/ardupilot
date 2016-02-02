@@ -240,13 +240,9 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // calculate collective mid point as a number from 0 to 1000
     _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
 
-    // calculate maximum collective pitch range from full positive pitch to zero pitch
-    _collective_range = 1000 - _collective_mid_pwm;
-
     // determine roll, pitch and collective input scaling
     _roll_scaler = (float)_cyclic_max/4500.0f;
     _pitch_scaler = (float)_cyclic_max/4500.0f;
-    _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
@@ -350,15 +346,14 @@ void AP_MotorsHeli_Single::set_delta_phase_angle(int16_t angle)
 //
 // move_actuators - moves swash plate and tail rotor
 //                 - expected ranges:
-//                       roll : -4500 ~ 4500
-//                       pitch: -4500 ~ 4500
-//                       collective: 0 ~ 1000
-//                       yaw:   -4500 ~ 4500
+//                       roll : -1 ~ +1
+//                       pitch: -1 ~ +1
+//                       collective: 0 ~ 1
+//                       yaw:   -1 ~ +1
 //
-void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out)
+void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)
 {
-    int16_t yaw_offset = 0;
-    int16_t coll_out_scaled;
+    float yaw_offset = 0.0f;
 
     // initialize limits flag
     limit.roll_pitch = false;
@@ -369,37 +364,33 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     // rescale roll_out and pitch_out into the min and max ranges to provide linear motion
     // across the input range instead of stopping when the input hits the constrain value
     // these calculations are based on an assumption of the user specified cyclic_max
-    // coming into this equation at 4500 or less, and based on the original assumption of the
-    // total _servo_x.servo_out range being -4500 to 4500.
+    // coming into this equation at 4500 or less
 
-    float total_out = pythagorous2((float)pitch_out, (float)roll_out);
+    float total_out = pythagorous2(pitch_out, roll_out);
 
-    if (total_out > _cyclic_max) {
-        float ratio = (float)_cyclic_max / total_out;
+    if (total_out > (_cyclic_max/4500.0f)) {
+        float ratio = (float)(_cyclic_max/4500.0f) / total_out;
         roll_out *= ratio;
         pitch_out *= ratio;
         limit.roll_pitch = true;
     }
 
     // constrain collective input
-    _collective_out = coll_in;
-    if (_collective_out <= 0) {
-        _collective_out = 0;
+    float collective_out = coll_in;
+    if (collective_out <= 0.0f) {
+        collective_out = 0.0f;
         limit.throttle_lower = true;
     }
-    if (_collective_out >= 1000) {
-        _collective_out = 1000;
+    if (collective_out >= 1.0f) {
+        collective_out = 1.0f;
         limit.throttle_upper = true;
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && _collective_out < _land_collective_min) {
-        _collective_out = _land_collective_min;
+    if (_heliflags.landing_collective && collective_out < (_land_collective_min/1000.0f)) {
+        collective_out = (_land_collective_min/1000.0f);
         limit.throttle_lower = true;
     }
-
-    // scale collective pitch
-    coll_out_scaled = _collective_out * _collective_scalar + _collective_min - 1000;
 
     // if servo output not in manual mode, process pre-compensation factors
     if (_servo_mode == SERVO_CONTROL_MODE_AUTOMATED) {
@@ -409,38 +400,34 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
         if ((_main_rotor.get_control_output() > _rsc_idle_output) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
-            yaw_offset = _collective_yaw_effect * abs(_collective_out - _collective_mid_pwm);
+            yaw_offset = _collective_yaw_effect * fabsf(collective_out - (_collective_mid_pwm/1000.0f));
         }
     } else {
-        yaw_offset = 0;  
+        yaw_offset = 0.0f;
     }
 
     // feed power estimate into main rotor controller
     // ToDo: include tail rotor power?
     // ToDo: add main rotor cyclic power?
-    _main_rotor_power = ((float)(abs(_collective_out - _collective_mid_pwm)) / _collective_range);
-    _main_rotor.set_motor_load(_main_rotor_power);
+    _main_rotor.set_motor_load(fabsf(collective_out - (_collective_mid_pwm/1000.0f)));
 
     // swashplate servos
-    _swash_servo_1.servo_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out)/10 + _collectiveFactor[CH_1] * coll_out_scaled + (_swash_servo_1.radio_trim-1500);
-    _swash_servo_2.servo_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out)/10 + _collectiveFactor[CH_2] * coll_out_scaled + (_swash_servo_2.radio_trim-1500);
+    float collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
+    float coll_out_scaled = collective_out * collective_scalar + (_collective_min - 1000)/1000.0f;
+    float servo1_out = ((_rollFactor[CH_1] * roll_out) + (_pitchFactor[CH_1] * pitch_out))*0.45f + _collectiveFactor[CH_1] * coll_out_scaled;
+    float servo2_out = ((_rollFactor[CH_2] * roll_out) + (_pitchFactor[CH_2] * pitch_out))*0.45f + _collectiveFactor[CH_2] * coll_out_scaled;
     if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H1) {
-        _swash_servo_1.servo_out += 500;
-        _swash_servo_2.servo_out += 500;
+        servo1_out += 0.5f;
+        servo2_out += 0.5f;
     }
-    _swash_servo_3.servo_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out)/10 + _collectiveFactor[CH_3] * coll_out_scaled + (_swash_servo_3.radio_trim-1500);
-
-    // use servo_out to calculate pwm_out and radio_out
-    _swash_servo_1.calc_pwm();
-    _swash_servo_2.calc_pwm();
-    _swash_servo_3.calc_pwm();
+    float servo3_out = ((_rollFactor[CH_3] * roll_out) + (_pitchFactor[CH_3] * pitch_out))*0.45f + _collectiveFactor[CH_3] * coll_out_scaled;
 
     hal.rcout->cork();
 
     // actually move the servos
-    rc_write(AP_MOTORS_MOT_1, _swash_servo_1.radio_out);
-    rc_write(AP_MOTORS_MOT_2, _swash_servo_2.radio_out);
-    rc_write(AP_MOTORS_MOT_3, _swash_servo_3.radio_out);
+    rc_write(AP_MOTORS_MOT_1, calc_pwm_output_0to1(servo1_out, _swash_servo_1));
+    rc_write(AP_MOTORS_MOT_2, calc_pwm_output_0to1(servo2_out, _swash_servo_2));
+    rc_write(AP_MOTORS_MOT_3, calc_pwm_output_0to1(servo3_out, _swash_servo_3));
 
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
