@@ -188,7 +188,7 @@ protected:
     virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
 
     // reset_swash_servo - free up swash servo for maximum movement
-    static void reset_swash_servo(RC_Channel& servo);
+    void reset_swash_servo(RC_Channel& servo);
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
     virtual void init_outputs() = 0;
