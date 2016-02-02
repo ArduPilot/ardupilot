@@ -96,7 +96,7 @@ private:
 	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
     void rate_bf_to_motor_roll_pitch(float rate_roll_target_rads, float rate_pitch_target_rads);
-    virtual float rate_bf_to_motor_yaw(float rate_yaw_rads);
+    float rate_bf_to_motor_yaw(float rate_yaw_rads);
 
     //
     // throttle methods
