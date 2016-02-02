@@ -186,7 +186,7 @@ void AP_MotorsHeli::Init()
 void AP_MotorsHeli::output_min()
 {
     // move swash to mid
-    move_actuators(0,0,500,0);
+    move_actuators(0.0f,0.0f,0.5f,0.0f);
 
     update_motor_control(ROTOR_CONTROL_STOP);
 
