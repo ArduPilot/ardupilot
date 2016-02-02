@@ -50,7 +50,7 @@ void Copter::drift_run()
 
     // if landed and throttle at zero, set throttle to zero and exit immediately
     if (!motors.armed() || !motors.get_interlock() || (ap.land_complete && ap.throttle_zero)) {
-        motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }
@@ -95,7 +95,7 @@ void Copter::drift_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
