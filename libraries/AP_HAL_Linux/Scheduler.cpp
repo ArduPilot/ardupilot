@@ -52,7 +52,6 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_IO_PERIOD             20000
 #endif // CONFIG_HAL_BOARD_SUBTYPE
 
-
 Scheduler::Scheduler()
 { }
 
@@ -280,10 +279,6 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
 
 void Scheduler::_timer_task()
 {
-    while (system_initializing()) {
-        poll(NULL, 0, 1);
-    }
-
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
     printf("Initialising rpcmem\n");
     rpcmem_init();
@@ -336,9 +331,6 @@ void Scheduler::_run_io(void)
 
 void Scheduler::_rcin_task()
 {
-    while (system_initializing()) {
-        poll(NULL, 0, 1);
-    }
     while (true) {
         microsleep(APM_LINUX_RCIN_PERIOD);
 #if !HAL_LINUX_UARTS_ON_TIMER_THREAD
@@ -368,9 +360,6 @@ void Scheduler::_run_uarts()
 
 void Scheduler::_uart_task()
 {
-    while (system_initializing()) {
-        poll(NULL, 0, 1);
-    }
     while (true) {
         microsleep(APM_LINUX_UART_PERIOD);
 #if !HAL_LINUX_UARTS_ON_TIMER_THREAD
@@ -381,9 +370,6 @@ void Scheduler::_uart_task()
 
 void Scheduler::_tonealarm_task()
 {
-    while (system_initializing()) {
-        poll(NULL, 0, 1);
-    }
     while (true) {
         microsleep(APM_LINUX_TONEALARM_PERIOD);
 
@@ -394,9 +380,6 @@ void Scheduler::_tonealarm_task()
 
 void Scheduler::_io_task()
 {
-    while (system_initializing()) {
-        poll(NULL, 0, 1);
-    }
     while (true) {
         microsleep(APM_LINUX_IO_PERIOD);
 
@@ -442,4 +425,13 @@ void Scheduler::stop_clock(uint64_t time_usec)
         _stopped_clock_usec = time_usec;
         _run_io();
     }
+}
+
+bool Scheduler::SchedulerThread::_run()
+{
+    while (_sched.system_initializing()) {
+        poll(NULL, 0, 1);
+    }
+
+    return Thread::_run();
 }
