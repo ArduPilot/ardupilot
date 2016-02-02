@@ -1,21 +1,22 @@
+#include "Scheduler.h"
+
+#include <algorithm>
+#include <errno.h>
+#include <poll.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/time.h>
+#include <unistd.h>
+
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include "Scheduler.h"
-#include "Storage.h"
 #include "RCInput.h"
+#include "RPIOUARTDriver.h"
+#include "SPIUARTDriver.h"
+#include "Storage.h"
 #include "UARTDriver.h"
 #include "Util.h"
-#include "SPIUARTDriver.h"
-#include "RPIOUARTDriver.h"
-#include <algorithm>
-#include <poll.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <sys/mman.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 #include <rpcmem.h>
@@ -23,7 +24,6 @@
 #include <AP_HAL_Linux/qflight/qflight_dsp.h>
 #include <AP_HAL_Linux/qflight/qflight_buffer.h>
 #endif
-
 
 using namespace Linux;
 
@@ -50,8 +50,6 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_TONEALARM_PERIOD      10000
 #define APM_LINUX_IO_PERIOD             20000
 #endif // CONFIG_HAL_BOARD_SUBTYPE
-
-
 
 
 Scheduler::Scheduler()
@@ -355,8 +353,8 @@ void *Scheduler::_timer_thread(void* arg)
     printf("Initialising rpcmem\n");
     rpcmem_init();
 #endif
-    
-/*
+
+    /*
       this aims to run at an average of 1kHz, so that it can be used
       to drive 1kHz processes without drift
      */
@@ -524,5 +522,3 @@ void Scheduler::stop_clock(uint64_t time_usec)
         _run_io();
     }
 }
-
-#endif // CONFIG_HAL_BOARD
