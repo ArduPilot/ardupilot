@@ -112,15 +112,24 @@ void Frame::init(float _mass, float hover_throttle, float _terminal_velocity, fl
     terminal_rotation_rate = _terminal_rotation_rate;
 }
 
+/*
+  find a frame by name
+ */
+Frame *Frame::find_frame(const char *name)
+{
+    for (uint8_t i=0; i < ARRAY_SIZE(supported_frames); i++) {
+        if (strcasecmp(name, supported_frames[i].name) == 0) {
+            return &supported_frames[i];
+        }
+    }
+    return NULL;
+}
+
 MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     frame(NULL)
 {
-    for (uint8_t i=0; i < ARRAY_SIZE(supported_frames); i++) {
-        if (strcasecmp(frame_str, supported_frames[i].name) == 0) {
-            frame = &supported_frames[i];
-        }
-    }
+    frame = Frame::find_frame(frame_str);
     if (frame == NULL) {
         printf("Frame '%s' not found", frame_str);
         exit(1);
@@ -138,7 +147,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     float motor_speed[num_motors];
 
     for (uint8_t i=0; i<num_motors; i++) {
-        uint16_t servo = input.servos[motors[i].servo-1];
+        uint16_t servo = input.servos[motor_offset+motors[i].servo-1];
         // assume 1000 to 2000 PWM range
         if (servo <= 1000) {
             motor_speed[i] = 0;

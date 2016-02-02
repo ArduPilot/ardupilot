@@ -55,6 +55,10 @@ public:
         num_motors(_num_motors),
         motors(_motors) {}
 
+
+    // find a frame by name
+    static Frame *find_frame(const char *name);
+    
     // initialise frame
     void init(float mass, float hover_throttle, float terminal_velocity, float terminal_rotation_rate);
 
@@ -67,6 +71,7 @@ public:
     float terminal_rotation_rate;
     float thrust_scale;
     float mass;
+    uint8_t motor_offset;
 };
 
 /*
