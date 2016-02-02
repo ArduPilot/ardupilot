@@ -157,7 +157,7 @@ public:
 
     // manual servo modes (used for setup)
     enum ServoControlModes {
-        SERVO_CONTROL_MODE_AUTOMATED,
+        SERVO_CONTROL_MODE_AUTOMATED = 0,
         SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH,
         SERVO_CONTROL_MODE_MANUAL_MAX,
         SERVO_CONTROL_MODE_MANUAL_CENTER,
