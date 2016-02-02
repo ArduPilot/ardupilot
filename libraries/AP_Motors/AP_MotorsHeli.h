@@ -101,12 +101,6 @@ public:
     // has_flybar - returns true if we have a mechical flybar
     virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
 
-    // get_collective_mid - returns collective mid position as a number from 0 ~ 1000
-    int16_t get_collective_mid() const { return  _collective_mid; }
-
-    // get_collective_out - returns collective position from last output as a number from 0 ~ 1000
-    int16_t get_collective_out() const { return _collective_out; }
-
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
