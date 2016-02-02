@@ -62,7 +62,7 @@ void Copter::land_gps_run()
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
-        motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
@@ -116,7 +116,7 @@ void Copter::land_gps_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // process roll, pitch inputs
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
@@ -186,7 +186,7 @@ void Copter::land_nogps_run()
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
-        motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
@@ -206,7 +206,7 @@ void Copter::land_nogps_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
