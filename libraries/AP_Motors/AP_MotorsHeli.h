@@ -191,7 +191,7 @@ protected:
     void                update_throttle_filter();
 
     // move_actuators - moves swash plate and tail rotor
-    virtual void move_actuators(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out) = 0;
+    virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
 
     // reset_swash_servo - free up swash servo for maximum movement
     static void reset_swash_servo(RC_Channel& servo);
@@ -231,9 +231,6 @@ protected:
     float           _collectiveFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _roll_scaler = 1;                // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
     float           _pitch_scaler = 1;               // scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
-    float           _collective_scalar = 1;          // collective scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
-    float           _main_rotor_power = 0;           // estimated main rotor power load, range 0-1.0f, used for RSC feedforward
-    int16_t         _collective_out = 0;             // actual collective pitch value.  Required by the main code for calculating cruise throttle
     int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
     int16_t         _delta_phase_angle = 0;          // phase angle dynamic compensation
     int16_t         _roll_radio_passthrough = 0;     // roll control PWM direct from radio, used for manual control
