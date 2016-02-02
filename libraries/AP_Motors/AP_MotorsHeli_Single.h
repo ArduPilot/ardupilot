@@ -146,7 +146,7 @@ protected:
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out);
 
     // move_yaw - moves the yaw servo
-    void move_yaw(int16_t yaw_out);
+    void move_yaw(float yaw_out);
 
     // write_aux - outputs pwm onto output aux channel (ch7). servo_out parameter is of the range 0 ~ 1000
     void write_aux(int16_t servo_out);

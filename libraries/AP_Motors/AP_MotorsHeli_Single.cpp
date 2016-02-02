@@ -436,17 +436,19 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
 }
 
 // move_yaw
-void AP_MotorsHeli_Single::move_yaw(int16_t yaw_out)
+void AP_MotorsHeli_Single::move_yaw(float yaw_out)
 {
-    _yaw_servo.servo_out = constrain_int16(yaw_out, -4500, 4500);
-
-    if (_yaw_servo.servo_out != yaw_out) {
+    // sanity check yaw_out
+    if (yaw_out < -1.0f) {
+        yaw_out = -1.0f;
+        limit.yaw = true;
+    }
+    if (yaw_out > 1.0f) {
+        yaw_out = 1.0f;
         limit.yaw = true;
     }
 
-    _yaw_servo.calc_pwm();
-
-    rc_write(AP_MOTORS_MOT_4, _yaw_servo.radio_out);
+    rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(yaw_out, _yaw_servo));
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
@@ -457,7 +459,8 @@ void AP_MotorsHeli_Single::move_yaw(int16_t yaw_out)
         }
     } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0) {
         // output yaw servo to tail rsc
-        write_aux(_yaw_servo.servo_out);
+        // To-Do: fix this messy calculation
+        write_aux((yaw_out*0.5f+1.0f) * 1000.0f);
     }
 }
 
