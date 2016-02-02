@@ -143,6 +143,12 @@ protected:
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;
 
+    // convert input in -1 to +1 range to pwm output
+    int16_t calc_pwm_output_1to1(float input, const RC_Channel& servo);
+
+    // convert input in 0 to +1 range to pwm output
+    int16_t calc_pwm_output_0to1(float input, const RC_Channel& servo);
+
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
