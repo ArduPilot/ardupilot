@@ -220,7 +220,7 @@ void Copter::flip_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // output pilot's throttle without angle boost
     if (is_zero(throttle_out)) {
