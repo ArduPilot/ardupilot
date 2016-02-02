@@ -73,6 +73,16 @@ public:
     float               get_yaw() const { return _yaw_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
 
+    // spool up states
+    enum spool_up_down_desired {
+        DESIRED_SHUT_DOWN = 0,              // all motors stop
+        DESIRED_SPIN_WHEN_ARMED = 1,        // all motors at spin when armed
+        DESIRED_SPIN_MIN_THROTTLE = 2,      // all motors at min throttle
+        DESIRED_THROTTLE_UNLIMITED = 3,     // motors are no longer constrained by start up procedure
+    };
+
+    virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };
+
     //
     // voltage, current and air pressure compensation or limiting features - multicopters only
     //
@@ -149,6 +159,7 @@ protected:
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
+    spool_up_down_desired _spool_desired;           // desired spool state
 
     // battery voltage, current and air pressure compensation variables
     float               _batt_voltage;          // latest battery voltage reading
