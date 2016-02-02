@@ -142,7 +142,7 @@ void AP_BoardConfig::init()
     }
 
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    if (_can_enable == 1) {
+    if (_can_enable >= 1) {
         const char *args[] = { "uavcan", "start", NULL };
         int ret = uavcan_main(3, args);
         if (ret != 0) {
@@ -153,6 +153,17 @@ void AP_BoardConfig::init()
             hal.scheduler->delay(1500);
         }
     }
+    if (_can_enable >= 2) {
+        const char *args[] = { "uavcan", "start", "fw", NULL };
+        int ret = uavcan_main(4, args);
+        if (ret != 0) {
+            hal.console->printf("UAVCAN: failed to start servers\n");
+        } else {
+            hal.console->printf("UAVCAN: servers started\n");
+            // give some time for CAN bus initialisation
+            hal.scheduler->delay(500);
+        }
+   }
 #endif
     
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
