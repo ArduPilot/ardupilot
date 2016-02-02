@@ -47,6 +47,19 @@ public:
     void microsleep(uint32_t usec);
 
 private:
+    class SchedulerThread : public Thread {
+    public:
+        SchedulerThread(Thread::task_t t, Scheduler &sched)
+            : Thread(t)
+            , _sched(sched)
+        { }
+
+    protected:
+        bool _run() override;
+
+        Scheduler &_sched;
+    };
+
     void _timer_handler(int signum);
 
     AP_HAL::Proc _delay_cb;
@@ -77,11 +90,11 @@ private:
 
     volatile bool _timer_event_missed;
 
-    Thread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void)};
-    Thread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void)};
-    Thread _rcin_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_rcin_task, void)};
-    Thread _uart_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_uart_task, void)};
-    Thread _tonealarm_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_tonealarm_task, void)};
+    SchedulerThread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void), *this};
+    SchedulerThread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void), *this};
+    SchedulerThread _rcin_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_rcin_task, void), *this};
+    SchedulerThread _uart_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_uart_task, void), *this};
+    SchedulerThread _tonealarm_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_tonealarm_task, void), *this};
 
     void _timer_task();
     void _io_task();
