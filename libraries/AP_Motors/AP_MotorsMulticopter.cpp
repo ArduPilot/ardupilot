@@ -316,7 +316,7 @@ void AP_MotorsMulticopter::output_logic()
 {
     // force desired and current spool mode if disarmed or not interlocked
     if (!_flags.armed || !_flags.interlock) {
-        _multicopter_flags.spool_desired = DESIRED_SHUT_DOWN;
+        _spool_desired = DESIRED_SHUT_DOWN;
         _multicopter_flags.spool_mode = SHUT_DOWN;
         _multicopter_flags.slow_start_low_end = true;
     }
@@ -333,7 +333,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = true;
 
             // make sure the motors are spooling in the correct direction
-            if(_multicopter_flags.spool_desired != DESIRED_SHUT_DOWN){
+            if(_spool_desired != DESIRED_SHUT_DOWN){
                 _multicopter_flags.spool_mode = SPIN_WHEN_ARMED;
                 break;
             }
@@ -357,9 +357,9 @@ void AP_MotorsMulticopter::output_logic()
 
             // set and increment ramp variables
             float spool_step = 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
-            if(_multicopter_flags.spool_desired == DESIRED_SHUT_DOWN){
+            if(_spool_desired == DESIRED_SHUT_DOWN){
                 _throttle_low_end_pct -= spool_step;
-            } else if(_multicopter_flags.spool_desired == DESIRED_THROTTLE_UNLIMITED ){
+            } else if(_spool_desired == DESIRED_THROTTLE_UNLIMITED ){
                 _throttle_low_end_pct += spool_step;
             }else{
                 _throttle_low_end_pct += constrain_float(spin_when_armed_low_end_pct()-_throttle_low_end_pct, -spool_step, spool_step);
@@ -389,7 +389,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = false;
 
             // make sure the motors are spooling in the correct direction
-            if(_multicopter_flags.spool_desired != DESIRED_THROTTLE_UNLIMITED ){
+            if(_spool_desired != DESIRED_THROTTLE_UNLIMITED ){
                 _multicopter_flags.spool_mode = SPOOL_DOWN;
                 break;
             }
@@ -420,7 +420,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = false;
 
             // make sure the motors are spooling in the correct direction
-            if(_multicopter_flags.spool_desired != DESIRED_THROTTLE_UNLIMITED ){
+            if(_spool_desired != DESIRED_THROTTLE_UNLIMITED ){
                 _multicopter_flags.spool_mode = SPOOL_DOWN;
                 break;
             }
@@ -442,7 +442,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = false;
 
             // make sure the motors are spooling in the correct direction
-            if(_multicopter_flags.spool_desired == DESIRED_THROTTLE_UNLIMITED ){
+            if(_spool_desired == DESIRED_THROTTLE_UNLIMITED ){
                 _multicopter_flags.spool_mode = SPOOL_UP;
                 break;
             }
