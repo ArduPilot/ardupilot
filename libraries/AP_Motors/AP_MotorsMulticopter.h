@@ -41,7 +41,7 @@ public:
     virtual void        output();
 
     // output_to_motors - sends commands to the motors
-    virtual void        output_to_motors(){};
+    virtual void        output_to_motors() = 0;
 
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
