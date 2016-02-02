@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <errno.h>
 #include <poll.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -53,88 +54,24 @@ extern const AP_HAL::HAL& hal;
 
 
 Scheduler::Scheduler()
-{}
-
-void Scheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
-                                             const char *name,
-                                             pthread_startroutine_t start_routine)
-{
-    struct sched_param param = { .sched_priority = rtprio };
-    pthread_attr_t attr;
-    int r;
-
-    pthread_attr_init(&attr);
-    /*
-      we need to run as root to get realtime scheduling. Allow it to
-      run as non-root for debugging purposes, plus to allow the Replay
-      tool to run
-     */
-    if (geteuid() == 0) {
-        pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
-        pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
-        pthread_attr_setschedparam(&attr, &param);
-    }
-    r = pthread_create(ctx, &attr, start_routine, this);
-    if (r != 0) {
-        hal.console->printf("Error creating thread '%s': %s\n",
-                            name, strerror(r));
-        AP_HAL::panic("Failed to create thread");
-    }
-    pthread_attr_destroy(&attr);
-
-    if (name) {
-        pthread_setname_np(*ctx, name);
-    }
-}
+{ }
 
 void Scheduler::init()
 {
     mlockall(MCL_CURRENT|MCL_FUTURE);
 
-    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
-    sched_setscheduler(0, SCHED_FIFO, &param);
-
-    struct {
-        pthread_t *ctx;
-        int rtprio;
-        const char *name;
-        pthread_startroutine_t start_routine;
-    } *iter, table[] = {
-        { .ctx = &_timer_thread_ctx,
-          .rtprio = APM_LINUX_TIMER_PRIORITY,
-          .name = "sched-timer",
-          .start_routine = &Linux::Scheduler::_timer_thread,
-        },
-        { .ctx = &_uart_thread_ctx,
-          .rtprio = APM_LINUX_UART_PRIORITY,
-          .name = "sched-uart",
-          .start_routine = &Linux::Scheduler::_uart_thread,
-        },
-        { .ctx = &_rcin_thread_ctx,
-          .rtprio = APM_LINUX_RCIN_PRIORITY,
-          .name = "sched-rcin",
-          .start_routine = &Linux::Scheduler::_rcin_thread,
-        },
-        { .ctx = &_tonealarm_thread_ctx,
-          .rtprio = APM_LINUX_TONEALARM_PRIORITY,
-          .name = "sched-tonealarm",
-          .start_routine = &Linux::Scheduler::_tonealarm_thread,
-        },
-        { .ctx = &_io_thread_ctx,
-          .rtprio = APM_LINUX_IO_PRIORITY,
-          .name = "sched-io",
-          .start_routine = &Linux::Scheduler::_io_thread,
-        },
-        { }
-    };
-
     if (geteuid() != 0) {
         printf("WARNING: running as non-root. Will not use realtime scheduling\n");
     }
 
-    for (iter = table; iter->ctx; iter++)
-        _create_realtime_thread(iter->ctx, iter->rtprio, iter->name,
-                                iter->start_routine);
+    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
+    sched_setscheduler(0, SCHED_FIFO, &param);
+
+    _timer_thread.start("sched-timer", SCHED_FIFO, APM_LINUX_TIMER_PRIORITY);
+    _uart_thread.start("sched-uart", SCHED_FIFO, APM_LINUX_UART_PRIORITY);
+    _rcin_thread.start("sched-rcin", SCHED_FIFO, APM_LINUX_RCIN_PRIORITY);
+    _tonealarm_thread.start("sched-tonealarm", SCHED_FIFO, APM_LINUX_TONEALARM_PRIORITY);
+    _io_thread.start("sched-io", SCHED_FIFO, APM_LINUX_IO_PRIORITY);
 }
 
 void Scheduler::microsleep(uint32_t usec)
@@ -341,11 +278,9 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
     _in_timer_proc = false;
 }
 
-void *Scheduler::_timer_thread(void* arg)
+void Scheduler::_timer_task()
 {
-    Scheduler* sched = (Scheduler *)arg;
-
-    while (sched->system_initializing()) {
+    while (system_initializing()) {
         poll(NULL, 0, 1);
     }
 
@@ -365,11 +300,11 @@ void *Scheduler::_timer_thread(void* arg)
             // we've lost sync - restart
             next_run_usec = AP_HAL::micros64();
         } else {
-            sched->microsleep(dt);
+            microsleep(dt);
         }
         next_run_usec += 1000;
         // run registered timers
-        sched->_run_timers(true);
+        _run_timers(true);
 
 #if HAL_LINUX_UARTS_ON_TIMER_THREAD
         /*
@@ -381,7 +316,6 @@ void *Scheduler::_timer_thread(void* arg)
         RCInput::from(hal.rcin)->_timer_tick();
 #endif
     }
-    return NULL;
 }
 
 void Scheduler::_run_io(void)
@@ -400,27 +334,23 @@ void Scheduler::_run_io(void)
     _io_semaphore.give();
 }
 
-void *Scheduler::_rcin_thread(void *arg)
+void Scheduler::_rcin_task()
 {
-    Scheduler* sched = (Scheduler *)arg;
-
-    while (sched->system_initializing()) {
+    while (system_initializing()) {
         poll(NULL, 0, 1);
     }
     while (true) {
-        sched->microsleep(APM_LINUX_RCIN_PERIOD);
+        microsleep(APM_LINUX_RCIN_PERIOD);
 #if !HAL_LINUX_UARTS_ON_TIMER_THREAD
         RCInput::from(hal.rcin)->_timer_tick();
 #endif
     }
-    return NULL;
 }
-
 
 /*
   run timers for all UARTs
  */
-void Scheduler::_run_uarts(void)
+void Scheduler::_run_uarts()
 {
     // process any pending serial bytes
     UARTDriver::from(hal.uartA)->_timer_tick();
@@ -436,55 +366,46 @@ void Scheduler::_run_uarts(void)
     UARTDriver::from(hal.uartE)->_timer_tick();
 }
 
-void *Scheduler::_uart_thread(void* arg)
+void Scheduler::_uart_task()
 {
-    Scheduler* sched = (Scheduler *)arg;
-
-    while (sched->system_initializing()) {
+    while (system_initializing()) {
         poll(NULL, 0, 1);
     }
     while (true) {
-        sched->microsleep(APM_LINUX_UART_PERIOD);
+        microsleep(APM_LINUX_UART_PERIOD);
 #if !HAL_LINUX_UARTS_ON_TIMER_THREAD
         _run_uarts();
 #endif
     }
-    return NULL;
 }
 
-void *Scheduler::_tonealarm_thread(void* arg)
+void Scheduler::_tonealarm_task()
 {
-    Scheduler* sched = (Scheduler *)arg;
-
-    while (sched->system_initializing()) {
+    while (system_initializing()) {
         poll(NULL, 0, 1);
     }
     while (true) {
-        sched->microsleep(APM_LINUX_TONEALARM_PERIOD);
+        microsleep(APM_LINUX_TONEALARM_PERIOD);
 
         // process tone command
         Util::from(hal.util)->_toneAlarm_timer_tick();
     }
-    return NULL;
 }
 
-void *Scheduler::_io_thread(void* arg)
+void Scheduler::_io_task()
 {
-    Scheduler* sched = (Scheduler *)arg;
-
-    while (sched->system_initializing()) {
+    while (system_initializing()) {
         poll(NULL, 0, 1);
     }
     while (true) {
-        sched->microsleep(APM_LINUX_IO_PERIOD);
+        microsleep(APM_LINUX_IO_PERIOD);
 
         // process any pending storage writes
         Storage::from(hal.storage)->_timer_tick();
 
         // run registered IO procepsses
-        sched->_run_io();
+        _run_io();
     }
-    return NULL;
 }
 
 bool Scheduler::in_timerprocess()

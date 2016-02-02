@@ -2,18 +2,13 @@
 
 #include "AP_HAL_Linux.h"
 #include "Semaphores.h"
-
-#include <sys/time.h>
-#include <pthread.h>
+#include "Thread.h"
 
 #define LINUX_SCHEDULER_MAX_TIMER_PROCS 10
 #define LINUX_SCHEDULER_MAX_TIMESLICED_PROCS 10
 #define LINUX_SCHEDULER_MAX_IO_PROCS 10
 
 class Linux::Scheduler : public AP_HAL::Scheduler {
-
-typedef void *(*pthread_startroutine_t)(void *);
-
 public:
     Scheduler();
 
@@ -82,23 +77,21 @@ private:
 
     volatile bool _timer_event_missed;
 
-    pthread_t _timer_thread_ctx;
-    pthread_t _io_thread_ctx;
-    pthread_t _rcin_thread_ctx;
-    pthread_t _uart_thread_ctx;
-    pthread_t _tonealarm_thread_ctx;
+    Thread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void)};
+    Thread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void)};
+    Thread _rcin_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_rcin_task, void)};
+    Thread _uart_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_uart_task, void)};
+    Thread _tonealarm_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_tonealarm_task, void)};
 
-    static void *_timer_thread(void* arg);
-    static void *_io_thread(void* arg);
-    static void *_rcin_thread(void* arg);
-    static void *_uart_thread(void* arg);
-    static void _run_uarts(void);
-    static void *_tonealarm_thread(void* arg);
+    void _timer_task();
+    void _io_task();
+    void _rcin_task();
+    void _uart_task();
+    void _tonealarm_task();
 
     void _run_timers(bool called_from_timer_thread);
-    void _run_io(void);
-    void _create_realtime_thread(pthread_t *ctx, int rtprio, const char *name,
-                                 pthread_startroutine_t start_routine);
+    void _run_io();
+    void _run_uarts();
     bool _register_timesliced_proc(AP_HAL::MemberProc, uint8_t);
 
     uint64_t _stopped_clock_usec;
