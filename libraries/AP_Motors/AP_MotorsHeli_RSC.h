@@ -45,6 +45,7 @@ public:
 
     // set_idle_output
     void        set_idle_output(int16_t idle_output) { _idle_output = idle_output; }
+    float       get_idle_output() { return _idle_output; }
 
     // get_desired_speed
     int16_t     get_desired_speed() const { return _desired_speed; }
