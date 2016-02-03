@@ -100,17 +100,17 @@ public:
     // get_rsc_mode - gets the rotor speed control method (AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH or AP_MOTORS_HELI_RSC_MODE_SETPOINT)
     uint8_t get_rsc_mode() const { return _rsc_mode; }
 
-    // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1000)
-    int16_t get_rsc_setpoint() const { return _rsc_setpoint; }
+    // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
+    float get_rsc_setpoint() const { return _rsc_setpoint; }
 
-    // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
-    virtual void set_desired_rotor_speed(int16_t desired_speed) = 0;
+    // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
+    virtual void set_desired_rotor_speed(float desired_speed) = 0;
 
-    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
-    virtual int16_t get_desired_rotor_speed() const = 0;
+    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
+    virtual float get_desired_rotor_speed() const = 0;
 
     // get_main_rotor_speed - gets estimated or measured main rotor speed
-    virtual int16_t get_main_rotor_speed() const = 0;
+    virtual float get_main_rotor_speed() const = 0;
 
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const { return _heliflags.rotor_runup_complete; }
