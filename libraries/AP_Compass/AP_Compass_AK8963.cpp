@@ -236,7 +236,7 @@ void AP_Compass_AK8963::_update()
         goto end;
     }
 
-    if (!_sem_take_nonblocking()) {
+    if (!_bus_sem->take_nonblocking()) {
         goto end;
     }
 
@@ -287,7 +287,7 @@ void AP_Compass_AK8963::_update()
 
     _last_update_timestamp = AP_HAL::micros();
 fail:
-    _sem_give();
+    _bus_sem->give();
 end:
     return;
 }
@@ -333,37 +333,6 @@ bool AP_Compass_AK8963::_calibrate()
     }
 
     return true;
-}
-
-bool AP_Compass_AK8963::_sem_take_blocking()
-{
-    return _bus_sem->take(10);
-}
-
-bool AP_Compass_AK8963::_sem_give()
-{
-    return _bus_sem->give();
-}
-
-bool AP_Compass_AK8963::_sem_take_nonblocking()
-{
-    static int _sem_failure_count = 0;
-
-    if (_bus_sem->take_nonblocking()) {
-        _sem_failure_count = 0;
-        return true;
-    }
-
-    if (!hal.scheduler->system_initializing() ) {
-        _sem_failure_count++;
-        if (_sem_failure_count > 100) {
-            AP_HAL::panic("PANIC: failed to take _bus->sem "
-                                 "100 times in a row, in "
-                                 "AP_Compass_AK8963");
-        }
-    }
-
-    return false;
 }
 
 void AP_Compass_AK8963::_dump_registers()
