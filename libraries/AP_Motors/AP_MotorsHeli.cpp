@@ -254,7 +254,7 @@ void AP_MotorsHeli::output_disarmed()
                 // pass pilot commands straight through to swash
                 _roll_in = _roll_radio_passthrough;
                 _pitch_in = _pitch_radio_passthrough;
-                _throttle_filter.reset(_throttle_radio_passthrough / 1000.0f);
+                _throttle_filter.reset(_throttle_radio_passthrough);
                 _yaw_in = _yaw_radio_passthrough;
                 break;
             case SERVO_CONTROL_MODE_MANUAL_CENTER:
@@ -355,22 +355,13 @@ void AP_MotorsHeli::update_throttle_filter()
     _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
 }
 
-// set_radio_passthrough used to pass radio inputs directly to outputs
-void AP_MotorsHeli::set_radio_passthrough(int16_t radio_roll_input, int16_t radio_pitch_input, int16_t radio_throttle_input, int16_t radio_yaw_input)
-{
-    _roll_radio_passthrough = radio_roll_input;
-    _pitch_radio_passthrough = radio_pitch_input;
-    _throttle_radio_passthrough = radio_throttle_input;
-    _yaw_radio_passthrough = radio_yaw_input;
-}
-
 // reset_radio_passthrough used to reset all radio inputs to center
 void AP_MotorsHeli::reset_radio_passthrough()
 {
-    _roll_radio_passthrough = 0;
-    _pitch_radio_passthrough = 0;
-    _throttle_radio_passthrough = 500;
-    _yaw_radio_passthrough = 0;
+    _roll_radio_passthrough = 0.0f;
+    _pitch_radio_passthrough = 0.0f;
+    _throttle_radio_passthrough = 0.5f;
+    _yaw_radio_passthrough = 0.0f;
 }
 
 // reset_flight_controls - resets all controls and scalars to flight status

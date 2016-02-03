@@ -131,9 +131,6 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t get_motor_mask() = 0;
 
-    // set_radio_passthrough used to pass radio inputs directly to outputs
-    void set_radio_passthrough(int16_t radio_roll_input, int16_t radio_pitch_input, int16_t radio_throttle_input, int16_t radio_yaw_input);
-
     // reset_radio_passthrough used to reset all radio inputs to center
     void reset_radio_passthrough();
 
@@ -213,9 +210,5 @@ protected:
     float           _pitchFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _collectiveFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    int16_t         _roll_radio_passthrough = 0;     // roll control PWM direct from radio, used for manual control
-    int16_t         _pitch_radio_passthrough = 0;    // pitch control PWM direct from radio, used for manual control
-    int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
-    int16_t         _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 };
