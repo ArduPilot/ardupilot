@@ -109,9 +109,6 @@ public:
 
     void set_acro_tail(bool set) { _acro_tail = set; }
 
-    // servo_test - move servos through full range of movement
-    void servo_test();
-
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const;
     
@@ -137,6 +134,9 @@ protected:
 
     // write_aux - outputs pwm onto output aux channel (ch7). servo_out parameter is of the range 0 ~ 1000
     void write_aux(int16_t servo_out);
+
+    // servo_test - move servos through full range of movement
+    void servo_test();
 
     // external objects we depend upon
     RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
