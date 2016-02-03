@@ -127,10 +127,6 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    // set_delta_phase_angle for setting variable phase angle compensation and force recalculation of collective factors
-    // ignored unless overloaded by child classes
-    virtual void set_delta_phase_angle(int16_t angle){};
-
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t get_motor_mask() = 0;
@@ -217,7 +213,6 @@ protected:
     float           _pitchFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _collectiveFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    int16_t         _delta_phase_angle = 0;          // phase angle dynamic compensation
     int16_t         _roll_radio_passthrough = 0;     // roll control PWM direct from radio, used for manual control
     int16_t         _pitch_radio_passthrough = 0;    // pitch control PWM direct from radio, used for manual control
     int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
