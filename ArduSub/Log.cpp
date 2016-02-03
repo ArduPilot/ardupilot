@@ -30,21 +30,27 @@ bool Sub::print_log_menu(void)
     if (0 == g.log_bitmask) {
         cliSerial->printf("none");
     }else{
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST) cliSerial->printf(" ATTITUDE_FAST");
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) cliSerial->printf(" ATTITUDE_MED");
-        if (g.log_bitmask & MASK_LOG_GPS) cliSerial->printf(" GPS");
-        if (g.log_bitmask & MASK_LOG_PM) cliSerial->printf(" PM");
-        if (g.log_bitmask & MASK_LOG_CTUN) cliSerial->printf(" CTUN");
-        if (g.log_bitmask & MASK_LOG_NTUN) cliSerial->printf(" NTUN");
-        if (g.log_bitmask & MASK_LOG_RCIN) cliSerial->printf(" RCIN");
-        if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf(" IMU");
-        if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf(" CMD");
-        if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf(" CURRENT");
-        if (g.log_bitmask & MASK_LOG_RCOUT) cliSerial->printf(" RCOUT");
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf(" OPTFLOW");
-        if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf(" COMPASS");
-        if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf(" CAMERA");
-        if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf(" PID");
+        // Macro to make the following code a bit easier on the eye.
+        // Pass it the capitalised name of the log option, as defined
+        // in defines.h but without the LOG_ prefix.  It will check for
+        // the bit being set and print the name of the log option to suit.
+#define PLOG(_s) if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", # _s)
+        PLOG(ATTITUDE_FAST);
+        PLOG(ATTITUDE_MED);
+        PLOG(GPS);
+        PLOG(PM);
+        PLOG(CTUN);
+        PLOG(NTUN);
+        PLOG(RCIN);
+        PLOG(IMU);
+        PLOG(CMD);
+        PLOG(CURRENT);
+        PLOG(RCOUT);
+        PLOG(OPTFLOW);
+        PLOG(COMPASS);
+        PLOG(CAMERA);
+        PLOG(PID);
+#undef PLOG
     }
 
     cliSerial->println();
