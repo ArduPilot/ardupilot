@@ -1,11 +1,11 @@
-
-#ifndef __AP_INERTIAL_SENSOR_LSM9DS0_H__
-#define __AP_INERTIAL_SENSOR_LSM9DS0_H__
+#pragma once
 
 #define LSM9DS0_DEBUG 0
 
 #include <AP_HAL/AP_HAL.h>
+
 #include "AP_InertialSensor.h"
+#include "AP_InertialSensor_Backend.h"
 
 class AP_InertialSensor_LSM9DS0 : public AP_InertialSensor_Backend
 {
@@ -90,5 +90,3 @@ private:
     void        _dump_registers();
 #endif
 };
-
-#endif /* __AP_INERTIAL_SENSOR_LSM9DS0_H__ */

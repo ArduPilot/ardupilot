@@ -147,6 +147,7 @@ public:
         k_param_arming = 100,
         k_param_parachute_channel,
         k_param_crash_accel_threshold,
+        k_param_override_safety,
 
         // 105: Extra parameters
         k_param_fence_retalt = 105,
@@ -496,6 +497,7 @@ public:
     AP_Int8 flap_slewrate;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 override_channel;
+    AP_Int8 override_safety;
 #endif
     AP_Int16 gcs_pid_mask;
     AP_Int8 parachute_channel;

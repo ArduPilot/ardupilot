@@ -348,13 +348,14 @@ void Rover::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
 #if CAMERA == ENABLED
-    camera.control(cmd.content.digicam_control.session,
-                   cmd.content.digicam_control.zoom_pos,
-                   cmd.content.digicam_control.zoom_step,
-                   cmd.content.digicam_control.focus_lock,
-                   cmd.content.digicam_control.shooting_cmd,
-                   cmd.content.digicam_control.cmd_id);
-    log_picture();
+    if (camera.control(cmd.content.digicam_control.session,
+                       cmd.content.digicam_control.zoom_pos,
+                       cmd.content.digicam_control.zoom_step,
+                       cmd.content.digicam_control.focus_lock,
+                       cmd.content.digicam_control.shooting_cmd,
+                       cmd.content.digicam_control.cmd_id)) {
+            log_picture();
+    }
 #endif
 }
 
@@ -370,8 +371,14 @@ void Rover::do_take_picture()
 // log_picture - log picture taken and send feedback to GCS
 void Rover::log_picture()
 {
-    gcs_send_message(MSG_CAMERA_FEEDBACK);
-    if (should_log(MASK_LOG_CAMERA)) {
-        DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+    if (!camera.using_feedback_pin()) {
+        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        if (should_log(MASK_LOG_CAMERA)) {
+            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+        }
+    } else {
+        if (should_log(MASK_LOG_CAMERA)) {
+            DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
+        }      
     }
 }

@@ -527,7 +527,7 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
     if (comm_get_txspace(chan) < 500) {
         return false;
     }
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (rand() < 0.1) {
         return false;
     }

@@ -8,7 +8,7 @@
 
 class AnalogSource_Raspilot: public AP_HAL::AnalogSource {
 public:
-    friend class RaspilotAnalogIn;
+    friend class AnalogIn_Raspilot;
     AnalogSource_Raspilot(int16_t pin);
     float read_average();
     float read_latest();
@@ -23,9 +23,9 @@ private:
     float _value;
 };
 
-class RaspilotAnalogIn: public AP_HAL::AnalogIn {
+class AnalogIn_Raspilot: public AP_HAL::AnalogIn {
 public:
-    RaspilotAnalogIn();
+    AnalogIn_Raspilot();
     void init();
     AP_HAL::AnalogSource* channel(int16_t n);
 

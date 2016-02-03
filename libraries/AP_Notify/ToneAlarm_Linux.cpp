@@ -20,16 +20,17 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "ToneAlarm_Linux.h"
-#include "AP_Notify.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <AP_HAL_Linux/Util.h>
-#include <stdio.h>
-#include <errno.h>
+
+#include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
 

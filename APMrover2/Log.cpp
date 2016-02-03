@@ -476,4 +476,3 @@ void Rover::start_logging() {}
 void Rover::Log_Write_RC(void) {}
 
 #endif // LOGGING_ENABLED
-

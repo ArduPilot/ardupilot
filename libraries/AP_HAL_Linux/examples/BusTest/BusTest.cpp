@@ -16,7 +16,7 @@ void setup(void)
 
 static struct {
     const char *name;
-    enum AP_HAL::SPIDevice dev;
+    enum AP_HAL::SPIDeviceType dev;
     uint8_t whoami_reg;
 } whoami_list[] = {
     { "MS5611",     AP_HAL::SPIDevice_MS5611,     0x00 | 0x80 },

@@ -385,6 +385,7 @@ struct PACKED log_Camera {
     int32_t  longitude;
     int32_t  altitude;
     int32_t  altitude_rel;
+    int32_t  altitude_gps;
     int16_t  roll;
     int16_t  pitch;
     uint16_t yaw;
@@ -721,7 +722,9 @@ Format characters in the format string for binary log messages
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
-      "CAM", "QIHLLeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
+      "CAM", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw" }, \
+    { LOG_TRIGGER_MSG, sizeof(log_Camera), \
+      "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "Qffcff",   "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
@@ -733,7 +736,7 @@ Format characters in the format string for binary log messages
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-            "RFND", "QCC",         "TimeUS,Dist1,Dist2" }, \
+      "RFND", "QCC",         "TimeUS,Dist1,Dist2" }, \
     { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
       "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx" }
 
@@ -966,6 +969,7 @@ enum LogMessages {
     LOG_MSG_SBPRAW1,
     LOG_MSG_SBPRAW2,
     LOG_MSG_SBPRAWx,
+    LOG_TRIGGER_MSG,
 
     LOG_GIMBAL1_MSG,
     LOG_GIMBAL2_MSG,

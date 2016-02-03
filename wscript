@@ -11,7 +11,8 @@ import ardupilotwaf
 import boards
 
 from waflib import ConfigSet, Utils
-from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
+from waflib.Build import BuildContext
+import waflib.Context
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
@@ -34,11 +35,13 @@ def init(ctx):
         return
 
     # define the variant build commands according to the board
-    for c in (BuildContext, CleanContext, InstallContext, UninstallContext, CheckContext):
-        class context(c):
-            variant = env.BOARD
+    for c in waflib.Context.classes:
+        if not issubclass(c, BuildContext):
+            continue
+        c.variant = env.BOARD
 
 def options(opt):
+    opt.load('ardupilotwaf')
     boards_names = boards.get_boards_names()
 
     opt.load('compiler_cxx compiler_c waf_unit_test python')
@@ -116,11 +119,18 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
-def build(bld):
-    bld.load('ardupilotwaf')
-    bld.load('gtest')
+def _build_cmd_tweaks(bld):
+    if bld.cmd == 'check-all':
+        bld.options.all_tests = True
+        bld.cmd = 'check'
 
-    #generate mavlink headers
+    if bld.cmd == 'check':
+        bld.options.clear_failed_tests = True
+        if not bld.env.HAS_GTEST:
+            bld.fatal('check: gtest library is required')
+        bld.add_post_fun(ardupilotwaf.test_summary)
+
+def _create_common_taskgens(bld):
     bld(
         features='mavgen',
         source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
@@ -144,50 +154,83 @@ def build(bld):
         libraries=bld.ap_get_all_libraries(),
         use='mavlink',
     )
-    # TODO: Currently each vehicle also generate its own copy of the
-    # libraries. Fix this, or at least reduce the amount of
-    # vehicle-dependent libraries.
-    vehicles = collect_dirs_to_recurse(bld, '*')
+
+def _build_recursion(bld):
+    common_dirs_patterns = [
+        # TODO: Currently each vehicle also generate its own copy of the
+        # libraries. Fix this, or at least reduce the amount of
+        # vehicle-dependent libraries.
+        '*',
+        'Tools/*',
+        'libraries/*/examples/*',
+        '**/tests',
+        '**/benchmarks',
+    ]
+
+    common_dirs_excl = [
+        'modules',
+        'libraries/AP_HAL_*',
+        'libraries/SITL',
+    ]
+
+    hal_dirs_patterns = [
+        'libraries/%s/**/tests',
+        'libraries/%s/**/benchmarks',
+        'libraries/%s/examples/*',
+    ]
+
+    dirs_to_recurse = collect_dirs_to_recurse(
+        bld,
+        common_dirs_patterns,
+        excl=common_dirs_excl,
+    )
+
+    for p in hal_dirs_patterns:
+        dirs_to_recurse += collect_dirs_to_recurse(
+            bld,
+            [p % l for l in bld.env.AP_LIBRARIES],
+        )
 
     # NOTE: we need to sort to ensure the repeated sources get the
     # same index, and random ordering of the filesystem doesn't cause
     # recompilation.
-    vehicles.sort()
+    dirs_to_recurse.sort()
 
-    tools = collect_dirs_to_recurse(bld, 'Tools/*')
-    examples = collect_dirs_to_recurse(bld,
-                                       'libraries/*/examples/*',
-                                       excl='libraries/AP_HAL_* libraries/SITL')
-
-    tests = collect_dirs_to_recurse(bld,
-                                    '**/tests',
-                                    excl='modules Tools libraries/AP_HAL_* libraries/SITL')
-    board_tests = ['libraries/%s/**/tests' % l for l in bld.env.AP_LIBRARIES]
-    tests.extend(collect_dirs_to_recurse(bld, board_tests))
-
-    benchmarks = collect_dirs_to_recurse(bld,
-                                         '**/benchmarks',
-                                         excl='modules Tools libraries/AP_HAL_* libraries/SITL')
-    board_benchmarks = ['libraries/%s/**/benchmarks' % l for l in bld.env.AP_LIBRARIES]
-    benchmarks.extend(collect_dirs_to_recurse(bld, board_benchmarks))
-
-    hal_examples = []
-    for l in bld.env.AP_LIBRARIES:
-        hal_examples.extend(collect_dirs_to_recurse(bld, 'libraries/' + l + '/examples/*'))
-
-    for d in vehicles + tools + examples + hal_examples + tests + benchmarks:
+    for d in dirs_to_recurse:
         bld.recurse(d)
 
-    if bld.cmd == 'check':
-        bld.options.clear_failed_tests = True
-        if not bld.env.HAS_GTEST:
-            bld.fatal('check: gtest library is required')
-        bld.add_post_fun(ardupilotwaf.test_summary)
+def build(bld):
+    bld.load('ardupilotwaf')
+    bld.load('gtest')
 
-class CheckContext(BuildContext):
-    '''executes tests after build'''
-    cmd = 'check'
+    _build_cmd_tweaks(bld)
+    _create_common_taskgens(bld)
+    _build_recursion(bld)
 
-copter = ardupilotwaf.build_shortcut(targets='bin/arducopter')
-plane = ardupilotwaf.build_shortcut(targets='bin/arduplane')
-rover = ardupilotwaf.build_shortcut(targets='bin/ardurover')
+ardupilotwaf.build_command('check',
+    program_group_list='all',
+    doc='builds all programs and run tests',
+)
+ardupilotwaf.build_command('check-all',
+    program_group_list='all',
+    doc='shortcut for `waf check --alltests`',
+)
+
+ardupilotwaf.build_command('copter',
+    targets='bin/arducopter',
+    doc='builds arducopter',
+)
+ardupilotwaf.build_command('plane',
+    targets='bin/arduplane',
+    doc='builds arduplane',
+)
+ardupilotwaf.build_command('rover',
+    targets='bin/ardurover',
+    doc='builds ardurover',
+)
+
+for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
+    ardupilotwaf.build_command(program_group,
+        program_group_list=program_group,
+        doc='builds all programs of %s group' % program_group,
+    )

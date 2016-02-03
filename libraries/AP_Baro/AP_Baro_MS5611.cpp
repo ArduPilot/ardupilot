@@ -50,7 +50,7 @@ extern const AP_HAL::HAL& hal;
 
 // SPI Device //////////////////////////////////////////////////////////////////
 
-AP_SerialBus_SPI::AP_SerialBus_SPI(enum AP_HAL::SPIDevice device, enum AP_HAL::SPIDeviceDriver::bus_speed speed) :
+AP_SerialBus_SPI::AP_SerialBus_SPI(enum AP_HAL::SPIDeviceType device, enum AP_HAL::SPIDeviceDriver::bus_speed speed) :
     _device(device),
     _speed(speed),
     _spi(NULL),
@@ -167,15 +167,10 @@ void AP_SerialBus_I2C::sem_give()
 /*
   constructor
  */
-AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer) :
-    AP_Baro_Backend(baro),
-    _serial(serial),
-    _updated(false),
-    _state(0),
-    _last_timer(0),
-    _use_timer(use_timer),
-    _D1(0.0f),
-    _D2(0.0f)
+AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
+    : AP_Baro_Backend(baro)
+    , _serial(serial)
+    , _use_timer(use_timer)
 {
 }
 

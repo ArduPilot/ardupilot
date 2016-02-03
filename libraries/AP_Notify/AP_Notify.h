@@ -14,27 +14,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __AP_NOTIFY_H__
-#define __AP_NOTIFY_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Param/AP_Param.h>
-#include "AP_BoardLED.h"
-#include "ToshibaLED.h"
-#include "ToshibaLED_I2C.h"
-#include "ToshibaLED_PX4.h"
-#include "ToneAlarm_PX4.h"
-#include "ToneAlarm_Linux.h"
-#include "NavioLED_I2C.h"
-#include "ExternalLED.h"
-#include "Buzzer.h"
-#include "VRBoard_LED.h"
-#include "OreoLED_PX4.h"
-#include "RCOutputRGBLed.h"
-#include "Display.h"
-#include "Display_SSD1306_I2C.h"
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
+#include "NotifyDevice.h"
 
 #ifndef OREOLED_ENABLED
  # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
@@ -115,5 +101,3 @@ private:
 
     AP_Int8 _rgb_led_brightness;
 };
-
-#endif    // __AP_NOTIFY_H__

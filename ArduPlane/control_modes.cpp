@@ -90,7 +90,8 @@ void Plane::read_control_switch()
             gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override disabled");
         }
         if (px4io_override_enabled && 
-            hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED) {
+            hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED &&
+            g.override_safety == 1) {
             // we force safety off, so that if this override is used
             // with a in-flight reboot it gives a way for the pilot to
             // re-arm and take manual control
