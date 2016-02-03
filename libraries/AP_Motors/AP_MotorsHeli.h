@@ -17,18 +17,12 @@
 
 // servo output rates
 #define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
-#define AP_MOTORS_HELI_SPEED_DIGITAL_SERVOS     125     // update rate for digital servos
-#define AP_MOTORS_HELI_SPEED_ANALOG_SERVOS      125     // update rate for analog servos
 
 // default swash min and max angles and positions
 #define AP_MOTORS_HELI_SWASH_CYCLIC_MAX         2500
 #define AP_MOTORS_HELI_COLLECTIVE_MIN           1250
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
-
-// swash min and max position while in stabilize mode (as a number from 0 ~ 100)
-#define AP_MOTORS_HELI_MANUAL_COLLECTIVE_MIN    0
-#define AP_MOTORS_HELI_MANUAL_COLLECTIVE_MAX    100
 
 // swash min while landed or landing (as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_LAND_COLLECTIVE_MIN      0
@@ -50,7 +44,6 @@
 
 // flybar types
 #define AP_MOTORS_HELI_NOFLYBAR                 0
-#define AP_MOTORS_HELI_FLYBAR                   1
 
 class AP_HeliControls;
 
