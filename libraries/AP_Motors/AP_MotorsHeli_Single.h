@@ -132,8 +132,8 @@ protected:
     // move_yaw - moves the yaw servo
     void move_yaw(float yaw_out);
 
-    // write_aux - outputs pwm onto output aux channel (ch7). servo_out parameter is of the range 0 ~ 1000
-    void write_aux(int16_t servo_out);
+    // write_aux - converts servo_out parameter value (0 to 1 range) to pwm and outputs to aux channel (ch7)
+    void write_aux(float servo_out);
 
     // servo_test - move servos through full range of movement
     void servo_test();

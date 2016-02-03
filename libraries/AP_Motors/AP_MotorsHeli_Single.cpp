@@ -189,9 +189,9 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
             // external gyro & tail servo
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
                 if (_acro_tail && _ext_gyro_gain_acro > 0) {
-                    write_aux(_ext_gyro_gain_acro);
+                    write_aux(_ext_gyro_gain_acro/1000.0f);
                 } else {
-                    write_aux(_ext_gyro_gain_std);
+                    write_aux(_ext_gyro_gain_std/1000.0f);
                 }
             }
             rc_write(AP_MOTORS_MOT_4, pwm);
@@ -440,24 +440,21 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
         if (_acro_tail && _ext_gyro_gain_acro > 0) {
-            write_aux(_ext_gyro_gain_acro);
+            write_aux(_ext_gyro_gain_acro/1000.0f);
         } else {
-            write_aux(_ext_gyro_gain_std);
+            write_aux(_ext_gyro_gain_std/1000.0f);
         }
     } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0) {
         // output yaw servo to tail rsc
         // To-Do: fix this messy calculation
-        write_aux((yaw_out*0.5f+1.0f) * 1000.0f);
+        write_aux(yaw_out*0.5f+1.0f);
     }
 }
 
-// write_aux - outputs pwm onto output aux channel (ch7)
-// servo_out parameter is of the range 0 ~ 1000
-void AP_MotorsHeli_Single::write_aux(int16_t servo_out)
+// write_aux - converts servo_out parameter value (0 to 1 range) to pwm and outputs to aux channel (ch7)
+void AP_MotorsHeli_Single::write_aux(float servo_out)
 {
-    _servo_aux.servo_out = servo_out;
-    _servo_aux.calc_pwm();
-    rc_write(AP_MOTORS_HELI_SINGLE_AUX, _servo_aux.radio_out);
+    rc_write(AP_MOTORS_HELI_SINGLE_AUX, calc_pwm_output_0to1(servo_out, _servo_aux));
 }
 
 // servo_test - move servos through full range of movement
