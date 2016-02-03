@@ -91,4 +91,9 @@ bool Thread::start(const char *name, int policy, int prio)
     return true;
 }
 
+bool Thread::is_current_thread()
+{
+    return pthread_equal(pthread_self(), _ctx);
+}
+
 }
