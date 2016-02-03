@@ -48,10 +48,6 @@ void Scheduler::begin_atomic()
 void Scheduler::end_atomic()
 {}
 
-bool Scheduler::system_initializing() {
-    return false;
-}
-
 void Scheduler::system_initialized()
 {}
 

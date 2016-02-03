@@ -367,10 +367,6 @@ bool PX4Scheduler::in_timerprocess()
     return getpid() != _main_task_pid;
 }
 
-bool PX4Scheduler::system_initializing() {
-    return !_initialized;
-}
-
 void PX4Scheduler::system_initialized() {
     if (_initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called"
