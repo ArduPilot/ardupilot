@@ -42,12 +42,6 @@ bool Scheduler::in_timerprocess() {
     return false;
 }
 
-void Scheduler::begin_atomic()
-{}
-
-void Scheduler::end_atomic()
-{}
-
 void Scheduler::system_initialized()
 {}
 
