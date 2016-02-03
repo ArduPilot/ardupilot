@@ -47,6 +47,8 @@ public:
 
     bool start(const char *name, int policy, int prio);
 
+    bool is_current_thread();
+
 protected:
     static void *run_trampoline(void *arg);
 
