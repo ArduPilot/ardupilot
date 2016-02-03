@@ -403,10 +403,6 @@ void Scheduler::begin_atomic()
 void Scheduler::end_atomic()
 {}
 
-bool Scheduler::system_initializing() {
-    return !_initialized;
-}
-
 void Scheduler::_wait_all_threads()
 {
     int r = pthread_barrier_wait(&_initialized_barrier);

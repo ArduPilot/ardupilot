@@ -193,10 +193,6 @@ void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr)
     _in_timer_proc = false;
 }
 
-bool FLYMAPLEScheduler::system_initializing() {
-    return !_initialized;
-}
-
 void FLYMAPLEScheduler::system_initialized()
 {
     if (_initialized) {
