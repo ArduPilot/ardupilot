@@ -143,9 +143,13 @@ void stability_test()
     motors.armed(true);
     motors.set_interlock(true);
 
-    //hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,AvgOut\n");                       // quad
-    //hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,AvgOut\n");             // hexa
-    //hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,Mot7,Mot8,AvgOut\n");   // octa
+#if NUM_OUTPUTS <= 4
+    hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,AvgOut\n");                       // quad
+#elif NUM_OUTPUTS <= 6
+    hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,AvgOut\n");             // hexa
+#else
+    hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,Mot7,Mot8,AvgOut\n");   // octa
+#endif
 
     // run stability test
     for (uint8_t y=0; y<rpy_tests_num; y++) {
