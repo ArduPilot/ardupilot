@@ -731,26 +731,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// AP_Limits Defaults
-//
-
-// Enable/disable AP_Limits
-#ifndef AC_FENCE
- #define AC_FENCE ENABLED
-#endif
-
-#ifndef AC_RALLY
- #define AC_RALLY   ENABLED
-#endif
-
-#ifndef AC_TERRAIN
- #define AC_TERRAIN ENABLED
- #if !AC_RALLY
-  #error Terrain relies on Rally which is disabled
- #endif
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
 

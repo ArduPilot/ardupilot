@@ -136,15 +136,6 @@ public:
         k_param_throttle_behavior,
         k_param_pilot_takeoff_alt, // 64
 
-        // 65: AP_Limits Library
-        k_param_limits = 65,            // deprecated - remove
-        k_param_gpslock_limit,          // deprecated - remove
-        k_param_geofence_limit,         // deprecated - remove
-        k_param_altitude_limit,         // deprecated - remove
-        k_param_fence,
-        k_param_gps_glitch,             // deprecated
-        k_param_baro_glitch,            // 71 - deprecated
-
         // AP_ADSB Library
         k_param_adsb,                   // 72
         k_param_notify,                 // 73
