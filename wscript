@@ -119,15 +119,18 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
-def build(bld):
-    bld.load('ardupilotwaf')
-    bld.load('gtest')
-
+def _build_cmd_tweaks(bld):
     if bld.cmd == 'check-all':
         bld.options.all_tests = True
         bld.cmd = 'check'
 
-    #generate mavlink headers
+    if bld.cmd == 'check':
+        bld.options.clear_failed_tests = True
+        if not bld.env.HAS_GTEST:
+            bld.fatal('check: gtest library is required')
+        bld.add_post_fun(ardupilotwaf.test_summary)
+
+def _create_common_taskgens(bld):
     bld(
         features='mavgen',
         source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
@@ -152,6 +155,7 @@ def build(bld):
         use='mavlink',
     )
 
+def _build_recursion(bld):
     common_dirs_patterns = [
         # TODO: Currently each vehicle also generate its own copy of the
         # libraries. Fix this, or at least reduce the amount of
@@ -195,11 +199,13 @@ def build(bld):
     for d in dirs_to_recurse:
         bld.recurse(d)
 
-    if bld.cmd == 'check':
-        bld.options.clear_failed_tests = True
-        if not bld.env.HAS_GTEST:
-            bld.fatal('check: gtest library is required')
-        bld.add_post_fun(ardupilotwaf.test_summary)
+def build(bld):
+    bld.load('ardupilotwaf')
+    bld.load('gtest')
+
+    _build_cmd_tweaks(bld)
+    _create_common_taskgens(bld)
+    _build_recursion(bld)
 
 ardupilotwaf.build_command('check',
     program_group_list='all',
