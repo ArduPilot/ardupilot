@@ -160,7 +160,7 @@ void stability_test()
                     motors.set_roll(pitch_in/4500.0f);
                     motors.set_yaw(yaw_in/4500.0f);
                     motors.set_throttle(throttle_in);
-                    motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
+                    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 #if HELI_TEST == 0
                     motors.set_throttle_mix_mid();
 #endif
