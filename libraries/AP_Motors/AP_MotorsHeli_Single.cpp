@@ -270,14 +270,14 @@ void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
     if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM) {                     //CCPM Swashplate, perform control mixing
 
         // roll factors
-        _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - (_phase_angle + _delta_phase_angle)));
-        _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - (_phase_angle + _delta_phase_angle)));
-        _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - (_phase_angle + _delta_phase_angle)));
+        _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - _phase_angle));
+        _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - _phase_angle));
+        _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - _phase_angle));
 
         // pitch factors
-        _pitchFactor[CH_1] = cosf(radians(_servo1_pos - (_phase_angle + _delta_phase_angle)));
-        _pitchFactor[CH_2] = cosf(radians(_servo2_pos - (_phase_angle + _delta_phase_angle)));
-        _pitchFactor[CH_3] = cosf(radians(_servo3_pos - (_phase_angle + _delta_phase_angle)));
+        _pitchFactor[CH_1] = cosf(radians(_servo1_pos - _phase_angle));
+        _pitchFactor[CH_2] = cosf(radians(_servo2_pos - _phase_angle));
+        _pitchFactor[CH_3] = cosf(radians(_servo3_pos - _phase_angle));
 
         // collective factors
         _collectiveFactor[CH_1] = 1;
@@ -328,15 +328,6 @@ void AP_MotorsHeli_Single::update_motor_control(RotorControlState state)
 
     // Check if both rotors are run-up, tail rotor controller always returns true if not enabled
     _heliflags.rotor_runup_complete = ( _main_rotor.is_runup_complete() && _tail_rotor.is_runup_complete() );
-}
-
-// set_delta_phase_angle for setting variable phase angle compensation and force
-// recalculation of collective factors
-void AP_MotorsHeli_Single::set_delta_phase_angle(int16_t angle)
-{
-    angle = constrain_int16(angle, -90, 90);
-    _delta_phase_angle = angle;
-    calculate_roll_pitch_collective_factors();
 }
 
 //

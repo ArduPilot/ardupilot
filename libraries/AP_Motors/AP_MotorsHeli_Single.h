@@ -114,10 +114,6 @@ public:
     // supports_yaw_passthrought - returns true if we support yaw passthrough
     bool supports_yaw_passthrough() const { return _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO; }
 
-    // set_delta_phase_angle for setting variable phase angle compensation and force
-    // recalculation of collective factors
-    void set_delta_phase_angle(int16_t angle);
-
     void set_acro_tail(bool set) { _acro_tail = set; }
 
     // servo_test - move servos through full range of movement
