@@ -156,9 +156,9 @@ void stability_test()
                     pitch_in = rpy_tests[p];
                     yaw_in = rpy_tests[y];
                     throttle_in = throttle_tests[t]/1000.0f;
-                    motors.set_pitch(roll_in);
-                    motors.set_roll(pitch_in);
-                    motors.set_yaw(yaw_in);
+                    motors.set_pitch(roll_in/4500.0f);
+                    motors.set_roll(pitch_in/4500.0f);
+                    motors.set_yaw(yaw_in/4500.0f);
                     motors.set_throttle(throttle_in);
                     motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
 #if HELI_TEST == 0
