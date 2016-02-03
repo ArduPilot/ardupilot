@@ -96,4 +96,35 @@ bool Thread::is_current_thread()
     return pthread_equal(pthread_self(), _ctx);
 }
 
+bool PeriodicThread::set_rate(uint32_t rate_hz)
+{
+    if (_started || rate_hz == 0) {
+        return false;
+    }
+
+    _period_usec = hz_to_usec(rate_hz);
+
+    return true;
+}
+
+bool PeriodicThread::_run()
+{
+    uint64_t next_run_usec = AP_HAL::micros64() + _period_usec;
+
+    while (true) {
+        uint64_t dt = next_run_usec - AP_HAL::micros64();
+        if (dt > _period_usec) {
+            // we've lost sync - restart
+            next_run_usec = AP_HAL::micros64();
+        } else {
+            Scheduler::from(hal.scheduler)->microsleep(dt);
+        }
+        next_run_usec += _period_usec;
+
+        _task();
+    }
+
+    return true;
+}
+
 }

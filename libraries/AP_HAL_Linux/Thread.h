@@ -57,4 +57,18 @@ protected:
     pthread_t _ctx;
 };
 
+class PeriodicThread : public Thread {
+public:
+    PeriodicThread(Thread::task_t t)
+        : Thread(t)
+    { }
+
+    bool set_rate(uint32_t rate_hz);
+
+protected:
+    bool _run() override;
+
+    uint64_t _period_usec;
+};
+
 }
