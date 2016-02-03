@@ -397,12 +397,6 @@ bool Scheduler::in_timerprocess()
     return _in_timer_proc;
 }
 
-void Scheduler::begin_atomic()
-{}
-
-void Scheduler::end_atomic()
-{}
-
 void Scheduler::_wait_all_threads()
 {
     int r = pthread_barrier_wait(&_initialized_barrier);
