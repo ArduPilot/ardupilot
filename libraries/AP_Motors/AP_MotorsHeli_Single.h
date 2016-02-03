@@ -98,18 +98,11 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t get_motor_mask();
 
-    // _tail_type - returns the tail type (servo, servo with ext gyro, direct drive var pitch, direct drive fixed pitch)
-    int16_t tail_type() const { return _tail_type; }
-
-    // ext_gyro_gain - gets and sets external gyro gain as a pwm (1000~2000)
-    int16_t ext_gyro_gain() const { return _ext_gyro_gain_std; }
+    // ext_gyro_gain - get external gyro gain in range 0 ~ 1000
     void ext_gyro_gain(int16_t pwm) { _ext_gyro_gain_std = pwm; }
 
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() const { return _flybar_mode; }
-
-    // get_phase_angle - returns phase angle
-    int16_t get_phase_angle() const { return _phase_angle; }
 
     // supports_yaw_passthrought - returns true if we support yaw passthrough
     bool supports_yaw_passthrough() const { return _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO; }
