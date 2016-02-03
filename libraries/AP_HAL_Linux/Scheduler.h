@@ -1,5 +1,7 @@
 #pragma once
 
+#include <pthread.h>
+
 #include "AP_HAL_Linux.h"
 #include "Semaphores.h"
 #include "Thread.h"
@@ -60,6 +62,7 @@ private:
         Scheduler &_sched;
     };
 
+    void _wait_all_threads();
     void _timer_handler(int signum);
 
     AP_HAL::Proc _delay_cb;
@@ -68,6 +71,7 @@ private:
     AP_HAL::Proc _failsafe;
 
     bool _initialized;
+    pthread_barrier_t _initialized_barrier;
     volatile bool _timer_pending;
 
     AP_HAL::MemberProc _timer_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];

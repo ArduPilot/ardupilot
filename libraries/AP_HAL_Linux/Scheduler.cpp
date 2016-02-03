@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <errno.h>
 #include <poll.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -66,6 +65,8 @@ void Scheduler::init()
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
     sched_setscheduler(0, SCHED_FIFO, &param);
 
+    /* set barrier to 6 threads: worker threads below + main thread */
+    pthread_barrier_init(&_initialized_barrier, nullptr, 6);
     _timer_thread.start("sched-timer", SCHED_FIFO, APM_LINUX_TIMER_PRIORITY);
     _uart_thread.start("sched-uart", SCHED_FIFO, APM_LINUX_UART_PRIORITY);
     _rcin_thread.start("sched-rcin", SCHED_FIFO, APM_LINUX_RCIN_PRIORITY);
@@ -406,12 +407,23 @@ bool Scheduler::system_initializing() {
     return !_initialized;
 }
 
+void Scheduler::_wait_all_threads()
+{
+    int r = pthread_barrier_wait(&_initialized_barrier);
+    if (r == PTHREAD_BARRIER_SERIAL_THREAD) {
+        pthread_barrier_destroy(&_initialized_barrier);
+    }
+}
+
 void Scheduler::system_initialized()
 {
     if (_initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called more than once");
     }
+
     _initialized = true;
+
+    _wait_all_threads();
 }
 
 void Scheduler::reboot(bool hold_in_bootloader)
@@ -429,9 +441,7 @@ void Scheduler::stop_clock(uint64_t time_usec)
 
 bool Scheduler::SchedulerThread::_run()
 {
-    while (_sched.system_initializing()) {
-        poll(NULL, 0, 1);
-    }
+    _sched._wait_all_threads();
 
     return Thread::_run();
 }
