@@ -240,10 +240,6 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // calculate collective mid point as a number from 0 to 1000
     _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
 
-    // determine roll, pitch and collective input scaling
-    _roll_scaler = (float)_cyclic_max/4500.0f;
-    _pitch_scaler = (float)_cyclic_max/4500.0f;
-
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
 
