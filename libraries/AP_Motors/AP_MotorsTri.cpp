@@ -170,7 +170,6 @@ uint16_t AP_MotorsTri::get_motor_mask()
 
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
-// TODO pull code that is common to output_armed_not_stabilizing into helper functions
 void AP_MotorsTri::output_armed_stabilizing()
 {
     float   roll_thrust;                // roll thrust input value, +/- 1.0
@@ -199,7 +198,6 @@ void AP_MotorsTri::output_armed_stabilizing()
         throttle_thrust = 0.0f;
         limit.throttle_lower = true;
     }
-    // convert throttle_max from 0~1000 to 0~1 range
     if (throttle_thrust >= _throttle_thrust_max) {
         throttle_thrust = _throttle_thrust_max;
         limit.throttle_upper = true;
@@ -254,9 +252,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     if(rpy_scale < 1.0f){
         // Full range is being used by roll, pitch, and yaw.
         limit.roll_pitch = true;
-        if(thr_adj < 0.0f){
-            limit.throttle_lower = true;
-        }else if(thr_adj > 0.0f){
+        if (thr_adj > 0.0f){
             limit.throttle_upper = true;
         }
         thr_adj = 0.0f;
@@ -264,7 +260,6 @@ void AP_MotorsTri::output_armed_stabilizing()
         if(thr_adj < -(throttle_thrust_best_rpy+rpy_low)){
             // Throttle can't be reduced to desired value
             thr_adj = -(throttle_thrust_best_rpy+rpy_low);
-            limit.throttle_lower = true;
         }else if(thr_adj > thrust_max - (throttle_thrust_best_rpy+rpy_high)){
             // Throttle can't be increased to desired value
             thr_adj = thrust_max - (throttle_thrust_best_rpy+rpy_high);
