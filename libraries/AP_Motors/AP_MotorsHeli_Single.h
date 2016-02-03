@@ -98,8 +98,8 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t get_motor_mask();
 
-    // ext_gyro_gain - get external gyro gain in range 0 ~ 1000
-    void ext_gyro_gain(int16_t pwm) { _ext_gyro_gain_std = pwm; }
+    // ext_gyro_gain - set external gyro gain in range 0 ~ 1
+    void ext_gyro_gain(float gain) { _ext_gyro_gain_std = gain * 1000.0f; }
 
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() const { return _flybar_mode; }
