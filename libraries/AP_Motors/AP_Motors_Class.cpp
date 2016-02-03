@@ -61,6 +61,15 @@ void AP_Motors::armed(bool arm)
     AP_Notify::flags.armed = arm;
 };
 
+// pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle
+void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float throttle_input, float yaw_input)
+{
+    _roll_radio_passthrough = roll_input;
+    _pitch_radio_passthrough = pitch_input;
+    _throttle_radio_passthrough = throttle_input;
+    _yaw_radio_passthrough = yaw_input;
+}
+
 /*
   write to an output channel
  */

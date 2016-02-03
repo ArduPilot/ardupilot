@@ -132,6 +132,9 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask() = 0;
 
+    // pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle
+    void                set_radio_passthrough(float roll_input, float pitch_input, float throttle_input, float yaw_input);
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
@@ -175,4 +178,10 @@ protected:
     // mapping to output channels
     uint8_t             _motor_map[AP_MOTORS_MAX_NUM_MOTORS];
     uint16_t            _motor_map_mask;
+
+    // pass through variables
+    float _roll_radio_passthrough = 0.0f;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
+    float _pitch_radio_passthrough = 0.0f;    // pitch input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
+    float _throttle_radio_passthrough = 0.0f; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
+    float _yaw_radio_passthrough = 0.0f;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 };
