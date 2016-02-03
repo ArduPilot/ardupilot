@@ -227,7 +227,7 @@ void Scheduler::resume_timer_procs()
     _timer_semaphore.give();
 }
 
-void Scheduler::_run_timers(bool called_from_timer_thread)
+void Scheduler::_run_timers()
 {
     int i;
 
@@ -300,7 +300,7 @@ void Scheduler::_timer_task()
         }
         next_run_usec += 1000;
         // run registered timers
-        _run_timers(true);
+        _run_timers();
 
 #if HAL_LINUX_UARTS_ON_TIMER_THREAD
         /*
