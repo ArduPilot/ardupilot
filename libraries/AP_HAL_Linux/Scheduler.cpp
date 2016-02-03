@@ -36,20 +36,20 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_TONEALARM_PRIORITY    11
 #define APM_LINUX_IO_PRIORITY           10
 
+#define APM_LINUX_TIMER_RATE            1000
+#define APM_LINUX_UART_RATE             100
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||    \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
-#define APM_LINUX_UART_PERIOD           10000
-#define APM_LINUX_RCIN_PERIOD           500
-#define APM_LINUX_TONEALARM_PERIOD      10000
-#define APM_LINUX_IO_PERIOD             20000
+#define APM_LINUX_RCIN_RATE             2000
+#define APM_LINUX_TONEALARM_RATE        100
+#define APM_LINUX_IO_RATE               50
 #else
-#define APM_LINUX_UART_PERIOD           10000
-#define APM_LINUX_RCIN_PERIOD           10000
-#define APM_LINUX_TONEALARM_PERIOD      10000
-#define APM_LINUX_IO_PERIOD             20000
-#endif // CONFIG_HAL_BOARD_SUBTYPE
+#define APM_LINUX_RCIN_RATE             100
+#define APM_LINUX_TONEALARM_RATE        100
+#define APM_LINUX_IO_RATE               50
+#endif
 
 Scheduler::Scheduler()
 { }
@@ -64,6 +64,12 @@ void Scheduler::init()
 
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
     sched_setscheduler(0, SCHED_FIFO, &param);
+
+    _timer_thread.set_rate(APM_LINUX_TIMER_RATE);
+    _uart_thread.set_rate(APM_LINUX_UART_RATE);
+    _rcin_thread.set_rate(APM_LINUX_RCIN_RATE);
+    _tonealarm_thread.set_rate(APM_LINUX_TONEALARM_RATE);
+    _io_thread.set_rate(APM_LINUX_IO_RATE);
 
     /* set barrier to 6 threads: worker threads below + main thread */
     pthread_barrier_init(&_initialized_barrier, nullptr, 6);
@@ -227,7 +233,7 @@ void Scheduler::resume_timer_procs()
     _timer_semaphore.give();
 }
 
-void Scheduler::_run_timers()
+void Scheduler::_timer_task()
 {
     int i;
 
@@ -237,7 +243,7 @@ void Scheduler::_run_timers()
     _in_timer_proc = true;
 
     if (!_timer_semaphore.take(0)) {
-        printf("Failed to take timer semaphore in _run_timers\n");
+        printf("Failed to take timer semaphore in %s\n", __PRETTY_FUNCTION__);
     }
     // now call the timer based drivers
     for (i = 0; i < _num_timer_procs; i++) {
@@ -248,8 +254,7 @@ void Scheduler::_run_timers()
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
     //SPI UART use SPI
-    if (!((RPIOUARTDriver *)hal.uartC)->isExternal() )
-    {
+    if (!((RPIOUARTDriver *)hal.uartC)->isExternal()) {
         ((RPIOUARTDriver *)hal.uartC)->_timer_tick();
     }
 #endif
@@ -276,37 +281,16 @@ void Scheduler::_run_timers()
     }
 
     _in_timer_proc = false;
-}
-
-void Scheduler::_timer_task()
-{
-    /*
-      this aims to run at an average of 1kHz, so that it can be used
-      to drive 1kHz processes without drift
-     */
-    uint64_t next_run_usec = AP_HAL::micros64() + 1000;
-    while (true) {
-        uint64_t dt = next_run_usec - AP_HAL::micros64();
-        if (dt > 2000) {
-            // we've lost sync - restart
-            next_run_usec = AP_HAL::micros64();
-        } else {
-            microsleep(dt);
-        }
-        next_run_usec += 1000;
-        // run registered timers
-        _run_timers();
 
 #if HAL_LINUX_UARTS_ON_TIMER_THREAD
-        /*
-          some boards require that UART calls happen on the same
-          thread as other calls of the same time. This impacts the
-          QFLIGHT calls where UART output is an RPC call to the DSPs
-         */
-        _run_uarts();
-        RCInput::from(hal.rcin)->_timer_tick();
+    /*
+       some boards require that UART calls happen on the same
+       thread as other calls of the same time. This impacts the
+       QFLIGHT calls where UART output is an RPC call to the DSPs
+       */
+    _run_uarts();
+    RCInput::from(hal.rcin)->_timer_tick();
 #endif
-    }
 }
 
 void Scheduler::_run_io(void)
@@ -323,16 +307,6 @@ void Scheduler::_run_io(void)
     }
 
     _io_semaphore.give();
-}
-
-void Scheduler::_rcin_task()
-{
-    while (true) {
-        microsleep(APM_LINUX_RCIN_PERIOD);
-#if !HAL_LINUX_UARTS_ON_TIMER_THREAD
-        RCInput::from(hal.rcin)->_timer_tick();
-#endif
-    }
 }
 
 /*
@@ -354,37 +328,33 @@ void Scheduler::_run_uarts()
     UARTDriver::from(hal.uartE)->_timer_tick();
 }
 
+void Scheduler::_rcin_task()
+{
+#if !HAL_LINUX_UARTS_ON_TIMER_THREAD
+    RCInput::from(hal.rcin)->_timer_tick();
+#endif
+}
+
 void Scheduler::_uart_task()
 {
-    while (true) {
-        microsleep(APM_LINUX_UART_PERIOD);
 #if !HAL_LINUX_UARTS_ON_TIMER_THREAD
-        _run_uarts();
+    _run_uarts();
 #endif
-    }
 }
 
 void Scheduler::_tonealarm_task()
 {
-    while (true) {
-        microsleep(APM_LINUX_TONEALARM_PERIOD);
-
-        // process tone command
-        Util::from(hal.util)->_toneAlarm_timer_tick();
-    }
+    // process tone command
+    Util::from(hal.util)->_toneAlarm_timer_tick();
 }
 
 void Scheduler::_io_task()
 {
-    while (true) {
-        microsleep(APM_LINUX_IO_PERIOD);
+    // process any pending storage writes
+    Storage::from(hal.storage)->_timer_tick();
 
-        // process any pending storage writes
-        Storage::from(hal.storage)->_timer_tick();
-
-        // run registered IO procepsses
-        _run_io();
-    }
+    // run registered IO processes
+    _run_io();
 }
 
 bool Scheduler::in_timerprocess()
@@ -436,5 +406,5 @@ bool Scheduler::SchedulerThread::_run()
 
     _sched._wait_all_threads();
 
-    return Thread::_run();
+    return PeriodicThread::_run();
 }
