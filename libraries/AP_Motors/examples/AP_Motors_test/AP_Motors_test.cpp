@@ -40,7 +40,11 @@ void motor_order_test();
 void stability_test();
 void update_motors();
 
+#define HELI_TEST       1   // set to 1 to test helicopters
+#define NUM_OUTPUTS     4   // set to 6 for hexacopter, 8 for octacopter and heli
+
 RC_Channel rc1(0), rc2(1), rc3(2), rc4(3);
+RC_Channel rc7(6), rsc(8), h1(0), h2(1), h3(2), h4(3);
 
 // uncomment the row below depending upon what frame you are using
 //AP_MotorsTri	motors(400);
@@ -49,8 +53,7 @@ AP_MotorsQuad   motors(400);
 //AP_MotorsY6	motors(400);
 //AP_MotorsOcta	motors(400);
 //AP_MotorsOctaQuad	motors(400);
-//AP_MotorsHeli	motors(rc1, rc2, rc3, rc4, 400);
-
+//AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 
 // setup
 void setup()
@@ -61,8 +64,10 @@ void setup()
     motors.set_update_rate(490);
     motors.set_frame_orientation(AP_MOTORS_X_FRAME);
     motors.Init();
+#if HELI_TEST == 0
     motors.set_throttle_range(130,1000,2000);
     motors.set_hover_throttle(500);
+#endif
     motors.enable();
     motors.output_min();
 
@@ -136,6 +141,7 @@ void stability_test()
 
     // arm motors
     motors.armed(true);
+    motors.set_interlock(true);
 
     //hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,AvgOut\n");                       // quad
     //hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,AvgOut\n");             // hexa
@@ -155,13 +161,19 @@ void stability_test()
                     motors.set_yaw(yaw_in);
                     motors.set_throttle(throttle_in);
                     motors.set_desired_spool_state(AP_MotorsMulticopter::DESIRED_THROTTLE_UNLIMITED);
+#if HELI_TEST == 0
                     motors.set_throttle_mix_mid();
+#endif
                     update_motors();
                     avg_out = ((hal.rcout->read(0) + hal.rcout->read(1) + hal.rcout->read(2) + hal.rcout->read(3))/4);
                     // display input and output
-                    //hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",    // octa
-                    //hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d\n",          // hexa
-                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d\n",                  // quad
+#if NUM_OUTPUTS <= 4
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d\n",                // quad
+#elif NUM_OUTPUTS <= 6
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d\n",          // hexa
+#else
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",    // octa
+#endif
                             (int)roll_in,
                             (int)pitch_in,
                             (int)yaw_in,
@@ -170,10 +182,14 @@ void stability_test()
                             (int)hal.rcout->read(1),
                             (int)hal.rcout->read(2),
                             (int)hal.rcout->read(3),
-                            //(int)hal.rcout->read(4),
-                            //(int)hal.rcout->read(5),
-                            //(int)hal.rcout->read(6),
-                            //(int)hal.rcout->read(7),
+#if NUM_OUTPUTS >= 6
+                            (int)hal.rcout->read(4),
+                            (int)hal.rcout->read(5),
+#endif
+#if NUM_OUTPUTS >= 8
+                            (int)hal.rcout->read(6),
+                            (int)hal.rcout->read(7),
+#endif
                             (int)avg_out);
                 }
             }
