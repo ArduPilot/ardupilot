@@ -626,8 +626,8 @@ void Copter::Log_Sensor_Health()
 struct PACKED log_Heli {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    int16_t   desired_rotor_speed;
-    int16_t   main_rotor_speed;
+    float    desired_rotor_speed;
+    float    main_rotor_speed;
 };
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -751,7 +751,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
     { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qhh",         "TimeUS,DRRPM,ERRPM" },
+      "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
       "PL",    "QBffffff",    "TimeUS,Heal,bX,bY,eX,eY,pX,pY" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
