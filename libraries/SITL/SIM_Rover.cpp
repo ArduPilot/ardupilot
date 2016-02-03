@@ -69,7 +69,7 @@ float SimRover::calc_yaw_rate(float steering, float speed)
         return 0;
     }
     float d = turn_circle(steering);
-    float c = M_PI_F * d;
+    float c = M_PI * d;
     float t = c / speed;
     float rate = 360.0f / t;
     return rate;

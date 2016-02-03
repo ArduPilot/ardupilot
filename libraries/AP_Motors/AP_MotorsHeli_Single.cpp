@@ -372,7 +372,7 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     // coming into this equation at 4500 or less, and based on the original assumption of the
     // total _servo_x.servo_out range being -4500 to 4500.
 
-    float total_out = pythagorous2((float)pitch_out, (float)roll_out);
+    float total_out = norm((float)pitch_out, (float)roll_out);
 
     if (total_out > _cyclic_max) {
         float ratio = (float)_cyclic_max / total_out;
@@ -491,26 +491,26 @@ void AP_MotorsHeli_Single::servo_test()
     if ((_servo_test_cycle_time >= 0.0f && _servo_test_cycle_time < 0.5f)||                                   // Tilt swash back
         (_servo_test_cycle_time >= 6.0f && _servo_test_cycle_time < 6.5f)){
         _pitch_test += (4500 / (_loop_rate/2));
-        _oscillate_angle += 8 * M_PI_F / _loop_rate;
+        _oscillate_angle += 8 * M_PI / _loop_rate;
         _yaw_test = 2250 * sinf(_oscillate_angle);
     } else if ((_servo_test_cycle_time >= 0.5f && _servo_test_cycle_time < 4.5f)||                            // Roll swash around
                (_servo_test_cycle_time >= 6.5f && _servo_test_cycle_time < 10.5f)){
-        _oscillate_angle += M_PI_F / (2 * _loop_rate);
+        _oscillate_angle += M_PI / (2 * _loop_rate);
         _roll_test = 4500 * sinf(_oscillate_angle);
         _pitch_test = 4500 * cosf(_oscillate_angle);
         _yaw_test = 4500 * sinf(_oscillate_angle);
     } else if ((_servo_test_cycle_time >= 4.5f && _servo_test_cycle_time < 5.0f)||                            // Return swash to level
                (_servo_test_cycle_time >= 10.5f && _servo_test_cycle_time < 11.0f)){
         _pitch_test -= (4500 / (_loop_rate/2));
-        _oscillate_angle += 8 * M_PI_F / _loop_rate;
+        _oscillate_angle += 8 * M_PI / _loop_rate;
         _yaw_test = 2250 * sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
         _collective_test += (1000 / _loop_rate);
-        _oscillate_angle += 2 * M_PI_F / _loop_rate;
+        _oscillate_angle += 2 * M_PI / _loop_rate;
         _yaw_test = 4500 * sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
         _collective_test -= (1000 / _loop_rate);
-        _oscillate_angle += 2 * M_PI_F / _loop_rate;
+        _oscillate_angle += 2 * M_PI / _loop_rate;
         _yaw_test = 4500 * sinf(_oscillate_angle);
     } else {                                                                                                  // reset cycle
         _servo_test_cycle_time = 0.0f;
