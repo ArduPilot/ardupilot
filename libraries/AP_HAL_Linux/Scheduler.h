@@ -59,7 +59,6 @@ private:
     };
 
     void _wait_all_threads();
-    void _timer_handler(int signum);
 
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
@@ -68,7 +67,6 @@ private:
 
     bool _initialized;
     pthread_barrier_t _initialized_barrier;
-    volatile bool _timer_pending;
 
     AP_HAL::MemberProc _timer_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
