@@ -207,12 +207,12 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
 }
 
 // set_desired_rotor_speed
-void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
+void AP_MotorsHeli_Single::set_desired_rotor_speed(float desired_speed)
 {
     _main_rotor.set_desired_speed(desired_speed);
 
     // always send desired speed to tail rotor control, will do nothing if not DDVPT not enabled
-    _tail_rotor.set_desired_speed(_direct_drive_tailspeed);
+    _tail_rotor.set_desired_speed(_direct_drive_tailspeed/1000.0f);
 }
 
 // calculate_scalars - recalculates various scalers used.
@@ -220,10 +220,9 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
 {
     _main_rotor.set_ramp_time(_rsc_ramp_time);
     _main_rotor.set_runup_time(_rsc_runup_time);
-    _main_rotor.set_critical_speed(_rsc_critical);
-    _main_rotor.set_idle_output(_rsc_idle_output);
-    _main_rotor.set_power_output_range(_rsc_power_low, _rsc_power_high);
-    _main_rotor.recalc_scalers();
+    _main_rotor.set_critical_speed(_rsc_critical/1000.0f);
+    _main_rotor.set_idle_output(_rsc_idle_output/1000.0f);
+    _main_rotor.set_power_output_range(_rsc_power_low/1000.0f, _rsc_power_high/1000.0f);
 }
 
 
@@ -252,8 +251,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);
         _tail_rotor.set_ramp_time(AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME);
         _tail_rotor.set_runup_time(AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME);
-        _tail_rotor.set_critical_speed(_rsc_critical);
-        _tail_rotor.set_idle_output(_rsc_idle_output);
+        _tail_rotor.set_critical_speed(_rsc_critical/1000.0f);
+        _tail_rotor.set_idle_output(_rsc_idle_output/1000.0f);
     } else {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_DISABLED);
         _tail_rotor.set_ramp_time(0);
@@ -261,7 +260,6 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_critical_speed(0);
         _tail_rotor.set_idle_output(0);
     }
-    _tail_rotor.recalc_scalers();
 }
 
 // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
@@ -444,7 +442,7 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
         } else {
             write_aux(_ext_gyro_gain_std/1000.0f);
         }
-    } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0) {
+    } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0.0f) {
         // output yaw servo to tail rsc
         // To-Do: fix this messy calculation
         write_aux(yaw_out*0.5f+1.0f);

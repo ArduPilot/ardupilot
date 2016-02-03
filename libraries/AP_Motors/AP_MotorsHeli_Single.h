@@ -76,14 +76,14 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     void output_test(uint8_t motor_seq, int16_t pwm);
 
-    // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
-    void set_desired_rotor_speed(int16_t desired_speed);
+    // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
+    void set_desired_rotor_speed(float desired_speed);
 
     // get_main_rotor_speed - gets estimated or measured main rotor speed
-    int16_t get_main_rotor_speed() const { return _main_rotor.get_rotor_speed(); }
+    float get_main_rotor_speed() const { return _main_rotor.get_rotor_speed(); }
 
-    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
-    int16_t get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
+    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
+    float get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     bool rotor_speed_above_critical() const { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
