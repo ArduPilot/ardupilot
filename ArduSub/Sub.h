@@ -572,6 +572,7 @@ private:
     void rc_loop();
     void throttle_loop();
     void update_mount();
+    void update_trigger();
     void update_batt_compass(void);
     void ten_hz_logging_loop();
     void fifty_hz_logging_loop();
