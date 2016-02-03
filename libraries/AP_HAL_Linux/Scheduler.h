@@ -86,8 +86,6 @@ private:
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
 
-    volatile bool _timer_event_missed;
-
     SchedulerThread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void), *this};
     SchedulerThread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void), *this};
     SchedulerThread _rcin_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_rcin_task, void), *this};
