@@ -40,8 +40,6 @@
 // COLYAW parameter min and max values
 #define AP_MOTORS_HELI_SINGLE_COLYAW_RANGE             10.0f
 
-#define AP_MOTORS_HELI_SINGLE_TAIL_RAMP_INCREMENT              5       // 5 is 2 seconds for direct drive tail rotor to reach to full speed (5 = (2sec*100hz)/1000)
-
 /// @class      AP_MotorsHeli_Single
 class AP_MotorsHeli_Single : public AP_MotorsHeli {
 public:
