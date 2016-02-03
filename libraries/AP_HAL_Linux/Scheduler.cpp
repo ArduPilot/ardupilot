@@ -280,11 +280,6 @@ void Scheduler::_run_timers()
 
 void Scheduler::_timer_task()
 {
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-    printf("Initialising rpcmem\n");
-    rpcmem_init();
-#endif
-
     /*
       this aims to run at an average of 1kHz, so that it can be used
       to drive 1kHz processes without drift
@@ -431,6 +426,14 @@ void Scheduler::stop_clock(uint64_t time_usec)
 
 bool Scheduler::SchedulerThread::_run()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+    if (_sched._timer_thread.is_current_thread()) {
+        /* make rpcmem initialization on timer thread */
+        printf("Initialising rpcmem\n");
+        rpcmem_init();
+    }
+#endif
+
     _sched._wait_all_threads();
 
     return Thread::_run();
