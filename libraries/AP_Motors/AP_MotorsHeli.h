@@ -223,14 +223,11 @@ protected:
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _pitchFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _collectiveFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _roll_scaler = 1;                // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
-    float           _pitch_scaler = 1;               // scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
     int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
     int16_t         _delta_phase_angle = 0;          // phase angle dynamic compensation
     int16_t         _roll_radio_passthrough = 0;     // roll control PWM direct from radio, used for manual control
     int16_t         _pitch_radio_passthrough = 0;    // pitch control PWM direct from radio, used for manual control
     int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
     int16_t         _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
-    int16_t         _collective_range = 0;           // maximum absolute collective pitch range (500 - 1000)
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 };
