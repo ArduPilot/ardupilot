@@ -45,10 +45,10 @@ public:
     void microsleep(uint32_t usec);
 
 private:
-    class SchedulerThread : public Thread {
+    class SchedulerThread : public PeriodicThread {
     public:
         SchedulerThread(Thread::task_t t, Scheduler &sched)
-            : Thread(t)
+            : PeriodicThread(t)
             , _sched(sched)
         { }
 
@@ -102,7 +102,6 @@ private:
     void _uart_task();
     void _tonealarm_task();
 
-    void _run_timers();
     void _run_io();
     void _run_uarts();
     bool _register_timesliced_proc(AP_HAL::MemberProc, uint8_t);
