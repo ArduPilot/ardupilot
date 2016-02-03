@@ -19,6 +19,7 @@ namespace Linux {
     class Storage_FRAM;
     class DigitalSource;
     class DigitalSource_Sysfs;
+    class PeriodicThread;
     class PWM_Sysfs;
     class PWM_Sysfs_Bebop;
     class PWM_Sysfs_Base;
