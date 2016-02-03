@@ -102,7 +102,7 @@ private:
     void _uart_task();
     void _tonealarm_task();
 
-    void _run_timers(bool called_from_timer_thread);
+    void _run_timers();
     void _run_io();
     void _run_uarts();
     bool _register_timesliced_proc(AP_HAL::MemberProc, uint8_t);
