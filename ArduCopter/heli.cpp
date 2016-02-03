@@ -93,7 +93,7 @@ void Copter::update_heli_control_dynamics(void)
     // Use Leaky_I if we are not moving fast
     attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
 
-    if (ap.land_complete || (motors.get_desired_rotor_speed() == 0)){
+    if (ap.land_complete || (is_zero(motors.get_desired_rotor_speed()))){
         // if we are landed or there is no rotor power demanded, decrement slew scalar
         hover_roll_trim_scalar_slew--;        
     } else {
@@ -156,18 +156,17 @@ void Copter::heli_update_rotor_speed_targets()
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
 
-    rsc_control_deglitched = rotor_speed_deglitch_filter.apply(g.rc_8.control_in);
-
+    float rsc_control_deglitched = rotor_speed_deglitch_filter.apply((float)g.rc_8.control_in/1000.0f);
 
     switch (rsc_control_mode) {
         case ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH:
             // pass through pilot desired rotor speed if control input is higher than 10, creating a deadband at the bottom
-            if (rsc_control_deglitched > 10) {
+            if (rsc_control_deglitched > 0.01f) {
                 motors.set_interlock(true);
                 motors.set_desired_rotor_speed(rsc_control_deglitched);
             } else {
                 motors.set_interlock(false);
-                motors.set_desired_rotor_speed(0);
+                motors.set_desired_rotor_speed(0.0f);
             }
             break;
         case ROTOR_CONTROL_MODE_SPEED_SETPOINT:
@@ -175,12 +174,12 @@ void Copter::heli_update_rotor_speed_targets()
         case ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT:
             // pass setpoint through as desired rotor speed, this is almost pointless as the Setpoint serves no function in this mode
             // other than being used to create a crude estimate of rotor speed
-            if (rsc_control_deglitched > 0) {
+            if (rsc_control_deglitched > 0.0f) {
                 motors.set_interlock(true);
                 motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
             }else{
                 motors.set_interlock(false);
-                motors.set_desired_rotor_speed(0);
+                motors.set_desired_rotor_speed(0.0f);
             }
             break;
     }

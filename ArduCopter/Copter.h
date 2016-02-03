@@ -545,8 +545,6 @@ private:
     // governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
     ModeFilterInt16_Size5 rotor_speed_deglitch_filter {4};
 
-    int16_t rsc_control_deglitched;
-
     // Tradheli flags
     struct {
         uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
