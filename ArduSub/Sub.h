@@ -162,11 +162,8 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
-<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
     RC_Channel *channel_forward;
     RC_Channel *channel_strafe;
-=======
->>>>>>> Changed to ArduCopter as the base code.
 
     // Dataflash
     DataFlash_Class DataFlash{FIRMWARE_STRING};
@@ -316,11 +313,10 @@ private:
  #define MOTOR_CLASS AP_MotorsSingle
 #elif FRAME_CONFIG == COAX_FRAME
  #define MOTOR_CLASS AP_MotorsCoax
-<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
-#elif FRAME_CONFIG == BLUEROV
- #define MOTOR_CLASS AP_MotorsBlueROV
-=======
->>>>>>> Changed to ArduCopter as the base code.
+#elif FRAME_CONFIG == BLUEROV_FRAME
+ #define MOTOR_CLASS AP_MotorsBlueROV6DOF
+#elif FRAME_CONFIG == VECTORED_FRAME
+ #define MOTOR_CLASS AP_MotorsVectoredROV
 #else
  #error Unrecognised frame type
 #endif
@@ -818,11 +814,8 @@ private:
     void sport_run();
     bool stabilize_init(bool ignore_checks);
     void stabilize_run();
-<<<<<<< 6dafedb2d1ad5061d859a9c319fa4b69b4ac5dd9
     bool rov_init(bool ignore_checks);
     void rov_run();
-=======
->>>>>>> Changed to ArduCopter as the base code.
     void crash_check();
     void parachute_check();
     void parachute_release();
