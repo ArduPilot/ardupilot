@@ -139,9 +139,8 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	float throttleScale = 0.8;
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1500-500*throttleScale;
-	int16_t rollTrim = 0;
+	static int16_t rollTrim = 0;
 	static int16_t mode;
-
 	static int16_t camTilt = 1500;
 
 	if ( buttons & (1 << 4) ) {
@@ -156,9 +155,9 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 		camTilt = constrain_float(camTilt-20,800,2200);
 	}
 
-	if ( (buttons & ( 1 << 14 )) && rollTrim > -200 ) {
+	if ( (buttons & ( 1 << 2 )) && rollTrim > -200 ) {
 		rollTrim -= 10;
-	} else if ( (buttons & ( 1 << 15 )) && rollTrim < 200 ) {
+	} else if ( (buttons & ( 1 << 3 )) && rollTrim < 200 ) {
 		rollTrim += 10;
 	}
 
