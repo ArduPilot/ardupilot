@@ -51,11 +51,34 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_IO_RATE               50
 #endif
 
+#define SCHED_THREAD(name_, UPPER_NAME_)                        \
+    {                                                           \
+        .name = "sched-" #name_,                                \
+        .thread = &_##name_##_thread,                           \
+        .policy = SCHED_FIFO,                                   \
+        .prio = APM_LINUX_##UPPER_NAME_##_PRIORITY,             \
+        .rate = APM_LINUX_##UPPER_NAME_##_RATE,                 \
+    }
+
 Scheduler::Scheduler()
 { }
 
 void Scheduler::init()
 {
+    const struct sched_table {
+        const char *name;
+        SchedulerThread *thread;
+        int policy;
+        int prio;
+        uint32_t rate;
+    } sched_table[] = {
+        SCHED_THREAD(timer, TIMER),
+        SCHED_THREAD(uart, UART),
+        SCHED_THREAD(rcin, RCIN),
+        SCHED_THREAD(tonealarm, TONEALARM),
+        SCHED_THREAD(io, IO),
+    };
+
     mlockall(MCL_CURRENT|MCL_FUTURE);
 
     if (geteuid() != 0) {
@@ -65,19 +88,16 @@ void Scheduler::init()
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
     sched_setscheduler(0, SCHED_FIFO, &param);
 
-    _timer_thread.set_rate(APM_LINUX_TIMER_RATE);
-    _uart_thread.set_rate(APM_LINUX_UART_RATE);
-    _rcin_thread.set_rate(APM_LINUX_RCIN_RATE);
-    _tonealarm_thread.set_rate(APM_LINUX_TONEALARM_RATE);
-    _io_thread.set_rate(APM_LINUX_IO_RATE);
+    /* set barrier to N + 1 threads: worker threads + main */
+    unsigned n_threads = ARRAY_SIZE(sched_table) + 1;
+    pthread_barrier_init(&_initialized_barrier, nullptr, n_threads);
 
-    /* set barrier to 6 threads: worker threads below + main thread */
-    pthread_barrier_init(&_initialized_barrier, nullptr, 6);
-    _timer_thread.start("sched-timer", SCHED_FIFO, APM_LINUX_TIMER_PRIORITY);
-    _uart_thread.start("sched-uart", SCHED_FIFO, APM_LINUX_UART_PRIORITY);
-    _rcin_thread.start("sched-rcin", SCHED_FIFO, APM_LINUX_RCIN_PRIORITY);
-    _tonealarm_thread.start("sched-tonealarm", SCHED_FIFO, APM_LINUX_TONEALARM_PRIORITY);
-    _io_thread.start("sched-io", SCHED_FIFO, APM_LINUX_IO_PRIORITY);
+    for (size_t i = 0; i < ARRAY_SIZE(sched_table); i++) {
+        const struct sched_table *t = &sched_table[i];
+
+        t->thread->set_rate(t->rate);
+        t->thread->start(t->name, t->policy, t->prio);
+    }
 }
 
 void Scheduler::microsleep(uint32_t usec)
