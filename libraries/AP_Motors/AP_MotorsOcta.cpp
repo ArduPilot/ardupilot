@@ -62,4 +62,7 @@ void AP_MotorsOcta::setup_motors()
         add_motor(AP_MOTORS_MOT_7,  -67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7);
         add_motor(AP_MOTORS_MOT_8,  112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
     }
+
+    // normalise factors to magnitude 0.5
+    normalise_rpy_factors();
 }
