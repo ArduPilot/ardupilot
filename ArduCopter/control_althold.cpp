@@ -130,10 +130,6 @@ void Copter::althold_run()
             motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
             attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
             pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-            // slow start if landed
-            if (ap.land_complete) {
-                motors.slow_start(true);
-            }
             return;
         }
 
