@@ -389,3 +389,41 @@ void AP_MotorsMatrix::remove_all_motors()
         remove_motor(i);
     }
 }
+
+// normalizes the roll, pitch and yaw factors so maximum magnitude is 0.5
+void AP_MotorsMatrix::normalise_rpy_factors()
+{
+    float roll_fac = 0.0f;
+    float pitch_fac = 0.0f;
+    float yaw_fac = 0.0f;
+
+    // find maximum roll, pitch and yaw factors
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            if (roll_fac < fabsf(_roll_factor[i])) {
+                roll_fac = fabsf(_roll_factor[i]);
+            }
+            if (pitch_fac < fabsf(_pitch_factor[i])) {
+                pitch_fac = fabsf(_pitch_factor[i]);
+            }
+            if (yaw_fac < fabsf(_yaw_factor[i])) {
+                yaw_fac = fabsf(_yaw_factor[i]);
+            }
+        }
+    }
+
+    // scale factors back to -0.5 to +0.5 for each axis
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            if (!is_zero(roll_fac)) {
+                _roll_factor[i] = 0.5f*_roll_factor[i]/roll_fac;
+            }
+            if (!is_zero(pitch_fac)) {
+                _pitch_factor[i] = 0.5f*_pitch_factor[i]/pitch_fac;
+            }
+            if (!is_zero(yaw_fac)) {
+                _yaw_factor[i] = 0.5f*_yaw_factor[i]/yaw_fac;
+            }
+        }
+    }
+}
