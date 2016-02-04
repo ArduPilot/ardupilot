@@ -17,6 +17,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Notify/AP_Notify.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -70,6 +71,16 @@ void AP_BattMonitor_SMBus_PX4::read()
             _state.last_time_micros = AP_HAL::micros();
             _state.current_total_mah = batt_status.discharged_mah;
             _state.healthy = true;
+
+            if (batt_status.is_powering_off && !_state.is_powering_off) {
+                mavlink_command_long_t cmd_msg {};
+                cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
+                mavlink_message_t msg;
+                mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
+                GCS_MAVLINK::send_to_components(&msg);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "System is shutting down NOW...");
+            }
+
             _state.is_powering_off = batt_status.is_powering_off;
             AP_Notify::flags.powering_off = batt_status.is_powering_off;
 
