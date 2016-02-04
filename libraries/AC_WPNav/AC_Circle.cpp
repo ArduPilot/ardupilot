@@ -186,7 +186,7 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     Vector2f vec;   // vector from circle center to current location
     vec.x = (curr_pos.x - _center.x);
     vec.y = (curr_pos.y - _center.y);
-    float dist = pythagorous2(vec.x, vec.y);
+    float dist = norm(vec.x, vec.y);
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
     if (is_zero(dist)) {
