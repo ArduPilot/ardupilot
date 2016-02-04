@@ -72,7 +72,7 @@ fi
 
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 if ! grep -Fxq "$exportline" ~/.profile ; then
-    if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [Y/n]?" ; then
+    if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [y/N]?" ; then
         echo $exportline >> ~/.profile
         $exportline
     else
@@ -82,7 +82,7 @@ fi
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
 if ! grep -Fxq "$exportline2" ~/.profile ; then
-    if maybe_prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [Y/n]?" ; then
+    if maybe_prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [y/N]?" ; then
         echo $exportline2 >> ~/.profile
         $exportline2
     else
