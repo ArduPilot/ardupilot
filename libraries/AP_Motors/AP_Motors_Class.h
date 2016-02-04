@@ -124,10 +124,6 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
 
-    // slow_start - set to true to slew motors from current speed to maximum
-    // Note: this must be set immediately before a step up in throttle
-    virtual void        slow_start(bool true_false) = 0;
-
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask() = 0;
