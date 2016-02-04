@@ -122,10 +122,6 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     // disable all motors by default
     memset(motor_enabled, false, sizeof(motor_enabled));
 
-    // init flags
-    _multicopter_flags.slow_start = false;
-    _multicopter_flags.slow_start_low_end = true;
-
     // setup battery voltage filtering
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
@@ -318,7 +314,6 @@ void AP_MotorsMulticopter::output_logic()
     if (!_flags.armed || !_flags.interlock) {
         _spool_desired = DESIRED_SHUT_DOWN;
         _multicopter_flags.spool_mode = SHUT_DOWN;
-        _multicopter_flags.slow_start_low_end = true;
     }
 
     switch (_multicopter_flags.spool_mode) {
@@ -467,14 +462,6 @@ void AP_MotorsMulticopter::output_logic()
             }
             break;
     }
-}
-
-// slow_start - set to true to slew motors from current speed to maximum
-// Note: this must be set immediately before a step up in throttle
-void AP_MotorsMulticopter::slow_start(bool true_false)
-{
-    // set slow_start flag
-    _multicopter_flags.slow_start = true;
 }
 
 // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs

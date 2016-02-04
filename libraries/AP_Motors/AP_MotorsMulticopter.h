@@ -75,10 +75,6 @@ public:
 
     void                output_logic();
 
-    // slow_start - set to true to slew motors from current speed to maximum
-    // Note: this must be set immediately before a step up in throttle
-    void                slow_start(bool true_false);
-
     // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     void                throttle_pass_through(int16_t pwm);
@@ -139,8 +135,6 @@ protected:
     // flag bitmask
     struct {
         spool_up_down_mode     spool_mode       : 4;    // motor's current spool mode
-        uint8_t slow_start         : 1;    // 1 if slow start is active
-        uint8_t slow_start_low_end : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
     } _multicopter_flags;
 
     // parameters
