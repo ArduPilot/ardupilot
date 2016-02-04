@@ -5,7 +5,7 @@
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
-#define FRAME_CONFIG BLUEROV
+#define FRAME_CONFIG VECTORED_FRAME
 /*  options:
  *  QUAD_FRAME
  *  TRI_FRAME
@@ -16,6 +16,8 @@
  *  HELI_FRAME
  *  SINGLE_FRAME
  *  COAX_FRAME
+ *  BLUEROV_FRAME
+ *  VECTORED_FRAME
  */
 
 // uncomment the lines below to disable features (flash sizes listed are for APM2 boards and will underestimate savings on Pixhawk and other boards)
