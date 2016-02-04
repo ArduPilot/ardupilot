@@ -272,7 +272,7 @@ void AP_MotorsMulticopter::update_throttle_rpy_mix()
 
 float AP_MotorsMulticopter::get_hover_throttle_as_high_end_pct() const
 {
-    return ((float)_hover_out / (1000.0f - _min_throttle));
+    return (MAX(0,(float)_hover_out-_min_throttle) / (float)(1000-_min_throttle));
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const
