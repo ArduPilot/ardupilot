@@ -26,7 +26,8 @@
 #define APM_BUILD_ArduCopter     2
 #define APM_BUILD_ArduPlane      3
 #define APM_BUILD_AntennaTracker 4
-#define APM_BUILD_UNKNOWN        5
+#define APM_BUILD_ArduSub		 5
+#define APM_BUILD_UNKNOWN        6
 
 /*
   using this macro catches cases where we try to check vehicle type on
