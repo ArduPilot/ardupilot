@@ -79,6 +79,7 @@ Build.ArduCopter/*
 Build.ArduPlane/*
 Build.APMrover2/*
 Build.AntennaTracker/*
+Build.ArduSub/*
 cmake_install.cmake
 CMakeCache.txt
 CMakeFiles
