@@ -40,7 +40,7 @@ void motor_order_test();
 void stability_test();
 void update_motors();
 
-#define HELI_TEST       1   // set to 1 to test helicopters
+#define HELI_TEST       0   // set to 1 to test helicopters
 #define NUM_OUTPUTS     4   // set to 6 for hexacopter, 8 for octacopter and heli
 
 RC_Channel rc1(0), rc2(1), rc3(2), rc4(3);
@@ -160,8 +160,8 @@ void stability_test()
                     pitch_in = rpy_tests[p];
                     yaw_in = rpy_tests[y];
                     throttle_in = throttle_tests[t]/1000.0f;
-                    motors.set_pitch(roll_in/4500.0f);
-                    motors.set_roll(pitch_in/4500.0f);
+                    motors.set_roll(roll_in/4500.0f);
+                    motors.set_pitch(pitch_in/4500.0f);
                     motors.set_yaw(yaw_in/4500.0f);
                     motors.set_throttle(throttle_in);
                     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
