@@ -155,6 +155,8 @@ def _build_common_taskgens(bld):
         use='mavlink',
     )
 
+    bld.libgtest()
+
 def _build_recursion(bld):
     common_dirs_patterns = [
         # TODO: Currently each vehicle also generate its own copy of the
@@ -203,7 +205,6 @@ def build(bld):
     bld.post_mode = Build.POST_LAZY
 
     bld.load('ardupilotwaf')
-    bld.load('gtest')
 
     _build_cmd_tweaks(bld)
 
