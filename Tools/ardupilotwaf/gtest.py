@@ -20,13 +20,7 @@ def configure(cfg):
         )
         return
 
-    cfg.start_msg('Checking for gtest submodule')
-    readme = cfg.srcnode.find_resource('modules/gtest/README')
-    if not readme:
-        cfg.end_msg('not initialized', color='YELLOW')
-        return
-    cfg.end_msg('yes')
-
+    cfg.env.append_value('GIT_SUBMODULES', 'gtest')
     cfg.env.HAS_GTEST = True
 
 @conf
