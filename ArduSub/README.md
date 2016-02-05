@@ -48,6 +48,27 @@ The ArduSub project currently supports two frame types:
 
 The code must be compiled for the correct frame type, defined in AP_MotorsBlueROV.cpp.
 
+### Compilation and Flashing ###
+
+Please refer to the ArduPilot documentation for basic instructions on building the code.
+
+- [Mac Instructions](http://dev.ardupilot.com/wiki/building-px4-with-make-on-mac/)
+- [Linux Instructions](http://dev.ardupilot.com/wiki/building-px4-for-linux-with-make/)
+- [Windows Instructions](http://dev.ardupilot.com/wiki/building-px4-with-make/)
+
+To compile the ArduSub branch, first `cd ArduSub` to enter the directory and then use one of the following commands.
+
+| Command | Function |
+| --- | --- |
+| `make px4-v2-bluerov` | Compile for BlueROV thruster configuration |
+| `make px4-v2-vectored` | Compile for vectored thruster configuration |
+
+Add `-upload` to the end of the make target to upload. For example:
+
+``` bash
+make px4-v2-vectored-upload
+```
+
 ### Initial Setup ###
 
 1. Compile and upload firmware to the autopilot
@@ -100,7 +121,7 @@ In **Althold** (learning) mode, the ROV will stabilize and also hold its depth. 
 
 ## How To Get Involved ##
 
-The ArduSub project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](http://dev.ardupilot.com/wiki/guidelines-for-contributors-to-the-apm-codebase)
+The ArduSub project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](http://dev.ardupilot.com/wiki/guidelines-for-contributors-to-the-apm-codebase).
 
 Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/bluerobotics/ardupilot/issues).
 
