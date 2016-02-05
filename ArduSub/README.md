@@ -112,6 +112,7 @@ The gamepad controls the ROV during operation. It has been tested with the Micro
 - **Y Button:** Switch to althold (learning) mode
 - **B Button:** Switch to stabilize (manual) mode
 - **Buttonpad Up/Down Arrows:** Tilt camera (if applicable and set up in QGC)
+- **Buttonpad Left/Right Arrows:** Increase/decrease roll trim (if IMU is not completely level)
 
 #### Modes ####
 
