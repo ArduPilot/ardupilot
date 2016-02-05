@@ -97,6 +97,8 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
+    cfg.env.append_value('GIT_SUBMODULES', 'mavlink')
+
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
     ])
