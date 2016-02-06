@@ -923,6 +923,7 @@ private:
     void read_radio();
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
+    void radio_passthrough_to_motors();
     void init_barometer(bool full_calibration);
     void read_barometer(void);
     void init_sonar(void);
