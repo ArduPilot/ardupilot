@@ -236,8 +236,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
     }
     _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
 
-    // calculate collective mid point as a number from 0 to 1000
-    _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
+    // calculate collective mid point as a number from 0 to 1
+    _collective_mid_pct = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min));
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
@@ -385,7 +385,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         if ((_main_rotor.get_control_output() > _main_rotor.get_idle_output()) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
-            yaw_offset = _collective_yaw_effect * fabsf(collective_out - (_collective_mid_pwm/1000.0f));
+            yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_mid_pct);
         }
     } else {
         yaw_offset = 0.0f;
@@ -394,7 +394,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     // feed power estimate into main rotor controller
     // ToDo: include tail rotor power?
     // ToDo: add main rotor cyclic power?
-    _main_rotor.set_motor_load(fabsf(collective_out - (_collective_mid_pwm/1000.0f)));
+    _main_rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
 
     // swashplate servos
     float collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
