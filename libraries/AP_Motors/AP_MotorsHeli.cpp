@@ -261,7 +261,7 @@ void AP_MotorsHeli::output_disarmed()
                 // fixate mid collective
                 _roll_in = 0.0f;
                 _pitch_in = 0.0f;
-                _throttle_filter.reset(_collective_mid_pwm / 1000.0f);
+                _throttle_filter.reset(_collective_mid_pct);
                 _yaw_in = 0.0f;
                 break;
             case SERVO_CONTROL_MODE_MANUAL_MAX:
