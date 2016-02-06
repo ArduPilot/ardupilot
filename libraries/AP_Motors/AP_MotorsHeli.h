@@ -128,9 +128,6 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t get_motor_mask() = 0;
 
-    // reset_radio_passthrough used to reset all radio inputs to center
-    void reset_radio_passthrough();
-
     // servo_test - move servos through full range of movement
     // to be overloaded by child classes, different vehicle types would have different movement patterns
     virtual void servo_test() = 0;

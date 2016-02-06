@@ -175,6 +175,9 @@ void AP_MotorsHeli::Init()
     // ensure inputs are not passed through to servos on start-up
     _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
 
+    // initialise radio passthrough for collective to middle
+    _throttle_radio_passthrough = 0.5f;
+
     // initialise Servo/PWM ranges and endpoints
     init_outputs();
 
@@ -355,19 +358,9 @@ void AP_MotorsHeli::update_throttle_filter()
     _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
 }
 
-// reset_radio_passthrough used to reset all radio inputs to center
-void AP_MotorsHeli::reset_radio_passthrough()
-{
-    _roll_radio_passthrough = 0.0f;
-    _pitch_radio_passthrough = 0.0f;
-    _throttle_radio_passthrough = 0.5f;
-    _yaw_radio_passthrough = 0.0f;
-}
-
 // reset_flight_controls - resets all controls and scalars to flight status
 void AP_MotorsHeli::reset_flight_controls()
 {
-    reset_radio_passthrough();
     _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
     init_outputs();
     calculate_scalars();
