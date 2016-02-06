@@ -22,11 +22,6 @@
 #include <assert.h>
 #include <queue>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-#define RCIN_RPI_CHN_NUM 8
-#else
-#define RCIN_RPI_CHN_NUM 1
-#endif
 
 enum state_t{
     RCIN_RPI_INITIAL_STATE = -1,
@@ -103,33 +98,23 @@ private:
     Memory_table *con_blocks;
 
     uint64_t curr_tick;
+    uint64_t prev_tick;
+    uint64_t delta_time;
 
     uint32_t curr_tick_inc;
     uint32_t curr_pointer;
     uint32_t curr_channel;
     uint32_t counter;
 
-    struct RcChannel {
-        RcChannel() :
-            prev_tick(0), delta_time(0),
-            width_s0(0), width_s1(0),
-            curr_signal(0), last_signal(0),
-            enable_pin(0), state(RCIN_RPI_INITIAL_STATE)
-        {}
+    uint16_t width_s0;
+    uint16_t width_s1;
 
-        uint64_t prev_tick;
-        uint64_t delta_time;
-
-        uint16_t width_s0;
-        uint16_t width_s1;
-
-        uint8_t curr_signal;
-        uint8_t last_signal;
-
-        state_t state;
-
-        AP_HAL::DigitalSource *enable_pin;
-    } rc_channels[RCIN_RPI_CHN_NUM];
+    uint8_t curr_signal;
+    uint8_t last_signal;
+  
+    state_t state;
+    
+    AP_HAL::DigitalSource *enable_pin; 
 
     void init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb);
     void* map_peripheral(uint32_t base, uint32_t len);

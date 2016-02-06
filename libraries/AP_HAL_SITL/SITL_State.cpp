@@ -204,7 +204,7 @@ void SITL_State::_fdm_input(void)
         // a packet giving the receiver PWM inputs
         uint8_t i;
         for (i=0; i<size/2; i++) {
-            // setup the pwn input for the RC channel inputs
+            // setup the pwm input for the RC channel inputs
             if (pwm_pkt.pwm[i] != 0) {
                 pwm_input[i] = pwm_pkt.pwm[i];
             }

@@ -22,6 +22,9 @@ const extern AP_HAL::HAL& hal;
 static bool _start_collect_sample;
 static void _snoop(const mavlink_message_t* msg);
 
+uint8_t AP_AccelCal::_num_clients = 0;
+AP_AccelCal_Client* AP_AccelCal::_clients[AP_ACCELCAL_MAX_NUM_CLIENTS] {};
+
 void AP_AccelCal::update()
 {
     if (!get_calibrator(0)) {
@@ -245,13 +248,10 @@ void AP_AccelCal::collect_sample()
 }
 
 void AP_AccelCal::register_client(AP_AccelCal_Client* client) {
-    if (client == NULL || _num_clients == AP_ACCELCAL_MAX_NUM_CLIENTS) {
+    if (client == NULL || _num_clients >= AP_ACCELCAL_MAX_NUM_CLIENTS) {
         return;
     }
 
-    if (_started) {
-        fail();
-    }
 
     for(uint8_t i=0; i<_num_clients; i++) {
         if(_clients[i] == client) {

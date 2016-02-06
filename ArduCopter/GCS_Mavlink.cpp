@@ -88,10 +88,8 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
         MAV_TYPE_OCTOROTOR,
 #elif (FRAME_CONFIG == HELI_FRAME)
         MAV_TYPE_HELICOPTER,
-#elif (FRAME_CONFIG == SINGLE_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
-        MAV_TYPE_ROCKET,
-#elif (FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
-        MAV_TYPE_ROCKET,
+#elif (FRAME_CONFIG == SINGLE_FRAME || FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
+        MAV_TYPE_QUADROTOR,
 #else
   #error Unrecognised frame type
 #endif
@@ -1056,6 +1054,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_PARAM_VALUE:
+    {
+#if MOUNT == ENABLED
+        copter.camera_mount.handle_param_value(msg);
+#endif
+        break;
+    }
+
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST: // MAV ID: 38
     {
         handle_mission_write_partial_list(copter.mission, msg);
@@ -1143,6 +1149,43 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        break;
+    }
+
+    case MAVLINK_MSG_ID_COMMAND_INT:
+    {
+        // decode packet
+        mavlink_command_int_t packet;
+        mavlink_msg_command_int_decode(msg, &packet);
+        switch(packet.command)
+        {
+            case MAV_CMD_DO_SET_ROI: {
+                // param1 : /* Region of interest mode (not used)*/
+                // param2 : /* MISSION index/ target ID (not used)*/
+                // param3 : /* ROI index (not used)*/
+                // param4 : /* empty */
+                // x : lat
+                // y : lon
+                // z : alt
+                // sanity check location
+                if (labs(packet.x) >= 900000000l || labs(packet.y) >= 1800000000l) {
+                    break;
+                }
+                Location roi_loc;
+                roi_loc.lat = packet.x;
+                roi_loc.lng = packet.y;
+                roi_loc.alt = (int32_t)(packet.z * 100.0f);
+                copter.set_auto_yaw_roi(roi_loc);
+                result = MAV_RESULT_ACCEPTED;
+                break;
+            }
+            default:
+                result = MAV_RESULT_UNSUPPORTED;
+                break;
+        }
+
+        // send ACK or NAK
+        mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
         break;
     }
 
@@ -1295,13 +1338,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_DIGICAM_CONTROL:
-            copter.camera.control(packet.param1,
-                                  packet.param2,
-                                  packet.param3,
-                                  packet.param4,
-                                  packet.param5,
-                                  packet.param6);
-
+            if (copter.camera.control(packet.param1,
+                                      packet.param2,
+                                      packet.param3,
+                                      packet.param4,
+                                      packet.param5,
+                                      packet.param6)) {
+                copter.log_picture();
+            }
             result = MAV_RESULT_ACCEPTED;
             break;
 #endif // CAMERA == ENABLED
@@ -1683,6 +1727,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // check for supported coordinate frames
         if (packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
+            packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT && // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
             packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
             packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
             break;
@@ -1707,6 +1752,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             loc.lng = packet.lon_int;
             loc.alt = packet.alt*100;
             switch (packet.coordinate_frame) {
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
                     loc.flags.relative_alt = true;
                     loc.flags.terrain_alt = false;
@@ -1717,7 +1763,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     break;
                 case MAV_FRAME_GLOBAL_INT:
                 default:
-                    loc.flags.relative_alt = false;
+                    // Copter does not support navigation to absolute altitudes. This convert the WGS84 altitude
+                    // to a home-relative altitude before passing it to the navigation controller
+                    loc.alt -= copter.ahrs.get_home().alt;
+                    loc.flags.relative_alt = true;
                     loc.flags.terrain_alt = false;
                     break;
             }

@@ -14,10 +14,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "Display_SSD1306_I2C.h"
 
 #include <AP_HAL/AP_HAL.h>
-
-#include "Display_SSD1306_I2C.h"
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

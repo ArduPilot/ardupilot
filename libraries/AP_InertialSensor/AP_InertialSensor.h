@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_INERTIAL_SENSOR_H__
-#define __AP_INERTIAL_SENSOR_H__
+#pragma once
 
 // Gyro and Accelerometer calibration criteria
 #define AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE  4.0f
@@ -20,12 +18,12 @@
 #define INS_VIBRATION_CHECK_INSTANCES 2
 
 #include <stdint.h>
+
+#include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_AccelCal/AP_AccelCal.h>
-#include "AP_InertialSensor_UserInteract.h"
-#include <Filter/LowPassFilter.h>
 #include <Filter/LowPassFilter2p.h>
+#include <Filter/LowPassFilter.h>
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
@@ -98,6 +96,9 @@ public:
     //get delta angle if available
     bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const;
     bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
+
+    float get_delta_angle_dt(uint8_t i) const;
+    float get_delta_angle_dt() const { return get_delta_angle_dt(_primary_accel); }
 
     //get delta velocity if available
     bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const;
@@ -173,7 +174,7 @@ public:
 
     // return the main loop delta_t in seconds
     float get_loop_delta_t(void) const { return _loop_delta_t; }
-    
+
     uint16_t error_count(void) const { return 0; }
     bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
@@ -280,7 +281,7 @@ private:
     // the selected sample rate
     uint16_t _sample_rate;
     float _loop_delta_t;
-    
+
     // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
     Vector3f _delta_velocity[INS_MAX_INSTANCES];
@@ -298,11 +299,14 @@ private:
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
-    
+
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
     Vector3f _delta_angle[INS_MAX_INSTANCES];
+    float _delta_angle_dt[INS_MAX_INSTANCES];
     bool _delta_angle_valid[INS_MAX_INSTANCES];
+    // time accumulator for delta angle accumulator
+    float _delta_angle_acc_dt[INS_MAX_INSTANCES];
     Vector3f _delta_angle_acc[INS_MAX_INSTANCES];
     Vector3f _last_delta_angle[INS_MAX_INSTANCES];
     Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
@@ -365,7 +369,7 @@ private:
 
     // target time for next wait_for_sample() return
     uint32_t _next_sample_usec;
-    
+
     // time between samples in microseconds
     uint32_t _sample_period_usec;
 
@@ -421,20 +425,3 @@ private:
 
     bool _accel_cal_requires_reboot;
 };
-
-#include "AP_InertialSensor_Backend.h"
-#include "AP_InertialSensor_MPU6000.h"
-#include "AP_InertialSensor_PX4.h"
-#include "AP_InertialSensor_MPU9250.h"
-#include "AP_InertialSensor_L3G4200D.h"
-#include "AP_InertialSensor_Flymaple.h"
-#include "AP_InertialSensor_MPU9150.h"
-#include "AP_InertialSensor_LSM9DS0.h"
-#include "AP_InertialSensor_HIL.h"
-#include "AP_InertialSensor_SITL.h"
-#include "AP_InertialSensor_qflight.h"
-#include "AP_InertialSensor_QURT.h"
-#include "AP_InertialSensor_UserInteract_Stream.h"
-#include "AP_InertialSensor_UserInteract_MAVLink.h"
-
-#endif // __AP_INERTIAL_SENSOR_H__

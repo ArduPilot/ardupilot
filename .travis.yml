@@ -1,26 +1,11 @@
 language: cpp
-sudo: false
+sudo: required
 
 cache:
   directories:
     - $HOME/opt
-    - $HOME/.ccache
 
 addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - build-essential
-    - ccache
-    - g++-4.8
-    - gcc-4.8
-    - genromfs
-    - libc6-i386
-    - python-argparse
-    - python-empy
-    - python-serial
-    - zlib1g-dev
   coverity_scan:
     project:
       name: "diydrones/ardupilot"
@@ -31,49 +16,11 @@ addons:
     branch_pattern: coverity_scan
 
 before_install:
-  - pushd $HOME
-  - pushd $HOME/opt
-  # PX4 toolchain
-  - compiler="gcc-arm-none-eabi-4_9-2015q3"
-  - if [ ! -d "$HOME/opt/$compiler" ]; then
-      wget http://firmware.diydrones.com/Tools/PX4-tools/gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
-      && tar -xf gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
-      ;
-    fi
-  # RPi toolchain
-  - compiler="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
-  - if [ ! -d "$HOME/opt/$compiler" ]; then
-      wget http://firmware.diydrones.com/Tools/Travis/NavIO/master.tar.gz
-      && tar -xf master.tar.gz
-      ;
-    fi
-  - popd
-  - mkdir -p $HOME/bin
-    && ln -sf /usr/bin/gcc-4.8 $HOME/bin/gcc
-    && ln -sf /usr/bin/g++-4.8 $HOME/bin/g++
-    && exportline="export PATH=$HOME/bin:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:\$PATH"
-    && if grep -Fxq "$exportline" ~/.profile; then echo nothing to do ; else echo $exportline >> ~/.profile; fi
-    && . ~/.profile
-  - popd
-
-before_script:
-  - mkdir -p $HOME/ccache-bin
-  - ln -s /usr/bin/ccache ~/bin/g++-4.8
-  - ln -s /usr/bin/ccache ~/bin/gcc-4.8
-  - ln -s /usr/bin/ccache ~/bin/gcc-4.8-size
-  - ln -s /usr/bin/ccache ~/bin/gcc-4.8-objcopy
-  - ln -s /usr/bin/ccache ~/bin/arm-none-eabi-g++
-  - ln -s /usr/bin/ccache ~/bin/arm-none-eabi-gcc
-  - ln -s /usr/bin/ccache ~/bin/arm-none-eabi-size
-  - ln -s /usr/bin/ccache ~/bin/arm-none-eabi-objcopy
-  - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-g++
-  - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-gcc
-  - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-size
-  - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-objcopy
+  - APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/configure-ci.sh && . ~/.profile && popd
 
 script:
   - python Tools/autotest/param_metadata/param_parse.py
-  - Tools/scripts/build_all_travis.sh
+  - Tools/scripts/build_ci.sh
 
 notifications:
   webhooks:
@@ -89,5 +36,5 @@ env:
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
   matrix:
-    - TRAVIS_BUILD_TARGET="px4-v2"
-    - TRAVIS_BUILD_TARGET="sitl linux navio raspilot minlure bebop"
+    - CI_BUILD_TARGET="px4-v2 sitl linux"
+    - CI_BUILD_TARGET="navio raspilot minlure bebop"

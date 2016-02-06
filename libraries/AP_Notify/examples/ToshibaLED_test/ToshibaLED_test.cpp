@@ -1,14 +1,15 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Notify/AP_Notify.h>          // Notify library
-#include <AP_Notify/ToshibaLED.h>
+#include <AP_Notify/AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <AP_Notify/ToshibaLED_PX4.h>
 static ToshibaLED_PX4 toshiba_led;
 #else
+#include <AP_Notify/ToshibaLED_I2C.h>
 static ToshibaLED_I2C toshiba_led;
 #endif
 

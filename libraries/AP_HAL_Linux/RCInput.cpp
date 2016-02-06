@@ -42,11 +42,6 @@ uint8_t RCInput::num_channels()
     return _num_channels;
 }
 
-void RCInput::set_num_channels(uint8_t num)
-{
-    _num_channels = num;
-}
-
 uint16_t RCInput::read(uint8_t ch) 
 {
     new_rc_input = false;
@@ -317,18 +312,10 @@ reset:
     memset(&dsm_state, 0, sizeof(dsm_state));        
 }
 
-void RCInput::_process_pwm_pulse(uint16_t channel, uint16_t width_s0, uint16_t width_s1)
-{
-    if (channel < _num_channels) {
-        _pwm_values[channel] = width_s1; // range: 700 ~ 2300
-        new_rc_input = true;
-    }
-}
-
 /*
   process a RC input pulse of the given width
  */
-void RCInput::_process_rc_pulse(uint16_t width_s0, uint16_t width_s1, uint16_t channel)
+void RCInput::_process_rc_pulse(uint16_t width_s0, uint16_t width_s1)
 {
 #if 0
     // useful for debugging
@@ -340,23 +327,14 @@ void RCInput::_process_rc_pulse(uint16_t width_s0, uint16_t width_s1, uint16_t c
         fprintf(rclog, "%u %u\n", (unsigned)width_s0, (unsigned)width_s1);
     }
 #endif
+    // treat as PPM-sum
+    _process_ppmsum_pulse(width_s0 + width_s1);
 
-    if (channel == LINUX_RC_INPUT_CHANNEL_INVALID) {
+    // treat as SBUS
+    _process_sbus_pulse(width_s0, width_s1);
 
-      // treat as PPM-sum
-      _process_ppmsum_pulse(width_s0 + width_s1);
-
-      // treat as SBUS
-      _process_sbus_pulse(width_s0, width_s1);
-
-      // treat as DSM
-      _process_dsm_pulse(width_s0, width_s1);
-
-    } else {
-
-      // treat as PWM
-      _process_pwm_pulse(channel, width_s0, width_s1);
-    }
+    // treat as DSM
+    _process_dsm_pulse(width_s0, width_s1);
 }
 
 /*

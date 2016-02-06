@@ -731,10 +731,10 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// AP_Limits Defaults
+// Fence, Rally and Terrain defaults
 //
 
-// Enable/disable AP_Limits
+// Enable/disable Fence
 #ifndef AC_FENCE
  #define AC_FENCE ENABLED
 #endif

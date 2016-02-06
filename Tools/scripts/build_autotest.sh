@@ -40,7 +40,7 @@ lock_file() {
 
         if test -f "$lck" && kill -0 $pid 2> /dev/null; then
 	    LOCKAGE=$(($(date +%s) - $(stat -c '%Y' "build.lck")))
-	    test $LOCKAGE -gt 7200 && {
+	    test $LOCKAGE -gt 30000 && {
                 echo "old lock file $lck is valid for $pid with age $LOCKAGE seconds"
 	    }
             return 1
@@ -180,6 +180,6 @@ killall -9 JSBSim || /bin/true
 # raise core limit
 ulimit -c 10000000
 
-timelimit 12000 APM/Tools/autotest/autotest.py --timeout=11500 > buildlogs/autotest-output.txt 2>&1
+timelimit 22000 APM/Tools/autotest/autotest.py --timeout=20000 > buildlogs/autotest-output.txt 2>&1
 
 ) >> build.log 2>&1

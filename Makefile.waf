@@ -3,15 +3,12 @@ ROOT = $(dir $(lastword $(MAKEFILE_LIST)))
 WAF_BINARY = $(realpath $(ROOT)/modules/waf/waf-light)
 WAF = $(WAF_BINARY) $(WAF_FLAGS)
 
-EXPLICIT_COMMANDS = check clean list_boards
+EXPLICIT_COMMANDS = check check-all clean list_boards
 
 VEHICLES = copter plane rover
 
 all: $(WAF_BINARY)
 	@$(WAF) build
-
-check-all: $(WAF_BINARY)
-	@$(WAF) check --alltests
 
 $(WAF_BINARY):
 	@git submodule init && git submodule update

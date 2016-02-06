@@ -319,6 +319,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
 
+    // @Param: RTL_RADIUS
+    // @DisplayName: RTL loiter radius
+    // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used.
+    // @Units: Meters
+    // @Range: -32767 32767
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rtl_radius,             "RTL_RADIUS",  0),
+    
 #if GEOFENCE_ENABLED == ENABLED
     // @Param: FENCE_ACTION
     // @DisplayName: Action on geofence breach
@@ -549,8 +558,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_LONG_ACTN
     // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. 
-    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide
+    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTION is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). 
+    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute
     // @User: Standard
     GSCALAR(long_fs_action,         "FS_LONG_ACTN",   LONG_FAILSAFE_ACTION),
 
@@ -908,9 +917,15 @@ const AP_Param::Info Plane::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: OVERRIDE_CHAN
     // @DisplayName: PX4IO override channel
-    // @Description: If set to a non-zero value then this is an RC input channel number to use for testing manual control in case the main FMU microcontroller on a PX4 or Pixhawk fails. When this RC input channel goes above 1750 the FMU will stop sending servo controls to the PX4IO board, which will trigger the PX4IO board to start using its failsafe override behaviour, which should give you manual control of the aircraft. That allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is normally only set to a non-zero value for ground testing purposes. When the override channel is used it also forces the PX4 safety switch into an armed state. This allows it to be used as a way to re-arm a plane after an in-flight reboot. Use in that way is considered a developer option, for people testing unstable developer code. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get PX4IO based override when in flight mode 6. Note that when override is triggered the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
+    // @Description: If set to a non-zero value then this is an RC input channel number to use for giving PX4IO manual control in case the main FMU microcontroller on a PX4 or Pixhawk fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the PX4IO microcontroller will directly control the servos. Note that PX4IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Please also see the docs on OVERRIDE_SAFETY. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get PX4IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
     // @User: Advanced
     GSCALAR(override_channel,      "OVERRIDE_CHAN",  0),
+
+    // @Param: OVERRIDE_SAFETY
+    // @DisplayName: PX4IO override safety switch
+    // @Description: This controls whether the safety switch is turned off when you activate override with OVERRIDE_CHAN. When set to 1 the safety switch is de-activated (activating the servos) then a PX4IO override is triggered. In that case the safety remains de-activated after override is disabled. If OVERRIDE_SAFETTY is set to 0 then the safety switch state does not change. Note that regardless of the value of this parameter the servos will be active while override is active.
+    // @User: Advanced
+    GSCALAR(override_safety,      "OVERRIDE_SAFETY",  1),
 #endif
 
     // @Param: INVERTEDFLT_CH

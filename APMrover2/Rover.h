@@ -380,6 +380,7 @@ private:
     // private member functions
     void ahrs_update();
     void mount_update(void);
+    void update_trigger(void);    
     void update_alt();
     void gcs_failsafe_check(void);
     void compass_accumulate(void);

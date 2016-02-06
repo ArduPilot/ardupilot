@@ -12,8 +12,7 @@
 #pragma GCC optimize("O3")
 #endif
 
-#include "AP_SmallEKF.h"
-#include <AP_AHRS/AP_AHRS.h>
+#include "SoloGimbalEKF.h"
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
@@ -23,47 +22,95 @@ extern const AP_HAL::HAL& hal;
 
 
 // Define tuning parameters
-const AP_Param::GroupInfo SmallEKF::var_info[] = {
+const AP_Param::GroupInfo SoloGimbalEKF::var_info[] = {
     AP_GROUPEND
 };
 
+// Hash define constants
+#define GYRO_BIAS_LIMIT 0.349066f // maximum allowed gyro bias (rad/sec)
+
 // constructor
-SmallEKF::SmallEKF(const AP_AHRS_NavEKF &ahrs) :
+SoloGimbalEKF::SoloGimbalEKF(const AP_AHRS_NavEKF &ahrs) :
     _ahrs(ahrs),
-    _main_ekf(ahrs.get_NavEKF_const()),
     states(),
-    state(*reinterpret_cast<struct state_elements *>(&states)),
-    gSense{},
-    Cov{},
-    TiltCorrection(0),
-    StartTime_ms(0),
-    FiltInit(false),
-    lastMagUpdate(0),
-    dtIMU(0)
+    state(*reinterpret_cast<struct state_elements *>(&states))
 {
     AP_Param::setup_object_defaults(this, var_info);
+    reset();
+}
+
+
+// complete reset
+void SoloGimbalEKF::reset()
+{
+    memset(&states,0,sizeof(states));
+    memset(&gSense,0,sizeof(gSense));
+    memset(&Cov,0,sizeof(Cov));
+    TiltCorrection = 0;
+    StartTime_ms = 0;
+    FiltInit = false;
+    lastMagUpdate = 0;
+    dtIMU = 0;
+    innovationIncrement = 0;
+    lastInnovation = 0;
 }
 
 // run a 9-state EKF used to calculate orientation
-void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vector3f &delta_velocity, const Vector3f &joint_angles)
+void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vector3f &delta_velocity, const Vector3f &joint_angles)
 {
     imuSampleTime_ms = AP_HAL::millis();
     dtIMU = delta_time;
 
     // initialise variables and constants
     if (!FiltInit) {
-        StartTime_ms =  imuSampleTime_ms;
+        // Note: the start time is initialised to 0 in the constructor
+        if (StartTime_ms == 0) {
+            StartTime_ms = imuSampleTime_ms;
+        }
+
+        // Set data to pre-initialsation defaults
+        FiltInit = false;
         newDataMag = false;
         YawAligned = false;
+        memset(&state, 0, sizeof(state));
         state.quat[0] = 1.0f;
+
+        bool main_ekf_healthy = false;
+        nav_filter_status main_ekf_status;
+
+        if (_ahrs.get_filter_status(main_ekf_status)) {
+            if (main_ekf_status.flags.attitude) {
+                main_ekf_healthy = true;
+            }
+        }
+
+        // Wait for gimbal to stabilise to body fixed position for a few seconds before starting small EKF
+        // Also wait for navigation EKF to be healthy beasue we are using the velocity output data
+        // This prevents jerky gimbal motion from degrading the EKF initial state estimates
+        if (imuSampleTime_ms - StartTime_ms < 5000 || !main_ekf_healthy) {
+            return;
+        }
+
+        Quaternion ned_to_vehicle_quat;
+        ned_to_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+
+        Quaternion vehicle_to_gimbal_quat;
+        vehicle_to_gimbal_quat.from_vector312(joint_angles.x,joint_angles.y,joint_angles.z);
+
+        // calculate initial orientation
+        state.quat = ned_to_vehicle_quat * vehicle_to_gimbal_quat;
+
         const float Sigma_velNED = 0.5f; // 1 sigma uncertainty in horizontal velocity components
-        const float Sigma_dAngBias  = 0.01745f*dtIMU; // 1 Sigma uncertainty in delta angle bias
-        const float Sigma_angErr = 1.0f; // 1 Sigma uncertainty in angular misalignment (rad)
+        const float Sigma_dAngBias = 0.002f*dtIMU; // 1 Sigma uncertainty in delta angle bias (rad)
+        const float Sigma_angErr = 0.1f; // 1 Sigma uncertainty in angular misalignment (rad)
         for (uint8_t i=0; i <= 2; i++) Cov[i][i] = sq(Sigma_angErr);
         for (uint8_t i=3; i <= 5; i++) Cov[i][i] = sq(Sigma_velNED);
         for (uint8_t i=6; i <= 8; i++) Cov[i][i] = sq(Sigma_dAngBias);
         FiltInit = true;
-        hal.console->printf("\nSmallEKF Alignment Started\n");
+        hal.console->printf("\nSoloGimbalEKF Alignment Started\n");
+
+        // Don't run the filter in this timestep becasue we have already used the delta velocity data to set an initial orientation
+        return;
     }
 
     // We are using IMU data and joint angles from the gimbal
@@ -85,17 +132,17 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
     // predict the covariance
     predictCovariance();
 
-    // fuse SmallEKF velocity data
-    fuseVelocity(YawAligned);
+    // fuse SoloGimbalEKF velocity data
+    fuseVelocity();
 
     
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
     // Force it to align if too much time has lapsed
-    if (((((imuSampleTime_ms - StartTime_ms) > 25000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
+    if (((((imuSampleTime_ms - StartTime_ms) > 8000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
         //calculate the initial heading using magnetometer, estimated tilt and declination
         alignHeading();
         YawAligned = true;
-        hal.console->printf("\nSmallEKF Alignment Completed\n");
+        hal.console->printf("\nSoloGimbalEKF Alignment Completed\n");
     }
 
     // Fuse magnetometer data if  we have new measurements and an aligned heading
@@ -109,7 +156,7 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
 }
 
 // state prediction
-void SmallEKF::predictStates()
+void SoloGimbalEKF::predictStates()
 {
     static Vector3f gimDelAngCorrected;
     static Vector3f gimDelAngPrev;
@@ -138,14 +185,21 @@ void SmallEKF::predictStates()
 
     // sum delta velocities to get velocity
     state.velocity += delVelNav;
+
+    state.delAngBias.x = constrain_float(state.delAngBias.x, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
+    state.delAngBias.y = constrain_float(state.delAngBias.y, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
+    state.delAngBias.z = constrain_float(state.delAngBias.z, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
 }
 
 // covariance prediction using optimised algebraic toolbox expressions
 // equivalent to P = F*P*transpose(P) + G*imu_errors*transpose(G) +
 // gyro_bias_state_noise
-void SmallEKF::predictCovariance()
+void SoloGimbalEKF::predictCovariance()
 {
-    float delAngBiasVariance = sq(dtIMU*dtIMU*5E-4f);
+    float delAngBiasVariance = sq(dtIMU*5E-6f);
+    if (YawAligned && !hal.util->get_soft_armed()) {
+        delAngBiasVariance *= 4.0f;
+    }
 
     float daxNoise = sq(dtIMU*0.0087f);
     float dayNoise = sq(dtIMU*0.0087f);
@@ -540,9 +594,13 @@ void SmallEKF::predictCovariance()
 
 }
 
-// Fuse the SmallEKF velocity estimates - this enables alevel reference to be maintained during constant turns
-void SmallEKF::fuseVelocity(bool yawInit)
+// Fuse the SoloGimbalEKF velocity estimates - this enables alevel reference to be maintained during constant turns
+void SoloGimbalEKF::fuseVelocity()
 {
+    if (!_ahrs.have_inertial_nav()) {
+        return;
+    }
+
     float R_OBS = 0.25f;
     float innovation[3];
     float varInnov[3];
@@ -553,11 +611,18 @@ void SmallEKF::fuseVelocity(bool yawInit)
     for (uint8_t obsIndex=0;obsIndex<=2;obsIndex++) {
         stateIndex = 3 + obsIndex;
 
-        // Calculate the velocity measurement innovation using the SmallEKF estimate as the observation
+        // Calculate the velocity measurement innovation using the SoloGimbalEKF estimate as the observation
         // if heading isn't aligned, use zero velocity (static assumption)
-        if (yawInit) {
-            Vector3f measVelNED;
-            _main_ekf.getVelNED(measVelNED);
+        if (YawAligned) {
+            Vector3f measVelNED = Vector3f(0,0,0);
+            nav_filter_status main_ekf_status;
+
+            if (_ahrs.get_filter_status(main_ekf_status)) {
+                if (main_ekf_status.flags.horiz_vel) {
+                    _ahrs.get_velocity_NED(measVelNED);
+                }
+            }
+
             innovation[obsIndex] = state.velocity[obsIndex] - measVelNED[obsIndex];
         } else {
             innovation[obsIndex] = state.velocity[obsIndex];
@@ -599,10 +664,10 @@ void SmallEKF::fuseVelocity(bool yawInit)
 }
 
 // check for new magnetometer data and update store measurements if available
-void SmallEKF::readMagData()
+void SoloGimbalEKF::readMagData()
 {
-    if (_ahrs.get_compass() && 
-        _ahrs.get_compass()->use_for_yaw() && 
+    if (_ahrs.get_compass() &&
+        _ahrs.get_compass()->use_for_yaw() &&
         _ahrs.get_compass()->last_update_usec() != lastMagUpdate) {
         // store time of last measurement update
         lastMagUpdate = _ahrs.get_compass()->last_update_usec();
@@ -619,7 +684,7 @@ void SmallEKF::readMagData()
 }
 
 // Fuse compass measurements from autopilot
-void SmallEKF::fuseCompass()
+void SoloGimbalEKF::fuseCompass()
 {
     float q0 = state.quat[0];
     float q1 = state.quat[1];
@@ -766,11 +831,10 @@ void SmallEKF::fuseCompass()
 }
 
 // Perform an initial heading alignment using the magnetic field and assumed declination
-void SmallEKF::alignHeading()
+void SoloGimbalEKF::alignHeading()
 {
     // calculate the correction rotation vector in NED frame
-    Vector3f deltaRotNED;
-    deltaRotNED.z = -calcMagHeadingInnov();
+    Vector3f deltaRotNED = Vector3f(0,0,-calcMagHeadingInnov());
 
     // rotate into sensor frame
     Vector3f angleCorrection = Tsn.transposed()*deltaRotNED;
@@ -785,7 +849,7 @@ void SmallEKF::alignHeading()
 
 
 // Calculate magnetic heading innovation
-float SmallEKF::calcMagHeadingInnov()
+float SoloGimbalEKF::calcMagHeadingInnov()
 {
     // Define rotation from magnetometer to sensor using a 312 rotation sequence
     Matrix3f Tms;
@@ -800,17 +864,18 @@ float SmallEKF::calcMagHeadingInnov()
     Tms[2][2] = cosTheta*cosPhi;
 
     // get earth magnetic field estimate from main ekf if available to take advantage of main ekf magnetic field learning
-    Vector3f body_magfield, earth_magfield;
+    Vector3f earth_magfield = Vector3f(0,0,0);
+    _ahrs.get_mag_field_NED(earth_magfield);
+
     float declination;
-    if (_main_ekf.healthy()) {
-        _main_ekf.getMagNED(earth_magfield);
-        _main_ekf.getMagXYZ(body_magfield);
+    if (!earth_magfield.is_zero()) {
         declination = atan2f(earth_magfield.y,earth_magfield.x);
     } else {
-        body_magfield.zero();
-        earth_magfield.zero();
         declination = _ahrs.get_compass()->get_declination();
     }
+
+    Vector3f body_magfield = Vector3f(0,0,0);
+    _ahrs.get_mag_field_correction(body_magfield);
 
     // Define rotation from magnetometer to NED axes
     Matrix3f Tmn = Tsn*Tms;
@@ -822,17 +887,27 @@ float SmallEKF::calcMagHeadingInnov()
     float innovation = atan2f(magMeasNED.y,magMeasNED.x) - declination;
 
     // wrap the innovation so it sits on the range from +-pi
-    if (innovation > 3.1415927f) {
-        innovation = innovation - 6.2831853f;
-    } else if (innovation < -3.1415927f) {
-        innovation = innovation + 6.2831853f;
+    if (innovation > M_PI_F) {
+        innovation = innovation - 2*M_PI_F;
+    } else if (innovation < -M_PI_F) {
+        innovation = innovation + 2*M_PI_F;
     }
 
-    return innovation;
+    // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
+    if (innovation - lastInnovation > M_PI_F) {
+        // Angle has wrapped in the positive direction to subtract an additional 2*Pi
+        innovationIncrement -= 2*M_PI_F;
+    } else if (innovation -innovationIncrement < -M_PI_F) {
+        // Angle has wrapped in the negative direction so add an additional 2*Pi
+        innovationIncrement += 2*M_PI_F;
+    }
+    lastInnovation = innovation;
+
+    return innovation + innovationIncrement;
 }
 
 // Force symmmetry and non-negative diagonals on state covarinace matrix
-void SmallEKF::fixCovariance()
+void SoloGimbalEKF::fixCovariance()
 {
     // force symmetry
     for (uint8_t rowIndex=1; rowIndex<=8; rowIndex++) {
@@ -851,7 +926,7 @@ void SmallEKF::fixCovariance()
 }
 
 // return data for debugging EKF
-void SmallEKF::getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector3f &gyroBias) const
+void SoloGimbalEKF::getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector3f &gyroBias) const
 {
     tilt = TiltCorrection;
     velocity = state.velocity;
@@ -864,7 +939,7 @@ void SmallEKF::getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector
 }
 
 // get gyro bias data
-void SmallEKF::getGyroBias(Vector3f &gyroBias) const
+void SoloGimbalEKF::getGyroBias(Vector3f &gyroBias) const
 {
     if (dtIMU < 1.0e-6f) {
         gyroBias.zero();
@@ -873,17 +948,26 @@ void SmallEKF::getGyroBias(Vector3f &gyroBias) const
     }
 }
 
+void SoloGimbalEKF::setGyroBias(const Vector3f &gyroBias)
+{
+    if (dtIMU < 1.0e-6f) {
+        return;
+    }
+    state.delAngBias = gyroBias * dtIMU;
+}
+
+
 // get quaternion data
-void SmallEKF::getQuat(Quaternion &quat) const
+void SoloGimbalEKF::getQuat(Quaternion &quat) const
 {
     quat = state.quat;
 }
 
 // get filter status - true is aligned
-bool SmallEKF::getStatus() const
+bool SoloGimbalEKF::getStatus() const
 {
     float run_time = AP_HAL::millis() - StartTime_ms;
-    return  YawAligned && (run_time > 30000);
+    return  YawAligned && (run_time > 15000);
 }
 
 #endif // HAL_CPU_CLASS

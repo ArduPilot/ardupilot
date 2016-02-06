@@ -68,7 +68,6 @@ PROJECT_ENV.CXXFLAGS += [
     '-Werror=unused-but-set-variable',
     '-Werror=uninitialized',
     '-Werror=init-self',
-    '-Wno-missing-field-initializers',
 ]
 
 PROJECT_ENV.LINKFLAGS += [

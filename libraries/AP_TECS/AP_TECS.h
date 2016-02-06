@@ -97,6 +97,11 @@ public:
         _path_proportion = constrain_float(path_proportion, 0.0f, 1.0f);
     }
 
+    // set pitch max limit in degrees
+    void set_pitch_max_limit(int8_t pitch_limit) {
+        _pitch_max_limit = pitch_limit;
+    }
+    
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -155,6 +160,9 @@ private:
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
 
+    // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
+    int8_t _pitch_max_limit = 90;
+    
     // current height estimate (above field elevation)
     float _height;
 

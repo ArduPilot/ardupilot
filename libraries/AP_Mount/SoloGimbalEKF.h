@@ -18,8 +18,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AP_SmallEKF
-#define AP_SmallEKF
+#ifndef _SOLO_GIMBAL_EKF_
+#define _SOLO_GIMBAL_EKF_
 
 #include <AP_Math/AP_Math.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -27,13 +27,13 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Param/AP_Param.h>
-#include "AP_Nav_Common.h"
+#include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include "AP_NavEKF.h"
+#include <AP_NavEKF/AP_NavEKF.h>
 
 #include <AP_Math/vectorN.h>
 
-class SmallEKF
+class SoloGimbalEKF
 {
 public:
     typedef float ftype;
@@ -78,16 +78,21 @@ public:
 #endif
 
     // Constructor
-    SmallEKF(const AP_AHRS_NavEKF &ahrs);
+    SoloGimbalEKF(const AP_AHRS_NavEKF &ahrs);
 
     // Run the EKF main loop once every time we receive sensor data
     void RunEKF(float delta_time, const Vector3f &delta_angles, const Vector3f &delta_velocity, const Vector3f &joint_angles);
+
+    void reset();
 
     // get some debug information
     void getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector3f &gyroBias) const;
 
     // get gyro bias data
     void getGyroBias(Vector3f &gyroBias) const;
+
+    // set gyro bias
+    void setGyroBias(const Vector3f &gyroBias);
 
     // get quaternion data
     void getQuat(Quaternion &quat) const;
@@ -99,7 +104,6 @@ public:
 
 private:
     const AP_AHRS_NavEKF &_ahrs;
-    const NavEKF &_main_ekf;
 
     // the states are available in two forms, either as a Vector13 or
     // broken down as individual elements. Both are equivalent (same
@@ -140,6 +144,10 @@ private:
     uint32_t imuSampleTime_ms;
     float dtIMU;
 
+    // States used for unwrapping of compass yaw error
+    float innovationIncrement;
+    float lastInnovation;
+
     // state prediction
     void predictStates();
 
@@ -147,7 +155,7 @@ private:
     void predictCovariance();
 
     // EKF velocity fusion
-    void fuseVelocity(bool yawInit);
+    void fuseVelocity();
     
     // read magnetometer data
     void readMagData();
@@ -165,4 +173,4 @@ private:
     void fixCovariance();
 };
 
-#endif // AP_SmallEKF
+#endif // _SOLO_GIMBAL_EKF_

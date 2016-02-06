@@ -161,17 +161,21 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         thrust += motor_speed[i] * thrust_scale; // newtons
     }
 
-    // rotational air resistance
-    const Vector3f &gyro = aircraft.get_gyro();
-    rot_accel.x -= gyro.x * radians(400.0) / terminal_rotation_rate;
-    rot_accel.y -= gyro.y * radians(400.0) / terminal_rotation_rate;
-    rot_accel.z -= gyro.z * radians(400.0) / terminal_rotation_rate;
-
-    // air resistance
-    Vector3f air_resistance = -aircraft.get_velocity_ef() * (GRAVITY_MSS/terminal_velocity);
-
     body_accel = Vector3f(0, 0, -thrust / mass);
-    body_accel += aircraft.get_dcm().transposed() * air_resistance;    
+
+    if (terminal_rotation_rate > 0) {
+        // rotational air resistance
+        const Vector3f &gyro = aircraft.get_gyro();
+        rot_accel.x -= gyro.x * radians(400.0) / terminal_rotation_rate;
+        rot_accel.y -= gyro.y * radians(400.0) / terminal_rotation_rate;
+        rot_accel.z -= gyro.z * radians(400.0) / terminal_rotation_rate;
+    }
+
+    if (terminal_velocity > 0) {
+        // air resistance
+        Vector3f air_resistance = -aircraft.get_velocity_ef() * (GRAVITY_MSS/terminal_velocity);
+        body_accel += aircraft.get_dcm().transposed() * air_resistance;
+    }
 
     // add some noise
     const float gyro_noise = radians(0.1);

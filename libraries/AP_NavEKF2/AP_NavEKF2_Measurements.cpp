@@ -251,7 +251,7 @@ void NavEKF2_core::readIMUData()
     } else {
         readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng);
     }
-    imuDataNew.delAngDT = MAX(ins.get_delta_time(),1.0e-4f);
+    imuDataNew.delAngDT = MAX(ins.get_delta_angle_dt(imu_index),1.0e-4f);
 
     // Get current time stamp
     imuDataNew.time_ms = imuSampleTime_ms;

@@ -35,7 +35,7 @@ public:
 class AP_SerialBus_SPI : public AP_SerialBus
 {
 public:
-    AP_SerialBus_SPI(enum AP_HAL::SPIDevice device, enum AP_HAL::SPIDeviceDriver::bus_speed speed);
+    AP_SerialBus_SPI(enum AP_HAL::SPIDeviceType device, enum AP_HAL::SPIDeviceDriver::bus_speed speed);
     void init();
     uint16_t read_16bits(uint8_t reg);
     uint32_t read_24bits(uint8_t reg);
@@ -46,7 +46,7 @@ public:
     void sem_give();
 
 private:
-    enum AP_HAL::SPIDevice _device;
+    enum AP_HAL::SPIDeviceType _device;
     enum AP_HAL::SPIDeviceDriver::bus_speed _speed;
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;
@@ -94,12 +94,13 @@ protected:
     volatile uint32_t        _s_D1, _s_D2;
     uint8_t                  _state;
     uint32_t                 _last_timer;
+    bool                     _timesliced;
 
     bool _use_timer;
 
     // Internal calibration registers
     uint16_t                 _c1,_c2,_c3,_c4,_c5,_c6;
-    float                    _D1,_D2;
+    float                    _D1, _D2;
     uint8_t _instance;
 };
 

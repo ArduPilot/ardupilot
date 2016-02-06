@@ -600,13 +600,18 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Plane::verify_loiter_unlim()
 {
-    update_loiter();
+    if (g.rtl_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
+    update_loiter(abs(g.rtl_radius));
     return false;
 }
 
 bool Plane::verify_loiter_time()
 {
-    update_loiter();
+    update_loiter(0);
     if (loiter.start_time_ms == 0) {
         if (nav_controller->reached_loiter_target()) {
             // we've reached the target, start the timer
@@ -621,7 +626,7 @@ bool Plane::verify_loiter_time()
 
 bool Plane::verify_loiter_turns()
 {
-    update_loiter();
+    update_loiter(0);
     if (loiter.sum_cd > loiter.total_cd) {
         loiter.total_cd = 0;
         gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
@@ -638,7 +643,7 @@ bool Plane::verify_loiter_turns()
  */
 bool Plane::verify_loiter_to_alt() 
 {
-    update_loiter();
+    update_loiter(0);
 
     //has target altitude been reached?
     if (condition_value != 0) {
@@ -705,7 +710,12 @@ bool Plane::verify_loiter_to_alt()
 
 bool Plane::verify_RTL()
 {
-    update_loiter();
+    if (g.rtl_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
+    update_loiter(abs(g.rtl_radius));
 	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
         nav_controller->reached_loiter_target()) {
 			gcs_send_text(MAV_SEVERITY_INFO,"Reached HOME");
@@ -913,13 +923,14 @@ void Plane::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 void Plane::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
 #if CAMERA == ENABLED
-    camera.control(cmd.content.digicam_control.session,
-                   cmd.content.digicam_control.zoom_pos,
-                   cmd.content.digicam_control.zoom_step,
-                   cmd.content.digicam_control.focus_lock,
-                   cmd.content.digicam_control.shooting_cmd,
-                   cmd.content.digicam_control.cmd_id);
-    log_picture();
+    if (camera.control(cmd.content.digicam_control.session,
+                       cmd.content.digicam_control.zoom_pos,
+                       cmd.content.digicam_control.zoom_step,
+                       cmd.content.digicam_control.focus_lock,
+                       cmd.content.digicam_control.shooting_cmd,
+                       cmd.content.digicam_control.cmd_id)) {
+        log_picture();
+    }
 #endif
 }
 
@@ -957,9 +968,15 @@ void Plane::do_parachute(const AP_Mission::Mission_Command& cmd)
 void Plane::log_picture()
 {
 #if CAMERA == ENABLED
-    gcs_send_message(MSG_CAMERA_FEEDBACK);
-    if (should_log(MASK_LOG_CAMERA)) {
-        DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+    if (!camera.using_feedback_pin()) {
+        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        if (should_log(MASK_LOG_CAMERA)) {
+            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+        }
+    } else {
+        if (should_log(MASK_LOG_CAMERA)) {
+            DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
+        }      
     }
 #endif
 }

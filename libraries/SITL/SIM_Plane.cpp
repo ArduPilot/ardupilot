@@ -38,64 +38,151 @@ Plane::Plane(const char *home_str, const char *frame_str) :
 }
 
 /*
-  calculate lift in neutons
+  the following functions are from last_letter
+  https://github.com/Georacer/last_letter/blob/master/last_letter/src/aerodynamicsLib.cpp
+  many thanks to Georacer!
  */
-float Plane::calculate_lift(void) const
+float Plane::liftCoeff(float alpha) const
 {
-    // simple lift equation from http://wright.nasa.gov/airplane/lifteq.html
-    const float max_angle = radians(30);
-    const float max_angle_delta = radians(10);
-    const float clift_at_max = coefficient.lift * 2 * M_PI_F * max_angle;
-    float Cl = coefficient.lift * 2 * M_PI_F * angle_of_attack;
-    if (fabsf(angle_of_attack) > max_angle+max_angle_delta) {
-        return 0;
-    }
-    if (angle_of_attack > max_angle) {
-        Cl = clift_at_max * (1-(angle_of_attack - max_angle)/max_angle_delta);
-    } else if (angle_of_attack < -max_angle) {
-        Cl = -clift_at_max * (1+(angle_of_attack - max_angle)/max_angle_delta);
-    }
-    float lift = 0.5 * Cl * air_density * sq(airspeed) * wing_area;
-    return lift;
-}
-
-
-/*
-  calculate induced drag in neutons
- */
-float Plane::calculate_drag_induced(void) const
-{
-    float lift = calculate_lift();
+    const float alpha0 = coefficient.alpha_stall;
+    const float M = coefficient.mcoeff;
+    const float c_lift_0 = coefficient.c_lift_0;
+    const float c_lift_a0 = coefficient.c_lift_a;
     
-    // simple induced drag from https://en.wikipedia.org/wiki/Lift-induced_drag
-    if (airspeed < 0.1) {
-        return 0;
-    }
-    float drag_i = coefficient.lift_drag * sq(lift) / (0.25 * sq(air_density) * sq(airspeed) * wing_area * M_PI_F * wing_efficiency * aspect_ratio);
-    return drag_i;
+	double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
+	double linear = (1.0-sigmoid) * (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
+	double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
+
+	float result  = linear+flatPlate;
+	return result;
 }
 
-/*
-  calculate form drag in neutons
- */
-float Plane::calculate_drag_form(void) const
+float Plane::dragCoeff(float alpha) const
 {
-    // simple form drag
-    float drag_f = 0.5 * air_density * sq(airspeed) * coefficient.drag;
-    return drag_f;
+    const float b = coefficient.b;
+    const float s = coefficient.s;
+    const float c_drag_p = coefficient.c_drag_p;
+    const float c_lift_0 = coefficient.c_lift_0;
+    const float c_lift_a0 = coefficient.c_lift_a;
+    const float oswald = coefficient.oswald;
+    
+	double AR = pow(b,2)/s;
+	double c_drag_a = c_drag_p + pow(c_lift_0+c_lift_a0*alpha,2)/(M_PI*oswald*AR);
+
+	return c_drag_a;
 }
 
-/*
-  calculate lift+drag in neutons in body frame
- */
-Vector3f Plane::calculate_lift_drag(void) const
+// Torque calculation function
+Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRudder, const Vector3f &force) const
 {
-    if (velocity_ef.is_zero()) {
-        return Vector3f(0,0,0);
-    }
-    float lift = calculate_lift();
-    float drag = calculate_drag_induced() + calculate_drag_form();
-    return velocity_bf.normalized()*(-drag) + Vector3f(0, 0, -lift);
+    const float alpha = angle_of_attack;
+    const float s = coefficient.s;
+    const float c = coefficient.c;
+    const float b = coefficient.b;
+    const float c_l_0 = coefficient.c_l_0;
+    const float c_l_b = coefficient.c_l_b;
+    const float c_l_p = coefficient.c_l_p;
+    const float c_l_r = coefficient.c_l_r;
+    const float c_l_deltaa = coefficient.c_l_deltaa;
+    const float c_l_deltar = coefficient.c_l_deltar;
+    const float c_m_0 = coefficient.c_m_0;
+    const float c_m_a = coefficient.c_m_a;
+    const float c_m_q = coefficient.c_m_q;
+    const float c_m_deltae = coefficient.c_m_deltae;
+    const float c_n_0 = coefficient.c_n_0;
+    const float c_n_b = coefficient.c_n_b;
+    const float c_n_p = coefficient.c_n_p;
+    const float c_n_r = coefficient.c_n_r;
+    const float c_n_deltaa = coefficient.c_n_deltaa;
+    const float c_n_deltar = coefficient.c_n_deltar;
+    const Vector3f &CGOffset = coefficient.CGOffset;
+    
+    float rho = air_density;
+
+	//read angular rates
+	double p = gyro.x;
+	double q = gyro.y;
+	double r = gyro.z;
+
+	//calculate aerodynamic torque
+	double qbar = 1.0/2.0*rho*pow(airspeed,2)*s; //Calculate dynamic pressure
+	double la, na, ma;
+	if (is_zero(airspeed))
+	{
+		la = 0;
+		ma = 0;
+		na = 0;
+	}
+	else
+	{
+		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*airspeed) + c_l_r*b*r/(2*airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
+		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*airspeed) + c_m_deltae*inputElevator);
+		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*airspeed) + c_n_r*b*r/(2*airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
+	}
+
+
+	// Add torque to to force misalignment with CG
+	// r x F, where r is the distance from CoG to CoL
+	la +=  CGOffset.y * force.z - CGOffset.z * force.y;
+	ma += -CGOffset.x * force.z + CGOffset.z * force.x;
+	na += -CGOffset.y * force.x + CGOffset.x * force.y;
+
+	return Vector3f(la, ma, na);
+}
+
+// Force calculation function from last_letter
+Vector3f Plane::getForce(float inputAileron, float inputElevator, float inputRudder) const
+{
+    const float alpha = angle_of_attack;
+    const float c_drag_q = coefficient.c_drag_q;
+    const float c_lift_q = coefficient.c_lift_q;
+    const float s = coefficient.s;
+    const float c = coefficient.c;
+    const float b = coefficient.b;
+    const float c_drag_deltae = coefficient.c_drag_deltae;
+    const float c_lift_deltae = coefficient.c_lift_deltae;
+    const float c_y_0 = coefficient.c_y_0;
+    const float c_y_b = coefficient.c_y_b;
+    const float c_y_p = coefficient.c_y_p;
+    const float c_y_r = coefficient.c_y_r;
+    const float c_y_deltaa = coefficient.c_y_deltaa;
+    const float c_y_deltar = coefficient.c_y_deltar;
+    
+    float rho = air_density;
+
+	//request lift and drag alpha-coefficients from the corresponding functions
+	double c_lift_a = liftCoeff(alpha);
+	double c_drag_a = dragCoeff(alpha);
+
+	//convert coefficients to the body frame
+	double c_x_a = -c_drag_a*cos(alpha)+c_lift_a*sin(alpha);
+	double c_x_q = -c_drag_q*cos(alpha)+c_lift_q*sin(alpha);
+	double c_z_a = -c_drag_a*sin(alpha)-c_lift_a*cos(alpha);
+	double c_z_q = -c_drag_q*sin(alpha)-c_lift_q*cos(alpha);
+
+	//read angular rates
+	double p = gyro.x;
+	double q = gyro.y;
+	double r = gyro.z;
+
+	//calculate aerodynamic force
+	double qbar = 1.0/2.0*rho*pow(airspeed,2)*s; //Calculate dynamic pressure
+	double ax, ay, az;
+	if (is_zero(airspeed))
+	{
+		ax = 0;
+		ay = 0;
+		az = 0;
+	}
+	else
+	{
+		ax = qbar*(c_x_a + c_x_q*c*q/(2*airspeed) - c_drag_deltae*cos(alpha)*fabs(inputElevator) + c_lift_deltae*sin(alpha)*inputElevator);
+		// split c_x_deltae to include "abs" term
+		ay = qbar*(c_y_0 + c_y_b*beta + c_y_p*b*p/(2*airspeed) + c_y_r*b*r/(2*airspeed) + c_y_deltaa*inputAileron + c_y_deltar*inputRudder);
+		az = qbar*(c_z_a + c_z_q*c*q/(2*airspeed) - c_drag_deltae*sin(alpha)*fabs(inputElevator) - c_lift_deltae*cos(alpha)*inputElevator);
+		// split c_z_deltae to include "abs" term
+	}
+    return Vector3f(ax, ay, az);
 }
 
 void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
@@ -104,45 +191,24 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float elevator = (input.servos[1]-1500)/500.0f;
     float rudder   = (input.servos[3]-1500)/500.0f;
     float throttle = constrain_float((input.servos[2]-1000)/1000.0f, 0, 1);
-    float speed_scaling = airspeed / cruise_airspeed;
     
     float thrust     = throttle;
-    float roll_rate  = aileron * speed_scaling;
-    float pitch_rate = elevator * speed_scaling;
-    float yaw_rate   = rudder * speed_scaling;
-
-    // rotational acceleration, in rad/s/s, in body frame
-    rot_accel.x = roll_rate  * max_rates.x;
-    rot_accel.y = pitch_rate * max_rates.y;
-    rot_accel.z = yaw_rate   * max_rates.z;
-
-    // rotational air resistance
-    rot_accel.x -= gyro.x * radians(800.0) / terminal_rotation_rate.x;
-    rot_accel.y -= gyro.y * radians(800.0) / terminal_rotation_rate.y;
-    rot_accel.z -= gyro.z * radians(1200.0)  / terminal_rotation_rate.z;
-
-    // add torque of stabilisers
-    rot_accel.z += velocity_bf.y * speed_scaling * coefficient.vertical_stabiliser;
-    rot_accel.y -= velocity_bf.z * speed_scaling * coefficient.horizontal_stabiliser;
 
     // calculate angle of attack
     angle_of_attack = atan2f(velocity_bf.z, velocity_bf.x);
     beta = atan2f(velocity_bf.y,velocity_bf.x);
     
-    // add dihedral
-    rot_accel.x -= beta * airspeed * coefficient.dihedral;
-    
+    Vector3f force = getForce(aileron, elevator, rudder);
+    rot_accel = getTorque(aileron, elevator, rudder, force);
+
     // velocity in body frame
     velocity_bf = dcm.transposed() * velocity_ef;
-
-    // get lift and drag in body frame, in neutons
-    Vector3f lift_drag = calculate_lift_drag();
     
     // scale thrust to newtons
     thrust *= thrust_scale;
 
     accel_body = Vector3f(thrust/mass, 0, 0);
-    accel_body += lift_drag/mass;
+    accel_body += force;
 
     // add some noise
     add_noise(thrust / thrust_scale);

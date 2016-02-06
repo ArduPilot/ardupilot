@@ -557,6 +557,8 @@ void AP_InertialSensor_MPU6000::start()
     _product_id = _register_read(MPUREG_PRODUCT_ID);
     //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
 
+    // TODO: should be changed to 16G once we have a way to override the
+    // previous offsets
     if ((_product_id == MPU6000ES_REV_C4) ||
         (_product_id == MPU6000ES_REV_C5) ||
         (_product_id == MPU6000_REV_C4)   ||
@@ -879,7 +881,7 @@ int AP_MPU6000_AuxiliaryBusSlave::_set_passthrough(uint8_t reg, uint8_t size,
 }
 
 int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
-                                                  uint8_t size)
+                                                   uint8_t size)
 {
     assert(buf);
 
@@ -889,8 +891,9 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
     }
 
     int r = _set_passthrough(reg, size);
-    if (r < 0)
+    if (r < 0) {
         return r;
+    }
 
     /* wait the value to be read from the slave and read it back */
     hal.scheduler->delay(10);
@@ -912,8 +915,9 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
     }
 
     int r = _set_passthrough(reg, 1, &val);
-    if (r < 0)
+    if (r < 0) {
         return r;
+    }
 
     /* wait the value to be written to the slave */
     hal.scheduler->delay(10);
@@ -954,8 +958,9 @@ AP_HAL::Semaphore *AP_MPU6000_AuxiliaryBus::get_semaphore()
 AuxiliaryBusSlave *AP_MPU6000_AuxiliaryBus::_instantiate_slave(uint8_t addr, uint8_t instance)
 {
     /* Enable slaves on MPU6000 if this is the first time */
-    if (_ext_sens_data == 0)
+    if (_ext_sens_data == 0) {
         _configure_slaves();
+    }
 
     return new AP_MPU6000_AuxiliaryBusSlave(*this, addr, instance);
 }
@@ -964,8 +969,8 @@ void AP_MPU6000_AuxiliaryBus::_configure_slaves()
 {
     auto &backend = AP_InertialSensor_MPU6000::from(_ins_backend);
 
-    uint8_t user_ctrl;
-    user_ctrl = backend._register_read(MPUREG_USER_CTRL);
+    /* Enable the I2C master to slaves on the auxiliary I2C bus*/
+    uint8_t user_ctrl = backend._register_read(MPUREG_USER_CTRL);
     backend._register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
 
     /* stop condition between reads; clock at 400kHz */
@@ -985,8 +990,9 @@ void AP_MPU6000_AuxiliaryBus::_configure_slaves()
 int AP_MPU6000_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slave,
                                                      uint8_t reg, uint8_t size)
 {
-    if (_ext_sens_data + size > MAX_EXT_SENS_DATA)
+    if (_ext_sens_data + size > MAX_EXT_SENS_DATA) {
         return -1;
+    }
 
     AP_MPU6000_AuxiliaryBusSlave *mpu_slave =
         static_cast<AP_MPU6000_AuxiliaryBusSlave*>(slave);

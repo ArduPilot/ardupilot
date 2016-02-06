@@ -71,7 +71,21 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Units: Degrees
     // @Range: 0 180
     AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 0),
+ 
+    // @Param: FEEDBACK_PIN
+    // @DisplayName: Camera feedback pin
+    // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection. See also the CAM_FEEDBACK_POL option
+    // @Values: -1:Disabled, 0-8:APM FeedbackPin, 50-55:PixHawk FeedbackPin
+    // @User: Standard
+    AP_GROUPINFO("FEEDBACK_PIN",  8, AP_Camera, _feedback_pin, AP_CAMERA_FEEDBACK_DEFAULT_FEEDBACK_PIN),
 
+    // @Param: FEEDBACK_POL
+    // @DisplayName: Camera feedback pin polarity
+    // @Description: Polarity for feedback pin. If this is 1 then the feedback pin should go high on trigger. If set to 0 then it should go low
+    // @Values: 0:TriggerLow,1:TriggerHigh
+    // @User: Standard
+    AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
+    
     AP_GROUPEND
 };
 
@@ -106,6 +120,12 @@ AP_Camera::relay_pic()
 void
 AP_Camera::trigger_pic(bool send_mavlink_msg)
 {
+    if (_feedback_pin > 0 && !_timer_installed) {
+        // install a 1kHz timer to check feedback pin
+        _timer_installed = true;
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
+    }
+
     _image_index++;
     switch (_trigger_type)
     {
@@ -190,11 +210,14 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     GCS_MAVLINK::send_to_components(&msg);
 }
 
-void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
+    bool ret = false;
+    
     // take picture
     if (is_equal(shooting_cmd,1.0f)) {
         trigger_pic(false);
+        ret = true;
     }
 
     mavlink_message_t msg;
@@ -214,6 +237,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
+    return ret;
 }
 
 /*
@@ -276,4 +300,40 @@ bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
         _last_photo_time = tnow;
         return true;
     }
+}
+
+/*
+  check if feedback pin is high
+ */
+void AP_Camera::feedback_pin_timer(void)
+{
+    int8_t dpin = hal.gpio->analogPinToDigitalPin(_feedback_pin);
+    if (dpin == -1) {
+        return;
+    }
+    // ensure we are in input mode
+    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
+
+    // enable pullup
+    hal.gpio->write(dpin, 1);
+
+    uint8_t pin_state = hal.gpio->read(dpin);
+    uint8_t trigger_polarity = _feedback_polarity==0?0:1;
+    if (pin_state == trigger_polarity &&
+        _last_pin_state != trigger_polarity) {
+        _camera_triggered = true;
+    }
+    _last_pin_state = pin_state;
+}
+
+/*
+  check if camera has triggered
+ */
+bool AP_Camera::check_trigger_pin(void)
+{
+    if (_camera_triggered) {
+        _camera_triggered = false;
+        return true;
+    }
+    return false;
 }

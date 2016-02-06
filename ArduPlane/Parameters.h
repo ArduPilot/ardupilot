@@ -147,6 +147,7 @@ public:
         k_param_arming = 100,
         k_param_parachute_channel,
         k_param_crash_accel_threshold,
+        k_param_override_safety,
 
         // 105: Extra parameters
         k_param_fence_retalt = 105,
@@ -277,6 +278,7 @@ public:
         k_param_kff_throttle_to_pitch,
         k_param_scaling_speed,
         k_param_quadplane,
+        k_param_rtl_radius,
 
         //
         // 210: flight modes
@@ -383,6 +385,7 @@ public:
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 loiter_radius;
+    AP_Int16 rtl_radius;
 
 #if GEOFENCE_ENABLED == ENABLED
     AP_Int8 fence_action;
@@ -494,6 +497,7 @@ public:
     AP_Int8 flap_slewrate;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 override_channel;
+    AP_Int8 override_safety;
 #endif
     AP_Int16 gcs_pid_mask;
     AP_Int8 parachute_channel;

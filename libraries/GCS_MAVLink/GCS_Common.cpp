@@ -28,8 +28,7 @@ extern const AP_HAL::HAL& hal;
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
 
-GCS_MAVLINK::GCS_MAVLINK() :
-    waypoint_receive_timeout(5000)
+GCS_MAVLINK::GCS_MAVLINK()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -361,7 +360,7 @@ void GCS_MAVLINK::handle_mission_clear_all(AP_Mission &mission, mavlink_message_
         mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_RESULT_ACCEPTED);
     }else{
         // send nack
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, 1);
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR);
     }
 }
 
@@ -497,7 +496,7 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
-        send_text(MAV_SEVERITY_WARNING, sysid);
+        send_text(MAV_SEVERITY_INFO, sysid);
     }
 
     // Start sending parameters - next call to ::update will kick the first one out

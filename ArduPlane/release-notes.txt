@@ -1,8 +1,8 @@
-Release 3.5.0beta1, 9th January 2016
-------------------------------------
+Release 3.5.0, 30th January 2016
+--------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.5.0beta1 of APM:Plane. This is a major release with a lot of
+version 3.5.0 of APM:Plane. This is a major release with a lot of
 changes so please read the notes carefully!
 
 The biggest changes in this release are:
@@ -13,6 +13,7 @@ The biggest changes in this release are:
  - support for 4 new flight boards, the QualComm Flight, the BHAT,
    the PXFmini and the Pixracer
  - support for arming on moving platforms
+ - support for better camera trigger logging
 
 New Kalman Filter
 
@@ -69,6 +70,17 @@ startup. This makes it possible to startup and arm on a moving
 platform by setting the INS_GYR_CAL parameter to zero (to disable gyro
 calibration on boot). This should be a big help when flying off boats.
 
+Improved Camera Trigger Logging
+
+This release adds new CAM_FEEDBACK_PIN and CAM_FEEDBACK_POL
+parameters. These add support for separate CAM and TRIG log messages,
+where TRIG is logged when the camera is triggered and the CAM message
+is logged when an external pin indicates the camera has actually
+fired. This pin is typically based on the flash hotshoe of a camera
+and provides a way to log the exact time of camera triggering more
+accurately. Many thanks to Dario Andres and Jaime Machuca for their
+work on this feature.
+
 That is just a taste of all of the improvements in this release. In
 total the release includes over 1500 patches. Some of the other more
 significant changes include:
@@ -96,6 +108,9 @@ significant changes include:
 - added BRD_CAN_ENABLE parameter
 - support FlightGear visualisation in SITL
 - configurable RGB LED brightness
+- added RTL_RADIUS parameter
+- improvements to the OVERRIDE_CHAN handling, fixing a race condition
+- added OVERRIDE_SAFETY parameter
 
 Many thanks to everyone who contributed to this release! The
 development team is growing at a fast pace, with 57 people
