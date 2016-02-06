@@ -47,9 +47,6 @@ void Copter::heli_acro_run()
         }
     }   
 
-    // send RC inputs direct into motors library for use during manual passthrough for helicopter setup
-    heli_radio_passthrough();
-
     if (!motors.has_flybar()){
         // convert the input to the desired body frame rate
         get_pilot_desired_angle_rates(channel_roll->control_in, channel_pitch->control_in, channel_yaw->control_in, target_roll, target_pitch, target_yaw);

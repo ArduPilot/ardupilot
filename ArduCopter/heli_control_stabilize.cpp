@@ -46,9 +46,6 @@ void Copter::heli_stabilize_run()
         }
     }
 
-    // send RC inputs direct into motors library for use during manual passthrough for helicopter setup
-    heli_radio_passthrough();
-
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 

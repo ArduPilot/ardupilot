@@ -863,7 +863,6 @@ private:
     void update_heli_control_dynamics(void);
     void heli_update_landing_swash();
     void heli_update_rotor_speed_targets();
-    void heli_radio_passthrough();
     bool heli_acro_init(bool ignore_checks);
     void heli_acro_run();
     bool heli_stabilize_init(bool ignore_checks);
