@@ -47,7 +47,8 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF& ahrs) :
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     backend(new AP_OpticalFlow_HIL(*this)),
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     backend(new AP_OpticalFlow_Onboard(*this, ahrs)),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     backend(new AP_OpticalFlow_Linux(*this)),
