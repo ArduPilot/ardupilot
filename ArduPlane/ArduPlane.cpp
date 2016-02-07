@@ -328,8 +328,6 @@ void Plane::one_second_loop()
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
 
-    crash_detection_update();
-
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
         terrain.log_terrain_data(DataFlash);
