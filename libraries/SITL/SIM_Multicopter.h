@@ -29,13 +29,15 @@ namespace SITL {
 class Motor {
 public:
     float angle;
-    bool clockwise;
+    float yaw_factor;
     uint8_t servo;
+    uint8_t display_order;
 
-    Motor(float _angle, bool _clockwise, uint8_t _servo) :
+    Motor(uint8_t _servo, float _angle, float _yaw_factor, uint8_t _display_order) :
+        servo(_servo), // what servo output drives this motor
         angle(_angle), // angle in degrees from front
-        clockwise(_clockwise), // clockwise == true, anti-clockwise == false
-        servo(_servo) // what servo output drives this motor
+        yaw_factor(_yaw_factor), // positive is clockwise
+        display_order(_display_order) // order for clockwise display
     {}
 };
 

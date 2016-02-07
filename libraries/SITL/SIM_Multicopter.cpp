@@ -18,69 +18,70 @@
 */
 
 #include "SIM_Multicopter.h"
+#include <AP_Motors/AP_Motors.h>
 
 #include <stdio.h>
 
 using namespace SITL;
 
-static const Motor quad_plus_motors[4] =
+static const Motor quad_plus_motors[] =
 {
-    Motor(90,  false,  1),
-    Motor(270, false,  2),
-    Motor(0,   true,   3),
-    Motor(180, true,   4)
+    Motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
+    Motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
 };
 
-static const Motor quad_x_motors[4] =
+static const Motor quad_x_motors[] =
 {
-    Motor(45,  false,  1),
-    Motor(225, false,  2),
-    Motor(315, true,   3),
-    Motor(135, true,   4)
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
 };
 
-static const Motor hexa_motors[6] =
+static const Motor hexa_motors[] =
 {
-    Motor(60,   false, 1),
-    Motor(60,   true,  7),
-    Motor(180,  true,  4),
-    Motor(180,  false, 8),
-    Motor(-60,  true,  2),
-    Motor(-60,  false, 3),
+    Motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
+    Motor(AP_MOTORS_MOT_2, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_3,-120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
+    Motor(AP_MOTORS_MOT_4,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_5, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
+    Motor(AP_MOTORS_MOT_6, 120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3)
 };
 
-static const Motor hexax_motors[6] =
+static const Motor hexax_motors[] =
 {
-    Motor(30,  false,  7),
-    Motor(90,  true,   1),
-    Motor(150, false,  4),
-    Motor(210, true,   8),
-    Motor(270, false,  2),
-    Motor(330, true,   3)
+    Motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
+    Motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_3, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
+    Motor(AP_MOTORS_MOT_4, 150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
+    Motor(AP_MOTORS_MOT_5,  30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_6,-150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4)
 };
 
-static const Motor octa_motors[8] =
+static const Motor octa_motors[] =
 {
-    Motor(0,    true,  1),
-    Motor(180,  true,  2),
-    Motor(45,   false, 3),
-    Motor(135,  false, 4),
-    Motor(-45,  false, 5),
-    Motor(-135, false, 6),
-    Motor(270,  true,  7),
-    Motor(90,   true,  8)
+    Motor(AP_MOTORS_MOT_1,    0,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
+    Motor(AP_MOTORS_MOT_2,  180,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
+    Motor(AP_MOTORS_MOT_3,   45,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_4,  135,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_5,  -45,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8),
+    Motor(AP_MOTORS_MOT_6, -135,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
+    Motor(AP_MOTORS_MOT_7,  -90,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_8,   90,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3)
 };
 
-static const Motor octa_quad_motors[8] =
+static const Motor octa_quad_motors[] =
 {
-    Motor(  45, false, 1),
-    Motor( -45, true,  2),
-    Motor(-135, false, 3),
-    Motor( 135, true,  4),
-    Motor( -45, false, 5),
-    Motor(  45, true,  6),
-    Motor( 135, false, 7),
-    Motor(-135, true,  8)
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_5,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8),
+    Motor(AP_MOTORS_MOT_6,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
+    Motor(AP_MOTORS_MOT_7,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6)
 };
 
 /*
@@ -144,30 +145,15 @@ void Frame::calculate_forces(const Aircraft &aircraft,
                              Vector3f &rot_accel,
                              Vector3f &body_accel)
 {
-    float motor_speed[num_motors];
-
-    for (uint8_t i=0; i<num_motors; i++) {
-        uint16_t servo = input.servos[motor_offset+motors[i].servo-1];
-        // assume 1000 to 2000 PWM range
-        if (servo <= 1000) {
-            motor_speed[i] = 0;
-        } else {
-            motor_speed[i] = (servo-1000) / 1000.0f;
-        }
-    }
-
     // rotational acceleration, in rad/s/s, in body frame
     float thrust = 0.0f; // newtons
 
     for (uint8_t i=0; i<num_motors; i++) {
-        rot_accel.x  += -radians(5000.0) * sinf(radians(motors[i].angle)) * motor_speed[i];
-        rot_accel.y  +=  radians(5000.0) * cosf(radians(motors[i].angle)) * motor_speed[i];
-        if (motors[i].clockwise) {
-            rot_accel.z -= motor_speed[i] * radians(400.0);
-        } else {
-            rot_accel.z += motor_speed[i] * radians(400.0);
-        }
-        thrust += motor_speed[i] * thrust_scale; // newtons
+        float motor_speed = constrain_float((input.servos[motor_offset+motors[i].servo]-1000)/1000.0, 0, 1);
+        rot_accel.x  += -radians(5000.0) * sinf(radians(motors[i].angle)) * motor_speed;
+        rot_accel.y  +=  radians(5000.0) * cosf(radians(motors[i].angle)) * motor_speed;
+        rot_accel.z += motors[i].yaw_factor * motor_speed * radians(400.0);
+        thrust += motor_speed * thrust_scale; // newtons
     }
 
     body_accel = Vector3f(0, 0, -thrust / mass);
