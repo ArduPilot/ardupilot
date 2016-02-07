@@ -155,6 +155,8 @@ void Plane::update_is_flying_5Hz(void)
     }
     previous_is_flying = new_is_flying;
 
+    crash_detection_update();
+
     if (should_log(MASK_LOG_MODE)) {
         Log_Write_Status();
     }
