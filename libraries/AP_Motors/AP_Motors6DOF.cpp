@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
 	// @Description: Used to decouple pitch from forward/vertical motion
 	// @Values: 0: min (no effect), 1: normal, 1.5: maximum
 	// @User: Standard
-	AP_GROUPINFO("FWDVERT_CPL_K", 8, AP_Motors6DOF, _forwardVerticalCouplingFactor, 1.0),
+	AP_GROUPINFO("FV_CPLNG_K", 8, AP_Motors6DOF, _forwardVerticalCouplingFactor, 1.0),
 
     AP_GROUPEND
 };

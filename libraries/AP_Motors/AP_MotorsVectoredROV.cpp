@@ -153,18 +153,18 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
         }
     }
 
-    int16_t forward_coupling_limit = _forwardVerticalCouplingFactor*(400-fabs(throttle_radio_output));
+    int16_t forward_coupling_limit = 400-_forwardVerticalCouplingFactor*fabs(throttle_radio_output);
     if ( forward_coupling_limit < 0 ) {
     	forward_coupling_limit = 0;
     }
-    int8_t forward_coupling_direction[] = {-1,0,1,1,0,-1};
+    int8_t forward_coupling_direction[] = {-1,0,1,1,0,-1,0,0};
 
     // calculate linear command for each motor
     // linear factors should be 0.0 or 1.0 for now
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
 
-        	float forward_pwm_limited;
+        	float forward_pwm_limited = forward_pwm;
 
         	// The following statements decouple forward/vertical hydrodynamic coupling on
         	// vectored ROVs. This is done by limiting the maximum output of the "rear" vectored
