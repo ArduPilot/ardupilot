@@ -35,7 +35,7 @@ DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKE
 DEFINES        +=   $(EXTRAFLAGS)
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-psabi
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2 
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-unused-parameter
 WARNFLAGSCXX    =   -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
 
@@ -72,14 +72,6 @@ LDFLAGS         =   $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS) -mcpu=cortex-m3 -mthumb
            -Xlinker --gc-sections \
            -Xassembler --march=armv7-m -Wall 
 LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) $(CPULDFLAGS)
-
-# under certain situations with certain avr-gcc versions the --relax flag causes
-# a bug. Give the user a way to disable this flag per-sketch.
-# I know this is a rotten hack but we're really close to sunset on AVR.
-EXCLUDE_RELAX := $(wildcard $(SRCROOT)/norelax.inoflag)
-ifeq ($(EXCLUDE_RELAX),)
-#  LDFLAGS      +=   -Wl,--relax
-endif
 
 LIBS = -lm
 

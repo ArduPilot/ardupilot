@@ -10,3 +10,4 @@ bootloaders using:
 from a nsh prompt. Users can get a nsh prompt either via the CLI in
 test -> shell, or by booting with no SD card installed
 
+to use NSH to do this, please see the Wiki http://dev.ardupilot.com/wiki/interfacing-with-pixhawk-using-the-nsh

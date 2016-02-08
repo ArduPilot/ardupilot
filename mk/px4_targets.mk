@@ -43,10 +43,12 @@ EXTRAFLAGS += -DUAVCAN=1
 # we have different config files for V1 and V2
 PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
 PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
+PX4_V4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v4_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
 WARNFLAGS = -Werror -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
+OPTFLAGS = -fsingle-precision-constant
 
 # avoid PX4 submodules
 export GIT_SUBMODULES_ARE_EVIL = 1
@@ -54,8 +56,8 @@ export GIT_SUBMODULES_ARE_EVIL = 1
 PYTHONPATH=$(SKETCHBOOK)/mk/PX4/Tools/genmsg/src:$(SKETCHBOOK)/mk/PX4/Tools/gencpp/src
 export PYTHONPATH
 
-PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
-PX4_MAKE_ARCHIVES = make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os"
+PX4_MAKE = $(v)+ GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 $(MAKE) -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile.make EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) $(OPTFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
+PX4_MAKE_ARCHIVES = $(MAKE) -C $(PX4_ROOT) -f $(PX4_ROOT)/Makefile.make NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os"
 
 HASHADDER_FLAGS += --ardupilot "$(SKETCHBOOK)"
 
@@ -75,38 +77,58 @@ module_mk:
 	$(v) echo "MODULE_COMMAND = ArduPilot" >> $(SKETCHBOOK)/module.mk.new
 	$(v) echo "SRCS = $(wildcard $(SRCROOT)/*.cpp) $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $(SKETCHBOOK)/module.mk.new
-	$(v) echo "EXTRACXXFLAGS = -Wframe-larger-than=1200" >> $(SKETCHBOOK)/module.mk.new
+	$(v) echo "EXTRACXXFLAGS = -Wframe-larger-than=1300" >> $(SKETCHBOOK)/module.mk.new
 	$(v) cmp $(SKETCHBOOK)/module.mk $(SKETCHBOOK)/module.mk.new 2>/dev/null || mv $(SKETCHBOOK)/module.mk.new $(SKETCHBOOK)/module.mk
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
-px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
+px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
 	$(RULEHDR)
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V1_CONFIG_FILE)
 	$(v) cp $(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
 	$(v) /bin/rm -f $(SKETCH)-v1.px4
+	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v1_APM.build/firmware.elf
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v1_APM.px4 $(SKETCH)-v1.px4
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v1.px4" "$(SKETCH)-v1.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
-px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
+px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
 	$(RULEHDR)
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V2_CONFIG_FILE)
 	$(v) cp $(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v2_APM
 	$(v) /bin/rm -f $(SKETCH)-v2.px4
+	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v2_APM.build/firmware.elf
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v2_APM.px4 $(SKETCH)-v2.px4
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v2.px4" "$(SKETCH)-v2.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v2.px4"
 
-px4: px4-v1 px4-v2
+px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v4.export $(SKETCHCPP) module_mk
+	$(RULEHDR)
+	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V4_CONFIG_FILE)
+	$(v) cp $(PX4_V4_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
+	$(PX4_MAKE) px4fmu-v4_APM
+	$(v) /bin/rm -f $(SKETCH)-v4.px4
+	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v4_APM.build/firmware.elf
+	$(v) cp $(PX4_ROOT)/Images/px4fmu-v4_APM.px4 $(SKETCH)-v4.px4
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4.px4" "$(SKETCH)-v4.px4"
+	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4.px4"
+
+px4: px4-v1 px4-v2 px4-v4
 
 px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
-	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
+	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build $(PX4_ROOT)/Images/*.px4 $(PX4_ROOT)/Images/*.bin
+	$(v) /bin/rm -rf $(PX4_ROOT)/src/modules/uORB/topics $(PX4_ROOT)/src/platforms/nuttx/px4_messages
 
 px4-cleandep: clean
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
+	$(v) find $(UAVCAN_DIRECTORY) -type f -name '*.d' | xargs rm -f
 	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
+
+px4-v2-upload-solo: px4-v2
+	scp $(SKETCH)-v2.px4 root@10.1.1.10:/tmp/
+	ssh root@10.1.1.10 PYTHONUNBUFFERED=1 loadPixhawk.py /tmp/ArduCopter-v2.px4
+	ssh root@10.1.1.10 rm /tmp/ArduCopter-v2.px4;
 
 px4-v1-upload: px4-v1
 	$(RULEHDR)
@@ -116,13 +138,17 @@ px4-v2-upload: px4-v2
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) px4fmu-v2_APM upload
 
+px4-v4-upload: px4-v4
+	$(RULEHDR)
+	$(v) $(PX4_MAKE) px4fmu-v4_APM upload
+
 px4-upload: px4-v1-upload
 
 px4-archives-clean:
 	$(v) /bin/rm -rf $(PX4_ROOT)/Archives
 
 px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
-	$(v) make -C $(PX4_ROOT) px4io-v1_default
+	$(v)+ $(MAKE) -C $(PX4_ROOT) -f $(PX4_ROOT)/Makefile.make px4io-v1_default
 	$(v) /bin/rm -f px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Images/px4io-v1_default.bin px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.elf px4io-v1.elf
@@ -136,7 +162,7 @@ px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 
 
 px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
-	$(v) make -C $(PX4_ROOT) px4io-v2_default
+	$(v)+ $(MAKE) -C $(PX4_ROOT) -f $(PX4_ROOT)/Makefile.make px4io-v2_default
 	$(v) /bin/rm -f px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.bin px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Images/px4io-v2_default.bin px4io-v2.bin
@@ -151,12 +177,29 @@ px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 
 px4-io: px4-io-v1 px4-io-v2
 
+# These targets can't run in parallel because they all need to generate a tool
+# to generate the config.h inside them. This could trigger races if done in
+# parallel, trying to generate the tool and replacing it while the header is already
+# being generated
+#
+# We could serialize inside PX4Firmware, but it's easier to serialize here
+# while maintaining the rest of the build parallelized
+
+.NOTPARALLEL: \
+	$(PX4_ROOT)/Archives/px4fmu-v1.export \
+	$(PX4_ROOT)/Archives/px4fmu-v2.export \
+	$(PX4_ROOT)/Archives/px4fmu-v4.export \
+	$(PX4_ROOT)/Archives/px4io-v1.export \
+	$(PX4_ROOT)/Archives/px4io-v2.export
 
 $(PX4_ROOT)/Archives/px4fmu-v1.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v1"
 
 $(PX4_ROOT)/Archives/px4fmu-v2.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v2"
+
+$(PX4_ROOT)/Archives/px4fmu-v4.export:
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v4"
 
 $(PX4_ROOT)/Archives/px4io-v1.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v1"
@@ -165,4 +208,4 @@ $(PX4_ROOT)/Archives/px4io-v2.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v2"
 
 px4-archives:
-	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v1 px4io-v2 px4fmu-v1 px4fmu-v2"
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v1 px4io-v2 px4fmu-v1 px4fmu-v2 px4fmu-v4"

@@ -2,7 +2,7 @@
 # Sketch
 #
 
-SRCSUFFIXES = *.cpp *.c *.S
+SRCSUFFIXES = *.cpp
 
 MAKE_INC=$(wildcard $(SRCROOT)/make.inc)
 ifeq (,$(MAKE_INC))
@@ -21,6 +21,53 @@ SKETCHOBJS := $(addsuffix .o,$(basename $(SKETCHOBJS)))
 include $(MAKE_INC)
 LIBTOKENS := $(LIBRARIES)
 
+
+# HAL and board specific libraries are included here.
+LIBTOKENS += \
+	AP_HAL \
+	AP_HAL_Empty
+
+ifeq ($(HAL_BOARD),HAL_BOARD_APM1)
+LIBTOKENS += \
+	AP_HAL_APM
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_APM2)
+LIBTOKENS += \
+	AP_HAL_APM
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_SITL)
+LIBTOKENS += \
+	AP_HAL_SITL \
+	SITL
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_LINUX)
+LIBTOKENS += \
+	AP_HAL_Linux
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_PX4)
+LIBTOKENS += \
+	AP_HAL_PX4
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_VRBRAIN)
+LIBTOKENS += \
+	AP_HAL_VRBRAIN
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_FLYMAPLE)
+LIBTOKENS += \
+	AP_HAL_FLYMAPLE
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_QURT)
+LIBTOKENS += \
+	AP_HAL_QURT
+endif
+
 #
 # Find sketchbook libraries referenced by the sketch.
 #
@@ -31,7 +78,7 @@ SKETCHLIBNAMES		:=	$(notdir $(SKETCHLIBS))
 SKETCHLIBSRCDIRS	:=	$(SKETCHLIBS) $(addsuffix /utility,$(SKETCHLIBS))
 SKETCHLIBSRCS		:=	$(wildcard $(foreach suffix,$(SRCSUFFIXES),$(addsuffix /$(suffix),$(SKETCHLIBSRCDIRS))))
 SKETCHLIBOBJS		:=	$(addsuffix .o,$(basename $(subst $(SKETCHBOOK),$(BUILDROOT),$(SKETCHLIBSRCS))))
-SKETCHLIBINCLUDES	:=	-I$(SKETCHBOOK)/libraries/
+SKETCHLIBINCLUDES	:=	-I$(SKETCHBOOK)/libraries/ -I$(BUILDROOT)/libraries/ -I$(BUILDROOT)/libraries/GCS_MAVLink/
 SKETCHLIBSRCSRELATIVE	:=	$(subst $(SKETCHBOOK)/,,$(SKETCHLIBSRCS))
 
 ifeq ($(VERBOSE),)
