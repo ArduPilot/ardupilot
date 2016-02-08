@@ -60,9 +60,9 @@ protected:
     // parameters
     AP_Int8         _yaw_reverse;                       // Reverse yaw output
     AP_Int16        _yaw_servo_trim;                    // Trim or center position of yaw servo
-    AP_Int16        _yaw_servo_min;                     // Minimum angle limit of yaw servo
-    AP_Int16        _yaw_servo_max;                     // Maximum angle limit of yaw servo
     float           _pivot_angle_max = radians(30.0f);  // Maximum angle of yaw pivot
+    AP_Int16        _yaw_servo_min;                     // Minimum pwm of yaw servo
+    AP_Int16        _yaw_servo_max;                     // Maximum pwm of yaw servo
     float           _pivot_angle;                       // Angle of yaw pivot
     float           _thrust_right;
     float           _thrust_rear;

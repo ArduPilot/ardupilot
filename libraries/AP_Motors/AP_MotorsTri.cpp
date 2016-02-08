@@ -50,8 +50,8 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     AP_GROUPINFO("YAW_SV_TRIM", 32,     AP_MotorsTri,  _yaw_servo_trim, 1500),
 
     // @Param: YAW_SV_MIN
-    // @DisplayName: Yaw Servo Min Position
-    // @Description: Minimum angle limit of yaw servo
+    // @DisplayName: Yaw Servo Min PWM
+    // @Description: Yaw servo's minimum pwm value
     // @Range: 1000 1400
     // @Units: PWM
     // @Increment: 1
@@ -59,8 +59,8 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     AP_GROUPINFO("YAW_SV_MIN", 33,     AP_MotorsTri,  _yaw_servo_min, 1250),
 
     // @Param: YAW_SV_MAX
-    // @DisplayName: Yaw Servo Max Position
-    // @Description: Maximum angle limit of yaw servo
+    // @DisplayName: Yaw Servo Max PWM
+    // @Description: Yaw servo's maximum pwm value
     // @Range: 1600 2000
     // @Units: PWM
     // @Increment: 1
