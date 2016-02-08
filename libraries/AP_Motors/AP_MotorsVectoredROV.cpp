@@ -153,8 +153,10 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
         }
     }
 
-    float forwardVerticalCouplingFactor = 1.0; // 0.0-1.5
-    int16_t forward_coupling_limit = max(forwardVerticalCouplingFactor*(400-fabs(throttle_radio_output)),0);
+    int16_t forward_coupling_limit = _forwardVerticalCouplingFactor*(400-fabs(throttle_radio_output));
+    if ( forward_coupling_limit < 0 ) {
+    	forward_coupling_limit = 0;
+    }
     int8_t forward_coupling_direction[] = {-1,0,1,1,0,-1};
 
     // calculate linear command for each motor
