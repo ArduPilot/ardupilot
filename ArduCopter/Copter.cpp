@@ -30,7 +30,7 @@ Copter::Copter(void) :
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
     control_mode(STABILIZE),
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-    motors(g.rc_7, g.heli_servo_rsc, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE),
+    motors(g.rc_7, MAIN_LOOP_RATE),
 #else
     motors(MAIN_LOOP_RATE),
 #endif

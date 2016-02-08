@@ -161,16 +161,16 @@ public:
         //
         // 80: Heli
         //
-        k_param_heli_servo_1 = 80,
-        k_param_heli_servo_2,
-        k_param_heli_servo_3,
-        k_param_heli_servo_4,
+        k_param_heli_servo_1 = 80,  // remove
+        k_param_heli_servo_2,       // remove
+        k_param_heli_servo_3,       // remove
+        k_param_heli_servo_4,       // remove
         k_param_heli_pitch_ff,      // remove
         k_param_heli_roll_ff,       // remove
         k_param_heli_yaw_ff,        // remove
         k_param_heli_stab_col_min,  // remove
         k_param_heli_stab_col_max,  // remove
-        k_param_heli_servo_rsc,     // 89 = full!
+        k_param_heli_servo_rsc,     // 89 = full! - remove
 
         //
         // 90: misc2
@@ -453,12 +453,6 @@ public:
 
     AP_Int8         throw_motor_start;
 
-#if FRAME_CONFIG ==     HELI_FRAME
-    // Heli
-    RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
-    RC_Channel      heli_servo_rsc;                                             // servo for rotor speed control output
-#endif
-
     // RC channels
     RC_Channel              rc_1;
     RC_Channel              rc_2;
@@ -514,14 +508,6 @@ public:
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters() :
-
-#if FRAME_CONFIG ==     HELI_FRAME
-        heli_servo_1        (CH_1),
-        heli_servo_2        (CH_2),
-        heli_servo_3        (CH_3),
-        heli_servo_4        (CH_4),
-        heli_servo_rsc      (CH_8),
-#endif
 
         rc_1                (CH_1),
         rc_2                (CH_2),

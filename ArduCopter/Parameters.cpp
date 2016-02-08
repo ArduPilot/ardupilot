@@ -532,24 +532,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
-    
-#if FRAME_CONFIG ==     HELI_FRAME
-    // @Group: HS1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_1,    "HS1_", RC_Channel),
-    // @Group: HS2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_2,    "HS2_", RC_Channel),
-    // @Group: HS3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_3,    "HS3_", RC_Channel),
-    // @Group: HS4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_4,    "HS4_", RC_Channel),
-    // @Group: H_RSC_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_rsc,    "H_RSC_", RC_Channel),
-#endif
 
     // RC channel
     //-----------
