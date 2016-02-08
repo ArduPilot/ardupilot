@@ -528,7 +528,9 @@ void Plane::check_long_failsafe()
     uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
+    if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS &&
+            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
+            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
             flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
         if (failsafe.state == FAILSAFE_SHORT &&
                    (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
@@ -562,8 +564,10 @@ void Plane::check_short_failsafe()
 {
     // only act on changes
     // -------------------
-    if(failsafe.state == FAILSAFE_NONE && (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH)) {
+    if(failsafe.state == FAILSAFE_NONE &&
+            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
+            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
+            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
         if(failsafe.ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
             failsafe_short_on_event(FAILSAFE_SHORT);
         }
@@ -749,9 +753,9 @@ void Plane::frsky_telemetry_send(void)
 
 
 /*
-  return throttle percentage from 0 to 100
+  return throttle percentage from 0 to 100 for normal use and -100 to 100 when using reverse thrust
  */
-uint8_t Plane::throttle_percentage(void)
+int8_t Plane::throttle_percentage(void)
 {
     if (auto_state.vtol_mode) {
         return quadplane.throttle_percentage();

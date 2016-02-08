@@ -92,6 +92,7 @@ protected:
     } coefficient;
 
     float thrust_scale;
+    bool reverse_thrust;
 
     float liftCoeff(float alpha) const;
     float dragCoeff(float alpha) const;

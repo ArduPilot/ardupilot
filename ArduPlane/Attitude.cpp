@@ -23,7 +23,7 @@ float Plane::get_speed_scaler(void)
     } else {
         if (channel_throttle->servo_out > 0) {
             speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / channel_throttle->servo_out / 2.0f);                 // First order taylor expansion of square root
-            // Should maybe be to the 2/7 power, but we aren't goint to implement that...
+            // Should maybe be to the 2/7 power, but we aren't going to implement that...
         }else{
             speed_scaler = 1.67f;
         }
@@ -96,7 +96,7 @@ void Plane::stabilize_pitch(float speed_scaler)
 {
     int8_t force_elevator = takeoff_tail_hold();
     if (force_elevator != 0) {
-        // we are holding the tail down during takeoff. Just covert
+        // we are holding the tail down during takeoff. Just convert
         // from a percentage to a -4500..4500 centidegree angle
         channel_pitch->servo_out = 45*force_elevator;
         return;
@@ -217,7 +217,9 @@ void Plane::stabilize_yaw(float speed_scaler)
         // are below the GROUND_STEER_ALT
         steering_control.ground_steering = (channel_roll->control_in == 0 && 
                                             fabsf(relative_altitude()) < g.ground_steer_alt);
-        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+        if (control_mode == AUTO &&
+                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
             // don't use ground steering on landing approach
             steering_control.ground_steering = false;
         }
@@ -760,10 +762,13 @@ void Plane::set_servos_idle(void)
 }
 
 /*
-  return minimum throttle, taking account of throttle reversal
+  return minimum throttle PWM value, taking account of throttle reversal. For reverse thrust you get the throttle off position
  */
 uint16_t Plane::throttle_min(void) const
 {
+    if (aparm.throttle_min < 0) {
+        return channel_throttle->radio_trim;
+    }
     return channel_throttle->get_reverse() ? channel_throttle->radio_max : channel_throttle->radio_min;
 };
 
@@ -890,18 +895,26 @@ void Plane::set_servos(void)
 #if THROTTLE_OUT == 0
         channel_throttle->servo_out = 0;
 #else
-        // convert 0 to 100% into PWM
-        uint8_t min_throttle = aparm.throttle_min.get();
-        uint8_t max_throttle = aparm.throttle_max.get();
-        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-            min_throttle = 0;
+        // convert 0 to 100% (or -100 to +100) into PWM
+        int8_t min_throttle = aparm.throttle_min.get();
+        int8_t max_throttle = aparm.throttle_max.get();
+
+        if (min_throttle < 0 && !allow_reverse_thrust()) {
+           // reverse thrust is available but inhibited.
+           min_throttle = 0;
         }
-        if (control_mode == AUTO &&
-            (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT)) {
-            if(aparm.takeoff_throttle_max != 0) {
-                max_throttle = aparm.takeoff_throttle_max;
-            } else {
-                max_throttle = aparm.throttle_max;
+
+        if (control_mode == AUTO) {
+            if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+                min_throttle = 0;
+            }
+
+            if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+                if(aparm.takeoff_throttle_max != 0) {
+                    max_throttle = aparm.takeoff_throttle_max;
+                } else {
+                    max_throttle = aparm.throttle_max;
+                }
             }
         }
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
@@ -987,6 +1000,7 @@ void Plane::set_servos(void)
                 }
                 break;
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+            case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
                 if (g.land_flap_percent != 0) {
                     auto_flap_percent = g.land_flap_percent;
@@ -1083,6 +1097,78 @@ void Plane::set_servos(void)
     RC_Channel_aux::output_ch_all();
 }
 
+bool Plane::allow_reverse_thrust(void)
+{
+    // check if we should allow reverse thrust
+    bool allow = false;
+
+    if (g.use_reverse_thrust == USE_REVERSE_THRUST_NEVER) {
+        return false;
+    }
+
+    switch (control_mode) {
+    case AUTO:
+        {
+        uint8_t nav_cmd = mission.get_current_nav_cmd().id;
+
+        // never allow reverse thrust during takeoff
+        if (nav_cmd == MAV_CMD_NAV_TAKEOFF) {
+            return false;
+        }
+
+        // always allow regardless of mission item
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_ALWAYS);
+
+        // landing
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LAND_APPROACH) &&
+                (nav_cmd == MAV_CMD_NAV_LAND);
+
+        // LOITER_TO_ALT
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LOITER_TO_ALT) &&
+                (nav_cmd == MAV_CMD_NAV_LOITER_TO_ALT);
+
+        // any Loiter (including LOITER_TO_ALT)
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LOITER_ALL) &&
+                    (nav_cmd == MAV_CMD_NAV_LOITER_TIME ||
+                     nav_cmd == MAV_CMD_NAV_LOITER_TO_ALT ||
+                     nav_cmd == MAV_CMD_NAV_LOITER_TURNS ||
+                     nav_cmd == MAV_CMD_NAV_LOITER_UNLIM);
+
+        // waypoints
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_WAYPOINT) &&
+                    (nav_cmd == MAV_CMD_NAV_WAYPOINT ||
+                     nav_cmd == MAV_CMD_NAV_SPLINE_WAYPOINT);
+        }
+        break;
+
+    case LOITER:
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_LOITER);
+        break;
+    case RTL:
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_RTL);
+        break;
+    case CIRCLE:
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_CIRCLE);
+        break;
+    case CRUISE:
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_CRUISE);
+        break;
+    case FLY_BY_WIRE_B:
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_FBWB);
+        break;
+    case GUIDED:
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_GUIDED);
+        break;
+    default:
+        // all other control_modes are auto_throttle_mode=false.
+        // If we are not controlling throttle, don't limit it.
+        allow = true;
+        break;
+    }
+
+    return allow;
+}
+
 void Plane::demo_servos(uint8_t i) 
 {
     while(i > 0) {
@@ -1107,7 +1193,7 @@ void Plane::demo_servos(uint8_t i)
  */
 void Plane::adjust_nav_pitch_throttle(void)
 {
-    uint8_t throttle = throttle_percentage();
+    int8_t throttle = throttle_percentage();
     if (throttle < aparm.throttle_cruise && flight_stage != AP_SpdHgtControl::FLIGHT_VTOL) {
         float p = (aparm.throttle_cruise - throttle) / (float)aparm.throttle_cruise;
         nav_pitch_cd -= g.stab_pitch_down * 100.0f * p;

@@ -405,10 +405,10 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
         // simulate simple battery setup
         float throttle = _sitl->motors_on?(input.servos[2]-1000) / 1000.0f:0;
         // lose 0.7V at full throttle
-        voltage = _sitl->batt_voltage - 0.7f*throttle;
+        voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
 
         // assume 50A at full throttle
-        _current = 50.0f * throttle;
+        _current = 50.0f * fabsf(throttle);
     } else {
         // FDM provides voltage and current
         voltage = _sitl->state.battery_voltage;
