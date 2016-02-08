@@ -45,21 +45,13 @@ class AP_MotorsHeli_Single : public AP_MotorsHeli {
 public:
     // constructor
     AP_MotorsHeli_Single(RC_Channel&    servo_aux,
-                         RC_Channel&    servo_rsc,
-                         RC_Channel&    servo_1,
-                         RC_Channel&    servo_2,
-                         RC_Channel&    servo_3,
-                         RC_Channel&    servo_4,
                          uint16_t       loop_rate,
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
         _servo_aux(servo_aux),
-        _swash_servo_1(servo_1),
-        _swash_servo_2(servo_2),
-        _swash_servo_3(servo_3),
-        _yaw_servo(servo_4),
         _main_rotor(RC_Channel_aux::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC, loop_rate),
-        _tail_rotor(RC_Channel_aux::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX, loop_rate)
+        _tail_rotor(RC_Channel_aux::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX, loop_rate),
+        _swash_servo_1(CH_1), _swash_servo_2(CH_2), _swash_servo_3(CH_3), _yaw_servo(CH_4)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -140,11 +132,6 @@ protected:
 
     // external objects we depend upon
     RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
-    RC_Channel&     _swash_servo_1;             // swash plate servo #1
-    RC_Channel&     _swash_servo_2;             // swash plate servo #2
-    RC_Channel&     _swash_servo_3;             // swash plate servo #3
-    RC_Channel&     _yaw_servo;                 // tail servo
-
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
 
@@ -168,6 +155,10 @@ protected:
     AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    RC_Channel      _swash_servo_1;             // swash plate servo #1
+    RC_Channel      _swash_servo_2;             // swash plate servo #2
+    RC_Channel      _swash_servo_3;             // swash plate servo #3
+    RC_Channel      _yaw_servo;                 // tail servo
 
     bool            _acro_tail = false;
 };
