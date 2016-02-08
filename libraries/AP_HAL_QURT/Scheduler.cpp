@@ -272,10 +272,6 @@ bool Scheduler::in_timerprocess()
     return getpid() != _main_task_pid;
 }
 
-bool Scheduler::system_initializing() {
-    return !_initialized;
-}
-
 void Scheduler::system_initialized() {
     if (_initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called"

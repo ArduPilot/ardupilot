@@ -68,9 +68,6 @@ private:
 
     void _update();
     void _dump_registers();
-    bool _sem_take_blocking();
-    bool _sem_take_nonblocking();
-    bool _sem_give();
 
     float               _magnetometer_ASA[3] {0, 0, 0};
     uint8_t             _compass_instance;
