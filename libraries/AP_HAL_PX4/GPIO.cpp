@@ -58,11 +58,13 @@ void PX4GPIO::init()
     }
 #endif
 
+#ifdef PX4IO_DEVICE_PATH
     // also try to setup for the relay pins on the IO board
     _gpio_io_fd = open(PX4IO_DEVICE_PATH, O_RDWR);
     if (_gpio_io_fd == -1) {
         hal.console->printf("GPIO: Unable to open px4io\n");
     }
+#endif
 }
 
 void PX4GPIO::pinMode(uint8_t pin, uint8_t output)

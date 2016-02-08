@@ -14,7 +14,7 @@
 // these are virtual pins that read from the ORB
 #define PX4_ANALOG_ORB_BATTERY_VOLTAGE_PIN     100
 #define PX4_ANALOG_ORB_BATTERY_CURRENT_PIN     101
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 #define PX4_ANALOG_VCC_5V_PIN                4
 #define PX4_ANALOG_ORB_SERVO_VOLTAGE_PIN       102
 #define PX4_ANALOG_ORB_SERVO_VRSSI_PIN         103
