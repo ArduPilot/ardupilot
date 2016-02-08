@@ -7,3 +7,6 @@
 [submodule "modules/uavcan"]
 	path = modules/uavcan
 	url = git://github.com/diydrones/uavcan.git
+[submodule "modules/mavlink"]
+	path = modules/mavlink
+	url = git://github.com/diydrones/mavlink
