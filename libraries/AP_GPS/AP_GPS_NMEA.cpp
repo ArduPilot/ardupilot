@@ -191,17 +191,26 @@ int16_t AP_GPS_NMEA::_from_hex(char a)
         return a - '0';
 }
 
-uint32_t AP_GPS_NMEA::_parse_decimal_100()
+int32_t AP_GPS_NMEA::_parse_decimal_100()
 {
     char *p = _term;
-    uint32_t ret = 100UL * atol(p);
+    int32_t ret = 100UL * atol(p);
+    int32_t sign = 1;
+    if (*p == '+') ++p;
+    else if (*p == '-') {
+        ++p;
+        sign = -1;
+    }
     while (isdigit(*p))
         ++p;
     if (*p == '.') {
         if (isdigit(p[1])) {
-            ret += 10 * DIGIT_TO_VAL(p[1]);
-            if (isdigit(p[2]))
-                ret += DIGIT_TO_VAL(p[2]);
+            ret += sign * 10 * DIGIT_TO_VAL(p[1]);
+            if (isdigit(p[2])) {
+                ret += sign * DIGIT_TO_VAL(p[2]);
+                if (isdigit(p[3]))
+                    ret += sign * (DIGIT_TO_VAL(p[3]) >= 5);
+            }
         }
     }
     return ret;
@@ -371,7 +380,7 @@ bool AP_GPS_NMEA::_term_complete()
             _new_satellite_count = atol(_term);
             break;
         case _GPS_SENTENCE_GPGGA + 8: // HDOP (GGA)
-            _new_hdop = _parse_decimal_100();
+            _new_hdop = (uint16_t)_parse_decimal_100();
             break;
 
         // time and date
