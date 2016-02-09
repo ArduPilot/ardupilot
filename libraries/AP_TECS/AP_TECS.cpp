@@ -299,7 +299,6 @@ void AP_TECS::_update_speed(float load_factor)
     // Convert equivalent airspeeds to true airspeeds
 
     float EAS2TAS = _ahrs.get_EAS2TAS();
-    _TAS_dem  = _EAS_dem * EAS2TAS;
     _TASmax   = aparm.airspeed_max * EAS2TAS;
     _TASmin   = aparm.airspeed_min * EAS2TAS;
 
@@ -309,21 +308,24 @@ void AP_TECS::_update_speed(float load_factor)
         _TASmin *= load_factor;
     }
 
+    float demanded_airspeed = _EAS_dem;
+    if (_ahrs.airspeed_sensor_enabled()) {
+        if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL) && _landAirspeed >= 0) {
+            demanded_airspeed = _landAirspeed;
+        } else if (_flight_stage == FLIGHT_LAND_PREFLARE) {
+            if (aparm.land_pre_flare_airspeed > 0) {
+                demanded_airspeed = aparm.land_pre_flare_airspeed;
+            } else if (_landAirspeed >= 0) {
+                demanded_airspeed = _landAirspeed;
+            }
+        }
+    }
+    _TAS_dem = demanded_airspeed * EAS2TAS;
     if (_TASmax < _TASmin) {
         _TASmax = _TASmin;
     }
-    if (_ahrs.airspeed_sensor_enabled()) {
-        if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL) && _landAirspeed >= 0) {
-            _TAS_dem = _landAirspeed * EAS2TAS;
-            if (_TASmin > _TAS_dem) {
-                _TASmin = _TAS_dem;
-            }
-        } else if (_flight_stage == FLIGHT_LAND_PREFLARE && aparm.land_pre_flare_airspeed > 0) {
-            _TAS_dem = aparm.land_pre_flare_airspeed * EAS2TAS;
-            if (_TASmin > _TAS_dem) {
-                _TASmin = _TAS_dem;
-            }
-        }
+    if (_TASmin > _TAS_dem) {
+        _TASmin = _TAS_dem;
     }
 
     // Reset states of time since last update is too large
