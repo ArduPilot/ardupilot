@@ -318,6 +318,7 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_GPVTG_ms = now;
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course_cd = wrap_360_cd(_new_course);
+                    fill_3d_velocity();
                     // VTG has no fix indicator, can't change fix status
                     break;
                 }
