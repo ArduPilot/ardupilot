@@ -765,7 +765,12 @@ int8_t Plane::throttle_percentage(void)
     }
     // to get the real throttle we need to use norm_output() which
     // returns a number from -1 to 1.
-    return constrain_int16(50*(channel_throttle->norm_output()+1), 0, 100);
+    if (aparm.throttle_min >= 0) {
+        return constrain_int16(50*(channel_throttle->norm_output()+1), 0, 100);
+    } else {
+        // reverse thrust
+        return constrain_int16(100*channel_throttle->norm_output(), -100, 100);
+    }
 }
 
 /*
