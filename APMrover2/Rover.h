@@ -154,7 +154,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming arming {ahrs, barometer, compass, home_is_set};
+    AP_Arming arming {ahrs, barometer, compass, battery, home_is_set};
 
     AP_L1_Control L1_controller;
 
