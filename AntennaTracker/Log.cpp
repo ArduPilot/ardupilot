@@ -10,8 +10,8 @@
 void Tracker::Log_Write_Attitude()
 {
     Vector3f targets;
-    targets.y = nav_status.pitch;
-    targets.z = wrap_360_cd_float(nav_status.bearing);
+    targets.y = nav_status.pitch * 100.0f;
+    targets.z = wrap_360_cd_float(nav_status.bearing * 100.0f);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
     DataFlash.Log_Write_EKF(ahrs,false);
@@ -33,7 +33,6 @@ const struct LogStructure Tracker::log_structure[] = {
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()
 {
-    // only 200(?) bytes are guaranteed by DataFlash
     DataFlash.Log_Write_Mode(control_mode);
 }
 
