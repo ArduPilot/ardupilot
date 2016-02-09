@@ -91,7 +91,7 @@ private:
     /// @returns		The value expressed by the string in _term,
     ///					multiplied by 100.
     ///
-    uint32_t    _parse_decimal_100();
+    int32_t    _parse_decimal_100();
 
     /// Parses the current term as a NMEA-style degrees + minutes
     /// value with up to four decimal digits.
