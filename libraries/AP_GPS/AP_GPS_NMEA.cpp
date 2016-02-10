@@ -307,8 +307,36 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_course_cd = wrap_360_cd(_new_course);
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = AP_HAL::millis();
-                    // To-Do: add support for proper reporting of 2D and 3D fix
-                    state.status           = AP_GPS::GPS_OK_FIX_3D;
+                    // To-Do: add support for proper reporting of 2D and 3D fix (requires GPGSA messages)
+                    switch(_new_mode_indicator) {
+                    case 'A': // Autonomous mode
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
+                        break;
+                    case 'D': // Differential mode
+                        state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                        break;
+                    case 'F': // Float RTK  (specific for NV08C (not official NMEA 0813))
+                        state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                        break;
+                    case 'R': // Real Time Kinematic (specific for NV08C (not official NMEA 0813))
+                        state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                        break;
+                    case 'E': // Estimated (dead reckoning) mode
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
+                        break;
+                    case 'M': // Manual input mode
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    case 'S': // Simulator mode
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    case 'N': // Data not valid
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    default:
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    }
                     fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GPGGA:
@@ -317,8 +345,39 @@ bool AP_GPS_NMEA::_term_complete()
                     state.location.lng  = _new_longitude;
                     state.num_sats      = _new_satellite_count;
                     state.hdop          = _new_hdop;
-                    // To-Do: add support for proper reporting of 2D and 3D fix
-                    state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    // To-Do: add support for proper reporting of 2D and 3D fix (requires GPGSA messages)
+                    switch(_new_quality_indicator) {
+                    case 0: // Fix not available or invalid
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    case 1: // GPS SPS Mode, fix valid
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
+                        break;
+                    case 2: // Differential GPS, SPS Mode, fix valid
+                        state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                        break;
+                    case 3: // GPS PPS Mode, fix valid
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
+                        break;
+                    case 4: // Real Time Kinematic. System used in RTK mode with fixed integers
+                        state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                        break;
+                    case 5: // Float RTK. Satellite system used in RTK mode, floating integers
+                        state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                        break;
+                    case 6: // Estimated (dead reckoning) Mode
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
+                        break;
+                    case 7: // Manual Input Mode
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    case 8: // Simulator Mode
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    default:
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    }
                     break;
                 case _GPS_SENTENCE_GPVTG:
                     state.ground_speed     = _new_speed*0.01f;
@@ -370,7 +429,21 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_GPRMC + 2: // validity (RMC)
             _gps_data_good = _term[0] == 'A';
             break;
+        case _GPS_SENTENCE_GPRMC + 12: // Mode indicator (RMC)
+            /* A = Autonomous mode
+             * D = Differential mode
+             * F = Float RTK  (specific for NV08C (not official NMEA 0813))
+             * R = Real Time Kinematic (specific for NV08C (not official NMEA 0813))
+             * E = Estimated (dead reckoning) mode
+             * M = Manual input mode
+             * S = Simulator mode
+             * N = Data not valid
+             */
+            _new_mode_indicator = _term[0];
+            _gps_data_good = ((_term[0] == 'A') || (_term[0] == 'D') || (_term[0] == 'F') || (_term[0] == 'R') || (_term[0] == 'E'));
+            break;
         case _GPS_SENTENCE_GPGGA + 6: // Fix data (GGA)
+            _new_quality_indicator = DIGIT_TO_VAL(_term[0]);
             _gps_data_good = _term[0] > '0';
             break;
         case _GPS_SENTENCE_GPVTG + 9: // validity (VTG) (we may not see this field)
