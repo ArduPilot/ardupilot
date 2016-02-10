@@ -322,6 +322,8 @@ private:
         // flag to hold whether battery low voltage threshold has been breached
         uint8_t low_battery:1;
 
+		uint8_t warning_battery:1;
+
         // saved flight mode
         enum FlightMode saved_mode;
 
@@ -587,6 +589,8 @@ private:
 
     // Sometimes there is a second condition required:
     int32_t condition_value2;
+
+	bool rel_alt;
     // A starting value used to check the status of a conditional command.
     // For example in a delay command the condition_start records that start time for the delay
     uint32_t condition_start;
@@ -650,6 +654,12 @@ private:
     // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
     uint32_t G_Dt_max = 0;
     uint32_t G_Dt_min = 0;
+
+
+	//Loiter turns
+	uint16_t turns_remaining;
+	double turnsub = 0;
+        double oldturnratio = 0;
 
     // System Timers
     // Time in microseconds of start of main control loop
@@ -794,6 +804,8 @@ private:
     void failsafe_long_on_event(enum failsafe_state fstype);
     void failsafe_short_off_event();
     void low_battery_event(void);
+	//void warning_battery_event(void);
+	void warning_battery_event(void);
     void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);

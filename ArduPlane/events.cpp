@@ -116,12 +116,46 @@ void Plane::low_battery_event(void)
     gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
                       (double)battery.voltage(), (double)battery.current_total_mah());
     if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-    	set_mode(RTL);
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH && !(control_mode == STABILIZE || control_mode == MANUAL || control_mode == FLY_BY_WIRE_A || control_mode == TRAINING || control_mode == ACRO || control_mode == FLY_BY_WIRE_B))  {
+    	//set_mode(RTL);
+			//go directly to the nearest landing sequence if critical battery and in an auto mode.
+		jump_to_landing_sequence();
     	aparm.throttle_cruise.load();
     }
     failsafe.low_battery = true;
     AP_Notify::flags.failsafe_battery = true;
+
+	if (control_mode == STABILIZE || control_mode == MANUAL || control_mode == FLY_BY_WIRE_A || control_mode == TRAINING || control_mode == ACRO || control_mode == FLY_BY_WIRE_B)
+		{
+			if (control_mode != INITIALISING)
+			{
+				gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Low Battery. Land Now!"));
+			}
+		}
+		else
+		{
+			if (control_mode != INITIALISING)
+			{
+				gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Low Battery. Landing!"));
+			}
+		}
+}
+
+void Plane::warning_battery_event(void)
+{
+    if (failsafe.warning_battery) {
+        return;
+    }
+   
+
+	gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Low Battery!"));
+	gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Low Battery!"));
+	gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Low Battery!"));
+	
+    failsafe.warning_battery = true;
+	 gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
+                      (double)battery.voltage(), (double)battery.current_total_mah());
+    
 }
 
 void Plane::update_events(void)

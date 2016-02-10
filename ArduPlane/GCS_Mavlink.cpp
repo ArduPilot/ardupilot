@@ -652,7 +652,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        plane.gcs[chan-MAVLINK_COMM_0].send_radio_in(plane.receiver_rssi);
+        plane.gcs[chan-MAVLINK_COMM_0].send_radio_in(plane.receiver_rssi, plane.turns_remaining);
         break;
 
     case MSG_RADIO_OUT:
@@ -997,6 +997,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_GPS_RAW);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_FENCE_STATUS);
+		send_message(MSG_BATTERY2);
     }
 
     if (plane.gcs_out_of_time) return;
@@ -1049,7 +1050,7 @@ GCS_MAVLINK::data_stream_send(void)
 #endif
         send_message(MSG_MAG_CAL_REPORT);
         send_message(MSG_MAG_CAL_PROGRESS);
-        send_message(MSG_BATTERY2);
+        //send_message(MSG_BATTERY2);
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_EKF_STATUS_REPORT);

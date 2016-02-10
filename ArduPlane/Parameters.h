@@ -142,6 +142,7 @@ public:
         k_param_crash_detection_enable,
         k_param_land_abort_throttle_enable,
 
+
         // 97: RSSI
         k_param_rssi = 97,
         
@@ -152,6 +153,8 @@ public:
         k_param_fence_retalt = 105,
         k_param_fence_autoenable,
         k_param_fence_ret_rally,
+		//testremove
+		k_param_fence_invert,
 
         // 110: Telemetry control
         //
@@ -177,6 +180,14 @@ public:
         k_param_acro_roll_rate,
         k_param_acro_pitch_rate,
         k_param_acro_locking,
+
+		//
+		// 129: Throttle cut radius
+		//
+		//testremove
+		k_param_throttle_cut_rad = 129,
+
+		
 
         //
         // 130: Sensor parameters
@@ -264,6 +275,8 @@ public:
         k_param_long_fs_timeout,
         k_param_rc_13,
         k_param_rc_14,
+		//testremove
+		k_param_extra_fs_timeout,
 
         //
         // 200: Feed-forward gains
@@ -376,6 +389,8 @@ public:
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 loiter_radius;
+	//testremove
+	AP_Int16 throttle_cut_rad;
 
 #if GEOFENCE_ENABLED == ENABLED
     AP_Int8 fence_action;
@@ -384,6 +399,8 @@ public:
     AP_Int16 fence_minalt;    // meters
     AP_Int16 fence_maxalt;    // meters
     AP_Int16 fence_retalt;    // meters
+	//testremove
+	AP_Int8 fence_invert;
     AP_Int8 fence_autoenable;
     AP_Int8 fence_ret_rally;
 #endif
@@ -409,6 +426,8 @@ public:
     AP_Int8 gcs_heartbeat_fs_enabled;
     AP_Float fs_batt_voltage;
     AP_Float fs_batt_mah;
+	//testremove
+	AP_Float extra_fs_timeout;
 
     // Flight modes
     //

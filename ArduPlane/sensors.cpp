@@ -85,6 +85,12 @@ void Plane::read_battery(void)
     battery.read();
     compass.set_current(battery.current_amps());
 
+	if (!usb_connected && 
+        hal.util->get_soft_armed() &&
+        battery.exhausted(g.fs_batt_voltage + 0.2, g.fs_batt_mah*1.25)) {
+        warning_battery_event();
+    }
+
     if (!usb_connected && 
         hal.util->get_soft_armed() &&
         battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {

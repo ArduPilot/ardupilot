@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # home location lat, lon, alt, heading
-LOCATION="CMAC"
-TRACKER_LOCATION="CMAC_PILOTSBOX"
+LOCATION="Marburg"
+TRACKER_LOCATION="Marburg"
 VEHICLE=""
 BUILD_TARGET="sitl"
 FRAME=""

@@ -236,6 +236,16 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_flare_alt,          "LAND_FLARE_ALT",  3.0),
 
+	////testremove
+
+	// @Param: THOTTLE_CUT_RAD
+    // @DisplayName: Landing throttle cut radius
+    // @Description: Distance from Land waypoint at which the throttle cuts. 
+    // @Units: meters
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(throttle_cut_rad,          "THROTTLE_CUT_RAD",  30),
+
     // @Param: LAND_FLARE_SEC
     // @DisplayName: Landing flare time
     // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.  Set to 0 if you only wish to flare based on altitude (see LAND_FLARE_ALT).
@@ -365,6 +375,17 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(fence_retalt,           "FENCE_RETALT",   0),
+
+	//testremove
+
+	// @Param: FENCE_INVERT
+    // @DisplayName: Fence Invert
+    // @Description: Defines weather or not the fence is an inclusion zone or an exclusion zone. Set to 0 for regular incusion zone geofence. Set to 1 for exclusion zone geofence.
+    // @Units: 
+    // @Range: 0 1
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(fence_invert,           "FENCE_INVERT",   0),
 
     // @Param: FENCE_AUTOENABLE
     // @DisplayName: Fence automatic enable
@@ -561,6 +582,17 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @Increment: 0.5
     // @User: Standard
     GSCALAR(long_fs_timeout,        "FS_LONG_TIMEOUT", 5),
+
+	//testremove
+
+	// @Param: FS_EXTRA_TIMEOUT
+    // @DisplayName: Extra failsafe timeout
+    // @Description: The time in seconds that a failsafe condition has to persist before a extra long failsafe event will occur. This defaults to 90 seconds. (i.e sends to landing rally after comms loss.)
+    // @Units: seconds
+    // @Range: 1 300
+    // @Increment: 0.5
+    // @User: Standard
+    GSCALAR(extra_fs_timeout,        "FS_EXTRA_TIMEOUT", 90),
 
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage

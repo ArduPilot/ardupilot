@@ -1023,6 +1023,56 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
     }
 }
 
+void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi, uint16_t turns_remaining)
+{
+    uint32_t now = hal.scheduler->millis();
+
+    uint16_t values[8];
+    memset(values, 0, sizeof(values));
+    hal.rcin->read(values, 8);
+
+    mavlink_msg_rc_channels_raw_send(
+        chan,
+        now,
+        turns_remaining, // port
+        values[0],
+        values[1],
+        values[2],
+        values[3],
+        values[4],
+        values[5],
+        values[6],
+        values[7],
+        receiver_rssi);
+
+    if (hal.rcin->num_channels() > 8 && 
+        comm_get_txspace(chan) >= MAVLINK_MSG_ID_RC_CHANNELS_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+        mavlink_msg_rc_channels_send(
+            chan,
+            now,
+            hal.rcin->num_channels(),
+            hal.rcin->read(CH_1),
+            hal.rcin->read(CH_2),
+            hal.rcin->read(CH_3),
+            hal.rcin->read(CH_4),
+            hal.rcin->read(CH_5),
+            hal.rcin->read(CH_6),
+            hal.rcin->read(CH_7),
+            hal.rcin->read(CH_8),
+            hal.rcin->read(CH_9),
+            hal.rcin->read(CH_10),
+            hal.rcin->read(CH_11),
+            hal.rcin->read(CH_12),
+            hal.rcin->read(CH_13),
+            hal.rcin->read(CH_14),
+            hal.rcin->read(CH_15),
+            hal.rcin->read(CH_16),
+            hal.rcin->read(CH_17),
+            hal.rcin->read(CH_18),
+            receiver_rssi);        
+    }
+}
+
 void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &compass)
 {
     const Vector3f &accel = ins.get_accel(0);
@@ -1202,10 +1252,17 @@ void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const prog_char_t *
 // report battery2 state
 void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
 {
-    if (battery.num_instances() > 1) {
+    //if (battery.num_instances() > 1) {
         mavlink_msg_battery2_send(chan, battery.voltage2()*1000, -1);
-    }
+   // }
 }
+
+//void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery, uint16_t turns)
+//{
+//    //if (battery.num_instances() > 1) {
+//        mavlink_msg_battery2_send(chan, turns*100, turns);
+//   // }
+//}
 
 /*
   handle a SET_MODE MAVLink message

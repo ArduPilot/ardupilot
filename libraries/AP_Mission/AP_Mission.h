@@ -26,7 +26,7 @@
 
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
-#define AP_MISSION_EEPROM_COMMAND_SIZE      15      // size in bytes of all mission commands
+#define AP_MISSION_EEPROM_COMMAND_SIZE      17      // size in bytes of all mission commands
 
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75
  # define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 3     // allow up to 3 do-jump commands (due to RAM limitations) on the APM2
@@ -168,6 +168,8 @@ public:
         // conditional delay
         Conditional_Delay_Command delay;
 
+		
+
         // conditional distance
         Conditional_Distance_Command distance;
 
@@ -222,7 +224,9 @@ public:
         uint16_t index;             // this commands position in the command list
         uint8_t id;                 // mavlink command id
         uint16_t p1;                // general purpose parameter 1
-        Content content;
+		uint16_t p2;
+		Content content;
+		
     };
 
     // main program function pointers

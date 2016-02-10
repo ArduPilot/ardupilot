@@ -142,11 +142,13 @@ public:
     bool send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
     void send_radio_in(uint8_t receiver_rssi);
+	void send_radio_in(uint8_t receiver_rssi, uint16_t turns_remaining);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
     void send_scaled_pressure(AP_Baro &barometer);
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
     void send_ahrs(AP_AHRS &ahrs);
     void send_battery2(const AP_BattMonitor &battery);
+	//void send_battery2(const AP_BattMonitor &battery, uint16_t turns);
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif

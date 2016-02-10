@@ -131,7 +131,7 @@ void Plane::geofence_load(void)
     }
     if (Polygon_outside(geofence_state->boundary[0], &geofence_state->boundary[1], geofence_state->num_points-1)) {
         // return point needs to be inside the fence
-        goto failed;
+        //goto failed;
     }
 
     geofence_state->boundary_uptodate = true;
@@ -311,25 +311,48 @@ void Plane::geofence_check(bool altitude_check_only)
     struct Location loc;
 
     // Never trigger a fence breach in the final stage of landing
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
         return;
     }
 
     if (geofence_state->floor_enabled && geofence_check_minalt()) {
         outside = true;
-        breach_type = FENCE_BREACH_MINALT;
+		//testremove
+        if (g.fence_invert == 0)
+		{
+			breach_type = FENCE_BREACH_MINALT;
+		}
+		else
+		{
+			outside = !outside;
+		}
     } else if (geofence_check_maxalt()) {
         outside = true;
-        breach_type = FENCE_BREACH_MAXALT;
+		//testremove
+		if (g.fence_invert == 0)
+		{
+			breach_type = FENCE_BREACH_MAXALT;
+		}
+		else
+		{
+			outside = !outside;
+		}
     } else if (!altitude_check_only && ahrs.get_position(loc)) {
         Vector2l location;
         location.x = loc.lat;
         location.y = loc.lng;
         outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
-        if (outside) {
+		//testremove
+        if (outside && g.fence_invert == 0) {
             breach_type = FENCE_BREACH_BOUNDARY;
         }
+		if (g.fence_invert == 1)
+		{
+			outside = !outside;
+		}
     }
+	
+
 
     if (!outside) {
         if (geofence_state->fence_triggered && !altitude_check_only) {
@@ -346,9 +369,15 @@ void Plane::geofence_check(bool altitude_check_only)
         return;
     }
 
+	if (g.fence_invert == 1)
+	{
+		breach_type = FENCE_BREACH_BOUNDARY;
+
+	}
+
     // we are outside the fence
-    if (geofence_state->fence_triggered &&
-        (control_mode == GUIDED || g.fence_action == FENCE_ACTION_REPORT)) {
+    if (geofence_state->fence_triggered)/* &&
+        (control_mode == GUIDED || g.fence_action == FENCE_ACTION_REPORT)) */{
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
@@ -378,35 +407,37 @@ void Plane::geofence_check(bool altitude_check_only)
         // make sure we don't auto trim the surfaces on this mode change
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
-        set_mode(GUIDED);
+        //set_mode(GUIDED);
+		set_mode(AUTO);
+		mission.set_current_cmd(2);  //send back to take-off rally
         g.auto_trim.set(saved_auto_trim);
 
-        if (g.fence_ret_rally != 0) { //return to a rally point
-            guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+        //if (g.fence_ret_rally != 0) { //return to a rally point
+        //    guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
-        } else { //return to fence return point, not a rally point
-            if (g.fence_retalt > 0) {
-                //fly to the return point using fence_retalt
-                guided_WP_loc.alt = home.alt + 100.0f*g.fence_retalt;
-            } else if (g.fence_minalt >= g.fence_maxalt) {
-                // invalid min/max, use RTL_altitude
-                guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
-            } else {
-                // fly to the return point, with an altitude half way between
-                // min and max
-                guided_WP_loc.alt = home.alt + 100.0f*(g.fence_minalt + g.fence_maxalt)/2;
-            }
-            guided_WP_loc.options = 0;
-            guided_WP_loc.lat = geofence_state->boundary[0].x;
-            guided_WP_loc.lng = geofence_state->boundary[0].y;
-        }
-        geofence_state->guided_lat = guided_WP_loc.lat;
-        geofence_state->guided_lng = guided_WP_loc.lng;
+        //} else { //return to fence return point, not a rally point
+        //    if (g.fence_retalt > 0) {
+        //        //fly to the return point using fence_retalt
+        //        guided_WP_loc.alt = home.alt + 100.0f*g.fence_retalt;
+        //    } else if (g.fence_minalt >= g.fence_maxalt) {
+        //        // invalid min/max, use RTL_altitude
+        //        guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
+        //    } else {
+        //        // fly to the return point, with an altitude half way between
+        //        // min and max
+        //        guided_WP_loc.alt = home.alt + 100.0f*(g.fence_minalt + g.fence_maxalt)/2;
+        //    }
+        //    guided_WP_loc.options = 0;
+        //    guided_WP_loc.lat = geofence_state->boundary[0].x;
+        //    guided_WP_loc.lng = geofence_state->boundary[0].y;
+        //}
+        //geofence_state->guided_lat = guided_WP_loc.lat;
+        //geofence_state->guided_lng = guided_WP_loc.lng;
         geofence_state->old_switch_position = oldSwitchPosition;
 
-        setup_terrain_target_alt(guided_WP_loc);
+        /*setup_terrain_target_alt(guided_WP_loc);
 
-        set_guided_WP();
+        set_guided_WP();*/
 
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
             guided_throttle_passthru = true;

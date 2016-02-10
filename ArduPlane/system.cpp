@@ -509,7 +509,7 @@ void Plane::check_long_failsafe()
         if (failsafe.state == FAILSAFE_SHORT &&
                    (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
-        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == AUTO &&
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && (control_mode == AUTO  || control_mode == CIRCLE  || control_mode == CRUISE  || control_mode == RTL  || control_mode == LOITER || control_mode == GUIDED) &&
                    failsafe.last_heartbeat_ms != 0 &&
                    (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS);
@@ -522,7 +522,28 @@ void Plane::check_long_failsafe()
                    (tnow - gcs[0].last_radio_status_remrssi_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS);
         }
-    } else {
+    } 
+	//testremove
+	else if(flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL && flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH)
+	{
+		if (failsafe.state == FAILSAFE_SHORT &&
+                   (tnow - failsafe.ch3_timer_ms) > g.extra_fs_timeout*1000) {
+					jump_to_landing_sequence();
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && (control_mode == AUTO  || control_mode == CIRCLE  || control_mode == CRUISE  || control_mode == RTL  || control_mode == LOITER || control_mode == GUIDED) &&
+                   failsafe.last_heartbeat_ms != 0 &&
+                   (tnow - failsafe.last_heartbeat_ms) > g.extra_fs_timeout*1000) {
+					jump_to_landing_sequence();
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HEARTBEAT &&
+                   failsafe.last_heartbeat_ms != 0 &&
+                   (tnow - failsafe.last_heartbeat_ms) > g.extra_fs_timeout*1000) {
+					jump_to_landing_sequence();
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
+                   gcs[0].last_radio_status_remrssi_ms != 0 &&
+                   (tnow - gcs[0].last_radio_status_remrssi_ms) > g.extra_fs_timeout*1000) {
+					jump_to_landing_sequence();
+        }
+	}
+	else {
         // We do not change state but allow for user to change mode
         if (failsafe.state == FAILSAFE_GCS && 
             (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {

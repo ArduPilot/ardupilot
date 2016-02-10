@@ -426,7 +426,8 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
 
         cmd.id = _storage.read_byte(pos_in_storage);
         cmd.p1 = _storage.read_uint16(pos_in_storage+1);
-        _storage.read_block(cmd.content.bytes, pos_in_storage+3, 12);
+		cmd.p2 = _storage.read_uint16(pos_in_storage+3);
+        _storage.read_block(cmd.content.bytes, pos_in_storage+5, 12);
 
         // set command's index to it's position in eeprom
         cmd.index = index;
@@ -451,7 +452,8 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
 
     _storage.write_byte(pos_in_storage, cmd.id);
     _storage.write_uint16(pos_in_storage+1, cmd.p1);
-    _storage.write_block(pos_in_storage+3, cmd.content.bytes, 12);
+	_storage.write_uint16(pos_in_storage+3, cmd.p2);
+    _storage.write_block(pos_in_storage+5, cmd.content.bytes, 12);
 
     // remember when the mission last changed
     _last_change_time_ms = hal.scheduler->millis();
@@ -478,6 +480,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
     bool copy_alt = false;
     uint8_t num_turns, radius_m; // used by MAV_CMD_NAV_LOITER_TURNS & _TO_ALT
     uint8_t heading_req;         // used by MAV_CMD_NAV_LOITER_TO_ALT
+	uint16_t exit_height;
 
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
@@ -512,7 +515,10 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         copy_location = true;
         num_turns = packet.param1;                      // number of times to circle is held in param1
         radius_m = fabsf(packet.param3);                // radius in meters is held in high in param3
+		//exit_height = fabsf(packet.param2);
         cmd.p1 = (((uint16_t)radius_m)<<8) | (uint16_t)num_turns;   // store radius in high byte of p1, num turns in low byte of p1
+		
+		cmd.p2 = packet.param2;  //Exit Height for loiter turns
         cmd.content.location.flags.loiter_ccw = (packet.param3 < 0);
         break;
 
@@ -838,6 +844,7 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
     case MAV_CMD_NAV_LOITER_TURNS:                      // MAV ID: 18
         copy_location = true;
         packet.param1 = LOWBYTE(cmd.p1);                // number of times to circle is held in low byte of p1
+		packet.param2 = cmd.p2;//cmd.content.distance.meters;
         packet.param3 = HIGHBYTE(cmd.p1);               // radius is held in high byte of p1
         if (cmd.content.location.flags.loiter_ccw) {
             packet.param3 = -packet.param3;

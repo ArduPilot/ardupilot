@@ -239,6 +239,8 @@ float AP_BattMonitor::voltage2() const
     return 0.0f;
 }
 
+
+
 /// current_amps - returns the instantaneous current draw in amperes
 float AP_BattMonitor::current_amps(uint8_t instance) const {
     if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {

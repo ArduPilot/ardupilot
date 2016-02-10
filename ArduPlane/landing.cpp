@@ -66,6 +66,12 @@ bool Plane::verify_land()
 #else
     bool rangefinder_in_range = false;
 #endif
+	//test_remove
+	if (get_distance(current_loc, next_WP_loc) <= g.throttle_cut_rad)
+	{
+		channel_throttle->servo_out = 0;
+	}
+
     if (height <= g.land_flare_alt ||
         (aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec) ||
         (!rangefinder_in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||

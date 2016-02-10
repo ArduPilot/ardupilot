@@ -296,8 +296,11 @@ void Plane::do_RTL(void)
     auto_state.next_wp_no_crosstrack = true;
     auto_state.no_crosstrack = true;
     prev_WP_loc = current_loc;
-    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
-    setup_terrain_target_alt(next_WP_loc);
+	AP_Mission::Mission_Command t_rally;
+	mission.read_cmd_from_storage(2, t_rally);
+	next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, t_rally.content.location, get_RTL_altitude());
+    
+	setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
     if (g.loiter_radius < 0) {
@@ -384,8 +387,25 @@ void Plane::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
+	turns_remaining = cmd.p1;
     loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
-    loiter_set_direction_wp(cmd);
+	oldturnratio = 0;
+	turnsub = 0;
+	condition_value = next_WP_loc.alt;
+	condition_value2 = cmd.p2;
+	
+	
+	loiter_set_direction_wp(cmd);
+
+	if (cmd.content.location.flags.relative_alt) 
+	{
+        rel_alt = true;
+    }
+	
+
+	
+
+
 }
 
 void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
@@ -394,6 +414,7 @@ void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
     // we set start_time_ms when we reach the waypoint
     loiter.start_time_ms = 0;
     loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // units are seconds
+	turns_remaining = loiter.time_max_ms;
     loiter_set_direction_wp(cmd);
 }
 
@@ -578,6 +599,7 @@ bool Plane::verify_loiter_unlim()
 bool Plane::verify_loiter_time()
 {
     update_loiter();
+	turns_remaining = loiter.time_max_ms -((millis() - loiter.start_time_ms)/1000);
     if (loiter.start_time_ms == 0) {
         if (nav_controller->reached_loiter_target()) {
             // we've reached the target, start the timer
@@ -592,14 +614,113 @@ bool Plane::verify_loiter_time()
 
 bool Plane::verify_loiter_turns()
 {
-    update_loiter();
+   
+	if (loiter.total_cd != 0 && (oldturnratio < min(((100*loiter.sum_cd)/(loiter.total_cd)),100))) 
+	{
+		turnsub = min(((100*loiter.sum_cd)/(loiter.total_cd)),100)*((condition_value-home.alt) - condition_value2*100);
+		 oldturnratio = min(((100*loiter.sum_cd)/(loiter.total_cd)),100);
+	}
+	
+	if (loiter.sum_cd > 0)
+	{
+		
+		next_WP_loc.alt = condition_value - int(turnsub*0.01);
+	}
+	 
+	//next_WP_loc.alt = condition_value - ((condition_value - condition_value2*100)*(min((loiter.sum_cd/loiter.total_cd),1)));
+	update_loiter();
+	 // convert relative alt to absolute alt
+	
+
+	turns_remaining = max(0,(int)ceil(((loiter.total_cd) / 36000)-(loiter.sum_cd/36000)));
+	
+
+ //   if (rel_alt) 
+	//{
+	//	//next_WP_loc.alt += home.alt;
+	//}
+
+	
     if (loiter.sum_cd > loiter.total_cd) {
-        loiter.total_cd = 0;
-        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
+        /*loiter.total_cd = 0;*/
+        //gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
         // clear the command queue;
-        return true;
+        //return true;
     }
-    return false;
+	else
+	{
+		return false;
+	}
+
+	//has target altitude been reached?
+ //   if (labs(condition_value2 - current_loc.alt) < 500) 
+	//{
+ //           //Only have to reach the altitude once -- that's why I need
+ //           //this global condition variable.
+ //           //
+ //           //This is in case of altitude oscillation when still trying
+ //           //to reach the target heading.
+ //           condition_value = 0;
+ //   } 
+	//else 
+	//{
+	//		return false;
+ //   }
+
+
+	//Get the lat/lon of next Nav waypoint after this one:
+        AP_Mission::Mission_Command next_nav_cmd;
+        if (! mission.get_next_nav_cmd(mission.get_current_nav_index() + 1,
+                                       next_nav_cmd)) {
+            //no next waypoint to shoot for -- go ahead and break out of loiter
+			loiter.total_cd = 0;
+			gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
+            return true;        
+        }
+
+        if (get_distance(next_WP_loc, next_nav_cmd.content.location) < labs(g.loiter_radius)) {
+            /* Whenever next waypoint is within the loiter radius, 
+               maintaining loiter would prevent us from ever pointing toward the next waypoint.
+               Hence break out of loiter immediately
+             */
+			loiter.total_cd = 0;
+			gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
+            return true;
+        }
+
+        // Bearing in radians
+        int32_t bearing_cd = get_bearing_cd(current_loc,next_nav_cmd.content.location);
+
+        // get current heading. We should probably be using the ground
+        // course instead to improve the accuracy in wind
+        int32_t heading_cd = ahrs.yaw_sensor;
+
+        int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
+ 
+        /*
+          Check to see if the the plane is heading toward the land
+          waypoint
+          We use 10 degrees of slop so that we can handle 100
+          degrees/second of yaw
+        */
+        if (labs(heading_err_cd) <= 1000) {
+            //Want to head in a straight line from _here_ to the next waypoint.
+            //DON'T want to head in a line from the center of the loiter to 
+            //the next waypoint.
+            //Therefore: mark the "last" (next_wp_loc is about to be updated)
+            //wp lat/lon as the current location.
+            next_WP_loc = current_loc;
+			loiter.total_cd = 0;
+			gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
+			gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
+			gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
+            return true;
+        } else {
+            return false;
+        }
+
+
+   
 }
 
 /*
@@ -610,6 +731,8 @@ bool Plane::verify_loiter_turns()
 bool Plane::verify_loiter_to_alt() 
 {
     update_loiter();
+
+	
 
     //has target altitude been reached?
     if (condition_value != 0) {

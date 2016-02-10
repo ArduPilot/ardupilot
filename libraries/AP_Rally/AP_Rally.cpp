@@ -158,6 +158,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     RallyLocation ral_loc = {};
     Location return_loc = {};
     const struct Location &home_loc = _ahrs.get_home();
+	
     
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         // valid rally point found
@@ -166,6 +167,29 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
         // no valid rally point, return home position
         return_loc = home_loc;
         return_loc.alt = rtl_home_alt;
+        return_loc.flags.relative_alt = false; // read_alt_to_hold returns an absolute altitude
+    }
+
+    return return_loc;
+}
+
+// return best RTL location from current position
+Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc, const Location &rally_loc, float rtl_home_alt) const
+{
+    RallyLocation ral_loc = {};
+    Location return_loc = {};
+    const struct Location &home_loc = _ahrs.get_home();
+	
+    
+    if (find_nearest_rally_point(current_loc, ral_loc)) {
+        // valid rally point found
+        return_loc = rally_location_to_location(ral_loc);
+    } else {
+        // no valid rally point, return home position
+        //return_loc = home_loc;
+		 return_loc = rally_loc;
+        //return_loc.alt = rtl_home_alt;
+		 return_loc.alt = rally_loc.alt;
         return_loc.flags.relative_alt = false; // read_alt_to_hold returns an absolute altitude
     }
 
