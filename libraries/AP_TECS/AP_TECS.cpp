@@ -179,7 +179,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: LAND_PMAX
     // @DisplayName: Maximum pitch during final stage of landing
     // @Description: This limits the pitch used during the final stage of automatic landing. During the final landing stage most planes need to keep their pitch small to avoid stalling. A maximum of 10 degrees is usually good. A value of zero means to use the normal pitch limits.
-    // @Range: 0 40
+    // @Range: -5 40
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("LAND_PMAX", 20, AP_TECS, _land_pitch_max, 10),
@@ -902,7 +902,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);
 
         // and use max pitch from TECS_LAND_PMAX
-        if (_land_pitch_max > 0) {
+        if (_land_pitch_max != 0) {
             _PITCHmaxf = MIN(_PITCHmaxf, _land_pitch_max);
         }
 
