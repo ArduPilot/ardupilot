@@ -213,6 +213,9 @@ void Tracker::set_mode(enum ControlMode mode)
         disarm_servos();
         break;
     }
+
+	// log mode change
+	DataFlash.Log_Write_Mode(control_mode);
 }
 
 /*
