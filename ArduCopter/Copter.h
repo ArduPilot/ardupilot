@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APM:Copter V3.3"
-#define FIRMWARE_VERSION 3,3,0,FIRMWARE_VERSION_TYPE_OFFICIAL
+#define THISFIRMWARE "APM:Copter V3.3.3-rc2"
+#define FIRMWARE_VERSION 3,3,3,FIRMWARE_VERSION_TYPE_RC
 
 /*
    This program is free software: you can redistribute it and/or modify
@@ -109,6 +109,8 @@
 #include <AC_PrecLand/AC_PrecLand.h>
 //#endif
 #include <AP_IRLock/AP_IRLock.h>
+#include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
+#include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 
 // AP_HAL to Arduino compatibility layer
 // Configuration
@@ -175,7 +177,7 @@ private:
     AP_InertialSensor ins;
 
 #if CONFIG_SONAR == ENABLED
-    RangeFinder sonar;
+    RangeFinder sonar{serial_manager};
     bool sonar_enabled; // enable user switch for sonar
 #endif
 
@@ -512,7 +514,12 @@ private:
 #endif
 ////////////////////////////////////////////////////////////////////////////////
 
-
+    // Pilot Input Management Library
+    // Only used for Helicopter for AC3.3, to be expanded to include Multirotor
+    // child class for AC3.4
+#if FRAME_CONFIG == HELI_FRAME
+    AC_InputManager_Heli input_manager;
+#endif
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
@@ -821,7 +828,6 @@ private:
     bool mode_allows_arming(uint8_t mode, bool arming_from_gcs);
     void notify_flight_mode(uint8_t mode);
     void heli_init();
-    int16_t get_pilot_desired_collective(int16_t control_in);
     void check_dynamic_flight(void);
     void update_heli_control_dynamics(void);
     void heli_update_landing_swash();

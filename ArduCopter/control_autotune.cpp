@@ -164,6 +164,11 @@ static float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel;
 // autotune_init - should be called when autotune mode is selected
 bool Copter::autotune_init(bool ignore_checks)
 {
+#if FRAME_CONFIG == HELI_FRAME
+    // Autotune mode not available for helicopters
+    return false;
+#endif
+
     bool success = true;
 
     switch (autotune_state.mode) {
@@ -247,8 +252,9 @@ bool Copter::autotune_start(bool ignore_checks)
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    // initialise altitude target to stopping point
-    pos_control.set_target_to_stopping_point_z();
+    // initialise position and desired velocity
+    pos_control.set_alt_target(inertial_nav.get_altitude());
+    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     return true;
 }
@@ -325,7 +331,7 @@ void Copter::autotune_run()
         }
 
         // call position controller
-        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control.update_z_controller();
     }
 }

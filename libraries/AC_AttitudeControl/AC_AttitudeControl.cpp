@@ -57,6 +57,13 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_P_MAX", 7, AC_AttitudeControl, _accel_pitch_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
 
+    // @Param: ANGLE_BOOST
+    // @DisplayName: Angle Boost
+    // @Description: Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("ANGLE_BOOST", 12, AC_AttitudeControl, _angle_boost_enabled, 1),
+
     AP_GROUPEND
 };
 
@@ -107,6 +114,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
 
     // sanity check smoothing gain
     smoothing_gain = constrain_float(smoothing_gain,1.0f,50.0f);
+
+    // add roll trim to compensate tail rotor thrust in heli (should return zero for multirotors)
+    roll_angle_ef += get_roll_trim();
 
     // if accel limiting and feed forward enabled
     if ((_accel_roll_max > 0.0f) && _rate_bf_ff_enabled) {
@@ -200,6 +210,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, fl
 {
     Vector3f    angle_ef_error;         // earth frame angle errors
 
+    // add roll trim to compensate tail rotor thrust in heli (should return zero for multirotors)
+    roll_angle_ef += get_roll_trim();
+
     // set earth-frame angle targets for roll and pitch and calculate angle error
     _angle_ef_target.x = constrain_float(roll_angle_ef, -_aparm.angle_max, _aparm.angle_max);
     angle_ef_error.x = wrap_180_cd_float(_angle_ef_target.x - _ahrs.roll_sensor);
@@ -244,6 +257,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, fl
 void AC_AttitudeControl::angle_ef_roll_pitch_yaw(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef, bool slew_yaw)
 {
     Vector3f    angle_ef_error;
+
+    // add roll trim to compensate tail rotor thrust in heli (should return zero for multirotors)
+    roll_angle_ef += get_roll_trim();
 
     // set earth-frame angle targets
     _angle_ef_target.x = constrain_float(roll_angle_ef, -_aparm.angle_max, _aparm.angle_max);

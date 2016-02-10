@@ -29,6 +29,14 @@ struct Guided_Limit {
 // guided_init - initialise guided controller
 bool Copter::guided_init(bool ignore_checks)
 {
+#if FRAME_CONFIG == HELI_FRAME
+    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete and current control mode has manual throttle control,
+    // as this will force the helicopter to descend.
+    if (!ignore_checks && mode_has_manual_throttle(control_mode) && !motors.rotor_runup_complete()){
+        return false;
+    }
+#endif
+
     if (position_ok() || ignore_checks) {
         // initialise yaw
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
@@ -192,6 +200,18 @@ void Copter::guided_run()
 //      called by guided_run at 100hz or more
 void Copter::guided_takeoff_run()
 {
+    // if not auto armed or motors not enabled set throttle to zero and exit immediately
+    if (!ap.auto_armed || !motors.get_interlock()) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
+        return;
+    }
+
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!failsafe.radio) {
@@ -285,19 +305,8 @@ void Copter::guided_vel_control_run()
         pos_control.set_desired_velocity(Vector3f(0,0,0));
     }
 
-    // calculate dt
-    float dt = pos_control.time_since_last_xy_update();
-
-    // update at poscontrol update rate
-    if (dt >= pos_control.get_dt_xy()) {
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // call velocity controller which includes z axis controller
-        pos_control.update_vel_controller_xyz(ekfNavVelGainScaler);
-    }
+    // call velocity controller which includes z axis controller
+    pos_control.update_vel_controller_xyz(ekfNavVelGainScaler);
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {

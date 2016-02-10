@@ -12,6 +12,8 @@
 #include <math.h>
 #include "AC_PID.h"
 
+#define AC_PID_LEAK_MIN     500.0  // Default I-term Leak Minimum
+
 /// @class	AC_HELI_PID
 /// @brief	Heli PID control class
 class AC_HELI_PID : public AC_PID {
@@ -34,6 +36,7 @@ public:
     
 private:
     AP_Float        _vff;
+    AP_Float        _leak_min;
     
 };
 

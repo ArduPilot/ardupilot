@@ -122,8 +122,6 @@
   # define RATE_YAW_IMAX                        4500
   # define RATE_YAW_FF                          0.02
   # define RATE_YAW_FILT_HZ                     20.0f
-  # define HELI_STAB_COLLECTIVE_MIN_DEFAULT     0
-  # define HELI_STAB_COLLECTIVE_MAX_DEFAULT     1000
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
 #endif
@@ -693,6 +691,10 @@
 // the acceleration used to define the distance-velocity curve
 #ifndef ALT_HOLD_ACCEL_MAX
  # define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
+#endif
+
+#ifndef AUTO_DISARMING_DELAY
+# define AUTO_DISARMING_DELAY  10
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

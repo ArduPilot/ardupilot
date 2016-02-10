@@ -265,6 +265,10 @@ protected:
     // calculate total body frame throttle required to produce the given earth frame throttle
     virtual float get_boosted_throttle(float throttle_in) = 0;
 
+    // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
+    // Overloaded by AC_Attitude_Heli to return angle.  Should be left to return zero for multirotors.
+    virtual int16_t get_roll_trim() { return 0;}
+
     // references to external libraries
     const AP_AHRS&      _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
@@ -282,6 +286,7 @@ protected:
     AP_Float            _accel_pitch_max;          // maximum rotation acceleration for earth-frame pitch axis
     AP_Float            _accel_yaw_max;           // maximum rotation acceleration for earth-frame yaw axis
     AP_Int8             _rate_bf_ff_enabled;    // Enable/Disable body frame rate feed forward
+    AP_Int8             _angle_boost_enabled;   // Enable/Disable angle boost
 
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?

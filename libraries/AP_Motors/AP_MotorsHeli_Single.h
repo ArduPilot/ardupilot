@@ -83,6 +83,9 @@ public:
     // allow_arming - returns true if main rotor is spinning and it is ok to arm
     bool allow_arming() const;
 
+    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
+    bool parameter_check() const;
+
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(int16_t desired_speed);
 
@@ -121,6 +124,9 @@ public:
     // set_delta_phase_angle for setting variable phase angle compensation and force
     // recalculation of collective factors
     void set_delta_phase_angle(int16_t angle);
+
+    // servo_test - move servos through full range of movement
+    void servo_test();
     
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
@@ -131,7 +137,7 @@ protected:
     void init_outputs();
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(uint8_t state);
+    void update_motor_control(AP_MotorsHeli_RSC::MotorControlState state);
 
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     void calculate_roll_pitch_collective_factors();
@@ -154,6 +160,14 @@ protected:
 
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
+
+    // internal variables
+    float _oscillate_angle = 0.0f;              // cyclic oscillation angle, used by servo_test function
+    float _servo_test_cycle_time = 0.0f;        // cycle time tracker, used by servo_test function
+    float _collective_test = 0.0f;              // over-ride for collective output, used by servo_test function
+    float _roll_test = 0.0f;                    // over-ride for roll output, used by servo_test function
+    float _pitch_test = 0.0f;                   // over-ride for pitch output, used by servo_test function
+    float _yaw_test = 0.0f;                     // over-ride for yaw output, used by servo_test function
 
     // parameters
     AP_Int16        _servo1_pos;                // Angular location of swash servo #1

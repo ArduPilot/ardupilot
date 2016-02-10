@@ -165,6 +165,11 @@ void Copter::init_ardupilot()
     log_init();
 #endif
 
+#if FRAME_CONFIG == HELI_FRAME
+    // trad heli specific initialisation
+    heli_init();
+#endif
+    
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
 
@@ -256,11 +261,6 @@ void Copter::init_ardupilot()
     reset_control_switch();
     init_aux_switches();
 
-#if FRAME_CONFIG == HELI_FRAME
-    // trad heli specific initialisation
-    heli_init();
-#endif
-
     startup_ground(true);
 
     // we don't want writes to the serial port to cause us to pause
@@ -322,7 +322,7 @@ bool Copter::position_ok()
     }
 
     // check ekf position estimate
-    return ekf_position_ok();
+    return (ekf_position_ok() || optflow_position_ok());
 }
 
 // ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set

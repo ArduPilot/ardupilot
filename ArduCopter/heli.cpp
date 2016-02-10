@@ -18,21 +18,23 @@ void Copter::heli_init()
 {
     // helicopters are always using motor interlock
     set_using_interlock(true);
-}
 
-// get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the channel_throttle->servo_out function
-int16_t Copter::get_pilot_desired_collective(int16_t control_in)
-{
-    // return immediately if reduce collective range for manual flight has not been configured
-    if (g.heli_stab_col_min == 0 && g.heli_stab_col_max == 1000) {
-        return control_in;
+    /*
+      automatically set H_RSC_MIN and H_RSC_MAX from RC8_MIN and
+      RC8_MAX so that when users upgrade from tradheli version 3.2 to
+      3.3 they get the same throttle range as in previous versions of
+      the code
+     */
+    if (!g.heli_servo_rsc.radio_min.load()) {
+        g.heli_servo_rsc.radio_min.set_and_save(g.rc_8.radio_min.get());
+    }
+    if (!g.heli_servo_rsc.radio_max.load()) {
+        g.heli_servo_rsc.radio_max.set_and_save(g.rc_8.radio_max.get());
     }
 
-    // scale pilot input to reduced collective range
-    float scalar = ((float)(g.heli_stab_col_max - g.heli_stab_col_min))/1000.0f;
-    int16_t collective_out = g.heli_stab_col_min + control_in * scalar;
-    collective_out = constrain_int16(collective_out, 0, 1000);
-    return collective_out;
+    // pre-load stab col values as mode is initialized as Stabilize, but stabilize_init() function is not run on start-up.
+    input_manager.set_use_stab_col(true);
+    input_manager.set_stab_col_ramp(1.0);
 }
 
 // heli_check_dynamic_flight - updates the dynamic_flight flag based on our horizontal velocity
@@ -83,10 +85,22 @@ void Copter::check_dynamic_flight(void)
 // should be run between the rate controller and the servo updates.
 void Copter::update_heli_control_dynamics(void)
 {
+    static int16_t hover_roll_trim_scalar_slew = 0;
+
     // Use Leaky_I if we are not moving fast
     attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
-    
-    // To-Do: Update dynamic phase angle of swashplate
+
+    if (ap.land_complete || (motors.get_desired_rotor_speed() == 0)){
+        // if we are landed or there is no rotor power demanded, decrement slew scalar
+        hover_roll_trim_scalar_slew--;        
+    } else {
+        // if we are not landed and motor power is demanded, increment slew scalar
+        hover_roll_trim_scalar_slew++;
+    }
+    hover_roll_trim_scalar_slew = constrain_int16(hover_roll_trim_scalar_slew, 0, MAIN_LOOP_RATE);
+
+    // set hover roll trim scalar, will ramp from 0 to 1 over 1 second after we think helicopter has taken off
+    attitude_control.set_hover_roll_trim_scalar((float)(hover_roll_trim_scalar_slew/MAIN_LOOP_RATE));
 }
 
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing

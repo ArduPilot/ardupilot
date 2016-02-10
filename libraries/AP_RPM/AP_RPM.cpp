@@ -33,6 +33,12 @@ const AP_Param::GroupInfo AP_RPM::var_info[] PROGMEM = {
     // @Increment: 0.001
     AP_GROUPINFO("_SCALING", 1, AP_RPM, _scaling[0], 1.0f),
 
+    // @Param: _MAX
+    // @DisplayName: Maximum RPM
+    // @Description: Maximum RPM to report
+    // @Increment: 1
+    AP_GROUPINFO("_MAX", 2, AP_RPM, _maximum[0], 0),
+
 #if RPM_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second RPM type

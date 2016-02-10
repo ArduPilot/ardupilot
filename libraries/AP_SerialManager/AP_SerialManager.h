@@ -81,6 +81,7 @@ public:
         SerialProtocol_GPS2 = 6,        // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
+        SerialProtocol_Lidar = 9,
     };
 
     // Constructor

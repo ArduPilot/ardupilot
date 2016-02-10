@@ -32,6 +32,9 @@ Copter::Copter(void) :
     control_mode(STABILIZE),
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
     motors(g.rc_7, g.heli_servo_rsc, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE),
+
+    // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4
+    input_manager(MAIN_LOOP_RATE),
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
     motors(MAIN_LOOP_RATE),
 #elif FRAME_CONFIG == SINGLE_FRAME  // single constructor requires extra servos for flaps
@@ -126,7 +129,7 @@ Copter::Copter(void) :
 //#endif
     in_mavlink_delay(false),
     gcs_out_of_time(false),
-    param_loader(var_info)
+    param_loader(var_info)    
 {
     memset(&current_loc, 0, sizeof(current_loc));
 
