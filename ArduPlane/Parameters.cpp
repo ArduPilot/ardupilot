@@ -485,9 +485,9 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
-    // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero.
+    // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero. If your ESC supports reverse, use a negative value to configure for reverse thrust.
     // @Units: Percent
-    // @Range: 0 100
+    // @Range: -100 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_min,           "THR_MIN",        THROTTLE_MIN),
