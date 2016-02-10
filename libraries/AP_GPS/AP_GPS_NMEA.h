@@ -138,6 +138,8 @@ private:
     int32_t _new_course;                                        ///< course parsed from a term
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
+    uint8_t _new_quality_indicator;                                     ///< GPS quality indicator parsed from a term
+    char _new_mode_indicator;                                           ///< GPS mode indicator parsed from a term
 
     uint32_t _last_GPRMC_ms = 0;
     uint32_t _last_GPGGA_ms = 0;
