@@ -150,6 +150,10 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
     }
 
+    if (aparm.throttle_min < 0) {
+        control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
+    }
+
     // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control, geofence and motor output which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE);
 
@@ -300,6 +304,11 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     }
 #endif
 
+    if (aparm.throttle_min < 0 && channel_throttle->servo_out < 0) {
+        control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;
+        control_sensors_health |= MAV_SYS_STATUS_REVERSE_MOTOR;
+    }
+
     if (AP_Notify::flags.initialising) {
         // while initialising the gyros and accels are not enabled
         control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
@@ -428,7 +437,7 @@ void Plane::send_vfr_hud(mavlink_channel_t chan)
         aspeed,
         gps.ground_speed(),
         (ahrs.yaw_sensor / 100) % 360,
-        throttle_percentage(),
+        abs(throttle_percentage()),
         current_loc.alt / 100.0f,
         barometer.get_climb_rate());
 }
