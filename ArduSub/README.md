@@ -98,8 +98,12 @@ make px4-v2-vectored-upload
 	- Set all to stabilize
 	- Set last flight mode to altHold (Learning mode)
 9. Set Up Camera Tilt (if desired)
-	- Use camera tab to connect RC8 to Output Channel 8
-	- Connect camera tilt servo or gimbal to Ch. 8
+	- Use camera tab to connect RC8 to Output Channel 7
+	- Connect camera tilt servo or gimbal to Ch. 7
+10. Set up Lights
+	- Use camera tab to connect RC9 to Output Channel 8
+	- Set range to 1100-1900
+	- Connect lights PWM signal to Ch. 8
 
 ### Operation ###
 
@@ -113,6 +117,8 @@ The gamepad controls the ROV during operation. It has been tested with the Micro
 - **B Button:** Switch to stabilize (manual) mode
 - **Buttonpad Up/Down Arrows:** Tilt camera (if applicable and set up in QGC)
 - **Buttonpad Left/Right Arrows:** Increase/decrease roll trim (if IMU is not completely level)
+- **Right Joystick Click:** Cycle through light brightness
+- **Left Joystick Click:** Reset camera tilt angle
 
 #### Modes ####
 
