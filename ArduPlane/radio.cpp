@@ -102,7 +102,7 @@ void Plane::rudder_arm_disarm_check()
     }
 
     // if throttle is not down, then pilot cannot rudder arm/disarm
-    if (channel_throttle->control_in > 0) {
+    if (channel_throttle->control_in != 0){
         rudder_arm_timer = 0;
         return;
     }
