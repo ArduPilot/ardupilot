@@ -1152,6 +1152,43 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_COMMAND_INT:
+    {
+        // decode packet
+        mavlink_command_int_t packet;
+        mavlink_msg_command_int_decode(msg, &packet);
+        switch(packet.command)
+        {
+            case MAV_CMD_DO_SET_ROI: {
+                // param1 : /* Region of interest mode (not used)*/
+                // param2 : /* MISSION index/ target ID (not used)*/
+                // param3 : /* ROI index (not used)*/
+                // param4 : /* empty */
+                // x : lat
+                // y : lon
+                // z : alt
+                // sanity check location
+                if (labs(packet.x) >= 900000000l || labs(packet.y) >= 1800000000l) {
+                    break;
+                }
+                Location roi_loc;
+                roi_loc.lat = packet.x;
+                roi_loc.lng = packet.y;
+                roi_loc.alt = (int32_t)(packet.z * 100.0f);
+                copter.set_auto_yaw_roi(roi_loc);
+                result = MAV_RESULT_ACCEPTED;
+                break;
+            }
+            default:
+                result = MAV_RESULT_UNSUPPORTED;
+                break;
+        }
+
+        // send ACK or NAK
+        mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
+        break;
+    }
+
     // Pre-Flight calibration requests
     case MAVLINK_MSG_ID_COMMAND_LONG:       // MAV ID: 76
     {
@@ -1690,6 +1727,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // check for supported coordinate frames
         if (packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
+            packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT && // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
             packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
             packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
             break;
@@ -1714,6 +1752,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             loc.lng = packet.lon_int;
             loc.alt = packet.alt*100;
             switch (packet.coordinate_frame) {
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
                     loc.flags.relative_alt = true;
                     loc.flags.terrain_alt = false;

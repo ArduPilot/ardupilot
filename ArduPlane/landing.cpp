@@ -22,6 +22,7 @@ bool Plane::verify_land()
 
         throttle_suppressed = false;
         auto_state.land_complete = false;
+        auto_state.land_pre_flare = false;
         nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
 
         // see if we have reached abort altitude
@@ -72,8 +73,10 @@ bool Plane::verify_land()
                                   (double)gps.ground_speed(),
                                   (double)get_distance(current_loc, next_WP_loc));
             }
+            auto_state.land_complete = true;
+            update_flight_stage();
         }
-        auto_state.land_complete = true;
+
 
         if (gps.ground_speed() < 3) {
             // reload any airspeed or groundspeed parameters that may have
@@ -83,6 +86,13 @@ bool Plane::verify_land()
             g.airspeed_cruise_cm.load();
             g.min_gndspeed_cm.load();
             aparm.throttle_cruise.load();
+        }
+    } else if (!auto_state.land_complete && !auto_state.land_pre_flare && aparm.land_pre_flare_airspeed > 0) {
+        bool reached_pre_flare_alt = g.land_pre_flare_alt > 0 && (height <= g.land_pre_flare_alt);
+        bool reached_pre_flare_sec = g.land_pre_flare_sec > 0 && (height <= auto_state.sink_rate * g.land_pre_flare_sec);
+        if (reached_pre_flare_alt || reached_pre_flare_sec) {
+            auto_state.land_pre_flare = true;
+            update_flight_stage();
         }
     }
 
@@ -314,6 +324,7 @@ float Plane::tecs_hgt_afe(void)
     */
     float hgt_afe;
     if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();

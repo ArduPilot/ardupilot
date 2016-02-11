@@ -19,7 +19,7 @@
 
 >>ArduRover (or APMrover2) : [code](https://github.com/diydrones/ardupilot/tree/master/APMrover2), [wiki](http://rover.ardupilot.com)
 
->>Antenna Tracker : [code](https://github.com/diydrones/ardupilot/tree/master/AntennaTracker), [wiki](http://copter.ardupilot.com/wiki/common-antennatracker-introduction)
+>>Antenna Tracker : [code](https://github.com/diydrones/ardupilot/tree/master/AntennaTracker), [wiki](http://antennatracker.ardupilot.com)
 
 ### User Support & Discussion Forums ###
 >>APM Forum: [http://ardupilot.com/forum/index.php](http://ardupilot.com/forum/index.php)
@@ -111,3 +111,5 @@
 >>   - ***Subsystem***: Build system
 >> - [Craig Elder] (https://github.com/CraigElder)
 >>   - ***Administration***: Dronecode Technical Community Manager
+>> - [Tom Pittenger] (https://github.com/magicrub)
+>>   - ***Vehicle***: Plane

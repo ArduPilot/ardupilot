@@ -328,17 +328,11 @@ void Plane::one_second_loop()
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
 
-    crash_detection_update();
-
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
         terrain.log_terrain_data(DataFlash);
     }
 #endif
-    // piggyback the status log entry on the MODE log entry flag
-    if (should_log(MASK_LOG_MODE)) {
-        Log_Write_Status();
-    }
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 }
@@ -529,6 +523,7 @@ void Plane::handle_auto_mode(void)
             steer_state.hold_course_cd = -1;
         }
         auto_state.land_complete = false;
+        auto_state.land_pre_flare = false;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();
@@ -844,6 +839,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted via throttle. Climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
         break;
 
+    case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
     case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
     case AP_SpdHgtControl::FLIGHT_NORMAL:
     case AP_SpdHgtControl::FLIGHT_VTOL:
@@ -884,6 +880,7 @@ void Plane::update_alt()
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
+                                                 mission.get_current_nav_cmd().id,
                                                  auto_state.takeoff_pitch_cd,
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
@@ -908,13 +905,15 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if ((g.land_abort_throttle_enable && channel_throttle->control_in > 95) ||
+                if ((g.land_abort_throttle_enable && channel_throttle->control_in >= 90) ||
                         auto_state.commanded_go_around ||
                         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
                 } else if (auto_state.land_complete == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
+                } else if (auto_state.land_pre_flare == true) {
+                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
                 } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
                     float path_progress = location_path_proportion(current_loc, prev_WP_loc, next_WP_loc);
                     bool lined_up = abs(nav_controller->bearing_error_cd()) < 1000;

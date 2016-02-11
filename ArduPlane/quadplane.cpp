@@ -13,7 +13,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Group: M_
     // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
-    AP_SUBGROUPPTR(motors, "M_", 2, QuadPlane, AP_MotorsQuad),
+    AP_SUBGROUPPTR(motors, "M_", 2, QuadPlane, AP_MotorsMulticopter),
 
     // @Param: RT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
@@ -331,6 +331,20 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Units: Degrees
     // @Increment: 1
     AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
+
+    // @Param: FRAME_CLASS
+    // @DisplayName: Frame Class
+    // @Description: Controls major frame class for multicopter component
+    // @Values: 0:Quad, 1:Hexa, 2:Octa
+    // @User: Standard
+    AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 0),
+
+    // @Param: FRAME_TYPE
+    // @DisplayName: Frame Type (+, X or V)
+    // @Description: Controls motor mixing for multicopter component
+    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B
+    // @User: Standard
+    AP_GROUPINFO("FRAME_TYPE", 31, QuadPlane, frame_type, 1),
     
     AP_GROUPEND
 };
@@ -340,6 +354,16 @@ QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+
+// setup default motors for the frame class
+void QuadPlane::setup_default_channels(uint8_t num_motors)
+{
+    for (uint8_t i=0; i<num_motors; i++) {
+        RC_Channel_aux::set_aux_channel_default((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+i), CH_5+i);
+    }
+}
+    
 
 bool QuadPlane::setup(void)
 {
@@ -356,23 +380,34 @@ bool QuadPlane::setup(void)
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
         goto failed;
     }
-    
-    // setup default motors for X frame
-    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor1, CH_5);
-    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
-    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor3, CH_7);
-    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
-    
+
     /*
       dynamically allocate the key objects for quadplane. This ensures
       that the objects don't affect the vehicle unless enabled and
       also saves memory when not in use
      */
-    motors = new AP_MotorsQuad(plane.ins.get_sample_rate());
+    switch ((enum frame_class)frame_class.get()) {
+    case FRAME_CLASS_QUAD:
+        setup_default_channels(4);
+        motors = new AP_MotorsQuad(plane.ins.get_sample_rate());
+        break;
+    case FRAME_CLASS_HEXA:
+        setup_default_channels(6);
+        motors = new AP_MotorsHexa(plane.ins.get_sample_rate());
+        break;
+    case FRAME_CLASS_OCTA:
+        setup_default_channels(8);
+        motors = new AP_MotorsOcta(plane.ins.get_sample_rate());
+        break;
+    default:
+        hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
+        goto failed;
+    }
     if (!motors) {
         hal.console->printf("Unable to allocate motors\n");
         goto failed;
     }
+    
     AP_Param::load_object_from_eeprom(motors, motors->var_info);
     attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors,
                                                     p_stabilize_roll, p_stabilize_pitch, p_stabilize_yaw,
@@ -397,7 +432,7 @@ bool QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    motors->set_frame_orientation(AP_MOTORS_X_FRAME);
+    motors->set_frame_orientation(frame_type);
     motors->Init();
     motors->set_throttle_range(0, thr_min_pwm, thr_max_pwm);
     motors->set_hover_throttle(throttle_mid);

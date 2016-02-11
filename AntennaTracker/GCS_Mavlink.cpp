@@ -573,7 +573,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     // alas we have to look inside each packet to see if its for us or for the remote
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
     {
-        handle_request_data_stream(msg, true);
+        handle_request_data_stream(msg, false);
         break;
     }
 

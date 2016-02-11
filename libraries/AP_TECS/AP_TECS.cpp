@@ -184,6 +184,15 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LAND_PMAX", 20, AP_TECS, _land_pitch_max, 10),
 
+    // @Param: APPR_SMAX
+    // @DisplayName: Sink rate max for landing approach stage
+    // @Description: The sink rate max for the landing approach stage of landing. This will need to be large for steep landing approaches especially when using reverse thrust. If 0, then use TECS_SINK_MAX.
+    // @Range: 0.0 20.0
+    // @Units: m/s
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("APPR_SMAX", 21, AP_TECS, _maxSinkRate_approach, 0),
+
     AP_GROUPEND
 };
 
@@ -290,7 +299,6 @@ void AP_TECS::_update_speed(float load_factor)
     // Convert equivalent airspeeds to true airspeeds
 
     float EAS2TAS = _ahrs.get_EAS2TAS();
-    _TAS_dem  = _EAS_dem * EAS2TAS;
     _TASmax   = aparm.airspeed_max * EAS2TAS;
     _TASmin   = aparm.airspeed_min * EAS2TAS;
 
@@ -300,15 +308,24 @@ void AP_TECS::_update_speed(float load_factor)
         _TASmin *= load_factor;
     }
 
+    float demanded_airspeed = _EAS_dem;
+    if (_ahrs.airspeed_sensor_enabled()) {
+        if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL) && _landAirspeed >= 0) {
+            demanded_airspeed = _landAirspeed;
+        } else if (_flight_stage == FLIGHT_LAND_PREFLARE) {
+            if (aparm.land_pre_flare_airspeed > 0) {
+                demanded_airspeed = aparm.land_pre_flare_airspeed;
+            } else if (_landAirspeed >= 0) {
+                demanded_airspeed = _landAirspeed;
+            }
+        }
+    }
+    _TAS_dem = demanded_airspeed * EAS2TAS;
     if (_TASmax < _TASmin) {
         _TASmax = _TASmin;
     }
-    if (_landAirspeed >= 0 && _ahrs.airspeed_sensor_enabled() &&
-            (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL)) {
-        _TAS_dem = _landAirspeed * EAS2TAS;
-        if (_TASmin > _TAS_dem) {
-            _TASmin = _TAS_dem;
-        }
+    if (_TASmin > _TAS_dem) {
+        _TASmin = _TAS_dem;
     }
 
     // Reset states of time since last update is too large
@@ -402,14 +419,24 @@ void AP_TECS::_update_height_demand(void)
     _hgt_dem = 0.5f * (_hgt_dem + _hgt_dem_in_old);
     _hgt_dem_in_old = _hgt_dem;
 
+    float max_sink_rate = _maxSinkRate;
+    if (_maxSinkRate_approach > 0 && is_on_land_approach(true)) {
+        // special sink rate for approach to accommodate steep slopes and reverse thrust.
+        // A special check must be done to see if we're LANDing on approach but also if
+        // we're in that tiny window just starting NAV_LAND but still in NORMAL mode. If
+        // we have a steep slope with a short approach we'll want to allow acquiring the
+        // glide slope right away.
+        max_sink_rate = _maxSinkRate_approach;
+    }
+
     // Limit height rate of change
     if ((_hgt_dem - _hgt_dem_prev) > (_maxClimbRate * 0.1f))
     {
         _hgt_dem = _hgt_dem_prev + _maxClimbRate * 0.1f;
     }
-    else if ((_hgt_dem - _hgt_dem_prev) < (-_maxSinkRate * 0.1f))
+    else if ((_hgt_dem - _hgt_dem_prev) < (-max_sink_rate * 0.1f))
     {
-        _hgt_dem = _hgt_dem_prev - _maxSinkRate * 0.1f;
+        _hgt_dem = _hgt_dem_prev - max_sink_rate * 0.1f;
     }
     _hgt_dem_prev = _hgt_dem;
 
@@ -445,7 +472,7 @@ void AP_TECS::_update_height_demand(void)
     // us to consistently be above the desired glide slope. This will
     // be replaced with a better zero-lag filter in the future.
     float new_hgt_dem = _hgt_dem_adj;
-    if (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL) {
+    if (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL || _flight_stage == FLIGHT_LAND_PREFLARE) {
         new_hgt_dem += (_hgt_dem_adj - _hgt_dem_adj_last)*10.0f*(timeConstant()+1);
     }
     _hgt_dem_adj_last = _hgt_dem_adj;
@@ -495,6 +522,7 @@ void AP_TECS::_update_energies(void)
 float AP_TECS::timeConstant(void) const
 {
     if (_flight_stage==FLIGHT_LAND_FINAL ||
+            _flight_stage==FLIGHT_LAND_PREFLARE ||
             _flight_stage==FLIGHT_LAND_APPROACH) {
         if (_landTimeConst < 0.1f) {
             return 0.1f;
@@ -600,7 +628,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
     float nomThr;
     //If landing and we don't have an airspeed sensor and we have a non-zero
     //TECS_LAND_THR param then use it
-    if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL) &&
+    if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL || _flight_stage == FLIGHT_LAND_PREFLARE) &&
             _landThrottle >= 0) {
         nomThr = (_landThrottle + throttle_nudge) * 0.01f;
     } else { //not landing or not using TECS_LAND_THR parameter
@@ -668,7 +696,9 @@ void AP_TECS::_update_pitch(void)
         SKE_weighting = 0.0f;
     } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         SKE_weighting = 2.0f;
-    } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
+    } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH ||
+            _flight_stage == AP_TECS::FLIGHT_LAND_PREFLARE ||
+            _flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
         if (_spdWeightLand < 0) {
             // use sliding scale from normal weight down to zero at landing
             float scaled_weight = _spdWeight * (1.0f - _path_proportion);
@@ -792,9 +822,32 @@ void AP_TECS::_update_STE_rate_lim(void)
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
 }
 
+// return true if on landing approach or pre-flare approach flight stages. Optional
+// argument allows to be true while in normal stage just before switching to approach
+bool AP_TECS::is_on_land_approach(bool include_segment_between_NORMAL_and_APPROACH)
+{
+    if (_mission_cmd_id != MAV_CMD_NAV_LAND) {
+        return false;
+    }
+
+    bool on_land_approach = false;
+
+    on_land_approach |= (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH);
+    on_land_approach |= (_flight_stage == AP_TECS::FLIGHT_LAND_PREFLARE);
+
+    if (include_segment_between_NORMAL_and_APPROACH) {
+        // include the brief time where we are performing NAV_LAND but still
+        // on NORMAL stage until we line up with the approach slope
+        on_land_approach |= (_flight_stage == AP_TECS::FLIGHT_NORMAL);
+    }
+
+    return on_land_approach;
+}
+
 void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t EAS_dem_cm,
                                     enum FlightStage flight_stage,
+                                    uint8_t mission_cmd_id,
                                     int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
@@ -804,6 +857,12 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     uint32_t now = AP_HAL::micros();
     _DT = MAX((now - _update_pitch_throttle_last_usec), 0U) * 1.0e-6f;
     _update_pitch_throttle_last_usec = now;
+
+    // store the mission cmd. This is needed due to the delay between
+    // starting an approach, and switching to flight stage approach.
+    // This delay can become a problem with short approaches on steep
+    // landings using reverse thrust.
+    _mission_cmd_id = mission_cmd_id;
 
     // Update the speed estimate using a 2nd order complementary filter
     _update_speed(load_factor);
@@ -849,7 +908,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
         // and allow zero throttle
         _THRminf = 0;
-    } else if (flight_stage == FLIGHT_LAND_APPROACH && (-_climb_rate) > _land_sink) {
+    } else if ((flight_stage == FLIGHT_LAND_APPROACH || flight_stage == FLIGHT_LAND_PREFLARE) && (-_climb_rate) > _land_sink) {
         // constrain the pitch in landing as we get close to the flare
         // point. Use a simple linear limit from 15 meters after the
         // landing point
