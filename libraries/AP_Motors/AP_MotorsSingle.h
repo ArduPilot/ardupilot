@@ -63,9 +63,6 @@ protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
 
-    // calc_yaw_radio_output - calculate final pwm output for yaw channel
-    int16_t             calc_pivot_radio_output(float yaw_input, const RC_Channel& servo);
-
     // servo speed
     AP_Int16            _servo_speed;
 
