@@ -135,10 +135,10 @@ void AP_MotorsCoax::output_to_motors()
         case SHUT_DOWN:
             // sends minimum values out to the motors
             hal.rcout->cork();
-            rc_write(AP_MOTORS_MOT_1, calc_pivot_radio_output(_roll_radio_passthrough, _servo1));
-            rc_write(AP_MOTORS_MOT_2, calc_pivot_radio_output(_pitch_radio_passthrough, _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pivot_radio_output(_roll_radio_passthrough, _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pivot_radio_output(_pitch_radio_passthrough, _servo4));
+            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_roll_radio_passthrough, _servo1));
+            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_pitch_radio_passthrough, _servo2));
+            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_roll_radio_passthrough, _servo3));
+            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_pitch_radio_passthrough, _servo4));
             rc_write(AP_MOTORS_MOT_5, _throttle_radio_min);
             rc_write(AP_MOTORS_MOT_6, _throttle_radio_min);
             hal.rcout->push();
@@ -146,10 +146,10 @@ void AP_MotorsCoax::output_to_motors()
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             hal.rcout->cork();
-            rc_write(AP_MOTORS_MOT_1, calc_pivot_radio_output(_throttle_low_end_pct * _actuator_out[0], _servo1));
-            rc_write(AP_MOTORS_MOT_2, calc_pivot_radio_output(_throttle_low_end_pct * _actuator_out[1], _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pivot_radio_output(_throttle_low_end_pct * _actuator_out[2], _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pivot_radio_output(_throttle_low_end_pct * _actuator_out[3], _servo4));
+            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[0], _servo1));
+            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[1], _servo2));
+            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[2], _servo3));
+            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
             rc_write(AP_MOTORS_MOT_6, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
             hal.rcout->push();
@@ -159,10 +159,10 @@ void AP_MotorsCoax::output_to_motors()
         case SPOOL_DOWN:
             // set motor output based on thrust requests
             hal.rcout->cork();
-            rc_write(AP_MOTORS_MOT_1, calc_pivot_radio_output(_actuator_out[0], _servo1));
-            rc_write(AP_MOTORS_MOT_2, calc_pivot_radio_output(_actuator_out[1], _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pivot_radio_output(_actuator_out[2], _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pivot_radio_output(_actuator_out[3], _servo4));
+            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_actuator_out[0], _servo1));
+            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_actuator_out[1], _servo2));
+            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_actuator_out[2], _servo3));
+            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_thrust_to_pwm(_thrust_yt_ccw));
             rc_write(AP_MOTORS_MOT_6, calc_thrust_to_pwm(_thrust_yt_cw));
             hal.rcout->push();
@@ -334,22 +334,4 @@ void AP_MotorsCoax::output_test(uint8_t motor_seq, int16_t pwm)
             // do nothing
             break;
     }
-}
-
-// calc_yaw_radio_output - calculate final radio output for yaw channel
-int16_t AP_MotorsCoax::calc_pivot_radio_output(float yaw_input, const RC_Channel& servo)
-{
-    int16_t ret;
-
-    if (servo.get_reverse()) {
-        yaw_input = -yaw_input;
-    }
-
-    if (yaw_input >= 0.0f){
-        ret = ((yaw_input * (servo.radio_max - servo.radio_trim)) + servo.radio_trim);
-    } else {
-        ret = ((yaw_input * (servo.radio_trim - servo.radio_min)) + servo.radio_trim);
-    }
-
-    return ret;
 }
