@@ -54,6 +54,8 @@ AP_MotorsQuad   motors(400);
 //AP_MotorsOcta	motors(400);
 //AP_MotorsOctaQuad	motors(400);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
+//AP_MotorsSingle motors(400);
+//AP_MotorsCoax motors(400);
 
 // setup
 void setup()
