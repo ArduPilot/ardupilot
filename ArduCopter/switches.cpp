@@ -83,7 +83,9 @@ void Copter::read_control_switch()
 bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
     bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check
-                || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
+                || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check
+                || g.ch13_option == auxsw_mode_check || g.ch14_option == auxsw_mode_check || g.ch15_option == auxsw_mode_check
+                || g.ch16_option == auxsw_mode_check;
 
     return ret;
 }
