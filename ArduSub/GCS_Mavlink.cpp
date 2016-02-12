@@ -1431,8 +1431,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (sub.init_arm_motors(true)) {
                     result = MAV_RESULT_ACCEPTED;
                 }
-            } else if (is_zero(packet.param1) && (sub.ap.land_complete || is_equal(packet.param2,21196.0f)))  {
+            } else if (is_zero(packet.param1))  {
                 // force disarming by setting param2 = 21196 is deprecated
+            	// see COMMAND_LONG DO_FLIGHTTERMINATION
                 sub.init_disarm_motors();
                 result = MAV_RESULT_ACCEPTED;
             } else {
