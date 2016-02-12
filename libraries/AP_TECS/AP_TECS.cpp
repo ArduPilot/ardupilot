@@ -874,12 +874,13 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _is_doing_auto_land = is_doing_auto_land;
     _distance_beyond_land_wp = distance_beyond_land_wp;
 
-    // Update the speed estimate using a 2nd order complementary filter
-    _update_speed(load_factor);
-
     // Convert inputs
     _hgt_dem = hgt_dem_cm * 0.01f;
     _EAS_dem = EAS_dem_cm * 0.01f;
+
+    // Update the speed estimate using a 2nd order complementary filter
+    _update_speed(load_factor);
+
     if (aparm.takeoff_throttle_max != 0 &&
             (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT)) {
         _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
