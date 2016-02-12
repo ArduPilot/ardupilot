@@ -1659,13 +1659,13 @@ void AP_Param::send_parameter(char *name, enum ap_var_type param_header_type) co
     }
 
     // for vectors we need to send 3 messages
-    Vector3f *v = (Vector3f *)this;
+    const Vector3f &v = ((AP_Vector3f *)this)->get();
     char &name_axis = name[strlen(name)-1];
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->x);
+    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v.x);
     name_axis = 'Y';
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->y);
+    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v.y);
     name_axis = 'Z';
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->z);
+    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v.z);
 }
 
 /*
