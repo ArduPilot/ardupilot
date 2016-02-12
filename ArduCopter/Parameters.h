@@ -183,7 +183,7 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
-                
+
         //
         // 100: Inertial Nav
         //
@@ -209,6 +209,10 @@ public:
         k_param_ch10_option,
         k_param_ch11_option,
         k_param_ch12_option,
+        k_param_ch13_option,
+        k_param_ch14_option,
+        k_param_ch15_option,
+        k_param_ch16_option,
         k_param_takeoff_trigger_dz,
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
@@ -295,6 +299,10 @@ public:
         k_param_failsafe_gps_enabled,   // remove
         k_param_rc_9,
         k_param_rc_12,
+        k_param_rc_13,
+        k_param_rc_14,
+        k_param_rc_15,
+        k_param_rc_16,
         k_param_failsafe_gcs,
         k_param_rcmap, // 199
 
@@ -401,7 +409,7 @@ public:
 
     AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
-    
+
     // Waypoints
     //
     AP_Int32        rtl_loiter_time;
@@ -441,6 +449,10 @@ public:
     AP_Int8         ch10_option;
     AP_Int8         ch11_option;
     AP_Int8         ch12_option;
+    AP_Int8         ch13_option;
+    AP_Int8         ch14_option;
+    AP_Int8         ch15_option;
+    AP_Int8         ch16_option;
     AP_Int8         arming_check;
     AP_Int8         disarm_delay;
 
@@ -588,4 +600,3 @@ public:
 extern const AP_Param::Info        var_info[];
 
 #endif // PARAMETERS_H
-
