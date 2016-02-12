@@ -288,8 +288,10 @@ bool AP_GPS_NMEA::_term_complete()
         uint8_t checksum = 16 * _from_hex(_term[0]) + _from_hex(_term[1]);
         if (checksum == _parity) {
             if (_gps_data_good) {
+                uint32_t now = AP_HAL::millis();
                 switch (_sentence_type) {
                 case _GPS_SENTENCE_GPRMC:
+                    _last_GPRMC_ms = now;
                     //time                        = _new_time;
                     //date                        = _new_date;
                     state.location.lat     = _new_latitude;
@@ -297,12 +299,13 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course_cd = wrap_360_cd(_new_course);
                     make_gps_time(_new_date, _new_time * 10);
-                    state.last_gps_time_ms = AP_HAL::millis();
+                    state.last_gps_time_ms = now;
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     state.status           = AP_GPS::GPS_OK_FIX_3D;
                     fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GPGGA:
+                    _last_GPGGA_ms = now;
                     state.location.alt  = _new_altitude;
                     state.location.lat  = _new_latitude;
                     state.location.lng  = _new_longitude;
@@ -312,8 +315,10 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
                     break;
                 case _GPS_SENTENCE_GPVTG:
+                    _last_GPVTG_ms = now;
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course_cd = wrap_360_cd(_new_course);
+                    fill_3d_velocity();
                     // VTG has no fix indicator, can't change fix status
                     break;
                 }
@@ -337,15 +342,12 @@ bool AP_GPS_NMEA::_term_complete()
     if (_term_number == 0) {
         if (!strcmp(_term, _gprmc_string)) {
             _sentence_type = _GPS_SENTENCE_GPRMC;
-            _last_GPRMC_ms = AP_HAL::millis();
         } else if (!strcmp(_term, _gpgga_string)) {
             _sentence_type = _GPS_SENTENCE_GPGGA;
-            _last_GPGGA_ms = AP_HAL::millis();
         } else if (!strcmp(_term, _gpvtg_string)) {
             _sentence_type = _GPS_SENTENCE_GPVTG;
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
-            _last_GPVTG_ms = AP_HAL::millis();
             _gps_data_good = true;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;

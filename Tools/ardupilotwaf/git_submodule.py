@@ -54,6 +54,15 @@ class update_submodule(Task.Task):
 
         return Task.SKIP_ME
 
+    def uid(self):
+        if not hasattr(self, 'uid_'):
+            m = Utils.md5()
+            m.update(self.__class__.__name__)
+            m.update(self.env.get_flat('SUBMODULE_PATH'))
+            self.uid_ = m.digest()
+
+        return self.uid_
+
     def __str__(self):
         return 'Submodule update: %s' % self.submodule
 

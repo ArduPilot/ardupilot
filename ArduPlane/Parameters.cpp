@@ -274,8 +274,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: USE_REV_THRUST
     // @DisplayName: Bitmask for when to allow negative reverse thrust
     // @Description: Typically THR_MIN will be clipped to zero unless reverse thrust is available. Since you may not want negative thrust available at all times this bitmask allows THR_MIN to go below 0 while executing certain auto-mission commands.
-    // @Values: 0:Disabled,1:AlwaysAllowed,2:LandApproach,4:LoiterToAlt,8:Loiter,16:Waypoint
-    // @Bitmask: 0:ALWAYS,1:LAND,2:LOITER_TO_ALT,3:LOITER_ALL,4:WAYPOINTS
+    // @Values: 0:Disabled,1:AlwaysAllowedInAuto,2:Auto_LandApproach,4:Auto_LoiterToAlt,8:Auto_Loiter,16:Auto_Waypoint,32:Loiter,64:RTL,128:Circle,256:Cruise,512:FBWB,1024:Guided
+    // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
 
@@ -485,9 +485,9 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
-    // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero.
+    // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero. If your ESC supports reverse, use a negative value to configure for reverse thrust.
     // @Units: Percent
-    // @Range: 0 100
+    // @Range: -100 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_min,           "THR_MIN",        THROTTLE_MIN),
