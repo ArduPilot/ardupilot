@@ -193,6 +193,15 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("APPR_SMAX", 21, AP_TECS, _maxSinkRate_approach, 0),
 
+    // @Param: LAND_SRC
+    // @DisplayName: Land sink rate change
+    // @Description: When zero, the flare sink rate (TECS_LAND_SINK) is a fixed sink demand. With this enabled the flare sinkrate will increase/decrease the flare sink demand as you get further beyond the LAND waypoint. Has no effect before the waypoint. This value is added to TECS_LAND_SINK proportional to distance traveled after wp. With an increasing sink rate you can still land in a given distance if you're traveling too fast and cruise passed the land point. A positive value will force the plane to land sooner proportional to distance passed land point. A negative number will tell the plane to slowly climb allowing for a pitched-up stall landing. Recommend 0.2 as initial value.
+    // @Range: -2.0 2.0
+    // @Units: m/s/m
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LAND_SRC", 22, AP_TECS, _land_sink_rate_change, 0),
+
     AP_GROUPEND
 };
 
@@ -452,12 +461,16 @@ void AP_TECS::_update_height_demand(void)
             _hgt_rate_dem = _climb_rate;
             _land_hgt_dem = _hgt_dem_adj;
         }
+
+        // adjust the flare sink rate to increase/decrease as your travel further beyond the land wp
+        float land_sink_rate_adj = _land_sink + _land_sink_rate_change*_distance_beyond_land_wp;
+
         // bring it in over 1s to prevent overshoot
         if (_flare_counter < 10) {
-            _hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * _land_sink;
+            _hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * land_sink_rate_adj;
             _flare_counter++;
         } else {
-            _hgt_rate_dem = - _land_sink;
+            _hgt_rate_dem = - land_sink_rate_adj;
         }
         _land_hgt_dem += 0.1f * _hgt_rate_dem;
         _hgt_dem_adj = _land_hgt_dem;
@@ -848,6 +861,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t EAS_dem_cm,
                                     enum FlightStage flight_stage,
                                     bool is_doing_auto_land,
+                                    float distance_beyond_land_wp,
                                     int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
@@ -859,6 +873,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _update_pitch_throttle_last_usec = now;
 
     _is_doing_auto_land = is_doing_auto_land;
+    _distance_beyond_land_wp = distance_beyond_land_wp;
 
     // Update the speed estimate using a 2nd order complementary filter
     _update_speed(load_factor);
