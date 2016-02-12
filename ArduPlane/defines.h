@@ -193,4 +193,20 @@ enum {
     CRASH_DETECT_ACTION_BITMASK_DISARM = (1<<0),
     // note: next enum will be (1<<1), then (1<<2), then (1<<3)
 };
+
+enum {
+    USE_REVERSE_THRUST_NEVER                    = 0,
+    USE_REVERSE_THRUST_AUTO_ALWAYS              = (1<<0),
+    USE_REVERSE_THRUST_AUTO_LAND_APPROACH       = (1<<1),
+    USE_REVERSE_THRUST_AUTO_LOITER_TO_ALT       = (1<<2),
+    USE_REVERSE_THRUST_AUTO_LOITER_ALL          = (1<<3),
+    USE_REVERSE_THRUST_AUTO_WAYPOINT            = (1<<4),
+    USE_REVERSE_THRUST_LOITER                   = (1<<5),
+    USE_REVERSE_THRUST_RTL                      = (1<<6),
+    USE_REVERSE_THRUST_CIRCLE                   = (1<<7),
+    USE_REVERSE_THRUST_CRUISE                   = (1<<8),
+    USE_REVERSE_THRUST_FBWB                     = (1<<9),
+    USE_REVERSE_THRUST_GUIDED                   = (1<<10),
+};
+
 #endif // _DEFINES_H

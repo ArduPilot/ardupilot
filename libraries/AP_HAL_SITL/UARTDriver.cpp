@@ -84,7 +84,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             uint16_t port = atoi(args2);
             _tcp_start_client(args1, port);
         } else if (strcmp(devtype, "uart") == 0) {
-            uint32_t baudrate = args2? atoi(args2) : 57600;
+            uint32_t baudrate = args2? atoi(args2) : baud;
             ::printf("UART connection %s:%u\n", args1, baudrate);
             _uart_start_connection(args1, baudrate);
         } else {

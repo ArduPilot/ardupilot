@@ -49,13 +49,6 @@ def configure(cfg):
         )
         return
 
-    cfg.start_msg('Checking for gbenchmark submodule')
-    cmake_lists = cfg.srcnode.find_resource('modules/gbenchmark/CMakeLists.txt')
-    if not cmake_lists:
-        cfg.end_msg('not initialized', color='YELLOW')
-        return
-    cfg.end_msg('yes')
-
     cfg.find_program('cmake', mandatory=False)
 
     if not env.CMAKE:
@@ -74,25 +67,18 @@ def configure(cfg):
     bldnode = cfg.bldnode.make_node(cfg.variant)
     prefix_node = bldnode.make_node('gbenchmark')
     my_build_node = bldnode.make_node('gbenchmark_build')
-    my_src_node = cfg.srcnode.find_dir('modules/gbenchmark')
+    my_src_node = cfg.srcnode.make_node('modules/gbenchmark')
 
     env.GBENCHMARK_PREFIX_REL = prefix_node.path_from(bldnode)
     env.GBENCHMARK_BUILD = my_build_node.abspath()
     env.GBENCHMARK_BUILD_REL = my_build_node.path_from(bldnode)
     env.GBENCHMARK_SRC = my_src_node.abspath()
 
-    cfg.start_msg('Configuring gbenchmark')
-    try:
-        _configure_cmake(cfg, bldnode)
-        cfg.end_msg('done')
-    except:
-        cfg.end_msg('failed', color='YELLOW')
-        return
-
     env.INCLUDES_GBENCHMARK = [prefix_node.make_node('include').abspath()]
     env.LIBPATH_GBENCHMARK = [prefix_node.make_node('lib').abspath()]
     env.LIB_GBENCHMARK = ['benchmark']
 
+    env.append_value('GIT_SUBMODULES', 'gbenchmark')
     env.HAS_GBENCHMARK = True
 
 class gbenchmark_build(Task.Task):
@@ -115,10 +101,6 @@ class gbenchmark_build(Task.Task):
     def run(self):
         bld = self.generator.bld
         cmds = []
-
-        cmake_lists = bld.srcnode.find_resource('modules/gbenchmark/CMakeLists.txt')
-        if not cmake_lists:
-            bld.fatal('Submodule gbenchmark not initialized, please run configure again')
 
         try:
             # Generate build system first, if necessary

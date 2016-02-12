@@ -351,6 +351,14 @@ void AP_Baro::init(void)
  */
 void AP_Baro::update(void)
 {
+    if (fabsf(_alt_offset - _alt_offset_active) > 0.1f) {
+        // if there's more than 10cm difference then slowly slew to it via LPF.
+        // The EKF does not like step inputs so this keeps it happy
+        _alt_offset_active = (0.9f*_alt_offset_active) + (0.1f*_alt_offset);
+    } else {
+        _alt_offset_active = _alt_offset;
+    }
+
     if (!_hil_mode) {
         for (uint8_t i=0; i<_num_drivers; i++) {
             drivers[i]->update();
@@ -374,7 +382,7 @@ void AP_Baro::update(void)
             // sanity check altitude
             sensors[i].alt_ok = !(isnan(altitude) || isinf(altitude));
             if (sensors[i].alt_ok) {
-                sensors[i].altitude = altitude + _alt_offset;
+                sensors[i].altitude = altitude + _alt_offset_active;
             }
         }
     }

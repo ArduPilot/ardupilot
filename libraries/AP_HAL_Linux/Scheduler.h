@@ -1,11 +1,8 @@
-
-#ifndef __AP_HAL_LINUX_SCHEDULER_H__
-#define __AP_HAL_LINUX_SCHEDULER_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #include "Semaphores.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <sys/time.h>
 #include <pthread.h>
 
@@ -108,7 +105,3 @@ private:
     Semaphore _timer_semaphore;
     Semaphore _io_semaphore;
 };
-
-#endif // CONFIG_HAL_BOARD
-
-#endif // __AP_HAL_LINUX_SCHEDULER_H__

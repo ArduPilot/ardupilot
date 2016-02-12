@@ -14,7 +14,17 @@
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&tracker.v, {group_info : class::var_info} }
 
 const AP_Param::Info Tracker::var_info[] = {
+    // @Param: FORMAT_VERSION
+    // @DisplayName: Eeprom format version number
+    // @Description: This value is incremented when changes are made to the eeprom format
+    // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
+
+    // @Param: SYSID_SW_TYPE
+    // @DisplayName: Software Type
+    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
+    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover
+    // @User: Advanced
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
@@ -275,7 +285,64 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
 
+    // @Param: PITCH2SRV_P
+    // @DisplayName: Pitch axis controller P gain
+    // @Description: Pitch axis controller P gain.  Converts the difference between desired pitch angle and actual pitch angle into a pitch servo pwm change
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: PITCH2SRV_I
+    // @DisplayName: Pitch axis controller I gain
+    // @Description: Pitch axis controller I gain.  Corrects long-term difference in desired pitch angle vs actual pitch angle
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: PITCH2SRV_IMAX
+    // @DisplayName: Pitch axis controller I gain maximum
+    // @Description: Pitch axis controller I gain maximum.  Constrains the maximum pwm change that the I gain will output
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: Percent*10
+    // @User: Standard
+
+    // @Param: PITCH2SRV_D
+    // @DisplayName: Pitch axis controller D gain
+    // @Description: Pitch axis controller D gain.  Compensates for short-term change in desired pitch angle vs actual pitch angle
+    // @Range: 0.001 0.1
+    // @Increment: 0.001
+    // @User: Standard
 	GGROUP(pidPitch2Srv,       "PITCH2SRV_", PID),
+
+    // @Param: YAW2SRV_P
+    // @DisplayName: Yaw axis controller P gain
+    // @Description: Yaw axis controller P gain.  Converts the difference between desired yaw angle (heading) and actual yaw angle into a yaw servo pwm change
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: YAW2SRV_I
+    // @DisplayName: Yaw axis controller I gain
+    // @Description: Yaw axis controller I gain.  Corrects long-term difference in desired yaw angle (heading) vs actual yaw angle
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: YAW2SRV_IMAX
+    // @DisplayName: Yaw axis controller I gain maximum
+    // @Description: Yaw axis controller I gain maximum.  Constrains the maximum pwm change that the I gain will output
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: Percent*10
+    // @User: Standard
+
+    // @Param: YAW2SRV_D
+    // @DisplayName: Yaw axis controller D gain
+    // @Description: Yaw axis controller D gain.  Compensates for short-term change in desired yaw angle (heading) vs actual yaw angle
+    // @Range: 0.001 0.1
+    // @Increment: 0.001
+    // @User: Standard
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", PID),
 
     // @Param: CMD_TOTAL

@@ -244,6 +244,41 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     ASCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),
 
+    // @Param: LAND_PF_ALT
+    // @DisplayName: Landing pre-flare altitude
+    // @Description: Altitude to trigger pre-flare flight stage where LAND_PF_ARSPD controls airspeed. The pre-flare flight stage trigger works just like LAND_FLARE_ALT but higher. Disabled when LAND_PF_ARSPD is 0.
+    // @Units: meters
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Advanced
+    GSCALAR(land_pre_flare_alt     , "LAND_PF_ALT",  10.0),
+
+    // @Param: LAND_PF_SEC
+    // @DisplayName: Landing pre-flare time
+    // @Description: Vertical time to ground to trigger pre-flare flight stage where LAND_PF_ARSPD controls airspeed. This pre-flare flight stage trigger works just like LAND_FLARE_SEC but earlier. Disabled when LAND_PF_ARSPD is 0.
+    // @Units: seconds
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Advanced
+    GSCALAR(land_pre_flare_sec     , "LAND_PF_SEC",  6.0),
+
+    // @Param: LAND_PF_ARSPD
+    // @DisplayName: Landing pre-flare airspeed
+    // @Description: Desired airspeed during pre-flare flight stage. This is useful to reduce airspeed just before the flare. Use 0 to disable.
+    // @Units: m/s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Advanced
+    ASCALAR(land_pre_flare_airspeed, "LAND_PF_ARSPD",  0),
+
+    // @Param: USE_REV_THRUST
+    // @DisplayName: Bitmask for when to allow negative reverse thrust
+    // @Description: Typically THR_MIN will be clipped to zero unless reverse thrust is available. Since you may not want negative thrust available at all times this bitmask allows THR_MIN to go below 0 while executing certain auto-mission commands.
+    // @Values: 0:Disabled,1:AlwaysAllowedInAuto,2:Auto_LandApproach,4:Auto_LoiterToAlt,8:Auto_Loiter,16:Auto_Waypoint,32:Loiter,64:RTL,128:Circle,256:Cruise,512:FBWB,1024:Guided
+    // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED
+    // @User: Advanced
+    GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
+
     // @Param: LAND_DISARMDELAY
     // @DisplayName: Landing disarm delay
     // @Description: After a landing has completed using a LAND waypoint, automatically disarm after this many seconds have passed. Use 0 to not disarm.
@@ -450,9 +485,9 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
-    // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero.
+    // @Description: The minimum throttle setting (as a percentage) which the autopilot will apply. For the final stage of an automatic landing this is always zero. If your ESC supports reverse, use a negative value to configure for reverse thrust.
     // @Units: Percent
-    // @Range: 0 100
+    // @Range: -100 100
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_min,           "THR_MIN",        THROTTLE_MIN),

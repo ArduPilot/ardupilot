@@ -53,11 +53,5 @@ def configure(cfg):
 
     env = cfg.env
 
-    cfg.start_msg('Checking for mavgen')
-    if not cfg.srcnode.find_resource('modules/mavlink/pymavlink/tools/mavgen.py'):
-        cfg.fatal('not found, please run: git submodule init && git submodule update')
-        return
-    cfg.end_msg('yes')
-
-    env.MAVLINK_DIR = cfg.srcnode.find_dir('modules/mavlink/').abspath()
+    env.MAVLINK_DIR = cfg.srcnode.make_node('modules/mavlink/').abspath()
     env.MAVGEN = env.MAVLINK_DIR  + '/pymavlink/tools/mavgen.py'

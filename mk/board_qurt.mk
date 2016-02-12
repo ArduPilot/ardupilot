@@ -43,7 +43,7 @@ COPTS           =   -ffunction-sections -fdata-sections -fsigned-char $(DSP_CFLA
 
 # DSP build flags
 DSP_INC=-I$(HEXAGON_SDK_ROOT)/gnu/hexagon/include -I$(HEXAGON_FC_ADDON)/hexagon/inc -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/sys -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/sys/sys -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/include -I$(HEXAGON_SDK_ROOT)/lib/common/qurt/ADSPv5MP/include -I$(HEXAGON_SDK_ROOT)/lib/common/remote/ship/hexagon_Debug_dynamic -I$(HEXAGON_SDK_ROOT)/inc/stddef -I$(HAL_QURT_BUILD)
-DSP_WARN=-Wno-unused-parameter
+DSP_WARN=-Wno-unused-parameter -Wno-gnu-variable-sized-type-not-at-end -Wno-gnu-designator -Wno-absolute-value
 DSP_FLAGS=-mv5 -G0 -g $(OPT) $(DSP_WARN) -fno-exceptions -fno-strict-aliasing -fno-zero-initialized-in-bss -fdata-sections -fpic -D__V_DYNAMIC__ -D_DEBUG $(DSP_INC) -D_PID_T -D_UID_T -D_TIMER_T -D_HAS_C9X
 
 DSP_LINK_FLAGS = -mv5 -G0 -fpic -shared -Wl,-Bsymbolic -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=free -Wl,--wrap=realloc -Wl,--wrap=memalign -Wl,--wrap=__stack_chk_fail -Wl,-soname=lib$(SKETCHNAME)_skel.so 

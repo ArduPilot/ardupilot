@@ -10,9 +10,7 @@ sys.path.insert(0, 'Tools/ardupilotwaf/')
 import ardupilotwaf
 import boards
 
-from waflib import ConfigSet, Utils
-from waflib.Build import BuildContext
-import waflib.Context
+from waflib import Build, ConfigSet, Context, Utils
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
@@ -35,8 +33,8 @@ def init(ctx):
         return
 
     # define the variant build commands according to the board
-    for c in waflib.Context.classes:
-        if not issubclass(c, BuildContext):
+    for c in Context.classes:
+        if not issubclass(c, Build.BuildContext):
             continue
         c.variant = env.BOARD
 
@@ -82,6 +80,7 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
+    cfg.load('git_submodule')
     cfg.load('gbenchmark')
     cfg.load('gtest')
     cfg.load('static_linking')
@@ -97,6 +96,8 @@ def configure(cfg):
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.env.append_value('GIT_SUBMODULES', 'mavlink')
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
@@ -130,7 +131,7 @@ def _build_cmd_tweaks(bld):
             bld.fatal('check: gtest library is required')
         bld.add_post_fun(ardupilotwaf.test_summary)
 
-def _create_common_taskgens(bld):
+def _build_dynamic_sources(bld):
     bld(
         features='mavgen',
         source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
@@ -144,6 +145,7 @@ def _create_common_taskgens(bld):
         ],
     )
 
+def _build_common_taskgens(bld):
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider
@@ -154,6 +156,8 @@ def _create_common_taskgens(bld):
         libraries=bld.ap_get_all_libraries(),
         use='mavlink',
     )
+
+    bld.libgtest()
 
 def _build_recursion(bld):
     common_dirs_patterns = [
@@ -200,11 +204,22 @@ def _build_recursion(bld):
         bld.recurse(d)
 
 def build(bld):
+    bld.post_mode = Build.POST_LAZY
+
     bld.load('ardupilotwaf')
-    bld.load('gtest')
 
     _build_cmd_tweaks(bld)
-    _create_common_taskgens(bld)
+
+    bld.add_group('git_submodules')
+    for name in bld.env.GIT_SUBMODULES:
+        bld.git_submodule(name)
+
+    bld.add_group('dynamic_sources')
+    _build_dynamic_sources(bld)
+
+    bld.add_group('build')
+    _build_common_taskgens(bld)
+
     _build_recursion(bld)
 
 ardupilotwaf.build_command('check',

@@ -23,27 +23,39 @@
 
 using namespace SITL;
 
-static const Motor quad_motors[4] =
-{
-    Motor(45,  false,  5),
-    Motor(225, false,  6),
-    Motor(315, true,   7),
-    Motor(135, true,   8)
-};
-
-static Frame quad_frame("x", 4, quad_motors);
-
 QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
     Plane(home_str, frame_str)
 {
-    frame = &quad_frame;
-    // we use zero terminal velocity to let the plane model handle the drag
-    frame->init(mass, 0.51, 0, 0);
-
     // see if we want a tiltrotor
     if (strstr(frame_str, "-tilt")) {
         tiltrotors = true;
     }
+    // default to X frame
+    const char *frame_type = "x";
+
+    if (strstr(frame_str, "-octa-quad")) {
+        frame_type = "octa-quad";
+    } else if (strstr(frame_str, "-octa")) {
+        frame_type = "octa";
+    } else if (strstr(frame_str, "-hexax")) {
+        frame_type = "hexax";
+    } else if (strstr(frame_str, "-hexa")) {
+        frame_type = "hexa";
+    } else if (strstr(frame_str, "-plus")) {
+        frame_type = "+";
+    }
+    frame = Frame::find_frame(frame_type);
+    if (frame == nullptr) {
+        printf("Failed to find frame '%s'\n", frame_type);
+        exit(1);
+    }
+
+    // leave first 4 servos free for plane
+    frame->motor_offset = 4;
+
+    // we use zero terminal velocity to let the plane model handle the drag
+    frame->init(mass, 0.51, 0, 0);
+
 }
 
 /*
