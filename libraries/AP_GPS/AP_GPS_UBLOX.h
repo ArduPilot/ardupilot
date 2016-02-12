@@ -506,6 +506,8 @@ private:
 
     uint32_t _last_5hz_time;
 
+    bool _cfg_needs_save;
+
     bool noReceivedHdop;
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
