@@ -186,8 +186,10 @@ AP_GPS_UBLOX::_request_next_config(void)
 #endif
         break;
     case STEP_VERSION:
-         if(!_have_version && !hal.util->get_soft_armed()) {
+        if(!_have_version && !hal.util->get_soft_armed()) {
             _request_version();
+        } else {
+            _unconfigured_messages &= ~CONFIG_VERSION;
         }
         // no need to send the initial rates, move to checking only
         _next_message = STEP_PORT;
@@ -960,7 +962,8 @@ AP_GPS_UBLOX::_parse_gps(void)
     // this ensures we don't use stale data
     if (_new_position && _new_speed && _last_vel_time == _last_pos_time) {
         _new_speed = _new_position = false;
-        if (AP_HAL::millis() - _last_5hz_time > 10000U) {
+        // allow the GPS configuration to run through the full loop at least once before throwing this
+        if (state.status != AP_GPS::NO_FIX && AP_HAL::millis() - _last_5hz_time > 20000U) {
             // the gps seems to be slow, possibly due to a brown out
             // invalidate the config so it can be reset
             _last_5hz_time = AP_HAL::millis();
