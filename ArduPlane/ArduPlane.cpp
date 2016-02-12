@@ -29,10 +29,11 @@
 
 /*
   scheduler table - all regular tasks are listed here, along with how
-  often they should be called (in 20ms units) and the maximum time
+  often they should be called (in Hz) and the maximum time
   they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
+                           // Units:   Hz      us
     SCHED_TASK(read_radio,             50,    700),
     SCHED_TASK(check_short_failsafe,   50,   1000),
     SCHED_TASK(ahrs_update,           400,   6400),
