@@ -424,7 +424,6 @@ void AP_TECS::_update_speed_demand(void)
 void AP_TECS::_update_height_demand(void)
 {
     // Apply 2 point moving average to demanded height
-    // This is required because height demand is only updated at 5Hz
     _hgt_dem = 0.5f * (_hgt_dem + _hgt_dem_in_old);
     _hgt_dem_in_old = _hgt_dem;
 
