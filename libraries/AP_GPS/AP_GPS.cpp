@@ -104,8 +104,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: SAVE_CFG
     // @DisplayName: Save GPS configuration
-    // @Description: Determines whether the configuration for this GPS should be written to non-volatile memory on the GPS. Currently working for UBlox 7 series and above.
-    // @Values: 0:Do not save config,1:Save config
+    // @Description: Determines whether the configuration for this GPS should be written to non-volatile memory on the GPS. Currently working for UBlox 6 series and above.
+    // @Values: 0:Do not save config,1:Save config,2:Save only when needed
     // @User: Advanced
     AP_GROUPINFO("SAVE_CFG", 11, AP_GPS, _save_config, 0),
 
