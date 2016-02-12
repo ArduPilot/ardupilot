@@ -877,11 +877,17 @@ void Plane::update_alt()
     update_flight_stage();
 
     bool is_doing_auto_land = (control_mode == AUTO) && (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND);
+    float distance_beyond_land_wp = 0;
+    if (is_doing_auto_land && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
+    }
+
     if (auto_throttle_mode && !throttle_suppressed) {        
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  is_doing_auto_land,
+                                                 distance_beyond_land_wp,
                                                  auto_state.takeoff_pitch_cd,
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
