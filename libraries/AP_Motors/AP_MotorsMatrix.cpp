@@ -166,6 +166,10 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   unused_range;               // amount of yaw we can fit in the current channel
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
 
+    // init motor limit flags
+    limit.motor_upper = 0;
+    limit.motor_lower = 0;
+
     // apply voltage and air pressure compensation
     roll_thrust = _roll_in * get_compensation_gain();
     pitch_thrust = _pitch_in * get_compensation_gain();
@@ -287,6 +291,13 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             _thrust_rpyt_out[i] = constrain_float(_thrust_rpyt_out[i], 0.0f, 1.0f);
+            if (_thrust_rpyt_out[i] > 1-_thr_warn_threshold) {
+                limit.motor_upper |= (1<<i);
+            }
+            else if (_thrust_rpyt_out[i] < _thr_warn_threshold) {
+                limit.motor_lower |= (1<<i);
+            }
+
         }
     }
 }

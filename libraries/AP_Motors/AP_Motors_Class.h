@@ -115,6 +115,8 @@ public:
         uint8_t yaw             : 1; // we have reached yaw limit
         uint8_t throttle_lower  : 1; // we have reached throttle's lower limit
         uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
+        uint8_t motor_lower     : AP_MOTORS_MAX_NUM_MOTORS; // a certain motor has reached the lower warning threshold
+        uint8_t motor_upper     : AP_MOTORS_MAX_NUM_MOTORS; // a certain motor has reached the upper warning threshold
     } limit;
 
     //
