@@ -826,7 +826,7 @@ void AP_TECS::_update_STE_rate_lim(void)
 // argument allows to be true while in normal stage just before switching to approach
 bool AP_TECS::is_on_land_approach(bool include_segment_between_NORMAL_and_APPROACH)
 {
-    if (_mission_cmd_id != MAV_CMD_NAV_LAND) {
+    if (!_is_doing_auto_land) {
         return false;
     }
 
@@ -847,7 +847,7 @@ bool AP_TECS::is_on_land_approach(bool include_segment_between_NORMAL_and_APPROA
 void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t EAS_dem_cm,
                                     enum FlightStage flight_stage,
-                                    uint8_t mission_cmd_id,
+                                    bool is_doing_auto_land,
                                     int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
@@ -858,11 +858,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _DT = MAX((now - _update_pitch_throttle_last_usec), 0U) * 1.0e-6f;
     _update_pitch_throttle_last_usec = now;
 
-    // store the mission cmd. This is needed due to the delay between
-    // starting an approach, and switching to flight stage approach.
-    // This delay can become a problem with short approaches on steep
-    // landings using reverse thrust.
-    _mission_cmd_id = mission_cmd_id;
+    _is_doing_auto_land = is_doing_auto_land;
 
     // Update the speed estimate using a 2nd order complementary filter
     _update_speed(load_factor);
