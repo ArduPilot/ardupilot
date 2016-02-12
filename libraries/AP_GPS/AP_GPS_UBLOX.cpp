@@ -171,7 +171,7 @@ AP_GPS_UBLOX::_request_next_config(void)
             _next_message--;
         }
 #else
-        _unconfigured_messages & = ~COONFIG_RATE_RAW;
+        _unconfigured_messages & = ~CONFIG_RATE_RAW;
 #endif
         break;
     case STEP_RAWX:
@@ -182,7 +182,7 @@ AP_GPS_UBLOX::_request_next_config(void)
             _next_message--;
         }
 #else
-        _unconfigured_messages & = ~COONFIG_RATE_RAW;
+        _unconfigured_messages & = ~CONFIG_RATE_RAW;
 #endif
         break;
     case STEP_VERSION:
