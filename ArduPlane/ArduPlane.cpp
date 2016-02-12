@@ -876,11 +876,12 @@ void Plane::update_alt()
 
     update_flight_stage();
 
+    bool is_doing_auto_land = (control_mode == AUTO) && (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND);
     if (auto_throttle_mode && !throttle_suppressed) {        
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
-                                                 mission.get_current_nav_cmd().id,
+                                                 is_doing_auto_land,
                                                  auto_state.takeoff_pitch_cd,
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
