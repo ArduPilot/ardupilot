@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 
 //enable bypass MPU60XX for HCM8343
 #define MPUREG_USER_CTRL                        0x6A
-#define MPUREG_INT_PIN_CFG 						0x37
+#define MPUREG_INT_PIN_CFG                      0x37
 #define BIT_I2C_BYPASS_EN                       0x02
 
 // MPU 6000 registers
