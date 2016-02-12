@@ -47,7 +47,7 @@ PX4_V4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v4_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
-WARNFLAGS = -Werror -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
+WARNFLAGS = -Wall -Wextra -Wlogical-op -Werror -Wno-redundant-decls -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
 OPTFLAGS = -fsingle-precision-constant
 
 # avoid PX4 submodules
@@ -111,6 +111,7 @@ px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) /bin/rm -f $(SKETCH)-v4.px4
 	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v4_APM.build/firmware.elf
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v4_APM.px4 $(SKETCH)-v4.px4
+	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmuv4_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4.px4" "$(SKETCH)-v4.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4.px4"
 

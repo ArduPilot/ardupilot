@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Range: -1.0 2.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("LAND_SPDWGT", 14, AP_TECS, _spdWeightLand, 1.0f),
+    AP_GROUPINFO("LAND_SPDWGT", 14, AP_TECS, _spdWeightLand, -1.0f),
 
     // @Param: PITCH_MAX
     // @DisplayName: Maximum pitch in auto flight
@@ -192,6 +192,15 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("APPR_SMAX", 21, AP_TECS, _maxSinkRate_approach, 0),
+
+    // @Param: LAND_SRC
+    // @DisplayName: Land sink rate change
+    // @Description: When zero, the flare sink rate (TECS_LAND_SINK) is a fixed sink demand. With this enabled the flare sinkrate will increase/decrease the flare sink demand as you get further beyond the LAND waypoint. Has no effect before the waypoint. This value is added to TECS_LAND_SINK proportional to distance traveled after wp. With an increasing sink rate you can still land in a given distance if you're traveling too fast and cruise passed the land point. A positive value will force the plane to land sooner proportional to distance passed land point. A negative number will tell the plane to slowly climb allowing for a pitched-up stall landing. Recommend 0.2 as initial value.
+    // @Range: -2.0 2.0
+    // @Units: m/s/m
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LAND_SRC", 22, AP_TECS, _land_sink_rate_change, 0),
 
     AP_GROUPEND
 };
@@ -415,7 +424,6 @@ void AP_TECS::_update_speed_demand(void)
 void AP_TECS::_update_height_demand(void)
 {
     // Apply 2 point moving average to demanded height
-    // This is required because height demand is only updated at 5Hz
     _hgt_dem = 0.5f * (_hgt_dem + _hgt_dem_in_old);
     _hgt_dem_in_old = _hgt_dem;
 
@@ -452,12 +460,16 @@ void AP_TECS::_update_height_demand(void)
             _hgt_rate_dem = _climb_rate;
             _land_hgt_dem = _hgt_dem_adj;
         }
+
+        // adjust the flare sink rate to increase/decrease as your travel further beyond the land wp
+        float land_sink_rate_adj = _land_sink + _land_sink_rate_change*_distance_beyond_land_wp;
+
         // bring it in over 1s to prevent overshoot
         if (_flare_counter < 10) {
-            _hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * _land_sink;
+            _hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * land_sink_rate_adj;
             _flare_counter++;
         } else {
-            _hgt_rate_dem = - _land_sink;
+            _hgt_rate_dem = - land_sink_rate_adj;
         }
         _land_hgt_dem += 0.1f * _hgt_rate_dem;
         _hgt_dem_adj = _land_hgt_dem;
@@ -826,7 +838,7 @@ void AP_TECS::_update_STE_rate_lim(void)
 // argument allows to be true while in normal stage just before switching to approach
 bool AP_TECS::is_on_land_approach(bool include_segment_between_NORMAL_and_APPROACH)
 {
-    if (_mission_cmd_id != MAV_CMD_NAV_LAND) {
+    if (!_is_doing_auto_land) {
         return false;
     }
 
@@ -847,7 +859,8 @@ bool AP_TECS::is_on_land_approach(bool include_segment_between_NORMAL_and_APPROA
 void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t EAS_dem_cm,
                                     enum FlightStage flight_stage,
-                                    uint8_t mission_cmd_id,
+                                    bool is_doing_auto_land,
+                                    float distance_beyond_land_wp,
                                     int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
@@ -858,18 +871,16 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _DT = MAX((now - _update_pitch_throttle_last_usec), 0U) * 1.0e-6f;
     _update_pitch_throttle_last_usec = now;
 
-    // store the mission cmd. This is needed due to the delay between
-    // starting an approach, and switching to flight stage approach.
-    // This delay can become a problem with short approaches on steep
-    // landings using reverse thrust.
-    _mission_cmd_id = mission_cmd_id;
-
-    // Update the speed estimate using a 2nd order complementary filter
-    _update_speed(load_factor);
+    _is_doing_auto_land = is_doing_auto_land;
+    _distance_beyond_land_wp = distance_beyond_land_wp;
 
     // Convert inputs
     _hgt_dem = hgt_dem_cm * 0.01f;
     _EAS_dem = EAS_dem_cm * 0.01f;
+
+    // Update the speed estimate using a 2nd order complementary filter
+    _update_speed(load_factor);
+
     if (aparm.takeoff_throttle_max != 0 &&
             (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT)) {
         _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;

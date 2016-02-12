@@ -37,13 +37,15 @@ PROJECT_ENV.CFLAGS += [
     '-fdata-sections',
     '-fsigned-char',
 
-    '-Wformat',
     '-Wall',
+    '-Wextra',
+    '-Wformat',
     '-Wshadow',
     '-Wpointer-arith',
     '-Wcast-align',
-    '-Wno-unused-parameter',
     '-Wno-missing-field-initializers',
+    '-Wno-unused-parameter',
+    '-Wno-redundant-decls',
 ]
 
 PROJECT_ENV.CXXFLAGS += [
@@ -54,20 +56,22 @@ PROJECT_ENV.CXXFLAGS += [
     '-fno-exceptions',
     '-fsigned-char',
 
-    '-Wformat',
     '-Wall',
+    '-Wextra',
+    '-Wformat',
     '-Wshadow',
     '-Wpointer-arith',
     '-Wcast-align',
     '-Wno-unused-parameter',
     '-Wno-missing-field-initializers',
     '-Wno-reorder',
+    '-Wno-redundant-decls',
     '-Werror=format-security',
     '-Werror=array-bounds',
-    '-Wfatal-errors',
     '-Werror=unused-but-set-variable',
     '-Werror=uninitialized',
     '-Werror=init-self',
+    '-Wfatal-errors',
 ]
 
 PROJECT_ENV.LINKFLAGS += [
