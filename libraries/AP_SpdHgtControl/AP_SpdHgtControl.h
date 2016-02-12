@@ -44,6 +44,7 @@ public:
 										int32_t EAS_dem_cm,
 										enum FlightStage flight_stage,
                                         bool is_doing_auto_land,
+                                        float distance_beyond_land_wp,
 										int32_t ptchMinCO_cd,
 										int16_t throttle_nudge,
                                         float hgt_afe,
