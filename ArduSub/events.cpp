@@ -171,7 +171,7 @@ void Sub::failsafe_gcs_check()
 
     // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs and we are not in guided mode
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if ((!failsafe.gcs)&&(g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!failsafe.rc_override_active && control_mode != GUIDED))) {
+    if ((!failsafe.gcs) && (g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!failsafe.rc_override_active && control_mode != GUIDED))) {
         return;
     }
 
@@ -203,53 +203,8 @@ void Sub::failsafe_gcs_check()
     hal.rcin->clear_overrides();
     failsafe.rc_override_active = false;
 
-    // This is how to handle a failsafe.
-    // use the throttle failsafe setting to decide what to do
-    switch(control_mode) {
-        case STABILIZE:
-        case ACRO:
-        case SPORT:
-            // if throttle is zero disarm motors
-            if (ap.throttle_zero || ap.land_complete) {
-                init_disarm_motors();
-            }else if(home_distance > FS_CLOSE_TO_HOME_CM) {
-                // switch to RTL or if that fails, LAND
-                set_mode_RTL_or_land_with_pause();
-            }else{
-                // We have no GPS or are very close to home so we will land
-                set_mode_land_with_pause();
-            }
-            break;
-        case AUTO:
-            // if mission has not started AND vehicle is landed, disarm motors
-            if (!ap.auto_armed && ap.land_complete) {
-                init_disarm_motors();
-            // if g.failsafe_gcs is 1 do RTL, 2 means continue with the mission
-            } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
-                if (home_distance > FS_CLOSE_TO_HOME_CM) {
-                    // switch to RTL or if that fails, LAND
-                    set_mode_RTL_or_land_with_pause();
-                }else{
-                    // We are very close to home so we will land
-                    set_mode_land_with_pause();
-                }
-            }
-            // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
-            break;
-        default:
-            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
-            // if landed disarm
-            if (ap.land_complete) {
-                init_disarm_motors();
-            } else if (home_distance > FS_CLOSE_TO_HOME_CM) {
-                // switch to RTL or if that fails, LAND
-                set_mode_RTL_or_land_with_pause();
-            }else{
-                // We have no GPS or are very close to home so we will land
-                set_mode_land_with_pause();
-            }
-            break;
-    }
+    // Disarm the motors, pilot has lost all contact/control over vehicle.
+    init_disarm_motors();
 }
 
 // failsafe_gcs_off_event - actions to take when GCS contact is restored
