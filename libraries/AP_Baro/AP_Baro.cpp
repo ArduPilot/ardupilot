@@ -406,7 +406,7 @@ void AP_Baro::update(void)
             if (is_zero(sensors[i].ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
-            float altitude;
+            float altitude = sensors[i].altitude;
             if(sensors[i].type == BARO_TYPE_AIR) {
             	altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
             } else if(sensors[i].type == BARO_TYPE_WATER) {
