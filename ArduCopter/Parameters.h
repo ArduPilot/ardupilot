@@ -328,12 +328,12 @@ public:
         //
         k_param_acro_rp_p = 221,
         k_param_axis_lock_p,    // remove
-        k_param_pid_rate_roll,
-        k_param_pid_rate_pitch,
-        k_param_pid_rate_yaw,
-        k_param_p_stabilize_roll,
-        k_param_p_stabilize_pitch,
-        k_param_p_stabilize_yaw,
+        k_param_pid_rate_roll,      // remove
+        k_param_pid_rate_pitch,     // remove
+        k_param_pid_rate_yaw,       // remove
+        k_param_p_stabilize_roll,   // remove
+        k_param_p_stabilize_pitch,  // remove
+        k_param_p_stabilize_yaw,    // remove
         k_param_p_pos_xy,
         k_param_p_loiter_lon,       // remove
         k_param_pid_loiter_rate_lat,    // remove
@@ -480,24 +480,12 @@ public:
     AP_Float                acro_expo;
 
     // PI/D controllers
-#if FRAME_CONFIG == HELI_FRAME
-    AC_HELI_PID             pid_rate_roll;
-    AC_HELI_PID             pid_rate_pitch;
-    AC_HELI_PID             pid_rate_yaw;
-#else
-    AC_PID                  pid_rate_roll;
-    AC_PID                  pid_rate_pitch;
-    AC_PID                  pid_rate_yaw;
-#endif
     AC_PI_2D                pi_vel_xy;
 
     AC_P                    p_vel_z;
     AC_PID                  pid_accel_z;
 
     AC_P                    p_pos_xy;
-    AC_P                    p_stabilize_roll;
-    AC_P                    p_stabilize_pitch;
-    AC_P                    p_stabilize_yaw;
     AC_P                    p_alt_hold;
 
     // Autotune
@@ -526,16 +514,6 @@ public:
 
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------
-#if FRAME_CONFIG == HELI_FRAME
-        pid_rate_roll           (RATE_ROLL_P,     RATE_ROLL_I,      RATE_ROLL_D,    RATE_ROLL_IMAX,     RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS, RATE_ROLL_FF),
-        pid_rate_pitch          (RATE_PITCH_P,    RATE_PITCH_I,     RATE_PITCH_D,   RATE_PITCH_IMAX,    RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS, RATE_PITCH_FF),
-        pid_rate_yaw            (RATE_YAW_P,      RATE_YAW_I,       RATE_YAW_D,     RATE_YAW_IMAX,      RATE_YAW_FILT_HZ,   MAIN_LOOP_SECONDS, RATE_YAW_FF),
-#else
-        pid_rate_roll           (RATE_ROLL_P,     RATE_ROLL_I,      RATE_ROLL_D,    RATE_ROLL_IMAX,     RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS),
-        pid_rate_pitch          (RATE_PITCH_P,    RATE_PITCH_I,     RATE_PITCH_D,   RATE_PITCH_IMAX,    RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS),
-        pid_rate_yaw            (RATE_YAW_P,      RATE_YAW_I,       RATE_YAW_D,     RATE_YAW_IMAX,      RATE_YAW_FILT_HZ,   MAIN_LOOP_SECONDS),
-#endif
-
         pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
 
         p_vel_z                 (VEL_Z_P),
@@ -544,10 +522,6 @@ public:
         // P controller	        initial P
         //----------------------------------------------------------------------
         p_pos_xy                (POS_XY_P),
-
-        p_stabilize_roll        (STABILIZE_ROLL_P),
-        p_stabilize_pitch       (STABILIZE_PITCH_P),
-        p_stabilize_yaw         (STABILIZE_YAW_P),
 
         p_alt_hold              (ALT_HOLD_P)
     {
