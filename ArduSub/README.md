@@ -12,7 +12,7 @@ The ArduSub project is a subsea vehicle control system designed primarily for RO
 The majority of code changes required for the ArduSub are held in the [/ArduSub/](/ArduSub/) directory of this repository. Changes have also been made to a number of libraries:
 
 - **AP_Baro:** Added support for MS58XX pressure sensors for water depth measurement
-- **AP_Motors:** Added AP_Motors6DOF and AP_MotorsBlueROV classes 
+- **AP_Motors:** Added AP_Motors6DOF, AP_MotorsBlueROV6DOF, AP_MotorsVectoredROV classes 
 - **AP_RCMapper:** Added "forward" and "strafe" input axes
 
 ## Setup ##
@@ -28,7 +28,7 @@ Since this is based on the ArduPilot project and includes the ArduPilot Hardware
 
 - PixHawk variants (PXRacer, PX4V4)
 - Navio+, Navio2 from Emlid
-- PXFmini from Erle Robotics
+- Erle Brain 2 and PXFmini from Erle Robotics
 - BBBmini
 
 The following autopilots *are not supported*:
@@ -46,7 +46,7 @@ The ArduSub project currently supports two frame types:
 - 6-DOF Thruster Configuration (for the [BlueRobotics BlueROV](http://bluerobotics.com/store/rov/bluerov/))
 - Vectored Thruster Configuration with side-by-side vertical thrusters
 
-The code must be compiled for the correct frame type, defined in AP_MotorsBlueROV.cpp.
+The code must be compiled for the correct frame type using the commands below.
 
 ### Compilation and Flashing ###
 
@@ -84,6 +84,10 @@ make px4-v2-vectored-upload
 	- ATC_ACCEL_Y_MAX to Disabled
 	- EK_ALT_NOISE to 0.1
 	- EK2_ALT_NOISE to 0.1
+	- RATE_YAW_FILT_HZ to 30
+  - PILOT_VELZ_MAX to 50 cm/s
+  - PILOT_ACCEL_Z to 50 cm/s/s
+  - POS_Z_P to 8.0 (above limit)
 6. Setup Power Tab
 	- Analog Voltage and Current
 	- 10000 mAh
@@ -96,7 +100,7 @@ make px4-v2-vectored-upload
 	- Change primary baro to 2ndBaro
 8. Flight Modes
 	- Set all to stabilize
-	- Set last flight mode to altHold (Learning mode)
+	- Set Flight Mode 6 to altHold (Learning mode)
 9. Set Up Camera Tilt (if desired)
 	- Use camera tab to connect RC8 to Output Channel 7
 	- Connect camera tilt servo or gimbal to Ch. 7
