@@ -1023,7 +1023,8 @@ void Plane::set_servos(void)
     RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, auto_flap_percent);
     RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, manual_flap_percent);
 
-    if (control_mode >= FLY_BY_WIRE_B) {
+    if (control_mode >= FLY_BY_WIRE_B ||
+        quadplane.in_assisted_flight()) {
         /* only do throttle slew limiting in modes where throttle
          *  control is automatic */
         throttle_slew_limit(last_throttle);
