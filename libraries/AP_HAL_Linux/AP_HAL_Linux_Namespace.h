@@ -19,6 +19,7 @@ namespace Linux {
     class Storage_FRAM;
     class DigitalSource;
     class DigitalSource_Sysfs;
+    class PeriodicThread;
     class PWM_Sysfs;
     class PWM_Sysfs_Bebop;
     class PWM_Sysfs_Base;
@@ -44,6 +45,7 @@ namespace Linux {
     class Util;
     class UtilRPI;
     class ToneAlarm;
+    class Thread;
     class Heat;
     class HeatPwm;
     class CameraSensor;
