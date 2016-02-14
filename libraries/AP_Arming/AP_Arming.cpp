@@ -326,7 +326,9 @@ bool AP_Arming::gps_checks(bool report)
                                                  "PreArm: GPS %d has not been fully configured",
                                                   first_unconfigured);
             }
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
             return false;
+#endif
         }
     }
     return true;
