@@ -13,8 +13,42 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 
+// default rate controller PID gains
+#ifndef AC_ATC_MULTI_RATE_RP_P
+  # define AC_ATC_MULTI_RATE_RP_P           0.150f
+#endif
+#ifndef AC_ATC_MULTI_RATE_RP_I
+  # define AC_ATC_MULTI_RATE_RP_I           0.100f
+#endif
+#ifndef AC_ATC_MULTI_RATE_RP_D
+  # define AC_ATC_MULTI_RATE_RP_D           0.004f
+#endif
+#ifndef AC_ATC_MULTI_RATE_RP_IMAX
+ # define AC_ATC_MULTI_RATE_RP_IMAX         2000.0f
+#endif
+#ifndef AC_ATC_MULTI_RATE_RP_FILT_HZ
+ # define AC_ATC_MULTI_RATE_RP_FILT_HZ      20.0f
+#endif
+#ifndef AC_ATC_MULTI_RATE_YAW_P
+ # define AC_ATC_MULTI_RATE_YAW_P           0.200f
+#endif
+#ifndef AC_ATC_MULTI_RATE_YAW_I
+ # define AC_ATC_MULTI_RATE_YAW_I           0.020f
+#endif
+#ifndef AC_ATC_MULTI_RATE_YAW_D
+ # define AC_ATC_MULTI_RATE_YAW_D           0.0f
+#endif
+#ifndef AC_ATC_MULTI_RATE_YAW_IMAX
+ # define AC_ATC_MULTI_RATE_YAW_IMAX        1000.0f
+#endif
+#ifndef AC_ATC_MULTI_RATE_YAW_FILT_HZ
+ # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     5.0f
+#endif
+
 // TODO: change the name or move to AP_Math? eliminate in favor of degrees(100)?
 #define AC_ATTITUDE_CONTROL_DEGX100                           5729.57795f      // constant to convert from radians to centidegrees
+
+#define AC_ATTITUDE_CONTROL_ANGLE_P                           4.5f             // default angle P gain for roll, pitch and yaw
 
 #define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS             radians(40.0f)   // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
 #define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS             radians(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
@@ -45,22 +79,20 @@ public:
     AC_AttitudeControl( AP_AHRS &ahrs,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
-                        AC_P& pi_angle_roll, AC_P& pi_angle_pitch, AC_P& pi_angle_yaw,
-                        AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
-                        ) :
-        _dt(AC_ATTITUDE_400HZ_DT),
+                        float dt) :
+        _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
+        _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P),
+        _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
+        _dt(dt),
         _angle_boost(0),
         _att_ctrl_use_accel_limit(true),
         _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ),
         _ahrs(ahrs),
         _aparm(aparm),
         _motors(motors),
-        _p_angle_roll(pi_angle_roll),
-        _p_angle_pitch(pi_angle_pitch),
-        _p_angle_yaw(pi_angle_yaw),
-        _pid_rate_roll(pid_rate_roll),
-        _pid_rate_pitch(pid_rate_pitch),
-        _pid_rate_yaw(pid_rate_yaw)
+        _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
+            _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
+            _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_YAW_FILT_HZ, dt)
         {
             AP_Param::setup_object_defaults(this, var_info);
         }
@@ -68,8 +100,13 @@ public:
     // Empty destructor to suppress compiler warning
     virtual ~AC_AttitudeControl() {}
 
-    // Set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
-    void set_dt(float delta_sec);
+    // pid accessors
+    AC_P& get_angle_roll_p() { return _p_angle_roll; }
+    AC_P& get_angle_pitch_p() { return _p_angle_pitch; }
+    AC_P& get_angle_yaw_p() { return _p_angle_yaw; }
+    virtual AC_PID& get_rate_roll_pid() = 0;
+    virtual AC_PID& get_rate_pitch_pid() = 0;
+    virtual AC_PID& get_rate_yaw_pid() = 0;
 
     // Gets the roll acceleration limit in centidegrees/s/s
     float get_accel_roll_max() { return _accel_roll_max; }
@@ -301,6 +338,14 @@ protected:
     // Enable/Disable angle boost
     AP_Int8             _angle_boost_enabled;
 
+    // angle controller P objects
+    AC_P                _p_angle_roll;
+    AC_P                _p_angle_pitch;
+    AC_P                _p_angle_yaw;
+    AC_PID                _pid_rate_roll;
+    AC_PID                _pid_rate_pitch;
+    AC_PID                _pid_rate_yaw;
+
     // Intersampling period in seconds
     float               _dt;
 
@@ -346,12 +391,6 @@ protected:
     const AP_AHRS&      _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
-    AC_P&               _p_angle_roll;
-    AC_P&               _p_angle_pitch;
-    AC_P&               _p_angle_yaw;
-    AC_PID&             _pid_rate_roll;
-    AC_PID&             _pid_rate_pitch;
-    AC_PID&             _pid_rate_yaw;
 };
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\

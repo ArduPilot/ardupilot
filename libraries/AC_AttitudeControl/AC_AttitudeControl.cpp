@@ -66,16 +66,29 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ANGLE_BOOST", 12, AC_AttitudeControl, _angle_boost_enabled, 1),
 
+    // @Param: ANG_RLL_P
+    // @DisplayName: Roll axis angle controller P gain
+    // @Description: Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
+    // @Range: 3.000 12.000
+    // @User: Standard
+    AP_SUBGROUPINFO(_p_angle_roll, "ANG_RLL_", 13, AC_AttitudeControl, AC_P),
+
+    // @Param: ANG_PIT_P
+    // @DisplayName: Pitch axis angle controller P gain
+    // @Description: Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
+    // @Range: 3.000 12.000
+    // @User: Standard
+    AP_SUBGROUPINFO(_p_angle_pitch, "ANG_PIT_", 14, AC_AttitudeControl, AC_P),
+
+    // @Param: ANG_YAW_P
+    // @DisplayName: Yaw axis angle controller P gain
+    // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
+    // @Range: 3.000 6.000
+    // @User: Standard
+    AP_SUBGROUPINFO(_p_angle_yaw, "ANG_YAW_", 15, AC_AttitudeControl, AC_P),
+
     AP_GROUPEND
 };
-
-void AC_AttitudeControl::set_dt(float delta_sec)
-{
-    _dt = delta_sec;
-    _pid_rate_roll.set_dt(_dt);
-    _pid_rate_pitch.set_dt(_dt);
-    _pid_rate_yaw.set_dt(_dt);
-}
 
 void AC_AttitudeControl::relax_bf_rate_controller()
 {
@@ -83,9 +96,9 @@ void AC_AttitudeControl::relax_bf_rate_controller()
     // to the input angular velocity and reset the angular velocity integrators.
     // This zeros the output of the angular velocity controller.
     _ang_vel_target_rads = _ahrs.get_gyro();
-    _pid_rate_roll.reset_I();
-    _pid_rate_pitch.reset_I();
-    _pid_rate_yaw.reset_I();
+    get_rate_roll_pid().reset_I();
+    get_rate_pitch_pid().reset_I();
+    get_rate_yaw_pid().reset_I();
 
     // Write euler derivatives derived from vehicle angular velocity to
     // _att_target_euler_rate_rads. This resets the state of the input shapers.
@@ -503,18 +516,18 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_rads)
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
     // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    _pid_rate_roll.set_input_filter_d(degrees(rate_error_rads)*100.0f);
-    _pid_rate_roll.set_desired_rate(degrees(rate_target_rads)*100.0f);
+    get_rate_roll_pid().set_input_filter_d(degrees(rate_error_rads)*100.0f);
+    get_rate_roll_pid().set_desired_rate(degrees(rate_target_rads)*100.0f);
 
-    float integrator = _pid_rate_roll.get_integrator();
+    float integrator = get_rate_roll_pid().get_integrator();
 
     // Ensure that integrator can only be reduced if the output is saturated
     if (!_motors.limit.roll_pitch || ((integrator > 0 && rate_error_rads < 0) || (integrator < 0 && rate_error_rads > 0))) {
-        integrator = _pid_rate_roll.get_i();
+        integrator = get_rate_roll_pid().get_i();
     }
 
     // Compute output in range -1 ~ +1
-    float output = (_pid_rate_roll.get_p() + integrator + _pid_rate_roll.get_d()) / 4500.0f;
+    float output = (get_rate_roll_pid().get_p() + integrator + get_rate_roll_pid().get_d()) / 4500.0f;
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);
@@ -526,18 +539,18 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_rads)
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
     // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    _pid_rate_pitch.set_input_filter_d(degrees(rate_error_rads)*100.0f);
-    _pid_rate_pitch.set_desired_rate(degrees(rate_target_rads)*100.0f);
+    get_rate_pitch_pid().set_input_filter_d(degrees(rate_error_rads)*100.0f);
+    get_rate_pitch_pid().set_desired_rate(degrees(rate_target_rads)*100.0f);
 
-    float integrator = _pid_rate_pitch.get_integrator();
+    float integrator = get_rate_pitch_pid().get_integrator();
 
     // Ensure that integrator can only be reduced if the output is saturated
     if (!_motors.limit.roll_pitch || ((integrator > 0 && rate_error_rads < 0) || (integrator < 0 && rate_error_rads > 0))) {
-        integrator = _pid_rate_pitch.get_i();
+        integrator = get_rate_pitch_pid().get_i();
     }
 
     // Compute output in range -1 ~ +1
-    float output = (_pid_rate_pitch.get_p() + integrator + _pid_rate_pitch.get_d()) / 4500.0f;
+    float output = (get_rate_pitch_pid().get_p() + integrator + get_rate_pitch_pid().get_d()) / 4500.0f;
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);
@@ -549,18 +562,18 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_rads)
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
     // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    _pid_rate_yaw.set_input_filter_all(degrees(rate_error_rads)*100.0f);
-    _pid_rate_yaw.set_desired_rate(degrees(rate_target_rads)*100.0f);
+    get_rate_yaw_pid().set_input_filter_all(degrees(rate_error_rads)*100.0f);
+    get_rate_yaw_pid().set_desired_rate(degrees(rate_target_rads)*100.0f);
 
-    float integrator = _pid_rate_yaw.get_integrator();
+    float integrator = get_rate_yaw_pid().get_integrator();
 
     // Ensure that integrator can only be reduced if the output is saturated
     if (!_motors.limit.yaw || ((integrator > 0 && rate_error_rads < 0) || (integrator < 0 && rate_error_rads > 0))) {
-        integrator = _pid_rate_yaw.get_i();
+        integrator = get_rate_yaw_pid().get_i();
     }
 
     // Compute output in range -1 ~ +1
-    float output = (_pid_rate_yaw.get_p() + integrator + _pid_rate_yaw.get_d()) / 4500.0f;
+    float output = (get_rate_yaw_pid().get_p() + integrator + get_rate_yaw_pid().get_d()) / 4500.0f;
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);
@@ -671,21 +684,21 @@ void AC_AttitudeControl::get_rotation_reference_to_vehicle(Matrix3f& m)
 
 float AC_AttitudeControl::max_rate_step_bf_roll()
 {
-    float alpha = _pid_rate_roll.get_filt_alpha();
+    float alpha = get_rate_roll_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*_pid_rate_roll.kD())/_dt + _pid_rate_roll.kP());
+    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_roll_pid().kD())/_dt + get_rate_roll_pid().kP());
 }
 
 float AC_AttitudeControl::max_rate_step_bf_pitch()
 {
-    float alpha = _pid_rate_pitch.get_filt_alpha();
+    float alpha = get_rate_pitch_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*_pid_rate_pitch.kD())/_dt + _pid_rate_pitch.kP());
+    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_pitch_pid().kD())/_dt + get_rate_pitch_pid().kP());
 }
 
 float AC_AttitudeControl::max_rate_step_bf_yaw()
 {
-    float alpha = _pid_rate_yaw.get_filt_alpha();
+    float alpha = get_rate_yaw_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*_pid_rate_yaw.kD())/_dt + _pid_rate_yaw.kP());
+    return AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
 }
