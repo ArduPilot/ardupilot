@@ -105,7 +105,7 @@ px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(PX4_MAKE) px4fmu-v4_APM
 	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v4_APM.build/firmware.elf
 	$(v) cp -f $(PX4_ROOT)/Images/px4fmu-v4_APM.px4 $(SKETCH)-v4.px4
-	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmuv4_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
+	$(v) cp -f $(SKETCHBOOK)/mk/PX4/bootloader/px4fmuv4_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4.px4" "$(SKETCH)-v4.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4.px4"
 
@@ -145,7 +145,7 @@ px4-archives-clean:
 px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 	$(v)+ $(MAKE) -C $(PX4_ROOT) -f $(PX4_ROOT)/Makefile.make px4io-v1_default
 	$(v) cp -f $(PX4_ROOT)/Images/px4io-v1_default.bin px4io-v1.bin
-	$(v) cp $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.elf px4io-v1.elf
+	$(v) cp -f $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.elf px4io-v1.elf
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
 	$(v) cp -f px4io-v1.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
@@ -155,8 +155,8 @@ px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 
 px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 	$(v)+ $(MAKE) -C $(PX4_ROOT) -f $(PX4_ROOT)/Makefile.make px4io-v2_default
-	$(v) cp $(PX4_ROOT)/Images/px4io-v2_default.bin px4io-v2.bin
-	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.elf px4io-v2.elf
+	$(v) cp -f $(PX4_ROOT)/Images/px4io-v2_default.bin px4io-v2.bin
+	$(v) cp -f $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.elf px4io-v2.elf
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
 	$(v) cp -f px4io-v2.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
