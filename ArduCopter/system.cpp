@@ -200,8 +200,7 @@ void Copter::init_ardupilot()
     ahrs.set_optflow(&optflow);
 #endif
 
-    // initialise attitude and position controllers
-    attitude_control.set_dt(MAIN_LOOP_SECONDS);
+    // initialise position controllers
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
