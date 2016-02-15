@@ -15,118 +15,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
     AP_SUBGROUPPTR(motors, "M_", 2, QuadPlane, AP_MotorsMulticopter),
 
-    // @Param: RT_RLL_P
-    // @DisplayName: Roll axis rate controller P gain
-    // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
-    // @Range: 0.08 0.30
-    // @Increment: 0.005
-    // @User: Standard
-
-    // @Param: RT_RLL_I
-    // @DisplayName: Roll axis rate controller I gain
-    // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
-    // @Range: 0.01 0.5
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: RT_RLL_IMAX
-    // @DisplayName: Roll axis rate controller I gain maximum
-    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
-    // @User: Standard
-
-    // @Param: RT_RLL_D
-    // @DisplayName: Roll axis rate controller D gain
-    // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
-    // @Range: 0.001 0.02
-    // @Increment: 0.001
-    // @User: Standard
-    AP_SUBGROUPINFO(pid_rate_roll, "RT_RLL_", 3, QuadPlane, AC_PID),
-
-    // @Param: RT_PIT_P
-    // @DisplayName: Pitch axis rate controller P gain
-    // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.08 0.30
-    // @Increment: 0.005
-    // @User: Standard
-
-    // @Param: RT_PIT_I
-    // @DisplayName: Pitch axis rate controller I gain
-    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
-    // @Range: 0.01 0.5
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: RT_PIT_IMAX
-    // @DisplayName: Pitch axis rate controller I gain maximum
-    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
-    // @User: Standard
-
-    // @Param: RT_PIT_D
-    // @DisplayName: Pitch axis rate controller D gain
-    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.001 0.02
-    // @Increment: 0.001
-    // @User: Standard
-    AP_SUBGROUPINFO(pid_rate_pitch, "RT_PIT_", 4, QuadPlane, AC_PID),
-
-    // @Param: RT_YAW_P
-    // @DisplayName: Yaw axis rate controller P gain
-    // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
-    // @Range: 0.150 0.50
-    // @Increment: 0.005
-    // @User: Standard
-
-    // @Param: RT_YAW_I
-    // @DisplayName: Yaw axis rate controller I gain
-    // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
-    // @Range: 0.010 0.05
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: RT_YAW_IMAX
-    // @DisplayName: Yaw axis rate controller I gain maximum
-    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
-    // @User: Standard
-
-    // @Param: RT_YAW_D
-    // @DisplayName: Yaw axis rate controller D gain
-    // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
-    // @Range: 0.000 0.02
-    // @Increment: 0.001
-    // @User: Standard
-    AP_SUBGROUPINFO(pid_rate_yaw, "RT_YAW_", 5, QuadPlane, AC_PID),
-
-    // P controllers
-    //--------------
-    // @Param: STB_RLL_P
-    // @DisplayName: Roll axis stabilize controller P gain
-    // @Description: Roll axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
-    // @Range: 3.000 12.000
-    // @User: Standard
-    AP_SUBGROUPINFO(p_stabilize_roll, "STB_R_", 6, QuadPlane, AC_P),
-
-    // @Param: STB_PIT_P
-    // @DisplayName: Pitch axis stabilize controller P gain
-    // @Description: Pitch axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
-    // @Range: 3.000 12.000
-    // @User: Standard
-    AP_SUBGROUPINFO(p_stabilize_pitch, "STB_P_", 7, QuadPlane, AC_P),
-
-    // @Param: STB_YAW_P
-    // @DisplayName: Yaw axis stabilize controller P gain
-    // @Description: Yaw axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
-    // @Range: 3.000 6.000
-    // @User: Standard
-    AP_SUBGROUPINFO(p_stabilize_yaw,   "STB_Y_", 8, QuadPlane, AC_P),
+    // 3 ~ 8 were used by quadplane attitude control PIDs
 
     // @Group: ATC_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
@@ -413,9 +302,7 @@ bool QuadPlane::setup(void)
     }
     
     AP_Param::load_object_from_eeprom(motors, motors->var_info);
-    attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors,
-                                                    p_stabilize_roll, p_stabilize_pitch, p_stabilize_yaw,
-                                                    pid_rate_roll, pid_rate_pitch, pid_rate_yaw);
+    attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, plane.ins.get_loop_delta_t());
     if (!attitude_control) {
         hal.console->printf("Unable to allocate attitude_control\n");
         goto failed;
@@ -442,10 +329,6 @@ bool QuadPlane::setup(void)
     motors->set_hover_throttle(throttle_mid);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
-    attitude_control->set_dt(plane.ins.get_loop_delta_t());
-    pid_rate_roll.set_dt(plane.ins.get_loop_delta_t());
-    pid_rate_pitch.set_dt(plane.ins.get_loop_delta_t());
-    pid_rate_yaw.set_dt(plane.ins.get_loop_delta_t());
     pid_accel_z.set_dt(plane.ins.get_loop_delta_t());
     pos_control->set_dt(plane.ins.get_loop_delta_t());
 
@@ -1227,9 +1110,9 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     if (!setup()) {
         return false;
     }
-    pid_rate_roll.reset_I();
-    pid_rate_pitch.reset_I();
-    pid_rate_yaw.reset_I();
+    attitude_control->get_rate_roll_pid().reset_I();
+    attitude_control->get_rate_pitch_pid().reset_I();
+    attitude_control->get_rate_pitch_pid().reset_I();
     pid_accel_z.reset_I();
     pi_vel_xy.reset_I();
     

@@ -72,12 +72,6 @@ public:
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
-    AC_PID        pid_rate_roll {0.25, 0.25, 0.004,  2000, 10, 0.02};
-    AC_PID        pid_rate_pitch{0.25, 0.25, 0.004,  2000, 10, 0.02};
-    AC_PID        pid_rate_yaw  {0.15, 0.1,  0.004,  2000,  5, 0.02};
-    AC_P          p_stabilize_roll{4.5};
-    AC_P          p_stabilize_pitch{4.5};
-    AC_P          p_stabilize_yaw{4.5};
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
