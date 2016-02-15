@@ -102,3 +102,10 @@ def git_submodule(bld, git_submodule, **kw):
     kw['features'].append('git_submodule')
 
     return bld(**kw)
+
+@conf
+def git_submodule_head_hash(self, name):
+    module_node = self.srcnode.make_node(os.path.join('modules', name))
+    cmd = self.env.get_flat('GIT'), '-C', module_node.abspath(), 'rev-parse', 'HEAD'
+    out = self.cmd_and_log(cmd, quiet=Context.BOTH)
+    return out.strip()
