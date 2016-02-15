@@ -46,6 +46,7 @@
 #include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
 
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
+#include "GCS_Frontend.h" // MAVLink frontend definition
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
@@ -79,14 +80,15 @@
 
 class Tracker : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
-    friend class Parameters;
+    friend class GCS_Backend_Tracker;
 
     Tracker(void);
 
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
+
+    GCS_Frontend &gcs() { return gcs_frontend; }
 
 private:
     Parameters g;
@@ -136,8 +138,7 @@ private:
     RC_Channel channel_pitch{CH_PITCH};
 
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_Frontend_Tracker gcs_frontend{DataFlash, g};
 
     AP_BoardConfig BoardConfig;
 
@@ -201,15 +202,11 @@ private:
     void send_location(mavlink_channel_t chan);
     void send_radio_out(mavlink_channel_t chan);
     void send_hwstatus(mavlink_channel_t chan);
-    void send_waypoint_request(mavlink_channel_t chan);
-    void send_statustext(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void mavlink_check_target(const mavlink_message_t* msg);
-    void gcs_send_message(enum ap_message id);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void gcs_retry_deferred(void);
     void load_parameters(void);
     void update_auto(void);
@@ -253,7 +250,6 @@ private:
     void tracking_update_pressure(const mavlink_scaled_pressure_t &msg);
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed();
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void init_capabilities(void);
     void compass_cal_update();
     void Log_Write_Attitude();

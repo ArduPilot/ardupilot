@@ -4,6 +4,10 @@
 #define PARAMETERS_H
 
 #include <AP_Common/AP_Common.h>
+#include <AC_PID/AC_PID.h>
+#include <AC_PID/AC_PI_2D.h>
+#include <AC_PID/AC_P.h>
+#include <AC_WPNav/AC_WPNav.h> // for WPNAV_LOITER_UPDATE_TIME
 
 // Global parameter class.
 //

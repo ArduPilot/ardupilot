@@ -7,7 +7,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Frontend.h>
 
 #include <stdio.h>
 
@@ -115,6 +115,7 @@
 
 
 extern const AP_HAL::HAL& hal;
+extern GCS_Frontend &gcs;
 
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] = {
@@ -423,13 +424,13 @@ bool NavEKF::InitialiseFilterDynamic(void)
     if (core == nullptr) {
         if (hal.util->available_memory() < 4096 + sizeof(*core)) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF: not enough memory");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "NavEKF: not enough memory");
             return false;
         }
         core = new NavEKF_core(*this, _ahrs, _baro, _rng);
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF: Allocation failed");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "NavEKF: Allocation failed");
             return false;
         }
     }
@@ -446,7 +447,7 @@ bool NavEKF::InitialiseFilterBootstrap(void)
         core = new NavEKF_core(*this, _ahrs, _baro, _rng);
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF: Allocation failed");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "NavEKF: Allocation failed");
             return false;
         }
     }

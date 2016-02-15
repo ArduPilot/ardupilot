@@ -72,6 +72,7 @@ enum ap_message {
     MSG_RETRY_DEFERRED // this must be last
 };
 
+class GCS_Frontend;
 
 ///
 /// @class	GCS_MAVLINK
@@ -79,27 +80,34 @@ enum ap_message {
 ///
 class GCS_MAVLINK
 {
+    friend class GCS_Backend_Copter; // for access to streamRates[]
+
 public:
     GCS_MAVLINK();
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-    void        update(run_cli_fn run_cli);
+    void        update();
+    void set_run_cli_func(run_cli_fn func) { _run_cli = func; }
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *str);
-    void        data_stream_send(void);
+    virtual void        data_stream_send(void) = 0;
     void        queued_param_send();
     void        queued_waypoint_send();
     void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
         msg_snoop = _msg_snoop;
     }
 
+    // indicate we have seen mavlink traffic on this channel:
+    void set_active();
+
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
     static const struct AP_Param::GroupInfo        var_info[];
+    virtual const AP_Param::GroupInfo *get_var_info();
 
-    // set to true if this GCS link is active
+    // set to true if this GCS link is ready
     bool            initialised;
 
     // NOTE! The streams enum below and the
@@ -117,7 +125,7 @@ public:
                   NUM_STREAMS};
 
     // see if we should send a stream now. Called at 50Hz
-    bool        stream_trigger(enum streams stream_num);
+    virtual bool        stream_trigger(enum streams stream_num) = 0;
 
 	// this costs us 51 bytes per instance, but means that low priority
 	// messages don't block the CPU
@@ -134,41 +142,77 @@ public:
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
-    // common send functions
+    // functions that must return a resouce for base class to work with:
+    virtual AP_GPS &_gps() const = 0;
+#if AP_AHRS_NAVEKF_AVAILABLE
+    virtual AP_AHRS_NavEKF &_ahrs() const = 0;
+#else
+    virtual AP_AHRS &_ahrs() const = 0;
+#endif
+    virtual Compass &_compass() const = 0;
+    virtual AP_Baro &_barometer() const = 0;
+    virtual AP_InertialSensor &_ins() const = 0;
+
+    // common send functions.  These functions are expected to take
+    // state from both the GCS_Backend_* object and the related
+    // vehicle (e.g. plane.airspeed) and call the nominated
+    // mavlink_.*_send function with that data.
+    virtual bool send_AHRS();
+    virtual bool send_AHRS2();
+    virtual bool send_ATTITUDE() = 0;
+    virtual bool send_BATTERY2() { return true; }
+    virtual bool send_CAMERA_FEEDBACK() { return true; }
+    virtual bool send_EKF_STATUS_REPORT();
+    virtual bool send_FENCE_STATUS() { return true; }
+    virtual bool send_GIMBAL_REPORT() { return true; };
+    virtual bool send_GLOBAL_POSITION_INT() = 0;
+    virtual bool send_GPS_RAW();
+    virtual bool send_HEARTBEAT() = 0;
+    virtual bool send_HWSTATUS();
+    virtual bool send_LIMITS_STATUS() const { return true; }
+    virtual bool send_LOCAL_POSITION_NED() const;
+    virtual bool send_MAG_CAL_PROGRESS();
+    virtual bool send_MAG_CAL_REPORT();
+    virtual bool send_MISSION_CURRENT() { return true; }
+    virtual bool send_MISSION_ITEM_REACHED() { return true; }
+    virtual bool send_MOUNT_STATUS() { return true; };
+    virtual bool send_NAV_CONTROLLER_OUTPUT() = 0;
+    virtual bool send_OPTICAL_FLOW() { return true; }
+    virtual bool send_PID_TUNING() { return true; }
+    virtual bool send_RC_CHANNELS_RAW() = 0;
+    virtual bool send_SERVO_OUTPUT_RAW() = 0; // radio-out
+    virtual bool send_RANGEFINDER() { return true; }
+    virtual bool send_RAW_IMU();
+    virtual bool send_RC_CHANNELS_SCALED() { return true; }
+    virtual bool send_RPM() { return true; }
+    virtual bool send_SCALED_PRESSURE();
+    virtual bool send_SENSOR_OFFSETS();
+    virtual bool send_SIMSTATE() = 0;
+    virtual bool send_STATUSTEXT();
+    virtual bool send_SYS_STATUS() { return true; }; //FIXME: well, fix Tracker
+    virtual bool send_SYSTEM_TIME();
+    virtual bool send_TERRAIN_REQUEST() { return true; }
+    virtual bool send_VFR_HUD() { return true; }
+    virtual bool send_VIBRATION() const;
+    virtual bool send_WIND() { return true; }
+
     void send_meminfo(void);
     void send_power_status(void);
-    void send_ahrs2(AP_AHRS &ahrs);
-    bool send_gps_raw(AP_GPS &gps);
-    void send_system_time(AP_GPS &gps);
     void send_radio_in(uint8_t receiver_rssi);
-    void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
-    void send_scaled_pressure(AP_Baro &barometer);
-    void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
-    void send_ahrs(AP_AHRS &ahrs);
     void send_battery2(const AP_BattMonitor &battery);
+
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
     void send_autopilot_version(uint8_t major_version, uint8_t minor_version, uint8_t patch_version, uint8_t version_type) const;
-    void send_local_position(const AP_AHRS &ahrs) const;
-    void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
-    static void send_home_all(const Location &home);
 
-    // return a bitmap of active channels. Used by libraries to loop
-    // over active channels to send to all active channels    
-    static uint8_t active_channel_mask(void) { return mavlink_active; }
+    // send a specific parameter value to this GCS
+    void send_param_value(const char *param_name, ap_var_type param_type, float param_value);
 
-    /*
-      send a statustext message to all active MAVLink
-      connections. This function is static so it can be called from
-      any library
-    */
-    static void send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...);
+    void mavlink_msg_command_ack_send(MAV_CMD cmd, int ret);
+    void mavlink_msg_compassmot_status_send(int16_t, float, float, float, float, float);
 
-    // send a PARAM_VALUE message to all active MAVLink connections.
-    static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
-    
     /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
@@ -181,8 +225,67 @@ public:
      */
     static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
 
+    void set_frontend(GCS_Frontend *frontend) { _frontend = frontend; }
+
+protected:
+    GCS_Frontend *_frontend;
+    mavlink_channel_t           chan;
+
+    // true if we are out of time in our event timeslice
+    bool out_of_time;
+
+    AP_Int16 &streamRate(uint8_t i) { return streamRates[i]; }
+    bool            waypoint_receiving() const { return _waypoint_receiving; }
+    void            set_waypoint_receiving(const bool value) { _waypoint_receiving = value; }
+    AP_Param * queued_parameter() { return _queued_parameter; }
+
+    // FIXME: factor AntennaTracker to not use this!
+    void            set_waypoint_request_i(const uint16_t index) { waypoint_request_i = index; }
+    void            set_waypoint_request_last(const uint16_t index) { waypoint_request_last = index; }
+
+    // number of 50Hz ticks until we next send this stream
+    uint8_t         stream_ticks[NUM_STREAMS];
+
+    // number of extra ticks to add to slow things down for the radio
+    uint8_t         stream_slowdown;
+
+    FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
+
+    void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
+
+    void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
+
+    void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
+    void handle_log_send(DataFlash_Class &dataflash);
+
+    void handle_mission_count(AP_Mission &mission, mavlink_message_t *msg);
+    void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
+    bool handle_mission_item(mavlink_message_t *msg, AP_Mission &mission);
+    void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
+    void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
+    void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
+    void handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg);
+
+    void handle_param_request_list(mavlink_message_t *msg);
+    void handle_param_request_read(mavlink_message_t *msg);
+    void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
+
+    void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
+
+    void handle_request_data_stream(mavlink_message_t *msg, bool save);
+
+    void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
+
+    void handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode);
+
+    bool telemetry_delayed() const;
+
 private:
-    void        handleMessage(mavlink_message_t * msg);
+    run_cli_fn _run_cli;
+
+    virtual void        handleMessage(mavlink_message_t * msg) = 0;
+
+    virtual bool should_try_send_message(enum ap_message id) = 0;
 
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
@@ -212,7 +315,7 @@ private:
     ///
     /// @return         The number of reportable parameters.
     ///
-    mavlink_channel_t           chan;
+
     uint16_t                    packet_drops;
 
     // this allows us to detect the user wanting the CLI to start
@@ -223,7 +326,7 @@ private:
     uint16_t        waypoint_request_last; // last request index
     uint16_t        waypoint_dest_sysid; // where to send requests
     uint16_t        waypoint_dest_compid; // "
-    bool            waypoint_receiving; // currently receiving
+    bool            _waypoint_receiving; // currently receiving
     uint16_t        waypoint_count;
     uint32_t        waypoint_timelast_receive; // milliseconds
     uint32_t        waypoint_timelast_request; // milliseconds
@@ -231,12 +334,6 @@ private:
 
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
-
-    // number of 50Hz ticks until we next send this stream
-    uint8_t         stream_ticks[NUM_STREAMS];
-
-    // number of extra ticks to add to slow things down for the radio
-    uint8_t         stream_slowdown;
 
     // millis value to calculate cli timeout relative to.
     // exists so we can separate the cli entry time from the system start time
@@ -274,51 +371,27 @@ private:
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
 
-    // bitmask of what mavlink channels are active
-    static uint8_t mavlink_active;
-
     // mavlink routing object
     static MAVLink_routing routing;
 
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
 
-    // vehicle specific message send function
-    bool try_send_message(enum ap_message id);
+    virtual bool try_send_message(enum ap_message id);
 
-    void handle_guided_request(AP_Mission::Mission_Command &cmd);
-    void handle_change_alt_request(AP_Mission::Mission_Command &cmd);
+    virtual void handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
+    virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
 
     void handle_log_request_list(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_request_data(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_request_erase(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_request_end(mavlink_message_t *msg, DataFlash_Class &dataflash);
-    void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
-    void handle_log_send(DataFlash_Class &dataflash);
     void handle_log_send_listing(DataFlash_Class &dataflash);
     bool handle_log_send_data(DataFlash_Class &dataflash);
 
-    void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
-    void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
 
-    void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
-    void handle_mission_count(AP_Mission &mission, mavlink_message_t *msg);
-    void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
-    void handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg);
-    bool handle_mission_item(mavlink_message_t *msg, AP_Mission &mission);
 
-    void handle_request_data_stream(mavlink_message_t *msg, bool save);
-    void handle_param_request_list(mavlink_message_t *msg);
-    void handle_param_request_read(mavlink_message_t *msg);
-    void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
-    void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
-    void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
     void lock_channel(mavlink_channel_t chan, bool lock);
-    FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
-    void handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode);
-    void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
-
-    void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);

@@ -30,10 +30,11 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Frontend.h>
 #include <StorageManager/StorageManager.h>
 
 extern const AP_HAL::HAL &hal;
+extern GCS_Frontend &gcs;
 
 #define ENABLE_DEBUG 1
 
@@ -856,14 +857,14 @@ bool AP_Param::save(bool force_save)
             v2 = get_default_value(&info->def_value);
         }
         if (is_equal(v1,v2) && !force_save) {
-            GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
+            gcs.send_param_value_active(name, (enum ap_var_type)info->type, v2);
             return true;
         }
         if (phdr.type != AP_PARAM_INT32 &&
             (fabsf(v1-v2) < 0.0001f*fabsf(v1))) {
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
-            GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
+            gcs.send_param_value_active(name, (enum ap_var_type)info->type, v2);
             return true;
         }
     }
@@ -1654,18 +1655,18 @@ void AP_Param::send_parameter(char *name, enum ap_var_type param_header_type) co
 {
     if (param_header_type != AP_PARAM_VECTOR3F) {
         // nice and simple for scalar types
-        GCS_MAVLINK::send_parameter_value_all(name, param_header_type, cast_to_float(param_header_type));
+        gcs.send_param_value_active(name, param_header_type, cast_to_float(param_header_type));
         return;
     }
 
     // for vectors we need to send 3 messages
     Vector3f *v = (Vector3f *)this;
     char &name_axis = name[strlen(name)-1];
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->x);
+    gcs.send_param_value_active(name, AP_PARAM_FLOAT, v->x);
     name_axis = 'Y';
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->y);
+    gcs.send_param_value_active(name, AP_PARAM_FLOAT, v->y);
     name_axis = 'Z';
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->z);
+    gcs.send_param_value_active(name, AP_PARAM_FLOAT, v->z);
 }
 
 /*

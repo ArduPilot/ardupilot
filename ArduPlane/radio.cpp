@@ -244,7 +244,7 @@ void Plane::control_failsafe(uint16_t pwm)
             // throttle has dropped below the mark
             failsafe.ch3_counter++;
             if (failsafe.ch3_counter == 10) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "MSG FS ON %u", (unsigned)pwm);
+                gcs_frontend.send_text_fmt(MAV_SEVERITY_WARNING, "MSG FS ON %u", (unsigned)pwm);
                 failsafe.ch3_failsafe = true;
                 AP_Notify::flags.failsafe_radio = true;
             }
@@ -260,7 +260,7 @@ void Plane::control_failsafe(uint16_t pwm)
                 failsafe.ch3_counter = 3;
             }
             if (failsafe.ch3_counter == 1) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "MSG FS OFF %u", (unsigned)pwm);
+                gcs_frontend.send_text_fmt(MAV_SEVERITY_WARNING, "MSG FS OFF %u", (unsigned)pwm);
             } else if(failsafe.ch3_counter == 0) {
                 failsafe.ch3_failsafe = false;
                 AP_Notify::flags.failsafe_radio = false;

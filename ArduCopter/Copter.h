@@ -42,6 +42,7 @@
 
 // Application dependencies
 #include <GCS_MAVLink/GCS.h>
+#include "GCS_Frontend.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_GPS/AP_GPS.h>             // ArduPilot GPS library
@@ -121,14 +122,16 @@
 
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
-    friend class Parameters;
+
+    friend class GCS_Backend_Copter;
 
     Copter(void);
 
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
+
+    GCS_Frontend &gcs() { return gcs_frontend; }
 
 private:
     // key aircraft parameters passed to multiple libraries
@@ -207,9 +210,7 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_Frontend_Copter gcs_frontend{DataFlash, g};
 
     // User variables
 #ifdef USERHOOK_VARIABLES
@@ -626,18 +627,12 @@ private:
     void send_servo_out(mavlink_channel_t chan);
     void send_radio_out(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
-    void send_current_waypoint(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
     void send_pid_tuning(mavlink_channel_t chan);
-    void send_statustext(mavlink_channel_t chan);
-    bool telemetry_delayed(mavlink_channel_t chan);
-    void gcs_send_message(enum ap_message id);
-    void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void do_erase_logs(void);
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
@@ -697,7 +692,7 @@ private:
     bool verify_yaw();
     void do_take_picture();
     void log_picture();
-    uint8_t mavlink_compassmot(mavlink_channel_t chan);
+    uint8_t mavlink_compassmot(GCS_MAVLINK *gcs);
     void delay(uint32_t ms);
     bool acro_init(bool ignore_checks);
     void acro_run();
@@ -870,8 +865,8 @@ private:
     void landinggear_update();
     void update_notify();
     void motor_test_output();
-    bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc);
-    uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec);
+    bool mavlink_motor_test_check(GCS_MAVLINK *gcs, bool check_rc);
+    uint8_t mavlink_motor_test_start(GCS_MAVLINK *gcs, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec);
     void motor_test_stop();
     void arm_motors_check();
     void auto_disarm_check();
@@ -968,7 +963,6 @@ private:
     void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void print_hit_enter();
     void tuning();
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);

@@ -58,6 +58,7 @@
 #include <AP_Mount/AP_Mount.h>		// Camera/Antenna mount
 #include <AP_Camera/AP_Camera.h>		// Camera triggering
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
+#include "GCS_Frontend.h" // GCS frontend definition
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Airspeed/AP_Airspeed.h>    // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>     // needed for AHRS build
@@ -98,12 +99,15 @@ public:
     friend class GCS_MAVLINK;
     friend class Parameters;
     friend class AP_Arming;
+    friend class GCS_Backend_Rover; // for access to in_mavlink_delay
 
     Rover(void);
 
     // HAL::Callbacks implementation.
     void setup(void) override;
     void loop(void) override;
+
+    GCS_Frontend &gcs() { return gcs_frontend; }
 
 private:
     AP_HAL::BetterStream* cliSerial;
@@ -180,8 +184,7 @@ private:
 
     // GCS handling
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_Frontend_Rover gcs_frontend{DataFlash, g};
 
     // relay support
     AP_Relay relay;
@@ -355,9 +358,6 @@ private:
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
-    // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
-
     static const AP_Param::Info var_info[];
     static const LogStructure log_structure[];
 
@@ -406,14 +406,9 @@ private:
     void send_hwstatus(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
-    void send_current_waypoint(mavlink_channel_t chan);
     void send_statustext(mavlink_channel_t chan);
-    bool telemetry_delayed(mavlink_channel_t chan);
-    void gcs_send_message(enum ap_message id);
-    void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void gcs_retry_deferred(void);
 
     void do_erase_logs(void);
@@ -503,7 +498,6 @@ private:
     bool should_log(uint32_t mask);
     void frsky_telemetry_send(void);
     void print_hit_enter();    
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);

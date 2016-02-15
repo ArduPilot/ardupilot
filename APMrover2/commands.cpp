@@ -30,7 +30,7 @@ void Rover::set_next_WP(const struct Location& loc)
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text(MAV_SEVERITY_NOTICE, "Resetting previous WP");
+        gcs_frontend.send_text(MAV_SEVERITY_NOTICE, "Resetting previous WP");
         prev_WP = current_loc;
     }
 
@@ -63,12 +63,12 @@ void Rover::init_home()
         return;
     }
 
-	gcs_send_text(MAV_SEVERITY_INFO, "Init HOME");
+	gcs_frontend.send_text(MAV_SEVERITY_INFO, "Init HOME");
 
     ahrs.set_home(gps.location());
 	home_is_set = HOME_SET_NOT_LOCKED;
 	Log_Write_Home_And_Origin();
-    GCS_MAVLINK::send_home_all(gps.location());
+    gcs_frontend.send_home(gps.location());
 
 	// Save Home to EEPROM
 	mission.write_home_to_storage();
@@ -99,7 +99,7 @@ void Rover::update_home()
     if (home_is_set == HOME_SET_NOT_LOCKED) {
         ahrs.set_home(gps.location());
         Log_Write_Home_And_Origin();
-        GCS_MAVLINK::send_home_all(gps.location());
+        gcs_frontend.send_home(gps.location());
     }
     barometer.update_calibration();
 }

@@ -22,15 +22,112 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS_Frontend.h>
 
 extern const AP_HAL::HAL& hal;
+extern GCS_Frontend &gcs;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
-uint8_t GCS_MAVLINK::mavlink_active = 0;
+
+// this is only the default var_info used by the subclasses; they
+// assign this into their own reference (or not, in the case of
+// copter):
+
+/*
+  default stream rates to 1Hz
+ */
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
+    // @Param: RAW_SENS
+    // @DisplayName: Raw sensor stream rate
+    // @Description: Raw sensor stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  1),
+
+    // @Param: EXT_STAT
+    // @DisplayName: Extended status stream rate to ground station
+    // @Description: Extended status stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  1),
+
+    // @Param: RC_CHAN
+    // @DisplayName: RC Channel stream rate to ground station
+    // @Description: RC Channel stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  1),
+
+    // @Param: RAW_CTRL
+    // @DisplayName: Raw Control stream rate to ground station
+    // @Description: Raw Control stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  1),
+
+    // @Param: POSITION
+    // @DisplayName: Position stream rate to ground station
+    // @Description: Position stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  1),
+
+    // @Param: EXTRA1
+    // @DisplayName: Extra data type 1 stream rate to ground station
+    // @Description: Extra data type 1 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  1),
+
+    // @Param: EXTRA2
+    // @DisplayName: Extra data type 2 stream rate to ground station
+    // @Description: Extra data type 2 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  1),
+
+    // @Param: EXTRA3
+    // @DisplayName: Extra data type 3 stream rate to ground station
+    // @Description: Extra data type 3 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  1),
+
+    // @Param: PARAMS
+    // @DisplayName: Parameter stream rate to ground station
+    // @Description: Parameter stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  10),
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo *GCS_MAVLINK::get_var_info()
+{
+    return var_info;
+}
 
 GCS_MAVLINK::GCS_MAVLINK()
 {
-    AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, get_var_info());
 }
 
 void
@@ -165,7 +262,7 @@ void
 GCS_MAVLINK::queued_waypoint_send()
 {
     if (initialised &&
-        waypoint_receiving &&
+        waypoint_receiving() &&
         waypoint_request_i <= waypoint_request_last) {
         mavlink_msg_mission_request_send(
             chan,
@@ -201,9 +298,11 @@ void GCS_MAVLINK::send_power_status(void)
 }
 
 // report AHRS2 state
-void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
+bool GCS_MAVLINK::send_AHRS2()
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
+    AP_AHRS_NavEKF &ahrs = _ahrs();
+
     Vector3f euler;
     struct Location loc {};
     if (ahrs.get_secondary_attitude(euler)) {
@@ -215,10 +314,10 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
                                loc.lat,
                                loc.lng);
     }
-    AP_AHRS_NavEKF &_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
-    if (_ahrs.get_NavEKF2().activeCores() > 0) {
-        _ahrs.get_NavEKF2().getLLH(loc);
-        _ahrs.get_NavEKF2().getEulerAngles(-1,euler);
+    AP_AHRS_NavEKF &a_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
+    if (a_ahrs.get_NavEKF2().activeCores() > 0) {
+        a_ahrs.get_NavEKF2().getLLH(loc);
+        a_ahrs.get_NavEKF2().getEulerAngles(-1,euler);
         mavlink_msg_ahrs3_send(chan,
                                euler.x,
                                euler.y,
@@ -229,6 +328,7 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
                                0, 0, 0, 0);
     }
 #endif
+    return true;
 }
 
 /*
@@ -244,7 +344,7 @@ void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_messa
     mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands());
 
     // set variables to help handle the expected sending of commands to the GCS
-    waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
+    _waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
     waypoint_dest_sysid = msg->sysid;       // record system id of GCS who has requested the commands
     waypoint_dest_compid = msg->compid;     // record component id of GCS who has requested the commands
 }
@@ -339,7 +439,7 @@ void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *m
 
     // set variables to help handle the expected receiving of commands from the GCS
     waypoint_timelast_receive = AP_HAL::millis();    // set time we last received commands to now
-    waypoint_receiving = true;              // record that we expect to receive commands
+    _waypoint_receiving = true;              // record that we expect to receive commands
     waypoint_request_i = 0;                 // reset the next expected command number to zero
     waypoint_request_last = packet.count;   // record how many commands we expect to receive
     waypoint_timelast_request = 0;          // set time we last requested commands to zero
@@ -383,7 +483,7 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
 
     waypoint_timelast_receive = AP_HAL::millis();
     waypoint_timelast_request = 0;
-    waypoint_receiving   = true;
+    _waypoint_receiving   = true;
     waypoint_request_i   = packet.start_index;
     waypoint_request_last= packet.end_index;
 }
@@ -675,7 +775,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     }
 
     // Check if receiving waypoints (mission upload expected)
-    if (!waypoint_receiving) {
+    if (waypoint_receiving()) {
         result = MAV_MISSION_ERROR;
         goto mission_ack;
     }
@@ -721,7 +821,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             MAV_MISSION_ACCEPTED);
         
         send_text(MAV_SEVERITY_INFO,"Flight plan received");
-        waypoint_receiving = false;
+        _waypoint_receiving = false;
         mission_is_complete = true;
         // XXX ignores waypoint radius for individual waypoints, can
         // only set WP_RADIUS parameter
@@ -809,8 +909,12 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     }
 }
 
+void GCS_MAVLINK::set_active() {
+    _frontend->set_channel_active(chan);
+}
+
 void
-GCS_MAVLINK::update(run_cli_fn run_cli)
+GCS_MAVLINK::update()
 {
     // receive new packets
     mavlink_message_t msg;
@@ -823,10 +927,14 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
     {
         uint8_t c = comm_receive_ch(chan);
 
-        if (run_cli) {
+        if (_run_cli) {
             /* allow CLI to be started by hitting enter 3 times, if no
              *  heartbeat packets have been received */
-            if ((mavlink_active==0) && (AP_HAL::millis() - _cli_timeout) < 20000 && 
+            // note that this checks for activity on *any* channel.
+            // I'm not sure if this was originally by design
+            // -pb20160116
+            if (_frontend->active_channel_mask() &&
+                (AP_HAL::millis() - _cli_timeout) < 20000 && 
                 comm_is_idle(chan)) {
                 if (c == '\n' || c == '\r') {
                     crlf_count++;
@@ -834,7 +942,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
                     crlf_count = 0;
                 }
                 if (crlf_count == 3) {
-                    run_cli(_port);
+                    _run_cli(_port);
                 }
             }
         }
@@ -844,7 +952,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
             // we exclude radio packets to make it possible to use the
             // CLI over the radio
             if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-                mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
+                set_active();
             }
             // if a snoop handler has been setup then use it
             if (msg_snoop != NULL) {
@@ -856,14 +964,14 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
         }
     }
 
-    if (!waypoint_receiving) {
+    if (!waypoint_receiving()) {
         return;
     }
 
     uint32_t tnow = AP_HAL::millis();
     uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
 
-    if (waypoint_receiving &&
+    if (waypoint_receiving() &&
         waypoint_request_i <= waypoint_request_last &&
         tnow - waypoint_timelast_request > wp_recv_time) {
         waypoint_timelast_request = tnow;
@@ -871,8 +979,8 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
     }
 
     // stop waypoint receiving if timeout
-    if (waypoint_receiving && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
-        waypoint_receiving = false;
+    if (waypoint_receiving() && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
+        _waypoint_receiving = false;
     }
 }
 
@@ -881,8 +989,10 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
   send raw GPS position information (GPS_RAW_INT, GPS2_RAW, GPS_RTK and GPS2_RTK).
   returns true if messages fit into transmit buffer, false otherwise.
  */
-bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
+bool GCS_MAVLINK::send_GPS_RAW()
 {
+    AP_GPS &gps = _gps();
+
     if (comm_get_txspace(chan) >= 
         MAVLINK_MSG_ID_GPS_RAW_INT_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
         gps.send_mavlink_gps_raw(chan);
@@ -920,12 +1030,15 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
 /*
   send the SYSTEM_TIME message
  */
-void GCS_MAVLINK::send_system_time(AP_GPS &gps)
+bool GCS_MAVLINK::send_SYSTEM_TIME()
 {
+    AP_GPS &gps = _gps();
+
     mavlink_msg_system_time_send(
         chan,
         gps.time_epoch_usec(),
         AP_HAL::millis());
+    return true;
 }
 
 
@@ -982,8 +1095,11 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
     }
 }
 
-void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &compass)
+bool GCS_MAVLINK::send_RAW_IMU()
 {
+    const AP_InertialSensor &ins = _ins();
+    const Compass &compass = _compass();
+
     const Vector3f &accel = ins.get_accel(0);
     const Vector3f &gyro = ins.get_gyro(0);
     Vector3f mag;
@@ -1009,7 +1125,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     if (ins.get_gyro_count() <= 1 &&
         ins.get_accel_count() <= 1 &&
         compass.get_count() <= 1) {
-        return;
+        return true;
     }
     const Vector3f &accel2 = ins.get_accel(1);
     const Vector3f &gyro2 = ins.get_gyro(1);
@@ -1034,7 +1150,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     if (ins.get_gyro_count() <= 2 &&
         ins.get_accel_count() <= 2 &&
         compass.get_count() <= 2) {
-        return;
+        return true;
     }
     const Vector3f &accel3 = ins.get_accel(2);
     const Vector3f &gyro3 = ins.get_gyro(2);
@@ -1055,10 +1171,14 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);        
+
+    return true;
 }
 
-void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
+bool GCS_MAVLINK::send_SCALED_PRESSURE()
 {
+    AP_Baro &barometer = _barometer();
+
     uint32_t now = AP_HAL::millis();
     float pressure = barometer.get_pressure(0);
     mavlink_msg_scaled_pressure_send(
@@ -1087,15 +1207,22 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
             (pressure - barometer.get_ground_pressure(2))*0.01f, // hectopascal
             barometer.get_temperature(2)*100); // 0.01 degrees C        
     }
+
+    return false;
 }
 
-void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer)
+bool GCS_MAVLINK::send_SENSOR_OFFSETS()
 {
+
+    const AP_InertialSensor &ins = _ins();
+    const Compass &compass = _compass();
+    AP_Baro &barometer = _barometer();
+
     // run this message at a much lower rate - otherwise it
     // pointlessly wastes quite a lot of bandwidth
     static uint8_t counter;
     if (counter++ < 10) {
-        return;
+        return false;
     }
     counter = 0;
 
@@ -1116,10 +1243,20 @@ void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compas
                                     accel_offsets.x,
                                     accel_offsets.y,
                                     accel_offsets.z);
+    return true;
 }
 
-void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
+// push the pending status text out to the channel
+bool GCS_MAVLINK::send_STATUSTEXT()
 {
+    mavlink_msg_statustext_send(chan, pending_status.severity, pending_status.text);
+    return true;
+}
+
+bool GCS_MAVLINK::send_AHRS()
+{
+    AP_AHRS &ahrs = _ahrs();
+
     const Vector3f &omega_I = ahrs.get_gyro_drift();
     mavlink_msg_ahrs_send(
         chan,
@@ -1130,49 +1267,21 @@ void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
         0,
         ahrs.get_error_rp(),
         ahrs.get_error_yaw());
+    return true;
 }
 
-/*
-  send a statustext message to all active MAVLink connections
- */
-void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
+void GCS_MAVLINK::send_param_value(const char *param_name, ap_var_type param_type, float param_value)
 {
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
-                char msg2[50] {};
-                va_list arg_list;
-                va_start(arg_list, fmt);
-                hal.util->vsnprintf((char *)msg2, sizeof(msg2), fmt, arg_list);
-                va_end(arg_list);
-                mavlink_msg_statustext_send(chan,
-                                            severity,
-                                            msg2);
-            }
-        }
+    if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_PARAM_VALUE_LEN) {
+        return;
     }
-}
-
-/*
-  send a parameter value message to all active MAVLink connections
- */
-void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value)
-{
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_PARAM_VALUE_LEN) {
-                mavlink_msg_param_value_send(
-                    chan,
-                    param_name,
-                    param_value,
-                    mav_var_type(param_type),
-                    AP_Param::count_parameters(),
-                    -1);
-            }
-        }
-    }
+    mavlink_msg_param_value_send(
+        chan,
+        param_name,
+        param_value,
+        mav_var_type(param_type),
+        AP_Param::count_parameters(),
+        -1);
 }
 
 // report battery2 state
@@ -1308,13 +1417,14 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
 /*
   send LOCAL_POSITION_NED message
  */
-void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
+bool GCS_MAVLINK::send_LOCAL_POSITION_NED() const
 {
+    const AP_AHRS &ahrs = _ahrs();
     Vector3f local_position, velocity;
     if (!ahrs.get_relative_position_NED(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
         // we don't know the position and velocity
-        return;
+        return false;
     }
 
     mavlink_msg_local_position_ned_send(
@@ -1326,13 +1436,16 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
         velocity.x,
         velocity.y,
         velocity.z);
+    return true;
 }
 
 /*
   send LOCAL_POSITION_NED message
  */
-void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
+bool GCS_MAVLINK::send_VIBRATION() const
 {
+    const AP_InertialSensor &ins = _ins();
+
     Vector3f vibration = ins.get_vibration_levels();
 
     mavlink_msg_vibration_send(
@@ -1344,6 +1457,7 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
         ins.get_accel_clip_count(0),
         ins.get_accel_clip_count(1),
         ins.get_accel_clip_count(2));
+    return true;
 }
 
 void GCS_MAVLINK::send_home(const Location &home) const
@@ -1361,22 +1475,287 @@ void GCS_MAVLINK::send_home(const Location &home) const
     }
 }
 
-void GCS_MAVLINK::send_home_all(const Location &home)
+bool GCS_MAVLINK::send_HWSTATUS()
 {
-    const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_HOME_POSITION_LEN) {
-                mavlink_msg_home_position_send(
-                    chan,
-                    home.lat,
-                    home.lng,
-                    home.alt / 100,
-                    0.0f, 0.0f, 0.0f,
-                    q,
-                    0.0f, 0.0f, 0.0f);
-            }
-        }
+    mavlink_msg_hwstatus_send(
+        chan,
+        hal.analogin->board_voltage()*1000,
+        hal.i2c->lockup_count());
+    return true;
+}
+
+bool GCS_MAVLINK::send_EKF_STATUS_REPORT()
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    _ahrs().send_ekf_status_report(chan);
+#endif
+    return true;
+}
+
+bool GCS_MAVLINK::send_MAG_CAL_PROGRESS()
+{
+    _compass().send_mag_cal_progress(chan);
+    return true;
+}
+bool GCS_MAVLINK::send_MAG_CAL_REPORT()
+{
+    _compass().send_mag_cal_report(chan);
+    return true;
+}
+
+void GCS_MAVLINK::mavlink_msg_command_ack_send(MAV_CMD cmd, int ret)
+{
+    ::mavlink_msg_command_ack_send(chan, cmd, ret);
+}
+
+
+void GCS_MAVLINK::mavlink_msg_compassmot_status_send(int16_t throttle_cin,
+                                                     float amps,
+                                                     float int_pct,
+                                                     float mot_ofs_x,
+                                                     float mot_ofs_y,
+                                                     float mot_ofs_z)
+{
+    ::mavlink_msg_compassmot_status_send(chan,
+                                         throttle_cin,
+                                         amps,
+                                         int_pct,
+                                         mot_ofs_x,
+                                         mot_ofs_y,
+                                         mot_ofs_z);
+}
+
+bool GCS_MAVLINK::telemetry_delayed() const
+{
+    uint32_t tnow = AP_HAL::millis() >> 10;
+    if (tnow > _frontend->telem_delay()) {
+        return false;
     }
+    if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
+        // this is USB telemetry, so won't be an Xbee
+        return false;
+    }
+    // we're either on the 2nd UART, or no USB cable is connected
+    // we need to delay telemetry by the TELEM_DELAY time
+    return true;
+}
+
+// try to send a message, return false if it wasn't sent
+bool GCS_MAVLINK::try_send_message(enum ap_message id)
+{
+    if (!should_try_send_message(id)) {
+        return false;
+    }
+
+    switch(id) {
+    case MSG_HEARTBEAT:
+        CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        last_heartbeat_time = AP_HAL::millis();
+        send_HEARTBEAT();
+        break;
+
+    case MSG_EXTENDED_STATUS1:
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+        send_SYS_STATUS();
+        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+        send_power_status();
+        break;
+
+    case MSG_EXTENDED_STATUS2:
+        CHECK_PAYLOAD_SIZE(MEMINFO);
+        send_meminfo();
+        break;
+
+    case MSG_ATTITUDE:
+        CHECK_PAYLOAD_SIZE(ATTITUDE);
+        send_ATTITUDE();
+        break;
+
+    case MSG_LOCATION:
+        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
+        send_GLOBAL_POSITION_INT();
+        break;
+
+    case MSG_LOCAL_POSITION:
+        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
+        send_LOCAL_POSITION_NED();
+        break;
+
+    case MSG_NAV_CONTROLLER_OUTPUT:
+        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
+        send_NAV_CONTROLLER_OUTPUT();
+        break;
+
+    case MSG_GPS_RAW:
+        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
+        send_GPS_RAW();
+        break;
+
+    case MSG_SYSTEM_TIME:
+        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+        send_SYSTEM_TIME();
+        break;
+
+    case MSG_SERVO_OUT:
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
+        send_RC_CHANNELS_SCALED();
+        break;
+
+    case MSG_RADIO_IN:
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
+        send_RC_CHANNELS_RAW();
+        break;
+
+    case MSG_RADIO_OUT:
+        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
+        send_SERVO_OUTPUT_RAW();
+        break;
+
+    case MSG_VFR_HUD:
+        CHECK_PAYLOAD_SIZE(VFR_HUD);
+        send_VFR_HUD();
+        break;
+
+    case MSG_RAW_IMU1:
+        CHECK_PAYLOAD_SIZE(RAW_IMU);
+        send_RAW_IMU();
+        break;
+
+    case MSG_RAW_IMU2:
+        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
+        send_SCALED_PRESSURE();
+        break;
+
+    case MSG_RAW_IMU3:
+        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
+        send_SENSOR_OFFSETS();
+        break;
+
+    case MSG_CURRENT_WAYPOINT:
+        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
+        send_MISSION_CURRENT();
+        break;
+
+    case MSG_NEXT_PARAM:
+        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
+        queued_param_send();
+        break;
+
+    case MSG_NEXT_WAYPOINT:
+        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+        queued_waypoint_send();
+        break;
+
+    case MSG_RANGEFINDER:
+        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+        send_RANGEFINDER();
+        break;
+
+    case MSG_RPM:
+        CHECK_PAYLOAD_SIZE(RPM);
+        send_RPM();
+        break;
+
+    case MSG_TERRAIN:
+        CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
+        send_TERRAIN_REQUEST();
+        break;
+
+    case MSG_CAMERA_FEEDBACK:
+        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+        send_CAMERA_FEEDBACK();
+        break;
+
+    case MSG_STATUSTEXT:
+        CHECK_PAYLOAD_SIZE(STATUSTEXT);
+        send_STATUSTEXT();
+        break;
+
+    case MSG_LIMITS_STATUS:
+        CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
+        send_LIMITS_STATUS();
+        break;
+
+    case MSG_AHRS:
+        CHECK_PAYLOAD_SIZE(AHRS);
+        send_AHRS();
+        break;
+
+    case MSG_SIMSTATE:
+        CHECK_PAYLOAD_SIZE(SIMSTATE);
+        send_SIMSTATE();
+        CHECK_PAYLOAD_SIZE(AHRS2);
+        send_AHRS2();
+        break;
+
+    case MSG_HWSTATUS:
+        CHECK_PAYLOAD_SIZE(HWSTATUS);
+        send_HWSTATUS();
+        break;
+
+    case MSG_MOUNT_STATUS:
+        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
+        send_MOUNT_STATUS();
+        break;
+
+    case MSG_BATTERY2:
+        CHECK_PAYLOAD_SIZE(BATTERY2);
+        send_BATTERY2();
+        break;
+
+    case MSG_OPTICAL_FLOW:
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
+        send_OPTICAL_FLOW();
+        break;
+
+    case MSG_GIMBAL_REPORT:
+        CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
+        send_GIMBAL_REPORT();
+        break;
+
+    case MSG_EKF_STATUS_REPORT:
+        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
+        send_EKF_STATUS_REPORT();
+        break;
+
+    case MSG_FENCE_STATUS:
+        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+        send_FENCE_STATUS();
+        break;
+
+    case MSG_WIND:
+        CHECK_PAYLOAD_SIZE(WIND);
+        send_WIND();
+        break;
+
+    case MSG_PID_TUNING:
+        CHECK_PAYLOAD_SIZE(PID_TUNING);
+        send_PID_TUNING();
+        break;
+
+    case MSG_VIBRATION:
+        CHECK_PAYLOAD_SIZE(VIBRATION);
+        send_VIBRATION();
+        break;
+
+    case MSG_MISSION_ITEM_REACHED:
+        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
+        send_MISSION_ITEM_REACHED();
+        break;
+
+    case MSG_RETRY_DEFERRED:
+        break; // just here to prevent a warning
+
+    case MSG_MAG_CAL_PROGRESS:
+        CHECK_PAYLOAD_SIZE(MAG_CAL_PROGRESS);
+        send_MAG_CAL_PROGRESS();
+        break;
+
+    case MSG_MAG_CAL_REPORT:
+        CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
+        send_MAG_CAL_REPORT();
+        break;
+    }
+
+    return true;
 }

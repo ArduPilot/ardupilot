@@ -36,8 +36,7 @@ void Tracker::init_tracker()
     barometer.init();
 
     // init the GCS and start snooping for vehicle data
-    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
-    gcs[0].set_snoop(mavlink_snoop_static);
+    gcs_frontend.setup_uarts(serial_manager, mavlink_snoop_static);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -47,18 +46,6 @@ void Tracker::init_tracker()
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
     usb_connected = true;
     check_usb_mux();
-
-    // setup serial port for telem1 and start snooping for vehicle data
-    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
-    gcs[1].set_snoop(mavlink_snoop_static);
-
-    // setup serial port for telem2 and start snooping for vehicle data
-    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
-    gcs[2].set_snoop(mavlink_snoop_static);
-
-    // setup serial port for fourth telemetry port (not used by default) and start snooping for vehicle data
-    gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
-    gcs[3].set_snoop(mavlink_snoop_static);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -98,7 +85,7 @@ void Tracker::init_tracker()
     if (fabsf(g.start_latitude) <= 90.0f && fabsf(g.start_longitude) <= 180.0f) {
         current_loc.lat = g.start_latitude * 1.0e7f;
         current_loc.lng = g.start_longitude * 1.0e7f;
-        gcs_send_text(MAV_SEVERITY_NOTICE, "Ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
+        gcs_frontend.send_text(MAV_SEVERITY_NOTICE, "Ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
     }
 
     // see if EEPROM has a default location as well
@@ -108,7 +95,7 @@ void Tracker::init_tracker()
 
     init_capabilities();
 
-    gcs_send_text(MAV_SEVERITY_INFO,"Ready to track");
+    gcs_frontend.send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking
@@ -165,7 +152,7 @@ void Tracker::set_home(struct Location temp)
 {
     set_home_eeprom(temp);
     current_loc = temp;
-    GCS_MAVLINK::send_home_all(temp);
+    gcs_frontend.send_home(temp);
 }
 
 void Tracker::arm_servos()

@@ -168,7 +168,7 @@ bool Copter::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 
         // send message to GCS
         if (cmd_complete) {
-            gcs_send_mission_item_reached_message(cmd.index);
+            gcs_frontend.send_mission_item_reached_message(cmd.index);
         }
 
         return cmd_complete;
@@ -610,7 +610,7 @@ bool Copter::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        gcs_frontend.send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }else{
         return false;
@@ -692,7 +692,7 @@ bool Copter::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        gcs_frontend.send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }else{
         return false;
@@ -897,7 +897,7 @@ void Copter::do_take_picture()
 void Copter::log_picture()
 {
     if (!camera.using_feedback_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        gcs_frontend.send_message(MSG_CAMERA_FEEDBACK);
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }

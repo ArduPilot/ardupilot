@@ -18,9 +18,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
 #include "AP_MotorsHeli_Single.h"
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Frontend.h>
 
 extern const AP_HAL::HAL& hal;
+extern GCS_Frontend &gcs;
 
 const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     AP_NESTEDGROUPINFO(AP_MotorsHeli, 0),
@@ -538,7 +539,7 @@ bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
     // returns false if Phase Angle is outside of range 
     if ((_phase_angle > 90) || (_phase_angle < -90)){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_PHANG out of range");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "PreArm: H_PHANG out of range");
         }
         return false;
     }
@@ -546,7 +547,7 @@ bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
     // returns false if Acro External Gyro Gain is outside of range
     if ((_ext_gyro_gain_acro < 0) || (_ext_gyro_gain_acro > 1000)){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN_ACRO out of range");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN_ACRO out of range");
         }
         return false;
     }
@@ -554,7 +555,7 @@ bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
     // returns false if Standard External Gyro Gain is outside of range
     if ((_ext_gyro_gain_std < 0) || (_ext_gyro_gain_std > 1000)){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN out of range");
+            gcs.send_text_active(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN out of range");
         }
         return false;
     }

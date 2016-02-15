@@ -110,6 +110,8 @@
 #include <SITL/SITL.h>
 #endif
 
+#include "GCS_Frontend.h"
+
 /*
   a plane specific arming class
  */
@@ -134,16 +136,17 @@ protected:
  */
 class Plane : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
-    friend class Parameters;
-    friend class AP_Arming_Plane;
     friend class QuadPlane;
+    friend class AP_Arming_Plane; // for access to plane.g.
+    friend class GCS_Backend_Plane; // for access to in_mavlink_delay
 
     Plane(void);
 
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
+
+    GCS_Frontend &gcs() { return gcs_frontend; }
 
 private:
     // key aircraft parameters passed to multiple libraries
@@ -255,8 +258,7 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_Frontend_Plane gcs_frontend{DataFlash, g, airspeed};
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
@@ -715,9 +717,6 @@ private:
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay = false;
 
-    // true if we are out of time in our event timeslice
-    bool gcs_out_of_time = false;
-
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
@@ -747,15 +746,8 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
-    void send_current_waypoint(mavlink_channel_t chan);
-    void send_statustext(mavlink_channel_t chan);
-    bool telemetry_delayed(mavlink_channel_t chan);
-    void gcs_send_message(enum ap_message id);
-    void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
-    void gcs_send_airspeed_calibration(const Vector3f &vg);
     void gcs_retry_deferred(void);
 
     void do_erase_logs(void);
@@ -960,7 +952,6 @@ private:
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
     bool in_preLaunch_flight_stage(void);
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void handle_auto_mode(void);
     void calc_throttle();
     void calc_nav_roll();
