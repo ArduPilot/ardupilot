@@ -5,232 +5,231 @@ import sys
 
 import waflib
 
-BOARDS = {}
+_board_classes = {}
 
-PROJECT_ENV = waflib.ConfigSet.ConfigSet()
+class BoardMeta(type):
+    def __init__(cls, name, bases, dct):
+        super(BoardMeta, cls).__init__(name, bases, dct)
+        if name == 'Board':
+            return
+        _board_classes[name] = cls
 
-def define_board(func, name, parent_name=None):
-    if parent_name is None:
-        parent = PROJECT_ENV
-    elif parent_name not in BOARDS:
-        print("Undefined parent board '%s' for '%s'" % (parent_name, name))
-        sys.exit(1)
-    else:
-        parent = BOARDS[parent_name]
+class Board:
+    def configure(self, cfg):
+        env = waflib.ConfigSet.ConfigSet()
+        self.configure_env(env)
 
-    env = parent.derive().detach()
-    if name in BOARDS:
-        print("Multiple definitions of " + name)
-        sys.exit(1)
-    BOARDS[name] = env
-    func(env)
+        d = env.get_merged_dict()
+        # Always prepend so that arguments passed in the command line get
+        # the priority.
+        for k, val in d.items():
+            # Dictionaries (like 'DEFINES') are converted to lists to
+            # conform to waf conventions.
+            if isinstance(val, dict):
+                for item in val.items():
+                    cfg.env.prepend_value(k, '%s=%s' % item)
+            else:
+                cfg.env.prepend_value(k, val)
+
+    def configure_env(self, env):
+        # Use a dictionary instead of the convetional list for definitions to
+        # make easy to override them. Convert back to list before consumption.
+        env.DEFINES = {}
+
+        env.CFLAGS += [
+            '-ffunction-sections',
+            '-fdata-sections',
+            '-fsigned-char',
+
+            '-Wall',
+            '-Wextra',
+            '-Wformat',
+            '-Wshadow',
+            '-Wpointer-arith',
+            '-Wcast-align',
+            '-Wno-missing-field-initializers',
+            '-Wno-unused-parameter',
+            '-Wno-redundant-decls',
+        ]
+
+        env.CXXFLAGS += [
+            '-std=gnu++11',
+
+            '-fdata-sections',
+            '-ffunction-sections',
+            '-fno-exceptions',
+            '-fsigned-char',
+
+            '-Wall',
+            '-Wextra',
+            '-Wformat',
+            '-Wshadow',
+            '-Wpointer-arith',
+            '-Wcast-align',
+            '-Wno-unused-parameter',
+            '-Wno-missing-field-initializers',
+            '-Wno-reorder',
+            '-Wno-redundant-decls',
+            '-Werror=format-security',
+            '-Werror=array-bounds',
+            '-Werror=unused-but-set-variable',
+            '-Werror=uninitialized',
+            '-Werror=init-self',
+            '-Wfatal-errors',
+        ]
+
+        env.LINKFLAGS += [
+            '-Wl,--gc-sections',
+        ]
+
+Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def get_boards_names():
-    return sorted(list(BOARDS.keys()))
+    return sorted(list(_board_classes.keys()))
 
-# Use a dictionary instead of the convetional list for definitions to
-# make easy to override them. Convert back to list before consumption.
-PROJECT_ENV.DEFINES = {}
-
-PROJECT_ENV.CFLAGS += [
-    '-ffunction-sections',
-    '-fdata-sections',
-    '-fsigned-char',
-
-    '-Wall',
-    '-Wextra',
-    '-Wformat',
-    '-Wshadow',
-    '-Wpointer-arith',
-    '-Wcast-align',
-    '-Wno-missing-field-initializers',
-    '-Wno-unused-parameter',
-    '-Wno-redundant-decls',
-]
-
-PROJECT_ENV.CXXFLAGS += [
-    '-std=gnu++11',
-
-    '-fdata-sections',
-    '-ffunction-sections',
-    '-fno-exceptions',
-    '-fsigned-char',
-
-    '-Wall',
-    '-Wextra',
-    '-Wformat',
-    '-Wshadow',
-    '-Wpointer-arith',
-    '-Wcast-align',
-    '-Wno-unused-parameter',
-    '-Wno-missing-field-initializers',
-    '-Wno-reorder',
-    '-Wno-redundant-decls',
-    '-Werror=format-security',
-    '-Werror=array-bounds',
-    '-Werror=unused-but-set-variable',
-    '-Werror=uninitialized',
-    '-Werror=init-self',
-    '-Wfatal-errors',
-]
-
-PROJECT_ENV.LINKFLAGS += [
-    '-Wl,--gc-sections',
-]
+def get_board(name):
+    return _board_classes[name]()
 
 # NOTE: Keeping all the board definitions together so we can easily
 # identify opportunities to simplify common flags. In the future might
 # be worthy to keep board definitions in files of their own.
 
-def sitl(env):
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
-    )
+class sitl(Board):
+    def configure_env(self, env):
+        super(sitl, self).configure_env(env)
 
-    env.CXXFLAGS += [
-        '-O3',
-    ]
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+        )
+        env.CXXFLAGS += [
+            '-O3',
+        ]
+        env.LIB += [
+            'm',
+        ]
+        env.LINKFLAGS += ['-pthread',]
+        env.AP_LIBRARIES += [
+            'AP_HAL_SITL',
+            'SITL',
+        ]
 
-    env.LIB += [
-        'm',
-    ]
-    env.LINKFLAGS += ['-pthread',]
-    env.AP_LIBRARIES += [
-        'AP_HAL_SITL',
-        'SITL',
-    ]
+class linux(Board):
+    def configure_env(self, env):
+        super(linux, self).configure_env(env)
 
-define_board(sitl, 'sitl')
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NONE',
+        )
+        env.CXXFLAGS += [
+            '-O3',
+        ]
+        env.LIB += [
+            'm',
+            'rt',
+        ]
+        env.LINKFLAGS += ['-pthread',]
+        env.AP_LIBRARIES = [
+            'AP_HAL_Linux',
+        ]
 
+class minlure(linux):
+    def configure_env(self, env):
+        super(minlure, self).configure_env(env)
 
-def linux(env):
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NONE',
-    )
-
-    env.CXXFLAGS += [
-        '-O3',
-    ]
-
-    env.LIB += [
-        'm',
-        'rt',
-    ]
-    env.LINKFLAGS += ['-pthread',]
-    env.AP_LIBRARIES = [
-        'AP_HAL_Linux',
-    ]
-
-define_board(linux, 'linux')
-
-
-def minlure(env):
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_MINLURE',
-    )
-
-define_board(minlure, 'minlure', 'linux')
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_MINLURE',
+        )
 
 
-def erleboard(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
+class erleboard(linux):
+    def configure_env(self, env):
+        super(erleboard, self).configure_env(env)
 
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD',
-    )
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD',
+        )
 
-define_board(erleboard, 'erleboard', 'linux')
+class navio(linux):
+    def configure_env(self, env):
+        super(navio, self).configure_env(env)
 
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NAVIO',
+        )
 
-def navio(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
+class zynq(linux):
+    def configure_env(self, env):
+        super(zynq, self).configure_env(env)
 
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NAVIO',
-    )
+        env.TOOLCHAIN = 'arm-xilinx-linux-gnueabi'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ZYNQ',
+        )
 
-define_board(navio, 'navio', 'linux')
+class bbbmini(linux):
+    def configure_env(self, env):
+        super(bbbmini, self).configure_env(env)
 
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BBBMINI',
+        )
 
-def zynq(env):
-    env.TOOLCHAIN = 'arm-xilinx-linux-gnueabi'
+class pxf(linux):
+    def configure_env(self, env):
+        super(pxf, self).configure_env(env)
 
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ZYNQ',
-    )
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXF',
+        )
 
-define_board(zynq, 'zynq', 'linux')
+class bebop(linux):
+    def configure_env(self, env):
+        super(bebop, self).configure_env(env)
 
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
+        )
+        env.STATIC_LINKING = [True]
 
-def bbbmini(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
+class raspilot(linux):
+    def configure_env(self, env):
+        super(raspilot, self).configure_env(env)
 
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BBBMINI',
-    )
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RASPILOT',
+        )
 
-define_board(bbbmini, 'bbbmini', 'linux')
+class erlebrain2(linux):
+    def configure_env(self, env):
+        super(erlebrain2, self).configure_env(env)
 
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2',
+        )
 
-def pxf(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
+class bhat(linux):
+    def configure_env(self, env):
+        super(bhat, self).configure_env(env)
 
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXF',
-    )
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BH',
+        )
 
-define_board(pxf, 'pxf', 'linux')
+class pxfmini(linux):
+    def configure_env(self, env):
+        super(pxfmini, self).configure_env(env)
 
-
-def bebop(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
-
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
-    )
-
-    env.STATIC_LINKING = [True]
-
-define_board(bebop, 'bebop', 'linux')
-
-
-def raspilot(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
-
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RASPILOT',
-    )
-
-define_board(raspilot, 'raspilot', 'linux')
-
-
-def erlebrain2(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
-
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2',
-    )
-
-define_board(erlebrain2, 'erlebrain2', 'linux')
-
-
-def bhat(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
-
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BH',
-    )
-
-define_board(bhat, 'bhat', 'linux')
-
-
-def pxfmini(env):
-    env.TOOLCHAIN = 'arm-linux-gnueabihf'
-
-    env.DEFINES.update(
-        CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXFMINI',
-    )
-
-define_board(pxfmini, 'pxfmini', 'linux')
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXFMINI',
+        )
