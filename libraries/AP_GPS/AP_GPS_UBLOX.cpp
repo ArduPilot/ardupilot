@@ -23,7 +23,7 @@
 #include "AP_GPS_UBLOX.h"
 #include <AP_HAL/Util.h>
 #include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Frontend.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
@@ -37,6 +37,7 @@
 #define UBLOX_FAKE_3DLOCK 0
 
 extern const AP_HAL::HAL& hal;
+extern GCS_Frontend &gcs;
 
 #if UBLOX_DEBUGGING
  # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
@@ -797,7 +798,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                                 state.instance,
                                 _buffer.mon_ver.hwVersion,
                                 _buffer.mon_ver.swVersion);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, version_buffer);
+            gcs.send_text_active(MAV_SEVERITY_INFO, version_buffer);
             if (gps._DataFlash != NULL && gps._DataFlash->logging_started()) {
                 gps._DataFlash->Log_Write_Message(version_buffer);
             }
@@ -987,7 +988,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             _last_5hz_time = AP_HAL::millis();
             _unconfigured_messages = CONFIG_ALL;
             _request_next_config();
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
+            gcs.send_text_fmt_active(MAV_SEVERITY_CRITICAL,
                                              "GPS: u-blox %d is not maintaining a 5Hz update",
                                              state.instance);
         }
@@ -1100,7 +1101,7 @@ AP_GPS_UBLOX::_save_cfg()
     _send_message(CLASS_CFG, MSG_CFG_CFG, &save_cfg, sizeof(save_cfg));
     _last_cfg_sent_time = AP_HAL::millis();
     _num_cfg_save_tries++;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
+    gcs.send_text_fmt_active(MAV_SEVERITY_INFO,
                                      "GPS: u-blox %d saving config",
                                      state.instance);
 }
