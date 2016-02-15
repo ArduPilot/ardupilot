@@ -146,9 +146,25 @@ public:
         uint32_t group_element : 18;
     } ParamToken;
 
+    
+    // nesting structure for recursive call states
+    struct GroupNesting {
+        static const uint8_t numlevels = 2;
+        uint8_t level;
+        const struct GroupInfo *group_ret[numlevels];
+    };
+    
     // return true if AP_Param has been initialised via setup()
     static bool initialised(void);
 
+    // the 'group_id' of a element of a group is the 18 bit identifier
+    // used to distinguish between this element of the group and other
+    // elements of the same group. It is calculated using a bit shift per
+    // level of nesting, so the first level of nesting gets 6 bits the 2nd
+    // level gets the next 6 bits, and the 3rd level gets the last 6
+    // bits. This limits groups to having at most 64 elements.
+    static uint32_t group_id(const struct GroupInfo *grpinfo, uint8_t base, uint8_t i, uint8_t shift);
+    
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
     ///
@@ -163,7 +179,7 @@ public:
     ///
     void copy_name_info(const struct AP_Param::Info *info,
                         const struct GroupInfo *ginfo,
-                        const struct GroupInfo *ginfo0,
+                        const struct GroupNesting &group_nesting,
                         uint8_t idx, char *buffer, size_t bufferSize, bool force_scalar=false) const;
     
     /// Copy the variable's name, prefixed by any containing group name, to a
@@ -362,22 +378,22 @@ private:
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
                                     uint16_t                    vindex,
-                                    uint8_t                     group_base,
+                                    uint32_t                    group_base,
                                     uint8_t                     group_shift,
                                     ptrdiff_t                   group_offset,
                                     uint32_t *                  group_element,
                                     const struct GroupInfo *   &group_ret,
-                                    const struct GroupInfo *   &group_ret0,
+                                    struct GroupNesting        &group_nesting,
                                     uint8_t *                   idx) const;
     const struct Info *         find_var_info(
                                     uint32_t *                group_element,
                                     const struct GroupInfo *  &group_ret,
-                                    const struct GroupInfo *  &group_ret0,
+                                    struct GroupNesting       &group_nesting,
                                     uint8_t *                 idx) const;
     const struct Info *			find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo *  &group_ret,
-                                                    const struct GroupInfo *  &group_ret0,
+                                                    struct GroupNesting       &group_nesting,
                                                     uint8_t *                  idx) const;
     static const struct Info *  find_by_header_group(
                                     struct Param_header phdr, void **ptr,
