@@ -393,7 +393,7 @@ void Copter::autotune_attitude_control()
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_roll(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().x) * 100.0f;
             autotune_start_angle = ahrs.roll_sensor;
-            rotation_rate_filt.set_cutoff_frequency(g.pid_rate_roll.filt_hz()*2.0f);
+            rotation_rate_filt.set_cutoff_frequency(attitude_control.get_rate_roll_pid().filt_hz()*2.0f);
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
                 rotation_rate_filt.reset(autotune_start_rate);
             } else {
@@ -405,7 +405,7 @@ void Copter::autotune_attitude_control()
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_pitch(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().y) * 100.0f;
             autotune_start_angle = ahrs.pitch_sensor;
-            rotation_rate_filt.set_cutoff_frequency(g.pid_rate_pitch.filt_hz()*2.0f);
+            rotation_rate_filt.set_cutoff_frequency(attitude_control.get_rate_pitch_pid().filt_hz()*2.0f);
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
                 rotation_rate_filt.reset(autotune_start_rate);
             } else {
@@ -767,35 +767,35 @@ void Copter::autotune_backup_gains_and_initialise()
     orig_bf_feedforward = attitude_control.get_bf_feedforward();
 
     // backup original pids and initialise tuned pid values
-    orig_roll_rp = g.pid_rate_roll.kP();
-    orig_roll_ri = g.pid_rate_roll.kI();
-    orig_roll_rd = g.pid_rate_roll.kD();
-    orig_roll_sp = g.p_stabilize_roll.kP();
+    orig_roll_rp = attitude_control.get_rate_roll_pid().kP();
+    orig_roll_ri = attitude_control.get_rate_roll_pid().kI();
+    orig_roll_rd = attitude_control.get_rate_roll_pid().kD();
+    orig_roll_sp = attitude_control.get_angle_roll_p().kP();
     orig_roll_accel = attitude_control.get_accel_roll_max();
-    tune_roll_rp = g.pid_rate_roll.kP();
-    tune_roll_rd = g.pid_rate_roll.kD();
-    tune_roll_sp = g.p_stabilize_roll.kP();
+    tune_roll_rp = attitude_control.get_rate_roll_pid().kP();
+    tune_roll_rd = attitude_control.get_rate_roll_pid().kD();
+    tune_roll_sp = attitude_control.get_angle_roll_p().kP();
     tune_roll_accel = attitude_control.get_accel_roll_max();
 
-    orig_pitch_rp = g.pid_rate_pitch.kP();
-    orig_pitch_ri = g.pid_rate_pitch.kI();
-    orig_pitch_rd = g.pid_rate_pitch.kD();
-    orig_pitch_sp = g.p_stabilize_pitch.kP();
+    orig_pitch_rp = attitude_control.get_rate_pitch_pid().kP();
+    orig_pitch_ri = attitude_control.get_rate_pitch_pid().kI();
+    orig_pitch_rd = attitude_control.get_rate_pitch_pid().kD();
+    orig_pitch_sp = attitude_control.get_angle_pitch_p().kP();
     orig_pitch_accel = attitude_control.get_accel_pitch_max();
-    tune_pitch_rp = g.pid_rate_pitch.kP();
-    tune_pitch_rd = g.pid_rate_pitch.kD();
-    tune_pitch_sp = g.p_stabilize_pitch.kP();
+    tune_pitch_rp = attitude_control.get_rate_pitch_pid().kP();
+    tune_pitch_rd = attitude_control.get_rate_pitch_pid().kD();
+    tune_pitch_sp = attitude_control.get_angle_pitch_p().kP();
     tune_pitch_accel = attitude_control.get_accel_pitch_max();
 
-    orig_yaw_rp = g.pid_rate_yaw.kP();
-    orig_yaw_ri = g.pid_rate_yaw.kI();
-    orig_yaw_rd = g.pid_rate_yaw.kD();
-    orig_yaw_rLPF = g.pid_rate_yaw.filt_hz();
+    orig_yaw_rp = attitude_control.get_rate_yaw_pid().kP();
+    orig_yaw_ri = attitude_control.get_rate_yaw_pid().kI();
+    orig_yaw_rd = attitude_control.get_rate_yaw_pid().kD();
+    orig_yaw_rLPF = attitude_control.get_rate_yaw_pid().filt_hz();
     orig_yaw_accel = attitude_control.get_accel_yaw_max();
-    orig_yaw_sp = g.p_stabilize_yaw.kP();
-    tune_yaw_rp = g.pid_rate_yaw.kP();
-    tune_yaw_rLPF = g.pid_rate_yaw.filt_hz();
-    tune_yaw_sp = g.p_stabilize_yaw.kP();
+    orig_yaw_sp = attitude_control.get_angle_yaw_p().kP();
+    tune_yaw_rp = attitude_control.get_rate_yaw_pid().kP();
+    tune_yaw_rLPF = attitude_control.get_rate_yaw_pid().filt_hz();
+    tune_yaw_sp = attitude_control.get_angle_yaw_p().kP();
     tune_yaw_accel = attitude_control.get_accel_yaw_max();
 
     Log_Write_Event(DATA_AUTOTUNE_INITIALISED);
@@ -808,29 +808,29 @@ void Copter::autotune_load_orig_gains()
     attitude_control.bf_feedforward(orig_bf_feedforward);
     if (autotune_roll_enabled()) {
         if (!is_zero(orig_roll_rp)) {
-            g.pid_rate_roll.kP(orig_roll_rp);
-            g.pid_rate_roll.kI(orig_roll_ri);
-            g.pid_rate_roll.kD(orig_roll_rd);
-            g.p_stabilize_roll.kP(orig_roll_sp);
+            attitude_control.get_rate_roll_pid().kP(orig_roll_rp);
+            attitude_control.get_rate_roll_pid().kI(orig_roll_ri);
+            attitude_control.get_rate_roll_pid().kD(orig_roll_rd);
+            attitude_control.get_angle_roll_p().kP(orig_roll_sp);
             attitude_control.set_accel_roll_max(orig_roll_accel);
         }
     }
     if (autotune_pitch_enabled()) {
         if (!is_zero(orig_pitch_rp)) {
-            g.pid_rate_pitch.kP(orig_pitch_rp);
-            g.pid_rate_pitch.kI(orig_pitch_ri);
-            g.pid_rate_pitch.kD(orig_pitch_rd);
-            g.p_stabilize_pitch.kP(orig_pitch_sp);
+            attitude_control.get_rate_pitch_pid().kP(orig_pitch_rp);
+            attitude_control.get_rate_pitch_pid().kI(orig_pitch_ri);
+            attitude_control.get_rate_pitch_pid().kD(orig_pitch_rd);
+            attitude_control.get_angle_pitch_p().kP(orig_pitch_sp);
             attitude_control.set_accel_pitch_max(orig_pitch_accel);
         }
     }
     if (autotune_yaw_enabled()) {
         if (!is_zero(orig_yaw_rp)) {
-            g.pid_rate_yaw.kP(orig_yaw_rp);
-            g.pid_rate_yaw.kI(orig_yaw_ri);
-            g.pid_rate_yaw.kD(orig_yaw_rd);
-            g.pid_rate_yaw.filt_hz(orig_yaw_rLPF);
-            g.p_stabilize_yaw.kP(orig_yaw_sp);
+            attitude_control.get_rate_yaw_pid().kP(orig_yaw_rp);
+            attitude_control.get_rate_yaw_pid().kI(orig_yaw_ri);
+            attitude_control.get_rate_yaw_pid().kD(orig_yaw_rd);
+            attitude_control.get_rate_yaw_pid().filt_hz(orig_yaw_rLPF);
+            attitude_control.get_angle_yaw_p().kP(orig_yaw_sp);
             attitude_control.set_accel_yaw_max(orig_yaw_accel);
         }
     }
@@ -846,29 +846,29 @@ void Copter::autotune_load_tuned_gains()
     }
     if (autotune_roll_enabled()) {
         if (!is_zero(tune_roll_rp)) {
-            g.pid_rate_roll.kP(tune_roll_rp);
-            g.pid_rate_roll.kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
-            g.pid_rate_roll.kD(tune_roll_rd);
-            g.p_stabilize_roll.kP(tune_roll_sp);
+            attitude_control.get_rate_roll_pid().kP(tune_roll_rp);
+            attitude_control.get_rate_roll_pid().kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
+            attitude_control.get_rate_roll_pid().kD(tune_roll_rd);
+            attitude_control.get_angle_roll_p().kP(tune_roll_sp);
             attitude_control.set_accel_roll_max(tune_roll_accel);
         }
     }
     if (autotune_pitch_enabled()) {
         if (!is_zero(tune_pitch_rp)) {
-            g.pid_rate_pitch.kP(tune_pitch_rp);
-            g.pid_rate_pitch.kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
-            g.pid_rate_pitch.kD(tune_pitch_rd);
-            g.p_stabilize_pitch.kP(tune_pitch_sp);
+            attitude_control.get_rate_pitch_pid().kP(tune_pitch_rp);
+            attitude_control.get_rate_pitch_pid().kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
+            attitude_control.get_rate_pitch_pid().kD(tune_pitch_rd);
+            attitude_control.get_angle_pitch_p().kP(tune_pitch_sp);
             attitude_control.set_accel_pitch_max(tune_pitch_accel);
         }
     }
     if (autotune_yaw_enabled()) {
         if (!is_zero(tune_yaw_rp)) {
-            g.pid_rate_yaw.kP(tune_yaw_rp);
-            g.pid_rate_yaw.kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
-            g.pid_rate_yaw.kD(0.0f);
-            g.pid_rate_yaw.filt_hz(tune_yaw_rLPF);
-            g.p_stabilize_yaw.kP(tune_yaw_sp);
+            attitude_control.get_rate_yaw_pid().kP(tune_yaw_rp);
+            attitude_control.get_rate_yaw_pid().kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
+            attitude_control.get_rate_yaw_pid().kD(0.0f);
+            attitude_control.get_rate_yaw_pid().filt_hz(tune_yaw_rLPF);
+            attitude_control.get_angle_yaw_p().kP(tune_yaw_sp);
             attitude_control.set_accel_yaw_max(tune_yaw_accel);
         }
     }
@@ -882,23 +882,23 @@ void Copter::autotune_load_intra_test_gains()
     // sanity check the gains
     attitude_control.bf_feedforward(true);
     if (autotune_roll_enabled()) {
-        g.pid_rate_roll.kP(orig_roll_rp);
-        g.pid_rate_roll.kI(orig_roll_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
-        g.pid_rate_roll.kD(orig_roll_rd);
-        g.p_stabilize_roll.kP(orig_roll_sp);
+        attitude_control.get_rate_roll_pid().kP(orig_roll_rp);
+        attitude_control.get_rate_roll_pid().kI(orig_roll_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
+        attitude_control.get_rate_roll_pid().kD(orig_roll_rd);
+        attitude_control.get_angle_roll_p().kP(orig_roll_sp);
     }
     if (autotune_pitch_enabled()) {
-        g.pid_rate_pitch.kP(orig_pitch_rp);
-        g.pid_rate_pitch.kI(orig_pitch_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
-        g.pid_rate_pitch.kD(orig_pitch_rd);
-        g.p_stabilize_pitch.kP(orig_pitch_sp);
+        attitude_control.get_rate_pitch_pid().kP(orig_pitch_rp);
+        attitude_control.get_rate_pitch_pid().kI(orig_pitch_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
+        attitude_control.get_rate_pitch_pid().kD(orig_pitch_rd);
+        attitude_control.get_angle_pitch_p().kP(orig_pitch_sp);
     }
     if (autotune_yaw_enabled()) {
-        g.pid_rate_yaw.kP(orig_yaw_rp);
-        g.pid_rate_yaw.kI(orig_yaw_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
-        g.pid_rate_yaw.kD(orig_yaw_rd);
-        g.pid_rate_yaw.filt_hz(orig_yaw_rLPF);
-        g.p_stabilize_yaw.kP(orig_yaw_sp);
+        attitude_control.get_rate_yaw_pid().kP(orig_yaw_rp);
+        attitude_control.get_rate_yaw_pid().kI(orig_yaw_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
+        attitude_control.get_rate_yaw_pid().kD(orig_yaw_rd);
+        attitude_control.get_rate_yaw_pid().filt_hz(orig_yaw_rLPF);
+        attitude_control.get_angle_yaw_p().kP(orig_yaw_sp);
     }
 }
 
@@ -908,23 +908,23 @@ void Copter::autotune_load_twitch_gains()
 {
     switch (autotune_state.axis) {
         case AUTOTUNE_AXIS_ROLL:
-            g.pid_rate_roll.kP(tune_roll_rp);
-            g.pid_rate_roll.kI(tune_roll_rp*0.01f);
-            g.pid_rate_roll.kD(tune_roll_rd);
-            g.p_stabilize_roll.kP(tune_roll_sp);
+            attitude_control.get_rate_roll_pid().kP(tune_roll_rp);
+            attitude_control.get_rate_roll_pid().kI(tune_roll_rp*0.01f);
+            attitude_control.get_rate_roll_pid().kD(tune_roll_rd);
+            attitude_control.get_angle_roll_p().kP(tune_roll_sp);
             break;
         case AUTOTUNE_AXIS_PITCH:
-            g.pid_rate_pitch.kP(tune_pitch_rp);
-            g.pid_rate_pitch.kI(tune_pitch_rp*0.01f);
-            g.pid_rate_pitch.kD(tune_pitch_rd);
-            g.p_stabilize_pitch.kP(tune_pitch_sp);
+            attitude_control.get_rate_pitch_pid().kP(tune_pitch_rp);
+            attitude_control.get_rate_pitch_pid().kI(tune_pitch_rp*0.01f);
+            attitude_control.get_rate_pitch_pid().kD(tune_pitch_rd);
+            attitude_control.get_angle_pitch_p().kP(tune_pitch_sp);
             break;
         case AUTOTUNE_AXIS_YAW:
-            g.pid_rate_yaw.kP(tune_yaw_rp);
-            g.pid_rate_yaw.kI(tune_yaw_rp*0.01f);
-            g.pid_rate_yaw.kD(0.0f);
-            g.pid_rate_yaw.filt_hz(tune_yaw_rLPF);
-            g.p_stabilize_yaw.kP(tune_yaw_sp);
+            attitude_control.get_rate_yaw_pid().kP(tune_yaw_rp);
+            attitude_control.get_rate_yaw_pid().kI(tune_yaw_rp*0.01f);
+            attitude_control.get_rate_yaw_pid().kD(0.0f);
+            attitude_control.get_rate_yaw_pid().filt_hz(tune_yaw_rLPF);
+            attitude_control.get_angle_yaw_p().kP(tune_yaw_sp);
             break;
     }
 }
@@ -945,67 +945,67 @@ void Copter::autotune_save_tuning_gains()
         // sanity check the rate P values
         if (autotune_roll_enabled() && !is_zero(tune_roll_rp)) {
             // rate roll gains
-            g.pid_rate_roll.kP(tune_roll_rp);
-            g.pid_rate_roll.kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
-            g.pid_rate_roll.kD(tune_roll_rd);
-            g.pid_rate_roll.save_gains();
+            attitude_control.get_rate_roll_pid().kP(tune_roll_rp);
+            attitude_control.get_rate_roll_pid().kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
+            attitude_control.get_rate_roll_pid().kD(tune_roll_rd);
+            attitude_control.get_rate_roll_pid().save_gains();
 
             // stabilize roll
-            g.p_stabilize_roll.kP(tune_roll_sp);
-            g.p_stabilize_roll.save_gains();
+            attitude_control.get_angle_roll_p().kP(tune_roll_sp);
+            attitude_control.get_angle_roll_p().save_gains();
 
             // acceleration roll
             attitude_control.save_accel_roll_max(tune_roll_accel);
 
             // resave pids to originals in case the autotune is run again
-            orig_roll_rp = g.pid_rate_roll.kP();
-            orig_roll_ri = g.pid_rate_roll.kI();
-            orig_roll_rd = g.pid_rate_roll.kD();
-            orig_roll_sp = g.p_stabilize_roll.kP();
+            orig_roll_rp = attitude_control.get_rate_roll_pid().kP();
+            orig_roll_ri = attitude_control.get_rate_roll_pid().kI();
+            orig_roll_rd = attitude_control.get_rate_roll_pid().kD();
+            orig_roll_sp = attitude_control.get_angle_roll_p().kP();
         }
 
         if (autotune_pitch_enabled() && !is_zero(tune_pitch_rp)) {
             // rate pitch gains
-            g.pid_rate_pitch.kP(tune_pitch_rp);
-            g.pid_rate_pitch.kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
-            g.pid_rate_pitch.kD(tune_pitch_rd);
-            g.pid_rate_pitch.save_gains();
+            attitude_control.get_rate_pitch_pid().kP(tune_pitch_rp);
+            attitude_control.get_rate_pitch_pid().kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
+            attitude_control.get_rate_pitch_pid().kD(tune_pitch_rd);
+            attitude_control.get_rate_pitch_pid().save_gains();
 
             // stabilize pitch
-            g.p_stabilize_pitch.kP(tune_pitch_sp);
-            g.p_stabilize_pitch.save_gains();
+            attitude_control.get_angle_pitch_p().kP(tune_pitch_sp);
+            attitude_control.get_angle_pitch_p().save_gains();
 
             // acceleration pitch
             attitude_control.save_accel_pitch_max(tune_pitch_accel);
 
             // resave pids to originals in case the autotune is run again
-            orig_pitch_rp = g.pid_rate_pitch.kP();
-            orig_pitch_ri = g.pid_rate_pitch.kI();
-            orig_pitch_rd = g.pid_rate_pitch.kD();
-            orig_pitch_sp = g.p_stabilize_pitch.kP();
+            orig_pitch_rp = attitude_control.get_rate_pitch_pid().kP();
+            orig_pitch_ri = attitude_control.get_rate_pitch_pid().kI();
+            orig_pitch_rd = attitude_control.get_rate_pitch_pid().kD();
+            orig_pitch_sp = attitude_control.get_angle_pitch_p().kP();
         }
 
         if (autotune_yaw_enabled() && !is_zero(tune_yaw_rp)) {
             // rate yaw gains
-            g.pid_rate_yaw.kP(tune_yaw_rp);
-            g.pid_rate_yaw.kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
-            g.pid_rate_yaw.kD(0.0f);
-            g.pid_rate_yaw.filt_hz(tune_yaw_rLPF);
-            g.pid_rate_yaw.save_gains();
+            attitude_control.get_rate_yaw_pid().kP(tune_yaw_rp);
+            attitude_control.get_rate_yaw_pid().kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
+            attitude_control.get_rate_yaw_pid().kD(0.0f);
+            attitude_control.get_rate_yaw_pid().filt_hz(tune_yaw_rLPF);
+            attitude_control.get_rate_yaw_pid().save_gains();
 
             // stabilize yaw
-            g.p_stabilize_yaw.kP(tune_yaw_sp);
-            g.p_stabilize_yaw.save_gains();
+            attitude_control.get_angle_yaw_p().kP(tune_yaw_sp);
+            attitude_control.get_angle_yaw_p().save_gains();
 
             // acceleration yaw
             attitude_control.save_accel_yaw_max(tune_yaw_accel);
 
             // resave pids to originals in case the autotune is run again
-            orig_yaw_rp = g.pid_rate_yaw.kP();
-            orig_yaw_ri = g.pid_rate_yaw.kI();
-            orig_yaw_rd = g.pid_rate_yaw.kD();
-            orig_yaw_rLPF = g.pid_rate_yaw.filt_hz();
-            orig_yaw_sp = g.p_stabilize_yaw.kP();
+            orig_yaw_rp = attitude_control.get_rate_yaw_pid().kP();
+            orig_yaw_ri = attitude_control.get_rate_yaw_pid().kI();
+            orig_yaw_rd = attitude_control.get_rate_yaw_pid().kD();
+            orig_yaw_rLPF = attitude_control.get_rate_yaw_pid().filt_hz();
+            orig_yaw_sp = attitude_control.get_angle_yaw_p().kP();
         }
         // update GCS and log save gains event
         autotune_update_gcs(AUTOTUNE_MESSAGE_SAVED_GAINS);
