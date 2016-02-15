@@ -5,6 +5,10 @@ An ArduPilot-based project for remotely operated underwater vehicles.
 
 *****
 
+**Build Status for ArduSub Fork:**
+
+[![Build Status](https://travis-ci.org/bluerobotics/ardupilot.svg?branch=master)](https://travis-ci.org/bluerobotics/ardupilot)
+
 ## Intro ##
 
 The ArduSub project is a subsea vehicle control system designed primarily for ROVs and AUVs. It is based on the *ArduCopter* vehicle-type of the [ArduPilot](https://github.com/diydrones/ardupilot) project. 
