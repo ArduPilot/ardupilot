@@ -61,6 +61,11 @@
 // Developer Items
 //
 
+//Usb mux pin detection, this make only for generics AVR BOARDS. If you are connected to USB, bridge to internal VDD, if not bridge to Ground. Pins if you want to use 33 or 32.
+#ifdef MEGA_GENERIC_PINS
+#define USB_MUXPIN 33
+#endif
+
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
  # define CLI_ENABLED ENABLED

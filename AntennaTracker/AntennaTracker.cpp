@@ -51,6 +51,11 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] PROGMEM = {
  */
 void Tracker::setup() 
 {
+
+#ifdef MEGA_GENERIC_PINS
+    hal.gpio->pinMode(USB_MUXPIN, HAL_GPIO_INPUT);
+#endif
+
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
