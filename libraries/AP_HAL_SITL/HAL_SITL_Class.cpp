@@ -34,6 +34,7 @@ static AnalogIn sitlAnalogIn(&sitlState);
 static Empty::GPIO emptyGPIO;
 static Empty::Semaphore emptyI2Csemaphore;
 static Empty::I2CDriver emptyI2C(&emptyI2Csemaphore);
+static Empty::I2CDeviceManager i2c_mgr_instance;
 static Empty::SPIDeviceManager emptySPI;
 static Empty::OpticalFlow emptyOpticalFlow;
 
@@ -52,6 +53,7 @@ HAL_SITL::HAL_SITL() :
         &sitlUart2Driver,  /* uartC */
         &sitlUart3Driver,  /* uartD */
         &sitlUart4Driver,  /* uartE */
+        &i2c_mgr_instance,
         &emptyI2C, /* i2c */
         &emptyI2C, /* i2c */
         &emptyI2C, /* i2c */

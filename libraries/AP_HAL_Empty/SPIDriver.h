@@ -1,6 +1,7 @@
+#pragma once
 
-#ifndef __AP_HAL_EMPTY_SPIDRIVER_H__
-#define __AP_HAL_EMPTY_SPIDRIVER_H__
+#include <AP_HAL/SPIDevice.h>
+#include <AP_HAL/utility/OwnPtr.h>
 
 #include "AP_HAL_Empty.h"
 #include "Semaphores.h"
@@ -23,10 +24,11 @@ private:
 class Empty::SPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
     SPIDeviceManager();
+
     void init();
     AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDeviceType, uint8_t index);
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+
 private:
     SPIDeviceDriver _device;
 };
-
-#endif // __AP_HAL_EMPTY_SPIDRIVER_H__
