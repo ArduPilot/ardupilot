@@ -595,12 +595,13 @@ void NavEKF2_core::FuseMagnetometer()
 
 
 /*
- * Fuse compass measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * Fuse magnetic heading measurement using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
  * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computatonally cheaper.
  * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
  * It is not as robust to magneometer failures.
+ * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degreees latitude of the the magnetic poles)
 */
 void NavEKF2_core::fuseCompass()
 {
@@ -609,48 +610,38 @@ void NavEKF2_core::fuseCompass()
     float q2 = stateStruct.quat[2];
     float q3 = stateStruct.quat[3];
 
-    float magX = magDataDelayed.mag.x;
-    float magY = magDataDelayed.mag.y;
-    float magZ = magDataDelayed.mag.z;
-
     // compass measurement error variance (rad^2)
     const float R_MAG = 3e-2f;
 
     // Calculate observation Jacobian
-    float t2 = q0*q0;
-    float t3 = q1*q1;
-    float t4 = q2*q2;
-    float t5 = q3*q3;
-    float t6 = q0*q2*2.0f;
-    float t7 = q1*q3*2.0f;
-    float t8 = t6+t7;
-    float t9 = q0*q3*2.0f;
-    float t13 = q1*q2*2.0f;
-    float t10 = t9-t13;
-    float t11 = t2+t3-t4-t5;
-    float t12 = magX*t11;
-    float t14 = magZ*t8;
-    float t19 = magY*t10;
-    float t15 = t12+t14-t19;
-    float t16 = t2-t3+t4-t5;
-    float t17 = q0*q1*2.0f;
-    float t24 = q2*q3*2.0f;
-    float t18 = t17-t24;
-    float t20 = 1.0f/t15;
-    float t21 = magY*t16;
-    float t22 = t9+t13;
-    float t23 = magX*t22;
-    float t28 = magZ*t18;
-    float t25 = t21+t23-t28;
-    float t29 = t20*t25;
-    float t26 = tan(t29);
-    float t27 = 1.0f/(t15*t15);
-    float t30 = t26*t26;
-    float t31 = t30+1.0f;
+    float t2 = q0 * q0;
+    float t3 = q1 * q1;
+    float t4 = q2 * q2;
+    float t5 = q3 * q3;
+    float t6 = t2 + t3 - t4 - t5;
+    float t7 = q0 * q3 * 2.0f;
+    float t8 = q1 * q2 * 2.0f;
+    float t9 = t7 + t8;
+    float t10;
+    if (fabsf(t6) > 1e-6f) {
+        t10 = 1.0f / (t6 * t6);
+    } else  {
+        return;
+    }
+    float t11 = t9 * t9;
+    float t12 = t10 * t11;
+    float t13 = t12 + 1.0f;
+    float t14;
+    if (fabsf(t13) > 1e-6f) {
+        t14 = 1.0f / t13;
+    } else  {
+        return;
+    }
+    float t15 = 1.0f / t6;
     float H_MAG[3];
-    H_MAG[0] = -t31*(t20*(magZ*t16+magY*t18)+t25*t27*(magY*t8+magZ*t10));
-    H_MAG[1] = t31*(t20*(magX*t18+magZ*t22)+t25*t27*(magX*t8-magZ*t11));
-    H_MAG[2] = t31*(t20*(magX*t16-magY*t22)+t25*t27*(magX*t10+magY*t11));
+    H_MAG[0] = 0.0f;
+    H_MAG[1] = t14*(t15*(q0*q1*2.0f-q2*q3*2.0f)+t9*t10*(q0*q2*2.0f+q1*q3*2.0f));
+    H_MAG[2] = t14*(t15*(t2-t3+t4-t5)+t9*t10*(t7-t8));
 
     // Calculate innovation variance and Kalman gains, taking advantage of the fact that only the first 3 elements in H are non zero
     float PH[3];
@@ -767,41 +758,34 @@ void NavEKF2_core::FuseDeclination()
     }
 
     // Calculate observation Jacobian and Kalman gains
-    float t2 = 1.0f/magN;
-    float t4 = magE*t2;
-    float t3 = tanf(t4);
-    float t5 = t3*t3;
-    float t6 = t5+1.0f;
-    float t7 = 1.0f/(magN*magN);
-    float t8 = P[17][17]*t2*t6;
-    float t15 = P[16][17]*magE*t6*t7;
-    float t9 = t8-t15;
-    float t10 = t2*t6*t9;
-    float t11 = P[17][16]*t2*t6;
-    float t16 = P[16][16]*magE*t6*t7;
-    float t12 = t11-t16;
-    float t17 = magE*t6*t7*t12;
-    float t13 = R_DECL+t10-t17;
-    float t14 = 1.0f/t13;
-    float t18 = magE;
-    float t19 = magN;
-    float t21 = 1.0f/t19;
-    float t22 = t18*t21;
-    float t20 = tanf(t22);
-    float t23 = t20*t20;
-    float t24 = t23+1.0f;
+    float t2 = magE*magE;
+    float t3 = magN*magN;
+    float t4 = t2+t3;
+    float t5 = 1.0f/t4;
+    float t22 = magE*t5;
+    float t23 = magN*t5;
+    float t6 = P[16][16]*t22;
+    float t13 = P[17][16]*t23;
+    float t7 = t6-t13;
+    float t8 = t22*t7;
+    float t9 = P[16][17]*t22;
+    float t14 = P[17][17]*t23;
+    float t10 = t9-t14;
+    float t15 = t23*t10;
+    float t11 = R_DECL+t8-t15; // innovation variance
+    float t12 = 1.0f/t11;
 
     float H_MAG[24];
-    H_MAG[16] = -t18*1.0f/(t19*t19)*t24;
-    H_MAG[17] = t21*t24;
+    H_MAG[16] = -magE*t5;
+    H_MAG[17] = magN*t5;
 
     for (uint8_t i=0; i<=15; i++) {
-        Kfusion[i] = t14*(P[i][17]*t2*t6-P[i][16]*magE*t6*t7);
+        Kfusion[i] = -t12*(P[i][16]*t22-P[i][17]*t23);
     }
-    Kfusion[16] = -t14*(t16-P[16][17]*t2*t6);
-    Kfusion[17] = t14*(t8-P[17][16]*magE*t6*t7);
+    Kfusion[16] = -t12*(t6-P[16][17]*t23);
+    Kfusion[17] = t12*(t14-P[17][16]*t22);
     for (uint8_t i=17; i<=23; i++) {
-        Kfusion[i] = t14*(P[i][17]*t2*t6-P[i][16]*magE*t6*t7);
+        Kfusion[i] = -t12*(P[i][16]*t22-P[i][17]*t23);
     }
 
     // get the magnetic declination
