@@ -13,12 +13,21 @@
  # define HAL_GPIO_LED_OFF          LOW
  # define HAL_GPIO_USB_MUX_PIN	    -1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#ifdef MEGA_GENERIC_PINS
+ # define HAL_GPIO_A_LED_PIN        13
+ # define HAL_GPIO_B_LED_PIN        31
+ # define HAL_GPIO_C_LED_PIN        30
+ # define HAL_GPIO_LED_ON           HIGH
+ # define HAL_GPIO_LED_OFF          LOW
+ # define HAL_GPIO_USB_MUX_PIN	    -1
+#else
  # define HAL_GPIO_A_LED_PIN        27
  # define HAL_GPIO_B_LED_PIN        26
  # define HAL_GPIO_C_LED_PIN        25
  # define HAL_GPIO_LED_ON           LOW
  # define HAL_GPIO_LED_OFF          HIGH
  # define HAL_GPIO_USB_MUX_PIN	    23
+ #endif
 #endif
 
 class AP_HAL_AVR::AVRDigitalSource : public AP_HAL::DigitalSource {
