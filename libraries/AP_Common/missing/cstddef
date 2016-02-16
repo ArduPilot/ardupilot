@@ -5,5 +5,15 @@
 #if defined(HAVE_NULLPTR_T) && !HAVE_NULLPTR_T
 namespace std {
     typedef decltype(nullptr) nullptr_t;
+
+    template< class T > struct remove_reference      {typedef T type;};
+    template< class T > struct remove_reference<T&>  {typedef T type;};
+    template< class T > struct remove_reference<T&&> {typedef T type;};
+
+    template< class T >
+    typename std::remove_reference<T>::type&& move(T&& t) noexcept
+    {
+        return static_cast<typename std::remove_reference<T>::type&&>(t);
+    }
 }
 #endif
