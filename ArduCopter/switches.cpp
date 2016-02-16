@@ -7,17 +7,17 @@
 //Documentation of Aux Switch Flags:
 static union {
     struct {
-        uint8_t CH6_flag            : 2; // 0, 1    // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH7_flag            : 2; // 2, 3    // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH8_flag            : 2; // 4, 5    // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH9_flag            : 2; // 6, 7    // ch9 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH10_flag           : 2; // 8, 9    // ch10 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH11_flag           : 2; // 10,11   // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH12_flag           : 2; // 12,13   // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH13_flag           : 2; // 12,13   // ch13 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH14_flag           : 2; // 12,13   // ch14 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH15_flag           : 2; // 12,13   // ch15 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH16_flag           : 2; // 12,13   // ch16 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH6_flag            : 2; // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH7_flag            : 2; // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH8_flag            : 2; // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH9_flag            : 2; // ch9 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH10_flag           : 2; // ch10 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH11_flag           : 2; // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH12_flag           : 2; // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH13_flag           : 2; // ch13 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH14_flag           : 2; // ch14 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH15_flag           : 2; // ch15 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH16_flag           : 2; // ch16 aux switch : 0 is low or false, 1 is center or true, 2 is high
 
     };
     uint32_t value;
@@ -82,12 +82,12 @@ void Copter::read_control_switch()
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
 bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
-    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check
-                || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check
-                || g.ch13_option == auxsw_mode_check || g.ch14_option == auxsw_mode_check || g.ch15_option == auxsw_mode_check
-                || g.ch16_option == auxsw_mode_check;
+  bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check
+              || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check
+              || g.ch13_option == auxsw_mode_check || g.ch14_option == auxsw_mode_check || g.ch15_option == auxsw_mode_check
+              || g.ch16_option == auxsw_mode_check;
 
-    return ret;
+  return ret;
 }
 
 // check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated
@@ -261,13 +261,13 @@ void Copter::read_aux_switches()
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
 void Copter::init_aux_switches()
 {
-    // set the CH7 ~ CH12 flags
+    // set the CH7 ~ CH16 flags
     aux_con.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
     aux_con.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
     aux_con.CH10_flag = read_3pos_switch(g.rc_10.radio_in);
     aux_con.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
 
-    // ch9, ch12 only supported on some boards
+    // ch9, ch16 only supported on some boards
     aux_con.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
     aux_con.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
     aux_con.CH13_flag = read_3pos_switch(g.rc_13.radio_in);
@@ -281,7 +281,7 @@ void Copter::init_aux_switches()
     init_aux_switch_function(g.ch10_option, aux_con.CH10_flag);
     init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
 
-    // ch9, ch12 only supported on some boards
+    // ch9, ch16 only supported on some boards
     init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
     init_aux_switch_function(g.ch13_option, aux_con.CH13_flag);
