@@ -17,8 +17,8 @@
  */
 
 #pragma once
-#ifndef __FUNCTOR_H__
-#define __FUNCTOR_H__
+
+#include <type_traits>
 
 #define FUNCTOR_TYPEDEF(name, rettype, ...) \
     typedef Functor<rettype, ## __VA_ARGS__> name
@@ -27,10 +27,10 @@
     Functor<rettype, ## __VA_ARGS__> name
 
 #define FUNCTOR_BIND(obj, func, rettype, ...) \
-    Functor<rettype, ## __VA_ARGS__>::bind<remove_reference<decltype(*obj)>::type, func>(obj)
+    Functor<rettype, ## __VA_ARGS__>::bind<std::remove_reference<decltype(*obj)>::type, func>(obj)
 
 #define FUNCTOR_BIND_MEMBER(func, rettype, ...) \
-    Functor<rettype, ## __VA_ARGS__>::bind<remove_reference<decltype(*this)>::type, func>(this)
+    Functor<rettype, ## __VA_ARGS__>::bind<std::remove_reference<decltype(*this)>::type, func>(this)
 
 template <class RetType, class... Args>
 class Functor
@@ -85,9 +85,3 @@ private:
         return (t->*method)(args...);
     }
 };
-
-template< class T > struct remove_reference      {typedef T type;};
-template< class T > struct remove_reference<T&>  {typedef T type;};
-template< class T > struct remove_reference<T&&> {typedef T type;};
-
-#endif
