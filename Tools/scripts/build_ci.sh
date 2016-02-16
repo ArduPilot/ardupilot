@@ -15,7 +15,7 @@ rm -rf $BUILDROOT
 
 # If CI_BUILD_TARGET is not set, default to all of them
 if [ -z "$CI_BUILD_TARGET" ]; then
-    CI_BUILD_TARGET="sitl linux apm2 navio bebop"
+    CI_BUILD_TARGET="sitl linux apm2 atmega navio bebop"
 fi
 
 declare -A build_platforms
@@ -23,13 +23,14 @@ declare -A build_concurrency
 declare -A build_extra_clean
 declare -A waf_supported_boards
 
-build_platforms=(  ["ArduPlane"]="apm2 navio bebop sitl linux"
+build_platforms=(  ["ArduPlane"]="apm2 atmega navio bebop sitl linux"
                    ["ArduCopter"]="navio bebop sitl linux"
-                   ["APMrover2"]="apm2 navio bebop sitl linux"
-                   ["AntennaTracker"]="apm2 navio bebop sitl linux"
+                   ["APMrover2"]="apm2 atmega navio bebop sitl linux"
+                   ["AntennaTracker"]="apm2 atmega navio bebop sitl linux"
                    ["Tools/Replay"]="linux")
 
 build_concurrency=(["apm2"]="-j2"
+                   ["atmega"]="-j2"
                    ["navio"]="-j2"
                    ["bebop"]="-j2"
                    ["sitl"]="-j2"

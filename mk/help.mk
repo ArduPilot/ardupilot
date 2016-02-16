@@ -22,6 +22,7 @@ help:
 	@echo ""
 	@echo "  apm1 - the APM1 board"
 	@echo "  apm2 - the APM2 board"
+	@echo "  atmega - the AVR generic board"
 	@echo "  px4-v1 - the PX4v1 board"
 	@echo "  px4-v2 - the Pixhawk"
 	@echo "  pxf - the Beagle Bone Black (BBB) + PXF cape combination"
