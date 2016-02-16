@@ -684,13 +684,6 @@ void NavEKF2_core::fuseCompass()
     // Copy raw value to output variable used for data logging
     innovYaw = innovation;
 
-    // limit the innovation so that initial corrections are not too large
-    if (innovation > 0.5f) {
-        innovation = 0.5f;
-    } else if (innovation < -0.5f) {
-        innovation = -0.5f;
-    }
-
     // calculate the innovation test ratio
     yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
 
@@ -704,6 +697,13 @@ void NavEKF2_core::fuseCompass()
         }
     } else {
         magHealth = true;
+    }
+
+    // limit the innovation so that initial corrections are not too large
+    if (innovation > 0.5f) {
+        innovation = 0.5f;
+    } else if (innovation < -0.5f) {
+        innovation = -0.5f;
     }
 
     // correct the state vector
