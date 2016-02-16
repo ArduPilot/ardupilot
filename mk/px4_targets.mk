@@ -41,7 +41,7 @@ EXTRAFLAGS += -DPX4_GIT_VERSION="\"$(PX4_GIT_VERSION)\""
 EXTRAFLAGS += -DUAVCAN=1
 
 # Add missing parts from libc and libstdc++
-EXTRAFLAGS += -DHAVE_NULLPTR_T=0
+EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0
 EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
 
 # we have different config files for V1 and V2

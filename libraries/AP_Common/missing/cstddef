@@ -2,7 +2,7 @@
 
 #include_next <cstddef>
 
-#if defined(HAVE_NULLPTR_T) && !HAVE_NULLPTR_T
+#if defined(HAVE_STD_NULLPTR_T) && !HAVE_STD_NULLPTR_T
 namespace std {
     typedef decltype(nullptr) nullptr_t;
 
