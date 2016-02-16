@@ -22,6 +22,11 @@ apm2: HAL_BOARD = HAL_BOARD_APM2
 apm2: TOOLCHAIN = AVR
 apm2: all
 
+atmega: HAL_BOARD = HAL_BOARD_APM2
+atmega: TOOLCHAIN = AVR
+atmega: DEFINES += -DAVR_MEGA
+atmega: all
+
 flymaple: HAL_BOARD = HAL_BOARD_FLYMAPLE
 flymaple: TOOLCHAIN = ARM
 flymaple: all
