@@ -16,15 +16,17 @@
 /*
  *   APM_Airspeed.cpp - airspeed (pitot) driver
  */
-
-
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_ADC/AP_ADC.h>
 #include "AP_Airspeed.h"
 
-extern const AP_HAL::HAL& hal;
+#include <AP_ADC/AP_ADC.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+
+extern const AP_HAL::HAL &hal;
+
+// the virtual pin for digital airspeed sensors
+#define AP_AIRSPEED_I2C_PIN 65
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #define ARSPD_DEFAULT_PIN 1
@@ -118,7 +120,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
 
 /*
-  this scaling factor converts from the old system where we used a 
+  this scaling factor converts from the old system where we used a
   0 to 4095 raw ADC value for 0-5V to the new system which gets the
   voltage in volts directly from the ADC driver
  */
@@ -130,7 +132,7 @@ void AP_Airspeed::init()
     _calibration.init(_ratio);
     _last_saved_ratio = _ratio;
     _counter = 0;
-    
+
     analog.init();
     digital.init();
 }
@@ -244,7 +246,7 @@ void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
     _raw_airspeed = airspeed;
     _airspeed = airspeed;
     _last_pressure = diff_pressure;
-    _last_update_ms = AP_HAL::millis();    
+    _last_update_ms = AP_HAL::millis();
     _hil_pressure = diff_pressure;
     _hil_set = true;
     _healthy = true;

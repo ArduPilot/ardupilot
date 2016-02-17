@@ -48,7 +48,11 @@ DSP_FLAGS=-mv5 -G0 -g $(OPT) $(DSP_WARN) -fno-exceptions -fno-strict-aliasing -f
 
 DSP_LINK_FLAGS = -mv5 -G0 -fpic -shared -Wl,-Bsymbolic -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=free -Wl,--wrap=realloc -Wl,--wrap=memalign -Wl,--wrap=__stack_chk_fail -Wl,-soname=lib$(SKETCHNAME)_skel.so 
 
-CXXFLAGS       +=   -std=gnu++11 $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS) $(DEFINES) $(DSP_FLAGS)
+# Add missing parts from libc and libstdc++
+MISSING_TOOLCHAIN_FLAGS += -DHAVE_STD_NULLPTR_T=0 -DHAVE_STD_MOVE=0 -DHAVE_STD_REMOVE_REFERENCE=0 -DHAVE_TYPE_TRAITS_H=0
+MISSING_TOOLCHAIN_FLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
+
+CXXFLAGS       +=   -std=gnu++11 $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(MISSING_TOOLCHAIN_FLAGS) $(CXXOPTS) $(DEFINES) $(DSP_FLAGS)
 CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS) $(DEFINES) $(DSP_FLAGS)
 
 ARM_INC=-I$(HEXAGON_SDK_ROOT)/lib/common/remote/ship/UbuntuARM_Debug -I$(SKETCHBOOK)/libraries/

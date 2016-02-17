@@ -14,8 +14,6 @@
 #include <linux/spi/spidev.h>
 #include "GPIO.h"
 
-#define SPI_DEBUGGING 0
-
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
@@ -78,9 +76,7 @@ SPIDeviceDriver SPIDeviceManager::_device[0];
 #endif
 
 #define LINUX_SPI_DEVICE_NUM_DEVICES ARRAY_SIZE(SPIDeviceManager::_device)
-
-// have a separate semaphore per bus
-Semaphore SPIDeviceManager::_semaphore[LINUX_SPI_MAX_BUSES];
+const uint8_t SPIDeviceManager::_n_device_desc = LINUX_SPI_DEVICE_NUM_DEVICES;
 
 SPIDeviceDriver::SPIDeviceDriver(const char *name, uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
     _name(name),
@@ -112,9 +108,9 @@ void SPIDeviceDriver::init()
     }
 }
 
-AP_HAL::Semaphore* SPIDeviceDriver::get_semaphore()
+AP_HAL::Semaphore *SPIDeviceDriver::get_semaphore()
 {
-    return SPIDeviceManager::get_semaphore(_bus);
+    return _fake_dev->get_semaphore();
 }
 
 bool SPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
@@ -156,21 +152,11 @@ void SPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
 void SPIDeviceManager::init()
 {
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
-        if (_device[i]._bus >= LINUX_SPI_MAX_BUSES) {
-            AP_HAL::panic("SPIDriver: invalid bus number");
+        _device[i]._fake_dev = SPIDeviceManager::from(hal.spi)->get_device(_device[i]);
+        if (!_device[i]._fake_dev) {
+            AP_HAL::panic("SPIDriver: couldn't use spidev%u.%u for %s",
+                          _device[i]._bus, _device[i]._subdev, _device[i]._name);
         }
-        char path[255];
-        snprintf(path, sizeof(path), "/dev/spidev%u.%u",
-                 _device[i]._bus, _device[i]._subdev);
-        _device[i]._fd = open(path, O_RDWR);
-        if (_device[i]._fd == -1) {
-            printf("Unable to open %s - %s\n", path, strerror(errno));
-            AP_HAL::panic("SPIDriver: unable to open SPI bus");
-        }
-#if SPI_DEBUGGING
-        printf("Opened %s\n", path);
-        fflush(stdout);
-#endif
         _device[i].init();
     }
 }
@@ -242,7 +228,8 @@ bool SPIDeviceManager::transaction(SPIDeviceDriver &driver, const uint8_t *tx, u
     int r;
     // we set the mode before we assert the CS line so that the bus is
     // in the correct idle state before the chip is selected
-    r = ioctl(driver._fd, SPI_IOC_WR_MODE, &driver._mode);
+    int fd = driver._fake_dev->get_fd();
+    r = ioctl(fd, SPI_IOC_WR_MODE, &driver._mode);
     if (r == -1) {
         hal.console->printf("SPI: error on setting mode\n");
         return false;
@@ -264,7 +251,7 @@ bool SPIDeviceManager::transaction(SPIDeviceDriver &driver, const uint8_t *tx, u
         memset(rx, 0, len);
     }
 
-    r = ioctl(driver._fd, SPI_IOC_MESSAGE(1), &spi);
+    r = ioctl(fd, SPI_IOC_MESSAGE(1), &spi);
     cs_release(driver._type);
 
     if (r == -1) {
@@ -291,14 +278,6 @@ AP_HAL::SPIDeviceDriver *SPIDeviceManager::device(enum AP_HAL::SPIDeviceType dev
         }
     }
     return NULL;
-}
-
-/*
-  return the bus specific semaphore
- */
-AP_HAL::Semaphore *SPIDeviceManager::get_semaphore(uint16_t bus)
-{
-    return &_semaphore[bus];
 }
 
 #endif // CONFIG_HAL_BOARD

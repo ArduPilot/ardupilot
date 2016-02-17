@@ -1,28 +1,29 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *   auto_calibration.cpp - airspeed auto calibration
-
- * Algorithm by Paul Riseborough 
+ *
+ * Algorithm by Paul Riseborough
  *
  */
 
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
+
 #include "AP_Airspeed.h"
 
 extern const AP_HAL::HAL& hal;
 
 // constructor - fill in all the initial values
-Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms) :
-    P(100,   0,         0,
-      0,   100,         0,
-      0,     0,  0.000001f),
-    Q0(0.01f),
-    Q1(0.0000005f),
-    state(0, 0, 0),
-    DT(1),
-    aparm(parms)
+Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms)
+    : P(100,   0,         0,
+        0,   100,         0,
+        0,     0,  0.000001f)
+    , Q0(0.01f)
+    , Q1(0.0000005f)
+    , state(0, 0, 0)
+    , DT(1)
+    , aparm(parms)
 {
 }
 
@@ -47,14 +48,14 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     P.a.x += Q0;
     P.b.y += Q0;
     P.c.z += Q1;
-    
+
     // Perform the predicted measurement using the current state estimates
     // No state prediction required because states are assumed to be time
     // invariant plus process noise
     // Ignore vertical wind component
     float TAS_pred = state.z * pythagorous3(vg.x - state.x, vg.y - state.y, vg.z);
     float TAS_mea  = airspeed;
-    
+
     // Calculate the observation Jacobian H_TAS
     float SH1 = sq(vg.y - state.y) + sq(vg.x - state.x);
     if (SH1 < 0.000001f) {
@@ -68,32 +69,32 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
         -(state.z*SH2*(2*vg.x - 2*state.x))/2,
         -(state.z*SH2*(2*vg.y - 2*state.y))/2,
         1/SH2);
-    
+
     // Calculate the fusion innovaton covariance assuming a TAS measurement
     // noise of 1.0 m/s
     // S = H_TAS*P*H_TAS' + 1.0; % [1 x 3] * [3 x 3] * [3 x 1] + [1 x 1]
     Vector3f PH = P * H_TAS;
     float S = H_TAS * PH + 1.0f;
-    
+
     // Calculate the Kalman gain
     // [3 x 3] * [3 x 1] / [1 x 1]
-    Vector3f KG = PH / S; 
-    
+    Vector3f KG = PH / S;
+
     // Update the states
     state += KG*(TAS_mea - TAS_pred); // [3 x 1] + [3 x 1] * [1 x 1]
-    
+
     // Update the covariance matrix
     Vector3f HP2 = H_TAS * P;
     P -= KG.mul_rowcol(HP2);
-    
+
     // force symmetry on the covariance matrix - necessary due to rounding
     // errors
-	float P12 = 0.5f * (P.a.y + P.b.x);
-	float P13 = 0.5f * (P.a.z + P.c.x);
-	float P23 = 0.5f * (P.b.z + P.c.y);
-	P.a.y = P.b.x = P12;
-	P.a.z = P.c.x = P13;
-	P.b.z = P.c.y = P23;
+    float P12 = 0.5f * (P.a.y + P.b.x);
+    float P13 = 0.5f * (P.a.z + P.c.x);
+    float P23 = 0.5f * (P.b.z + P.c.y);
+    P.a.y = P.b.x = P12;
+    P.a.z = P.c.x = P13;
+    P.b.z = P.c.y = P23;
 
     // Constrain diagonals to be non-negative - protects against rounding errors
     P.a.x = MAX(P.a.x, 0.0f);
@@ -120,7 +121,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
 
     // set state.z based on current ratio, this allows the operator to
     // override the current ratio in flight with autocal, which is
-    // very useful both for testing and to force a reasonable value. 
+    // very useful both for testing and to force a reasonable value.
     float ratio = constrain_float(_ratio, 1.0f, 4.0f);
 
     _calibration.state.z = 1.0f / sqrtf(ratio);
@@ -139,7 +140,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     zratio = constrain_float(zratio, 0.5f, 1.0f);
     _ratio.set(1/sq(zratio));
     if (_counter > 60) {
-        if (_last_saved_ratio > 1.05f*_ratio || 
+        if (_last_saved_ratio > 1.05f*_ratio ||
             _last_saved_ratio < 0.95f*_ratio) {
             _ratio.save();
             _last_saved_ratio = _ratio;

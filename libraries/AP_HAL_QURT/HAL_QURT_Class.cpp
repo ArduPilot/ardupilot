@@ -46,6 +46,7 @@ static RCInput rcinDriver("/dev/tty-1");
 static RCOutput rcoutDriver("/dev/tty-3");
 static Util utilInstance;
 static Scheduler schedulerInstance;
+static Empty::I2CDeviceManager i2c_mgr_instance;
 
 bool qurt_ran_overtime;
 
@@ -56,6 +57,7 @@ HAL_QURT::HAL_QURT() :
         &uartCDriver,
         &uartDDriver,
         &uartEDriver,
+        &i2c_mgr_instance,
         &i2cDriver,
         NULL, /* only one i2c */
         NULL, /* only one i2c */

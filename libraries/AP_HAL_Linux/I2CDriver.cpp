@@ -23,93 +23,14 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-/*
-  constructor
- */
-I2CDriver::I2CDriver(AP_HAL::Semaphore* semaphore, const char *device) :
-    _semaphore(semaphore)
+I2CDriver::I2CDriver(uint8_t bus)
+    : _fake_dev(I2CDeviceManager::from(hal.i2c_mgr)->get_device(bus, 0))
 {
-    _device = strdup(device);
-
-#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-    if (!((Util*)hal.util)->is_chardev_node(_device))
-        AP_HAL::panic("I2C device is not a chardev node");
-#endif
 }
 
-/* Match a given device by the prefix its devpath, i.e. the path returned by
- * udevadm info -q path /dev/<i2c-device>'. This constructor can be used when
- * the number of the I2C bus is not stable across reboots. It matches the
- * first device with a prefix in @devpaths */
-I2CDriver::I2CDriver(AP_HAL::Semaphore* semaphore,
-                               const char * const devpaths[]) :
-    _semaphore(semaphore)
+I2CDriver::I2CDriver(std::vector<const char *> devpaths)
+    : _fake_dev(I2CDeviceManager::from(hal.i2c_mgr)->get_device(devpaths, 0))
 {
-    const char *dirname = "/sys/class/i2c-dev";
-    struct dirent *de;
-    DIR *d;
-
-    d = opendir(dirname);
-    if (!d)
-        AP_HAL::panic("Could not get list of I2C buses");
-
-    for (de = readdir(d); de; de = readdir(d)) {
-        const char *p, * const *t;
-        char buf[PATH_MAX], buf2[PATH_MAX];
-
-        if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
-            continue;
-
-        if (snprintf(buf, sizeof(buf), "%s/%s", dirname, de->d_name) >= PATH_MAX)
-            continue;
-
-        p = realpath(buf, buf2);
-        if (!p || strncmp(p, "/sys", sizeof("/sys") - 1))
-            continue;
-
-        p += sizeof("/sys") - 1;
-
-        for (t = devpaths; t && *t; t++) {
-            if (strncmp(p, *t, strlen(*t)) == 0)
-                break;
-        }
-
-        if (!*t)
-            continue;
-
-        /* Found the device name, use the new path */
-        asprintf(&_device, "/dev/%s", de->d_name);
-        break;
-    }
-
-    closedir(d);
-
-    if (!((Util*)hal.util)->is_chardev_node(_device))
-        AP_HAL::panic("I2C device is not a chardev node");
-}
-
-I2CDriver::~I2CDriver()
-{
-    free(_device);
-}
-
-/*
-  called from HAL class init()
- */
-void I2CDriver::begin() 
-{
-    if (_fd != -1) {
-        close(_fd);
-    }
-    _fd = open(_device, O_RDWR);
-}
-
-void I2CDriver::end() 
-{
-    if (_fd != -1) {
-        ::close(_fd);
-        _fd = -1;
-    }
 }
 
 /*
@@ -117,30 +38,34 @@ void I2CDriver::end()
  */
 bool I2CDriver::set_address(uint8_t addr)
 {
-    if (_fd == -1) {
+    if (!_fake_dev) {
         return false;
     }
+
     if (_addr == addr) {
-        goto end;
-    } else {
-        if (ioctl(_fd, I2C_SLAVE, addr) < 0) {
-            if (errno != EBUSY) {
-                return false;
-            }
-            /* Only print this message once per i2c bus */
-            if (_print_ioctl_error) {
-                hal.console->printf("couldn't set i2c slave address: %s\n",
-                                    strerror(errno));
-                hal.console->printf("trying I2C_SLAVE_FORCE\n");
-                _print_ioctl_error = false;
-            }
-            if (ioctl(_fd, I2C_SLAVE_FORCE, addr) < 0) {
-                return false;
-            }
-        }
-        _addr = addr;
+        /* nothing to do */
+        return true;
     }
-end:
+
+    int fd = _fake_dev->get_fd();
+    if (ioctl(fd, I2C_SLAVE, addr) < 0) {
+        if (errno != EBUSY) {
+            return false;
+        }
+        /* Only print this message once per i2c bus */
+        if (_print_ioctl_error) {
+            hal.console->printf("couldn't set i2c slave address: %s\n",
+                                strerror(errno));
+            hal.console->printf("trying I2C_SLAVE_FORCE\n");
+            _print_ioctl_error = false;
+        }
+        if (ioctl(fd, I2C_SLAVE_FORCE, addr) < 0) {
+            return false;
+        }
+    }
+
+    _addr = addr;
+
     return true;
 }
 
@@ -159,7 +84,7 @@ uint8_t I2CDriver::write(uint8_t addr, uint8_t len, uint8_t* data)
     if (!set_address(addr)) {
         return 1;
     }
-    if (::write(_fd, data, len) != len) {
+    if (::write(_fake_dev->get_fd(), data, len) != len) {
         return 1;
     }
     return 0; // success
@@ -199,8 +124,8 @@ uint8_t I2CDriver::writeRegister(uint8_t addr, uint8_t reg, uint8_t val)
     }
     union i2c_smbus_data data;
     data.byte = val;
-    if (_i2c_smbus_access(_fd,I2C_SMBUS_WRITE, reg,
-                         I2C_SMBUS_BYTE_DATA, &data) == -1) {
+    if (_i2c_smbus_access(_fake_dev->get_fd(),I2C_SMBUS_WRITE, reg,
+                          I2C_SMBUS_BYTE_DATA, &data) == -1) {
         return 1;
     }
     return 0;
@@ -211,7 +136,7 @@ uint8_t I2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data)
     if (!set_address(addr)) {
         return 1;
     }
-    if (::read(_fd, data, len) != len) {
+    if (::read(_fake_dev->get_fd(), data, len) != len) {
         return 1;
     }
     return 0;
@@ -220,7 +145,7 @@ uint8_t I2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data)
 uint8_t I2CDriver::readRegisters(uint8_t addr, uint8_t reg,
                                       uint8_t len, uint8_t* data)
 {
-    if (_fd == -1) {
+    if (!_fake_dev) {
         return 1;
     }
     struct i2c_msg msgs[] = {
@@ -245,7 +170,7 @@ uint8_t I2CDriver::readRegisters(uint8_t addr, uint8_t reg,
     // prevent valgrind error
     memset(data, 0, len);
 
-    if (ioctl(_fd, I2C_RDWR, &i2c_data) == -1) {
+    if (ioctl(_fake_dev->get_fd(), I2C_RDWR, &i2c_data) == -1) {
         return 1;
     }
 
@@ -263,7 +188,7 @@ uint8_t I2CDriver::readRegistersMultiple(uint8_t addr, uint8_t reg,
     const uint8_t max_count = 8;
 #endif
 
-    if (_fd == -1) {
+    if (!_fake_dev) {
         return 1;
     }
     while (count > 0) {
@@ -284,7 +209,7 @@ uint8_t I2CDriver::readRegistersMultiple(uint8_t addr, uint8_t reg,
             msgs[i*2+1].buf = (typeof(msgs->buf))data;
             data += len;
         };
-        if (ioctl(_fd, I2C_RDWR, &i2c_data) == -1) {
+        if (ioctl(_fake_dev->get_fd(), I2C_RDWR, &i2c_data) == -1) {
             return 1;
         }
         count -= n;
@@ -300,7 +225,7 @@ uint8_t I2CDriver::readRegister(uint8_t addr, uint8_t reg, uint8_t* data)
     }
     union i2c_smbus_data v;
     memset(&v, 0, sizeof(v));
-    if (_i2c_smbus_access(_fd,I2C_SMBUS_READ, reg,
+    if (_i2c_smbus_access(_fake_dev->get_fd(),I2C_SMBUS_READ, reg,
                           I2C_SMBUS_BYTE_DATA, &v)) {
         return 1;
     }
@@ -346,11 +271,17 @@ bool I2CDriver::do_transfer(uint8_t addr, const uint8_t *send,
     else {
         return false;
     }
-    return ioctl(_fd, I2C_RDWR, &msg_rdwr) == (int)msg_rdwr.nmsgs;
+    return ioctl(_fake_dev->get_fd(), I2C_RDWR, &msg_rdwr) == (int)msg_rdwr.nmsgs;
 }
 
 uint8_t I2CDriver::lockup_count()
 {
     return 0;
 }
+
+AP_HAL::Semaphore *I2CDriver::get_semaphore()
+{
+    return _fake_dev->get_semaphore();
+}
+
 #endif // CONFIG_HAL_BOARD

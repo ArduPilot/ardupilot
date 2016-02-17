@@ -18,18 +18,17 @@
 /*
   backend driver for airspeed from I2C
  */
-
-#ifndef __AP_AIRSPEED_I2C_H__
-#define __AP_AIRSPEED_I2C_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
 #include "AP_Airspeed_Backend.h"
 
-class AP_Airspeed_I2C : public AP_Airspeed_Backend 
+class AP_Airspeed_I2C : public AP_Airspeed_Backend
 {
 public:
     // probe and initialise the sensor
-    bool init(void);
+    bool init();
 
     // return the current differential_pressure in Pascal
     bool get_differential_pressure(float &pressure);
@@ -38,15 +37,11 @@ public:
     bool get_temperature(float &temperature);
 
 private:
-    void _measure(void);
-    void _collect(void);
-    void _timer(void);
+    void _measure();
+    void _collect();
+    void _timer();
     float _temperature;
     float _pressure;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
 };
-
-#endif // __AP_AIRSPEED_I2C_H__
-
-
