@@ -279,7 +279,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_roll || ((roll_i>0&&rate_roll_error_rads<0)||(roll_i<0&&rate_roll_error_rads>0))){
 		if (_flags_heli.leaky_i){
-			roll_i = ((AC_HELI_PID&)_pid_rate_roll).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+			roll_i = _pid_rate_roll.get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
 		}else{
 			roll_i = _pid_rate_roll.get_i();
 		}
@@ -291,7 +291,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_pitch || ((pitch_i>0&&rate_pitch_error_rads<0)||(pitch_i<0&&rate_pitch_error_rads>0))){
 		if (_flags_heli.leaky_i) {
-			pitch_i = ((AC_HELI_PID&)_pid_rate_pitch).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+			pitch_i = _pid_rate_pitch.get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
 		}else{
 			pitch_i = _pid_rate_pitch.get_i();
 		}
