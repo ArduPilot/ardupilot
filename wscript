@@ -64,6 +64,11 @@ def options(opt):
                  help='Don\'t update git submodules. Useful for building ' +
                       'with submodules at specific revisions.')
 
+    g.add_option('--enable-benchmarks',
+                 action='store_true',
+                 default=False,
+                 help='Enable benchmarks')
+
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     # use a different variant for each board
@@ -79,7 +84,8 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('git_submodule')
-    cfg.load('gbenchmark')
+    if cfg.options.enable_benchmarks:
+        cfg.load('gbenchmark')
     cfg.load('gtest')
     cfg.load('static_linking')
 
