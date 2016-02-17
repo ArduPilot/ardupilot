@@ -236,7 +236,7 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 float AC_AttitudeControl_Heli::get_althold_lean_angle_max() const
 {
     // calc maximum tilt angle based on throttle
-    float ret = acosf(constrain_float(_throttle_in_filt.get()/900.0f, 0.0f, 1000.0f) / 1000.0f);
+    float ret = acosf(constrain_float(_throttle_in_filt.get()/0.9f, 0.0f, 1.0f));
 
     // TEMP: convert to centi-degrees for public interface
     return degrees(ret) * 100.0f;
