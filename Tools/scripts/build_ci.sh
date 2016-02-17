@@ -80,7 +80,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [[ -n ${waf_supported_boards[$t]} ]]; then
         echo "Starting waf build for board ${t}..."
-        $waf configure --board $t
+        $waf configure --board $t --enable-benchmarks
         $waf clean
         $waf ${build_concurrency[$t]} all
         if [[ $t == linux ]]; then
