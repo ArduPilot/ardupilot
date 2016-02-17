@@ -307,7 +307,7 @@ def _select_programs_from_group(bld):
             bld.targets += ',' + tg.name
 
 def options(opt):
-    g = opt.add_option_group('Ardupilot build options')
+    g = opt.ap_groups['build']
     g.add_option('--program-group',
         action='append',
         default=[],
