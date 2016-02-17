@@ -57,11 +57,6 @@ def options(opt):
                    default='sitl',
                    help='Target board to build, choices are %s' % boards_names)
 
-    g = opt.ap_groups['check']
-    g.add_option('--check-verbose',
-                 action='store_true',
-                 help='Output all test programs')
-
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     # use a different variant for each board
