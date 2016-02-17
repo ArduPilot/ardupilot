@@ -34,13 +34,13 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
 
     // @Param: FILT
     // @DisplayName: PID Input filter frequency in Hz
-    // @Description:
+    // @Description: PID Input filter frequency in Hz
     AP_GROUPINFO("FILT", 6, AC_HELI_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
 
     // @Param: ILMI
     // @DisplayName: I-term Leak Minimum
     // @Description: Point below which I-term will not leak down
-    // @Range: 0 4500
+    // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("ILMI", 7, AC_HELI_PID, _leak_min, AC_PID_LEAK_MIN),
 
