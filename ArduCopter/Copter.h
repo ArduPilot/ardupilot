@@ -672,6 +672,7 @@ private:
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
     void load_parameters(void);
+    void convert_pid_parameters(void);
     void userhook_init();
     void userhook_FastLoop();
     void userhook_50Hz();

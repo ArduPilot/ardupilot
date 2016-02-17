@@ -1017,4 +1017,61 @@ void Copter::load_parameters(void)
     AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
+
+    // upgrade parameters
+    convert_pid_parameters();
+}
+
+// handle conversion of PID gains from Copter-3.3 to Copter-3.4
+void Copter::convert_pid_parameters(void)
+{
+    // conversion info
+    AP_Param::ConversionInfo pid_conversion_info[] = {
+        { Parameters::k_param_pid_rate_roll, 0, AP_PARAM_FLOAT, "ATC_RAT_RLL_P" },
+        { Parameters::k_param_pid_rate_roll, 1, AP_PARAM_FLOAT, "ATC_RAT_RLL_I" },
+        { Parameters::k_param_pid_rate_roll, 2, AP_PARAM_FLOAT, "ATC_RAT_RLL_D" },
+        { Parameters::k_param_pid_rate_pitch, 0, AP_PARAM_FLOAT, "ATC_RAT_PIT_P" },
+        { Parameters::k_param_pid_rate_pitch, 1, AP_PARAM_FLOAT, "ATC_RAT_PIT_I" },
+        { Parameters::k_param_pid_rate_pitch, 2, AP_PARAM_FLOAT, "ATC_RAT_PIT_D" },
+        { Parameters::k_param_pid_rate_yaw, 0, AP_PARAM_FLOAT, "ATC_RAT_YAW_P" },
+        { Parameters::k_param_pid_rate_yaw, 1, AP_PARAM_FLOAT, "ATC_RAT_YAW_I" },
+        { Parameters::k_param_pid_rate_yaw, 2, AP_PARAM_FLOAT, "ATC_RAT_YAW_D" },
+    };
+    AP_Param::ConversionInfo imax_conversion_info[] = {
+        { Parameters::k_param_pid_rate_roll,  5, AP_PARAM_FLOAT, "ATC_RAT_RLL_IMAX" },
+        { Parameters::k_param_pid_rate_pitch, 5, AP_PARAM_FLOAT, "ATC_RAT_PIT_IMAX" },
+        { Parameters::k_param_pid_rate_yaw,   5, AP_PARAM_FLOAT, "ATC_RAT_YAW_IMAX" }
+    };
+    AP_Param::ConversionInfo filt_conversion_info[] = {
+        { Parameters::k_param_pid_rate_roll, 6, AP_PARAM_FLOAT, "ATC_RAT_RLL_FILT" },
+        { Parameters::k_param_pid_rate_pitch, 6, AP_PARAM_FLOAT, "ATC_RAT_PIT_FILT" },
+        { Parameters::k_param_pid_rate_yaw, 6, AP_PARAM_FLOAT, "ATC_RAT_YAW_FILT" }
+    };
+
+    // gains increase by 27% due to attitude controller's switch to use radians instead of centi-degrees
+    // and motor libraries switch to accept inputs in -1 to +1 range instead of -4500 ~ +4500
+    float pid_scaler = 1.27f;
+
+#if FRAME_CONFIG != HELI_FRAME
+    // Multicopter x-frame gains are 40% lower because -1 or +1 input to motors now results in maximum rotation
+    if (g.frame_orientation == AP_MOTORS_X_FRAME || g.frame_orientation == AP_MOTORS_V_FRAME || g.frame_orientation == AP_MOTORS_H_FRAME) {
+        pid_scaler = 0.9f;
+    }
+#endif
+
+    // scale PID gains
+    uint8_t table_size = ARRAY_SIZE(pid_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&pid_conversion_info[i], pid_scaler);
+    }
+    // reduce IMAX into -1 ~ +1 range
+    table_size = ARRAY_SIZE(imax_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&imax_conversion_info[i], 1.0f/4500.0f);
+    }
+    // convert filter without scaling
+    table_size = ARRAY_SIZE(filt_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&filt_conversion_info[i], 1.0f);
+    }
 }
