@@ -69,7 +69,7 @@ void AccelCalibrator::start(enum accel_cal_fit_type_t fit_type, uint8_t num_samp
     _conf_fit_type = fit_type;
 
     const uint16_t faces = 2*_conf_num_samples-4;
-    const float a = (4.0f * M_PI_F / (3.0f * faces)) + M_PI_F / 3.0f;
+    const float a = (4.0f * M_PI / (3.0f * faces)) + M_PI / 3.0f;
     const float theta = 0.5f * acosf(cosf(a) / (1.0f - cosf(a)));
     _min_sample_dist = GRAVITY_MSS * 2*sinf(theta/2);
 
