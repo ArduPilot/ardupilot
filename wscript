@@ -57,6 +57,11 @@ def options(opt):
                    default='sitl',
                    help='Target board to build, choices are %s' % boards_names)
 
+    g.add_option('--enable-benchmarks',
+                 action='store_true',
+                 default=False,
+                 help='Enable benchmarks')
+
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     # use a different variant for each board
@@ -84,7 +89,8 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('git_submodule')
-    cfg.load('gbenchmark')
+    if cfg.options.enable_benchmarks:
+        cfg.load('gbenchmark')
     cfg.load('gtest')
     cfg.load('static_linking')
 
