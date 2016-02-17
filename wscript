@@ -40,16 +40,17 @@ def init(ctx):
 
 def options(opt):
     opt.load('ardupilotwaf')
-    boards_names = boards.get_boards_names()
-
     opt.load('compiler_cxx compiler_c waf_unit_test python')
-    opt.add_option('--board',
+
+    g = opt.add_option_group('Ardupilot configure options')
+    boards_names = boards.get_boards_names()
+    g.add_option('--board',
                    action='store',
                    choices=boards_names,
                    default='sitl',
                    help='Target board to build, choices are %s' % boards_names)
 
-    g = opt.add_option_group('Check options')
+    g = opt.add_option_group('Ardupilot check options')
     g.add_option('--check-verbose',
                  action='store_true',
                  help='Output all test programs')
