@@ -72,7 +72,7 @@ Copter::Copter(void) :
     yaw_look_ahead_bearing(0.0f),
     condition_value(0),
     condition_start(0),
-    G_Dt(0.0025f),
+    G_Dt(MAIN_LOOP_SECONDS),
     inertial_nav(ahrs),
     attitude_control(ahrs, aparm, motors, MAIN_LOOP_SECONDS),
     pos_control(ahrs, inertial_nav, motors, attitude_control,
