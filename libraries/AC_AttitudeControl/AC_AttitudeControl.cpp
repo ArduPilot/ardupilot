@@ -515,9 +515,9 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_rads)
     float current_rate_rads = _ahrs.get_gyro().x;
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
-    // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    get_rate_roll_pid().set_input_filter_d(degrees(rate_error_rads)*100.0f);
-    get_rate_roll_pid().set_desired_rate(degrees(rate_target_rads)*100.0f);
+    // pass error to PID controller
+    get_rate_roll_pid().set_input_filter_d(rate_error_rads);
+    get_rate_roll_pid().set_desired_rate(rate_target_rads);
 
     float integrator = get_rate_roll_pid().get_integrator();
 
@@ -527,7 +527,7 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_rads)
     }
 
     // Compute output in range -1 ~ +1
-    float output = (get_rate_roll_pid().get_p() + integrator + get_rate_roll_pid().get_d()) / 4500.0f;
+    float output = get_rate_roll_pid().get_p() + integrator + get_rate_roll_pid().get_d();
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);
@@ -538,9 +538,9 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_rads)
     float current_rate_rads = _ahrs.get_gyro().y;
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
-    // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    get_rate_pitch_pid().set_input_filter_d(degrees(rate_error_rads)*100.0f);
-    get_rate_pitch_pid().set_desired_rate(degrees(rate_target_rads)*100.0f);
+    // pass error to PID controller
+    get_rate_pitch_pid().set_input_filter_d(rate_error_rads);
+    get_rate_pitch_pid().set_desired_rate(rate_target_rads);
 
     float integrator = get_rate_pitch_pid().get_integrator();
 
@@ -550,7 +550,7 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_rads)
     }
 
     // Compute output in range -1 ~ +1
-    float output = (get_rate_pitch_pid().get_p() + integrator + get_rate_pitch_pid().get_d()) / 4500.0f;
+    float output = get_rate_pitch_pid().get_p() + integrator + get_rate_pitch_pid().get_d();
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);
@@ -561,9 +561,9 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_rads)
     float current_rate_rads = _ahrs.get_gyro().z;
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
-    // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    get_rate_yaw_pid().set_input_filter_all(degrees(rate_error_rads)*100.0f);
-    get_rate_yaw_pid().set_desired_rate(degrees(rate_target_rads)*100.0f);
+    // pass error to PID controller
+    get_rate_yaw_pid().set_input_filter_all(rate_error_rads);
+    get_rate_yaw_pid().set_desired_rate(rate_target_rads);
 
     float integrator = get_rate_yaw_pid().get_integrator();
 
@@ -573,7 +573,7 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_rads)
     }
 
     // Compute output in range -1 ~ +1
-    float output = (get_rate_yaw_pid().get_p() + integrator + get_rate_yaw_pid().get_d()) / 4500.0f;
+    float output = get_rate_yaw_pid().get_p() + integrator + get_rate_yaw_pid().get_d();
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);
