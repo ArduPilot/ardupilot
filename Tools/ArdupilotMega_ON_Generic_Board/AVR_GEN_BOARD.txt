@@ -1,0 +1,73 @@
+DESCRIPTION
+-----------
+
+Here we are describe the AVR hardware board layout with ther outputs, inputs and functions are available.
+
+
+CHANNEL OUTPUT TABLE
+---------------------
+
+    AVR GENERIC Board        APM2 Board
+
+    Arduino Pin              Register Pin
+    -----------              --------------
+            12               OCR1B    out1
+            11               OCR1A    out2
+             8               OCR4C    out3
+             7               OCR4B    out4
+             6               OCR4A    out5
+             3               OCR3C    out6
+             2               OCR3B    out7
+             5               OCR3A    out8
+            45               OCR5B    out10
+            44               OCR5C    out11
+
+
+CHANNEL INPUT PPM
+-----------------
+
+
+    AVR GENERIC Board        APM2 BOARD
+	
+	ARDUINO PIN              Register Pin
+	-----------              ------------
+	
+	        48               ICP5/PL1 36 //This pin is mapped internally to atmega32u2 pin 23 / PC6
+
+
+NOTIFY AND STANDARD PIN LEDS A/B/C
+----------------------------------
+
+
+    AVR GENERIC Board        APM2 BOARD
+
+	ARDUINO PIN              Name   Pin
+	-----------              ----------
+
+            13               LED-A  27
+			31               LED-B  26
+			30               LED-C  25
+
+PIN NOTIFY EXTERNAL LEDS
+------------------------
+
+
+    AVR GENERIC Board        APM2 BOARD
+
+	ARDUINO PIN              Name    Pin
+	-----------              -----------
+	
+	        35               ARMED    61 //AN7
+			34                 GPS    60 //AN6
+			58 //AN4        MOTOR1    58 //AN4
+			59 //AN5        MOTOR2    62 //AN8
+			
+USB MUX PIN
+-----------
+
+    AVR GENERIC Board        APM2 BOARD
+
+	ARDUINO PIN              Name    Pin
+	-----------              -----------
+	
+	      32/33                       23
