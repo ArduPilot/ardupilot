@@ -513,12 +513,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     stateStruct.velocity += delVelNav;
 
     // apply a trapezoidal integration to velocities to calculate position
-    // if we are not doing aiding, then the horizontal position states are not predicted
-    if (PV_AidingMode != AID_NONE) {
-        stateStruct.position += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
-    } else {
-        stateStruct.position.z += (stateStruct.velocity.z + lastVelocity.z) * (imuDataDelayed.delVelDT*0.5f);
-    }
+    stateStruct.position += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
 
     // accumulate the bias delta angle and time since last reset by an OF measurement arrival
     delAngBodyOF += imuDataDelayed.delAng - stateStruct.gyro_bias;
@@ -677,7 +672,6 @@ void NavEKF2_core::CovariancePrediction()
     for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 0.0f;
     for (uint8_t i=9; i<=11; i++) processNoise[i] = dAngBiasSigma;
     for (uint8_t i=12; i<=14; i++) processNoise[i] = dAngScaleSigma;
-    processNoise[15] = dVelBiasSigma;
     if (expectGndEffectTakeoff) {
         processNoise[15] = 0.0f;
     } else {
@@ -1230,18 +1224,17 @@ void NavEKF2_core::ConstrainVariances()
 {
     for (uint8_t i=0; i<=2; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f); // attitude error
     for (uint8_t i=3; i<=5; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // velocities
-    // If we are not using the horizontal position states, keep their covariances at the initialisation values
-    if (PV_AidingMode == AID_NONE) {
-        zeroRows(P,6,7);
-        zeroCols(P,6,7);
-        P[6][6]   = sq(frontend->_gpsHorizPosNoise);
-        P[7][7]   = P[6][6];
-    } else {
-        for (uint8_t i=6; i<=7; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f);
-    }
+    for (uint8_t i=6; i<=7; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f);
     P[8][8] = constrain_float(P[8][8],0.0f,1.0e6f); // vertical position
     for (uint8_t i=9; i<=11; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtEkfAvg)); // delta angle biases
-    for (uint8_t i=12; i<=14; i++) P[i][i] = constrain_float(P[i][i],0.0f,0.01f); // delta angle scale factors
+    if (PV_AidingMode != AID_NONE) {
+        for (uint8_t i=12; i<=14; i++) P[i][i] = constrain_float(P[i][i],0.0f,0.01f); // delta angle scale factors
+    } else {
+        // we can't reliably estimate scale factors when there is no aiding data due to transient manoeuvre induced innovations
+        // so inhibit estimation by keeping covariance elements at zero
+        zeroRows(P,12,14);
+        zeroCols(P,12,14);
+    }
     P[15][15] = constrain_float(P[15][15],0.0f,sq(10.0f * dtEkfAvg)); // delta velocity bias
     for (uint8_t i=16; i<=18; i++) P[i][i] = constrain_float(P[i][i],0.0f,0.01f); // earth magnetic field
     for (uint8_t i=19; i<=21; i++) P[i][i] = constrain_float(P[i][i],0.0f,0.01f); // body magnetic field
