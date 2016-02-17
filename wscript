@@ -166,6 +166,9 @@ def _build_common_taskgens(bld):
 
     bld.libgtest()
 
+    if bld.env.HAS_GBENCHMARK:
+        bld.libbenchmark()
+
 def _build_recursion(bld):
     common_dirs_patterns = [
         # TODO: Currently each vehicle also generate its own copy of the
