@@ -277,6 +277,9 @@ public:
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size);
 
+    // convert a single parameter with scaling
+    static void         convert_old_parameter(const struct ConversionInfo *info, float scaler);
+
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
@@ -475,9 +478,6 @@ private:
     static const uint8_t        k_EEPROM_magic0      = 0x50;
     static const uint8_t        k_EEPROM_magic1      = 0x41; ///< "AP"
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
-
-    // convert old vehicle parameters to new object parameters
-    static void         convert_old_parameter(const struct ConversionInfo *info);
 };
 
 /// Template class for scalar variables.

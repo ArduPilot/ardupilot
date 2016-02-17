@@ -1436,9 +1436,8 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat"
 // convert one old vehicle parameter to new object parameter
-void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
+void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float scaler)
 {
-
     // find the old value in EEPROM.
     uint16_t pofs;
     AP_Param::Param_header header;
@@ -1473,8 +1472,8 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
         return;
     }
 
-    // see if they are the same type
-    if (ptype == (ap_var_type)header.type) {
+    // see if they are the same type and no scaling applied
+    if (ptype == (ap_var_type)header.type && is_equal(scaler, 1.0f)) {
         // copy the value over only if the new parameter does not already
         // have the old value (via a default).
         if (memcmp(ap2, ap, sizeof(old_value)) != 0) {
@@ -1487,7 +1486,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
         float v = ap->cast_to_float((enum ap_var_type)header.type);
         if (!is_equal(v,ap2->cast_to_float(ptype))) {
             // the value needs to change
-            set_value(ptype, ap2, v);
+            set_value(ptype, ap2, v * scaler);
             ap2->save();
         }
     } else {
@@ -1502,7 +1501,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
 void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size)
 {
     for (uint8_t i=0; i<table_size; i++) {
-        convert_old_parameter(&conversion_table[i]);
+        convert_old_parameter(&conversion_table[i], 1.0f);
     }
 }
 
