@@ -57,11 +57,6 @@ def options(opt):
                    default='sitl',
                    help='Target board to build, choices are %s' % boards_names)
 
-    g = opt.ap_groups['check']
-    g.add_option('--check-verbose',
-                 action='store_true',
-                 help='Output all test programs')
-
     g.add_option('--no-submodule-update',
                  dest='submodule_update',
                  action='store_false',

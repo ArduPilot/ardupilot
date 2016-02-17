@@ -316,6 +316,11 @@ def options(opt):
              'examples. The special group "all" selects all programs.',
     )
 
+    g = opt.ap_groups['check']
+    g.add_option('--check-verbose',
+                 action='store_true',
+                 help='Output all test programs')
+
 def build(bld):
     global LAST_IDX
     # FIXME: This is done to prevent same task generators being created with
