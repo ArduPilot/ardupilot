@@ -263,11 +263,11 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     rate_roll_error_rads = rate_roll_target_rads - gyro.x;
     rate_pitch_error_rads = rate_pitch_target_rads - gyro.y;
 
-    // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    _pid_rate_roll.set_input_filter_all(degrees(rate_roll_error_rads)*100.0f);
-    _pid_rate_roll.set_desired_rate(degrees(rate_roll_target_rads)*100.0f);
-    _pid_rate_pitch.set_input_filter_all(degrees(rate_pitch_error_rads)*100.0f);
-    _pid_rate_pitch.set_desired_rate(degrees(rate_pitch_target_rads)*100.0f);
+    // pass error to PID controller
+    _pid_rate_roll.set_input_filter_all(rate_roll_error_rads);
+    _pid_rate_roll.set_desired_rate(rate_roll_target_rads);
+    _pid_rate_pitch.set_input_filter_all(rate_pitch_error_rads);
+    _pid_rate_pitch.set_desired_rate(rate_pitch_target_rads);
 
     // call p and d controllers
     roll_pd = _pid_rate_roll.get_p() + _pid_rate_roll.get_d();
@@ -298,12 +298,12 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     }
     
     // For legacy reasons, we convert to centi-degrees before inputting to the feedforward
-    roll_ff = roll_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_roll).get_vff(degrees(rate_roll_target_rads)*100.0f), _dt);
-    pitch_ff = pitch_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_pitch).get_vff(degrees(rate_pitch_target_rads)*100.0f), _dt);
+    roll_ff = roll_feedforward_filter.apply(_pid_rate_roll.get_vff(rate_roll_target_rads), _dt);
+    pitch_ff = pitch_feedforward_filter.apply(_pid_rate_pitch.get_vff(rate_pitch_target_rads), _dt);
 
     // add feed forward and final output
-    roll_out = (roll_pd + roll_i + roll_ff) / 4500.0f;
-    pitch_out = (pitch_pd + pitch_i + pitch_ff) / 4500.0f;
+    roll_out = roll_pd + roll_i + roll_ff;
+    pitch_out = pitch_pd + pitch_i + pitch_ff;
 
     // constrain output and update limit flags
     if (fabsf(roll_out) > AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX) {
@@ -363,9 +363,9 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_rads)
     // calculate error and call pid controller
     rate_error_rads  = rate_target_rads - current_rate_rads;
 
-    // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    _pid_rate_yaw.set_input_filter_all(degrees(rate_error_rads)*100.0f);
-    _pid_rate_yaw.set_desired_rate(degrees(rate_target_rads)*100.0f);
+    // pass error to PID controller
+    _pid_rate_yaw.set_input_filter_all(rate_error_rads);
+    _pid_rate_yaw.set_desired_rate(rate_target_rads);
 
     // get p and d
     pd = _pid_rate_yaw.get_p() + _pid_rate_yaw.get_d();
@@ -383,11 +383,11 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_rads)
     }
     
     // For legacy reasons, we convert to centi-degrees before inputting to the feedforward
-    vff = yaw_velocity_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_yaw).get_vff(degrees(rate_target_rads)*100.0f), _dt);
-    aff = yaw_acceleration_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_yaw).get_aff(degrees(rate_target_rads)*100.0f), _dt);
+    vff = yaw_velocity_feedforward_filter.apply(_pid_rate_yaw.get_vff(rate_target_rads), _dt);
+    aff = yaw_acceleration_feedforward_filter.apply(_pid_rate_yaw.get_aff(rate_target_rads), _dt);
     
     // add feed forward
-    yaw_out = (pd + i + vff + aff) / 4500.0f;
+    yaw_out = pd + i + vff + aff;
 
     // constrain output and update limit flag
     if (fabsf(yaw_out) > AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX) {

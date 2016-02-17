@@ -10,17 +10,17 @@
 #include <Filter/Filter.h>
 
 // default rate controller PID gains
-#define AC_ATC_HELI_RATE_RP_P                       0.02
-#define AC_ATC_HELI_RATE_RP_I                       0.5
-#define AC_ATC_HELI_RATE_RP_D                       0.001
-#define AC_ATC_HELI_RATE_RP_IMAX                    4500
-#define AC_ATC_HELI_RATE_RP_FF                      0.05
+#define AC_ATC_HELI_RATE_RP_P                       0.024f
+#define AC_ATC_HELI_RATE_RP_I                       0.6f
+#define AC_ATC_HELI_RATE_RP_D                       0.001f
+#define AC_ATC_HELI_RATE_RP_IMAX                    1.0f
+#define AC_ATC_HELI_RATE_RP_FF                      0.060f
 #define AC_ATC_HELI_RATE_RP_FILT_HZ                 20.0f
-#define AC_ATC_HELI_RATE_YAW_P                      0.15
-#define AC_ATC_HELI_RATE_YAW_I                      0.100
-#define AC_ATC_HELI_RATE_YAW_D                      0.003
-#define AC_ATC_HELI_RATE_YAW_IMAX                   4500
-#define AC_ATC_HELI_RATE_YAW_FF                     0.02
+#define AC_ATC_HELI_RATE_YAW_P                      0.18f
+#define AC_ATC_HELI_RATE_YAW_I                      0.12f
+#define AC_ATC_HELI_RATE_YAW_D                      0.003f
+#define AC_ATC_HELI_RATE_YAW_IMAX                   1.0f
+#define AC_ATC_HELI_RATE_YAW_FF                     0.024f
 #define AC_ATC_HELI_RATE_YAW_FILT_HZ                20.0f
 
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
