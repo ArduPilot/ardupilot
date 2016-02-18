@@ -2,9 +2,7 @@
 
 /// @file	MAVLink_routing.h
 /// @brief	handle routing of MAVLink packets by ID
-
-#ifndef __MAVLINK_ROUTING_H
-#define __MAVLINK_ROUTING_H
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -63,6 +61,3 @@ private:
     // special handling for heartbeat messages
     void handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg);
 };
-
-#endif // __MAVLINK_ROUTING_H
-
