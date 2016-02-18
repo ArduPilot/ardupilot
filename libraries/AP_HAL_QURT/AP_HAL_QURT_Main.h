@@ -12,8 +12,4 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __AP_HAL_QURT_MAIN_H__
-#define __AP_HAL_QURT_MAIN_H__
-
-#endif // __AP_HAL_QURT_MAIN_H__
+#pragma once
