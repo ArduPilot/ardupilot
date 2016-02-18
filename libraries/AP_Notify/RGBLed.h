@@ -17,9 +17,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __RGBLED_H__
-#define __RGBLED_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "NotifyDevice.h"
@@ -59,5 +57,3 @@ protected:
 private:
     virtual void update_colours();
 };
-
-#endif //__RGBLED_H__
