@@ -115,25 +115,20 @@ public:
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     virtual bool rotor_speed_above_critical() const = 0;
 
-    // calculate_scalars - must be implemented by child classes
-    virtual void calculate_scalars() = 0;
-
-    // calculate_armed_scalars - must be implemented by child classes
-    virtual void calculate_armed_scalars() = 0;
-    
-    // var_info for holding Parameter information
-    static const struct AP_Param::GroupInfo var_info[];
-
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t get_motor_mask() = 0;
 
-    // servo_test - move servos through full range of movement
-    // to be overloaded by child classes, different vehicle types would have different movement patterns
-    virtual void servo_test() = 0;
-
     // output - sends commands to the motors
     void    output();
+
+    // supports_yaw_passthrough
+    virtual bool supports_yaw_passthrough() const { return false; }
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
 
     // manual servo modes (used for setup)
     enum ServoControlModes {
@@ -144,11 +139,6 @@ public:
         SERVO_CONTROL_MODE_MANUAL_MIN,
         SERVO_CONTROL_MODE_MANUAL_OSCILLATE,
     };
-
-    // supports_yaw_passthrough
-    virtual bool supports_yaw_passthrough() const { return false; }
-
-protected:
 
     // output - sends commands to the motors
     void        output_armed_stabilizing();
@@ -173,8 +163,18 @@ protected:
     // init_outputs - initialise Servo/PWM ranges and endpoints
     virtual void init_outputs() = 0;
 
+    // calculate_armed_scalars - must be implemented by child classes
+    virtual void calculate_armed_scalars() = 0;
+
+    // calculate_scalars - must be implemented by child classes
+    virtual void calculate_scalars() = 0;
+
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     virtual void calculate_roll_pitch_collective_factors() = 0;
+
+    // servo_test - move servos through full range of movement
+    // to be overloaded by child classes, different vehicle types would have different movement patterns
+    virtual void servo_test() = 0;
 
     // flags bitmask
     struct heliflags_type {
