@@ -1,10 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+#pragma once
 
 /// @file    AC_AttitudeControl_Multi.h
 /// @brief   ArduCopter attitude control library
-
-#ifndef AC_AttitudeControl_Multi_H
-#define AC_AttitudeControl_Multi_H
 
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsMulticopter.h>
@@ -34,5 +32,3 @@ protected:
 
     AP_MotorsMulticopter& _motors_multi;
 };
-
-#endif // AC_AttitudeControl_Multi_H

@@ -1,10 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+#pragma once
 
 /// @file    AC_AttitudeControl.h
 /// @brief   ArduCopter attitude control library
-
-#ifndef AC_AttitudeControl_H
-#define AC_AttitudeControl_H
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -354,5 +352,3 @@ protected:
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\
                             "ATT", "cccccCC",      "RollIn,Roll,PitchIn,Pitch,YawIn,Yaw,NavYaw" }
-
-#endif //AC_AttitudeControl_H
