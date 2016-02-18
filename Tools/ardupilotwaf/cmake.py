@@ -99,6 +99,7 @@ from waflib.TaskGen import feature, taskgen_method
 from collections import OrderedDict
 
 class cmake_configure_task(Task.Task):
+    vars = ['CMAKE_BLD_DIR']
     run_str = '${CMAKE} ${CMAKE_SRC_DIR} ${CMAKE_VARS} ${CMAKE_GENERATOR_OPTION}'
 
     def uid(self):
