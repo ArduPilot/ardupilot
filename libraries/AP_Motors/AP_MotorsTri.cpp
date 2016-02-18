@@ -118,18 +118,6 @@ void AP_MotorsTri::enable()
     rc_enable_ch(AP_MOTORS_CH_TRI_YAW);
 }
 
-// output_min - sends minimum values out to the motors
-void AP_MotorsTri::output_min()
-{
-    // send minimum value to each motor
-    hal.rcout->cork();
-    rc_write(AP_MOTORS_MOT_1, _throttle_radio_min);
-    rc_write(AP_MOTORS_MOT_2, _throttle_radio_min);
-    rc_write(AP_MOTORS_MOT_4, _throttle_radio_min);
-    rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
-    hal.rcout->push();
-}
-
 void AP_MotorsTri::output_to_motors()
 {
     switch (_multicopter_flags.spool_mode) {
