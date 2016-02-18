@@ -101,11 +101,6 @@ from collections import OrderedDict
 class cmake_configure_task(Task.Task):
     run_str = '${CMAKE} ${CMAKE_SRC_DIR} ${CMAKE_VARS} ${CMAKE_GENERATOR_OPTION}'
 
-    def runnable_status(self):
-        if not self.generator.cmake_bld.find_node('CMakeCache.txt'):
-            return Task.RUN_ME
-        return Task.SKIP_ME
-
     def __str__(self):
         return self.generator.name
 
@@ -158,6 +153,8 @@ def process_cmake_configure(self):
     if not isinstance(self.cmake_vars, OrderedDict):
         keys.sort()
     tsk.env.CMAKE_VARS = ["-D%s='%s'" % (k, self.cmake_vars[k]) for k in keys]
+
+    tsk.set_outputs(self.cmake_bld.find_or_declare('CMakeCache.txt'))
 
 @feature('cmake_build')
 def process_cmake_build(self):
