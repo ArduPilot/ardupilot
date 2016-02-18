@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_RCINPUT_H__
-#define __AP_HAL_EMPTY_RCINPUT_H__
+#pragma once
 
 #include "AP_HAL_Empty.h"
 
@@ -17,5 +15,3 @@ public:
     bool set_override(uint8_t channel, int16_t override);
     void clear_overrides();
 };
-
-#endif // __AP_HAL_EMPTY_RCINPUT_H__

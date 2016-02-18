@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_SEMAPHORE_H__
-#define __AP_HAL_EMPTY_SEMAPHORE_H__
+#pragma once
 
 #include "AP_HAL_Empty.h"
 
@@ -13,5 +11,3 @@ public:
 private:
     bool _taken;
 };
-
-#endif // __AP_HAL_EMPTY_SEMAPHORE_H__
