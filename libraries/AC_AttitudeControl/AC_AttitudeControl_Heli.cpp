@@ -220,13 +220,13 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
     if (_flags_heli.flybar_passthrough) {
-        _motors.set_roll(_passthrough_roll);
-        _motors.set_pitch(_passthrough_pitch);
+        _motors.set_roll(_passthrough_roll/4500.0f);
+        _motors.set_pitch(_passthrough_pitch/4500.0f);
     } else {
         rate_bf_to_motor_roll_pitch(_ang_vel_target_rads.x, _ang_vel_target_rads.y);
     }
     if (_flags_heli.tail_passthrough) {
-        _motors.set_yaw(_passthrough_yaw);
+        _motors.set_yaw(_passthrough_yaw/4500.0f);
     } else {
         _motors.set_yaw(rate_bf_to_motor_yaw(_ang_vel_target_rads.z));
     }
