@@ -346,6 +346,11 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
 int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max)
 {
     int16_t ret;
+
+    if (_yaw_reverse < 0) {
+        yaw_input = -yaw_input;
+    }
+
     if (yaw_input >= 0){
         ret = (_yaw_servo_trim + (yaw_input/yaw_input_max * (_yaw_servo_max - _yaw_servo_trim)));
     } else {
