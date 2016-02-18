@@ -1,4 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
 /// @file    AP_L1_Control.h
 /// @brief   L1 Control algorithm. This is a instance of an
@@ -12,9 +13,6 @@
  *  - Explicit control over track capture angle
  *  - Ability to use loiter radius smaller than L1 length
  */
-
-#ifndef AP_L1_CONTROL_H
-#define AP_L1_CONTROL_H
 
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -106,6 +104,3 @@ private:
     float _L1_xtrack_i_gain_prev = 0;
     uint32_t _last_update_waypoint_us;
 };
-
-
-#endif //AP_L1_CONTROL_H
