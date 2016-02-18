@@ -1,10 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
 /// @file	AC_HELI_PID.h
 /// @brief	Helicopter Specific Rate PID algorithm, with EEPROM-backed storage of constants.
-
-#ifndef __AC_HELI_PID_H__
-#define __AC_HELI_PID_H__
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -45,5 +43,3 @@ private:
     float           _last_requested_rate;       // Requested rate from last iteration, used to calculate rate change of requested rate
     
 };
-
-#endif // __AC_HELI_PID_H__
