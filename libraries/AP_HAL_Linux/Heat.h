@@ -13,12 +13,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __HEAT_H__
-#define __HEAT_H__
+#pragma once
 
 class Linux::Heat {
 public:
     virtual void set_imu_temp(float current) { }
 };
-#endif

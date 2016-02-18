@@ -1,6 +1,4 @@
-
-#ifndef _AP_HAL_LINUX_RCINPUT_UDP_H
-#define _AP_HAL_LINUX_RCINPUT_UDP_H
+#pragma once
 
 #include "RCInput.h"
 #include <AP_HAL/utility/Socket.h>
@@ -21,4 +19,3 @@ private:
     uint64_t _last_buf_ts;
     uint16_t _last_buf_seq;
 };
-#endif // _AP_HAL_LINUX_RCINPUT_UDP_H

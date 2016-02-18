@@ -75,7 +75,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
     }
 
     // we need to write a byte to prompt another reading
-    uart->write('\n');
+    uart->write('d');
 
     if (count == 0) {
         return false;

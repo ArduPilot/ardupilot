@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_BATTMONITOR_ANALOG_H
-#define AP_BATTMONITOR_ANALOG_H
+#pragma once
 
 #include <AP_ADC/AP_ADC.h>                 // ArduPilot Mega Analog to Digital Converter Library
 #include "AP_BattMonitor.h"
@@ -97,4 +96,3 @@ protected:
     AP_HAL::AnalogSource *_volt_pin_analog_source;
     AP_HAL::AnalogSource *_curr_pin_analog_source;
 };
-#endif  // AP_BATTMONITOR_ANALOG_H

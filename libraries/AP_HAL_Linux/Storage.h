@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_STORAGE_H__
-#define __AP_HAL_LINUX_STORAGE_H__
+#pragma once
 
 #define LINUX_STORAGE_USE_FRAM 0
 
@@ -44,6 +43,3 @@ protected:
 };
 
 #include "Storage_FRAM.h"
-
-#endif // __AP_HAL_LINUX_STORAGE_H__
-

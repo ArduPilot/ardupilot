@@ -16,11 +16,9 @@
  */
 
 /*
-  backend driver for airspeed from I2C
+  backend driver for airspeed from PX4Firmware
  */
-
-#ifndef __AP_AIRSPEED_PX4_H__
-#define __AP_AIRSPEED_PX4_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Airspeed_Backend.h"
@@ -44,5 +42,3 @@ private:
     uint64_t _last_timestamp;
     float _temperature;
 };
-
-#endif // __AP_AIRSPEED_PX4_H__

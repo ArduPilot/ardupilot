@@ -40,6 +40,10 @@ EXTRAFLAGS += -DNUTTX_GIT_VERSION="\"$(NUTTX_GIT_VERSION)\""
 EXTRAFLAGS += -DPX4_GIT_VERSION="\"$(PX4_GIT_VERSION)\""
 EXTRAFLAGS += -DUAVCAN=1
 
+# Add missing parts from libc and libstdc++
+EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0
+EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
+
 # we have different config files for V1 and V2
 PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
 PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
@@ -47,7 +51,7 @@ PX4_V4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v4_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
-WARNFLAGS = -Werror -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
+WARNFLAGS = -Wall -Wextra -Wlogical-op -Werror -Wno-redundant-decls -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
 OPTFLAGS = -fsingle-precision-constant
 
 # avoid PX4 submodules
@@ -83,10 +87,8 @@ module_mk:
 
 px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
 	$(RULEHDR)
-	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V1_CONFIG_FILE)
 	$(v) cp $(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
-	$(v) /bin/rm -f $(SKETCH)-v1.px4
 	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v1_APM.build/firmware.elf
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v1_APM.px4 $(SKETCH)-v1.px4
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v1.px4" "$(SKETCH)-v1.px4"
@@ -94,10 +96,8 @@ px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 
 px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
 	$(RULEHDR)
-	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V2_CONFIG_FILE)
 	$(v) cp $(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v2_APM
-	$(v) /bin/rm -f $(SKETCH)-v2.px4
 	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v2_APM.build/firmware.elf
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v2_APM.px4 $(SKETCH)-v2.px4
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v2.px4" "$(SKETCH)-v2.px4"
@@ -105,12 +105,11 @@ px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 
 px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v4.export $(SKETCHCPP) module_mk
 	$(RULEHDR)
-	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V4_CONFIG_FILE)
 	$(v) cp $(PX4_V4_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v4_APM
-	$(v) /bin/rm -f $(SKETCH)-v4.px4
 	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v4_APM.build/firmware.elf
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v4_APM.px4 $(SKETCH)-v4.px4
+	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmuv4_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4.px4" "$(SKETCH)-v4.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4.px4"
 
@@ -149,29 +148,22 @@ px4-archives-clean:
 
 px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 	$(v)+ $(MAKE) -C $(PX4_ROOT) -f $(PX4_ROOT)/Makefile.make px4io-v1_default
-	$(v) /bin/rm -f px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Images/px4io-v1_default.bin px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.elf px4io-v1.elf
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
-	$(v) rm -f $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) cp px4io-v1.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
-	$(v) rm -f $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmu_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) echo "PX4IOv1 Firmware is in px4io-v1.bin"
 
 
 px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 	$(v)+ $(MAKE) -C $(PX4_ROOT) -f $(PX4_ROOT)/Makefile.make px4io-v2_default
-	$(v) /bin/rm -f px4io-v2.bin
-	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.bin px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Images/px4io-v2_default.bin px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.elf px4io-v2.elf
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
-	$(v) rm -f $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) cp px4io-v2.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
-	$(v) rm -f $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmuv2_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) echo "PX4IOv2 Firmware is in px4io-v2.bin"
 

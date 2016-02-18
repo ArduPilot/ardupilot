@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_UTIL_H__
-#define __AP_HAL_UTIL_H__
+#pragma once
 
 #include <stdarg.h>
 #include "AP_HAL_Namespace.h"
@@ -104,6 +102,3 @@ protected:
     bool soft_armed = false;
     uint64_t capabilities = 0;
 };
-
-#endif // __AP_HAL_UTIL_H__
-

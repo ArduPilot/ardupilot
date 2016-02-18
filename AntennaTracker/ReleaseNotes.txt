@@ -1,5 +1,9 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 0.7.6 08-Feb-2016
+Changes from 0.7.5
+1) Fix logging of attitude and mode to dataflash 
+------------------------------------------------------------------
 AntennaTracker 0.7.5 27-Dec-2015
 Changes from 0.7.4
 1) Add dataflash logging

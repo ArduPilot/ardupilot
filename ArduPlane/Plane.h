@@ -9,7 +9,7 @@
 /*
    Lead developer: Andrew Tridgell
  
-   Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger
+   Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger, Tom Pittenger
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
 
    Please contribute your ideas! See http://dev.ardupilot.com for details
@@ -426,6 +426,9 @@ private:
         // Flag to indicate if we have landed.
         // Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
         bool land_complete:1;
+
+        // Flag to indicate if we have triggered pre-flare. This occurs when we have reached LAND_PF_ALT
+        bool land_pre_flare:1;
 
         // should we fly inverted?
         bool inverted_flight:1;
@@ -915,7 +918,7 @@ private:
     void servo_write(uint8_t ch, uint16_t pwm);
     bool should_log(uint32_t mask);
     void frsky_telemetry_send(void);
-    uint8_t throttle_percentage(void);
+    int8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);
     bool arm_motors(AP_Arming::ArmingMethod method);
@@ -952,6 +955,7 @@ private:
     void stabilize();
     void set_servos_idle(void);
     void set_servos();
+    bool allow_reverse_thrust(void);
     void update_aux();
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);

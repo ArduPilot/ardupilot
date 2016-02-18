@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_UARTDEVICE_UDP_H__
-#define __AP_HAL_LINUX_UARTDEVICE_UDP_H__
+#pragma once
 
 #include "SerialDevice.h"
 #include <AP_HAL/utility/Socket.h>
@@ -22,5 +21,3 @@ private:
     int _fd = -1;
     const char *_device_path;
 };
-
-#endif

@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_RCOUTPUT_ZYNQ_H__
-#define __AP_HAL_LINUX_RCOUTPUT_ZYNQ_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #define RCOUT_ZYNQ_PWM_BASE	 0x43c00000	//FIXME hardcoding is the devil's work
@@ -38,5 +36,3 @@ private:
     };
     volatile struct pwm_cmd *sharedMem_cmd;
 };
-
-#endif // __AP_HAL_LINUX_RCOUTPUT_ZYNQ_H__

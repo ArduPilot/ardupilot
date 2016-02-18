@@ -32,7 +32,6 @@ public:
     void     reboot(bool hold_in_bootloader);
 
     bool     in_timerprocess();
-    bool     system_initializing();
     void     system_initialized();
     void     hal_initialized();
     
@@ -42,7 +41,6 @@ private:
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
-    volatile bool _timer_pending;
 
     volatile bool _timer_suspended;
 

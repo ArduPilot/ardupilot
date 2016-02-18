@@ -26,19 +26,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
-#pragma GCC diagnostic warning "-Wall"
-#pragma GCC diagnostic warning "-Wextra"
-#pragma GCC diagnostic warning "-Wlogical-op"
-#pragma GCC diagnostic ignored "-Wredundant-decls"
-#else
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wgnu-variable-sized-type-not-at-end"
-#pragma GCC diagnostic ignored "-Wgnu-designator"
-#pragma GCC diagnostic ignored "-Wabsolute-value"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-
 // used to pack structures
 #define PACKED __attribute__((__packed__))
 

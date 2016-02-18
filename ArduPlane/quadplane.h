@@ -73,8 +73,11 @@ private:
     AC_P                    p_vel_z{5};
     AC_PID                  pid_accel_z{0.5, 1, 0, 800, 20, 0.02};
     AC_PI_2D                pi_vel_xy{1.0, 0.5, 1000, 5, 0.02};
+
+    AP_Int8 frame_class;
+    AP_Int8 frame_type;
     
-    AP_MotorsQuad *motors;
+    AP_MotorsMulticopter *motors;
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
@@ -122,6 +125,9 @@ private:
     float desired_auto_yaw_rate_cds(void);
 
     bool should_relax(void);
+
+    // setup correct aux channels for frame class
+    void setup_default_channels(uint8_t num_motors);
     
     AP_Int16 transition_time_ms;
 
@@ -186,4 +192,10 @@ private:
     } land_state;
     int32_t land_yaw_cd;
     float land_wp_proportion;
+
+    enum frame_class {
+        FRAME_CLASS_QUAD=0,
+        FRAME_CLASS_HEXA=1,
+        FRAME_CLASS_OCTA=2,
+    };
 };

@@ -25,7 +25,13 @@ void Plane::set_control_channels(void)
     channel_roll->set_angle(SERVO_MAX);
     channel_pitch->set_angle(SERVO_MAX);
     channel_rudder->set_angle(SERVO_MAX);
-    channel_throttle->set_range(0, 100);
+    if (aparm.throttle_min >= 0) {
+        // normal operation
+        channel_throttle->set_range(0, 100);
+    } else {
+        // reverse thrust
+        channel_throttle->set_angle(100);
+    }
 
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
@@ -96,7 +102,7 @@ void Plane::rudder_arm_disarm_check()
     }
 
     // if throttle is not down, then pilot cannot rudder arm/disarm
-    if (channel_throttle->control_in > 0) {
+    if (channel_throttle->control_in != 0){
         rudder_arm_timer = 0;
         return;
     }
@@ -188,7 +194,7 @@ void Plane::read_radio()
 
     channel_throttle->servo_out = channel_throttle->control_in;
 
-    if (g.throttle_nudge && channel_throttle->servo_out > 50) {
+    if (g.throttle_nudge && channel_throttle->servo_out > 50 && geofence_stickmixing()) {
         float nudge = (channel_throttle->servo_out - 50) * 0.02f;
         if (ahrs.airspeed_sensor_enabled()) {
             airspeed_nudge_cm = (aparm.airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;

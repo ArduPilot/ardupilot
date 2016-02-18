@@ -37,11 +37,13 @@ public:
     // valid packet from the GPS.
     virtual bool read() = 0;
 
-    virtual void inject_data(uint8_t *data, uint8_t len) { return; }
-
     // Highest status supported by this GPS. 
     // Allows external system to identify type of receiver connected.
     virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
+
+    virtual bool is_configured(void) { return true; }
+
+    virtual void inject_data(uint8_t *data, uint8_t len) { return; }
 
     //MAVLink methods
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan) { return ; }

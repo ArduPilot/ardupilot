@@ -61,7 +61,6 @@ def _get_legacy_defines(sketch_name):
 
 IGNORED_AP_LIBRARIES = [
     'doc',
-    'AP_Limits',
     'GCS_Console',
 ]
 
@@ -317,5 +316,10 @@ def options(opt):
     )
 
 def build(bld):
+    global LAST_IDX
+    # FIXME: This is done to prevent same task generators being created with
+    # different idx when build() is called multiple times (e.g. waf bin tests).
+    # Ideally, task generators should be created just once.
+    LAST_IDX = 0
     bld.add_pre_fun(_process_build_command)
     bld.add_pre_fun(_select_programs_from_group)

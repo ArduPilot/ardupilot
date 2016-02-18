@@ -417,6 +417,9 @@ void Rover::update_current_mode(void)
         set_reverse(false);
         if (rtl_complete || verify_RTL()) {
             // we have reached destination so stop where we are
+            if (channel_throttle->servo_out != g.throttle_min.get()) {
+                gcs_send_mission_item_reached_message(0);
+            }
             channel_throttle->servo_out = g.throttle_min.get();
             channel_steer->servo_out = 0;
             lateral_acceleration = 0;

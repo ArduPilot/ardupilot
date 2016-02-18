@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_I2C_DRIVER_H__
-#define __AP_HAL_I2C_DRIVER_H__
+#pragma once
 
 #include <stdint.h>
 
@@ -49,6 +47,3 @@ public:
 protected:
     bool _ignore_errors;
 };
-
-#endif // __AP_HAL_I2C_DRIVER_H__
-

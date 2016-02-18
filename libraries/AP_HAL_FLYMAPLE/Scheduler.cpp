@@ -165,16 +165,6 @@ void FLYMAPLEScheduler::_failsafe_timer_event()
         _failsafe();
 }
 
-void FLYMAPLEScheduler::begin_atomic()
-{
-    noInterrupts();
-}
-
-void FLYMAPLEScheduler::end_atomic()
-{
-    interrupts();
-}
-
 void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr) 
 {
     _in_timer_proc = true;
@@ -191,10 +181,6 @@ void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr)
     }
 
     _in_timer_proc = false;
-}
-
-bool FLYMAPLEScheduler::system_initializing() {
-    return !_initialized;
 }
 
 void FLYMAPLEScheduler::system_initialized()

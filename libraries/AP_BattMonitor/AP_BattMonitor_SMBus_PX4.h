@@ -15,8 +15,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef AP_BATTMONITOR_SMBUS_PX4_H
-#define AP_BATTMONITOR_SMBUS_PX4_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -40,5 +39,3 @@ private:
     int         _batt_fd;           // file descriptor
     bool        _capacity_updated;  // capacity info read
 };
-
-#endif // AP_BATTMONITOR_SMBUS_PX4_H

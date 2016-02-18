@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_Compass_AK8963_H
-#define AP_Compass_AK8963_H
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -68,9 +67,6 @@ private:
 
     void _update();
     void _dump_registers();
-    bool _sem_take_blocking();
-    bool _sem_take_nonblocking();
-    bool _sem_give();
 
     float               _magnetometer_ASA[3] {0, 0, 0};
     uint8_t             _compass_instance;
@@ -125,4 +121,3 @@ private:
     AP_HAL::I2CDriver *_i2c;
     uint8_t _addr;
 };
-#endif

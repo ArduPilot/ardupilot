@@ -9,4 +9,4 @@ $(MAVLINK_HEADERS): $(MESSAGE_DEFINITIONS)/ardupilotmega.xml $(MESSAGE_DEFINITIO
 	echo "Generating MAVLink headers..."
 	#goto mavlink module directory and run the most recent generator script
 	echo "Generating C code using mavgen.py located at" $(SKETCHBOOK)/modules/mavlink/
-	PYTHONPATH=$(MAVLINK_DIR) python $(MAVLINK_DIR)/pymavlink/tools/mavgen.py --lang=C --wire-protocol=1.0 --output=$(MAVLINK_OUTPUT_DIR) $(MAVLINK_DIR)/message_definitions/v1.0/ardupilotmega.xml
+	-PYTHONPATH=$(MAVLINK_DIR) python $(MAVLINK_DIR)/pymavlink/tools/mavgen.py --lang=C --wire-protocol=1.0 --output=$(MAVLINK_OUTPUT_DIR) $(MAVLINK_DIR)/message_definitions/v1.0/ardupilotmega.xml

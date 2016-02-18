@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_RCINPUT_H__
-#define __AP_HAL_LINUX_RCINPUT_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -77,5 +75,3 @@ public:
 
 #include "RCInput_PRU.h"
 #include "RCInput_ZYNQ.h"
-
-#endif // __AP_HAL_LINUX_RCINPUT_H__

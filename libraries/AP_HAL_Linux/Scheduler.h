@@ -1,22 +1,16 @@
+#pragma once
 
-#ifndef __AP_HAL_LINUX_SCHEDULER_H__
-#define __AP_HAL_LINUX_SCHEDULER_H__
+#include <pthread.h>
 
 #include "AP_HAL_Linux.h"
 #include "Semaphores.h"
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <sys/time.h>
-#include <pthread.h>
+#include "Thread.h"
 
 #define LINUX_SCHEDULER_MAX_TIMER_PROCS 10
 #define LINUX_SCHEDULER_MAX_TIMESLICED_PROCS 10
 #define LINUX_SCHEDULER_MAX_IO_PROCS 10
 
 class Linux::Scheduler : public AP_HAL::Scheduler {
-
-typedef void *(*pthread_startroutine_t)(void *);
-
 public:
     Scheduler();
 
@@ -40,10 +34,6 @@ public:
 
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
-    void     begin_atomic();
-    void     end_atomic();
-
-    bool     system_initializing();
     void     system_initialized();
 
     void     reboot(bool hold_in_bootloader);
@@ -52,9 +42,23 @@ public:
 
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
+    void microsleep(uint32_t usec);
+
 private:
-    void _timer_handler(int signum);
-    void _microsleep(uint32_t usec);
+    class SchedulerThread : public PeriodicThread {
+    public:
+        SchedulerThread(Thread::task_t t, Scheduler &sched)
+            : PeriodicThread(t)
+            , _sched(sched)
+        { }
+
+    protected:
+        bool _run() override;
+
+        Scheduler &_sched;
+    };
+
+    void _wait_all_threads();
 
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
@@ -62,7 +66,7 @@ private:
     AP_HAL::Proc _failsafe;
 
     bool _initialized;
-    volatile bool _timer_pending;
+    pthread_barrier_t _initialized_barrier;
 
     AP_HAL::MemberProc _timer_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
@@ -80,27 +84,21 @@ private:
 
     AP_HAL::MemberProc _io_proc[LINUX_SCHEDULER_MAX_IO_PROCS];
     uint8_t _num_io_procs;
-    volatile bool _in_io_proc;
 
-    volatile bool _timer_event_missed;
+    SchedulerThread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void), *this};
+    SchedulerThread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void), *this};
+    SchedulerThread _rcin_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_rcin_task, void), *this};
+    SchedulerThread _uart_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_uart_task, void), *this};
+    SchedulerThread _tonealarm_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_tonealarm_task, void), *this};
 
-    pthread_t _timer_thread_ctx;
-    pthread_t _io_thread_ctx;
-    pthread_t _rcin_thread_ctx;
-    pthread_t _uart_thread_ctx;
-    pthread_t _tonealarm_thread_ctx;
+    void _timer_task();
+    void _io_task();
+    void _rcin_task();
+    void _uart_task();
+    void _tonealarm_task();
 
-    static void *_timer_thread(void* arg);
-    static void *_io_thread(void* arg);
-    static void *_rcin_thread(void* arg);
-    static void *_uart_thread(void* arg);
-    static void _run_uarts(void);
-    static void *_tonealarm_thread(void* arg);
-
-    void _run_timers(bool called_from_timer_thread);
-    void _run_io(void);
-    void _create_realtime_thread(pthread_t *ctx, int rtprio, const char *name,
-                                 pthread_startroutine_t start_routine);
+    void _run_io();
+    void _run_uarts();
     bool _register_timesliced_proc(AP_HAL::MemberProc, uint8_t);
 
     uint64_t _stopped_clock_usec;
@@ -108,7 +106,3 @@ private:
     Semaphore _timer_semaphore;
     Semaphore _io_semaphore;
 };
-
-#endif // CONFIG_HAL_BOARD
-
-#endif // __AP_HAL_LINUX_SCHEDULER_H__

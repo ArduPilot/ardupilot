@@ -16,9 +16,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
-#ifndef __AP_HAL_UTILITY_PRINT_H__
-#define __AP_HAL_UTILITY_PRINT_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL_Namespace.h>
 
@@ -75,6 +73,3 @@ class AP_HAL::Print {
     size_t println(void);
 
 };
-
-#endif // __AP_HAL_UTILITY_PRINT_H__
-
