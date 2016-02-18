@@ -115,20 +115,6 @@ void AP_MotorsSingle::enable()
     rc_enable_ch(AP_MOTORS_MOT_6);
 }
 
-// output_min - sends minimum values out to the motor and trim values to the servos
-void AP_MotorsSingle::output_min()
-{
-    // send minimum value to each motor
-    hal.rcout->cork();
-    rc_write(AP_MOTORS_MOT_1, _servo1.radio_trim);
-    rc_write(AP_MOTORS_MOT_2, _servo2.radio_trim);
-    rc_write(AP_MOTORS_MOT_3, _servo3.radio_trim);
-    rc_write(AP_MOTORS_MOT_4, _servo4.radio_trim);
-    rc_write(AP_MOTORS_MOT_5, _throttle_radio_min);
-    rc_write(AP_MOTORS_MOT_6, _throttle_radio_min);
-    hal.rcout->push();
-}
-
 void AP_MotorsSingle::output_to_motors()
 {
     switch (_multicopter_flags.spool_mode) {
