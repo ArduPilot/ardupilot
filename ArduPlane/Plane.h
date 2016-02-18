@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef _PLANE_H
-#define _PLANE_H
+#pragma once
 
 #define THISFIRMWARE "ArduPlane V3.5.0"
 #define FIRMWARE_VERSION 3,5,0,FIRMWARE_VERSION_TYPE_OFFICIAL
@@ -1067,5 +1065,3 @@ extern Plane plane;
 
 using AP_HAL::millis;
 using AP_HAL::micros;
-
-#endif // _PLANE_H_
