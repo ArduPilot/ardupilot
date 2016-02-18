@@ -149,6 +149,14 @@ void AP_MotorsMulticopter::output()
     output_to_motors();
 };
 
+// sends minimum values out to the motors
+void AP_MotorsMulticopter::output_min()
+{
+    set_desired_spool_state(DESIRED_SHUT_DOWN);
+    _multicopter_flags.spool_mode = SHUT_DOWN;
+    output();
+}
+
 // update the throttle input filter
 void AP_MotorsMulticopter::update_throttle_filter()
 {

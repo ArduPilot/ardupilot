@@ -40,6 +40,9 @@ public:
     // output - sends commands to the motors
     virtual void        output();
 
+    // output_min - sends minimum values out to the motors
+    void                output_min();
+
     // output_to_motors - sends commands to the motors
     virtual void        output_to_motors() = 0;
 
