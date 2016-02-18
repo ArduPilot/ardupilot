@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsTri.h
 /// @brief	Motor control class for Tricopters
-
-#ifndef __AP_MOTORS_TRI_H__
-#define __AP_MOTORS_TRI_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -64,5 +62,3 @@ protected:
     AP_Int16        _yaw_servo_min;                     // Minimum angle limit of yaw servo
     AP_Int16        _yaw_servo_max;                     // Maximum angle limit of yaw servo
 };
-
-#endif  // AP_MOTORSTRI

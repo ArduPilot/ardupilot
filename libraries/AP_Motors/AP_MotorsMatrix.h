@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsMatrix.h
 /// @brief	Motor control class for Matrixcopters
-
-#ifndef __AP_MOTORS_MATRIX_H__
-#define __AP_MOTORS_MATRIX_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -79,5 +77,3 @@ protected:
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
 };
-
-#endif  // AP_MOTORSMATRIX
