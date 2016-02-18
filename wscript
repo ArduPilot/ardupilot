@@ -61,19 +61,7 @@ def configure(cfg):
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
-    board_dict = boards.BOARDS[cfg.env.BOARD].get_merged_dict()
-
-    # Always prepend so that arguments passed in the command line get
-    # the priority.
-    for k in board_dict:
-        val = board_dict[k]
-        # Dictionaries (like 'DEFINES') are converted to lists to
-        # conform to waf conventions.
-        if isinstance(val, dict):
-            for item in val.items():
-                cfg.env.prepend_value(k, '%s=%s' % item)
-        else:
-            cfg.env.prepend_value(k, val)
+    boards.get_board(cfg.env.BOARD).configure(cfg)
 
     cfg.load('toolchain')
     cfg.load('compiler_cxx compiler_c')
