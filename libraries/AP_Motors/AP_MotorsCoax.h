@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsCoax.h
 /// @brief	Motor and Servo control class for Co-axial helicopters with two motors and two flaps
-
-#ifndef __AP_MOTORS_COAX_H__
-#define __AP_MOTORS_COAX_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -71,5 +69,3 @@ protected:
     RC_Channel&         _servo1;
     RC_Channel&         _servo2;
 };
-
-#endif  // AP_MOTORSCOAX

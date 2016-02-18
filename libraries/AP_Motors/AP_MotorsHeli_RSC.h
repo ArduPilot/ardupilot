@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_MOTORS_HELI_RSC_H__
-#define __AP_MOTORS_HELI_RSC_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
@@ -118,5 +116,3 @@ private:
     // write_rsc - outputs pwm onto output rsc channel. servo_out parameter is of the range 0 ~ 1000
     void            write_rsc(int16_t servo_out);
 };
-
-#endif // AP_MOTORS_HELI_RSC_H
