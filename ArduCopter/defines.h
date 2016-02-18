@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef _DEFINES_H
-#define _DEFINES_H
+#pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
@@ -436,5 +434,3 @@ enum ThrowModeState {
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
 #define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
-
-#endif // _DEFINES_H
