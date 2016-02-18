@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Param: FILT
     // @DisplayName: PID Input filter frequency in Hz
     // @Description: Input filter frequency in Hz
-    // @Unit: Hz
+    // @Units: Hz
     AP_GROUPINFO("FILT", 6, AC_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
 
     AP_GROUPEND
