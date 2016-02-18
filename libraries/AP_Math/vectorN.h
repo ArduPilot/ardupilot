@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef VECTORN_H
-#define VECTORN_H
+#pragma once
 
 #include <math.h>
 #include <string.h>
@@ -140,5 +138,3 @@ public:
 private:
     T _v[N];
 };
-
-#endif // VECTORN_H
