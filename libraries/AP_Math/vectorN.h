@@ -19,7 +19,7 @@
 
 #include <math.h>
 #include <string.h>
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif
 
@@ -33,14 +33,14 @@ public:
     }
 
     inline T & operator[](uint8_t i) {
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
         assert(i >= 0 && i < N);
 #endif
         return _v[i];
     }
 
     inline const T & operator[](uint8_t i) const {
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
         assert(i >= 0 && i < N);
 #endif
         return _v[i];

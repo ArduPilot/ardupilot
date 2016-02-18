@@ -116,10 +116,8 @@ enum log_messages {
     LOG_RC_MSG,
     LOG_SONAR_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_STATUS_MSG 
-#if OPTFLOW == ENABLED
-    ,LOG_OPTFLOW_MSG
-#endif
+    LOG_STATUS_MSG,
+    LOG_OPTFLOW_MSG
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

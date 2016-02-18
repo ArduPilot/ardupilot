@@ -72,6 +72,7 @@ PROJECT_ENV.CXXFLAGS += [
     '-Werror=uninitialized',
     '-Werror=init-self',
     '-Wfatal-errors',
+    '-Wundef',
 ]
 
 PROJECT_ENV.LINKFLAGS += [

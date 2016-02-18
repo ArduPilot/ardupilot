@@ -3,6 +3,15 @@
 #ifndef AP_MATH_H
 #define AP_MATH_H
 
+// MATH_CHECK_INDEXES modifies some objects (e.g. SoloGimbalEKF) to
+// include more debug information.  It is also used by some functions
+// to add extra code for debugging purposes.  If you wish to activate
+// this, do it here or as part of the top-level Makefile -
+// e.g. Tools/Replay/Makefile
+#ifndef MATH_CHECK_INDEXES
+#define MATH_CHECK_INDEXES 0
+#endif
+
 // Assorted useful math operations for ArduPilot(Mega)
 
 #include <AP_Common/AP_Common.h>
