@@ -83,21 +83,6 @@ void AP_MotorsMatrix::enable()
     }
 }
 
-// output_min - sends minimum values out to the motors
-void AP_MotorsMatrix::output_min()
-{
-    int8_t i;
-
-    // send output to each motor
-    hal.rcout->cork();
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            rc_write(i, _throttle_radio_min);
-        }
-    }
-    hal.rcout->push();
-}
-
 void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;

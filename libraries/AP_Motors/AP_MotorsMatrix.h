@@ -39,9 +39,6 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     void                output_test(uint8_t motor_seq, int16_t pwm);
 
-    // output_min - sends minimum values out to the motors
-    void                output_min();
-
     // output_to_motors - sends minimum values out to the motors
     void                output_to_motors();
 
