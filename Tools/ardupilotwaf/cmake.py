@@ -47,6 +47,23 @@ Example::
         # cmake build for target 'baz' (syntactic sugar)
         foo.cmake_build('baz')
 
+The keys of cmake_vars are sorted so that unnecessary execution is avoided. If
+you want to ensure an order in which the variables are passed to cmake, use an
+OrderedDict. Example::
+
+    def build(bld):
+        foo_vars = OrderedDict()
+        foo_vars['CMAKE_BUILD_TYPE'] = 'Release'
+        foo_vars['FOO'] = 'value_of_foo'
+        foo_vars['BAR'] = 'value_of_bar'
+
+        # cmake configuration
+        foo = bld(
+            features='cmake_configure',
+            cmake_vars=foo_vars,
+            ...
+        )
+
 There may be cases when you want to stablish dependency between other tasks and
 the external build system's products (headers and libraries, for example). In
 that case, you can specify the specific files in the option 'target' of your
@@ -78,6 +95,8 @@ other tools rather than by wscripts. Example::
 
 from waflib import Node, Task, Utils
 from waflib.TaskGen import feature, taskgen_method
+
+from collections import OrderedDict
 
 class cmake_configure_task(Task.Task):
     run_str = '${CMAKE} ${CMAKE_SRC_DIR} ${CMAKE_VARS} ${CMAKE_GENERATOR_OPTION}'
@@ -134,7 +153,11 @@ def process_cmake_configure(self):
     tsk = self.cmake_config_task = self.create_task('cmake_configure')
     tsk.cwd = self.cmake_bld.abspath()
     tsk.env.CMAKE_SRC_DIR = self.cmake_src.abspath()
-    tsk.env.CMAKE_VARS = ["-D%s='%s'" % item for item in self.cmake_vars.items()]
+
+    keys = list(self.cmake_vars.keys())
+    if not isinstance(self.cmake_vars, OrderedDict):
+        keys.sort()
+    tsk.env.CMAKE_VARS = ["-D%s='%s'" % (k, self.cmake_vars[k]) for k in keys]
 
 @feature('cmake_build')
 def process_cmake_build(self):
