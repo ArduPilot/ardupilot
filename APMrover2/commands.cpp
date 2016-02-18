@@ -68,6 +68,7 @@ void Rover::init_home()
     ahrs.set_home(gps.location());
 	home_is_set = true;
 	Log_Write_Home_And_Origin();
+    GCS_MAVLINK::send_home_all(gps.location());
 
 	// Save Home to EEPROM
 	mission.write_home_to_storage();

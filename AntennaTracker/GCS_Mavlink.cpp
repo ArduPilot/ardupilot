@@ -667,6 +667,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 }
             break;
 
+            case MAV_CMD_GET_HOME_POSITION:
+                send_home(tracker.ahrs.get_home());
+                break;
+
             case MAV_CMD_DO_SET_MODE:
                 switch ((uint16_t)packet.param1) {
                     case MAV_MODE_MANUAL_ARMED:

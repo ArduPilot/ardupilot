@@ -43,9 +43,30 @@ public:
     virtual void     enable_ch(uint8_t ch) = 0;
     virtual void     disable_ch(uint8_t ch) = 0;
 
-    /* Output, either single channel or bulk array of channels */
+    /*
+     * Output a single channel, possibly grouped with previous writes if
+     * cork() has been called before.
+     */
     virtual void     write(uint8_t ch, uint16_t period_us) = 0;
-    virtual void     write(uint8_t ch, uint16_t* period_us, uint8_t len) = 0;
+
+    /*
+     * Delay subsequent calls to write() going to the underlying hardware in
+     * order to group related writes together. When all the needed writes are
+     * done, call push() to commit the changes.
+     *
+     * This method is optional: if the subclass doesn't implement it all calls
+     * to write() are synchronous.
+     */
+    virtual void     cork() { }
+
+    /*
+     * Push pending changes to the underlying hardware. All changes between a
+     * call to cork() and push() are pushed together in a single transaction.
+     *
+     * This method is optional: if the subclass doesn't implement it all calls
+     * to write() are synchronous.
+     */
+    virtual void     push() { }
 
     /* Read back current output state, as either single channel or
      * array of channels. */

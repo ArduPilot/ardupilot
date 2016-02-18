@@ -1193,6 +1193,10 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
 #endif
+
+    // @Group: RPM
+    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
+    GOBJECT(rpm_sensor, "RPM", AP_RPM),
     
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp

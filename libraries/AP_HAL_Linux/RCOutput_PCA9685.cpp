@@ -181,32 +181,62 @@ void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
         return;
     }
 
+    _pulses_buffer[ch] = period_us;
+    _pending_write_mask |= (1U << ch);
+
+    if (!_corking)
+        push();
+}
+
+void LinuxRCOutput_PCA9685::cork()
+{
+    _corking = true;
+}
+
+void LinuxRCOutput_PCA9685::push()
+{
+    _corking = false;
+
+    if (_pending_write_mask == 0)
+        return;
+
+    // Calculate the number of channels for this transfer.
+    uint8_t max_ch = (sizeof(unsigned) * 8) - __builtin_clz(_pending_write_mask);
+    uint8_t min_ch = __builtin_ctz(_pending_write_mask);
+
+    /*
+     * scratch buffer size is always for all the channels, but we write only
+     * from min_ch to max_ch
+     */
+    uint8_t data[PWM_CHAN_COUNT * 4] = { };
+
+    for (unsigned ch = min_ch; ch < max_ch; ch++) {
+        uint16_t period_us = _pulses_buffer[ch];
+        uint16_t length = 0;
+
+        if (period_us)
+            length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
+
+        uint8_t *d = &data[ch * 4];
+        *d++ = 0;
+        *d++ = 0;
+        *d++ = length & 0xFF;
+        *d++ = length >> 8;
+    }
+
     if (!_i2c_sem->take_nonblocking()) {
+        hal.console->printf("RCOutput: Unable to get bus semaphore");
         return;
     }
 
-    uint16_t length;
-
-    if (period_us == 0)
-        length = 0;
-    else
-        length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
-
-    uint8_t data[2] = {length & 0xFF, length >> 8};
-    uint8_t status = hal.i2c->writeRegisters(_addr,
-                                             PCA9685_RA_LED0_OFF_L + 4 * (ch + _channel_offset),
-                                             2,
-                                             data);
-
-    _pulses_buffer[ch] = period_us;
+    hal.i2c->writeRegisters(_addr,
+                            PCA9685_RA_LED0_ON_L + 4 * (_channel_offset + min_ch),
+                            (max_ch - min_ch) * 4,
+                            &data[min_ch * 4]);
 
     _i2c_sem->give();
-}
 
-void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++)
-        write(ch + i, period_us[i]);
+    _pending_write_mask = 0;
 }
 
 uint16_t LinuxRCOutput_PCA9685::read(uint8_t ch)

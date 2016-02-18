@@ -399,8 +399,8 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
         counter++;
         if (counter>20) {
             if (compass.healthy()) {
-                const Vector3f mag_ofs = compass.get_offsets_milligauss();
-                const Vector3f mag = compass.get_field_milligauss();
+                const Vector3f mag_ofs = compass.get_offsets();
+                const Vector3f mag = compass.get_field();
                 cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
                                     (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (double)mag.x, (double)mag.y, (double)mag.z,

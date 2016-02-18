@@ -493,7 +493,7 @@ void Copter::one_hz_loop()
 #endif
     }
 
-    // update assigned functions and enable auxiliar servos
+    // update assigned functions and enable auxiliary servos
     RC_Channel_aux::enable_aux_servos();
 
     check_usb_mux();

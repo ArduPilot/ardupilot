@@ -341,8 +341,6 @@ AP_Compass_LSM303D::init()
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
 
-    set_milligauss_ratio(_compass_instance, 1.0f);
-
     _spi_sem->give();
     hal.scheduler->resume_timer_procs();
     _initialised = true;

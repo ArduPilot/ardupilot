@@ -32,6 +32,16 @@
 #include <systemlib/perf_counter.h>
 #endif
 
+// GPS pre-flight check bit locations
+#define MASK_GPS_NSATS      (1<<0)
+#define MASK_GPS_HDOP       (1<<1)
+#define MASK_GPS_SPD_ERR    (1<<2)
+#define MASK_GPS_POS_ERR    (1<<3)
+#define MASK_GPS_YAW_ERR 	(1<<4)
+#define MASK_GPS_POS_DRIFT  (1<<5)
+#define MASK_GPS_VERT_SPD   (1<<6)
+#define MASK_GPS_HORIZ_SPD  (1<<7)
+
 class AP_AHRS;
 
 class NavEKF2_core
@@ -194,7 +204,16 @@ public:
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
-    return filter status flags
+    return filter gps quality check status
+    */
+    void  getFilterGpsStatus(nav_gps_status &status) const;
+
+    /*
+    Return a filter function status that indicates:
+        Which outputs are valid
+        If the filter has detected takeoff
+        If the filter has activated the mode that mitigates against ground effect static pressure errors
+        If GPS data is being used
     */
     void  getFilterStatus(nav_filter_status &status) const;
 
@@ -207,9 +226,8 @@ public:
     bool getHeightControlLimit(float &height) const;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns true if a reset yaw angle has been updated and not queried
-    // this function should not have more than one client
-    bool getLastYawResetAngle(float &yawAng);
+    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+    uint32_t getLastYawResetAngle(float &yawAng);
 
 private:
     // Reference to the global EKF frontend for parameters
@@ -427,9 +445,6 @@ private:
     // calculate the NED earth spin vector in rad/sec
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 
-    // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
-    void SetFlightAndFusionModes();
-
     // initialise the covariance matrix
     void CovarianceInit();
 
@@ -514,8 +529,25 @@ private:
     // fuse optical flow measurements into the main filter
     void FuseOptFlow();
 
-    // Check arm status and perform required checks and mode changes
-    void performArmingChecks();
+    // Control filter mode changes
+    void controlFilterModes();
+
+    // Determine if we are flying or on the ground
+    void detectFlight();
+
+    // Set inertial navigaton aiding mode
+    void setAidingMode();
+
+    // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
+    // avoid unnecessary operations
+    void setWindMagStateLearningMode();
+
+    // Check the alignmnent status of the tilt and yaw attitude
+    // Used during initial bootstrap alignment of the filter
+    void checkAttitudeAlignmentStatus();
+
+    // Control reset of yaw and magnetic field states
+    void controlMagYawReset();
 
     // Set the NED origin to be used until the next filter reset
     void setOrigin();
@@ -528,6 +560,9 @@ private:
 
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
+
+    // update inflight calculaton that determines if GPS data is good enough for reliable navigation
+    void calcGpsGoodForFlight(void);
 
     // Read the range finder and take new measurements if available
     // Apply a median filter to range finder data
@@ -595,8 +630,10 @@ private:
     ftype dtIMUavg;                 // expected time between IMU measurements (sec)
     ftype dt;                       // time lapsed since the last covariance prediction (sec)
     ftype hgtRate;                  // state for rate of change of height filter
-    bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
-    bool prevOnGround;              // value of onGround from previous update
+    bool onGround;                  // true when the flight vehicle is definitely on the ground
+    bool prevOnGround;              // value of onGround from previous frame - used to detect transition
+    bool inFlight;                  // true when the vehicle is definitely flying
+    bool prevInFlight;              // value inFlight from previous frame - used to detect transition
     bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
     uint32_t airborneDetectTime_ms; // last time flight movement was detected
     Vector6 innovVelPos;            // innovation output for a group of measurements
@@ -613,7 +650,6 @@ private:
     bool magFuseRequired;           // boolean set to true when magnetometer fusion will be perfomred in the next time step
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
     uint32_t prevBetaStep_ms;       // time stamp of last synthetic sideslip fusion step
-    bool constPosMode;              // true when fusing a constant position to maintain attitude reference for planned operation without GPS or optical flow data
     uint32_t lastMagUpdate_ms;      // last time compass was updated
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
@@ -624,7 +660,6 @@ private:
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
-    uint32_t lastPosFailTime_ms;    // time stamp when GPS position measurement last failed innovation consistency check (msec)
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime_ms;    // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint32_t lastTimeGpsReceived_ms;// last time we recieved GPS data
@@ -649,26 +684,24 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
-    bool firstArmComplete;          // true when first transition out of static mode has been performed after start up
     bool firstMagYawInit;           // true when the first post takeoff initialisation of earth field and yaw angle has been performed
     bool secondMagYawInit;          // true when the second post takeoff initialisation of earth field and yaw angle has been performed
     Vector2f gpsVelGlitchOffset;    // Offset applied to the GPS velocity when the gltch radius is being  decayed back to zero
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
-    bool filterArmed;               // true when the vehicle is disarmed
-    bool prevFilterArmed;           // vehicleArmed from previous frame
+    bool isAiding;                  // true when the filter is fusing position, velocity or flow measurements
+    bool prevIsAiding;              // isAiding from previous frame
     struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the UBlox GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
     Vector3f lastMagOffsets;        // magnetometer offsets returned by compass object from previous update
-    bool gpsAidingBad;              // true when GPS position measurements have been consistently rejected by the filter
     uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
-    float posDownAtArming;          // flight vehicle vertical position at arming used as a reference point
+    float posDownAtTakeoff;         // flight vehicle vertical position at arming used as a reference point
     bool highYawRate;               // true when the vehicle is doing rapid yaw rotation where gyro scale factor errors could cause loss of heading reference
     float yawRateFilt;              // filtered yaw rate used to determine when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     bool useGpsVertVel;             // true if GPS vertical velocity should be used
     float yawResetAngle;            // Change in yaw angle due to last in-flight yaw reset in radians. A positive value means the yaw angle has increased.
-    bool yawResetAngleWaiting;      // true when the yaw reset angle has been updated and has not been retrieved via the getLastYawResetAngle() function
+    uint32_t lastYawReset_ms;       // System time at which the last yaw reset occurred. Returned by getLastYawResetAngle
     Vector3f tiltErrVec;            // Vector of most recent attitude error correction from Vel,Pos fusion
     float tiltErrFilt;              // Filtered tilt error metric
     bool tiltAlignComplete;         // true when tilt alignment is complete
@@ -700,6 +733,31 @@ private:
     float innovYaw;                 // compass yaw angle innovation (rad)
     uint32_t timeTasReceived_ms;    // tie last TAS data was received (msec)
     bool gpsQualGood;               // true when the GPS quality can be used to initialise the navigation system
+    uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
+    bool consistentMagData;         // true when the magnetometers are passing consistency checks
+    bool motorsArmed;               // true when the motors have been armed
+    bool prevMotorsArmed;           // value of motorsArmed from previous frame
+
+    // variables used by the pre-initialisation GPS checks
+    struct Location gpsloc_prev;    // LLH location of previous GPS measurement
+    uint32_t lastPreAlignGpsCheckTime_ms;   // last time in msec the GPS quality was checked during pre alignment checks
+    float gpsDriftNE;               // amount of drift detected in the GPS position during pre-flight GPs checks
+    float gpsVertVelFilt;           // amount of filterred vertical GPS velocity detected durng pre-flight GPS checks
+    float gpsHorizVelFilt;          // amount of filtered horizontal GPS velocity detected during pre-flight GPS checks
+
+    // variable used by the in-flight GPS quality check
+    bool gpsSpdAccPass;             // true when reported GPS speed accuracy passes in-flight checks
+    bool ekfInnovationsPass;        // true when GPS innovations pass in-flight checks
+    float sAccFilterState1;         // state variable for LPF applid to reported GPS speed accuracy
+    float sAccFilterState2;         // state variable for peak hold filter applied to reported GPS speed
+    uint32_t lastGpsCheckTime_ms;   // last time in msec the GPS quality was checked
+    uint32_t lastInnovPassTime_ms;  // last time in msec the GPS innovations passed
+    uint32_t lastInnovFailTime_ms;  // last time in msec the GPS innovations failed
+    bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
+
+    // States used for unwrapping of compass yaw error
+    float innovationIncrement;
+    float lastInnovation;
 
     // variables added for optical flow fusion
     of_elements storedOF[OBS_BUFFER_LENGTH];    // OF data buffer
@@ -738,8 +796,6 @@ private:
     float auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2f flowGyroBias;          // bias error of optical flow sensor gyro output
     bool newDataRng;                // true when new valid range finder data has arrived.
-    bool constVelMode;              // true when fusing a constant velocity to maintain attitude reference when either optical flow or GPS measurements are lost after arming
-    bool lastConstVelMode;          // last value of holdVelocity
     Vector2f heldVelNE;             // velocity held when no aiding is available
     enum AidingMode {AID_ABSOLUTE=0,    // GPS aiding is being used (optical flow may also be used) so position estimates are absolute.
                      AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
@@ -760,7 +816,7 @@ private:
 
     // Movement detector
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
-    float rangeAtArming;            // range finder measurement when armed
+    float rngAtStartOfFlight;       // range finder measurement at start of flight
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
     // baro ground effect
@@ -770,6 +826,7 @@ private:
     uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
+    // flags indicating severw numerical errors in innovation variance calculation for different fusion operations
     struct {
         bool bad_xmag:1;
         bool bad_ymag:1;
@@ -777,6 +834,20 @@ private:
         bool bad_airspeed:1;
         bool bad_sideslip:1;
     } faultStatus;
+
+    // flags indicating which GPS quality checks are failing
+    struct {
+        bool bad_sAcc:1;
+        bool bad_hAcc:1;
+        bool bad_yaw:1;
+        bool bad_sats:1;
+        bool bad_VZ:1;
+        bool bad_horiz_drift:1;
+        bool bad_hdop:1;
+        bool bad_vert_vel:1;
+        bool bad_fix:1;
+        bool bad_horiz_vel:1;
+    } gpsCheckStatus;
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
@@ -800,6 +871,9 @@ private:
     } mag_state;
 
 
+    // string representing last reason for prearm failure
+    char prearm_fail_string[40];
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
     perf_counter_t  _perf_UpdateFilter;
@@ -808,7 +882,7 @@ private:
     perf_counter_t  _perf_FuseMagnetometer;
     perf_counter_t  _perf_FuseAirspeed;
     perf_counter_t  _perf_FuseSideslip;
-    perf_counter_t  _perf_OpticalFlowEKF;
+    perf_counter_t  _perf_TerrainOffset;
     perf_counter_t  _perf_FuseOptFlow;
 #endif
 

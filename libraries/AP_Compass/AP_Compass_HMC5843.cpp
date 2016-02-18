@@ -200,6 +200,7 @@ void AP_Compass_HMC5843::accumulate(void)
 	  // accumulate more than 8 before a read
        // get raw_field - sensor frame, uncorrected
        Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
+       raw_field *= _gain_multiple;
 
        // rotate raw_field from sensor frame to body frame
        rotate_field(raw_field, _compass_instance);
@@ -269,7 +270,7 @@ AP_Compass_HMC5843::init()
     uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
     uint16_t expected_yz = 715;
-    _gain_multiple = 1.0;
+    _gain_multiple = (1.0f / 1300) * 1000;
 
     _bus_sem = _bus->get_semaphore();
     hal.scheduler->suspend_timer_procs();
@@ -298,7 +299,7 @@ AP_Compass_HMC5843::init()
          */
         expected_x = 766;
         expected_yz  = 713;
-        _gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
+        _gain_multiple = (1.0f / 1090) * 1000;
     }
 
     if (!_calibrate(calibration_gain, expected_x, expected_yz)) {
@@ -330,8 +331,6 @@ AP_Compass_HMC5843::init()
 
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _product_id);
-
-    set_milligauss_ratio(_compass_instance, 1.0f / _gain_multiple);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
     set_external(_compass_instance, true);
@@ -417,20 +416,9 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
     }
 
     if (good_count >= 5) {
-        /*
-          The use of _gain_multiple below is incorrect, as the gain
-          difference between 2.5Ga mode and 1Ga mode is already taken
-          into account by the expected_x and expected_yz values.  We
-          are not going to fix it however as it would mean all
-          APM1/APM2 users redoing their compass calibration. The
-          impact is that the values we report on APM1/APM2 are lower
-          than they should be (by a multiple of about 0.6). This
-          doesn't have any impact other than the learned compass
-          offsets
-         */
-        _scaling[0] = _scaling[0] * _gain_multiple / good_count;
-        _scaling[1] = _scaling[1] * _gain_multiple / good_count;
-        _scaling[2] = _scaling[2] * _gain_multiple / good_count;
+        _scaling[0] = _scaling[0] / good_count;
+        _scaling[1] = _scaling[1] / good_count;
+        _scaling[2] = _scaling[2] / good_count;
         success = true;
     } else {
         /* best guess */
@@ -526,7 +514,7 @@ AP_HMC5843_SerialBus_MPU6000::AP_HMC5843_SerialBus_MPU6000(AP_InertialSensor &in
 {
     // Only initialize members. Fails are handled by configure or while
     // getting the semaphore
-    _bus = ins.get_auxiliar_bus(HAL_INS_MPU60XX_SPI);
+    _bus = ins.get_auxiliary_bus(HAL_INS_MPU60XX_SPI);
     if (!_bus)
         return;
     _slave = _bus->request_next_slave(addr);

@@ -70,6 +70,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(one_second_loop,        50,   1000),
     SCHED_TASK(check_long_failsafe,    15,   1000),
     SCHED_TASK(read_receiver_rssi,      5,   1000),
+    SCHED_TASK(rpm_update,              5,    200),
     SCHED_TASK(airspeed_ratio_update,  50,   1000),
     SCHED_TASK(update_mount,            1,   1500),
     SCHED_TASK(log_perf_info,         500,   1000),

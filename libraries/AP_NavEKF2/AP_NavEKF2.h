@@ -201,6 +201,11 @@ public:
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
+    return filter gps quality check status
+    */
+    void  getFilterGpsStatus(nav_gps_status &faults) const;
+
+    /*
     return filter status flags
     */
     void  getFilterStatus(nav_filter_status &status) const;
@@ -214,9 +219,8 @@ public:
     bool getHeightControlLimit(float &height) const;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns true if a reset yaw angle has been updated and not queried
-    // this function should not have more than one client
-    bool getLastYawResetAngle(float &yawAng);
+    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+    uint32_t getLastYawResetAngle(float &yawAng);
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set(enable); }
@@ -260,6 +264,7 @@ private:
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
     AP_Float _gyroScaleProcessNoise;// gyro scale factor state process noise : 1/s
     AP_Float _rngNoise;             // Range finder noise : m
+    AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -276,7 +281,6 @@ private:
     const uint32_t magFailTimeLimit_ms; // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     const float magVarRateScale;        // scale factor applied to magnetometer variance due to angular rate
     const float gyroBiasNoiseScaler;    // scale factor applied to gyro bias state process noise when on ground
-    const float accelBiasNoiseScaler;   // scale factor applied to accel bias state process noise when on ground
     const uint16_t hgtAvg_ms;           // average number of msec between height measurements
     const uint16_t betaAvg_ms;          // average number of msec between synthetic sideslip measurements
     const float covTimeStepMax;         // maximum time (sec) between covariance prediction updates

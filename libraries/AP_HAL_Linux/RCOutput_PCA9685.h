@@ -20,7 +20,8 @@ class Linux::LinuxRCOutput_PCA9685 : public AP_HAL::RCOutput {
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);
     void     write(uint8_t ch, uint16_t period_us);
-    void     write(uint8_t ch, uint16_t* period_us, uint8_t len);
+    void     cork() override;
+    void     push() override;
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
 
@@ -36,8 +37,10 @@ private:
 
     uint8_t _addr;
     bool _external_clock;
+    bool _corking = false;
     uint8_t _channel_offset;
     int16_t _oe_pin_number;
+    uint16_t _pending_write_mask;
 };
 
 #endif // __AP_HAL_LINUX_RCOUTPUT_PCA9685_H__

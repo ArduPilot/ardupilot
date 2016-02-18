@@ -326,6 +326,7 @@ void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
         ahrs.set_home(cmd.content.location);
 		home_is_set = true;
 		Log_Write_Home_And_Origin();
+        GCS_MAVLINK::send_home_all(cmd.content.location);
 	}
 }
 

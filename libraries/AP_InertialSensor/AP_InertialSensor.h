@@ -236,7 +236,7 @@ public:
     void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
     void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
 
-    AuxiliaryBus *get_auxiliar_bus(int16_t backend_id);
+    AuxiliaryBus *get_auxiliary_bus(int16_t backend_id);
 
 private:
 

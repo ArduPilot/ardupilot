@@ -617,6 +617,10 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
     pos = mav.location()
     dist_to_home = get_distance(HOME, pos)
     while dist_to_home > 5:
+        if get_sim_time(mav) > (tstart + timeout):
+            print("GPS Glitch testing failed - exceeded timeout %u seconds" % timeout)
+            ret = False
+            break
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         dist_to_home = get_distance(HOME, pos)

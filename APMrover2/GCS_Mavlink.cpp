@@ -575,7 +575,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_EKF_STATUS_REPORT:
 #if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        rover.ahrs.get_NavEKF().send_status_report(chan);
+        rover.ahrs.send_ekf_status_report(chan);
 #endif
         break;
 
@@ -1075,6 +1075,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_GET_HOME_POSITION:
+            send_home(rover.ahrs.get_home());
+            break;
+
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
             if (is_equal(packet.param1,1.0f)) {
                 rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
@@ -1304,7 +1308,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
     case MAVLINK_MSG_ID_LOG_ERASE:
         rover.in_log_download = true;
-        // fallthru
+        /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         if (!rover.in_mavlink_delay) {
             handle_log_message(msg, rover.DataFlash);

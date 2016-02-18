@@ -11,11 +11,38 @@
 extern const AP_HAL::HAL& hal;
 
 #include "Util.h"
+#include "Heat_Pwm.h"
+
 using namespace Linux;
 
 
 static int state;
 ToneAlarm LinuxUtil::_toneAlarm;
+
+void LinuxUtil::init(int argc, char * const *argv) {
+    saved_argc = argc;
+    saved_argv = argv;
+
+#ifdef HAL_UTILS_HEAT
+#if HAL_UTILS_HEAT == HAL_LINUX_HEAT_PWM
+    _heat = new Linux::LinuxHeatPwm(HAL_LINUX_HEAT_PWM_SYSFS_DIR,
+                            HAL_LINUX_HEAT_KP,
+                            HAL_LINUX_HEAT_KI,
+                            HAL_LINUX_HEAT_PERIOD_NS,
+                            HAL_LINUX_HEAT_TARGET_TEMP);
+#else
+    #error Unrecognized Heat
+#endif // #if
+#else
+    _heat = new Linux::LinuxHeat();
+#endif // #ifdef
+}
+
+void LinuxUtil::set_imu_temp(float current)
+{
+    _heat->set_imu_temp(current);
+}
+
 /**
    return commandline arguments, if available
 */

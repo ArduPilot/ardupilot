@@ -71,6 +71,12 @@ void Copter::check_dynamic_flight(void)
         moving = (motors.get_throttle() > 800.0f || ahrs.pitch_sensor < -1500);
     }
 
+    if (!moving && sonar_enabled && sonar.status() == RangeFinder::RangeFinder_Good) {
+        // when we are more than 2m from the ground with good
+        // rangefinder lock consider it to be dynamic flight
+        moving = (sonar.distance_cm() > 200);
+    }
+    
     if (moving) {
         // if moving for 2 seconds, set the dynamic flight flag
         if (!heli_flags.dynamic_flight) {

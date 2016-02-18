@@ -17,14 +17,60 @@
 // copter defaults
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     0.5f
-#define ALT_NOISE_DEFAULT       1.0f
+#define POSNE_NOISE_DEFAULT     1.0f
+#define ALT_NOISE_DEFAULT       1.5f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.01f
+#define GYRO_PNOISE_DEFAULT     0.005f
 #define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    1E-05f
-#define ABIAS_PNOISE_DEFAULT    0.00005f
-#define MAG_PNOISE_DEFAULT     0.0003f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define MAG_PNOISE_DEFAULT      2.0E-03f
+#define VEL_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        5
+#define HGT_GATE_DEFAULT        5
+#define MAG_GATE_DEFAULT        3
+#define MAG_CAL_DEFAULT         3
+#define GLITCH_RADIUS_DEFAULT   25
+#define FLOW_MEAS_DELAY         10
+#define FLOW_NOISE_DEFAULT      0.25f
+#define FLOW_GATE_DEFAULT       3
+#define GSCALE_PNOISE_DEFAULT   1.5E-03f
+
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+// rover defaults
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
+#define POSNE_NOISE_DEFAULT     1.0f
+#define ALT_NOISE_DEFAULT       1.5f
+#define MAG_NOISE_DEFAULT       0.05f
+#define GYRO_PNOISE_DEFAULT     0.005f
+#define ACC_PNOISE_DEFAULT      0.25f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define MAG_PNOISE_DEFAULT      2.0E-03f
+#define VEL_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        5
+#define HGT_GATE_DEFAULT        5
+#define MAG_GATE_DEFAULT        3
+#define MAG_CAL_DEFAULT         3
+#define GLITCH_RADIUS_DEFAULT   25
+#define FLOW_MEAS_DELAY         10
+#define FLOW_NOISE_DEFAULT      0.25f
+#define FLOW_GATE_DEFAULT       3
+#define GSCALE_PNOISE_DEFAULT   1.5E-03f
+
+#else
+// generic defaults (and for plane)
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
+#define POSNE_NOISE_DEFAULT     1.0f
+#define ALT_NOISE_DEFAULT       1.5f
+#define MAG_NOISE_DEFAULT       0.05f
+#define GYRO_PNOISE_DEFAULT     0.005f
+#define ACC_PNOISE_DEFAULT      0.25f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define MAG_PNOISE_DEFAULT      2.0E-03f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        10
@@ -34,50 +80,7 @@
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
-
-#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
-// rover defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     0.5f
-#define ALT_NOISE_DEFAULT       1.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.01f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    8E-06f
-#define ABIAS_PNOISE_DEFAULT    0.00005f
-#define MAG_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        5
-#define POS_GATE_DEFAULT        5
-#define HGT_GATE_DEFAULT        10
-#define MAG_GATE_DEFAULT        3
-#define MAG_CAL_DEFAULT         2
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         25
-#define FLOW_NOISE_DEFAULT      0.15f
-#define FLOW_GATE_DEFAULT       5
-
-#else
-// generic defaults (and for plane)
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     0.5f
-#define ALT_NOISE_DEFAULT       0.5f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.015f
-#define ACC_PNOISE_DEFAULT      0.5f
-#define GBIAS_PNOISE_DEFAULT    8E-06f
-#define ABIAS_PNOISE_DEFAULT    0.00005f
-#define MAG_PNOISE_DEFAULT     0.0003f
-#define VEL_GATE_DEFAULT        6
-#define POS_GATE_DEFAULT        30
-#define HGT_GATE_DEFAULT        20
-#define MAG_GATE_DEFAULT        3
-#define MAG_CAL_DEFAULT         0
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         25
-#define FLOW_NOISE_DEFAULT      0.3f
-#define FLOW_GATE_DEFAULT       3
+#define GSCALE_PNOISE_DEFAULT   1.5E-03f
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -327,7 +330,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.0000001 0.00001
     // @User: Advanced
     // @Units: 1/s
-    AP_GROUPINFO("GSCL_PNOISE", 27, NavEKF2, _gyroScaleProcessNoise, 1e-6f),
+    AP_GROUPINFO("GSCL_PNOISE", 27, NavEKF2, _gyroScaleProcessNoise, GSCALE_PNOISE_DEFAULT),
 
     // @Param: ABIAS_PNOISE
     // @DisplayName: Accelerometer bias process noise (m/s^2)
@@ -361,6 +364,12 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("WIND_PSCALE", 31, NavEKF2, _wndVarHgtRateScale, 0.5f),
 
+    // @Param: GPS_CHECK
+    // @DisplayName: GPS preflight check
+    // @Description: 1 byte bitmap of GPS preflight checks to perform. Set to 0 to bypass all checks. Set to 255 perform all checks. Set to 3 to check just the number of satellites and HDoP. Set to 31 for the most rigorous checks that will still allow checks to pass when the copter is moving, eg launch from a boat.
+    // @Bitmask: 0:NSats,1:HDoP,2:speed error,3:horiz pos error,4:yaw error,5:pos drift,6:vert speed,7:horiz speed
+    // @User: Advanced
+    AP_GROUPINFO("GPS_CHECK",    32, NavEKF2, _gpsCheck, 31),
     AP_GROUPEND
 };
 
@@ -382,7 +391,6 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     magFailTimeLimit_ms(10000),     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     magVarRateScale(0.05f),         // scale factor applied to magnetometer variance due to angular rate
     gyroBiasNoiseScaler(2.0f),      // scale factor applied to imu gyro bias learning before the vehicle is armed
-    accelBiasNoiseScaler(1.0f),     // scale factor applied to imu accel bias learning before the vehicle is armed
     hgtAvg_ms(100),                 // average number of msec between height measurements
     betaAvg_ms(100),                // average number of msec between synthetic sideslip measurements
     covTimeStepMax(0.07f),          // maximum time (sec) between covariance prediction updates
@@ -751,6 +759,16 @@ void NavEKF2::getFilterStatus(nav_filter_status &status) const
     }
 }
 
+/*
+return filter gps quality check status
+*/
+void  NavEKF2::getFilterGpsStatus(nav_gps_status &status) const
+{
+    if (core) {
+        core->getFilterGpsStatus(status);
+    }
+}
+
 // send an EKF_STATUS_REPORT message to GCS
 void NavEKF2::send_status_report(mavlink_channel_t chan)
 {
@@ -771,9 +789,8 @@ bool NavEKF2::getHeightControlLimit(float &height) const
 }
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns true if a reset yaw angle has been updated and not queried
-// this function should not have more than one client
-bool NavEKF2::getLastYawResetAngle(float &yawAng)
+// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+uint32_t NavEKF2::getLastYawResetAngle(float &yawAng)
 {
     if (!core) {
         return false;

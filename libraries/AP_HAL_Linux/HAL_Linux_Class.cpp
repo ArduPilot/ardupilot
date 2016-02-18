@@ -119,7 +119,7 @@ static Empty::EmptyRCOutput rcoutDriver;
 #endif
 
 static LinuxScheduler schedulerInstance;
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 static LinuxUtilRPI utilInstance;
 #else
 static LinuxUtil utilInstance;
@@ -227,11 +227,11 @@ void HAL_Linux::init(int argc,char* const argv[]) const
 #else
     i2c->begin();
 #endif
+    spi->init(NULL);
     rcout->init(NULL);
     rcin->init(NULL);
     uartA->begin(115200);    
     uartE->begin(115200);    
-    spi->init(NULL);
     analogin->init(NULL);
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 }

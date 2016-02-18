@@ -81,6 +81,9 @@ public:
      */
     virtual AP_HAL::Stream *get_shell_stream() { return NULL; }
 
+    /* Support for an imu heating system */
+    virtual void set_imu_temp(float current) {}
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started

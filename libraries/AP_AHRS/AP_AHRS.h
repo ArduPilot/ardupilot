@@ -400,9 +400,8 @@ public:
     };
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns true if a reset yaw angle has been updated and not queried
-    // this function should not have more than one client
-    virtual bool getLastYawResetAngle(float &yawAng) {
+    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastYawResetAngle(float &yawAng) {
         return false;
     };
 

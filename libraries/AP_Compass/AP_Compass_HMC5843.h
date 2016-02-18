@@ -31,7 +31,9 @@ private:
     bool                read_register(uint8_t address, uint8_t *value);
     bool                write_register(uint8_t address, uint8_t value);
 
-    bool                _calibrate(uint8_t calibration_gain, uint16_t expected_x, uint16_t expected_yz);
+    bool                _calibrate(uint8_t calibration_gain,
+                                   uint16_t expected_x,
+                                   uint16_t expected_yz);
     bool                _detect_version();
 
     uint32_t            _retry_time; // when unhealthy the millis() value to retry at

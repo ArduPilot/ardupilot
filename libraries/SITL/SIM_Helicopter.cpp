@@ -61,7 +61,7 @@ void Helicopter::update(const struct sitl_input &input)
 
     float rsc = (input.servos[7]-1000) / 1000.0f;
     // ignition only for gas helis
-    bool ignition_enabled = gas_heli?(input.servos[6] > 1500):true;
+    bool ignition_enabled = gas_heli?(input.servos[5] > 1500):true;
 
     float thrust = 0;
     float roll_rate = 0;

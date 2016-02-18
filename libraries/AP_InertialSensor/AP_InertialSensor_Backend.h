@@ -30,6 +30,7 @@ class AP_InertialSensor_Backend
 {
 public:
     AP_InertialSensor_Backend(AP_InertialSensor &imu);
+    AP_InertialSensor_Backend(const AP_InertialSensor_Backend &that) = delete;
 
     // we declare a virtual destructor so that drivers can
     // override with a custom destructor if need be.
@@ -63,7 +64,7 @@ public:
     /*
      * Return an AuxiliaryBus if backend has another bus it is able to export
      */
-    virtual AuxiliaryBus *get_auxiliar_bus() { return nullptr; }
+    virtual AuxiliaryBus *get_auxiliary_bus() { return nullptr; }
 
     /*
       return the product ID

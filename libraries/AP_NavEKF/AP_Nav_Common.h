@@ -35,6 +35,23 @@ union nav_filter_status {
         uint16_t takeoff            : 1; // 11 - true if filter is compensating for baro errors during takeoff
         uint16_t touchdown          : 1; // 12 - true if filter is compensating for baro errors during touchdown
         uint16_t using_gps          : 1; // 13 - true if we are using GPS position
+        uint16_t gps_glitching      : 1; // 14 - true if the the GPS is glitching
+    } flags;
+    uint16_t value;
+};
+
+union nav_gps_status {
+    struct {
+        uint16_t bad_sAcc           : 1; // 0 - true if reported gps speed accuracy is insufficient to start using GPS
+        uint16_t bad_hAcc           : 1; // 1 - true if reported gps horizontal position accuracy is insufficient to start using GPS
+        uint16_t bad_yaw            : 1; // 2 - true if EKF yaw errors are too large to start using GPS
+        uint16_t bad_sats           : 1; // 3 - true if the number of satellites is insufficient to start using GPS
+        uint16_t bad_VZ             : 1; // 4 - true if the vertical velocity is inconsistent with the inertial/baro
+        uint16_t bad_horiz_drift    : 1; // 5 - true if the GPS horizontal position is drifting (this check assumes vehicle is static)
+        uint16_t bad_hdop           : 1; // 6 - true if the reported HDoP is insufficient to start using GPS
+        uint16_t bad_vert_vel       : 1; // 7 - true if the GPS vertical speed is too large to start using GPS (this check assumes vehicle is static)
+        uint16_t bad_fix            : 1; // 8 - true if the GPS is not providing a 3D fix
+        uint16_t bad_horiz_vel      : 1; // 9 - true if the GPS horizontal speed is excessive (this check assumes the vehicle is static)
     } flags;
     uint16_t value;
 };

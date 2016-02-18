@@ -34,12 +34,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-/*
-  don't accept periods below 100us as it is probably ringing of the
-  signal. It would represent 600k RPM
- */
-#define RPM_MIN_PERIOD_US 100
-
 /* 
    open the sensor in constructor
 */
@@ -85,14 +79,19 @@ void AP_RPM_PX4_PWM::update(void)
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
         // the px4 pwm_input driver reports the period in microseconds
-        if (pwm.period > RPM_MIN_PERIOD_US) {
-            sum += (1.0e6f * 60) / pwm.period;
+        if (pwm.period == 0) {
+            continue;
+        }
+        float rpm = scaling * (1.0e6f * 60) / pwm.period;
+        float maximum = ap_rpm._maximum[state.instance];
+        if (maximum <= 0 || rpm <= maximum) {
+            sum += rpm;
             count++;
         }
     }
 
     if (count != 0) {
-        state.rate_rpm = scaling * sum / count;
+        state.rate_rpm = sum / count;
         state.last_reading_ms = hal.scheduler->millis();
     }
 }

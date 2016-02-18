@@ -1384,3 +1384,38 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
         ins.get_accel_clip_count(2));
 #endif
 }
+
+void GCS_MAVLINK::send_home(const Location &home) const
+{
+    if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_HOME_POSITION_LEN) {
+        const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+        mavlink_msg_home_position_send(
+            chan,
+            home.lat,
+            home.lng,
+            home.alt / 100,
+            0.0f, 0.0f, 0.0f,
+            q,
+            0.0f, 0.0f, 0.0f);
+    }
+}
+
+void GCS_MAVLINK::send_home_all(const Location &home)
+{
+    const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_HOME_POSITION_LEN) {
+                mavlink_msg_home_position_send(
+                    chan,
+                    home.lat,
+                    home.lng,
+                    home.alt / 100,
+                    0.0f, 0.0f, 0.0f,
+                    q,
+                    0.0f, 0.0f, 0.0f);
+            }
+        }
+    }
+}

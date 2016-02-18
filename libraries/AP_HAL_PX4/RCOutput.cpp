@@ -235,13 +235,6 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
     }
 }
 
-void PX4RCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (uint8_t i=0; i<len; i++) {
-        write(i, period_us[i]);
-    }
-}
-
 uint16_t PX4RCOutput::read(uint8_t ch) 
 {
     if (ch >= PX4_NUM_OUTPUT_CHANNELS) {

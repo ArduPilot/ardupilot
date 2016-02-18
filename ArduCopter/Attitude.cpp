@@ -53,8 +53,10 @@ float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 void Copter::check_ekf_yaw_reset()
 {
     float yaw_angle_change_rad = 0.0f;
-    if (ahrs.getLastYawResetAngle(yaw_angle_change_rad)) {
+    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
+    if (new_ekfYawReset_ms != ekfYawReset_ms) {
         attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+        ekfYawReset_ms = new_ekfYawReset_ms;
     }
 }
 

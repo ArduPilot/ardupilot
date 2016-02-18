@@ -11,11 +11,20 @@
 #endif
 
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
+#define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
 static Vector3f posvel_pos_target_cm;
 static Vector3f posvel_vel_target_cms;
 static uint32_t posvel_update_time_ms;
 static uint32_t vel_update_time_ms;
+
+struct {
+    uint32_t update_time_ms;
+    float roll_cd;
+    float pitch_cd;
+    float yaw_cd;
+    float climb_rate_cms;
+} static guided_angle_state = {0,0.0f, 0.0f, 0.0f, 0.0f};
 
 struct Guided_Limit {
     uint32_t timeout_ms;  // timeout (in seconds) from the time that guided is invoked
@@ -120,6 +129,30 @@ void Copter::guided_posvel_control_start()
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
+// initialise guided mode's angle controller
+void Copter::guided_angle_control_start()
+{
+    // set guided_mode to velocity controller
+    guided_mode = Guided_Angle;
+
+    // set vertical speed and acceleration
+    pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_accel_z(wp_nav.get_accel_z());
+
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
+
+    // initialise targets
+    guided_angle_state.update_time_ms = millis();
+    guided_angle_state.roll_cd = ahrs.roll_sensor;
+    guided_angle_state.pitch_cd = ahrs.pitch_sensor;
+    guided_angle_state.yaw_cd = ahrs.yaw_sensor;
+    guided_angle_state.climb_rate_cms = 0.0f;
+
+    // pilot always controls yaw
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+}
+
 // guided_set_destination - sets guided mode's target destination
 void Copter::guided_set_destination(const Vector3f& destination)
 {
@@ -159,6 +192,24 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
     pos_control.set_pos_target(posvel_pos_target_cm);
 }
 
+// set guided mode angle target
+void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
+{
+    // check we are in velocity control mode
+    if (guided_mode != Guided_Angle) {
+        guided_angle_control_start();
+    }
+
+    // convert quaternion to euler angles
+    q.to_euler(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd);
+    guided_angle_state.roll_cd = ToDeg(guided_angle_state.roll_cd) * 100.0f;
+    guided_angle_state.pitch_cd = ToDeg(guided_angle_state.pitch_cd) * 100.0f;
+    guided_angle_state.yaw_cd = wrap_180_cd_float(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
+
+    guided_angle_state.climb_rate_cms = climb_rate_cms;
+    guided_angle_state.update_time_ms = millis();
+}
+
 // guided_run - runs the guided controller
 // should be called at 100hz or more
 void Copter::guided_run()
@@ -184,6 +235,11 @@ void Copter::guided_run()
     case Guided_PosVel:
         // run position-velocity controller
         guided_posvel_control_run();
+        break;
+
+    case Guided_Angle:
+        // run angle controller
+        guided_angle_control_run();
         break;
     }
  }
@@ -376,6 +432,57 @@ void Copter::guided_posvel_control_run()
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.angle_ef_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true);
     }
+}
+
+// guided_angle_control_run - runs the guided angle controller
+// called from guided_run
+void Copter::guided_angle_control_run()
+{
+    // if not auto armed or motors not enabled set throttle to zero and exit immediately
+    if (!ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.set_yaw_target_to_current_heading();
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0.0f, 0.0f, 0.0f, get_smoothing_gain());
+        attitude_control.set_throttle_out(0.0f,false,g.throttle_filt);
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+        attitude_control.set_throttle_out_unstabilized(0.0f,true,g.throttle_filt);
+#endif
+        pos_control.relax_alt_hold_controllers(0.0f);
+        return;
+    }
+
+    // constrain desired lean angles
+    float roll_in = guided_angle_state.roll_cd;
+    float pitch_in = guided_angle_state.pitch_cd;
+    float total_in = pythagorous2(roll_in, pitch_in);
+    float angle_max = min(attitude_control.get_althold_lean_angle_max(), aparm.angle_max);
+    if (total_in > angle_max) {
+        float ratio = angle_max / total_in;
+        roll_in *= ratio;
+        pitch_in *= ratio;
+    }
+
+    // wrap yaw request
+    float yaw_in = wrap_180_cd_float(guided_angle_state.yaw_cd);
+
+    // constrain climb rate
+    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabs(wp_nav.get_speed_down()), wp_nav.get_speed_up());
+
+    // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
+    uint32_t tnow = millis();
+    if (tnow - guided_angle_state.update_time_ms > GUIDED_ATTITUDE_TIMEOUT_MS) {
+        roll_in = 0.0f;
+        pitch_in = 0.0f;
+        climb_rate_cms = 0.0f;
+    }
+
+    // call attitude controller
+    attitude_control.angle_ef_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
+
+    // call position controller
+    pos_control.set_alt_target_from_climb_rate(climb_rate_cms, G_Dt, false);
+    pos_control.update_z_controller();
 }
 
 // Guided Limit code

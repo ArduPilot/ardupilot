@@ -679,9 +679,8 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
 }
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns true if a reset yaw angle has been updated and not queried
-// this function should not have more than one client
-bool AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
+// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
 {
     switch (ekf_type()) {
     case 1:
@@ -708,6 +707,19 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
         return EKF2.resetHeightDatum();
     }
     return false;    
+}
+
+// send a EKF_STATUS_REPORT for current EKF
+void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
+{
+    switch (active_EKF_type()) {
+    case EKF_TYPE1:
+    default:
+        return EKF1.send_status_report(chan);
+
+    case EKF_TYPE2:
+        return EKF2.send_status_report(chan);
+    }    
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

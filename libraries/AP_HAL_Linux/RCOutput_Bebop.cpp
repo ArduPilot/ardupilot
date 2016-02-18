@@ -319,20 +319,23 @@ void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
 
     _request_period_us[ch] = period_us;
 
-    /* write command to motors only when all channels are set */
-    if (ch == (BEBOP_BLDC_MOTORS_NUM - 1)) {
-        pthread_mutex_lock(&_mutex);
-        memcpy(_period_us, _request_period_us, sizeof(_period_us));
-        pthread_cond_signal(&_cond);
-        pthread_mutex_unlock(&_mutex);
-        memset(_request_period_us, 0 ,sizeof(_request_period_us));
-    }
+    if (!_corking)
+        push();
 }
 
-void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t* period_us, uint8_t len)
+void LinuxRCOutput_Bebop::cork()
 {
-    for (int i = 0; i < len; i++)
-        write(ch + i, period_us[i]);
+    _corking = true;
+}
+
+void LinuxRCOutput_Bebop::push()
+{
+    _corking = false;
+    pthread_mutex_lock(&_mutex);
+    memcpy(_period_us, _request_period_us, sizeof(_period_us));
+    pthread_cond_signal(&_cond);
+    pthread_mutex_unlock(&_mutex);
+    memset(_request_period_us, 0 ,sizeof(_request_period_us));
 }
 
 uint16_t LinuxRCOutput_Bebop::read(uint8_t ch)

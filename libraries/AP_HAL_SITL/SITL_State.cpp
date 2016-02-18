@@ -34,9 +34,9 @@ void SITL_State::_set_param_default(const char *parm)
     float value = atof(p+1);
     *p = 0;
     enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find(parm, &var_type);
+    AP_Param *vp = AP_Param::find(pdup, &var_type);
     if (vp == NULL) {
-        printf("Unknown parameter %s\n", parm);
+        printf("Unknown parameter %s\n", pdup);
         exit(1);
     }
     if (var_type == AP_PARAM_FLOAT) {
@@ -48,10 +48,10 @@ void SITL_State::_set_param_default(const char *parm)
     } else if (var_type == AP_PARAM_INT8) {
         ((AP_Int8 *)vp)->set_and_save(value);
     } else {
-        printf("Unable to set parameter %s\n", parm);
+        printf("Unable to set parameter %s\n", pdup);
         exit(1);
     }
-    printf("Set parameter %s to %f\n", parm, value);
+    printf("Set parameter %s to %f\n", pdup, value);
     free(pdup);
 }
 

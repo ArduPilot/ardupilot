@@ -10,17 +10,15 @@
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
 #include <Filter/Filter.h>         // filter library
 
-// offsets for motors in motor_out, _motor_filtered and _motor_to_channel_map arrays
-#define AP_MOTORS_MOT_1 0
-#define AP_MOTORS_MOT_2 1
-#define AP_MOTORS_MOT_3 2
-#define AP_MOTORS_MOT_4 3
-#define AP_MOTORS_MOT_5 4
-#define AP_MOTORS_MOT_6 5
-#define AP_MOTORS_MOT_7 6
-#define AP_MOTORS_MOT_8 7
-
-#define MOTOR_TO_CHANNEL_MAP CH_1,CH_2,CH_3,CH_4,CH_5,CH_6,CH_7,CH_8
+// offsets for motors in motor_out and _motor_filtered arrays
+#define AP_MOTORS_MOT_1 0U
+#define AP_MOTORS_MOT_2 1U
+#define AP_MOTORS_MOT_3 2U
+#define AP_MOTORS_MOT_4 3U
+#define AP_MOTORS_MOT_5 4U
+#define AP_MOTORS_MOT_6 5U
+#define AP_MOTORS_MOT_7 6U
+#define AP_MOTORS_MOT_8 7U
 
 #define AP_MOTORS_MAX_NUM_MOTORS 8
 
@@ -143,9 +141,6 @@ protected:
         uint8_t frame_orientation  : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
         uint8_t interlock          : 1;    // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
     } _flags;
-
-    // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2
-    static const uint8_t _motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM;
 
     // internal variables
     float               _roll_control_input;        // desired roll control from attitude controllers, +/- 4500

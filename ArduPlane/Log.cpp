@@ -316,6 +316,7 @@ struct PACKED log_Status {
     uint8_t safety;
     bool is_crashed;
     bool is_still;
+    uint8_t stage;
 };
 
 void Plane::Log_Write_Status()
@@ -329,6 +330,7 @@ void Plane::Log_Write_Status()
         ,safety      : hal.util->safety_switch_state()
         ,is_crashed  : crash_state.is_crashed
         ,is_still    : plane.ins.is_still()
+        ,stage       : flight_stage
         };
 
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -494,7 +496,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P" },
     { LOG_STATUS_MSG, sizeof(log_Status),
-      "STAT", "QBfBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still" },
+      "STAT", "QBfBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },

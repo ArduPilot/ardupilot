@@ -1547,7 +1547,7 @@ void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa
 /*
  * Get an AuxiliaryBus on the backend identified by @backend_id
  */
-AuxiliaryBus *AP_InertialSensor::get_auxiliar_bus(int16_t backend_id)
+AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id)
 {
     _detect_backends();
 
@@ -1555,7 +1555,7 @@ AuxiliaryBus *AP_InertialSensor::get_auxiliar_bus(int16_t backend_id)
     if (backend == NULL)
         return NULL;
 
-    return backend->get_auxiliar_bus();
+    return backend->get_auxiliary_bus();
 }
 
 #if INS_VIBRATION_CHECK

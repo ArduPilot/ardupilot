@@ -119,4 +119,12 @@ public:
 private:
     void _calculate();
 };
+
+class AP_Baro_MS5637 : public AP_Baro_MS56XX
+{
+public:
+    AP_Baro_MS5637(AP_Baro &baro, AP_SerialBus *serial, bool use_timer);
+private:
+    void _calculate();
+};
 #endif //  __AP_BARO_MS5611_H__

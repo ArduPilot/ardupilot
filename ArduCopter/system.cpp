@@ -329,7 +329,7 @@ bool Copter::position_ok()
     }
 
     // check ekf position estimate
-    return ekf_position_ok();
+    return (ekf_position_ok() || optflow_position_ok());
 }
 
 // ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
