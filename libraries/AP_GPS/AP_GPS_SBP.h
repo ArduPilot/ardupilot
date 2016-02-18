@@ -20,9 +20,7 @@
 //
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
-
-#ifndef __AP_GPS_SBP_H__
-#define __AP_GPS_SBP_H__
+#pragma once
 
 #include "AP_GPS.h"
 
@@ -169,5 +167,3 @@ private:
    
 
 };
-
-#endif // __AP_GPS_SBP_H__
