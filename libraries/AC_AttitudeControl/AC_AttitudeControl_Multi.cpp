@@ -26,22 +26,24 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_RLL_IMAX
     // @DisplayName: Roll axis rate controller I gain maximum
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @Units: Percent
     // @User: Standard
 
     // @Param: RAT_RLL_D
     // @DisplayName: Roll axis rate controller D gain
     // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
-    // @Range: 0.001 0.02
+    // @Range: 0.0 0.02
     // @Increment: 0.001
     // @User: Standard
 
     // @Param: RAT_RLL_FILT
     // @DisplayName: Roll axis rate conroller input frequency in Hz
     // @Description: Roll axis rate conroller input frequency in Hz
-    // @Unit: Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Multi, AC_PID),
 
     // @Param: RAT_PIT_P
@@ -61,28 +63,30 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_PIT_IMAX
     // @DisplayName: Pitch axis rate controller I gain maximum
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @Units: Percent
     // @User: Standard
 
     // @Param: RAT_PIT_D
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.001 0.02
+    // @Range: 0.0 0.02
     // @Increment: 0.001
     // @User: Standard
 
     // @Param: RAT_PIT_FILT
     // @DisplayName: Pitch axis rate conroller input frequency in Hz
     // @Description: Pitch axis rate conroller input frequency in Hz
-    // @Unit: Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Multi, AC_PID),
 
     // @Param: RAT_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
     // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
-    // @Range: 0.150 0.50
+    // @Range: 0.10 0.50
     // @Increment: 0.005
     // @User: Standard
 
@@ -96,9 +100,9 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_YAW_IMAX
     // @DisplayName: Yaw axis rate controller I gain maximum
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @Units: Percent
     // @User: Standard
 
     // @Param: RAT_YAW_D
@@ -111,7 +115,9 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_YAW_FILT
     // @DisplayName: Yaw axis rate conroller input frequency in Hz
     // @Description: Yaw axis rate conroller input frequency in Hz
-    // @Unit: Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Multi, AC_PID),
 
     AP_GROUPEND
