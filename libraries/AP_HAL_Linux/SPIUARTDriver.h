@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_SPIUARTDRIVER_H__
-#define __AP_HAL_LINUX_SPIUARTDRIVER_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -28,5 +27,3 @@ private:
     uint8_t *_buffer;
     bool _external;
 };
-
-#endif //__AP_HAL_LINUX_SPIUARTDRIVER_H__

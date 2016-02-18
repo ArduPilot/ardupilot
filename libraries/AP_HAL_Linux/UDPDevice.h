@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_UDPDEVICE_UDP_H__
-#define __AP_HAL_LINUX_UDPDEVICE_UDP_H__
+#pragma once
 
 #include "SerialDevice.h"
 #include <AP_HAL/utility/Socket.h>
@@ -22,5 +21,3 @@ private:
     bool _bcast;
     bool _connected = false;
 };
-
-#endif

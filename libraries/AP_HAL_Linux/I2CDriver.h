@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_I2CDRIVER_H__
-#define __AP_HAL_LINUX_I2CDRIVER_H__
+#pragma once
 
 #include <vector>
 
@@ -56,5 +54,3 @@ private:
     uint8_t _addr;
     bool _print_ioctl_error = true;
 };
-
-#endif // __AP_HAL_LINUX_I2CDRIVER_H__

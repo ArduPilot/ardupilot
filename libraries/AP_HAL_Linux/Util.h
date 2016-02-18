@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_UTIL_H__
-#define __AP_HAL_LINUX_UTIL_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -84,7 +82,3 @@ private:
     const char* custom_terrain_directory = NULL;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
-
-
-
-#endif // __AP_HAL_LINUX_UTIL_H__

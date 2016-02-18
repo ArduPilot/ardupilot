@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_RCOUTPUT_RASPILOT_H__
-#define __AP_HAL_LINUX_RCOUTPUT_RASPILOT_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -25,5 +23,3 @@ private:
     uint16_t _frequency;
     uint16_t _period_us[8];
 };
-
-#endif // __AP_HAL_LINUX_RCOUTPUT_RASPILOT_H__
