@@ -18,9 +18,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef AP_NavEKF2_Tuning
-#define AP_NavEKF2_Tuning
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
@@ -341,5 +339,3 @@ private:
     const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint8_t fusionTimeStep_ms;    // The minimum time interval between covariance predictions and measurement fusions in msec
 };
-
-#endif //AP_NavEKF2
