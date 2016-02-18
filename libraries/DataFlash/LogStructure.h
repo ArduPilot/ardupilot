@@ -1,5 +1,4 @@
-#ifndef _LOGSTRUCTURE_H
-#define _LOGSTRUCTURE_H
+#pragma once
 
 /*
   unfortunately these need to be macros because of a limitation of
@@ -983,5 +982,3 @@ enum LogOriginType {
     ekf_origin = 0,
     ahrs_home = 1
 };
-
-#endif
