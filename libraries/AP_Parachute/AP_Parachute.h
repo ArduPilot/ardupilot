@@ -2,9 +2,7 @@
 
 /// @file	AP_Parachute.h
 /// @brief	Parachute release library
-
-#ifndef AP_PARACHUTE_H
-#define AP_PARACHUTE_H
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
@@ -75,5 +73,3 @@ private:
     bool        _release_in_progress:1;  // true if the parachute release is in progress
     bool        _released:1;    // true if the parachute has been released
 };
-
-#endif /* AP_PARACHUTE_H */
