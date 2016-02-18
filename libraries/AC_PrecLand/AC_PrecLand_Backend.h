@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AC_PRECLAND_BACKEND_H__
-#define __AC_PRECLAND_BACKEND_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -43,4 +42,3 @@ protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
     AC_PrecLand::precland_state &_state;    // reference to this instances state
 };
-#endif	// __AC_PRECLAND_BACKEND_H__
