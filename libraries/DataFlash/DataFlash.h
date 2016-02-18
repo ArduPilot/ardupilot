@@ -3,8 +3,7 @@
 /* ************************************************************ */
 /* Test for DataFlash Log library                               */
 /* ************************************************************ */
-#ifndef DataFlash_h
-#define DataFlash_h
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -179,5 +178,3 @@ private:
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const char *_firmware_string;
 };
-
-#endif

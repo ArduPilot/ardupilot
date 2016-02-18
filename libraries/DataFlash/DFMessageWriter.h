@@ -1,5 +1,4 @@
-#ifndef DF_LOGSTARTUP_H
-#define DF_LOGSTARTUP_H
+#pragma once
 
 #include "DataFlash_Backend.h"
 
@@ -112,6 +111,3 @@ private:
     DFMessageWriter_WriteSysInfo _writesysinfo;
     DFMessageWriter_WriteEntireMission _writeentiremission;
 };
-
-#endif
-
