@@ -18,8 +18,7 @@
 //  GPS proxy driver for APM on PX4 platforms
 //  Code by Holger Steinhaus
 //
-#ifndef __AP_GPS_PX4_H__
-#define __AP_GPS_PX4_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_GPS.h"
@@ -37,5 +36,3 @@ private:
     struct vehicle_gps_position_s _gps_pos;
 };
 #endif // CONFIG_HAL_BOARD
-#endif // AP_GPS_PX4_H
-
