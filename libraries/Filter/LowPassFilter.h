@@ -19,9 +19,7 @@
 /// @brief	A class to implement a low pass filter without losing precision even for int types
 ///         the downside being that it's a little slower as it internally uses a float
 ///         and it consumes an extra 4 bytes of memory to hold the constant gain
-
-#ifndef __LOW_PASS_FILTER_H__
-#define __LOW_PASS_FILTER_H__
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 #include "FilterClass.h"
@@ -88,6 +86,3 @@ typedef LowPassFilter<long>     LowPassFilterLong;
 typedef LowPassFilter<float>    LowPassFilterFloat;
 typedef LowPassFilter<Vector2f> LowPassFilterVector2f;
 typedef LowPassFilter<Vector3f> LowPassFilterVector3f;
-
-#endif // __LOW_PASS_FILTER_H__
-
