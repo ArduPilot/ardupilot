@@ -10,12 +10,6 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static AP_HAL::UARTDriver* uarts[] = {
-    hal.uartA, // console
-};
-#define NUM_UARTS (sizeof(uarts)/sizeof(uarts[0]))
-
-
 /*
   setup one UART at 57600
  */
