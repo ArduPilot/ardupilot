@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_ANALOG_IN_H__
-#define __AP_HAL_ANALOG_IN_H__
+#pragma once
 
 #include <inttypes.h>
 
@@ -56,6 +54,3 @@ public:
 
 #define ANALOG_INPUT_BOARD_VCC 254
 #define ANALOG_INPUT_NONE 255
-
-#endif // __AP_HAL_ANALOG_IN_H__
-

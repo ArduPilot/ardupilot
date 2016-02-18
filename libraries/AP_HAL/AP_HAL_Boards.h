@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_BOARDS_H__
-#define __AP_HAL_BOARDS_H__
+#pragma once
 
 /**
  * C preprocesor enumeration of the boards supported by the AP_HAL.
@@ -463,5 +461,3 @@
 #ifndef HAL_PARAM_DEFAULTS_PATH
 #define HAL_PARAM_DEFAULTS_PATH NULL
 #endif
-
-#endif // __AP_HAL_BOARDS_H__
