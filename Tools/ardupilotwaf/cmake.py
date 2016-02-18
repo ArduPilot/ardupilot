@@ -101,6 +101,18 @@ from collections import OrderedDict
 class cmake_configure_task(Task.Task):
     run_str = '${CMAKE} ${CMAKE_SRC_DIR} ${CMAKE_VARS} ${CMAKE_GENERATOR_OPTION}'
 
+    def uid(self):
+        if not hasattr(self, 'uid_'):
+            m = Utils.md5()
+            def u(s):
+                m.update(s.encode('utf-8'))
+            u(self.__class__.__name__)
+            u(self.env.get_flat('CMAKE_SRC_DIR'))
+            u(self.env.get_flat('CMAKE_BLD_DIR'))
+            self.uid_ = m.digest()
+
+        return self.uid_
+
     def __str__(self):
         return self.generator.name
 
@@ -109,6 +121,18 @@ class cmake_configure_task(Task.Task):
 
 class cmake_build_task(Task.Task):
     run_str = '${CMAKE} --build ${CMAKE_BLD_DIR} --target ${CMAKE_TARGET}'
+
+    def uid(self):
+        if not hasattr(self, 'uid_'):
+            m = Utils.md5()
+            def u(s):
+                m.update(s.encode('utf-8'))
+            u(self.__class__.__name__)
+            u(self.env.get_flat('CMAKE_BLD_DIR'))
+            u(self.env.get_flat('CMAKE_TARGET'))
+            self.uid_ = m.digest()
+
+        return self.uid_
 
     def __str__(self):
         config_name = self.generator.config_taskgen.name
@@ -147,6 +171,7 @@ def process_cmake_configure(self):
     # NOTE: we'll probably need to use the full class name in waf 1.9
     tsk = self.cmake_config_task = self.create_task('cmake_configure')
     tsk.cwd = self.cmake_bld.abspath()
+    tsk.env.CMAKE_BLD_DIR = self.cmake_bld.abspath()
     tsk.env.CMAKE_SRC_DIR = self.cmake_src.abspath()
 
     keys = list(self.cmake_vars.keys())
