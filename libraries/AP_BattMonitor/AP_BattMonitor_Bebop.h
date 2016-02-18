@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __AP_BATTMONITOR_BEBOP_H__
-#define __AP_BATTMONITOR_BEBOP_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -48,4 +46,3 @@ private:
     float _filter_voltage(float vbat_raw);
     float _compute_battery_percentage(float vbat);
 };
-#endif // __AP_BATTMONITOR_BEBOP_H__

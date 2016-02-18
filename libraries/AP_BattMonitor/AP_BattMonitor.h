@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_BATTMONITOR_H
-#define AP_BATTMONITOR_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -126,4 +125,3 @@ private:
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
     uint8_t     _num_instances;                                     /// number of monitors
 };
-#endif  // AP_BATTMONITOR_H
