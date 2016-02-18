@@ -1,5 +1,4 @@
-#ifndef AP_ADC_H
-#define AP_ADC_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 /*
@@ -58,5 +57,3 @@ private:
 
 #include "AP_ADC_ADS7844.h"
 #include "AP_ADC_ADS1115.h"
-
-#endif
