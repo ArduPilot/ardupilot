@@ -16,9 +16,7 @@
 /* 
    main Rover class, containing all vehicle specific state
 */
-
-#ifndef _ROVER_H_
-#define _ROVER_H_
+#pragma once
 
 #define THISFIRMWARE "ArduRover v2.51-beta"
 #define FIRMWARE_VERSION 2,51,0,FIRMWARE_VERSION_TYPE_BETA
@@ -564,5 +562,3 @@ extern Rover rover;
 
 using AP_HAL::millis;
 using AP_HAL::micros;
-
-#endif // _ROVER_H_
