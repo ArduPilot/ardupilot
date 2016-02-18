@@ -69,7 +69,7 @@ The programs in ardupilot are categorized into the following groups:
  - tools
  - examples: *programs that show how certain libraries are used or to simply
    test their operation*
- - benchmarks
+ - benchmarks: *requires `--enable-benchmarks` during configurarion*
  - tests: *basically unit tests to ensure changes don't break the system's
    logic*
 
