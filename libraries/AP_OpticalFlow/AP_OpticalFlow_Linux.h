@@ -4,9 +4,7 @@
  * Portions of this driver were borrowed from the PX4Firmware px4flow driver which can be found here:
  *     https://github.com/PX4/Firmware/blob/master/src/drivers/px4flow/px4flow.cpp
  */
-
-#ifndef AP_OpticalFlow_Linux_H
-#define AP_OpticalFlow_Linux_H
+#pragma once
 
 #include "OpticalFlow.h"
 
@@ -82,5 +80,3 @@ private:
     uint16_t num_errors = 0;
     uint32_t last_read_ms = 0;
 };
-
-#endif
