@@ -848,17 +848,17 @@ void NavEKF2_core::FuseDeclination()
 float NavEKF2_core::calcMagHeadingInnov()
 {
     // rotate measured body components into earth axis and compare to declination to give a heading measurement
+    Vector3f eulerAngles;
+    stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
     Matrix3f Tbn_temp;
-    stateStruct.quat.rotation_matrix(Tbn_temp);
+    Tbn_temp.from_euler(eulerAngles.x, eulerAngles.y, 0.0f);
     Vector3f magMeasNED = Tbn_temp*magDataDelayed.mag;
-    float measHdg = atan2f(magMeasNED.y,magMeasNED.x) - _ahrs->get_compass()->get_declination();
+    float measHdg = - atan2f(magMeasNED.y,magMeasNED.x) + _ahrs->get_compass()->get_declination();
 
     // wrap the heading so it sits on the range from +-pi
     measHdg = wrap_PI(measHdg);
 
     // calculate the innovation and wrap between +-pi
-    Vector3f eulerAngles;
-    stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
     float innovation = wrap_PI(eulerAngles.z - measHdg);
 
     // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
