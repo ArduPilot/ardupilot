@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APM:Copter V3.3.3"
-#define FIRMWARE_VERSION 3,3,3,FIRMWARE_VERSION_TYPE_OFFICIAL
+#define THISFIRMWARE "APM:Copter V3.3.4-rc1-pixracer"
+#define FIRMWARE_VERSION 3,3,4,FIRMWARE_VERSION_TYPE_BETA
 
 /*
    This program is free software: you can redistribute it and/or modify
