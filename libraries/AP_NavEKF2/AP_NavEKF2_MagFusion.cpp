@@ -847,21 +847,19 @@ void NavEKF2_core::FuseDeclination()
 // Calculate magnetic heading innovation
 float NavEKF2_core::calcMagHeadingInnov()
 {
-    // rotate predicted earth components into body axes and calculate
-    // predicted measurements
+    // rotate measured body components into earth axis and compare to declination to give a heading measurement
     Matrix3f Tbn_temp;
     stateStruct.quat.rotation_matrix(Tbn_temp);
     Vector3f magMeasNED = Tbn_temp*magDataDelayed.mag;
+    float measHdg = atan2f(magMeasNED.y,magMeasNED.x) - _ahrs->get_compass()->get_declination();
 
-    // calculate the innovation where the predicted measurement is the angle wrt magnetic north of the horizontal component of the measured field
-    float innovation = atan2f(magMeasNED.y,magMeasNED.x) - _ahrs->get_compass()->get_declination();
+    // wrap the heading so it sits on the range from +-pi
+    measHdg = wrap_PI(measHdg);
 
-    // wrap the innovation so it sits on the range from +-pi
-    if (innovation > M_PI_F) {
-        innovation = innovation - 2*M_PI_F;
-    } else if (innovation < -M_PI_F) {
-        innovation = innovation + 2*M_PI_F;
-    }
+    // calculate the innovation and wrap between +-pi
+    Vector3f eulerAngles;
+    stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+    float innovation = wrap_PI(eulerAngles.z - measHdg);
 
     // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
     if (innovation - lastInnovation > M_PI_F) {
