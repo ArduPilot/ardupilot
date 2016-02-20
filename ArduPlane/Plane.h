@@ -757,6 +757,7 @@ private:
     void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void gcs_send_airspeed_calibration(const Vector3f &vg);
     void gcs_retry_deferred(void);
+    void gcs_retry_sendtext(void);
 
     void do_erase_logs(void);
     void Log_Write_Attitude(void);

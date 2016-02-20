@@ -43,6 +43,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(set_servos,            400,   1600),
     SCHED_TASK(read_control_switch,     7,   1000),
     SCHED_TASK(gcs_retry_deferred,     50,   1000),
+    SCHED_TASK(gcs_retry_sendtext,     50,   1000),
     SCHED_TASK(update_GPS_50Hz,        50,   2500),
     SCHED_TASK(update_GPS_10Hz,        10,   2500),
     SCHED_TASK(navigate,               10,   3000),
