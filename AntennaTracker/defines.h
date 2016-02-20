@@ -20,11 +20,28 @@ enum ControlMode {
     INITIALISING=16
 };
 
-enum ServoType {
-    SERVO_TYPE_POSITION=0,
-    SERVO_TYPE_ONOFF=1,
-    SERVO_TYPE_CR=2
+enum PitchServoType {
+    PITCH_SERVO_TYPE_POSITION=0,
+    PITCH_SERVO_TYPE_ONOFF=1,
+    PITCH_SERVO_TYPE_CR=2
+
 };
+
+enum YawServoType {
+    YAW_SERVO_TYPE_POSITION=0,
+    YAW_SERVO_TYPE_ONOFF=1,
+    YAW_SERVO_TYPE_CR=2
+
+};
+
+//  Logging parameters
+#define MASK_LOG_ATTITUDE               (1<<0)
+#define MASK_LOG_GPS                    (1<<1)
+#define MASK_LOG_RCIN                   (1<<2)
+#define MASK_LOG_IMU                    (1<<3)
+#define MASK_LOG_RCOUT                  (1<<4)
+#define MASK_LOG_COMPASS                (1<<5)
+#define MASK_LOG_ANY                    0xFFFF
 
 #endif // _DEFINES_H
 

@@ -13,6 +13,9 @@ void Tracker::init_barometer(void)
 void Tracker::update_barometer(void)
 {
     barometer.update();
+    if (should_log(MASK_LOG_IMU)) {
+        Log_Write_Baro();
+    }
 }
 
 
@@ -33,6 +36,9 @@ void Tracker::update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         compass.learn_offsets();
+        if (should_log(MASK_LOG_COMPASS)) {
+            DataFlash.Log_Write_Compass(compass);
+        }
     } else {
         ahrs.set_compass(NULL);
     }
@@ -62,6 +68,20 @@ void Tracker::barometer_accumulate(void)
 void Tracker::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
+    }
+}
+
+/*
+    Accel calibration
+*/
+void Tracker::accel_cal_update() {
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+    ins.acal_update();
+    float trim_roll, trim_pitch;
+    if(ins.get_new_trim(trim_roll, trim_pitch)) {
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
 
@@ -102,6 +122,11 @@ void Tracker::update_GPS(void)
                 }
                 ground_start_count = 0;
             }
+        }
+
+        // log GPS data
+        if (should_log(MASK_LOG_GPS)) {
+            DataFlash.Log_Write_GPS(gps, 0, current_loc.alt);
         }
     }
 }

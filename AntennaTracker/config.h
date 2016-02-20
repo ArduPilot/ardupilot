@@ -32,6 +32,9 @@
 #ifndef CH_PITCH
  # define CH_PITCH      CH_2    // RC input/output for pitch on channel 2
 #endif
+#ifndef CH_MODE
+ # define CH_MODE		CH_5    // RC input/output for mode on channel 5
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -56,13 +59,57 @@
 #ifndef DISTANCE_MIN_DEFAULT
  # define DISTANCE_MIN_DEFAULT              5.0f    // do not track targets within 5 meters
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Developer Items
-//
-
-// use this to completely disable the CLI
-#ifndef CLI_ENABLED
- # define CLI_ENABLED ENABLED
+#ifndef ALT_SOURCE_DEFAULT
+ # define ALT_SOURCE_DEFAULT				0         // default source of data for altitude calculation (0 - baro, 1 - gps)
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// TRACKER_MODE
+//
+
+#ifndef TRACKER_MODE_1
+ # define TRACKER_MODE_1                  AUTO
+#endif
+#ifndef TRACKER_MODE_2
+ # define TRACKER_MODE_2                  MANUAL
+#endif
+#ifndef TRACKER_MODE_3
+ # define TRACKER_MODE_3                  STOP
+#endif
+#ifndef TRACKER_MODE_4
+ # define TRACKER_MODE_4                  AUTO
+#endif
+#ifndef TRACKER_MODE_5
+ # define TRACKER_MODE_5                  AUTO
+#endif
+#ifndef TRACKER_MODE_6
+ # define TRACKER_MODE_6                  AUTO
+#endif
+
+//
+// Dataflash logging control
+//
+#ifndef LOGGING_ENABLED
+# define LOGGING_ENABLED        ENABLED
+#endif
+
+// Default logging bitmask
+#ifndef DEFAULT_LOG_BITMASK
+ # define DEFAULT_LOG_BITMASK \
+    MASK_LOG_ATTITUDE | \
+    MASK_LOG_GPS | \
+    MASK_LOG_RCIN | \
+    MASK_LOG_IMU | \
+    MASK_LOG_RCOUT | \
+    MASK_LOG_COMPASS
+#endif
+
+/*
+  build a firmware version string.
+  GIT_VERSION comes from Makefile builds
+*/
+#ifndef GIT_VERSION
+#define FIRMWARE_STRING THISFIRMWARE
+#else
+#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
+#endif

@@ -6,8 +6,9 @@
 
 void Tracker::read_radio()
 {
-    if (hal.rcin->new_input()) {
-        channel_yaw.set_pwm(hal.rcin->read(CH_YAW));
-        channel_pitch.set_pwm(hal.rcin->read(CH_PITCH));
-    }
+	if (hal.rcin->new_input()) {
+		channel_yaw.set_pwm(hal.rcin->read(CH_YAW));
+		channel_pitch.set_pwm(hal.rcin->read(CH_PITCH));
+		g.channel_mode.set_pwm(hal.rcin->read(CH_MODE));
+	}
 }
