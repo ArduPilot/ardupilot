@@ -31,8 +31,6 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
-// #define MATH_CHECK_INDEXES 1
-
 #include <AP_Math/vectorN.h>
 
 // GPS pre-flight check bit locations

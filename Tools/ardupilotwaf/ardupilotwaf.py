@@ -185,6 +185,7 @@ def ap_find_tests(bld, use=[]):
             program_name=f.change_ext('').name,
             program_group='tests',
             use_legacy_defines=False,
+            cxxflags=['-Wno-undef'],
         )
 
 @conf

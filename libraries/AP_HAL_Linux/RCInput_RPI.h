@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_RCINPUT_RPI_H__
-#define __AP_HAL_LINUX_RCINPUT_RPI_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #include "RCInput.h"
@@ -130,5 +129,3 @@ private:
     void deinit() override;
 
 };
-
-#endif // __AP_HAL_LINUX_RCINPUT_RPI_H__

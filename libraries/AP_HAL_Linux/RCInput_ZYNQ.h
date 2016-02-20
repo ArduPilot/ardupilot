@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_RCINPUT_ZYNQ_H__
-#define __AP_HAL_LINUX_RCINPUT_ZYNQ_H__
+#pragma once
 
 /*
   This class implements RCInput on the ZYNQ / ZyboPilot platform with custom
@@ -28,5 +26,3 @@ public:
     // time spent in the low state
     uint32_t _s0_time;
 };
-
-#endif // __AP_HAL_LINUX_RCINPUT_ZYNQ_H__

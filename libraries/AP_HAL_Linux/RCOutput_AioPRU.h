@@ -8,10 +8,7 @@
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
-#ifndef __AP_HAL_LINUX_RCOUTPUT_AIOPRU_H__
-#define __AP_HAL_LINUX_RCOUTPUT_AIOPRU_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #define RCOUT_PRUSS_RAM_BASE 0x4a302000
@@ -43,5 +40,3 @@ private:
 
     volatile struct pwm *pwm;
 };
-
-#endif // __AP_HAL_LINUX_RCOUTPUT_AIOPRU_H__

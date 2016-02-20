@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AP_ADC_ADS7844_H__
-#define __AP_ADC_ADS7844_H__
-
+#pragma once
 
 #include <inttypes.h>
 #include "AP_ADC.h"
@@ -30,5 +28,3 @@ private:
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore  *_spi_sem;
 };
-
-#endif

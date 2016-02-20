@@ -57,8 +57,10 @@ class update_submodule(Task.Task):
     def uid(self):
         if not hasattr(self, 'uid_'):
             m = Utils.md5()
-            m.update(self.__class__.__name__)
-            m.update(self.env.get_flat('SUBMODULE_PATH'))
+            def u(s):
+                m.update(s.encode('utf-8'))
+            u(self.__class__.__name__)
+            u(self.env.get_flat('SUBMODULE_PATH'))
             self.uid_ = m.digest()
 
         return self.uid_

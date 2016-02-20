@@ -5,6 +5,7 @@
 gtest is a Waf tool for test builds in Ardupilot
 """
 
+from waflib import Utils
 from waflib.Configure import conf
 
 def configure(cfg):
@@ -25,6 +26,7 @@ def configure(cfg):
 
 @conf
 def libgtest(bld, **kw):
+    kw['cxxflags'] = Utils.to_list(kw.get('cxxflags', [])) + ['-Wno-undef']
     kw.update(
         source='modules/gtest/src/gtest-all.cc',
         target='gtest/gtest',

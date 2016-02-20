@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_MAIN_H__
-#define __AP_HAL_MAIN_H__
+#pragma once
 
 #include "HAL.h"
 
@@ -56,5 +55,3 @@
     }
 
 #endif
-
-#endif // __AP_HAL_MAIN_H__

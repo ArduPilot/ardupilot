@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_SCHEDULER_H__
-#define __AP_HAL_SCHEDULER_H__
+#pragma once
 
 #include <stdint.h>
 
@@ -63,6 +61,3 @@ public:
      */
     virtual void     stop_clock(uint64_t time_usec) {}
 };
-
-#endif // __AP_HAL_SCHEDULER_H__
-

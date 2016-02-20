@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_BATTMONITOR_ANALOG_H
-#define AP_BATTMONITOR_ANALOG_H
+#pragma once
 
 #include <AP_ADC/AP_ADC.h>                 // ArduPilot Mega Analog to Digital Converter Library
 #include "AP_BattMonitor.h"
@@ -57,7 +56,7 @@
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
 
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&  (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF)
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&  (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF)
  # define AP_BATT_VOLT_PIN                  5
  # define AP_BATT_CURR_PIN                  6
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
@@ -66,6 +65,12 @@
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
  # define AP_BATT_VOLT_PIN                  0
  # define AP_BATT_CURR_PIN                  1
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+ # define AP_BATT_VOLT_PIN                  2
+ # define AP_BATT_CURR_PIN                  3
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
 
@@ -97,4 +102,3 @@ protected:
     AP_HAL::AnalogSource *_volt_pin_analog_source;
     AP_HAL::AnalogSource *_curr_pin_analog_source;
 };
-#endif  // AP_BATTMONITOR_ANALOG_H

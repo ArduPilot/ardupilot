@@ -60,9 +60,6 @@ void loop(void)
         heading = compass.calculate_heading(ahrs.get_rotation_body_to_ned());
         // read compass at 10Hz
         last_compass = now;
-#if WITH_GPS
-        g_gps->update();
-#endif
     }
 
     ahrs.update();

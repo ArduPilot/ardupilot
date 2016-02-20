@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_ANALOGIN_H__
-#define __AP_HAL_EMPTY_ANALOGIN_H__
+#pragma once
 
 #include "AP_HAL_Empty.h"
 
@@ -26,4 +24,3 @@ public:
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void);
 };
-#endif // __AP_HAL_EMPTY_ANALOGIN_H__

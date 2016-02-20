@@ -805,7 +805,7 @@ void QuadPlane::update_transition(void)
         if (have_airspeed && aspeed > plane.aparm.airspeed_min && !assisted_flight) {
             transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", aspeed);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
         }
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
@@ -987,6 +987,17 @@ bool QuadPlane::in_vtol_auto(void)
     default:
         return false;
     }
+}
+
+/*
+  are we in a VTOL mode?
+ */
+bool QuadPlane::in_vtol_mode(void)
+{
+    return (plane.control_mode == QSTABILIZE ||
+            plane.control_mode == QHOVER ||
+            plane.control_mode == QLOITER ||
+            in_vtol_auto());
 }
 
 /*

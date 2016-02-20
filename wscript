@@ -54,6 +54,13 @@ def options(opt):
                  action='store_true',
                  help='Output all test programs')
 
+    g.add_option('--no-submodule-update',
+                 dest='submodule_update',
+                 action='store_false',
+                 default=True,
+                 help='Don\'t update git submodules. Useful for building ' +
+                      'with submodules at specific revisions.')
+
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     # use a different variant for each board
@@ -61,19 +68,7 @@ def configure(cfg):
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
-    board_dict = boards.BOARDS[cfg.env.BOARD].get_merged_dict()
-
-    # Always prepend so that arguments passed in the command line get
-    # the priority.
-    for k in board_dict:
-        val = board_dict[k]
-        # Dictionaries (like 'DEFINES') are converted to lists to
-        # conform to waf conventions.
-        if isinstance(val, dict):
-            for item in val.items():
-                cfg.env.prepend_value(k, '%s=%s' % item)
-        else:
-            cfg.env.prepend_value(k, val)
+    boards.get_board(cfg.env.BOARD).configure(cfg)
 
     cfg.load('toolchain')
     cfg.load('compiler_cxx compiler_c')
@@ -108,6 +103,9 @@ def configure(cfg):
     cfg.env.prepend_value('DEFINES', [
         'SKETCHBOOK="' + cfg.srcnode.abspath() + '"',
     ])
+
+    if cfg.options.submodule_update:
+        cfg.env.SUBMODULE_UPDATE = [True]
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -210,9 +208,10 @@ def build(bld):
 
     _build_cmd_tweaks(bld)
 
-    bld.add_group('git_submodules')
-    for name in bld.env.GIT_SUBMODULES:
-        bld.git_submodule(name)
+    if bld.env.SUBMODULE_UPDATE:
+        bld.add_group('git_submodules')
+        for name in bld.env.GIT_SUBMODULES:
+            bld.git_submodule(name)
 
     bld.add_group('dynamic_sources')
     _build_dynamic_sources(bld)

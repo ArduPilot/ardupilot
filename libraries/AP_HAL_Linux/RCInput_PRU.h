@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_RCINPUT_PRU_H__
-#define __AP_HAL_LINUX_RCINPUT_PRU_H__
+#pragma once
 
 /*
   This class implements RCInput on the BeagleBoneBlack with a PRU
@@ -35,5 +33,3 @@ public:
     // time spent in the low state
     uint16_t _s0_time;
 };
-
-#endif // __AP_HAL_LINUX_RCINPUT_PRU_H__

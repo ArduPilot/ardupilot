@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_I2CDRIVER_H__
-#define __AP_HAL_EMPTY_I2CDRIVER_H__
+#pragma once
 
 #include "AP_HAL_Empty.h"
 
@@ -49,5 +47,3 @@ public:
 private:
     AP_HAL::Semaphore* _semaphore;
 };
-
-#endif // __AP_HAL_EMPTY_I2CDRIVER_H__

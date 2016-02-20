@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_RC_INPUT_H__
-#define __AP_HAL_RC_INPUT_H__
+#pragma once
 
 #include "AP_HAL_Namespace.h"
 
@@ -56,6 +54,3 @@ public:
     /* execute receiver bind */
     virtual bool rc_bind(int dsmMode) { return false; };
 };
-
-#endif // __AP_HAL_RC_INPUT_H__
-

@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_NAMESPACE_H__
-#define __AP_HAL_NAMESPACE_H__
+#pragma once
 
 #include "string.h"
 #include "utility/functor.h"
@@ -70,5 +68,3 @@ namespace AP_HAL {
     // Must be implemented by the concrete HALs.
     const HAL& get_HAL();
 }
-
-#endif // __AP_HAL_NAMESPACE_H__
