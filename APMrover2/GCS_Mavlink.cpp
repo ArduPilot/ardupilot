@@ -1450,44 +1450,6 @@ void Rover::gcs_update(void)
     }
 }
 
-void Rover::gcs_send_text(MAV_SEVERITY severity, const char *str)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_text(severity, str);
-    }
-    }
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(str);
-#endif
-}
-
-/*
- *  send a low priority formatted message to the GCS
- *  only one fits in the queue, so if you send more than one before the
- *  last one gets into the serial buffer then the old one will be lost
- */
-void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)severity;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
-            sizeof(gcs[0].pending_status.text), fmt, arg_list);
-    va_end(arg_list);
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
-#endif
-    gcs[0].send_message(MSG_STATUSTEXT);
-    for (uint8_t i=1; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].pending_status = gcs[0].pending_status;
-            gcs[i].send_message(MSG_STATUSTEXT);
-        }
-    }
-}
-
-
 /**
    retry any deferred messages
  */
