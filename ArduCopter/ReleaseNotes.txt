@@ -1,5 +1,9 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3.4-rc2-pixracer 20-Feb-2016
+Changes from 3.3.4-rc1-pixracers
+1) fix SBUS input
+------------------------------------------------------------------
 Copter 3.3.4-rc1-pixracer 19-Feb-2016
 Changes from 3.3.3
 1) Ignores accel and gyro errors during first 2 seconds of startup
