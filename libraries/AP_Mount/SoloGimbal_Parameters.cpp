@@ -103,7 +103,7 @@ void SoloGimbal_Parameters::get_param(gmb_param_t param, float& value, float def
 }
 
 void SoloGimbal_Parameters::set_param(gmb_param_t param, float value) {
-    if ((_params[param].state == GMB_PARAMSTATE_CONSISTENT && param != GMB_PARAM_GMB_FLASH && _params[param].value == value) || _params[param].state == GMB_PARAMSTATE_NONEXISTANT) {
+    if ((_params[param].state == GMB_PARAMSTATE_CONSISTENT && param != GMB_PARAM_GMB_FLASH && is_equal(_params[param].value,value)) || _params[param].state == GMB_PARAMSTATE_NONEXISTANT) {
         return;
     }
 
@@ -190,12 +190,12 @@ void SoloGimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavli
                     break;
                 case GMB_PARAMSTATE_ATTEMPTING_TO_SET:
                     if (i == GMB_PARAM_GMB_FLASH) {
-                        if (_flashing_step == GMB_PARAM_FLASHING_WAITING_FOR_ACK && packet.param_value == 1) {
+                        if (_flashing_step == GMB_PARAM_FLASHING_WAITING_FOR_ACK && is_equal(packet.param_value,1)) {
                             _flashing_step = GMB_PARAM_NOT_FLASHING;
                         }
                         _params[i].value = 0;
                         _params[i].state = GMB_PARAMSTATE_CONSISTENT;
-                    } else if (packet.param_value == _params[i].value) {
+                    } else if (is_equal(packet.param_value,_params[i].value)) {
                         _params[i].state = GMB_PARAMSTATE_CONSISTENT;
                     }
                     break;

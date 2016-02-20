@@ -1,5 +1,4 @@
-#ifndef __TONE_ALARM_DRIVER_H__
-#define __TONE_ALARM_DRIVER_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_Linux_Namespace.h"
@@ -140,5 +139,3 @@ private:
 	int8_t tune_num;
 	uint8_t tune_pos;
 };
-
-#endif

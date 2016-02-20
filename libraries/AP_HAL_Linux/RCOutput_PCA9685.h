@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_RCOUTPUT_PCA9685_H__
-#define __AP_HAL_LINUX_RCOUTPUT_PCA9685_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -43,5 +41,3 @@ private:
     int16_t _oe_pin_number;
     uint16_t _pending_write_mask;
 };
-
-#endif // __AP_HAL_LINUX_RCOUTPUT_PCA9685_H__

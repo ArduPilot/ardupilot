@@ -283,6 +283,7 @@ public:
         k_param_scaling_speed,
         k_param_quadplane,
         k_param_rtl_radius,
+        k_param_land_then_servos_neutral,
 
         //
         // 210: flight modes
@@ -463,6 +464,7 @@ public:
     AP_Int32 RTL_altitude_cm;
     AP_Float land_flare_alt;
     AP_Int8 land_disarm_delay;
+    AP_Int8 land_then_servos_neutral;
     AP_Int8 land_abort_throttle_enable;
     AP_Float land_pre_flare_alt;
     AP_Float land_pre_flare_sec;

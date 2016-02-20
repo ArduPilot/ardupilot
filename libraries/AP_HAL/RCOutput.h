@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_RC_OUTPUT_H__
-#define __AP_HAL_RC_OUTPUT_H__
+#pragma once
 
 #include "AP_HAL_Namespace.h"
 
@@ -104,6 +102,3 @@ public:
      */
     virtual void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {}
 };
-
-#endif // __AP_HAL_RC_OUTPUT_H__
-

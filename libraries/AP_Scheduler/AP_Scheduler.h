@@ -19,9 +19,7 @@
  *  Author: Andrew Tridgell, January 2013
  *
  */
-
-#ifndef AP_SCHEDULER_H
-#define AP_SCHEDULER_H
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 
@@ -129,5 +127,3 @@ private:
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
 };
-
-#endif // AP_SCHEDULER_H

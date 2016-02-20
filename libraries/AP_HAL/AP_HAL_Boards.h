@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_BOARDS_H__
-#define __AP_HAL_BOARDS_H__
+#pragma once
 
 /**
  * C preprocesor enumeration of the boards supported by the AP_HAL.
@@ -338,11 +336,6 @@
  * focal length 2.1 mm, pixel size 3 um
  * 240x240 crop rescaled to 64x64 */
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (3.0 / (2.1 * 2.0 * 240 / 64))
-#define HAL_GPIO_A_LED_PIN        61
-#define HAL_GPIO_B_LED_PIN        48
-#define HAL_GPIO_C_LED_PIN        117
-#define HAL_GPIO_LED_ON           LOW
-#define HAL_GPIO_LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
@@ -375,6 +368,7 @@
 #define HAL_INS_DEFAULT           HAL_INS_MPU9250_SPI
 #define HAL_INS_MPU9250_NAME "mpu9250"
 #define HAL_BARO_DEFAULT          HAL_BARO_MS5611_SPI
+#define HAL_BARO_MS5611_NAME "ms5611"
 #define HAL_COMPASS_DEFAULT       HAL_COMPASS_AK8963_MPU9250
 #define HAL_GPIO_A_LED_PIN        24
 #define HAL_GPIO_B_LED_PIN        25
@@ -468,5 +462,3 @@
 #ifndef HAL_PARAM_DEFAULTS_PATH
 #define HAL_PARAM_DEFAULTS_PATH NULL
 #endif
-
-#endif // __AP_HAL_BOARDS_H__

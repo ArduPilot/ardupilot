@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_GPIO_H__
-#define __AP_HAL_LINUX_GPIO_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -32,4 +31,3 @@ private:
 #endif
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#endif // __AP_HAL_LINUX_GPIO_H__

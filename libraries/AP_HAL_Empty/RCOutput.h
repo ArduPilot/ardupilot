@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_RCOUTPUT_H__
-#define __AP_HAL_EMPTY_RCOUTPUT_H__
+#pragma once
 
 #include "AP_HAL_Empty.h"
 
@@ -14,5 +12,3 @@ class Empty::RCOutput : public AP_HAL::RCOutput {
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
 };
-
-#endif // __AP_HAL_EMPTY_RCOUTPUT_H__

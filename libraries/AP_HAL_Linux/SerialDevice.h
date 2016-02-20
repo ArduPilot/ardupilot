@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_SERIALDEVICE_H__
-#define __AP_HAL_LINUX_SERIALDEVICE_H__
+#pragma once
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -15,5 +14,3 @@ public:
     virtual void set_blocking(bool blocking) = 0;
     virtual void set_speed(uint32_t speed) = 0;
 };
-
-#endif

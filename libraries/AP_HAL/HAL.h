@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_HAL_H__
-#define __AP_HAL_HAL_H__
+#pragma once
 
 #include "AP_HAL_Namespace.h"
 
@@ -97,6 +95,3 @@ public:
     AP_HAL::Util        *util;
     AP_HAL::OpticalFlow *opticalflow;
 };
-
-#endif // __AP_HAL_HAL_H__
-

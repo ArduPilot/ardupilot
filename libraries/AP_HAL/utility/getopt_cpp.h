@@ -8,8 +8,7 @@
  * Simple conversion to C++ by Andrew Tridgell for ArduPilot. Based on
  * getopt_long.h from ccache
  */
-#ifndef GETOPT_LONG_H
-#define GETOPT_LONG_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -45,5 +44,3 @@ private:
     const struct option *longopts;
     const char *place;
 };
-
-#endif  /* GETOPT_LONG_H */

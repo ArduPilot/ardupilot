@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_RCOUTPUT_PRU_H__
-#define __AP_HAL_LINUX_RCOUTPUT_PRU_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #define RCOUT_PRUSS_SHAREDRAM_BASE     0x4a310000
@@ -39,5 +37,3 @@ private:
     volatile struct pwm_cmd *sharedMem_cmd;
 
 };
-
-#endif // __AP_HAL_LINUX_RCOUTPUT_PRU_H__

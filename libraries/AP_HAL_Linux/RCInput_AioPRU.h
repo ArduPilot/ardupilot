@@ -8,10 +8,7 @@
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
-#ifndef __AP_HAL_LINUX_RCINPUT_AIOPRU_H__
-#define __AP_HAL_LINUX_RCINPUT_AIOPRU_H__
+#pragma once
 
 /*
   This class implements RCInput on the BeagleBoneBlack with a PRU
@@ -44,5 +41,3 @@ public:
     };
     volatile struct ring_buffer *ring_buffer;
 };
-
-#endif // __AP_HAL_LINUX_RCINPUT_AIOPRU_H__

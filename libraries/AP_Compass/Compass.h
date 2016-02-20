@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef Compass_h
-#define Compass_h
+#pragma once
 
 #include <inttypes.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -417,4 +416,3 @@ private:
 #include "AP_Compass_LSM303D.h"
 #include "AP_Compass_qflight.h"
 #include "AP_Compass_QURT.h"
-#endif

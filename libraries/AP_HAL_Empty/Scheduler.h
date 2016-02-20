@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_SCHEDULER_H__
-#define __AP_HAL_EMPTY_SCHEDULER_H__
+#pragma once
 
 #include "AP_HAL_Empty.h"
 
@@ -27,5 +25,3 @@ public:
     void     reboot(bool hold_in_bootloader);
 
 };
-
-#endif // __AP_HAL_EMPTY_SCHEDULER_H__

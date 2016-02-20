@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_RPIOUARTDRIVER_H__
-#define __AP_HAL_LINUX_RPIOUARTDRIVER_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -37,5 +36,3 @@ private:
     bool _need_set_baud;
     uint32_t _baudrate;
 };
-
-#endif //__AP_HAL_LINUX_RPIOUARTDRIVER_H__

@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __HEAT_PWM_H__
-#define __HEAT_PWM_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #include "PWM_Sysfs.h"
@@ -36,4 +34,3 @@ private:
     float _sum_error;
     float _target;
 };
-#endif

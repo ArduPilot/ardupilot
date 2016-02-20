@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_PRIVATE_H__
-#define __AP_HAL_LINUX_PRIVATE_H__
+#pragma once
 
 /* Umbrella header for all private headers of the AP_HAL_Linux module.
  * Only import this header from inside AP_HAL_Linux
@@ -46,5 +44,3 @@
 #include "VideoIn.h"
 #include "OpticalFlow_Onboard.h"
 #include "Flow_PX4.h"
-
-#endif // __AP_HAL_LINUX_PRIVATE_H__

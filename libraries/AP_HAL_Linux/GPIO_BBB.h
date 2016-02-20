@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_GPIO_BBB_H__
-#define __AP_HAL_LINUX_GPIO_BBB_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -133,5 +131,3 @@ public:
     /* return true if USB cable is connected */
     bool    usb_connected(void);
 };
-
-#endif // __AP_HAL_LINUX_GPIO_BBB_H__

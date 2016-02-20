@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_RCINPUT_RASPILOT_H__
-#define __AP_HAL_LINUX_RCINPUT_RASPILOT_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #include "RCInput.h"
@@ -18,5 +16,3 @@ private:
     
     void _poll_data(void);
 };
-
-#endif // __AP_HAL_LINUX_RCINPUT_RASPILOT_H__

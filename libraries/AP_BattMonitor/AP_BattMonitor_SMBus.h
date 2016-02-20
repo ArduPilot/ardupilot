@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_BATTMONITOR_SMBUS_H
-#define AP_BATTMONITOR_SMBUS_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -26,5 +25,3 @@ public:
 // include specific implementations
 #include "AP_BattMonitor_SMBus_PX4.h"
 #include "AP_BattMonitor_SMBus_I2C.h"
-
-#endif // AP_BATTMONITOR_SMBUS_H

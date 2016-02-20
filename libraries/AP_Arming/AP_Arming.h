@@ -24,7 +24,7 @@ public:
         ARMING_CHECK_AIRSPEED   = 0x0200,
         ARMING_CHECK_LOGGING    = 0x0400,
         ARMING_CHECK_SWITCH     = 0x0800,
-        ARMING_CHECK_GPS_CONFIG = 0x1600,
+        ARMING_CHECK_GPS_CONFIG = 0x1000,
     };
 
     enum ArmingMethod {
