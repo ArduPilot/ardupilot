@@ -990,6 +990,17 @@ bool QuadPlane::in_vtol_auto(void)
 }
 
 /*
+  are we in a VTOL mode?
+ */
+bool QuadPlane::in_vtol_mode(void)
+{
+    return (plane.control_mode == QSTABILIZE ||
+            plane.control_mode == QHOVER ||
+            plane.control_mode == QLOITER ||
+            in_vtol_auto());
+}
+
+/*
   handle auto-mode when auto_state.vtol_mode is true
  */
 void QuadPlane::control_auto(const Location &loc)

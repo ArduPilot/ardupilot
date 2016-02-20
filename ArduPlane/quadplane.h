@@ -47,6 +47,7 @@ public:
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
     bool verify_vtol_land(const AP_Mission::Mission_Command &cmd);
     bool in_vtol_auto(void);
+    bool in_vtol_mode(void);
 
     // vtol help for is_flying()
     bool is_flying(void);

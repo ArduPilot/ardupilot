@@ -164,10 +164,17 @@ void Plane::Log_Write_Attitude(void)
     targets.z = 0;          //Plane does not have the concept of navyaw. This is a placeholder.
 
     DataFlash.Log_Write_Attitude(ahrs, targets);
-    DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
-    DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
-    DataFlash.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
-    DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+    if (quadplane.in_vtol_mode()) {
+        DataFlash.Log_Write_PID(LOG_PIDR_MSG, quadplane.pid_rate_roll.get_pid_info() );
+        DataFlash.Log_Write_PID(LOG_PIDP_MSG, quadplane.pid_rate_pitch.get_pid_info() );
+        DataFlash.Log_Write_PID(LOG_PIDY_MSG, quadplane.pid_rate_yaw.get_pid_info() );
+        DataFlash.Log_Write_PID(LOG_PIDA_MSG, quadplane.pid_accel_z.get_pid_info() );
+    } else {
+        DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
+        DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
+        DataFlash.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
+        DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+    }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
  #if OPTFLOW == ENABLED
