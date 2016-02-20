@@ -58,5 +58,5 @@ void AP_InertialSensor_UserInteract_MAVLink::printf(const char* fmt, ...)
     while (uart->txspace() < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_STATUSTEXT_LEN) {
         hal.scheduler->delay(1);
     }
-    _gcs->send_text(MAV_SEVERITY_CRITICAL, msg);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, msg);
 }

@@ -88,7 +88,6 @@ public:
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
-    void        send_text(MAV_SEVERITY severity, const char *str);
     void        data_stream_send(void);
     void        queued_param_send();
     void        queued_waypoint_send();
@@ -126,10 +125,6 @@ public:
 
     // see if we should send a stream now. Called at 50Hz
     bool        stream_trigger(enum streams stream_num);
-
-	// this costs us 51 bytes per instance, but means that low priority
-	// messages don't block the CPU
-    mavlink_statustext_t pending_status;
 
     // call to reset the timeout window for entering the cli
     void reset_cli_timeout();

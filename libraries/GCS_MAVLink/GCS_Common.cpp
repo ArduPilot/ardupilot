@@ -378,7 +378,7 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     if ((unsigned)packet.start_index > mission.num_commands() ||
         (unsigned)packet.end_index > mission.num_commands() ||
         packet.end_index < packet.start_index) {
-        send_text(MAV_SEVERITY_WARNING,"Flight plan update rejected");
+        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_WARNING, chan, "Flight plan update rejected");
         return;
     }
 
@@ -497,7 +497,7 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
-        send_text(MAV_SEVERITY_INFO, sysid);
+        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, sysid);
     }
 
     // Start sending parameters - next call to ::update will kick the first one out
@@ -582,24 +582,6 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
 }
 
 
-void
-GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
-{
-    if (severity < MAV_SEVERITY_WARNING && 
-        comm_get_txspace(chan) >= 
-        MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_STATUSTEXT_LEN) {
-        // send immediately
-        char msg[50] {};
-        strncpy(msg, str, sizeof(msg));
-        mavlink_msg_statustext_send(chan, severity, msg);
-    } else {
-        // send via the deferred queuing system
-        mavlink_statustext_t *s = &pending_status;
-        s->severity = (uint8_t)severity;
-        strncpy((char *)s->text, str, sizeof(s->text));
-        send_message(MSG_STATUSTEXT);
-    }
-}
 
 void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
 {
@@ -721,7 +703,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             msg->compid,
             MAV_MISSION_ACCEPTED);
         
-        send_text(MAV_SEVERITY_INFO,"Flight plan received");
+        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Flight plan received");
         waypoint_receiving = false;
         mission_is_complete = true;
         // XXX ignores waypoint radius for individual waypoints, can
