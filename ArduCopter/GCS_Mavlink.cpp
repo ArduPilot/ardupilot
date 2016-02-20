@@ -15,7 +15,7 @@ void Copter::gcs_send_deferred(void)
     gcs_send_message(MSG_RETRY_DEFERRED);
 }
 
-void Copter::gcs_send_deferred(void)
+void Copter::gcs_retry_statustext(void)
 {
     GCS_MAVLINK::retry_statustext();
 }

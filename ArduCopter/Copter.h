@@ -617,7 +617,7 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     void gcs_send_heartbeat(void);
     void gcs_send_deferred(void);
-    void gcs_retry_sendtext(void);
+    void gcs_retry_statustext(void);
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_limits_status(mavlink_channel_t chan);
