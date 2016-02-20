@@ -61,6 +61,13 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         ret = false;
     }
 
+    if (plane.quadplane.available() && plane.scheduler.get_loop_rate_hz() < 100) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: quadplane needs SCHED_LOOP_RATE > 100");
+        }
+        ret = false;
+    }
+
     return ret;
 }
 
