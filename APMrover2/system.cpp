@@ -214,10 +214,10 @@ void Rover::startup_ground(void)
 {
     set_mode(INITIALISING);
     
-	gcs_send_text(MAV_SEVERITY_INFO,"<startup_ground> Ground start");
+	GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,"<startup_ground> Ground start");
 
 	#if(GROUND_START_DELAY > 0)
-		gcs_send_text(MAV_SEVERITY_NOTICE,"<startup_ground> With delay");
+		GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE,"<startup_ground> With delay");
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
@@ -241,7 +241,7 @@ void Rover::startup_ground(void)
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
 
-	gcs_send_text(MAV_SEVERITY_INFO,"Ready to drive");
+	GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,"Ready to drive");
 }
 
 /*
@@ -357,7 +357,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
     }
     if (failsafe.triggered != 0 && failsafe.bits == 0) {
         // a failsafe event has ended
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Failsafe ended");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Failsafe ended");
     }
 
     failsafe.triggered &= failsafe.bits;
@@ -368,7 +368,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
         control_mode != RTL &&
         control_mode != HOLD) {
         failsafe.triggered = failsafe.bits;
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Failsafe trigger 0x%x", (unsigned)failsafe.triggered);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Failsafe trigger 0x%x", (unsigned)failsafe.triggered);
         switch (g.fs_action) {
         case 0:
             break;
@@ -384,12 +384,12 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
 
 void Rover::startup_INS_ground(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Warming up ADC");
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Warming up ADC");
  	mavlink_delay(500);
 
 	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
-    gcs_send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
 	mavlink_delay(1000);
 
     ahrs.init();
