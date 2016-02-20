@@ -27,6 +27,7 @@ extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
+ObjectBuffer<GCS_MAVLINK::statustext_t> GCS_MAVLINK::_statustext_queue(GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY);
 
 GCS_MAVLINK::GCS_MAVLINK()
 {
@@ -1137,21 +1138,124 @@ void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
  */
 void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
 {
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
-                char msg2[50] {};
-                va_list arg_list;
-                va_start(arg_list, fmt);
-                hal.util->vsnprintf((char *)msg2, sizeof(msg2), fmt, arg_list);
-                va_end(arg_list);
-                mavlink_msg_statustext_send(chan,
-                                            severity,
-                                            msg2);
-            }
-        }
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    va_end(arg_list);
+    _send_statustext(severity, mavlink_active, text);
+}
+
+/*
+  send a statustext message to specific MAVLink channel, zero indexed
+ */
+void GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan, const char *fmt, ...)
+{
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    va_end(arg_list);
+    _send_statustext(severity, (1<<dest_chan), text);
+}
+
+/*
+  send a statustext message to specific MAVLink connections in a bitmask
+ */
+void GCS_MAVLINK::send_statustext_bitmask(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *fmt, ...)
+{
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    va_end(arg_list);
+    _send_statustext(severity, dest_bitmask, text);
+}
+
+/*
+  send a statustext text string to specific MAVLink bitmask
+ */
+void GCS_MAVLINK::_send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char* text)
+{
+    // create bitmask of what mavlink ports we should send this text to.
+    // note, if sending to all ports, we only need to store the bitmask for each and the string only once.
+    // once we send over a link, clear the port but other busy ports bit may stay allowing for faster links
+    // to clear the bit and send quickly but slower links to still store the string. Regardless of mixed
+    // bitrates of ports, a maximum of GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY strings can be buffered. Downside
+    // is if you have a super slow link mixed with a faster port, if there are GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY
+    // string in the slow queue then a 6th item can not be queued for the faster link
+
+    dest_bitmask &= mavlink_active;
+    if (!dest_bitmask) {
+        // nowhere to send
+        return;
     }
+
+    statustext_t statustext{};
+    statustext.bitmask = mavlink_active & dest_bitmask;
+    statustext.msg.severity = severity;
+    memcpy(statustext.msg.text, text, sizeof(statustext.msg.text));
+    _statustext_queue.push(statustext);
+}
+
+/*
+  send a statustext message to specific MAVLink connections in a bitmask
+ */
+void GCS_MAVLINK::retry_statustext(void)
+{
+    // create bitmask of what mavlink ports we should send this text to.
+    // note, if sending to all ports, we only need to store the bitmask for each and the string only once.
+    // once we send over a link, clear the port but other busy ports bit may stay allowing for faster links
+    // to clear the bit and send quickly but slower links to still store the string. Regardless of mixed
+    // bitrates of ports, a maximum of GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY strings can be buffered. Downside
+    // is if you have a super slow link mixed with a faster port, if there are GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY
+    // string in the slow queue then a 6th item can not be queued for the faster link
+
+    if (_statustext_queue.empty()) {
+        // nothing to do
+        return;
+    }
+
+    // keep sending until all channels have unable to send (full) or have nothing to send
+    bool still_sending = true;
+
+    // using 'while' to ensure we either run out of text to send or all buffers on all ports are full
+    while (still_sending) {
+        still_sending = false; // if we send something, keep going
+
+        // populate statustext
+        statustext_t statustext; // no need to {} init it because the pop will memcpy all bytes
+        if (!_statustext_queue.pop(statustext)) {
+            // all done, nothing to send
+            return;
+        }
+
+        // try and send to all active mavlink ports listed in the statustext.bitmask
+        for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+
+            uint8_t chan_bit = (1<<i);
+            // logical AND (&) to mask them all together
+            if (statustext.bitmask & // something is queued
+                    mavlink_active & // to an active port
+                    chan_bit) {      // and that's the port index we're looping at
+
+                // if we have space then send then clear that channel bit on the mask.
+                mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+                if (comm_get_txspace(chan_index) > MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
+
+                    mavlink_msg_statustext_send(chan_index, statustext.msg.severity, statustext.msg.text);
+                    statustext.bitmask &= ~chan_bit;
+                    still_sending = true;
+                }
+            }
+        } // for
+
+        if (statustext.bitmask) {
+            // Still more to send but the port buffer was full. Queue it again to try later.
+            // Pushing back to the RingBuffer will allow slower links to not block faster links.
+            _statustext_queue.push(statustext);
+        }
+    } // while
 }
 
 /*

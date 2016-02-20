@@ -17,11 +17,13 @@
 #include "MAVLink_routing.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN)
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
+#define GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY          5
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
@@ -94,6 +96,12 @@ public:
         msg_snoop = _msg_snoop;
     }
 
+    struct statustext_t {
+        uint8_t                 bitmask;
+        mavlink_statustext_t    msg;
+    };
+    static ObjectBuffer<statustext_t> _statustext_queue;
+
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
@@ -160,11 +168,13 @@ public:
     static uint8_t active_channel_mask(void) { return mavlink_active; }
 
     /*
-      send a statustext message to all active MAVLink
-      connections. This function is static so it can be called from
-      any library
+      send a statustext message to active MAVLink connections, or a specific
+      one. This function is static so it can be called from any library.
     */
     static void send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...);
+    static void send_statustext_bitmask(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *fmt, ...);
+    static void send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan, const char *fmt, ...);
+    static void retry_statustext(void);
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
@@ -322,6 +332,8 @@ private:
 
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
+
+    static void _send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char* text);
 };
 
 #endif // __GCS_H
