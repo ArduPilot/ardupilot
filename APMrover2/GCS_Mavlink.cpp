@@ -383,15 +383,6 @@ void Rover::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-void Rover::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
-}
-
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool Rover::telemetry_delayed(mavlink_channel_t chan)
 {
@@ -521,9 +512,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_STATUSTEXT:
-        CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        rover.send_statustext(chan);
-        break;
+        // this method is depreciated, use GCS_MAVLINK::send_statustext*
+        return false;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
@@ -878,7 +868,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t result = MAV_RESULT_UNSUPPORTED;
 
             // do command
-            send_text(MAV_SEVERITY_INFO,"Command received: ");
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Command received: ");
 
             switch(packet.command) {
 
@@ -1003,7 +993,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 }
                 else {
-                    send_text(MAV_SEVERITY_WARNING, "Unsupported preflight calibration");
+                    GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_WARNING, chan, "Unsupported preflight calibration");
                 }
                 break;
 
@@ -1160,10 +1150,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
             // mark the firmware version in the tlog
-            send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, FIRMWARE_STRING);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
             handle_param_request_list(msg);
             break;
