@@ -496,16 +496,6 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-
-void NOINLINE Copter::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
-}
-
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool Copter::telemetry_delayed(mavlink_channel_t chan)
 {
@@ -668,9 +658,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_STATUSTEXT:
-        CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        copter.send_statustext(chan);
-        break;
+        // this method is depreciated, use GCS_MAVLINK::send_statustext*
+        return false;
 
     case MSG_LIMITS_STATUS:
 #if AC_FENCE == ENABLED
@@ -1043,12 +1032,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
         // mark the firmware version in the tlog
-        send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
+        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, FIRMWARE_STRING);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
+        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
-        send_text(MAV_SEVERITY_INFO, "Frame: " FRAME_CONFIG_STRING);
+        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Frame: " FRAME_CONFIG_STRING);
         handle_param_request_list(msg);
         break;
     }
@@ -1582,18 +1571,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_SEND_BANNER: {
             result = MAV_RESULT_ACCEPTED;
 
-            send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, FIRMWARE_STRING);
 
             #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
             #endif
 
-            send_text(MAV_SEVERITY_INFO, "Frame: " FRAME_CONFIG_STRING);
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Frame: " FRAME_CONFIG_STRING);
 
             // send system ID if we can
             char sysid[40];
             if (hal.util->get_system_id(sysid)) {
-                send_text(MAV_SEVERITY_INFO, sysid);
+                GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, sysid);
             }
 
             break;
@@ -1910,12 +1899,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         if (packet.idx >= copter.rally.get_rally_total() ||
             packet.idx >= copter.rally.get_rally_max()) {
-            send_text(MAV_SEVERITY_NOTICE,"Bad rally point message ID");
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_NOTICE, chan, "Bad rally point message ID");
             break;
         }
 
         if (packet.count != copter.rally.get_rally_total()) {
-            send_text(MAV_SEVERITY_NOTICE,"Bad rally point message count");
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_NOTICE, chan, "Bad rally point message count");
             break;
         }
 
@@ -1928,7 +1917,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         rally_point.flags = packet.flags;
 
         if (!copter.rally.set_rally_point_with_index(packet.idx, rally_point)) {
-            send_text(MAV_SEVERITY_CRITICAL, "Error setting rally point");
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_CRITICAL, chan, "Error setting rally point");
         }
 
         break;
@@ -1940,13 +1929,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_rally_fetch_point_decode(msg, &packet);
 
         if (packet.idx > copter.rally.get_rally_total()) {
-            send_text(MAV_SEVERITY_NOTICE, "Bad rally point index");
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_NOTICE, chan, "Bad rally point index");
             break;
         }
 
         RallyLocation rally_point;
         if (!copter.rally.get_rally_point_with_index(packet.idx, rally_point)) {
-           send_text(MAV_SEVERITY_NOTICE, "Failed to set rally point");
+            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_NOTICE, chan, "Failed to set rally point");
            break;
         }
 
