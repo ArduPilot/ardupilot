@@ -71,18 +71,18 @@ bool Plane::adsb_evasion_start(void)
     switch(adsb.get_behavior()) {
     case AP_ADSB::ADSB_BEHAVIOR_NONE:
     default:
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, no action taken");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "ADS-B threat found, no action taken");
         break;
 
     case AP_ADSB::ADSB_BEHAVIOR_GUIDED:
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, switching to GUIDED mode");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "ADS-B threat found, switching to GUIDED mode");
         set_mode(GUIDED);
         adsb_state.is_evading = true; // must be done AFTER set_mode()
         break;
 
     case AP_ADSB::ADSB_BEHAVIOR_LOITER:
     case AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND:
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, performing LOITER");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "ADS-B threat found, performing LOITER");
         set_mode(LOITER);
         adsb_state.is_evading = true; // must be done after set_mode()
         break;
@@ -96,7 +96,7 @@ bool Plane::adsb_evasion_start(void)
  */
 void Plane::adsb_evasion_stop(void)
 {
-    gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat gone, continuing mission");
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "ADS-B threat gone, continuing mission");
 
     FlightMode prev_control_mode = control_mode;
     set_mode(AUTO);
