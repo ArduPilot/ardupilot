@@ -21,7 +21,7 @@ void Plane::parachute_release()
     }
     
     // send message to gcs and dataflash
-    gcs_send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"Parachute: Released");
 
     // release parachute
     parachute.release();
@@ -42,12 +42,12 @@ bool Plane::parachute_manual_release()
     // do not release if vehicle is not flying
     if (!is_flying()) {
         // warn user of reason for failure
-        gcs_send_text(MAV_SEVERITY_WARNING,"Parachute: Not flying");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING,"Parachute: Not flying");
         return false;
     }
 
     if (relative_altitude() < parachute.alt_min()) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Parachute: Too low");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Parachute: Too low");
         return false;
     }
 

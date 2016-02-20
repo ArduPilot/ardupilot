@@ -1416,9 +1416,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.auto_state.commanded_go_around = true;
                
                 result = MAV_RESULT_ACCEPTED;
-                plane.gcs_send_text(MAV_SEVERITY_INFO,"Go around command accepted");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,"Go around command accepted");
             } else {
-                plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Rejected go around command");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE,"Rejected go around command");
             }
             break;
 
@@ -1442,7 +1442,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     if (! plane.geofence_set_floor_enabled(false)) {
                         result = MAV_RESULT_FAILED;
                     } else {
-                        plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Fence floor disabled");
+                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE,"Fence floor disabled");
                     }
                     break;
                 default:
@@ -1484,7 +1484,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.Log_Write_Home_And_Origin();
                 GCS_MAVLINK::send_home_all(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
-                plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
                                         (double)(new_home_loc.lng*1.0e-7f),
                                         (uint32_t)(new_home_loc.alt*0.01f));
@@ -1517,10 +1517,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 case PARACHUTE_RELEASE:
                     // treat as a manual release which performs some additional check of altitude
                     if (plane.parachute.released()) {
-                        plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Parachute already released");
+                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Parachute already released");
                         result = MAV_RESULT_FAILED;
                     } else if (!plane.parachute.enabled()) {
-                        plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Parachute not enabled");
+                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Parachute not enabled");
                         result = MAV_RESULT_FAILED;
                     } else {
                         if (!plane.parachute_manual_release()) {
@@ -1930,7 +1930,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         plane.home_is_set = HOME_SET_NOT_LOCKED;
         plane.Log_Write_Home_And_Origin();
         GCS_MAVLINK::send_home_all(new_home_loc);
-        plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                 (double)(new_home_loc.lat*1.0e-7f),
                                 (double)(new_home_loc.lng*1.0e-7f),
                                 (uint32_t)(new_home_loc.alt*0.01f));
@@ -1970,7 +1970,7 @@ void Plane::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Initialising APM");
     }
     check_usb_mux();
 
@@ -2026,43 +2026,6 @@ void Plane::gcs_update(void)
 #else
             gcs[i].update(NULL);
 #endif
-        }
-    }
-}
-
-void Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_text(severity, str);
-        }
-    }
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(str);
-#endif
-}
-
-/*
- *  send a low priority formatted message to the GCS
- *  only one fits in the queue, so if you send more than one before the
- *  last one gets into the serial buffer then the old one will be lost
- */
-void Plane::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)severity;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
-            sizeof(gcs[0].pending_status.text), fmt, arg_list);
-    va_end(arg_list);
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
-#endif
-    gcs[0].send_message(MSG_STATUSTEXT);
-    for (uint8_t i=1; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].pending_status = gcs[0].pending_status;
-            gcs[i].send_message(MSG_STATUSTEXT);
         }
     }
 }
