@@ -171,13 +171,13 @@ void Sub::failsafe_gcs_check()
 
     // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs and we are not in guided mode
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if ((!failsafe.gcs) && (g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!failsafe.rc_override_active && control_mode != GUIDED))) {
-        return;
+    if ((!failsafe.gcs) && (g.failsafe_gcs == FS_GCS_DISABLED)) {
+    	return;
     }
 
     // calc time since last gcs update
     // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
-    last_gcs_update_ms = millis() - failsafe.last_heartbeat_ms;
+    last_gcs_update_ms = AP_HAL::millis() - failsafe.last_heartbeat_ms;
 
     // check if all is well
     if (last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
