@@ -524,6 +524,7 @@ bool Sub::arm_checks(bool display_failure, bool arming_from_gcs)
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Nav Checks");
         }
+        ahrs.reset(); // This will fix the altitude hang; ToDo: figure out what is actually causing the hang
         return false;
     }
 
