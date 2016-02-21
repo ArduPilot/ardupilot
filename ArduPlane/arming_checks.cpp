@@ -68,6 +68,13 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         ret = false;
     }
 
+    if (plane.control_mode == AUTO && plane.mission.num_commands() <= 1) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: No mission loaded");
+        }
+        ret = false;
+    }
+
     return ret;
 }
 
