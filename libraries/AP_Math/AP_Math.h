@@ -395,38 +395,32 @@ auto degrees(const T &rad) -> decltype(rad * RAD_TO_DEG) {
  */
 template<class T>
 T hz_to_nsec(const T &freq) {
-    T val = NSEC_PER_SEC / freq;
-    return val;
+    return freq != 0 ? NSEC_PER_SEC / freq : 0;
 }
 
 template<class T>
 T nsec_to_hz(const T &nsec) {
-    T val = NSEC_PER_SEC / nsec;
-    return val;
+    return nsec != 0 ? NSEC_PER_SEC / nsec : 0;
 }
 
 template<class T>
 T usec_to_nsec(const T &usec) {
-    T val = usec * NSEC_PER_USEC;
-    return val;
+    return usec * NSEC_PER_USEC;
 }
 
 template<class T>
 T nsec_to_usec(const T &nsec) {
-    T val = nsec / NSEC_PER_USEC;
-    return val;
+    return nsec != 0 ? nsec / NSEC_PER_USEC : 0;
 }
 
 template<class T>
 T hz_to_usec(const T &freq) {
-    T val = USEC_PER_SEC / freq;
-    return val;
+    return freq != 0 ? USEC_PER_SEC / freq : 0;
 }
 
 template<class T>
 T usec_to_hz(const T &usec) {
-    T val = USEC_PER_SEC / usec;
-    return val;
+    return usec != 0 ? USEC_PER_SEC / usec : 0;
 }
 
 
