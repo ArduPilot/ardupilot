@@ -38,3 +38,4 @@ env:
   matrix:
     - CI_BUILD_TARGET="px4-v2 sitl linux"
     - CI_BUILD_TARGET="navio raspilot minlure bebop"
+    - CI_BUILD_TARGET="sitltest"

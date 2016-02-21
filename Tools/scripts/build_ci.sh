@@ -40,6 +40,20 @@ build_concurrency=(["navio"]="-j2"
 
 build_extra_clean=(["px4-v2"]="make px4-cleandep")
 
+# special case for SITL testing in CI
+if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
+    echo "Installing pymavlink"
+    git submodule init
+    git submodule update
+    (cd modules/mavlink/pymavlink && python setup.py build install --user)
+    unset BUILDROOT
+    echo "Running SITL QuadCopter test"
+    Tools/autotest/autotest.py -j2 build.ArduCopter fly.ArduCopter
+    echo "Running SITL QuadPlane test"
+    Tools/autotest/autotest.py -j2 build.ArduPlane fly.QuadPlane
+    exit 0
+fi
+
 waf=modules/waf/waf-light
 
 # get list of boards supported by the waf build
