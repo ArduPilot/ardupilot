@@ -7,7 +7,6 @@ def build(bld):
         name=vehicle + '_libs',
         vehicle=vehicle,
         libraries=bld.ap_common_vehicle_libraries() + [
-            'AP_ADSB',
             'AC_AttitudeControl',
             'AC_Fence',
             'AC_PID',
