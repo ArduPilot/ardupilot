@@ -17,5 +17,7 @@
 #include "AP_MotorsCoax.h"
 #include "AP_MotorsBlueROV6DOF.h"
 #include "AP_MotorsVectoredROV.h"
+#include "AP_MotorsVectored6DOF.h"
+
 
 #endif // __AP_MOTORS_H__

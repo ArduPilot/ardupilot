@@ -92,7 +92,7 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
         MAV_TYPE_ROCKET,
 #elif (FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
         MAV_TYPE_ROCKET,
-#elif (FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED_FRAME)
+#elif (FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED_FRAME || FRAME_CONFIG == VECTORED6DOF_FRAME)
         MAV_TYPE_HEXAROTOR,
 #else
   #error Unrecognised frame type

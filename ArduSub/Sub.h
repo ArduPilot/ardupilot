@@ -312,6 +312,9 @@ private:
  #define MOTOR_CLASS AP_MotorsBlueROV6DOF
 #elif FRAME_CONFIG == VECTORED_FRAME
  #define MOTOR_CLASS AP_MotorsVectoredROV
+#elif FRAME_CONFIG == VECTORED6DOF_FRAME
+ #define MOTOR_CLASS AP_MotorsVectored6DOF
+
 #else
  #error Unrecognised frame type
 #endif
