@@ -15,7 +15,7 @@ void Sub::crash_check()
     static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
     // return immediately if disarmed, or crash checking disabled
-    if (!motors.armed() || ap.land_complete || g.fs_crash_check == 0) {
+    if (!motors.armed() || g.fs_crash_check == 0) {
         crash_counter = 0;
         return;
     }
