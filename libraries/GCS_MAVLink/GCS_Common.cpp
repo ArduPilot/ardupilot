@@ -1159,14 +1159,7 @@ void GCS_MAVLINK::send_statustext_bitmask(MAV_SEVERITY severity, uint8_t dest_bi
  */
 void GCS_MAVLINK::_send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char* text)
 {
-    // create bitmask of what mavlink ports we should send this text to.
-    // note, if sending to all ports, we only need to store the bitmask for each and the string only once.
-    // once we send over a link, clear the port but other busy ports bit may stay allowing for faster links
-    // to clear the bit and send quickly but slower links to still store the string. Regardless of mixed
-    // bitrates of ports, a maximum of GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY strings can be buffered. Downside
-    // is if you have a super slow link mixed with a faster port, if there are GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY
-    // string in the slow queue then a 6th item can not be queued for the faster link
-
+    // filter destination ports to only allow active ports.
     dest_bitmask &= mavlink_active;
     if (!dest_bitmask) {
         // nowhere to send
@@ -1191,7 +1184,7 @@ void GCS_MAVLINK::retry_statustext(void)
     // to clear the bit and send quickly but slower links to still store the string. Regardless of mixed
     // bitrates of ports, a maximum of GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY strings can be buffered. Downside
     // is if you have a super slow link mixed with a faster port, if there are GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY
-    // string in the slow queue then a 6th item can not be queued for the faster link
+    // strings in the slow queue then the next item can not be queued for the faster link
 
     if (_statustext_queue.empty()) {
         // nothing to do
@@ -1216,14 +1209,13 @@ void GCS_MAVLINK::retry_statustext(void)
             return;
         }
 
+
         // try and send to all active mavlink ports listed in the statustext.bitmask
         for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
 
             uint8_t chan_bit = (1<<i);
-            // logical AND (&) to mask them all together
-            if (statustext.bitmask & // something is queued
-                    mavlink_active & // to an active port
-                    chan_bit) {      // and that's the port index we're looping at
+            // logical AND (&) to mask them together
+            if (statustext.bitmask & chan_bit) { // something is queued on a port and that's the port index we're looped at
 
                 // if we have space then send then clear that channel bit on the mask.
                 mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
