@@ -1865,6 +1865,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // configure or release parachute
             result = MAV_RESULT_ACCEPTED;
             copter.precland.handle_msg(msg);
+
+            // If vehicle is in Guided, set the Guided mode to Guided_Optical_Track
+            if (copter.control_mode == GUIDED && copter.guided_mode != Guided_Optical_Track) {
+                copter.guided_optical_track_control_start();
+            }
 #endif
 
 #if CAMERA == ENABLED
