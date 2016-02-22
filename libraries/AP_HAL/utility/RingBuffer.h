@@ -46,6 +46,12 @@ public:
     // read bytes from ringbuffer. Returns number of bytes read
     uint32_t read(uint8_t *data, uint32_t len);
 
+    /*
+      update bytes at the read pointer. Used to update an object without
+      popping it
+    */
+    bool update(const uint8_t *data, uint32_t len);
+    
     // return size of ringbuffer
     uint32_t get_size(void) const { return size; }
 
@@ -110,7 +116,7 @@ public:
         }
         return buffer->write((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
-
+   
     /*
       throw away an object
      */
@@ -145,6 +151,12 @@ public:
      */
     bool peek(T &object) {
         return peekbytes(&object, sizeof(T)) == sizeof(T);
+    }
+
+    /* update the object at the front of the queue (the one that would
+       be fetched by pop()) */
+    bool update(const T &object) {
+        return buffer->update((uint8_t*)&object, sizeof(T));
     }
     
 private:

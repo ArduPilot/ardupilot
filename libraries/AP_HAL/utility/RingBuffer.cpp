@@ -66,6 +66,28 @@ uint32_t ByteBuffer::write(const uint8_t *data, uint32_t len)
     return len;
 }
 
+/*
+  update bytes at the read pointer. Used to update an object without
+  popping it
+ */
+bool ByteBuffer::update(const uint8_t *data, uint32_t len)
+{
+    if (len > available()) {
+        return false;
+    }
+    // perform as two memcpy calls
+    uint32_t n = size - head;
+    if (n > len) {
+        n = len;
+    }
+    memcpy(&buf[head], data, n);
+    data += n;
+    if (len > n) {
+        memcpy(&buf[0], data, len-n);
+    }
+    return true;
+}
+
 bool ByteBuffer::advance(uint32_t n)
 {
     if (n > available()) {
