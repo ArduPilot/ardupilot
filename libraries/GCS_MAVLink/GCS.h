@@ -23,7 +23,12 @@
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN)
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
-#define GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY          5
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_1000
+    #define GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY          30
+#else
+    #define GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY          5
+#endif
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
