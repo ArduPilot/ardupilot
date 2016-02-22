@@ -1159,6 +1159,10 @@ void GCS_MAVLINK::send_statustext_bitmask(MAV_SEVERITY severity, uint8_t dest_bi
  */
 void GCS_MAVLINK::_send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char* text)
 {
+    if (dataflash_p != NULL) {
+        dataflash_p->Log_Write_Message(text);
+    }
+
     // filter destination ports to only allow active ports.
     dest_bitmask &= mavlink_active;
     if (!dest_bitmask) {
@@ -1175,10 +1179,6 @@ void GCS_MAVLINK::_send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, 
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
     // block but not until the buffer fills up.
     _statustext_queue.push_force(statustext);
-
-    if (dataflash_p != NULL) {
-        dataflash_p->Log_Write_Message(text);
-    }
 }
 
 /*
