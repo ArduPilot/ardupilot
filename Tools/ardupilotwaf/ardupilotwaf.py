@@ -307,7 +307,7 @@ def _select_programs_from_group(bld):
             bld.targets += ',' + tg.name
 
 def options(opt):
-    g = opt.add_option_group('Ardupilot build options')
+    g = opt.ap_groups['build']
     g.add_option('--program-group',
         action='append',
         default=[],
@@ -315,6 +315,11 @@ def options(opt):
              'build. Example: `waf --program-group examples` builds all ' +
              'examples. The special group "all" selects all programs.',
     )
+
+    g = opt.ap_groups['check']
+    g.add_option('--check-verbose',
+                 action='store_true',
+                 help='Output all test programs')
 
 def build(bld):
     global LAST_IDX
