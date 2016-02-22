@@ -130,10 +130,10 @@ public:
 
     
     /*
-      force() is semantically equivalent to:
-         if (!push(t)) { pop(); push(t); }
+     * push_force() is semantically equivalent to:
+     *   if (!push(t)) { pop(); push(t); }
      */
-    bool force(const T &object) {
+    bool push_force(const T &object) {
         if (buffer->space() < sizeof(T)) {
             buffer->advance(sizeof(T));
         }
