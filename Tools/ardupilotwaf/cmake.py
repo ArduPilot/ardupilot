@@ -97,6 +97,7 @@ from waflib import Node, Task, Utils
 from waflib.TaskGen import feature, taskgen_method
 
 from collections import OrderedDict
+import os
 
 class cmake_configure_task(Task.Task):
     vars = ['CMAKE_BLD_DIR']
@@ -119,6 +120,15 @@ class cmake_configure_task(Task.Task):
 
     def keyword(self):
         return 'CMake Configure'
+
+# Clean cmake configuration
+cmake_configure_task._original_run = cmake_configure_task.run
+def _cmake_configure_task_run(self):
+    cmakecache_path = self.outputs[0].abspath()
+    if os.path.exists(cmakecache_path):
+        os.remove(cmakecache_path)
+    self._original_run()
+cmake_configure_task.run = _cmake_configure_task_run
 
 class cmake_build_task(Task.Task):
     run_str = '${CMAKE} --build ${CMAKE_BLD_DIR} --target ${CMAKE_TARGET}'
