@@ -109,6 +109,8 @@ void Copter::init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
+    GCS_MAVLINK::set_dataflash(&DataFlash);
+
     BoardConfig.init();
 
     // initialise serial port
@@ -236,7 +238,7 @@ void Copter::init_ardupilot()
     while (barometer.get_last_update() == 0) {
         // the barometer begins updating when we get the first
         // HIL_STATE message
-        gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
         delay(1000);
     }
 
