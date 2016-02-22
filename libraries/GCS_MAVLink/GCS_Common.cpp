@@ -1171,6 +1171,10 @@ void GCS_MAVLINK::_send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, 
     statustext.msg.severity = severity;
     memcpy(statustext.msg.text, text, sizeof(statustext.msg.text));
     _statustext_queue.push(statustext);
+
+    if (dataflash_p != NULL) {
+        dataflash_p->Log_Write_Message(text);
+    }
 }
 
 /*
