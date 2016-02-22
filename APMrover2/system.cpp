@@ -89,6 +89,8 @@ void Rover::init_ardupilot()
 	
     load_parameters();
 
+    GCS_MAVLINK::set_dataflash(&DataFlash);
+
     BoardConfig.init();
 
     // initialise serial ports
