@@ -109,6 +109,8 @@ void Copter::init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
+    GCS_MAVLINK::set_dataflash(&DataFlash);
+
     BoardConfig.init();
 
     // initialise serial port
