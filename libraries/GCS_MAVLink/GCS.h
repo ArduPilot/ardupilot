@@ -101,6 +101,7 @@ public:
     }
 
     struct statustext_t {
+        uint32_t                timestamp_ms;
         uint8_t                 bitmask;
         mavlink_statustext_t    msg;
     };

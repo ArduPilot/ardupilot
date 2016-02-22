@@ -1164,14 +1164,14 @@ void GCS_MAVLINK::_send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, 
     }
 
     // filter destination ports to only allow active ports.
-    dest_bitmask &= mavlink_active;
-    if (!dest_bitmask) {
+    statustext_t statustext{};
+    statustext.bitmask = mavlink_active & dest_bitmask;
+    if (!statustext.bitmask) {
         // nowhere to send
         return;
     }
 
-    statustext_t statustext{};
-    statustext.bitmask = mavlink_active & dest_bitmask;
+    statustext.timestamp_ms = AP_HAL::millis();
     statustext.msg.severity = severity;
     strncpy(statustext.msg.text, text, sizeof(statustext.msg.text));
 
@@ -1220,13 +1220,25 @@ void GCS_MAVLINK::retry_statustext(void)
             // logical AND (&) to mask them together
             if (statustext.bitmask & chan_bit) { // something is queued on a port and that's the port index we're looped at
 
-                // if we have space then send then clear that channel bit on the mask.
                 mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
                 if (comm_get_txspace(chan_index) > MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
-
+                    // we have space so send then clear that channel bit on the mask
                     mavlink_msg_statustext_send(chan_index, statustext.msg.severity, statustext.msg.text);
                     statustext.bitmask &= ~chan_bit;
                     still_sending = true;
+
+                } else if (AP_HAL::millis() - statustext.timestamp_ms > 2000) {
+                    // port has been blocking for 2 seconds. This is blocking all further messages on all
+                    // ports so its best to toss the packet by clearing bitmask.
+                    statustext.bitmask &= ~chan_bit;
+
+                    // Also, forget that mavlink port. The port will be re-remembered if we get any data from it
+                    mavlink_active &= ~chan_bit;
+
+                    // restart loop so the other blocked ports can send immediately.
+                    still_sending = true;
+
+                    send_statustext_all(MAV_SEVERITY_CRITICAL, "Can not send statustext on Mavlink port %i", i);
                 } // if comm
             } // if bitmask
         } // for i
