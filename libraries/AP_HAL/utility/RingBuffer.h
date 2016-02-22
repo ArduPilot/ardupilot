@@ -30,16 +30,39 @@ class ByteBuffer {
 public:
     ByteBuffer(uint32_t size);
     ~ByteBuffer(void);
-    
+
+    // number of bytes available to be read
     uint32_t available(void) const;
+
+    // number of bytes space available to write
     uint32_t space(void) const;
+
+    // true if available() is zero
     bool empty(void) const;
+
+    // write bytes to ringbuffer. Returns number of bytes written
     uint32_t write(const uint8_t *data, uint32_t len);
+
+    // read bytes from ringbuffer. Returns number of bytes read
     uint32_t read(uint8_t *data, uint32_t len);
+
+    // return size of ringbuffer
     uint32_t get_size(void) const { return size; }
+
+    // advance the read pointer (discarding bytes)
     bool advance(uint32_t n);
+
+    // return a pointer to the next available data
     const uint8_t *readptr(uint32_t &available_bytes);
+
+    // peek one byte without advancing read pointer. Return byte
+    // or -1 if none available
     int16_t peek(uint32_t ofs) const;
+
+    /*
+      read len bytes without advancing the read pointer
+    */
+    uint32_t peekbytes(uint8_t *data, uint32_t len);
     
 private:
     uint8_t *buf = nullptr;
@@ -65,21 +88,39 @@ public:
         delete buffer;
     }
 
+    // return number of objects available to be read
     uint32_t available(void) const {
         return buffer->available() / sizeof(T);
     }
+
+    // return number of objects that could be written
     uint32_t space(void) const {
         return buffer->space() / sizeof(T);
     }
+
+    // true is available() == 0
     bool empty(void) const {
         return buffer->empty();
     }
+
+    // push one object
     bool push(const T &object) {
         if (buffer->space() < sizeof(T)) {
             return false;
         }
         return buffer->write((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
+
+    /*
+      throw away an object
+     */
+    bool pop(void) {
+        return buffer->advance(sizeof(T));
+    }
+
+    /*
+      pop earliest object off the queue
+     */
     bool pop(T &object) {
         if (buffer->available() < sizeof(T)) {
             return false;
@@ -87,6 +128,25 @@ public:
         return buffer->read((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
+    
+    /*
+      force() is semantically equivalent to:
+         if (!push(t)) { pop(); push(t); }
+     */
+    bool force(const T &object) {
+        if (buffer->space() < sizeof(T)) {
+            buffer->advance(sizeof(T));
+        }
+        return push(object);
+    }
+
+    /*
+      peek copies an object out without advancing the read pointer
+     */
+    bool peek(T &object) {
+        return peekbytes(&object, sizeof(T)) == sizeof(T);
+    }
+    
 private:
     ByteBuffer *buffer = nullptr;
     uint32_t size = 0;

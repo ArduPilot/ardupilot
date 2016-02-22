@@ -75,7 +75,10 @@ bool ByteBuffer::advance(uint32_t n)
     return true;
 }
 
-uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
+/*
+  read len bytes without advancing the read pointer
+ */
+uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
 {
     if (len > available()) {
         len = available();
@@ -91,20 +94,20 @@ uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
 
     // perform first memcpy
     memcpy(data, b, n);
-    advance(n);
     data += n;
 
     if (len > n) {
-        // possible second memcpy
-        uint32_t n2;
-        b = readptr(n2);
-        if (n2 > len-n) {
-            n2 = len-n;
-        }
-        memcpy(data, b, n2);
-        advance(n2);
+        // possible second memcpy, must be from front of buffer
+        memcpy(data, buf, len-n);
     }
     return len;
+}
+
+uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
+{
+    uint32_t ret = peekbytes(data, len);
+    advance(ret);
+    return ret;
 }
 
 /*
