@@ -1169,8 +1169,12 @@ void GCS_MAVLINK::_send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, 
     statustext_t statustext{};
     statustext.bitmask = mavlink_active & dest_bitmask;
     statustext.msg.severity = severity;
-    memcpy(statustext.msg.text, text, sizeof(statustext.msg.text));
-    _statustext_queue.push(statustext);
+    strncpy(statustext.msg.text, text, sizeof(statustext.msg.text));
+
+    // The force push will ensure comm links do not block other comm links forever if they fail.
+    // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
+    // block but not until the buffer fills up.
+    _statustext_queue.push_force(statustext);
 
     if (dataflash_p != NULL) {
         dataflash_p->Log_Write_Message(text);
@@ -1195,10 +1199,6 @@ void GCS_MAVLINK::retry_statustext(void)
         return;
     }
 
-//    if (_statustext_queue.available >= 2) {
-//        // TODO: reorder _statustext_queue for priority. Higher priority msgs skips ahead in line
-//    }
-
     // keep sending until all channels have unable to send (full) or have nothing to send
     bool still_sending = true;
 
@@ -1208,11 +1208,10 @@ void GCS_MAVLINK::retry_statustext(void)
 
         // populate statustext
         statustext_t statustext; // no need to {} init it because the pop will memcpy all bytes and when it was loaded it was properly zero initialized
-        if (!_statustext_queue.pop(statustext)) {
+        if (!_statustext_queue.peek(statustext)) {
             // all done, nothing else to send
             return;
         }
-
 
         // try and send to all active mavlink ports listed in the statustext.bitmask
         for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
@@ -1228,14 +1227,17 @@ void GCS_MAVLINK::retry_statustext(void)
                     mavlink_msg_statustext_send(chan_index, statustext.msg.severity, statustext.msg.text);
                     statustext.bitmask &= ~chan_bit;
                     still_sending = true;
-                }
-            }
-        } // for
+                } // if comm
+            } // if bitmask
+        } // for i
 
-        if (statustext.bitmask) {
-            // Still more to send but the port buffer was full. Queue it again to try later.
-            // Pushing back to the RingBuffer will allow slower links to not block faster links.
-            _statustext_queue.push(statustext);
+        if (!statustext.bitmask) {
+            // throw away what we just peeked at, all done with it
+            _statustext_queue.pop();
+
+        } else if (still_sending) {
+            // something was sent so the bitmask changed. Do an in-place update to the peeked entry index
+            _statustext_queue.update(statustext);
         }
     } // while
 }
