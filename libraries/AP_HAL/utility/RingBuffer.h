@@ -150,7 +150,7 @@ public:
       peek copies an object out without advancing the read pointer
      */
     bool peek(T &object) {
-        return peekbytes(&object, sizeof(T)) == sizeof(T);
+        return buffer->peekbytes((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
     /* update the object at the front of the queue (the one that would
