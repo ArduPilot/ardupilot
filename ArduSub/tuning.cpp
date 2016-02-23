@@ -106,24 +106,6 @@ void Sub::tuning() {
         g.acro_yaw_p = tuning_value;
         break;
 
-#if FRAME_CONFIG == HELI_FRAME
-    case TUNING_HELI_EXTERNAL_GYRO:
-        motors.ext_gyro_gain(g.rc_6.control_in);
-        break;
-
-    case TUNING_RATE_PITCH_FF:
-        g.pid_rate_pitch.ff(tuning_value);
-        break;
-
-    case TUNING_RATE_ROLL_FF:
-        g.pid_rate_roll.ff(tuning_value);
-        break;
-
-    case TUNING_RATE_YAW_FF:
-        g.pid_rate_yaw.ff(tuning_value);
-        break;
-#endif
-
     case TUNING_DECLINATION:
         // set declination to +-20degrees
         compass.set_declination(ToRad((2.0f * g.rc_6.control_in - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
@@ -199,11 +181,9 @@ void Sub::tuning() {
         g.pid_rate_roll.kD(tuning_value);
         break;
 
-#if FRAME_CONFIG != HELI_FRAME
     case TUNING_RATE_MOT_YAW_HEADROOM:
         motors.set_yaw_headroom(tuning_value*1000);
         break;
-#endif
 
      case TUNING_RATE_YAW_FILT:
          g.pid_rate_yaw.filt_hz(tuning_value);

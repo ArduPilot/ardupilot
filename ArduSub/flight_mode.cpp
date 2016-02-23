@@ -24,19 +24,11 @@ bool Sub::set_mode(uint8_t mode)
 
     switch(mode) {
         case ACRO:
-            #if FRAME_CONFIG == HELI_FRAME
-                success = heli_acro_init(ignore_checks);
-            #else
-                success = acro_init(ignore_checks);
-            #endif
+            success = acro_init(ignore_checks);
             break;
 
         case STABILIZE:
-            #if FRAME_CONFIG == HELI_FRAME
-                success = heli_stabilize_init(ignore_checks);
-            #else
-                success = stabilize_init(ignore_checks);
-            #endif
+            success = stabilize_init(ignore_checks);
             break;
 
         case ALT_HOLD:
@@ -136,19 +128,11 @@ void Sub::update_flight_mode()
 
     switch (control_mode) {
         case ACRO:
-            #if FRAME_CONFIG == HELI_FRAME
-                heli_acro_run();
-            #else
-                acro_run();
-            #endif
+            acro_run();
             break;
 
         case STABILIZE:
-            #if FRAME_CONFIG == HELI_FRAME
-                heli_stabilize_run();
-            #else
-                stabilize_run();
-            #endif
+            stabilize_run();
             break;
 
         case ALT_HOLD:
@@ -236,28 +220,6 @@ void Sub::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
 
     // cancel any takeoffs in progress
     takeoff_stop();
-
-#if FRAME_CONFIG == HELI_FRAME
-    // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_control_mode == ACRO) {
-        attitude_control.use_flybar_passthrough(false, false);
-        motors.set_acro_tail(false);
-    }
-
-    // if we are changing from a mode that did not use manual throttle,
-    // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
-    // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
-    if (!mode_has_manual_throttle(old_control_mode)){
-        if (new_control_mode == STABILIZE){
-            input_manager.set_stab_col_ramp(1.0);
-        } else if (new_control_mode == ACRO){
-            input_manager.set_stab_col_ramp(0.0);
-        }
-    }
-
-    // reset RC Passthrough to motors
-    motors.reset_radio_passthrough();
-#endif //HELI_FRAME
 }
 
 // returns true or false whether mode requires GPS

@@ -59,10 +59,8 @@
 #include <AP_Rally/AP_Rally.h>           // Rally point library
 #include <AC_PID/AC_PID.h>             // PID library
 #include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
-#include <AC_PID/AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_PID/AC_P.h>               // P library
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
-#include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
@@ -92,7 +90,6 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
-#include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 
 // Configuration
 #include "defines.h"
@@ -428,11 +425,8 @@ private:
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-#if FRAME_CONFIG == HELI_FRAME
-    AC_AttitudeControl_Heli attitude_control;
-#else
     AC_AttitudeControl_Multi attitude_control;
-#endif
+
     AC_PosControl pos_control;
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
@@ -510,13 +504,6 @@ private:
     AC_PrecLand precland;
 #endif
 
-    // Pilot Input Management Library
-    // Only used for Helicopter for AC3.3, to be expanded to include Multirotor
-    // child class for AC3.4
-#if FRAME_CONFIG == HELI_FRAME
-    AC_InputManager_Heli input_manager;
-#endif
-
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
@@ -526,21 +513,6 @@ private:
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
-
-#if FRAME_CONFIG == HELI_FRAME
-    // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
-    // and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC
-    // governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
-    ModeFilterInt16_Size5 rotor_speed_deglitch_filter {4};
-
-    int16_t rsc_control_deglitched;
-
-    // Tradheli flags
-    struct {
-        uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
-        uint8_t init_targets_on_arming  : 1;    // 1   // true if we have been disarmed, and need to reset rate controller targets when we arm
-    } heli_flags;
-#endif
 
 #if GNDEFFECT_COMPENSATION == ENABLED
     // ground effect detector
@@ -655,9 +627,6 @@ private:
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
     void Log_Write_Home_And_Origin();
     void Log_Sensor_Health();
-#if FRAME_CONFIG == HELI_FRAME
-    void Log_Write_Heli(void);
-#endif
     void Log_Write_Precland();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
@@ -839,16 +808,7 @@ private:
     bool mode_has_manual_throttle(uint8_t mode);
     bool mode_allows_arming(uint8_t mode, bool arming_from_gcs);
     void notify_flight_mode(uint8_t mode);
-    void heli_init();
     void check_dynamic_flight(void);
-    void update_heli_control_dynamics(void);
-    void heli_update_landing_swash();
-    void heli_update_rotor_speed_targets();
-    void heli_radio_passthrough();
-    bool heli_acro_init(bool ignore_checks);
-    void heli_acro_run();
-    bool heli_stabilize_init(bool ignore_checks);
-    void heli_stabilize_run();
     void read_inertia();
     void read_inertial_altitude();
     bool land_complete_maybe();

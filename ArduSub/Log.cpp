@@ -429,7 +429,6 @@ struct PACKED log_MotBatt {
 // Write an rate packet
 void Sub::Log_Write_MotBatt()
 {
-#if FRAME_CONFIG != HELI_FRAME
     struct log_MotBatt pkt_mot = {
         LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
         time_us         : AP_HAL::micros64(),
@@ -439,7 +438,6 @@ void Sub::Log_Write_MotBatt()
         th_limit        : (float)(motors.get_throttle_limit())
     };
     DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
-#endif
 }
 
 struct PACKED log_Startup {
@@ -671,20 +669,6 @@ struct PACKED log_Heli {
     int16_t   main_rotor_speed;
 };
 
-#if FRAME_CONFIG == HELI_FRAME
-// Write an helicopter packet
-void Sub::Log_Write_Heli()
-{
-    struct log_Heli pkt_heli = {
-        LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
-        time_us                 : AP_HAL::micros64(),
-        desired_rotor_speed     : motors.get_desired_rotor_speed(),
-        main_rotor_speed        : motors.get_main_rotor_speed(),
-    };
-    DataFlash.WriteBlock(&pkt_heli, sizeof(pkt_heli));
-}
-#endif
-
 // precision landing logging
 struct PACKED log_Precland {
     LOG_PACKET_HEADER;
@@ -860,10 +844,6 @@ void Sub::Log_Write_Baro(void) {}
 void Sub::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
 void Sub::Log_Write_Home_And_Origin() {}
 void Sub::Log_Sensor_Health() {}
-
-#if FRAME_CONFIG == HELI_FRAME
-void Sub::Log_Write_Heli() {}
-#endif
 
 #if OPTFLOW == ENABLED
 void Sub::Log_Write_Optflow() {}

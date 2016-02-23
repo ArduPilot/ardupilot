@@ -20,7 +20,6 @@ enum ESCCalibrationModes {
 // check if we should enter esc calibration mode
 void Sub::esc_calibration_startup_check()
 {
-#if FRAME_CONFIG != HELI_FRAME
     // exit immediately if pre-arm rc checks fail
     pre_arm_rc_checks();
     if (!ap.pre_arm_rc_check) {
@@ -71,13 +70,11 @@ void Sub::esc_calibration_startup_check()
     if (g.esc_calibrate != ESCCAL_DISABLED) {
         g.esc_calibrate.set_and_save(ESCCAL_NONE);
     }
-#endif  // FRAME_CONFIG != HELI_FRAME
 }
 
 // esc_calibration_passthrough - pass through pilot throttle to escs
 void Sub::esc_calibration_passthrough()
 {
-#if FRAME_CONFIG != HELI_FRAME
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
@@ -102,13 +99,11 @@ void Sub::esc_calibration_passthrough()
         // pass through to motors
         motors.throttle_pass_through(channel_throttle->radio_in);
     }
-#endif  // FRAME_CONFIG != HELI_FRAME
 }
 
 // esc_calibration_auto - calibrate the ESCs automatically using a timer and no pilot input
 void Sub::esc_calibration_auto()
 {
-#if FRAME_CONFIG != HELI_FRAME
     bool printed_msg = false;
 
     // reduce update rate to motors to 50Hz
@@ -148,5 +143,4 @@ void Sub::esc_calibration_auto()
 
     // block until we restart
     while(1) { delay(5); }
-#endif // FRAME_CONFIG != HELI_FRAME
 }
