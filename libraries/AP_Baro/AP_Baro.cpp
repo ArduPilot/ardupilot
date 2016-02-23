@@ -363,7 +363,8 @@ void AP_Baro::update(void)
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
             // update altitude calculation
-            if (is_zero(sensors[i].ground_pressure)) {
+            float ground_pressure = sensors[i].ground_pressure;
+            if (is_zero(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
             float altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
