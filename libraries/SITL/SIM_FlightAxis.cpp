@@ -129,9 +129,9 @@ Connection: Keep-Alive
     body += 4;
 
     // get the rest of the body
-    uint32_t expected_length = content_length + (body - reply);
-    if (expected_length >= sizeof(reply)) {
-        printf("Reply too large %u\n", expected_length);
+    int32_t expected_length = content_length + (body - reply);
+    if (expected_length >= (int32_t)sizeof(reply)) {
+        printf("Reply too large %i\n", expected_length);
         return nullptr;
     }
     while (ret < expected_length) {
