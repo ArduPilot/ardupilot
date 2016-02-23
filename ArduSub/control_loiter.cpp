@@ -9,13 +9,6 @@
 // loiter_init - initialise loiter controller
 bool Sub::loiter_init(bool ignore_checks)
 {
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Loiter if the Rotor Runup is not complete
-    if (!ignore_checks && !motors.rotor_runup_complete()){
-        return false;
-    }
-#endif
-
     if (position_ok() || ignore_checks) {
 
         // set target to current position
@@ -89,37 +82,18 @@ void Sub::loiter_run()
     switch (loiter_state) {
 
     case Loiter_Disarmed:
-
         wp_nav.init_loiter_target();
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
-        attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-#endif  // HELI_FRAME
+
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         break;
 
     case Loiter_MotorStop:
-
-#if FRAME_CONFIG == HELI_FRAME
-        // helicopters are capable of flying even with the motor stopped, therefore we will attempt to keep flying
-        // run loiter controller
-        wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
-
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
-
-        // force descent rate and call position controller
-        pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-        pos_control.update_z_controller();
-#else
         wp_nav.init_loiter_target();
         // multicopters do not stabilize roll/pitch/yaw when motors are stopped
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-#endif  // HELI_FRAME
         break;
 
     case Loiter_Takeoff:
@@ -150,14 +124,9 @@ void Sub::loiter_run()
     case Loiter_Landed:
 
         wp_nav.init_loiter_target();
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
-#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
         attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
-#endif
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         break;
 

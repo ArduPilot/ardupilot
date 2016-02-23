@@ -29,9 +29,7 @@ Sub::Sub(void) :
             FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)),
     control_mode(STABILIZE),
-#if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-    motors(g.rc_7, g.heli_servo_rsc, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE),
-#elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
+#if FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
     motors(MAIN_LOOP_RATE),
 #elif FRAME_CONFIG == SINGLE_FRAME  // single constructor requires extra servos for flaps
     motors(g.single_servo_1, g.single_servo_2, g.single_servo_3, g.single_servo_4, MAIN_LOOP_RATE),
@@ -116,10 +114,6 @@ Sub::Sub(void) :
 #endif
 #if PRECISION_LANDING == ENABLED
     precland(ahrs, inertial_nav, g.pi_precland, MAIN_LOOP_SECONDS),
-#endif
-#if FRAME_CONFIG == HELI_FRAME
-    // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4
-    input_manager(MAIN_LOOP_RATE),
 #endif
     in_mavlink_delay(false),
     gcs_out_of_time(false),
