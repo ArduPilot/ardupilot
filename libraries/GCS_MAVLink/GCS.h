@@ -102,11 +102,10 @@ public:
     }
 
     struct statustext_t {
-        uint32_t                timestamp_ms;
         uint8_t                 bitmask;
         mavlink_statustext_t    msg;
     };
-    static ObjectBuffer<statustext_t> _statustext_queue;
+    static ObjectArray<statustext_t> _statustext_queue;
 
 
     // accessor for uart

@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
-ObjectBuffer<GCS_MAVLINK::statustext_t> GCS_MAVLINK::_statustext_queue(GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY);
+ObjectArray<GCS_MAVLINK::statustext_t> GCS_MAVLINK::_statustext_queue(GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY);
 
 GCS_MAVLINK::GCS_MAVLINK()
 {
@@ -1164,7 +1164,6 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
         return;
     }
 
-    statustext.timestamp_ms = AP_HAL::millis();
     statustext.msg.severity = severity;
     strncpy(statustext.msg.text, text, sizeof(statustext.msg.text));
 
@@ -1172,6 +1171,9 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
     // block but not until the buffer fills up.
     _statustext_queue.push_force(statustext);
+
+    // try and send immediately if possible
+    service_statustext();
 }
 /*
     send a statustext message to specific MAVLink connections in a bitmask
@@ -1187,64 +1189,38 @@ void GCS_MAVLINK::service_statustext(void)
     // strings in the slow queue then the next item can not be queued for the faster link
 
     if (_statustext_queue.empty()) {
-    // nothing to do
-    return;
+        // nothing to do
+        return;
     }
 
-    // keep sending until all channels have unable to send (full) or have nothing to send
-    bool still_sending = true;
-
-    // using 'while' to ensure we either run out of text to send or all buffers on all ports are full
-    while (still_sending) {
-        still_sending = false; // if we send something, keep going
-
-        // populate statustext
-        statustext_t statustext; // no need to {} init it because the pop will memcpy all bytes and when it was loaded it was properly zero initialized
-        if (!_statustext_queue.peek(statustext)) {
-            // all done, nothing else to send
-            return;
+    for (uint8_t idx=0; idx<GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY; ) {
+        statustext_t *statustext = _statustext_queue[idx];
+        if (statustext == nullptr) {
+            break;
         }
 
         // try and send to all active mavlink ports listed in the statustext.bitmask
         for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-
-            uint8_t chan_bit = (1<<i);
+            uint8_t chan_bit = (1U<<i);
             // logical AND (&) to mask them together
-            if (statustext.bitmask & chan_bit) { // something is queued on a port and that's the port index we're looped at
-
+            if (statustext->bitmask & chan_bit) {
+                // something is queued on a port and that's the port index we're looped at
                 mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-                if (comm_get_txspace(chan_index) > MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
+                if (comm_get_txspace(chan_index) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
                     // we have space so send then clear that channel bit on the mask
-                    mavlink_msg_statustext_send(chan_index, statustext.msg.severity, statustext.msg.text);
-                    statustext.bitmask &= ~chan_bit;
-                    still_sending = true;
-
-                } else if (AP_HAL::millis() - statustext.timestamp_ms > 2000) {
-                    // port has been blocking for 2 seconds. This is blocking all further messages on all
-                    // ports so its best to toss the packet by clearing bitmask.
-                    statustext.bitmask &= ~chan_bit;
-
-                    // Also, forget that mavlink port. The port will be re-remembered if we get any data from it
-                    mavlink_active &= ~chan_bit;
-
-                    // restart loop so the other blocked ports can send immediately.
-                    still_sending = true;
-
-                    send_statustext_all(MAV_SEVERITY_CRITICAL, "Can not send statustext on Mavlink port %i", i);
-                } // if comm
-            } // if bitmask
-        } // for i
-
-        if (!statustext.bitmask) {
-            // throw away what we just peeked at, all done with it
-            _statustext_queue.pop();
-
-        } else if (still_sending) {
-            // something was sent so the bitmask changed but there is still something pending.
-            // Perform an in-place update to the peeked entry index. Only the bitmask should be changing
-            _statustext_queue.update(statustext);
+                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text);
+                    statustext->bitmask &= ~chan_bit;
+                }
+            }
         }
-    } // while
+
+        if (statustext->bitmask == 0) {
+            _statustext_queue.remove(idx);
+        } else {
+            // move to next index
+            idx++;
+        }
+    }
 }
 
 /*
