@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APM:Copter V3.3.4-rc2-pixracer"
+#define THISFIRMWARE "APM:Copter V3.3.4-rc3-pixracer"
 #define FIRMWARE_VERSION 3,3,4,FIRMWARE_VERSION_TYPE_BETA
 
 /*
