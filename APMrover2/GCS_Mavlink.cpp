@@ -383,15 +383,6 @@ void Rover::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-void Rover::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
-}
-
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool Rover::telemetry_delayed(mavlink_channel_t chan)
 {
@@ -521,9 +512,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_STATUSTEXT:
-        CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        rover.send_statustext(chan);
-        break;
+        // depreciated, use GCS_MAVLINK::send_statustext*
+        return false;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
@@ -1452,14 +1442,7 @@ void Rover::gcs_update(void)
 
 void Rover::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_text(severity, str);
-    }
-    }
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(str);
-#endif
+    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
 }
 
 /*
@@ -1469,22 +1452,12 @@ void Rover::gcs_send_text(MAV_SEVERITY severity, const char *str)
  */
 void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
+    char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)severity;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
-            sizeof(gcs[0].pending_status.text), fmt, arg_list);
+    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     va_end(arg_list);
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
-#endif
-    gcs[0].send_message(MSG_STATUSTEXT);
-    for (uint8_t i=1; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].pending_status = gcs[0].pending_status;
-            gcs[i].send_message(MSG_STATUSTEXT);
-        }
-    }
+    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
 }
 
 
@@ -1494,4 +1467,5 @@ void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 void Rover::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
+    GCS_MAVLINK::service_statustext();
 }
