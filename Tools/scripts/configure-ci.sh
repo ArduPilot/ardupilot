@@ -4,7 +4,7 @@
 set -ex
 
 PKGS="build-essential gawk ccache genromfs libc6-i386 \
-      python-argparse python-empy python-serial zlib1g-dev gcc-4.9 g++-4.9"
+      python-argparse python-empy python-serial python-pexpect python-dev python-pip zlib1g-dev gcc-4.9 g++-4.9"
 
 ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
@@ -15,6 +15,7 @@ RPI_TARBALL="$RPI_ROOT.tar.gz"
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
 sudo apt-get -qq -y update
 sudo apt-get -qq -y install $PKGS
+sudo pip install mavproxy
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 90 \
     --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
 

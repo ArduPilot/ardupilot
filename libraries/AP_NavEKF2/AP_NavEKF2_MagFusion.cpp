@@ -610,38 +610,59 @@ void NavEKF2_core::fuseCompass()
     float q2 = stateStruct.quat[2];
     float q3 = stateStruct.quat[3];
 
+    float magX = magDataDelayed.mag.x;
+    float magY = magDataDelayed.mag.y;
+    float magZ = magDataDelayed.mag.z;
+
     // compass measurement error variance (rad^2)
     const float R_MAG = 3e-2f;
 
-    // Calculate observation Jacobian
-    float t2 = q0 * q0;
-    float t3 = q1 * q1;
-    float t4 = q2 * q2;
-    float t5 = q3 * q3;
-    float t6 = t2 + t3 - t4 - t5;
-    float t7 = q0 * q3 * 2.0f;
-    float t8 = q1 * q2 * 2.0f;
-    float t9 = t7 + t8;
-    float t10;
-    if (fabsf(t6) > 1e-6f) {
-        t10 = 1.0f / (t6 * t6);
-    } else  {
+    // calculate intermediate variables for observation jacobian
+    float t2 = q0*q0;
+    float t3 = q1*q1;
+    float t4 = q2*q2;
+    float t5 = q3*q3;
+    float t6 = q0*q3*2.0f;
+    float t8 = t2-t3+t4-t5;
+    float t9 = q0*q1*2.0f;
+    float t10 = q2*q3*2.0f;
+    float t11 = t9-t10;
+    float t14 = q1*q2*2.0f;
+    float t21 = magY*t8;
+    float t22 = t6+t14;
+    float t23 = magX*t22;
+    float t24 = magZ*t11;
+    float t7 = t21+t23-t24;
+    float t12 = t2+t3-t4-t5;
+    float t13 = magX*t12;
+    float t15 = q0*q2*2.0f;
+    float t16 = q1*q3*2.0f;
+    float t17 = t15+t16;
+    float t18 = magZ*t17;
+    float t19 = t6-t14;
+    float t25 = magY*t19;
+    float t20 = t13+t18-t25;
+    if (fabsf(t20) < 1e-6f) {
         return;
     }
-    float t11 = t9 * t9;
-    float t12 = t10 * t11;
-    float t13 = t12 + 1.0f;
-    float t14;
-    if (fabsf(t13) > 1e-6f) {
-        t14 = 1.0f / t13;
-    } else  {
+    float t26 = 1.0f/(t20*t20);
+    float t27 = t7*t7;
+    float t28 = t26*t27;
+    float t29 = t28+1.0;
+    if (fabsf(t29) < 1e-12f) {
         return;
     }
-    float t15 = 1.0f / t6;
+    float t30 = 1.0f/t29;
+    if (fabsf(t20) < 1e-12f) {
+        return;
+    }
+    float t31 = 1.0f/t20;
+
+    // calculate observation jacobian
     float H_MAG[3];
-    H_MAG[0] = 0.0f;
-    H_MAG[1] = t14*(t15*(q0*q1*2.0f-q2*q3*2.0f)+t9*t10*(q0*q2*2.0f+q1*q3*2.0f));
-    H_MAG[2] = t14*(t15*(t2-t3+t4-t5)+t9*t10*(t7-t8));
+    H_MAG[0] = -t30*(t31*(magZ*t8+magY*t11)+t7*t26*(magY*t17+magZ*t19));
+    H_MAG[1] = t30*(t31*(magX*t11+magZ*t22)-t7*t26*(magZ*t12-magX*t17));
+    H_MAG[2] = t30*(t31*(magX*t8-magY*t22)+t7*t26*(magY*t12+magX*t19));
 
     // Calculate innovation variance and Kalman gains, taking advantage of the fact that only the first 3 elements in H are non zero
     float PH[3];
@@ -844,22 +865,20 @@ void NavEKF2_core::FuseDeclination()
 
 }
 
-// Calculate magnetic heading innovation
+// Calculate magnetic heading declination innovation
 float NavEKF2_core::calcMagHeadingInnov()
 {
-    // rotate measured body components into earth axis and compare to declination to give a heading measurement
-    Vector3f eulerAngles;
-    stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+    // rotate measured body components into earth axis
     Matrix3f Tbn_temp;
-    Tbn_temp.from_euler(eulerAngles.x, eulerAngles.y, 0.0f);
+    stateStruct.quat.rotation_matrix(Tbn_temp);
     Vector3f magMeasNED = Tbn_temp*magDataDelayed.mag;
-    float measHdg = - atan2f(magMeasNED.y,magMeasNED.x) + _ahrs->get_compass()->get_declination();
 
-    // wrap the heading so it sits on the range from +-pi
-    measHdg = wrap_PI(measHdg);
+    // the observation is the declination angle of the earth field from the compass library
+    // the prediction is the azimuth angle of the projection of the measured field onto the horizontal
+    float innovation = atan2f(magMeasNED.y,magMeasNED.x) - _ahrs->get_compass()->get_declination();
 
-    // calculate the innovation and wrap between +-pi
-    float innovation = wrap_PI(eulerAngles.z - measHdg);
+    // wrap the innovation so it sits on the range from +-pi
+    innovation = wrap_PI(innovation);
 
     // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
     if (innovation - lastInnovation > M_PI_F) {

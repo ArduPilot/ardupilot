@@ -181,6 +181,13 @@ public:
      */
     static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
 
+    /*
+      set a dataflash pointer for logging
+     */
+    static void set_dataflash(DataFlash_Class *dataflash) {
+        dataflash_p = dataflash;
+    }
+    
 private:
     void        handleMessage(mavlink_message_t * msg);
 
@@ -280,6 +287,9 @@ private:
     // mavlink routing object
     static MAVLink_routing routing;
 
+    // pointer to static dataflash for logging of text messages
+    static DataFlash_Class *dataflash_p;
+    
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
 

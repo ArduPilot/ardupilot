@@ -39,20 +39,23 @@ def init(ctx):
         c.variant = env.BOARD
 
 def options(opt):
-    opt.load('ardupilotwaf')
-    boards_names = boards.get_boards_names()
-
     opt.load('compiler_cxx compiler_c waf_unit_test python')
-    opt.add_option('--board',
+
+    opt.ap_groups = {
+        'configure': opt.add_option_group('Ardupilot configure options'),
+        'build': opt.add_option_group('Ardupilot build options'),
+        'check': opt.add_option_group('Ardupilot check options'),
+    }
+
+    opt.load('ardupilotwaf')
+
+    g = opt.ap_groups['configure']
+    boards_names = boards.get_boards_names()
+    g.add_option('--board',
                    action='store',
                    choices=boards_names,
                    default='sitl',
                    help='Target board to build, choices are %s' % boards_names)
-
-    g = opt.add_option_group('Check options')
-    g.add_option('--check-verbose',
-                 action='store_true',
-                 help='Output all test programs')
 
     g.add_option('--no-submodule-update',
                  dest='submodule_update',
@@ -60,6 +63,11 @@ def options(opt):
                  default=True,
                  help='Don\'t update git submodules. Useful for building ' +
                       'with submodules at specific revisions.')
+
+    g.add_option('--enable-benchmarks',
+                 action='store_true',
+                 default=False,
+                 help='Enable benchmarks')
 
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
@@ -76,7 +84,8 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('git_submodule')
-    cfg.load('gbenchmark')
+    if cfg.options.enable_benchmarks:
+        cfg.load('gbenchmark')
     cfg.load('gtest')
     cfg.load('static_linking')
 
@@ -156,6 +165,9 @@ def _build_common_taskgens(bld):
     )
 
     bld.libgtest()
+
+    if bld.env.HAS_GBENCHMARK:
+        bld.libbenchmark()
 
 def _build_recursion(bld):
     common_dirs_patterns = [

@@ -42,6 +42,9 @@ static uint8_t mavlink_locked_mask;
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
 
+// static dataflash pointer to support logging text messages
+DataFlash_Class *GCS_MAVLINK::dataflash_p;
+
 // snoop function for vehicle types that want to see messages for
 // other targets
 void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = NULL;
