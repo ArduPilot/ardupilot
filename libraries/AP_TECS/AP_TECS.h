@@ -150,6 +150,7 @@ private:
     AP_Float _ptchDamp;
     AP_Float _landDamp;
     AP_Float _thrDamp;
+    AP_Float _land_throttle_damp;
     AP_Float _integGain;
     AP_Float _vertAccLim;
     AP_Float _rollComp;
