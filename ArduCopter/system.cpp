@@ -165,6 +165,8 @@ void Copter::init_ardupilot()
     log_init();
 #endif
 
+    GCS_MAVLINK::set_dataflash(&DataFlash);
+
     // update motor interlock state
     update_using_interlock();
 
