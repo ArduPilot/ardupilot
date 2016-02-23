@@ -522,8 +522,13 @@ void Plane::calc_nav_roll()
 void Plane::throttle_slew_limit(int16_t last_throttle)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
-    if (control_mode==AUTO && auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
-        slewrate = g.takeoff_throttle_slewrate;
+    if (control_mode==AUTO) {
+        if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
+            slewrate = g.takeoff_throttle_slewrate;
+        } else if (g.land_throttle_slewrate != 0 &&
+                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
+            slewrate = g.land_throttle_slewrate;
+        }
     }
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
