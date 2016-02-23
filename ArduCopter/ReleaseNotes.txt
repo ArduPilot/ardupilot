@@ -1,5 +1,9 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3.4-rc3-pixracer 23-Feb-2016
+Changes from 3.3.4-rc2-pixracer
+1) fix parameter save issue caused by bus locking
+------------------------------------------------------------------
 Copter 3.3.4-rc2-pixracer 20-Feb-2016
 Changes from 3.3.4-rc1-pixracers
 1) fix SBUS input
