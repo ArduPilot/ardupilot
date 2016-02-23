@@ -52,7 +52,6 @@ void Sub::set_land_complete(bool b)
 //  has no effect when throttle is above hover throttle
 void Sub::update_throttle_thr_mix()
 {
-#if FRAME_CONFIG != HELI_FRAME
     // if disarmed or landed prioritise throttle
     if(!motors.armed() || ap.land_complete) {
         motors.set_throttle_mix_min();
@@ -91,5 +90,4 @@ void Sub::update_throttle_thr_mix()
             motors.set_throttle_mix_min();
         }
     }
-#endif
 }

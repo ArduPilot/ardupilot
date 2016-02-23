@@ -66,25 +66,7 @@
  # define FRAME_CONFIG   BLUEROV_FRAME
 #endif
 
-#if FRAME_CONFIG == QUAD_FRAME
- # define FRAME_CONFIG_STRING "QUAD"
-#elif FRAME_CONFIG == TRI_FRAME
- # define FRAME_CONFIG_STRING "TRI"
-#elif FRAME_CONFIG == HEXA_FRAME
- # define FRAME_CONFIG_STRING "HEXA"
-#elif FRAME_CONFIG == Y6_FRAME
- # define FRAME_CONFIG_STRING "Y6"
-#elif FRAME_CONFIG == OCTA_FRAME
- # define FRAME_CONFIG_STRING "OCTA"
-#elif FRAME_CONFIG == OCTA_QUAD_FRAME
- # define FRAME_CONFIG_STRING "OCTA_QUAD"
-#elif FRAME_CONFIG == HELI_FRAME
- # define FRAME_CONFIG_STRING "HELI"
-#elif FRAME_CONFIG == SINGLE_FRAME
- # define FRAME_CONFIG_STRING "SINGLE"
-#elif FRAME_CONFIG == COAX_FRAME
- # define FRAME_CONFIG_STRING "COAX"
-#elif FRAME_CONFIG == BLUEROV_FRAME
+#if FRAME_CONFIG == BLUEROV_FRAME
  # define FRAME_CONFIG_STRING "ROV_BLUEROV_FRAME"
 #elif FRAME_CONFIG == VECTORED_FRAME
  # define FRAME_CONFIG_STRING "ROV_VECTORED_FRAME"
@@ -92,49 +74,18 @@
  # define FRAME_CONFIG_STRING "UNKNOWN"
 #endif
 
-/////////////////////////////////////////////////////////////////////////////////
-// TradHeli defaults
-#if FRAME_CONFIG == HELI_FRAME
-  # define RC_FAST_SPEED                        125
-  # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
-  # define RATE_ROLL_P                          0.02
-  # define RATE_ROLL_I                          0.5
-  # define RATE_ROLL_D                          0.001
-  # define RATE_ROLL_IMAX                       4500
-  # define RATE_ROLL_FF                         0.05
-  # define RATE_ROLL_FILT_HZ                    20.0f
-  # define RATE_PITCH_P                         0.02
-  # define RATE_PITCH_I                         0.5
-  # define RATE_PITCH_D                         0.001
-  # define RATE_PITCH_IMAX                      4500
-  # define RATE_PITCH_FF                        0.05
-  # define RATE_PITCH_FILT_HZ                   20.0f
-  # define RATE_YAW_P                           0.15
-  # define RATE_YAW_I                           0.100
-  # define RATE_YAW_D                           0.003
-  # define RATE_YAW_IMAX                        4500
-  # define RATE_YAW_FF                          0.02
-  # define RATE_YAW_FILT_HZ                     20.0f
-  # define THR_MIN_DEFAULT                      0
-  # define AUTOTUNE_ENABLED                     DISABLED
-#endif
+
 
 /////////////////////////////////////////////////////////////////////////////////
 // Y6 defaults
-#if FRAME_CONFIG == Y6_FRAME
-  # define RATE_ROLL_P                  0.1f
-  # define RATE_ROLL_D                  0.006f
-  # define RATE_PITCH_P                 0.1f
-  # define RATE_PITCH_D                 0.006f
-  # define RATE_YAW_P                   0.150f
-  # define RATE_YAW_I                   0.015f
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////
-// Tri defaults
-#if FRAME_CONFIG == TRI_FRAME
-  # define RATE_YAW_FILT_HZ             100.0f
-#endif
+//#if FRAME_CONFIG == Y6_FRAME
+//  # define RATE_ROLL_P                  0.1f
+//  # define RATE_ROLL_D                  0.006f
+//  # define RATE_PITCH_P                 0.1f
+//  # define RATE_PITCH_D                 0.006f
+//  # define RATE_YAW_P                   0.150f
+//  # define RATE_YAW_I                   0.015f
+//#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PWM control

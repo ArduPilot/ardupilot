@@ -57,13 +57,9 @@ void Sub::land_gps_run()
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
-        attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+    	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-#endif
+
         wp_nav.init_loiter_target();
 
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
@@ -162,13 +158,8 @@ void Sub::land_nogps_run()
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-        attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+    	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-#endif
 
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         // disarm when the landing detector says we've landed and throttle is at minimum
