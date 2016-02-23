@@ -225,13 +225,8 @@ float Sub::get_throttle_pre_takeoff(float input_thr)
     float in_min = g.throttle_min;
     float in_max = get_takeoff_trigger_throttle();
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters swash will move from bottom to 1/2 of mid throttle
-    float out_min = 0;
-#else
     // multicopters will output between spin-when-armed and 1/2 of mid throttle
     float out_min = motors.get_throttle_warn();
-#endif
     float out_max = get_non_takeoff_throttle();
 
     if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {

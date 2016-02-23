@@ -164,11 +164,6 @@ void Sub::init_ardupilot()
 
     // update motor interlock state
     update_using_interlock();
-
-#if FRAME_CONFIG == HELI_FRAME
-    // trad heli specific initialisation
-    heli_init();
-#endif
     
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
@@ -397,27 +392,12 @@ void Sub::update_auto_armed()
         if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME 
-        // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
-        // so that rotor runup is checked again before attempting to take-off
-        if(ap.land_complete && !motors.rotor_runup_complete()) {
-            set_auto_armed(false);
-        }
-#endif // HELI_FRAME
     }else{
         // arm checks
-        
-#if FRAME_CONFIG == HELI_FRAME
-        // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero && motors.rotor_runup_complete()) {
-            set_auto_armed(true);
-        }
-#else
         // if motors are armed and throttle is above zero auto_armed should be true
         if(motors.armed() && !ap.throttle_zero) {
             set_auto_armed(true);
         }
-#endif // HELI_FRAME
     }
 }
 
