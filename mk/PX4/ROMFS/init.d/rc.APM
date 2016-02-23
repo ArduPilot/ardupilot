@@ -211,6 +211,41 @@ else
 fi
 
 
+if mtd start /fs/mtd
+then
+    echo "started mtd driver OK"
+else
+    echo "failed to start mtd driver"
+    echo "failed to start mtd driver" >> $logfile
+    sh /etc/init.d/rc.error           
+fi
+
+if mtd readtest /fs/mtd
+then
+    echo "mtd readtest OK"
+else
+    echo "failed to read mtd"
+    echo "failed to read mtd" >> $logfile
+    sh /etc/init.d/rc.error           
+fi
+
+if [ $BOARD == FMUv2 -o $BOARD == FMUv4 ]
+then
+  # the ramtron on FMUv2 is very fast and can handle trillions of
+  # writes. This full rw test on each boot ensures it is working
+  # properly. We have one board that failed this, so
+  # the test is arguably worth having
+  if mtd rwtest /fs/mtd
+  then
+    echo "mtd rwtest OK"
+  else
+    echo "failed to test mtd"
+    echo "failed to test mtd" >> $logfile
+    sh /etc/init.d/rc.error           
+  fi
+fi
+
+
 echo "Starting APM sensors"
 
 if ms5611 start
@@ -435,24 +470,6 @@ then
     echo "started pwm_input driver"
 fi
 
-if mtd start /fs/mtd
-then
-    echo "started mtd driver OK"
-else
-    echo "failed to start mtd driver"
-    echo "failed to start mtd driver" >> $logfile
-    sh /etc/init.d/rc.error           
-fi
-
-if mtd readtest /fs/mtd
-then
-    echo "mtd readtest OK"
-else
-    echo "failed to read mtd"
-    echo "failed to read mtd" >> $logfile
-    sh /etc/init.d/rc.error           
-fi
-
 # optional oreo leds
 if [ -f /bin/oreoled ]
 then
@@ -472,22 +489,6 @@ fi
 if irlock start
 then
     echo "irlock started"
-fi
-
-if [ $BOARD == FMUv2 -o $BOARD == FMUv4 ]
-then
-  # the ramtron on FMUv2 is very fast and can handle trillions of
-  # writes. This full rw test on each boot ensures it is working
-  # properly. We have one board that failed this, so
-  # the test is arguably worth having
-  if mtd rwtest /fs/mtd
-  then
-    echo "mtd rwtest OK"
-  else
-    echo "failed to test mtd"
-    echo "failed to test mtd" >> $logfile
-    sh /etc/init.d/rc.error           
-  fi
 fi
 
 echo Starting ArduPilot $deviceA $deviceC $deviceD
