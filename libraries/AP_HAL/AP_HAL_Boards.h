@@ -459,6 +459,10 @@
 #define HAL_OS_POSIX_IO 0
 #endif
 
+#ifndef HAL_OS_SOCKETS
+#define HAL_OS_SOCKETS 0
+#endif
+
 #ifndef HAL_PARAM_DEFAULTS_PATH
 #define HAL_PARAM_DEFAULTS_PATH NULL
 #endif
