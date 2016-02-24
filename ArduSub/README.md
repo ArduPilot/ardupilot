@@ -1,4 +1,4 @@
-ArduSub [![Build Status](https://travis-ci.org/bluerobotics/ardusub.svg?branch=master)](https://travis-ci.org/bluerobotics/ardusub)
+ArduSub [![Build Status](https://travis-ci.org/bluerobotics/ardusub.svg?branch=master)](https://travis-ci.org/bluerobotics/ardusub) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/bluerobotics/ardusub?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 =======
 
 An ArduPilot-based project for remotely operated underwater vehicles.
