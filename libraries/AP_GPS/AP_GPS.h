@@ -392,6 +392,7 @@ private:
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
+    void _broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index);
 };
 
 #define GPS_BAUD_TIME_MS 1200

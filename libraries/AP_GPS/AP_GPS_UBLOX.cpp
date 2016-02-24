@@ -790,17 +790,12 @@ AP_GPS_UBLOX::_parse_gps(void)
             }
             break;
         case MSG_MON_VER:
-            char version_buffer[46]; //17 string swVersion 30 hwVersion 10
             _have_version = true;
-            hal.util->snprintf(version_buffer, sizeof(version_buffer),
-                               "u-blox %d HW: %s SW: %s",
-                                state.instance,
-                                _buffer.mon_ver.hwVersion,
-                                _buffer.mon_ver.swVersion);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, version_buffer);
-            if (gps._DataFlash != NULL && gps._DataFlash->logging_started()) {
-                gps._DataFlash->Log_Write_Message(version_buffer);
-            }
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, 
+                                             "u-blox %d HW: %s SW: %s",
+                                             state.instance,
+                                             _buffer.mon_ver.hwVersion,
+                                             _buffer.mon_ver.swVersion);
             break;
         default:
             unexpected_message();
