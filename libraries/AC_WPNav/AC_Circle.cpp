@@ -62,6 +62,12 @@ void AC_Circle::init(const Vector3f& center)
 
     // set start angle from position
     init_start_angle(false);
+
+    // initialise angular velocity
+    _angular_vel = 0;
+
+    // set starting angle to current heading - 180 degrees
+    _angle = wrap_PI(_ahrs.yaw-PI);
 }
 
 /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
@@ -88,11 +94,20 @@ void AC_Circle::init()
 
     // set starting angle from vehicle heading
     init_start_angle(true);
+
+    // initialise angular velocity
+    _angular_vel = 0;
+
+    // set starting angle to current heading - 180 degrees
+    _angle = wrap_PI(_ahrs.yaw-PI);
 }
 
 /// update - update circle controller
 void AC_Circle::update()
 {
+    // update velocities
+    calc_velocities();
+
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
 
@@ -104,18 +119,8 @@ void AC_Circle::update()
             dt = 0.0f;
         }
 
-        // ramp up angular velocity to maximum
-        if (_rate >= 0) {
-            if (_angular_vel < _angular_vel_max) {
-                _angular_vel += _angular_accel * dt;
-                _angular_vel = constrain_float(_angular_vel, 0, _angular_vel_max);
-            }
-        }else{
-            if (_angular_vel > _angular_vel_max) {
-                _angular_vel += _angular_accel * dt;
-                _angular_vel = constrain_float(_angular_vel, _angular_vel_max, 0);
-            }
-        }
+        // ramp angular velocity to target
+        _angular_vel += constrain_float(_angular_vel_max-_angular_vel, -fabsf(_angular_accel * dt), fabsf(_angular_accel * dt));
 
         // update the target angle and total angle traveled
         float angle_change = _angular_vel * dt;
@@ -201,9 +206,6 @@ void AC_Circle::calc_velocities()
         _angular_vel_max = ToRad(_rate);
         _angular_accel = _angular_vel_max;  // reach maximum yaw velocity in 1 second
     }else{
-        // set starting angle to current heading - 180 degrees
-        _angle = wrap_PI(_ahrs.yaw-PI);
-
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
         float velocity_max = min(_pos_control.get_speed_xy(), safe_sqrt(0.5f*_pos_control.get_accel_xy()*_radius));
 
@@ -217,9 +219,6 @@ void AC_Circle::calc_velocities()
             _angular_accel = -_angular_accel;
         }
     }
-
-    // initialise angular velocity
-    _angular_vel = 0;
 }
 
 // init_start_angle - sets the starting angle around the circle and initialises the angle_total
