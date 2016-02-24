@@ -173,12 +173,10 @@ void Copter::failsafe_gps_glitch_check() {
     } else if (!glitch && failsafe.gps_glitch) {
         failsafe.gps_glitch = false;
 
-        if (control_mode_reason == MODE_REASON_GPS_GLITCH) {
-            if (failsafe.radio) {
-                failsafe_radio_on_event();
-            } else {
-                set_mode(LOITER, MODE_REASON_GPS_GLITCH_RECOVERED);
-            }
+        if (failsafe.radio) {
+            failsafe_radio_on_event();
+        } else if (control_mode_reason == MODE_REASON_GPS_GLITCH) {
+            set_mode(LOITER, MODE_REASON_GPS_GLITCH_RECOVERED);
         }
     }
 }
