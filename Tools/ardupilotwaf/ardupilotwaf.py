@@ -48,7 +48,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'Filter',
     'GCS_MAVLink',
     'RC_Channel',
-    'SITL',
     'StorageManager',
 ]
 
@@ -72,6 +71,8 @@ def ap_get_all_libraries(bld):
         if name in IGNORED_AP_LIBRARIES:
             continue
         if name.startswith('AP_HAL'):
+            continue
+        if name == 'SITL':
             continue
         libraries.append(name)
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
