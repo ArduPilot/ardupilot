@@ -121,7 +121,15 @@ void Sub::althold_run()
         }
 
         // call position controller
-        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        if(ap.at_bottom) {
+        	pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
+            pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+        } else if(ap.at_surface) {
+        	pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
+            pos_control.set_alt_target(inertial_nav.get_altitude() - 10.0f); // set target to 10 cm below surface
+        } else {
+        	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        }
         pos_control.update_z_controller();
         break;
     }

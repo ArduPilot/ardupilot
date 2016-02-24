@@ -240,6 +240,9 @@ private:
             uint8_t using_interlock     : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop: 1; // 21      // motor estop switch, shuts off motors when enabled
             uint8_t land_repo_active    : 1; // 22      // true if the pilot is overriding the landing position
+            uint8_t at_bottom			: 1;			// true if we are at the bottom
+            uint8_t at_surface			: 1;			// true if we are at the surface
+            uint8_t depth_sensor_present: 1;			// true if we have an external baro connected
         };
         uint32_t value;
     } ap;
@@ -390,6 +393,7 @@ private:
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
+    LowPassFilterVector3f depth_accel_ef_filter; // accelerations for land and crash detector tests
 
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
@@ -817,6 +821,9 @@ private:
     void update_land_and_crash_detectors();
     void update_land_detector();
     void update_throttle_thr_mix();
+    void update_surface_and_bottom_detector();
+    void set_surfaced(bool at_surface);
+    void set_bottomed(bool at_bottom);
 #if GNDEFFECT_COMPENSATION == ENABLED
     void update_ground_effect_detector(void);
 #endif // GNDEFFECT_COMPENSATION == ENABLED
