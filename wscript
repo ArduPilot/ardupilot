@@ -234,6 +234,7 @@ def build(bld):
     _build_dynamic_sources(bld)
 
     bld.add_group('build')
+    boards.get_board(bld.env.BOARD).build(bld)
     _build_common_taskgens(bld)
 
     _build_recursion(bld)
