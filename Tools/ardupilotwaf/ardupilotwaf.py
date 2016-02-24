@@ -48,7 +48,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'Filter',
     'GCS_MAVLink',
     'RC_Channel',
-    'SITL',
     'StorageManager',
 ]
 
