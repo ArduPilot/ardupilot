@@ -288,6 +288,9 @@ void Sub::fast_loop()
     // check if we've landed or crashed
     update_land_and_crash_detectors();
 
+    // check if we've reached the surface or bottom
+    update_surface_and_bottom_detector();
+
     // camera mount's fast update
     camera_mount.update_fast();
 
