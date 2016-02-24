@@ -13,6 +13,7 @@ void Sub::gcs_send_heartbeat(void)
 void Sub::gcs_send_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
+    GCS_MAVLINK::service_statustext();
 }
 
 /*
@@ -486,16 +487,6 @@ void Sub::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-
-void NOINLINE Sub::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
-}
-
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool Sub::telemetry_delayed(mavlink_channel_t chan)
 {
@@ -658,9 +649,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_STATUSTEXT:
-        CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        sub.send_statustext(chan);
-        break;
+    	// depreciated, use GCS_MAVLINK::send_statustext*
+    	return false;
 
     case MSG_LIMITS_STATUS:
 #if AC_FENCE == ENABLED
@@ -2083,11 +2073,7 @@ void Sub::gcs_check_input(void)
 
 void Sub::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_text(severity, str);
-        }
-    }
+    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
 }
 
 /*
@@ -2097,17 +2083,10 @@ void Sub::gcs_send_text(MAV_SEVERITY severity, const char *str)
  */
 void Sub::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
-    va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)severity;
+	char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+	va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
-            sizeof(gcs[0].pending_status.text), fmt, arg_list);
     va_end(arg_list);
-    gcs[0].send_message(MSG_STATUSTEXT);
-    for (uint8_t i=1; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].pending_status = gcs[0].pending_status;
-            gcs[i].send_message(MSG_STATUSTEXT);
-        }
-    }
+    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
+    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
 }
