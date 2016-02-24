@@ -190,7 +190,7 @@ void SoloGimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavli
                     break;
                 case GMB_PARAMSTATE_ATTEMPTING_TO_SET:
                     if (i == GMB_PARAM_GMB_FLASH) {
-                        if (_flashing_step == GMB_PARAM_FLASHING_WAITING_FOR_ACK && is_equal(packet.param_value,1)) {
+                        if (_flashing_step == GMB_PARAM_FLASHING_WAITING_FOR_ACK && (int)packet.param_value == 1) {
                             _flashing_step = GMB_PARAM_NOT_FLASHING;
                         }
                         _params[i].value = 0;

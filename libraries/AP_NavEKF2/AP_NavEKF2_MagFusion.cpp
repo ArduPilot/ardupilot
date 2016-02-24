@@ -881,12 +881,12 @@ float NavEKF2_core::calcMagHeadingInnov()
     innovation = wrap_PI(innovation);
 
     // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
-    if (innovation - lastInnovation > M_PI_F) {
+    if (innovation - lastInnovation > M_PI) {
         // Angle has wrapped in the positive direction to subtract an additional 2*Pi
-        innovationIncrement -= 2*M_PI_F;
-    } else if (innovation -innovationIncrement < -M_PI_F) {
+        innovationIncrement -= M_2PI;
+    } else if (innovation -innovationIncrement < -M_PI) {
         // Angle has wrapped in the negative direction so add an additional 2*Pi
-        innovationIncrement += 2*M_PI_F;
+        innovationIncrement += M_2PI;
     }
     lastInnovation = innovation;
 
@@ -905,7 +905,7 @@ void NavEKF2_core::alignMagStateDeclination()
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = stateStruct.earth_magfield;
-    float magLengthNE = pythagorous2(initMagNED.x,initMagNED.y);
+    float magLengthNE = norm(initMagNED.x,initMagNED.y);
     stateStruct.earth_magfield.x = magLengthNE * cosf(magDecAng);
     stateStruct.earth_magfield.y = magLengthNE * sinf(magDecAng);
 }

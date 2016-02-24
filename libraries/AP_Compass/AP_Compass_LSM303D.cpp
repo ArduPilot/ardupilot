@@ -275,7 +275,7 @@ bool AP_Compass_LSM303D::_read_raw()
     _mag_y = raw_mag_report_rx.y;
     _mag_z = raw_mag_report_rx.z;
 
-    if (is_zero(_mag_x) && is_zero(_mag_y) && is_zero(_mag_z)) {
+    if (_mag_x == 0 && _mag_y == 0 && _mag_z == 0) {
         return false;
     }
 
