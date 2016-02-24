@@ -13,7 +13,10 @@ class BoardMeta(type):
         super(BoardMeta, cls).__init__(name, bases, dct)
         if name == 'Board':
             return
-        _board_classes[name] = cls
+        board_name = getattr(cls, 'name', name)
+        if board_name in _board_classes:
+            raise Exception('board named %s already exists' % board_name)
+        _board_classes[board_name] = cls
 
 class Board:
     def configure(self, cfg):
