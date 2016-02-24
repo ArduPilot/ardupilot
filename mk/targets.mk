@@ -114,6 +114,7 @@ $(1)-$(2)-debug : $(1)-$(2)
 $(1)-$(2)-hilsensors : $(1)-$(2)
 $(1)-$(2)-upload : $(1)-$(2)
 $(1)-$(2)-upload : $(1)-upload
+$(1)-$(2)-upload-remote : $(1)-$(2)
 $(1)-$(2)-upload-remote : $(1)-upload-remote
 endef
 
