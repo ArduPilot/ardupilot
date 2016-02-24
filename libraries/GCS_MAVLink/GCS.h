@@ -311,11 +311,6 @@ private:
     // pointer to static dataflash for logging of text messages
     static DataFlash_Class *dataflash_p;
     
-    mavlink_signing_t signing;
-    static mavlink_signing_streams_t signing_streams;
-    
-    static StorageAccess _signing_storage;
-
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
 
