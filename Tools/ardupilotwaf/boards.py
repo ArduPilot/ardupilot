@@ -99,6 +99,9 @@ class Board:
             '-Wl,--gc-sections',
         ]
 
+    def build(self, bld):
+        pass
+
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def get_boards_names():
