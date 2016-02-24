@@ -152,6 +152,8 @@ private:
     AP_Float _thrDamp;
     AP_Float _land_throttle_damp;
     AP_Float _integGain;
+    AP_Float _integGain_takeoff;
+    AP_Float _integGain_land;
     AP_Float _vertAccLim;
     AP_Float _rollComp;
     AP_Float _spdWeight;
@@ -317,6 +319,9 @@ private:
 
     // Update Demanded Throttle Non-Airspeed
     void _update_throttle_option(int16_t throttle_nudge);
+
+    // get integral gain which is flight_stage dependent
+    float _get_i_gain(void);
 
     // Detect Bad Descent
     void _detect_bad_descent(void);
