@@ -712,7 +712,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
 void AC_PosControl::calc_leash_length_xy()
 {
     if (_flags.recalc_leash_xy) {
-        _leash = calc_leash_length(_speed_cms, _accel_cms, _p_pos_xy.kP());
+        _leash = calc_leash_length(max(_speed_cms,200.0f), _accel_cms, _p_pos_xy.kP());
         _flags.recalc_leash_xy = false;
     }
 }
@@ -803,9 +803,9 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
 
             // scale velocity within speed limit
             float vel_total = pythagorous2(_vel_target.x, _vel_target.y);
-            if (vel_total > _speed_cms) {
-                _vel_target.x = _speed_cms * _vel_target.x/vel_total;
-                _vel_target.y = _speed_cms * _vel_target.y/vel_total;
+            if (vel_total > max(_speed_cms,200.0f)) {
+                _vel_target.x = max(_speed_cms,200.0f) * _vel_target.x/vel_total;
+                _vel_target.y = max(_speed_cms,200.0f) * _vel_target.y/vel_total;
             }
         }
     }
