@@ -226,6 +226,13 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TKOFF_IGAIN", 25, AP_TECS, _integGain_takeoff, 0),
 
+    // @Param: LAND_PDAMP
+    // @Description: This is the damping gain for the pitch demand loop. Increase to add damping  to correct for oscillations in speed and height. If set to 0 then TECS_PTCH_DAMP will be used instead.
+    // @Range: 0.1 1.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LAND_PDAMP", 26, AP_TECS, _land_pitch_damp, 0),
+
     AP_GROUPEND
 };
 
@@ -801,11 +808,15 @@ void AP_TECS::_update_pitch(void)
     // During flare a different damping gain is used
     float gainInv = (_integ5_state * timeConstant() * GRAVITY_MSS);
     float temp = SEB_error + SEBdot_dem * timeConstant();
+
+    float pitch_damp = _ptchDamp;
     if (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
-        temp += SEBdot_error * _landDamp;
-    } else {
-        temp += SEBdot_error * _ptchDamp;
+        pitch_damp = _landDamp;
+    } else if (!is_zero(_land_pitch_damp) && is_on_land_approach(false)) {
+        pitch_damp = _land_pitch_damp;
     }
+    temp += SEBdot_error * pitch_damp;
+
     if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         temp += _PITCHminf * gainInv;
     }
