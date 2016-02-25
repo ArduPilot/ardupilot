@@ -1,23 +1,15 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef AP_MATH_H
-#define AP_MATH_H
+#include "definitions.h"
 
-// MATH_CHECK_INDEXES modifies some objects (e.g. SoloGimbalEKF) to
-// include more debug information.  It is also used by some functions
-// to add extra code for debugging purposes.  If you wish to activate
-// this, do it here or as part of the top-level Makefile -
-// e.g. Tools/Replay/Makefile
-#ifndef MATH_CHECK_INDEXES
-#define MATH_CHECK_INDEXES 0
-#endif
-
-// Assorted useful math operations for ArduPilot(Mega)
+#include <limits>
+#include <type_traits>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <math.h>
 #include <stdint.h>
+
 #include "rotations.h"
 #include "vector2.h"
 #include "vector3.h"
@@ -27,53 +19,6 @@
 #include "edc.h"
 #include <AP_Param/AP_Param.h>
 
-#ifndef M_PI_F
- #define M_PI_F 3.141592653589793f
-#endif
-#ifndef M_2PI_F
- #define M_2PI_F (2*M_PI_F)
-#endif
-#ifndef PI
- # define PI M_PI_F
-#endif
-#ifndef M_PI_2
- # define M_PI_2 1.570796326794897f
-#endif
-//Single precision conversions
-#define DEG_TO_RAD 0.017453292519943295769236907684886f
-#define RAD_TO_DEG 57.295779513082320876798154814105f
-
-//GPS Specific double precision conversions
-//The precision here does matter when using the wsg* functions for converting
-//between LLH and ECEF coordinates. Test code in examlpes/location/location.cpp
-#define DEG_TO_RAD_DOUBLE 0.0174532925199432954743716805978692718781530857086181640625  // equals to (M_PI / 180.0)
-#define RAD_TO_DEG_DOUBLE 57.29577951308232286464772187173366546630859375               // equals to (180.0 / M_PI)
-
-#define RadiansToCentiDegrees(x) ((x) * 5729.5779513082320876798154814105f)
-
-// acceleration due to gravity in m/s/s
-#define GRAVITY_MSS 9.80665f
-
-// radius of earth in meters
-#define RADIUS_OF_EARTH 6378100
-
-#define ROTATION_COMBINATION_SUPPORT 0
-
-// convert a longitude or latitude point to meters or centimeteres.
-// Note: this does not include the longitude scaling which is dependent upon location
-#define LATLON_TO_M  0.01113195f
-#define LATLON_TO_CM 1.113195f
-
-// Semi-major axis of the Earth, in meters.
-#define WGS84_A 6378137.0
-//Inverse flattening of the Earth
-#define WGS84_IF 298.257223563
-// The flattening of the Earth
-#define WGS84_F (1/WGS84_IF)
-// Semi-minor axis of the Earth in meters
-#define WGS84_B (WGS84_A*(1-WGS84_F))
-// Eccentricity of the Earth
-#define WGS84_E (sqrt(2*WGS84_F - WGS84_F*WGS84_F))
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
@@ -236,10 +181,6 @@ static inline float pythagorous3(float a, float b, float c) {
 	return sqrtf(sq(a)+sq(b)+sq(c));
 }
 
-#ifdef radians
-#error "Build is including Arduino base headers"
-#endif
-
 template<typename A, typename B>
 static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two) {
     return one < two ? one : two;
@@ -249,10 +190,6 @@ template<typename A, typename B>
 static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one : two) {
     return one > two ? one : two;
 }
-
-#define NSEC_PER_SEC 1000000000ULL
-#define NSEC_PER_USEC 1000ULL
-#define USEC_PER_SEC 1000000ULL
 
 inline uint32_t hz_to_nsec(uint32_t freq)
 {
@@ -284,4 +221,3 @@ inline uint32_t usec_to_hz(uint32_t usec)
     return USEC_PER_SEC / usec;
 }
 
-#endif // AP_MATH_H
