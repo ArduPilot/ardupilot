@@ -23,6 +23,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
 #include "AP_Math.h"
+#include "location.h"
 
 // scaling factor from 1e-7 degrees to meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
