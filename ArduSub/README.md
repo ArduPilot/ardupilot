@@ -83,11 +83,11 @@ make px4-v2-vectored-upload
 	- AHRS_ORIENTATION to Roll90 (or applicable orientation)
 	- ATC_ACCEL_Y_MAX to Disabled
 	- EK_ALT_NOISE to 0.1
-	- EK2_ALT_NOISE to 0.1
 	- RATE_YAW_FILT_HZ to 30
   - PILOT_VELZ_MAX to 50 cm/s
   - PILOT_ACCEL_Z to 50 cm/s/s
   - POS_Z_P to 8.0 (above limit)
+  - GND_PRIMARY to 2ndBaro
 6. Setup Power Tab
 	- Analog Voltage and Current
 	- 10000 mAh
@@ -96,15 +96,13 @@ make px4-v2-vectored-upload
 	- Voltage pin: Pixhawk
 	- Voltage multiplier: 9.174
 	- Amps per volt: 14.70
-7. Setup Pressure Sensor
-	- Change primary baro to 2ndBaro
-8. Flight Modes
+7. Flight Modes
 	- Set all to stabilize
 	- Set Flight Mode 6 to altHold (Learning mode)
-9. Set Up Camera Tilt (if desired)
+8. Set Up Camera Tilt (if desired)
 	- Use camera tab to connect RC8 to Output Channel 7
 	- Connect camera tilt servo or gimbal to Ch. 7
-10. Set up Lights
+9. Set up Lights
 	- Use camera tab to connect RC9 to Output Channel 8
 	- Set range to 1100-1900
 	- Connect lights PWM signal to Ch. 8
