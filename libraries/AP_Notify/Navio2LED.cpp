@@ -21,53 +21,44 @@
 #define NAVIO_LED_DIM    1    // dim brightness
 #define NAVIO_LED_OFF    0    // off
 
-# define GPIO_A_LED_PIN        27
-# define GPIO_B_LED_PIN        6
-# define GPIO_C_LED_PIN        4
-# define GPIO_LED_ON           0
-# define GPIO_LED_OFF          1
+# define GREEN_PIN        27
+# define BLUE_PIN        6
+# define RED_PIN        4
 
 extern const AP_HAL::HAL& hal;
 
-Navio2LED::Navio2LED():
-    RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
+Navio2LED::Navio2LED()
+    : RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
 {
 
 }
 
+#include <unistd.h>
 bool Navio2LED::hw_init(void)
 {
-    // setup the main LEDs as outputs
-    hal.gpio->pinMode(GPIO_A_LED_PIN, HAL_GPIO_OUTPUT);
-    hal.gpio->pinMode(GPIO_B_LED_PIN, HAL_GPIO_OUTPUT);
-    hal.gpio->pinMode(GPIO_C_LED_PIN, HAL_GPIO_OUTPUT);
+    red_pin = hal.gpio->channel(RED_PIN);
+    green_pin = hal.gpio->channel(GREEN_PIN);
+    blue_pin = hal.gpio->channel(BLUE_PIN);
 
-    // turn all lights off
-    hal.gpio->write(GPIO_A_LED_PIN, GPIO_LED_OFF);
-    hal.gpio->write(GPIO_B_LED_PIN, GPIO_LED_OFF);
-    hal.gpio->write(GPIO_C_LED_PIN, GPIO_LED_OFF);
-
+    red_pin->mode(HAL_GPIO_OUTPUT);
+    green_pin->mode(HAL_GPIO_OUTPUT);
+    blue_pin->mode(HAL_GPIO_OUTPUT);
+    
+    red_pin->write(0);
+    green_pin->write(0);
+    blue_pin->write(0);
+    
     return true;
 }
 
 // set_rgb - set color as a combination of red, green and blue values
 bool Navio2LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    if (red == NAVIO_LED_OFF) {
-        hal.gpio->write(GPIO_C_LED_PIN, GPIO_LED_OFF);
-    } else {
-        hal.gpio->write(GPIO_C_LED_PIN, GPIO_LED_ON);
-    }
-    if (green == NAVIO_LED_OFF) {
-        hal.gpio->write(GPIO_A_LED_PIN, GPIO_LED_OFF);
-    } else {
-        hal.gpio->write(GPIO_A_LED_PIN, GPIO_LED_ON);
-    }
-    if (blue == NAVIO_LED_OFF) {
-        hal.gpio->write(GPIO_B_LED_PIN, GPIO_LED_OFF);
-    } else {
-        hal.gpio->write(GPIO_B_LED_PIN, GPIO_LED_ON);
-    }
+    /* We fix the GPIO polarity right here */
+
+    red_pin->write(!red);
+    green_pin->write(!green);
+    blue_pin->write(!blue);
 
     return true;
 }
