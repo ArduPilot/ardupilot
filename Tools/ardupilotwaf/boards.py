@@ -163,6 +163,15 @@ class navio(linux):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NAVIO',
         )
 
+class navio2(linux):
+    def configure_env(self, env):
+        super(navio2, self).configure_env(env)
+
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NAVIO2',
+        )
+
 class zynq(linux):
     def configure_env(self, env):
         super(zynq, self).configure_env(env)
