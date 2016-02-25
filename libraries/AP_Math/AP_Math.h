@@ -90,13 +90,6 @@ float           safe_asin(float v);
 // a varient of sqrt() that always gives a valid answer.
 float           safe_sqrt(float v);
 
-#if ROTATION_COMBINATION_SUPPORT
-// find a rotation that is the combination of two other
-// rotations. This is used to allow us to add an overall board
-// rotation to an existing rotation of a sensor such as the compass
-enum Rotation           rotation_combination(enum Rotation r1, enum Rotation r2, bool *found = NULL);
-#endif
-
 // longitude_scale - returns the scaler to compensate for shrinking longitude as you move north or south from the equator
 // Note: this does not include the scaling to convert longitude/latitude points to meters or centimeters
 float                   longitude_scale(const struct Location &loc);
