@@ -117,6 +117,8 @@ def ap_program(bld, program_group='bin',
     tg = tg_constructor(
         target='#%s' % name,
         name=name,
+        program_name=program_name,
+        program_group=program_group,
         **kw
     )
     _grouped_programs.setdefault(program_group, []).append(tg)
