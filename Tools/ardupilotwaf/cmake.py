@@ -64,17 +64,32 @@ OrderedDict. Example::
             ...
         )
 
-There may be cases when you want to stablish dependency between other tasks and
+There may be cases when you want to establish dependency between other tasks and
 the external build system's products (headers and libraries, for example). In
 that case, you can specify the specific files in the option 'target' of your
-cmake_build task generator. In general, that feature is supposed to be used by
-other tools rather than by wscripts. Example::
+cmake_build task generator. Example::
 
     def build(bld):
         ...
 
         # declaring on target only what I'm interested in
         foo.cmake_build('baz', target='path/to/foobld/include/baz.h')
+
+        # myprogram.c includes baz.h, so the dependency is (implicitly)
+        # established
+        bld.program(target='myprogram', source='myprogram.c')
+
+        # another example
+        foo.cmake_build('another', target='another.txt')
+
+        bld(
+            rule='${CP} ${SRC} ${TGT}',
+            source=bld.bldnode.find_or_declare('another.txt'),
+            target='another_copied.txt',
+        )
+
+
+You can also establish the dependency directly on a task object::
 
     @feature('myfeature')
     def process_myfeature(self):
