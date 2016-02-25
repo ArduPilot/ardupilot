@@ -148,6 +148,7 @@ private:
     AP_Float _timeConst;
     AP_Float _landTimeConst;
     AP_Float _ptchDamp;
+    AP_Float _land_pitch_damp;
     AP_Float _landDamp;
     AP_Float _thrDamp;
     AP_Float _land_throttle_damp;
