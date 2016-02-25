@@ -106,6 +106,19 @@ You can also establish the dependency directly on a task object::
         # tsk is run whenever baz_task changes its outputs, namely,
         # path/to/foobld/include/baz.h
         tsk.dep_nodes.extend(baz_task.outputs)
+
+If your cmake build creates several files (that may be dependency for several
+tasks), you can use the parameter cmake_output_patterns. It receives a pattern
+or a list of patterns relative to the cmake build directory. After the build
+task is run, the files that match those patterns are set as output of the cmake
+build task, so that they get a signature. Example::
+
+    def build(bld):
+        ...
+
+        foo.cmake_build('baz', cmake_output_patterns='include/*.h')
+
+        ...
 """
 
 from waflib import Node, Task, Utils
@@ -172,6 +185,17 @@ class cmake_build_task(Task.Task):
 # declares outputs for the cmake build
 cmake_build_task = Task.update_outputs(cmake_build_task)
 
+cmake_build_task.original_post_run = cmake_build_task.post_run
+def _cmake_build_task_post_run(self):
+    self.output_patterns = Utils.to_list(self.output_patterns)
+    if not self.output_patterns:
+        return self.original_post_run()
+    bldnode = self.generator.config_taskgen.cmake_bld
+    for node in bldnode.ant_glob(self.output_patterns, remove=False):
+        self.set_outputs(node)
+    return self.original_post_run()
+cmake_build_task.post_run = _cmake_build_task_post_run
+
 # the cmake-generated build system is responsible of managing its own
 # dependencies
 cmake_build_task = Task.always_run(cmake_build_task)
@@ -236,6 +260,8 @@ def process_cmake_build(self):
         if not isinstance(o, Node.Node):
             o = self.path.find_or_declare(o)
         tsk.set_outputs(o)
+
+    tsk.output_patterns = getattr(self, 'cmake_output_patterns', [])
 
 @taskgen_method
 def cmake_build(self, cmake_target, **kw):
