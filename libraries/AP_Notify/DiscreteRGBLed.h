@@ -22,12 +22,14 @@
 
 class DiscreteRGBLed: public RGBLed {
 public:
-    DiscreteRGBLed();
+    DiscreteRGBLed(uint16_t red, uint16_t green, uint16_t blue, bool polarity);
 
     bool hw_init(void) override;
-    bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
+    bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) override;
 private:
     AP_HAL::DigitalSource *red_pin;
     AP_HAL::DigitalSource *green_pin;
     AP_HAL::DigitalSource *blue_pin;
+
+    uint16_t red_pin_number, green_pin_number, blue_pin_number;
 };
