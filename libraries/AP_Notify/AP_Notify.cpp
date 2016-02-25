@@ -29,7 +29,7 @@
 #include "ToshibaLED_I2C.h"
 #include "ToshibaLED_PX4.h"
 #include "VRBoard_LED.h"
-#include "Navio2LED.h"
+#include "DiscreteRGBLed.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
@@ -80,7 +80,7 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         ToshibaLED_I2C toshibaled;
         NotifyDevice *AP_Notify::_devices[] = {&navioled, &toshibaled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-        Navio2LED navioled;
+        DiscreteRGBLed navioled;
         ToshibaLED_I2C toshibaled;
         NotifyDevice *AP_Notify::_devices[] = {&navioled, &toshibaled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI

@@ -20,9 +20,9 @@
 
 #include "RGBLed.h"
 
-class Navio2LED: public RGBLed {
+class DiscreteRGBLed: public RGBLed {
 public:
-    Navio2LED();
+    DiscreteRGBLed();
 
     bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;

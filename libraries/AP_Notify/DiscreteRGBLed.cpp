@@ -1,5 +1,5 @@
 /*
-   Navio2LED driver
+   DiscreteRGBLed driver
 */
 /*
    This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "Navio2LED.h"
+#include "DiscreteRGBLed.h"
 
 #define NAVIO_LED_BRIGHT 1    // full brightness
 #define NAVIO_LED_MEDIUM 1    // medium brightness
@@ -27,14 +27,14 @@
 
 extern const AP_HAL::HAL& hal;
 
-Navio2LED::Navio2LED()
+DiscreteRGBLed::DiscreteRGBLed()
     : RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
 {
 
 }
 
 #include <unistd.h>
-bool Navio2LED::hw_init(void)
+bool DiscreteRGBLed::hw_init(void)
 {
     red_pin = hal.gpio->channel(RED_PIN);
     green_pin = hal.gpio->channel(GREEN_PIN);
@@ -52,7 +52,7 @@ bool Navio2LED::hw_init(void)
 }
 
 // set_rgb - set color as a combination of red, green and blue values
-bool Navio2LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
+bool DiscreteRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     /* We fix the GPIO polarity right here */
 
