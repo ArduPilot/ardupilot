@@ -1084,16 +1084,22 @@ void Plane::set_servos(void)
     }
 #endif
 
-    if (g.land_then_servos_neutral &&
+    if (g.land_then_servos_neutral > 0 &&
+            control_mode == AUTO &&
             g.land_disarm_delay > 0 &&
             auto_state.land_complete &&
             !arming.is_armed()) {
         // after an auto land and auto disarm, set the servos to be neutral just
         // in case we're upside down or some crazy angle and straining the servos.
-        channel_roll->servo_out = 0;
-        channel_pitch->servo_out = 0;
-        channel_throttle->servo_out = 0;
-        channel_rudder->servo_out = 0;
+        if (g.land_then_servos_neutral == 1) {
+            channel_roll->radio_out = channel_roll->radio_trim;
+            channel_pitch->radio_out = channel_pitch->radio_trim;
+            channel_rudder->radio_out = channel_rudder->radio_trim;
+        } else if (g.land_then_servos_neutral == 2) {
+            channel_roll->disable_out();
+            channel_pitch->disable_out();
+            channel_rudder->disable_out();
+        }
     }
 
     // send values to the PWM timers for output
