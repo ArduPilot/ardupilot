@@ -241,7 +241,7 @@ bool AP_Compass_LSM303D::_read_sample()
         return false;
     }
 
-    if (is_zero(rx.x) && is_zero(rx.y) && is_zero(rx.z)) {
+    if (rx.x == 0 && rx.y == 0 && rx.z == 0) {
         return false;
     }
 
