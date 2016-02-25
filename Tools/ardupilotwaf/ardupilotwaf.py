@@ -104,12 +104,17 @@ def ap_program(bld, program_group='bin',
 
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
 
-    if bld.env.STATIC_LINKING:
-        kw['features'].append('static_linking')
-
     name = os.path.join(program_group, program_name)
 
-    tg = bld.program(
+    tg_constructor = bld.program
+    if bld.env.AP_PROGRAM_AS_STLIB:
+        tg_constructor = bld.stlib
+    else:
+        if bld.env.STATIC_LINKING:
+            kw['features'].append('static_linking')
+
+
+    tg = tg_constructor(
         target='#%s' % name,
         name=name,
         **kw
