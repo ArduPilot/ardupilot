@@ -141,7 +141,7 @@ int8_t Plane::test_radio(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
-    uint8_t fail_test;
+    uint8_t fail_test = 0;
     print_hit_enter();
     for(int16_t i = 0; i < 50; i++) {
         hal.scheduler->delay(20);
