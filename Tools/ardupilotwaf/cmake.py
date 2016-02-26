@@ -174,8 +174,8 @@ class cmake_build_task(Task.Task):
         return self.uid_
 
     def __str__(self):
-        config_name = self.generator.config_taskgen.name
-        target = self.generator.cmake_target
+        config_name = self.config_taskgen.name
+        target = self.cmake_target
         return '%s %s' % (config_name, target)
 
     def keyword(self):
@@ -190,7 +190,7 @@ def _cmake_build_task_post_run(self):
     self.output_patterns = Utils.to_list(self.output_patterns)
     if not self.output_patterns:
         return self.original_post_run()
-    bldnode = self.generator.config_taskgen.cmake_bld
+    bldnode = self.config_taskgen.cmake_bld
     for node in bldnode.ant_glob(self.output_patterns, remove=False):
         self.set_outputs(node)
     return self.original_post_run()
@@ -245,15 +245,8 @@ def process_cmake_build(self):
     if not getattr(self.config_taskgen, 'posted', False):
         self.config_taskgen.post()
 
-    # NOTE: we'll probably need to use the full class name in waf 1.9
-    tsk = self.cmake_build_task = self.create_task('cmake_build')
-    tsk.env.CMAKE_BLD_DIR = self.config_taskgen.cmake_bld.abspath()
-    tsk.env.CMAKE_TARGET = self.cmake_target
-    tsk.set_run_after(self.config_taskgen.cmake_config_task)
-
-    if self.config_taskgen.last_build_task:
-        tsk.set_run_after(self.config_taskgen.last_build_task)
-    self.config_taskgen.last_build_task = tsk
+    tsk = self.create_cmake_build_task(self.cmake_config, self.cmake_target)
+    self.cmake_build_task = tsk
 
     outputs = Utils.to_list(getattr(self, 'target', ''))
     for o in outputs:
@@ -278,6 +271,24 @@ def cmake_build(self, cmake_target, **kw):
     kw['features'].append('cmake_build')
 
     return self.bld(**kw)
+
+@taskgen_method
+def create_cmake_build_task(self, cmake_config, cmake_target):
+    # NOTE: we'll probably need to use the full class name in waf 1.9
+    tsk = self.create_task('cmake_build')
+    config_tg = self.bld.get_tgen_by_name(cmake_config)
+    tsk.config_taskgen = config_tg
+    tsk.cmake_target = cmake_target
+    tsk.output_patterns = []
+    tsk.env.CMAKE_BLD_DIR = config_tg.cmake_bld.abspath()
+    tsk.env.CMAKE_TARGET = cmake_target
+    tsk.set_run_after(config_tg.cmake_config_task)
+
+    if config_tg.last_build_task:
+        tsk.set_run_after(config_tg.last_build_task)
+    config_tg.last_build_task = tsk
+
+    return tsk
 
 def configure(cfg):
     cfg.find_program('cmake')
