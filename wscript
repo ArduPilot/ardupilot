@@ -78,8 +78,6 @@ def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     boards.get_board(cfg.env.BOARD).configure(cfg)
 
-    cfg.load('toolchain')
-    cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
