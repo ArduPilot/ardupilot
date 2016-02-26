@@ -104,10 +104,9 @@ def ap_program(bld, program_group='bin',
     kw['features'] = common_features(bld) + kw.get('features', [])
 
     name = os.path.join(program_group, program_name)
-    target = bld.bldnode.find_or_declare(name)
 
     tg = bld.program(
-        target=target,
+        target='#%s' % name,
         name=name,
         **kw
     )
