@@ -72,7 +72,7 @@ void Tracker::update(const struct sitl_input &input)
     // how much time has passed?
     float delta_time = frame_time_us * 1.0e-6f;
 
-    float yaw_rate, pitch_rate;
+    float yaw_rate = 0.0f, pitch_rate = 0.0f;
 
     yaw_input = (input.servos[0]-1500)/500.0f;
     pitch_input = (input.servos[1]-1500)/500.0f;
