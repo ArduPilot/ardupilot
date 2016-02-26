@@ -1021,6 +1021,7 @@ private:
     void parachute_check();
     void parachute_release();
     bool parachute_manual_release();
+    void parachute_emergency_check();
     void accel_cal_update(void);
 
 public:

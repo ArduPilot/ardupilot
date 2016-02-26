@@ -146,6 +146,8 @@ public:
         k_param_parachute,
         k_param_arming = 100,
         k_param_parachute_channel,
+        k_param_parachute_auto_enabled,
+        k_param_parachute_auto_error,
         k_param_crash_accel_threshold,
         k_param_override_safety,
 
@@ -510,6 +512,8 @@ public:
 #endif
     AP_Int16 gcs_pid_mask;
     AP_Int8 parachute_channel;
+    AP_Int8 parachute_auto_enabled;
+    AP_Int16 parachute_auto_error;
 
     // RC channels
     RC_Channel rc_1;
