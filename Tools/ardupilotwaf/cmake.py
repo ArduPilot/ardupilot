@@ -177,6 +177,8 @@ def process_cmake_configure(self):
         self.cmake_bld = self.bld.bldnode.make_node(self.cmake_bld)
     self.cmake_bld.mkdir()
 
+    self.last_build_task = None
+
     self.cmake_vars = getattr(self, 'cmake_vars', {})
 
     # NOTE: we'll probably need to use the full class name in waf 1.9
@@ -209,6 +211,10 @@ def process_cmake_build(self):
     tsk.env.CMAKE_BLD_DIR = self.config_taskgen.cmake_bld.abspath()
     tsk.env.CMAKE_TARGET = self.cmake_target
     tsk.set_run_after(self.config_taskgen.cmake_config_task)
+
+    if self.config_taskgen.last_build_task:
+        tsk.set_run_after(self.config_taskgen.last_build_task)
+    self.config_taskgen.last_build_task = tsk
 
     outputs = Utils.to_list(getattr(self, 'target', ''))
     for o in outputs:
