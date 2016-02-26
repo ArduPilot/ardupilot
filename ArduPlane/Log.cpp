@@ -329,10 +329,10 @@ void Plane::Log_Write_Status()
         ,is_flying   : is_flying()
         ,is_flying_probability : isFlyingProbability
         ,armed       : hal.util->get_soft_armed()
-        ,safety      : hal.util->safety_switch_state()
+        ,safety      : static_cast<uint8_t>(hal.util->safety_switch_state())
         ,is_crashed  : crash_state.is_crashed
         ,is_still    : plane.ins.is_still()
-        ,stage       : flight_stage
+        ,stage       : static_cast<uint8_t>(flight_stage)
         ,impact      : crash_state.impact_detected
         };
 
