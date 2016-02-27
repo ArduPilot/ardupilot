@@ -3,7 +3,7 @@
 
 #include "Sub.h"
 
-#define SURFACE_DEPTH -0.02 // 2cm depends on where the external depth sensor is mounted
+#define SURFACE_DEPTH -0.05 // 5cm depends on where the external depth sensor is mounted
 #define DIVE_DEPTH_CONSTRAINT 0.10 // 10cm if we cannot achieve this target, we are trying to dig into the bottom
 #define BOTTOM_DETECTOR_TRIGGER_SEC 1.0
 #define SURFACE_DETECTOR_TRIGGER_SEC 1.0
@@ -52,29 +52,30 @@ void Sub::update_surface_and_bottom_detector()
 			set_bottomed(false); // If we are not trying to descend at lower throttle limit, we are not at the bottom
 		}
 
-	} else if (accel_stationary) {
-		if(motors.limit.throttle_upper) {
-			if( surface_detector_count < ((float)SURFACE_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
-				surface_detector_count++;
-			} else {
-				set_surfaced(true);
-			}
-		} else if(motors.limit.throttle_lower) {
-			// landed criteria met - increment the counter and check if we've triggered
-			if( bottom_detector_count < ((float)BOTTOM_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
-				bottom_detector_count++;
-			} else {
-				set_bottomed(true);
-			}
-		} else {
-			set_surfaced(false);
-			set_bottomed(false);
-		}
-	} else {
-		// we've sensed movement up or down so reset land_detector
-		set_surfaced(false);
-		set_bottomed(false);
 	}
+//	else if (accel_stationary) {
+//		if(motors.limit.throttle_upper) {
+//			if( surface_detector_count < ((float)SURFACE_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
+//				surface_detector_count++;
+//			} else {
+//				set_surfaced(true);
+//			}
+//		} else if(motors.limit.throttle_lower) {
+//			// landed criteria met - increment the counter and check if we've triggered
+//			if( bottom_detector_count < ((float)BOTTOM_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
+//				bottom_detector_count++;
+//			} else {
+//				set_bottomed(true);
+//			}
+//		} else {
+//			set_surfaced(false);
+//			set_bottomed(false);
+//		}
+//	} else {
+//		// we've sensed movement up or down so reset land_detector
+//		set_surfaced(false);
+//		set_bottomed(false);
+//	}
 
 
 }
