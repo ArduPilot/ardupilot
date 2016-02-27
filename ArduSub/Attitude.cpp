@@ -33,7 +33,7 @@ void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &ro
     }
 
     // do lateral tilt to euler roll conversion
-    roll_in = (18000/M_PI_F) * atanf(cosf(pitch_in*(M_PI_F/18000))*tanf(roll_in*(M_PI_F/18000)));
+    roll_in = (18000/M_PI) * atanf(cosf(pitch_in*(M_PI/18000))*tanf(roll_in*(M_PI/18000)));
 
     // return
     roll_out = roll_in;
