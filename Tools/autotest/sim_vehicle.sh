@@ -237,6 +237,11 @@ autotest="../Tools/autotest"
 [ -d "$autotest" ] || {
     # we are not running from one of the standard vehicle directories. Use 
     # the location of the sim_vehicle.sh script to find the path
+    if [ -z $(readlink -e $0) ]; then
+        echo "Can not find autotest directory"
+        usage
+        exit 1
+    fi
     autotest=$(dirname $(readlink -e $0))
 }
 
