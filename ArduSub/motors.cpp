@@ -175,8 +175,10 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
 
     if (ap.home_state == HOME_UNSET) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.resetHeightDatum();
-        Log_Write_Event(DATA_EKF_ALT_RESET);
+        
+        // Always use absolute altitude for ROV
+		// ahrs.resetHeightDatum();
+		// Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location();
