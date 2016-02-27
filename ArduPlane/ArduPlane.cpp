@@ -884,9 +884,18 @@ void Plane::update_alt()
     }
 
     if (auto_throttle_mode && !throttle_suppressed) {        
+
+        // set Flight stage for controller. If not in AUTO then assume normal operation.
+        // this prevents TECS from being stuck in the wrong stage if you switch from
+        // AUTO to, say, FBWB during an aborted landing
+        AP_SpdHgtControl::FlightStage fs = flight_stage;
+        if (control_mode != AUTO) {
+            fs = AP_SpdHgtControl::FLIGHT_NORMAL;
+        }
+
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
-                                                 flight_stage,
+                                                 fs,
                                                  is_doing_auto_land,
                                                  distance_beyond_land_wp,
                                                  auto_state.takeoff_pitch_cd,

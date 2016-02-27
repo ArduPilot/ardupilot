@@ -37,14 +37,14 @@ void DigitalBiquadFilter<T>::compute_params(float sample_freq, float cutoff_freq
     ret.sample_freq = sample_freq;
 
     float fr = sample_freq/cutoff_freq;
-    float ohm = tanf(PI/fr);
-    float c = 1.0f+2.0f*cosf(PI/4.0f)*ohm + ohm*ohm;
+    float ohm = tanf(M_PI/fr);
+    float c = 1.0f+2.0f*cosf(M_PI/4.0f)*ohm + ohm*ohm;
 
     ret.b0 = ohm*ohm/c;
     ret.b1 = 2.0f*ret.b0;
     ret.b2 = ret.b0;
     ret.a1 = 2.0f*(ohm*ohm-1.0f)/c;
-    ret.a2 = (1.0f-2.0f*cosf(PI/4.0f)*ohm+ohm*ohm)/c;
+    ret.a2 = (1.0f-2.0f*cosf(M_PI/4.0f)*ohm+ohm*ohm)/c;
 }
 
 

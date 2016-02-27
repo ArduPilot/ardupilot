@@ -28,6 +28,7 @@ namespace Linux {
     class RCInput_AioPRU;
     class RCInput_RPI;
     class RCInput_Raspilot;
+    class RCInput_Navio2;
     class RCInput_ZYNQ;
     class RCInput_UART;
     class RCInput_UDP;

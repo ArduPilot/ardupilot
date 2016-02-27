@@ -71,15 +71,15 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     }
 
     // handle flipping over pitch axis
-    if (_att_target_euler_rad.y > M_PI_F/2.0f) {
-        _att_target_euler_rad.x = wrap_PI(_att_target_euler_rad.x + M_PI_F);
-        _att_target_euler_rad.y = wrap_PI(M_PI_F - _att_target_euler_rad.x);
-        _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + M_PI_F);
+    if (_att_target_euler_rad.y > M_PI/2.0f) {
+        _att_target_euler_rad.x = wrap_PI(_att_target_euler_rad.x + M_PI);
+        _att_target_euler_rad.y = wrap_PI(M_PI - _att_target_euler_rad.x);
+        _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + M_PI);
     }
-    if (_att_target_euler_rad.y < -M_PI_F/2.0f) {
-        _att_target_euler_rad.x = wrap_PI(_att_target_euler_rad.x + M_PI_F);
-        _att_target_euler_rad.y = wrap_PI(-M_PI_F - _att_target_euler_rad.x);
-        _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + M_PI_F);
+    if (_att_target_euler_rad.y < -M_PI/2.0f) {
+        _att_target_euler_rad.x = wrap_PI(_att_target_euler_rad.x + M_PI);
+        _att_target_euler_rad.y = wrap_PI(-M_PI - _att_target_euler_rad.x);
+        _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + M_PI);
     }
 
     // convert body-frame angle errors to body-frame rate targets

@@ -146,7 +146,7 @@ void AC_Circle::update()
             _pos_control.set_xy_target(target.x, target.y);
 
             // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-PI) * AC_CIRCLE_DEGX100;
+            _yaw = wrap_PI(_angle-M_PI) * AC_CIRCLE_DEGX100;
         }else{
             // set target position to center
             Vector3f target;
@@ -245,12 +245,12 @@ void AC_Circle::init_start_angle(bool use_heading)
 
     // if use_heading is true
     if (use_heading) {
-        _angle = wrap_PI(_ahrs.yaw-PI);
+        _angle = wrap_PI(_ahrs.yaw-M_PI);
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
         const Vector3f &curr_pos = _inav.get_position();
         if (is_equal(curr_pos.x,_center.x) && is_equal(curr_pos.y,_center.y)) {
-            _angle = wrap_PI(_ahrs.yaw-PI);
+            _angle = wrap_PI(_ahrs.yaw-M_PI);
         } else {
             // get bearing from circle center to vehicle in radians
             float bearing_rad = atan2f(curr_pos.y-_center.y,curr_pos.x-_center.x);

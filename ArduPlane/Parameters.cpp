@@ -291,7 +291,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: LAND_THEN_NEUTRL
     // @DisplayName: Set servos to neutral after landing
     // @Description: When enabled, after an autoland and auto-disarm via LAND_DISARMDELAY happens then set all servos to neutral. This is helpful when an aircraft has a rough landing upside down or a crazy angle causing the servos to strain.
-    // @Values: 0:Disabled, 1:Enabled
+    // @Values: 0:Disabled, 1:Servos to Neutral, 2:Servos to Zero PWM
     // @User: Advanced
     GSCALAR(land_then_servos_neutral,       "LAND_THEN_NEUTRL",  0),
 
