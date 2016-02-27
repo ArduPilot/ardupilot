@@ -323,6 +323,11 @@ fi
 
 VEHICLEDIR="$autotest/../../$VEHICLE"
 [ -d "$VEHICLEDIR" ] || {
+    if [ -n $VEHICLEDIR ]; then
+        echo "Can not find VEHICLEDIR $VEHICLEDIR"
+        usage
+        exit 1
+    fi
     VEHICLEDIR=$(dirname $(readlink -e $VEHICLEDIR))
 }
 pushd $VEHICLEDIR || {
