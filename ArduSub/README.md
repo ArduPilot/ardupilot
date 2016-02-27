@@ -117,9 +117,10 @@ The gamepad controls the ROV during operation. It has been tested with the Micro
 - **Back Button:** Disarm vehicle
 - **Y Button:** Switch to althold (learning) mode
 - **B Button:** Switch to stabilize (manual) mode
+- **Right Bumper:** Increase light brightness
+- **Left Bumper:** Decrease light brightness
 - **Buttonpad Up/Down Arrows:** Tilt camera (if applicable and set up in QGC)
 - **Buttonpad Left/Right Arrows:** Increase/decrease roll trim (if IMU is not completely level)
-- **Right Joystick Click:** Cycle through light brightness
 - **Left Joystick Click:** Reset camera tilt angle
 
 #### Modes ####
