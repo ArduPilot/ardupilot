@@ -320,7 +320,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     // @Range: 300 700
     // @Units: Percent*10
-    // @Increment: 1
+    // @Increment: 10
     AP_GROUPINFO("THR_MID", 28, QuadPlane, throttle_mid, 500),
 
     // @Param: TRAN_PIT_MAX
