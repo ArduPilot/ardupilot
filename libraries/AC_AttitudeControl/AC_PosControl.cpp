@@ -55,6 +55,9 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _roll_target(0.0f),
     _pitch_target(0.0f),
     _alt_max(0.0f),
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+	_alt_min(0.0f),
+#endif
     _distance_to_target(0.0f),
     _accel_target_jerk_limited(0.0f,0.0f),
     _accel_target_filter(POSCONTROL_ACCEL_FILTER_HZ)
@@ -165,11 +168,25 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
         _pos_target.z += climb_rate_cms * dt;
     }
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // do not let target alt get above limit
+    if (_alt_max < 0 && _alt_max > _alt_min && _pos_target.z > _alt_max) {
+        _pos_target.z = _alt_max;
+        _limit.pos_up = true;
+    }
+
+    // do not let target alt get below limit
+    if (_alt_min < 0 && _pos_target.z < _alt_min) {
+        _pos_target.z = _alt_min;
+        _limit.pos_down = true;
+    }
+#else
     // do not let target alt get above limit
     if (_alt_max > 0 && _pos_target.z > _alt_max) {
         _pos_target.z = _alt_max;
         _limit.pos_up = true;
     }
+#endif
 
     // do not use z-axis desired velocity feed forward
     // vel_desired set to desired climb rate for reporting and land-detector
@@ -212,6 +229,23 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
         _pos_target.z += _vel_desired.z * dt;
     }
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // do not let target alt get above limit
+    if (_alt_max < 0 && _alt_max > _alt_min && _pos_target.z > _alt_max) {
+        _pos_target.z = _alt_max;
+        _limit.pos_up = true;
+        // decelerate feed forward to zero
+        _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
+    }
+
+    // do not let target alt get below limit
+    if (_alt_min < 0 && _pos_target.z < _alt_min) {
+        _pos_target.z = _alt_min;
+        _limit.pos_down = true;
+        // decelerate feed forward to zero
+        _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
+    }
+#else
     // do not let target alt get above limit
     if (_alt_max > 0 && _pos_target.z > _alt_max) {
         _pos_target.z = _alt_max;
@@ -219,6 +253,7 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
         // decelerate feed forward to zero
         _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
     }
+#endif
 }
 
 /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
