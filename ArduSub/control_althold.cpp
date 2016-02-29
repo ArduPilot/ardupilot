@@ -124,13 +124,18 @@ void Sub::althold_run()
         if(ap.at_bottom) {
         	pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
             pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
-        } else if(ap.at_surface) { // We could use the alt max parameter for this
-        	if(motors.limit.throttle_upper) // ToDo use a better condition
+        } else if(ap.at_surface) {
+        	if(pos_control.get_vel_target_z() > 0.0) {
         		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
-            pos_control.set_alt_target(inertial_nav.get_altitude() - 10.0f); // set target to 10 cm below surface
+        		pos_control.set_alt_target(SURFACE_DEPTH); // set alt target to the same depth that triggers the surface detector.
+        	}
+        	if(target_climb_rate < 0) { // Dive if the pilot wants to
+            	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        	}
         } else {
         	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         }
+
         pos_control.update_z_controller();
         break;
     }
