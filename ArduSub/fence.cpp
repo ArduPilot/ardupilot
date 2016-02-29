@@ -8,7 +8,7 @@
 
 // fence_check - ask fence library to check for breaches and initiate the response
 // called at 1hz
-void Copter::fence_check()
+void Sub::fence_check()
 {
     uint8_t new_breaches; // the type of fence that has been breached
     uint8_t orig_breaches = fence.get_breaches();
@@ -58,7 +58,7 @@ void Copter::fence_check()
 }
 
 // fence_send_mavlink_status - send fence status to ground station
-void Copter::fence_send_mavlink_status(mavlink_channel_t chan)
+void Sub::fence_send_mavlink_status(mavlink_channel_t chan)
 {   
     if (fence.enabled()) {
         // traslate fence library breach types to mavlink breach types
