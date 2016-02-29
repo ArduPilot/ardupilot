@@ -289,25 +289,19 @@ void Sub::set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 // updates position controller's maximum altitude using fence and EKF limits
 void Sub::update_poscon_alt_max()
 {
-    float alt_limit_cm = 0.0f;  // interpreted as no limit if left as zero
+	float min_alt_cm = 0.0f;  // interpreted as no limit if left as zero
+	float max_alt_cm = 0.0f;
 
 #if AC_FENCE == ENABLED
     // set fence altitude limit in position controller
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        alt_limit_cm = pv_alt_above_origin(fence.get_safe_alt()*100.0f);
+        min_alt_cm = fence.get_safe_depth()*100.0f;
+        max_alt_cm = fence.get_safe_alt()*100.0f;
     }
 #endif
-
-    // get alt limit from EKF (limited during optical flow flight)
-    float ekf_limit_cm = 0.0f;
-    if (inertial_nav.get_hgt_ctrl_limit(ekf_limit_cm)) {
-        if ((alt_limit_cm <= 0.0f) || (ekf_limit_cm < alt_limit_cm)) {
-            alt_limit_cm = ekf_limit_cm;
-        }
-    }
-
     // pass limit to pos controller
-    pos_control.set_alt_max(alt_limit_cm);
+    pos_control.set_alt_min(min_alt_cm);
+    pos_control.set_alt_max(max_alt_cm);
 }
 
 // rotate vector from vehicle's perspective to North-East frame
