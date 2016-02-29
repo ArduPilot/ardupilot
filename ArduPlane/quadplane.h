@@ -60,8 +60,8 @@ public:
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
-    AC_PID        pid_rate_roll {0.15, 0.1, 0.004,  2000, 20, 0.02};
-    AC_PID        pid_rate_pitch{0.15, 0.1, 0.004,  2000, 20, 0.02};
+    AC_PID        pid_rate_roll {0.25, 0.1, 0.004,  2000, 20, 0.02};
+    AC_PID        pid_rate_pitch{0.25, 0.1, 0.004,  2000, 20, 0.02};
     AC_PID        pid_rate_yaw  {0.15, 0.1, 0.004,  2000, 20, 0.02};
     AC_P          p_stabilize_roll{4.5};
     AC_P          p_stabilize_pitch{4.5};
@@ -72,7 +72,7 @@ private:
     AC_P                    p_pos_xy{1};
     AC_P                    p_alt_hold{1};
     AC_P                    p_vel_z{5};
-    AC_PID                  pid_accel_z{0.5, 1, 0, 800, 20, 0.02};
+    AC_PID                  pid_accel_z{0.3, 1, 0, 800, 20, 0.02};
     AC_PI_2D                pi_vel_xy{1.0, 0.5, 1000, 5, 0.02};
 
     AP_Int8 frame_class;
