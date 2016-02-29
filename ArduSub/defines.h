@@ -13,6 +13,10 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
+#define SURFACE_DEPTH -0.05 // 5cm, depends on where the external depth sensor is mounted
+#define BOTTOM_DETECTOR_TRIGGER_SEC 1.0
+#define SURFACE_DETECTOR_TRIGGER_SEC 1.0
+
 // Autopilot Yaw Mode enumeration
 enum autopilot_yaw_mode {
     AUTO_YAW_HOLD =             0,  // pilot controls the heading
