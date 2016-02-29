@@ -307,9 +307,6 @@ void Plane::update_aux(void)
 
 void Plane::one_second_loop()
 {
-    if (should_log(MASK_LOG_CURRENT))
-        Log_Write_Current();
-
     // send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
 
