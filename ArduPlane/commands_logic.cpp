@@ -601,15 +601,12 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Plane::verify_loiter_unlim()
 {
-    if (g.rtl_radius < 0) {
-        loiter.direction = -1;
-    } else {
-        loiter.direction = 1;
-    }
-
-    if (mission.get_current_nav_cmd().p1 == 0) {
+    if (mission.get_current_nav_cmd().p1 <= 1 && abs(g.rtl_radius) > 1) {
+        // if mission radius is 0,1, and rtl_radius is valid, use rtl_radius.
+        loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         update_loiter(abs(g.rtl_radius));
     } else {
+        // else use mission radius
         update_loiter(mission.get_current_nav_cmd().p1);
     }
     return false;
@@ -617,6 +614,7 @@ bool Plane::verify_loiter_unlim()
 
 bool Plane::verify_loiter_time()
 {
+    // mission radius is always g.loiter_radius
     update_loiter(0);
     if (loiter.start_time_ms == 0) {
         if (nav_controller->reached_loiter_target()) {
@@ -632,7 +630,9 @@ bool Plane::verify_loiter_time()
 
 bool Plane::verify_loiter_turns()
 {
-    update_loiter(HIGHBYTE(mission.get_current_nav_cmd().p1));
+    uint16_t radius = HIGHBYTE(mission.get_current_nav_cmd().p1);
+    update_loiter(radius);
+
     if (loiter.sum_cd > loiter.total_cd) {
         loiter.total_cd = 0;
         gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
@@ -649,7 +649,8 @@ bool Plane::verify_loiter_turns()
  */
 bool Plane::verify_loiter_to_alt() 
 {
-    update_loiter(HIGHBYTE(mission.get_current_nav_cmd().p1));
+    uint16_t radius = HIGHBYTE(mission.get_current_nav_cmd().p1);
+    update_loiter(radius);
 
     //has target altitude been reached?
     if (condition_value != 0) {

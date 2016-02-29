@@ -129,8 +129,10 @@ void Plane::calc_gndspeed_undershoot()
 
 void Plane::update_loiter(uint16_t radius)
 {
-    if (radius == 0) {
-        radius = abs(g.loiter_radius);
+    if (radius <= 1) {
+        // if radius is <=1 then use the general loiter radius. if it's small, use default
+        radius = (abs(g.loiter_radius <= 1)) ? LOITER_RADIUS_DEFAULT : abs(g.loiter_radius);
+        loiter.direction = (g.loiter_radius < 0) ? -1 : 1;
     }
 
     if (loiter.start_time_ms == 0 &&
