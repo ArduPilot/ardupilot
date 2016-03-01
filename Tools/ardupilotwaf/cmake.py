@@ -248,6 +248,9 @@ def process_cmake_build(self):
     self.cmake_build_task = tsk
 
     outputs = Utils.to_list(getattr(self, 'target', ''))
+    if not isinstance(outputs, list):
+        outputs = [outputs]
+
     for o in outputs:
         if not isinstance(o, Node.Node):
             o = self.path.find_or_declare(o)
