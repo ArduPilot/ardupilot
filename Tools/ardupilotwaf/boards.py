@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+from collections import OrderedDict
 import sys
 
 import waflib
@@ -26,10 +27,15 @@ class Board:
             # Dictionaries (like 'DEFINES') are converted to lists to
             # conform to waf conventions.
             if isinstance(val, dict):
-                for item in val.items():
-                    cfg.env.prepend_value(k, '%s=%s' % item)
-            else:
+                keys = list(val.keys())
+                if not isinstance(val, OrderedDict):
+                    keys.sort()
+                val = ['%s=%s' % (vk, val[vk]) for vk in keys]
+
+            if k in cfg.env and isinstance(cfg.env, list):
                 cfg.env.prepend_value(k, val)
+            else:
+                cfg.env[k] = val
 
     def configure_env(self, env):
         # Use a dictionary instead of the convetional list for definitions to
