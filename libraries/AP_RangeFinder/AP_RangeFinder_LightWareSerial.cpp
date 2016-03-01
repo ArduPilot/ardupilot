@@ -62,7 +62,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
         char c = uart->read();
         if (c == '\r') {
             linebuf[linebuf_len] = 0;
-            sum += atof(linebuf);
+            sum += (float)atof(linebuf);
             count++;
             linebuf_len = 0;
         } else if (isdigit(c) || c == '.') {

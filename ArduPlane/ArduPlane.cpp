@@ -307,9 +307,6 @@ void Plane::update_aux(void)
 
 void Plane::one_second_loop()
 {
-    if (should_log(MASK_LOG_CURRENT))
-        Log_Write_Current();
-
     // send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
 
@@ -765,25 +762,15 @@ void Plane::update_navigation()
             // on every loop
             auto_state.checked_for_autoland = true;
         }
-        // fall through to LOITER
-        if (g.rtl_radius < 0) {
-            loiter.direction = -1;
-        } else {
-            loiter.direction = 1;
-        }
         radius = abs(g.rtl_radius);
+        if (radius > 0) {
+            loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
+        }
+        // fall through to LOITER
 
     case LOITER:
     case GUIDED:
-        // allow loiter direction to be changed in flight
-        if (radius == 0) {
-            if (g.loiter_radius < 0) {
-                loiter.direction = -1;
-            } else {
-                loiter.direction = 1;
-            }
-        }
-        update_loiter(abs(radius));
+        update_loiter(radius);
         break;
 
     case CRUISE:

@@ -1555,7 +1555,7 @@ void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &
     }
 
     struct log_Camera pkt = {
-        LOG_PACKET_HEADER_INIT(msg),
+        LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(msg)),
         time_us     : AP_HAL::micros64(),
         gps_time    : gps.time_week_ms(),
         gps_week    : gps.time_week(),

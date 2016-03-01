@@ -505,6 +505,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
 
     case MAV_CMD_NAV_LOITER_UNLIM:                      // MAV ID: 17
         copy_location = true;
+        cmd.p1 = fabsf(packet.param3);                  // store radius as 16bit since no other params are competing for space
         cmd.content.location.flags.loiter_ccw = (packet.param3 < 0);    // -1 = counter clockwise, +1 = clockwise
         break;
 
@@ -518,7 +519,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
 
     case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
         copy_location = true;
-        cmd.p1 = packet.param1;                         // loiter time in seconds
+        cmd.p1 = packet.param1;                         // loiter time in seconds uses all 16 bits, 8bit seconds is too small. No room for radius.
         cmd.content.location.flags.loiter_ccw = (packet.param3 < 0);
         break;
 
@@ -546,18 +547,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
 
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
         copy_location = true;
-
         heading_req = packet.param1;                    //heading towards next waypoint required (0 = False)
-                      
-        cmd.content.location.flags.loiter_ccw = (packet.param2 < 0);
-        //Don't give users the impression I can set the radius size.
-        //I can only set the direction at this time and so can every 
-        //other command, despite what is implied (I'm looking at YOU
-        //NAV_LOITER_TURNS):
-        radius_m = 1; 
-        
+        radius_m = fabsf(packet.param2);                // radius in meters is held in high in param2
         cmd.p1 = (((uint16_t)radius_m)<<8) | (uint16_t)heading_req; // store "radius" in high byte of p1, heading_req in low byte of p1
-        
+        cmd.content.location.flags.loiter_ccw = (packet.param2 < 0);
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82

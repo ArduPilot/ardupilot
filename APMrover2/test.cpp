@@ -136,7 +136,7 @@ int8_t Rover::test_radio(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
-	uint8_t fail_test;
+	uint8_t fail_test = 0;
 	print_hit_enter();
 	for(int i = 0; i < 50; i++){
 		delay(20);

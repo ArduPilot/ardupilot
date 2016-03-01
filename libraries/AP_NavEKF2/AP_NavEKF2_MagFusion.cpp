@@ -152,7 +152,7 @@ void NavEKF2_core::SelectMagFusion()
     if (dataReady) {
         // If we haven't performed the first airborne magnetic field update or have inhibited magnetic field learning, then we use the simple method of declination to maintain heading
         if(inhibitMagStates) {
-            fuseCompass();
+            fuseEulerYaw();
             // zero the test ratio output from the inactive 3-axis magneteometer fusion
             magTestRatio.zero();
         } else {
@@ -603,79 +603,121 @@ void NavEKF2_core::FuseMagnetometer()
  * It is not as robust to magneometer failures.
  * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degreees latitude of the the magnetic poles)
 */
-void NavEKF2_core::fuseCompass()
+void NavEKF2_core::fuseEulerYaw()
 {
     float q0 = stateStruct.quat[0];
     float q1 = stateStruct.quat[1];
     float q2 = stateStruct.quat[2];
     float q3 = stateStruct.quat[3];
 
-    float magX = magDataDelayed.mag.x;
-    float magY = magDataDelayed.mag.y;
-    float magZ = magDataDelayed.mag.z;
-
     // compass measurement error variance (rad^2)
-    const float R_MAG = 3e-2f;
+    const float R_YAW = 0.25f;
 
-    // calculate intermediate variables for observation jacobian
-    float t2 = q0*q0;
-    float t3 = q1*q1;
-    float t4 = q2*q2;
-    float t5 = q3*q3;
-    float t6 = q0*q3*2.0f;
-    float t8 = t2-t3+t4-t5;
-    float t9 = q0*q1*2.0f;
-    float t10 = q2*q3*2.0f;
-    float t11 = t9-t10;
-    float t14 = q1*q2*2.0f;
-    float t21 = magY*t8;
-    float t22 = t6+t14;
-    float t23 = magX*t22;
-    float t24 = magZ*t11;
-    float t7 = t21+t23-t24;
-    float t12 = t2+t3-t4-t5;
-    float t13 = magX*t12;
-    float t15 = q0*q2*2.0f;
-    float t16 = q1*q3*2.0f;
-    float t17 = t15+t16;
-    float t18 = magZ*t17;
-    float t19 = t6-t14;
-    float t25 = magY*t19;
-    float t20 = t13+t18-t25;
-    if (fabsf(t20) < 1e-6f) {
-        return;
-    }
-    float t26 = 1.0f/(t20*t20);
-    float t27 = t7*t7;
-    float t28 = t26*t27;
-    float t29 = t28+1.0;
-    if (fabsf(t29) < 1e-12f) {
-        return;
-    }
-    float t30 = 1.0f/t29;
-    if (fabsf(t20) < 1e-12f) {
-        return;
-    }
-    float t31 = 1.0f/t20;
+    // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
+    // determine if a 321 or 312 Euler sequence is best
+    float predicted_yaw;
+    float H_YAW[3];
+    Matrix3f Tbn_zeroYaw;
+    if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
+        // calculate observation jacobian when we are observing the first rotation in a 321 sequence
+        float t2 = q0*q0;
+        float t3 = q1*q1;
+        float t4 = q2*q2;
+        float t5 = q3*q3;
+        float t6 = t2+t3-t4-t5;
+        float t7 = q0*q3*2.0f;
+        float t8 = q1*q2*2.0f;
+        float t9 = t7+t8;
+        float t10 = sq(t6);
+        if (t10 > 1e-6f) {
+            t10 = 1.0f / t10;
+        } else {
+            return;
+        }
+        float t11 = t9*t9;
+        float t12 = t10*t11;
+        float t13 = t12+1.0f;
+        float t14;
+        if (fabsf(t13) > 1e-3f) {
+            t14 = 1.0f/t13;
+        } else {
+            return;
+        }
+        float t15 = 1.0f/t6;
+        H_YAW[0] = 0.0f;
+        H_YAW[1] = t14*(t15*(q0*q1*2.0f-q2*q3*2.0f)+t9*t10*(q0*q2*2.0f+q1*q3*2.0f));
+        H_YAW[2] = t14*(t15*(t2-t3+t4-t5)+t9*t10*(t7-t8));
 
-    // calculate observation jacobian
-    float H_MAG[3];
-    H_MAG[0] = -t30*(t31*(magZ*t8+magY*t11)+t7*t26*(magY*t17+magZ*t19));
-    H_MAG[1] = t30*(t31*(magX*t11+magZ*t22)-t7*t26*(magZ*t12-magX*t17));
-    H_MAG[2] = t30*(t31*(magX*t8-magY*t22)+t7*t26*(magY*t12+magX*t19));
+        // Get the 321 euler angles
+        Vector3f euler321;
+        stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
+        predicted_yaw = euler321.z;
+
+        // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
+        Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
+
+    } else {
+        // calculate observaton jacobian when we are observing a rotation in a 312 sequence
+        float t2 = q0*q0;
+        float t3 = q1*q1;
+        float t4 = q2*q2;
+        float t5 = q3*q3;
+        float t6 = t2-t3+t4-t5;
+        float t7 = q0*q3*2.0f;
+        float t10 = q1*q2*2.0f;
+        float t8 = t7-t10;
+        float t9 = sq(t6);
+        if (t9 > 1e-6f) {
+            t9 = 1.0f/t9;
+        } else {
+            return;
+        }
+        float t11 = t8*t8;
+        float t12 = t9*t11;
+        float t13 = t12+1.0f;
+        float t14;
+        if (fabsf(t13) > 1e-3f) {
+            t14 = 1.0f/t13;
+        } else {
+            return;
+        }
+        float t15 = 1.0f/t6;
+        H_YAW[0] = -t14*(t15*(q0*q2*2.0+q1*q3*2.0)-t8*t9*(q0*q1*2.0-q2*q3*2.0));
+        H_YAW[1] = 0.0f;
+        H_YAW[2] = t14*(t15*(t2+t3-t4-t5)+t8*t9*(t7+t10));
+
+        // Get the 321 euler angles
+        Vector3f euler312 = stateStruct.quat.to_vector312();
+        predicted_yaw = euler312.z;
+
+        // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
+        Tbn_zeroYaw.from_euler312(euler312.x, euler312.y, 0.0f);
+    }
+
+    // rotate measured mag components into earth frame
+    Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+
+    // Use the difference between the horizontal projection and declination to give the measured yaw
+    float measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+
+    // Calculate the innovation
+    float innovation = wrap_PI(predicted_yaw - measured_yaw);
+
+    // Copy raw value to output variable used for data logging
+    innovYaw = innovation;
 
     // Calculate innovation variance and Kalman gains, taking advantage of the fact that only the first 3 elements in H are non zero
     float PH[3];
-    float varInnov = R_MAG;
+    float varInnov = R_YAW;
     for (uint8_t rowIndex=0; rowIndex<=2; rowIndex++) {
         PH[rowIndex] = 0.0f;
         for (uint8_t colIndex=0; colIndex<=2; colIndex++) {
-            PH[rowIndex] += P[rowIndex][colIndex]*H_MAG[colIndex];
+            PH[rowIndex] += P[rowIndex][colIndex]*H_YAW[colIndex];
         }
-        varInnov += H_MAG[rowIndex]*PH[rowIndex];
+        varInnov += H_YAW[rowIndex]*PH[rowIndex];
     }
     float varInnovInv;
-    if (varInnov >= R_MAG) {
+    if (varInnov >= R_YAW) {
         varInnovInv = 1.0f / varInnov;
         // All three magnetometer components are used in this measurement, so we output health status on three axes
         faultStatus.bad_xmag = false;
@@ -694,16 +736,10 @@ void NavEKF2_core::fuseCompass()
     for (uint8_t rowIndex=0; rowIndex<=stateIndexLim; rowIndex++) {
         Kfusion[rowIndex] = 0.0f;
         for (uint8_t colIndex=0; colIndex<=2; colIndex++) {
-            Kfusion[rowIndex] += P[rowIndex][colIndex]*H_MAG[colIndex];
+            Kfusion[rowIndex] += P[rowIndex][colIndex]*H_YAW[colIndex];
         }
         Kfusion[rowIndex] *= varInnovInv;
     }
-
-    // Calculate the innovation
-    float innovation = calcMagHeadingInnov();
-
-    // Copy raw value to output variable used for data logging
-    innovYaw = innovation;
 
     // calculate the innovation test ratio
     yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
@@ -742,7 +778,7 @@ void NavEKF2_core::fuseCompass()
     for (uint8_t colIndex=0; colIndex<=stateIndexLim; colIndex++) {
         HP[colIndex] = 0.0f;
         for (uint8_t rowIndex=0; rowIndex<=2; rowIndex++) {
-            HP[colIndex] += H_MAG[rowIndex]*P[rowIndex][colIndex];
+            HP[colIndex] += H_YAW[rowIndex]*P[rowIndex][colIndex];
         }
     }
     for (uint8_t rowIndex=0; rowIndex<=stateIndexLim; rowIndex++) {
@@ -863,34 +899,6 @@ void NavEKF2_core::FuseDeclination()
     ForceSymmetry();
     ConstrainVariances();
 
-}
-
-// Calculate magnetic heading declination innovation
-float NavEKF2_core::calcMagHeadingInnov()
-{
-    // rotate measured body components into earth axis
-    Matrix3f Tbn_temp;
-    stateStruct.quat.rotation_matrix(Tbn_temp);
-    Vector3f magMeasNED = Tbn_temp*magDataDelayed.mag;
-
-    // the observation is the declination angle of the earth field from the compass library
-    // the prediction is the azimuth angle of the projection of the measured field onto the horizontal
-    float innovation = atan2f(magMeasNED.y,magMeasNED.x) - _ahrs->get_compass()->get_declination();
-
-    // wrap the innovation so it sits on the range from +-pi
-    innovation = wrap_PI(innovation);
-
-    // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
-    if (innovation - lastInnovation > M_PI) {
-        // Angle has wrapped in the positive direction to subtract an additional 2*Pi
-        innovationIncrement -= M_2PI;
-    } else if (innovation -innovationIncrement < -M_PI) {
-        // Angle has wrapped in the negative direction so add an additional 2*Pi
-        innovationIncrement += M_2PI;
-    }
-    lastInnovation = innovation;
-
-    return innovation + innovationIncrement;
 }
 
 /********************************************************
