@@ -258,16 +258,27 @@ def process_cmake_build(self):
 
     tsk.output_patterns = getattr(self, 'cmake_output_patterns', [])
 
-@taskgen_method
-def cmake_build(self, cmake_target, **kw):
-    if not 'cmake_configure' in self.features:
-        self.bld.fatal('cmake_build: this is not a cmake_configure taskgen')
+def _get_config_tg(self, cmake_config):
+    if not cmake_config:
+        if 'cmake_configure' in self.features:
+            cmake_config = self.name
+        elif 'cmake_build' in self.features:
+            if hasattr(self, 'cmake_config'):
+                cmake_config = self.cmake_config
+    if not cmake_config:
+        self.bld.fatal('cmake: cmake_config is missing or invalid')
 
-    kw['cmake_config'] = self.name
+    return self.bld.get_tgen_by_name(cmake_config)
+
+@taskgen_method
+def cmake_build(self, cmake_target, cmake_config=None, **kw):
+    tg = _get_config_tg(self, cmake_config)
+
+    kw['cmake_config'] = tg.name
     kw['cmake_target'] = cmake_target
 
     if 'name' not in kw:
-        kw['name'] = '%s_%s' % (self.name, cmake_target)
+        kw['name'] = '%s_%s' % (tg.name, cmake_target)
 
     kw['features'] = Utils.to_list(kw.get('features', []))
     kw['features'].append('cmake_build')
@@ -275,21 +286,15 @@ def cmake_build(self, cmake_target, **kw):
     return self.bld(**kw)
 
 @taskgen_method
-def get_cmake_bldnode(self):
-    if 'cmake_build' in self.features:
-        if not hasattr(self, 'cmake_config'):
-            self.bld.fatal('cmake_build: taskgen is missing cmake_config')
-        return self.bld.get_tgen_by_name(self.cmake_config).get_cmake_bldnode()
+def get_cmake_bldnode(self, cmake_config=None):
+    tg = _get_config_tg(self, cmake_config)
 
-    if not 'cmake_configure' in self.features:
-        self.bld.fatal('cmake_build: this is not a cmake_configure taskgen')
+    if not hasattr(tg, 'cmake_bld'):
+        tg.cmake_bld = tg.cmake_src.get_bld()
+    elif not isinstance(tg.cmake_bld, Node.Node):
+        tg.cmake_bld = tg.bld.bldnode.make_node(tg.cmake_bld)
 
-    if not hasattr(self, 'cmake_bld'):
-        self.cmake_bld = self.cmake_src.get_bld()
-    elif not isinstance(self.cmake_bld, Node.Node):
-        self.cmake_bld = self.bld.bldnode.make_node(self.cmake_bld)
-
-    return self.cmake_bld
+    return tg.cmake_bld
 
 @taskgen_method
 def create_cmake_build_task(self, cmake_config, cmake_target):
