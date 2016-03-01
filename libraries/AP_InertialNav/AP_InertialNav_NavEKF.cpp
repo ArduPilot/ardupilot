@@ -17,25 +17,26 @@
 void AP_InertialNav_NavEKF::update(float dt)
 {
     // get the position relative to the local earth frame origin
-    _ahrs_ekf.get_relative_position_NED(_relpos_cm);
-    _relpos_cm *= 100; // convert to cm
+    if (_ahrs_ekf.get_relative_position_NED(_relpos_cm)) {
+        _relpos_cm *= 100; // convert to cm
+        _relpos_cm.z = - _relpos_cm.z; // InertialNav is NEU
+    }
 
     // get the absolute WGS-84 position
     _haveabspos = _ahrs_ekf.get_position(_abspos);
 
     // get the velocity relative to the local earth frame
-    _ahrs_ekf.get_velocity_NED(_velocity_cm);
-    _velocity_cm *= 100; // convert to cm/s
+    if (_ahrs_ekf.get_velocity_NED(_velocity_cm)) {
+        _velocity_cm *= 100; // convert to cm/s
+        _velocity_cm.z = -_velocity_cm.z; // InertialNav is NEU
+    }
 
     // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
-    _ahrs_ekf.get_vert_pos_rate(_pos_z_rate);
-    _pos_z_rate *= 100; // convert to cm/s
-
-    // InertialNav is NEU
-    _relpos_cm.z = - _relpos_cm.z;
-    _velocity_cm.z = -_velocity_cm.z;
-    _pos_z_rate = - _pos_z_rate;
+    if (_ahrs_ekf.get_vert_pos_rate(_pos_z_rate)) {
+        _pos_z_rate *= 100; // convert to cm/s
+        _pos_z_rate = - _pos_z_rate; // InertialNav is NEU
+    }
 }
 
 /**
