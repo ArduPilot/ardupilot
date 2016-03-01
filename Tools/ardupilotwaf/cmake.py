@@ -130,6 +130,7 @@ import os
 class cmake_configure_task(Task.Task):
     vars = ['CMAKE_BLD_DIR']
     run_str = '${CMAKE} ${CMAKE_SRC_DIR} ${CMAKE_VARS} ${CMAKE_GENERATOR_OPTION}'
+    color = 'BLUE'
 
     def uid(self):
         if not hasattr(self, 'uid_'):
@@ -160,6 +161,7 @@ cmake_configure_task.run = _cmake_configure_task_run
 
 class cmake_build_task(Task.Task):
     run_str = '${CMAKE} --build ${CMAKE_BLD_DIR} --target ${CMAKE_TARGET}'
+    color = 'BLUE'
 
     def uid(self):
         if not hasattr(self, 'uid_'):
