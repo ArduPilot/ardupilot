@@ -552,7 +552,7 @@ void NavEKF2_core::selectHeightForFusion()
 
     // determine if we should be using a height source other than baro
     bool usingRangeForHgt = (frontend->_altSource == 1 && imuSampleTime_ms - rngValidMeaTime_ms < 500 && frontend->_fusionModeGPS == 3);
-    bool usingGpsForHgt = (frontend->_altSource == 2 && imuSampleTime_ms - lastTimeGpsReceived_ms < 500 && validOrigin);
+    bool usingGpsForHgt = (frontend->_altSource == 2 && imuSampleTime_ms - lastTimeGpsReceived_ms < 500 && validOrigin && gpsAccuracyGood);
 
     // if there is new baro data to fuse, calculate filterred baro data required by other processes
     if (baroDataToFuse) {
