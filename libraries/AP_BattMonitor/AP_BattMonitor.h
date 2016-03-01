@@ -1,6 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
+#include <Filter/Filter.h>                     // Filter library
+#include <Filter/LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -112,6 +115,7 @@ public:
 protected:
 
     /// parameters
+    AP_Int8     _lpf_cutoff;                                        /// The cut-off filter is valid for all battery monitor instances (no need to make an array out of it)
     AP_Int8     _monitoring[AP_BATT_MONITOR_MAX_INSTANCES];         /// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8     _volt_pin[AP_BATT_MONITOR_MAX_INSTANCES];           /// board pin used to measure battery voltage
     AP_Int8     _curr_pin[AP_BATT_MONITOR_MAX_INSTANCES];           /// board pin used to measure battery current
@@ -124,4 +128,17 @@ private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
     uint8_t     _num_instances;                                     /// number of monitors
+    
+    
+    // Low pass filter with 10 Hz sampling rate and 5 Hz cut-off    
+    /// current_amps - returns the instantaneous current draw in amperes
+    float current_amp(uint8_t instance) const;
+    float current_amp() const { return current_amp(AP_BATT_PRIMARY_INSTANCE); }
+    
+    /// voltage - returns battery voltage in millivolts
+    float voltage_volt(uint8_t instance) const;
+    float voltage_volt() const { return voltage_volt(AP_BATT_PRIMARY_INSTANCE); }
+    
+    uint32_t _lpf_timer[AP_BATT_MONITOR_MAX_INSTANCES] =  { 0 };
+    LowPassFilterVector2f _lpf_volt_curr[AP_BATT_MONITOR_MAX_INSTANCES];
 };
