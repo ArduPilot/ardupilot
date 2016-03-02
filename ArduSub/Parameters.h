@@ -359,6 +359,9 @@ public:
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
+
+		//Sub-specific parameters
+		k_param_surface_depth = 256,
     };
 
     AP_Int16        format_version;
@@ -511,6 +514,8 @@ public:
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
     AP_Float                autotune_min_d;
+
+    AP_Float				surface_depth;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

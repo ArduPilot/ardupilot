@@ -29,6 +29,14 @@
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&sub.v, {group_info : class::var_info} }
 
 const AP_Param::Info Sub::var_info[] = {
+
+	// @Param: SURFACE_DEPTH
+	// @DisplayName: Depth reading at surface
+	// @Description: The depth the external pressure sensor will read when the vehicle is considered at the surface (in meters)
+	// @Range: -0.05 -1.0
+	// @User: Standard
+	GSCALAR(surface_depth, "SURFACE_DEPTH", SURFACE_DEPTH_DEFAULT),
+
     // @Param: SYSID_SW_MREV
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format
