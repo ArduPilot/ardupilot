@@ -60,6 +60,11 @@ Vector2f    location_diff(const struct Location &loc1, const struct Location &lo
 bool        locations_are_same(const struct Location &loc1, const struct Location &loc2);
 
 /*
+ * convert invalid waypoint with useful data. return true if location changed
+ */
+bool        location_sanitize(const struct Location &defaultLoc, struct Location &loc);
+
+/*
   print a int32_t lat/long in decimal degrees
  */
 void        print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);

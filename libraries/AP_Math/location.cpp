@@ -241,6 +241,28 @@ bool locations_are_same(const struct Location &loc1, const struct Location &loc2
 }
 
 /*
+ * convert invalid waypoint with useful data. return true if location changed
+ */
+bool location_sanitize(const struct Location &defaultLoc, struct Location &loc)
+{
+    bool has_changed = false;
+    // convert lat/lng=0 to mean current point
+    if (loc.lat == 0 && loc.lng == 0) {
+        loc.lat = defaultLoc.lat;
+        loc.lng = defaultLoc.lng;
+        has_changed = true;
+    }
+
+    // convert relative alt=0 to mean current alt
+    if (loc.alt == 0 && loc.flags.relative_alt) {
+        loc.flags.relative_alt = false;
+        loc.alt = defaultLoc.alt;
+        has_changed = true;
+    }
+    return has_changed;
+}
+
+/*
   print a int32_t lat/long in decimal degrees
  */
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
