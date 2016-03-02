@@ -101,7 +101,10 @@ def ap_program(bld, program_group='bin',
     if use_legacy_defines:
         kw['defines'].extend(_get_legacy_defines(bld.path.name))
 
-    kw['features'] = common_features(bld) + kw.get('features', [])
+    kw['features'] = kw.get('features', [])
+
+    if bld.env.STATIC_LINKING:
+        kw['features'].append('static_linking')
 
     name = os.path.join(program_group, program_name)
 
@@ -127,12 +130,6 @@ def _get_next_idx():
     global LAST_IDX
     LAST_IDX += 1
     return LAST_IDX
-
-def common_features(bld):
-    features = []
-    if bld.env.STATIC_LINKING:
-        features.append('static_linking')
-    return features
 
 @conf
 def ap_stlib(bld, **kw):
