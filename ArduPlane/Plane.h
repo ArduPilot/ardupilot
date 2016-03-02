@@ -620,8 +620,6 @@ private:
     // For example in a change altitude command, it is the altitude to change to.
     int32_t condition_value;
 
-    // Sometimes there is a second condition required:
-    int32_t condition_value2;
     // A starting value used to check the status of a conditional command.
     // For example in a delay command the condition_start records that start time for the delay
     uint32_t condition_start;
@@ -824,6 +822,7 @@ private:
     bool verify_vtol_land(const AP_Mission::Mission_Command &cmd);
     void do_loiter_at_location();
     void do_take_picture();
+    bool verify_loiter_heading(bool init);
     void log_picture();
     void exit_mission_callback();
     void update_commands(void);
