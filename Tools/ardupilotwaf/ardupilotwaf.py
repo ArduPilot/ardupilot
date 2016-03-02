@@ -101,7 +101,7 @@ def ap_program(bld, program_group='bin',
     if use_legacy_defines:
         kw['defines'].extend(_get_legacy_defines(bld.path.name))
 
-    kw['features'] = kw.get('features', [])
+    kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
 
     if bld.env.STATIC_LINKING:
         kw['features'].append('static_linking')
@@ -150,6 +150,7 @@ def ap_stlib(bld, **kw):
         lib_sources = lib_node.ant_glob(SOURCE_EXTS + UTILITY_SOURCE_EXTS)
         sources.extend(lib_sources)
 
+    kw['features'] = kw.get('features', []) + bld.env.AP_STLIB_FEATURES
     kw['source'] = sources
     kw['target'] = kw['name']
     kw['defines'] = _get_legacy_defines(kw['vehicle'])
