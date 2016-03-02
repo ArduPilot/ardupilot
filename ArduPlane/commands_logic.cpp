@@ -417,14 +417,20 @@ void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
     set_next_WP(cmd.content.location);
     loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
     loiter_set_direction_wp(cmd);
+
+    //must the plane be heading towards the next waypoint before breaking?
+    condition_value2 = cmd.content.location.flags.heading_req;
 }
 
 void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
     // we set start_time_ms when we reach the waypoint
-    loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // units are seconds
+    loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // convert sec to ms
     loiter_set_direction_wp(cmd);
+
+    //must the plane be heading towards the next waypoint before breaking?
+    condition_value2 = cmd.content.location.flags.heading_req;
 }
 
 void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
@@ -483,7 +489,7 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     loiter_set_direction_wp(cmd);
 
     //must the plane be heading towards the next waypoint before breaking?
-    condition_value2 = LOWBYTE(cmd.p1);
+    condition_value2 = cmd.content.location.flags.heading_req;
 }
 
 /********************************************************************************/
@@ -622,7 +628,14 @@ bool Plane::verify_loiter_time()
             loiter.start_time_ms = millis();
         }
     } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER time complete");
+        if (loiter.time_max_ms) {
+            gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER time complete");
+            loiter.time_max_ms = 0;
+        }
+
+        if (condition_value2 != 0) {
+            return do_break_out_of_loiter_via_heading();
+        }
         return true;
     }
     return false;
@@ -634,9 +647,14 @@ bool Plane::verify_loiter_turns()
     update_loiter(radius);
 
     if (loiter.sum_cd > loiter.total_cd) {
-        loiter.total_cd = 0;
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
-        // clear the command queue;
+        if (loiter.total_cd) {
+            gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
+            loiter.total_cd = 0;
+        }
+
+        if (condition_value2 != 0) {
+            return do_break_out_of_loiter_via_heading();
+        }
         return true;
     }
     return false;
@@ -668,48 +686,7 @@ bool Plane::verify_loiter_to_alt()
     
     //has target heading been reached?
     if (condition_value2 != 0) {
-        //Get the lat/lon of next Nav waypoint after this one:
-        AP_Mission::Mission_Command next_nav_cmd;
-        if (! mission.get_next_nav_cmd(mission.get_current_nav_index() + 1,
-                                       next_nav_cmd)) {
-            //no next waypoint to shoot for -- go ahead and break out of loiter
-            return true;        
-        }
-
-        if (get_distance(next_WP_loc, next_nav_cmd.content.location) < labs(g.loiter_radius)) {
-            /* Whenever next waypoint is within the loiter radius, 
-               maintaining loiter would prevent us from ever pointing toward the next waypoint.
-               Hence break out of loiter immediately
-             */
-            return true;
-        }
-
-        // Bearing in radians
-        int32_t bearing_cd = get_bearing_cd(current_loc,next_nav_cmd.content.location);
-
-        // get current heading. We should probably be using the ground
-        // course instead to improve the accuracy in wind
-        int32_t heading_cd = ahrs.yaw_sensor;
-
-        int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
- 
-        /*
-          Check to see if the the plane is heading toward the land
-          waypoint
-          We use 10 degrees of slop so that we can handle 100
-          degrees/second of yaw
-        */
-        if (labs(heading_err_cd) <= 1000) {
-            //Want to head in a straight line from _here_ to the next waypoint.
-            //DON'T want to head in a line from the center of the loiter to 
-            //the next waypoint.
-            //Therefore: mark the "last" (next_wp_loc is about to be updated)
-            //wp lat/lon as the current location.
-            next_WP_loc = current_loc;
-            return true;
-        } else {
-            return false;
-        }
+        return do_break_out_of_loiter_via_heading();
     } 
 
     return true;
@@ -1030,5 +1007,53 @@ void Plane::exit_mission_callback()
         setup_glide_slope();
         setup_turn_angle();
         start_command(auto_rtl_command);
+    }
+}
+
+
+bool Plane::do_break_out_of_loiter_via_heading(void)
+{
+    //Get the lat/lon of next Nav waypoint after this one:
+    AP_Mission::Mission_Command next_nav_cmd;
+    if (! mission.get_next_nav_cmd(mission.get_current_nav_index() + 1,
+                                   next_nav_cmd)) {
+        //no next waypoint to shoot for -- go ahead and break out of loiter
+        return true;
+    }
+
+    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < labs(g.loiter_radius)) {
+        /* Whenever next waypoint is within the loiter radius,
+           maintaining loiter would prevent us from ever pointing toward the next waypoint.
+           Hence break out of loiter immediately
+         */
+        return true;
+    }
+
+    // Bearing in radians
+    int32_t bearing_cd = get_bearing_cd(current_loc,next_nav_cmd.content.location);
+
+    // get current heading. We should probably be using the ground
+    // course instead to improve the accuracy in wind
+    int32_t heading_cd = ahrs.yaw_sensor;
+
+    int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
+
+    /*
+      Check to see if the the plane is heading toward the land
+      waypoint
+      We use 10 degrees of slop so that we can handle 100
+      degrees/second of yaw
+    */
+    if (labs(heading_err_cd) <= 1000) {
+        //Want to head in a straight line from _here_ to the next waypoint.
+        //DON'T want to head in a line from the center of the loiter to
+        //the next waypoint.
+        //Therefore: mark the "last" (next_wp_loc is about to be updated)
+        //wp lat/lon as the current location.
+        next_WP_loc = current_loc;
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING,"Verify nav: LOITER heading complete");
+        return true;
+    } else {
+        return false;
     }
 }

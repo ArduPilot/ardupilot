@@ -824,6 +824,7 @@ private:
     bool verify_vtol_land(const AP_Mission::Mission_Command &cmd);
     void do_loiter_at_location();
     void do_take_picture();
+    bool do_break_out_of_loiter_via_heading(void);
     void log_picture();
     void exit_mission_callback();
     void update_commands(void);
