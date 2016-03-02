@@ -321,10 +321,18 @@ def options(opt):
              'examples. The special group "all" selects all programs.',
     )
 
+    g.add_option('--upload',
+        action='store_true',
+        help='Upload applicable targets to a connected device. Not all ' +
+             'platforms may support this. Example: `waf copter --upload` ' +
+             'means "build arducopter and upload it to my board".',
+    )
+
     g = opt.ap_groups['check']
     g.add_option('--check-verbose',
                  action='store_true',
                  help='Output all test programs')
+
 
 def build(bld):
     global LAST_IDX
