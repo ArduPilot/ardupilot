@@ -127,7 +127,7 @@ void Sub::althold_run()
         } else if(ap.at_surface) {
         	if(pos_control.get_vel_target_z() > 0.0) {
         		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
-        		pos_control.set_alt_target(SURFACE_DEPTH); // set alt target to the same depth that triggers the surface detector.
+        		pos_control.set_alt_target(g.surface_depth); // set alt target to the same depth that triggers the surface detector.
         	}
         	if(target_climb_rate < 0) { // Dive if the pilot wants to
             	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);

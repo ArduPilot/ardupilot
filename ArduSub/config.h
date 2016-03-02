@@ -76,6 +76,9 @@
  # define FRAME_CONFIG_STRING "UNKNOWN"
 #endif
 
+#ifndef SURFACE_DEPTH_DEFAULT
+ # define SURFACE_DEPTH_DEFAULT -0.10 // pressure sensor reading 10cm depth means craft is considered surfaced
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////////
