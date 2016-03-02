@@ -408,24 +408,32 @@ void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd.content.location);
+    Location cmdloc = cmd.content.location;
+    location_sanitize(current_loc, cmdloc);
+    set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
 }
 
 void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd.content.location);
-    loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
+    Location cmdloc = cmd.content.location;
+    location_sanitize(current_loc, cmdloc);
+    set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
+
+    loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
     condition_value = 1; // used to signify primary turns goal not yet met
 }
 
 void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd.content.location);
+    Location cmdloc = cmd.content.location;
+    location_sanitize(current_loc, cmdloc);
+    set_next_WP(cmdloc);
+    loiter_set_direction_wp(cmd);
+
     // we set start_time_ms when we reach the waypoint
     loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // convert sec to ms
-    loiter_set_direction_wp(cmd);
     condition_value = 1; // used to signify primary time goal not yet met
 }
 
@@ -465,13 +473,10 @@ void Plane::do_altitude_wait(const AP_Mission::Mission_Command& cmd)
 void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd) 
 {
     //set target alt  
-    next_WP_loc.alt = cmd.content.location.alt;
-
-    // convert relative alt to absolute alt
-    if (cmd.content.location.flags.relative_alt) {
-        next_WP_loc.flags.relative_alt = false;
-        next_WP_loc.alt += home.alt;
-    }
+    Location loc = cmd.content.location;
+    location_sanitize(current_loc, loc);
+    set_next_WP(loc);
+    loiter_set_direction_wp(cmd);
 
     // used to signify primary turns goal not yet met when non-zero
     condition_value = next_WP_loc.alt;
@@ -479,13 +484,6 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
         // the value of 0 is used to signify it has been reached. Lets bump alt to 1 which is 10cm. Close enough!
         condition_value = 1;
     }
-    
-    //are lat and lon 0?  if so, don't change the current wp lat/lon
-    if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
-        set_next_WP(cmd.content.location);
-    }
-    //set loiter direction
-    loiter_set_direction_wp(cmd);
 }
 
 /********************************************************************************/
