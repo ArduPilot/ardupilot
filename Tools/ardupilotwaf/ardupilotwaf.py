@@ -165,7 +165,7 @@ def ap_find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
         return
 
-    features = common_features(bld)
+    features = []
     if bld.cmd == 'check':
         features.append('test')
 
@@ -197,7 +197,7 @@ def ap_find_benchmarks(bld, use=[]):
     for f in bld.path.ant_glob(incl='*.cpp'):
         ap_program(
             bld,
-            features=common_features(bld) + ['gbenchmark'],
+            features=['gbenchmark'],
             includes=includes,
             source=[f],
             use=use,
