@@ -113,8 +113,6 @@ public:
         k_param_rc_feel_rp,
         k_param_NavEKF,                 // Extended Kalman Filter Inertial Navigation Group
         k_param_mission,                // mission library
-        k_param_rc_13,
-        k_param_rc_14,
         k_param_rally,
         k_param_poshold_brake_rate,
         k_param_poshold_brake_angle_max,
@@ -299,10 +297,6 @@ public:
         k_param_failsafe_gps_enabled,   // remove
         k_param_rc_9,
         k_param_rc_12,
-        k_param_rc_13,
-        k_param_rc_14,
-        k_param_rc_15,
-        k_param_rc_16,
         k_param_failsafe_gcs,
         k_param_rcmap, // 199
 
