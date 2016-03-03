@@ -90,7 +90,7 @@ bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
   return ret;
 }
 
-// check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated
+// check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated. To be revised with easier method
 bool Copter::check_duplicate_auxsw(void)
 {
     bool ret = ((g.ch7_option != AUXSW_DO_NOTHING) && (g.ch7_option == g.ch8_option ||
