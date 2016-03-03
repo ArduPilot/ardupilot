@@ -644,7 +644,7 @@ int AP_MPU9250_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
     /* disable new writes */
     backend._register_write(_mpu9250_ctrl, 0);
 
-    return 0;
+    return 1;
 }
 
 int AP_MPU9250_AuxiliaryBusSlave::read(uint8_t *buf)
@@ -655,9 +655,11 @@ int AP_MPU9250_AuxiliaryBusSlave::read(uint8_t *buf)
     }
 
     auto &backend = AP_InertialSensor_MPU9250::from(_bus.get_backend());
-    backend._block_read(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, _sample_size);
+    if (!backend._block_read(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, _sample_size)) {
+        return -1;
+    }
 
-    return 0;
+    return _sample_size;
 }
 
 /* MPU9250 provides up to 5 slave devices, but the 5th is way too different to
