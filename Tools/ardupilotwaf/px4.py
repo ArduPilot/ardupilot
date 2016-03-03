@@ -64,8 +64,35 @@ def px4_import_objects_from_use(self):
 
         queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
+class px4_copy(Task.Task):
+    run_str = '${CP} ${SRC} ${TGT}'
+    color = 'CYAN'
+
+    def keyword(self):
+        return "PX4: Copying %s to" % self.inputs[0].name
+
+    def __str__(self):
+        return self.outputs[0].path_from(self.outputs[0].ctx.launch_node())
+
+@feature('px4_ap_program')
+@after_method('process_source')
+def px4_firmware(self):
+    romfs = self.bld.srcnode.make_node(self.env.PX4_ROMFS)
+
+    romfs_bootloader = romfs.make_node('bootloader/fmu_bl.bin')
+    bootloader = self.bld.srcnode.make_node(self.env.PX4_BOOTLOADER)
+    cp_bl = self.create_task('px4_copy', bootloader, romfs_bootloader)
+
+    fw_io_tg = self.bld.get_tgen_by_name('px4_fw_io')
+    fw_io_tg.post()
+
+    px4io = fw_io_tg.cmake_build_task.outputs[0]
+    romfs_px4io = romfs.make_node('px4io/px4io.bin')
+    cp_px4io = self.create_task('px4_copy', px4io, romfs_px4io)
+
 def configure(cfg):
     cfg.load('cmake')
+    cfg.find_program('cp')
 
     env = cfg.env
 
@@ -75,11 +102,21 @@ def configure(cfg):
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
 
+    if env.PX4_VERSION == '1':
+        bootloader_name = 'px4fmu_bl.bin'
+    else:
+        bootloader_name = 'px4fmuv%s_bl.bin' % env.get_flat('PX4_VERSION')
+    # TODO: we should move stuff from mk/PX4 to Tools/ardupilotwaf/px4 after
+    # stop using the make-based build system
+    env.PX4_ROMFS = 'mk/PX4/ROMFS'
+    env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % bootloader_name
+
     env.PX4_CMAKE_VARS = dict(
         CONFIG='nuttx_px4fmu-v%s_apm' % env.get_flat('PX4_VERSION'),
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
         UAVCAN_LIBUAVCAN_PATH=srcpath('modules/uavcan'),
         NUTTX_SRC=srcpath('modules/PX4NuttX'),
+        PX4_NUTTX_ROMFS=srcpath(env.PX4_ROMFS),
         EXTRA_CXX_FLAGS=' '.join((
             # NOTE: these "-Wno-error=*" flags should be removed as we update
             # the submodule
@@ -124,3 +161,11 @@ def build(bld):
         group='dynamic_sources',
         cmake_output_patterns='px4fmu-v%s/NuttX/nuttx-export/**/*.h' % version,
     )
+
+    if bld.env.PX4_USE_PX4IO:
+        px4.cmake_build(
+            'fw_io',
+            target=px4.get_cmake_bldnode().find_or_declare(
+                'src/modules/px4iofirmware/px4io-v%s.bin' % version,
+            ),
+        )
