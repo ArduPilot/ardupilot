@@ -5,10 +5,11 @@
 Waf tool for PX4 build
 """
 
-from waflib import Task, Utils
+from waflib import Logs, Task, Utils
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
+import sys
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -120,10 +121,12 @@ class px4_add_git_hashes(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.outputs[0].ctx.launch_node())
 
+_upload_task = []
+
 @feature('px4_ap_program')
 @after_method('process_source')
 def px4_firmware(self):
-    global _firmware_semaphorish_tasks
+    global _firmware_semaphorish_tasks, _upload_task
     version = self.env.get_flat('PX4_VERSION')
 
     romfs = self.bld.srcnode.make_node(self.env.PX4_ROMFS)
@@ -161,6 +164,15 @@ def px4_firmware(self):
     fw_dest = self.bld.bldnode.make_node(path)
     git_hashes = self.create_task('px4_add_git_hashes', firmware, fw_dest)
     _firmware_semaphorish_tasks.append(git_hashes)
+
+    if self.bld.options.upload:
+        if _upload_task:
+            Logs.warn('PX4: upload for %s ignored' % self.name)
+            return
+        _upload_task = self.create_cmake_build_task('px4', 'upload')
+        _upload_task.cmd_kw = dict(stdout=sys.stdout)
+        _upload_task.set_run_after(fw_task)
+        _firmware_semaphorish_tasks.append(_upload_task)
 
 def configure(cfg):
     cfg.load('cmake')
