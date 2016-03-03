@@ -396,8 +396,8 @@ void Sub::update_auto_armed()
         }
     }else{
         // arm checks
-        // if motors are armed and throttle is above zero auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero) {
+    	// if motors are armed and we are in throw mode, then auto_ermed should be true
+    	if(motors.armed() && (!ap.throttle_zero || control_mode == THROW)) {
             set_auto_armed(true);
         }
     }
