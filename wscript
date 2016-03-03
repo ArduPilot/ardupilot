@@ -114,7 +114,7 @@ def configure(cfg):
     ])
 
     if cfg.options.submodule_update:
-        cfg.env.SUBMODULE_UPDATE = [True]
+        cfg.env.SUBMODULE_UPDATE = True
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
