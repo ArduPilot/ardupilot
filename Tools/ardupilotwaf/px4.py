@@ -64,6 +64,40 @@ def px4_import_objects_from_use(self):
 
         queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
+class px4_copy_lib(Task.Task):
+    run_str = '${CP} ${SRC} ${PX4_AP_PROGRAM_LIB}'
+    color = 'CYAN'
+
+    def runnable_status(self):
+        status = super(px4_copy_lib, self).runnable_status()
+        if status != Task.SKIP_ME:
+            return status
+
+        pseudo_target = self.get_pseudo_target()
+        try:
+            if pseudo_target.sig != self.inputs[0].sig:
+                status = Task.RUN_ME
+        except AttributeError:
+            status = Task.RUN_ME
+
+        return status
+
+    def get_pseudo_target(self):
+        if hasattr(self, 'pseudo_target'):
+            return self.pseudo_target
+
+        bldnode = self.generator.bld.bldnode
+        self.pseudo_target = bldnode.make_node(self.env.PX4_AP_PROGRAM_LIB)
+        return self.pseudo_target
+
+    def keyword(self):
+        return 'PX4: Copying program library'
+
+    def post_run(self):
+        super(px4_copy_lib, self).post_run()
+        pseudo_target = self.get_pseudo_target()
+        pseudo_target.sig = pseudo_target.cache_sig = self.inputs[0].sig
+
 class px4_copy(Task.Task):
     run_str = '${CP} ${SRC} ${TGT}'
     color = 'CYAN'
@@ -74,9 +108,24 @@ class px4_copy(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.outputs[0].ctx.launch_node())
 
+_firmware_semaphorish_tasks = []
+
+class px4_add_git_hashes(Task.Task):
+    run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} --uavcan ${PX4_UAVCAN_ROOT} ${SRC} ${TGT}'
+    color = 'CYAN'
+
+    def keyword(self):
+        return "PX4: Copying firmware and adding git hashes"
+
+    def __str__(self):
+        return self.outputs[0].path_from(self.outputs[0].ctx.launch_node())
+
 @feature('px4_ap_program')
 @after_method('process_source')
 def px4_firmware(self):
+    global _firmware_semaphorish_tasks
+    version = self.env.get_flat('PX4_VERSION')
+
     romfs = self.bld.srcnode.make_node(self.env.PX4_ROMFS)
 
     romfs_bootloader = romfs.make_node('bootloader/fmu_bl.bin')
@@ -90,10 +139,34 @@ def px4_firmware(self):
     romfs_px4io = romfs.make_node('px4io/px4io.bin')
     cp_px4io = self.create_task('px4_copy', px4io, romfs_px4io)
 
+    cp_lib = self.create_task('px4_copy_lib', self.link_task.outputs)
+    # we need to synchronize because the path PX4_AP_PROGRAM_LIB is used by all
+    # ap_programs
+    if _firmware_semaphorish_tasks:
+        for t in _firmware_semaphorish_tasks:
+            cp_lib.set_run_after(t)
+
+    fw_task = self.create_cmake_build_task(
+        'px4',
+        'build_firmware_px4fmu-v%s' % version,
+    )
+    firmware = fw_task.config_taskgen.cmake_bld.make_node(
+        'src/firmware/nuttx/nuttx-px4fmu-v%s-apm.px4' % version,
+    )
+    fw_task.set_outputs(firmware)
+    fw_task.set_run_after(cp_lib)
+    fw_task.dep_nodes.extend([romfs_px4io, romfs_bootloader])
+
+    path = os.path.join(self.program_group, '%s.px4' % self.program_name)
+    fw_dest = self.bld.bldnode.make_node(path)
+    git_hashes = self.create_task('px4_add_git_hashes', firmware, fw_dest)
+    _firmware_semaphorish_tasks.append(git_hashes)
+
 def configure(cfg):
     cfg.load('cmake')
     cfg.find_program('cp')
 
+    bldnode = cfg.bldnode.make_node(cfg.variant)
     env = cfg.env
 
     env.AP_PROGRAM_FEATURES += ['px4_ap_program']
@@ -102,21 +175,36 @@ def configure(cfg):
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
 
+    def bldpath(path):
+        return bldnode.make_node(path).abspath()
+
     if env.PX4_VERSION == '1':
         bootloader_name = 'px4fmu_bl.bin'
     else:
         bootloader_name = 'px4fmuv%s_bl.bin' % env.get_flat('PX4_VERSION')
+
     # TODO: we should move stuff from mk/PX4 to Tools/ardupilotwaf/px4 after
     # stop using the make-based build system
     env.PX4_ROMFS = 'mk/PX4/ROMFS'
     env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % bootloader_name
 
+    bldnode.make_node('px4-extra-files').mkdir()
+    program_lib_name = cfg.env.cxxstlib_PATTERN % 'ap_program'
+    env.PX4_AP_PROGRAM_LIB = os.path.join('px4-extra-files', program_lib_name)
+
+    env.PX4_ADD_GIT_HASHES = srcpath('Tools/scripts/add_git_hashes.py')
+    env.PX4_APM_ROOT = srcpath('')
+    env.PX4_ROOT = srcpath('modules/PX4Firmware')
+    env.PX4_NUTTX_ROOT = srcpath('modules/PX4NuttX')
+    env.PX4_UAVCAN_ROOT = srcpath('modules/uavcan')
+
     env.PX4_CMAKE_VARS = dict(
         CONFIG='nuttx_px4fmu-v%s_apm' % env.get_flat('PX4_VERSION'),
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
-        UAVCAN_LIBUAVCAN_PATH=srcpath('modules/uavcan'),
-        NUTTX_SRC=srcpath('modules/PX4NuttX'),
+        UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
+        NUTTX_SRC=env.PX4_NUTTX_ROOT,
         PX4_NUTTX_ROMFS=srcpath(env.PX4_ROMFS),
+        APM_PROGRAM_LIB=bldpath(env.PX4_AP_PROGRAM_LIB),
         EXTRA_CXX_FLAGS=' '.join((
             # NOTE: these "-Wno-error=*" flags should be removed as we update
             # the submodule
