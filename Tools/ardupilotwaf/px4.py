@@ -64,9 +64,52 @@ def px4_import_objects_from_use(self):
 
         queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
+class px4_copy(Task.Task):
+    run_str = '${CP} ${SRC} ${TGT}'
+    color = 'CYAN'
+
+    def keyword(self):
+        return "PX4: Copying %s to" % self.inputs[0].name
+
+_cp_px4io = None
+
+@feature('px4_ap_program')
+@after_method('process_source')
+def px4_firmware(self):
+    global _cp_px4io
+    version = self.env.get_flat('PX4_VERSION')
+
+    if self.env.PX4_USE_PX4IO and not _cp_px4io:
+        px4io_task = self.create_cmake_build_task('px4', 'fw_io')
+        px4io = px4io_task.config_taskgen.get_cmake_bldnode().make_node(
+            'src/modules/px4iofirmware/px4io-v%s.bin' % version,
+        )
+        px4io_task.set_outputs(px4io)
+
+        romfs = self.bld.bldnode.make_node(self.env.PX4_ROMFS_BLD)
+        romfs_px4io = romfs.make_node('px4io/px4io.bin')
+        romfs_px4io.parent.mkdir()
+        _cp_px4io = self.create_task('px4_copy', px4io, romfs_px4io)
+        _cp_px4io.keyword = lambda: 'PX4: Copying PX4IO to ROMFS'
+
+def _px4_taskgen(bld, **kw):
+    if 'cls_keyword' in kw and not callable(kw['cls_keyword']):
+        cls_keyword = str(kw['cls_keyword'])
+        kw['cls_keyword'] = lambda tsk: 'PX4: ' + cls_keyword
+
+    if 'cls_str' in kw and not callable(kw['cls_str']):
+        cls_str = str(kw['cls_str'])
+        kw['cls_str'] = lambda tsk: cls_str
+
+    kw['color'] = 'CYAN'
+
+    return bld(**kw)
+
 def configure(cfg):
     cfg.load('cmake')
+    cfg.find_program('cp')
 
+    bldnode = cfg.bldnode.make_node(cfg.variant)
     env = cfg.env
 
     env.AP_PROGRAM_FEATURES += ['px4_ap_program']
@@ -75,11 +118,26 @@ def configure(cfg):
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
 
+    def bldpath(path):
+        return bldnode.make_node(path).abspath()
+
+    if env.PX4_VERSION == '1':
+        bootloader_name = 'px4fmu_bl.bin'
+    else:
+        bootloader_name = 'px4fmuv%s_bl.bin' % env.get_flat('PX4_VERSION')
+
+    # TODO: we should move stuff from mk/PX4 to Tools/ardupilotwaf/px4 after
+    # stop using the make-based build system
+    env.PX4_ROMFS_SRC = 'mk/PX4/ROMFS'
+    env.PX4_ROMFS_BLD = 'px4-extra-files/ROMFS'
+    env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % bootloader_name
+
     env.PX4_CMAKE_VARS = dict(
         CONFIG='nuttx_px4fmu-v%s_apm' % env.get_flat('PX4_VERSION'),
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
         UAVCAN_LIBUAVCAN_PATH=srcpath('modules/uavcan'),
         NUTTX_SRC=srcpath('modules/PX4NuttX'),
+        PX4_NUTTX_ROMFS=bldpath(env.PX4_ROMFS_BLD),
         EXTRA_CXX_FLAGS=' '.join((
             # NOTE: these "-Wno-error=*" flags should be removed as we update
             # the submodule
@@ -119,4 +177,37 @@ def build(bld):
         'prebuild_targets',
         group='dynamic_sources',
         cmake_output_patterns='px4fmu-v%s/NuttX/nuttx-export/**/*.h' % version,
+    )
+
+    # ROMFS static files
+    romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
+    bld.env.PX4_ROMFS_SRC_ABS = romfs_src.abspath()
+    romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
+    romfs_src_files = romfs_src.ant_glob('**')
+    romfs_bld_files = []
+    for node in romfs_src_files:
+        bld_node = romfs_bld.make_node(node.path_from(romfs_src))
+        romfs_bld_files.append(bld_node)
+
+    _px4_taskgen(
+        bld,
+        name='px4_romfs_static_files',
+        cls_keyword='Copying ROMFS to build directory',
+        cls_str='%s -> %s' % (bld.env.PX4_ROMFS_SRC, bld.env.PX4_ROMFS_BLD),
+        source=romfs_src_files,
+        target=romfs_bld_files,
+        group='dynamic_sources',
+        rule='${CP} -a -T ${PX4_ROMFS_SRC_ABS} ${PX4_ROMFS_BLD}',
+    )
+
+    romfs_bootloader = romfs_bld.make_node('bootloader/fmu_bl.bin')
+    romfs_bootloader.parent.mkdir()
+    _px4_taskgen(
+        bld,
+        name='px4_romfs_bootloader',
+        cls_keyword='Copying bootloader to ROMFS',
+        source=bld.env.PX4_BOOTLOADER,
+        target=romfs_bootloader,
+        group='dynamic_sources',
+        rule='${CP} ${SRC} ${TGT}',
     )
