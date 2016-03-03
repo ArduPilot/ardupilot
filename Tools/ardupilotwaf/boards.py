@@ -269,3 +269,75 @@ class pxfmini(linux):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXFMINI',
         )
+
+class px4(Board):
+    abstract = True
+
+    def __init__(self):
+        self.version = None
+        self.use_px4io = True
+
+    def configure(self, cfg):
+        if not self.version:
+            cfg.fatal('configure: px4: version required')
+
+        super(px4, self).configure(cfg)
+        cfg.load('px4')
+
+    def configure_env(self, cfg, env):
+        super(px4, self).configure_env(cfg, env)
+
+        env.TOOLCHAIN = 'arm-none-eabi'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_PX4',
+            HAVE_STD_NULLPTR_T = 0,
+        )
+        env.prepend_value('INCLUDES', [
+            cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
+        ])
+        env.CXXFLAGS += [
+            '-Wlogical-op',
+            '-Wframe-larger-than=1300',
+            '-fsingle-precision-constant',
+            '-Wno-error=double-promotion',
+            '-Wno-error=missing-declarations',
+            '-Wno-error=float-equal',
+            '-Wno-error=undef',
+            '-Wno-error=cpp',
+        ]
+        env.AP_LIBRARIES += [
+            'AP_HAL_PX4',
+        ]
+        env.GIT_SUBMODULES += [
+            'PX4Firmware',
+            'PX4NuttX',
+            'uavcan',
+        ]
+
+        env.PX4_VERSION = self.version
+        env.PX4_USE_PX4IO = True if self.use_px4io else False
+
+        env.AP_PROGRAM_AS_STLIB = True
+
+    def build(self, bld):
+        super(px4, self).build(bld)
+        bld.load('px4')
+
+class px4_v1(px4):
+    name = 'px4-v1'
+    def __init__(self):
+        super(px4_v1, self).__init__()
+        self.version = '1'
+
+class px4_v2(px4):
+    name = 'px4-v2'
+    def __init__(self):
+        super(px4_v2, self).__init__()
+        self.version = '2'
+
+class px4_v4(px4):
+    name = 'px4-v4'
+    def __init__(self):
+        super(px4_v4, self).__init__()
+        self.version = '4'
+        self.use_px4io = False
