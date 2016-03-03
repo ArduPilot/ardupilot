@@ -71,7 +71,7 @@ void AP_Mission::stop()
 }
 
 /// resume - continues the mission execution from where we last left off
-///     previous running commands will be re-initialised
+///     previous running commands will be re-initialized
 void AP_Mission::resume()
 {
     // if mission had completed then start it from the first command
@@ -476,8 +476,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
 {
     bool copy_location = false;
     bool copy_alt = false;
-    uint8_t num_turns, radius_m; // used by MAV_CMD_NAV_LOITER_TURNS & _TO_ALT
-    uint8_t heading_req;         // used by MAV_CMD_NAV_LOITER_TO_ALT
 
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
@@ -510,11 +508,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:                      // MAV ID: 18
+    {
         copy_location = true;
-        num_turns = packet.param1;                      // number of times to circle is held in param1
-        radius_m = fabsf(packet.param3);                // radius in meters is held in high in param3
-        cmd.p1 = (((uint16_t)radius_m)<<8) | (uint16_t)num_turns;   // store radius in high byte of p1, num turns in low byte of p1
+        uint16_t num_turns = packet.param1;              // param 1 is number of times to circle is held in low p1
+        uint16_t radius_m = fabsf(packet.param3);        // param 3 is radius in meters is held in high p1
+        cmd.p1 = (radius_m<<8) | (num_turns & 0x00FF);   // store radius in high byte of p1, num turns in low byte of p1
         cmd.content.location.flags.loiter_ccw = (packet.param3 < 0);
+    }
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
@@ -547,9 +547,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
 
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
         copy_location = true;
-        heading_req = packet.param1;                    //heading towards next waypoint required (0 = False)
-        radius_m = fabsf(packet.param2);                // radius in meters is held in high in param2
-        cmd.p1 = (((uint16_t)radius_m)<<8) | (uint16_t)heading_req; // store "radius" in high byte of p1, heading_req in low byte of p1
+        cmd.p1 = fabsf(packet.param2);                  // param2 is radius in meters
         cmd.content.location.flags.loiter_ccw = (packet.param2 < 0);
         break;
 
@@ -856,7 +854,7 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param1 = cmd.p1;                         // loiter time in seconds
         if (cmd.content.location.flags.loiter_ccw) {
             packet.param3 = -1;
-        }else{
+        } else {
             packet.param3 = 1;
         }
         break;
@@ -885,12 +883,10 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
         copy_location = true;
-        packet.param1 = LOWBYTE(cmd.p1);                //heading towards next waypoint required (0 = False) 
-        packet.param2 = HIGHBYTE(cmd.p1);               //loiter radius(m)
+        packet.param2 = cmd.p1;                        // loiter radius(m)
         if (cmd.content.location.flags.loiter_ccw) {
             packet.param2 = -packet.param2;
         }
-
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82

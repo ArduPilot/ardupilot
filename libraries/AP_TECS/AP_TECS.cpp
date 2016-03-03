@@ -202,6 +202,37 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LAND_SRC", 22, AP_TECS, _land_sink_rate_change, 0),
 
+    // @Param: LAND_TDAMP
+    // @DisplayName: Controller throttle damping when landing
+    // @Description: This is the damping gain for the throttle demand loop during and auto-landing. Same as TECS_THR_DAMP but only in effect during an auto-land. Increase to add damping to correct for oscillations in speed and height. When set to 0 landing throttle damp is controlled by TECS_THR_DAMP.
+    // @Range: 0.1 1.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LAND_TDAMP", 23, AP_TECS, _land_throttle_damp, 0),
+
+    // @Param: LAND_IGAIN
+    // @DisplayName: Controller integrator during landing
+    // @Description: This is the integrator gain on the control loop during landing. When set to 0 then TECS_INTEG_GAIN is used. Increase to increase the rate at which speed and height offsets are trimmed out. Typically values lower than TECS_INTEG_GAIN work best
+    // @Range: 0.0 0.5
+    // @Increment: 0.02
+    // @User: Advanced
+    AP_GROUPINFO("LAND_IGAIN", 24, AP_TECS, _integGain_land, 0),
+
+    // @Param: TKOFF_IGAIN
+    // @DisplayName: Controller integrator during takeoff
+    // @Description: This is the integrator gain on the control loop during takeoff. When set to 0 then TECS_INTEG_GAIN is used. Increase to increase the rate at which speed and height offsets are trimmed out. Typically values higher than TECS_INTEG_GAIN work best
+    // @Range: 0.0 0.5
+    // @Increment: 0.02
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_IGAIN", 25, AP_TECS, _integGain_takeoff, 0),
+
+    // @Param: LAND_PDAMP
+    // @Description: This is the damping gain for the pitch demand loop. Increase to add damping  to correct for oscillations in speed and height. If set to 0 then TECS_PTCH_DAMP will be used instead.
+    // @Range: 0.1 1.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LAND_PDAMP", 26, AP_TECS, _land_pitch_damp, 0),
+
     AP_GROUPEND
 };
 
@@ -586,7 +617,11 @@ void AP_TECS::_update_throttle(void)
         ff_throttle = nomThr + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
 
         // Calculate PD + FF throttle
-        _throttle_dem = (_STE_error + STEdot_error * _thrDamp) * K_STE2Thr + ff_throttle;
+        float throttle_damp = _thrDamp;
+        if (_is_doing_auto_land && !is_zero(_land_throttle_damp)) {
+            throttle_damp = _land_throttle_damp;
+        }
+        _throttle_dem = (_STE_error + STEdot_error * throttle_damp) * K_STE2Thr + ff_throttle;
 
         // Constrain throttle demand
         _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
@@ -611,7 +646,7 @@ void AP_TECS::_update_throttle(void)
 
         // Calculate integrator state, constraining state
         // Set integrator to a max throttle value during climbout
-        _integ6_state = _integ6_state + (_STE_error * _integGain) * _DT * K_STE2Thr;
+        _integ6_state = _integ6_state + (_STE_error * _get_i_gain()) * _DT * K_STE2Thr;
         if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT)
         {
             _integ6_state = integ_max;
@@ -632,6 +667,21 @@ void AP_TECS::_update_throttle(void)
 
     // Constrain throttle demand
     _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
+}
+
+float AP_TECS::_get_i_gain(void)
+{
+    float i_gain = _integGain;
+    if (_flight_stage == FLIGHT_TAKEOFF) {
+        if (!is_zero(_integGain_takeoff)) {
+            i_gain = _integGain_takeoff;
+        }
+    } else if (_is_doing_auto_land) {
+        if (!is_zero(_integGain_land)) {
+            i_gain = _integGain_land;
+        }
+    }
+    return i_gain;
 }
 
 void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
@@ -729,7 +779,7 @@ void AP_TECS::_update_pitch(void)
     float SEBdot_error = SEBdot_dem - (_SPEdot * SPE_weighting - _SKEdot * SKE_weighting);
 
     // Calculate integrator state, constraining input if pitch limits are exceeded
-    float integ7_input = SEB_error * _integGain;
+    float integ7_input = SEB_error * _get_i_gain();
     if (_pitch_dem > _PITCHmaxf)
     {
         integ7_input = MIN(integ7_input, _PITCHmaxf - _pitch_dem);
@@ -758,11 +808,15 @@ void AP_TECS::_update_pitch(void)
     // During flare a different damping gain is used
     float gainInv = (_integ5_state * timeConstant() * GRAVITY_MSS);
     float temp = SEB_error + SEBdot_dem * timeConstant();
+
+    float pitch_damp = _ptchDamp;
     if (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
-        temp += SEBdot_error * _landDamp;
-    } else {
-        temp += SEBdot_error * _ptchDamp;
+        pitch_damp = _landDamp;
+    } else if (!is_zero(_land_pitch_damp) && is_on_land_approach(false)) {
+        pitch_damp = _land_pitch_damp;
     }
+    temp += SEBdot_error * pitch_damp;
+
     if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         temp += _PITCHminf * gainInv;
     }
@@ -873,6 +927,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     _is_doing_auto_land = is_doing_auto_land;
     _distance_beyond_land_wp = distance_beyond_land_wp;
+    _flight_stage = flight_stage;
 
     // Convert inputs
     _hgt_dem = hgt_dem_cm * 0.01f;
@@ -943,7 +998,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // convert to radians
     _PITCHmaxf = radians(_PITCHmaxf);
     _PITCHminf = radians(_PITCHminf);
-    _flight_stage = flight_stage;
 
     // initialise selected states and variables if DT > 1 second or in climbout
     _initialise_states(ptchMinCO_cd, hgt_afe);

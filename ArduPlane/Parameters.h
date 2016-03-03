@@ -148,6 +148,7 @@ public:
         k_param_parachute_channel,
         k_param_crash_accel_threshold,
         k_param_override_safety,
+        k_param_land_throttle_slewrate, // 104
 
         // 105: Extra parameters
         k_param_fence_retalt = 105,
@@ -492,6 +493,7 @@ public:
     AP_Float takeoff_tdrag_speed1;
     AP_Float takeoff_rotate_speed;
     AP_Int8 takeoff_throttle_slewrate;
+    AP_Int8 land_throttle_slewrate;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;

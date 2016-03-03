@@ -198,6 +198,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: User
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
 
+    // @Param: LAND_THR_SLEW
+    // @DisplayName: Landing throttle slew rate
+    // @Description: This parameter sets the slew rate for the throttle during auto landing. When this is zero the THR_SLEWRATE parameter is used during landing. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on landing. Values below 50 are not recommended as it may cause a stall when airspeed is low and you can not throttle up fast enough.
+    // @Units: percent
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: User
+    GSCALAR(land_throttle_slewrate, "LAND_THR_SLEW",  0),
+
     // @Param: TKOFF_FLAP_PCNT
     // @DisplayName: Takeoff flap percentage
     // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff

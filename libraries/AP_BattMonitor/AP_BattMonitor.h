@@ -13,6 +13,7 @@
 
 #define AP_BATT_CAPACITY_DEFAULT            3300
 #define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000   // low voltage of 10 seconds will cause battery_exhausted to return true
+#define AP_BATT_MAX_WATT_DEFAULT            0
 
 // declare backend class
 class AP_BattMonitor_Backend;
@@ -107,6 +108,13 @@ public:
     /// set_monitoring - sets the monitor type (used for example sketch only)
     void set_monitoring(uint8_t instance, uint8_t mon) { _monitoring[instance].set(mon); }
 
+    bool get_watt_max() { return get_watt_max(AP_BATT_PRIMARY_INSTANCE); }
+    bool get_watt_max(uint8_t instance) { return _watt_max[instance]; }
+
+    /// true when (voltage * current) > watt_max
+    bool overpower_detected() const;
+    bool overpower_detected(uint8_t instance) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -119,6 +127,7 @@ protected:
     AP_Float    _curr_amp_per_volt[AP_BATT_MONITOR_MAX_INSTANCES];  /// voltage on current pin multiplied by this to calculate current in amps
     AP_Float    _curr_amp_offset[AP_BATT_MONITOR_MAX_INSTANCES];    /// offset voltage that is subtracted from current pin before conversion to amps
     AP_Int32    _pack_capacity[AP_BATT_MONITOR_MAX_INSTANCES];      /// battery pack capacity less reserve in mAh
+    AP_Int16    _watt_max[AP_BATT_MONITOR_MAX_INSTANCES];           /// max battery power allowed. Reduce max throttle to reduce current to satisfy this limit
 
 private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
