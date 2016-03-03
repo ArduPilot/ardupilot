@@ -5,7 +5,8 @@
 Waf tool for PX4 build
 """
 
-from waflib.TaskGen import before_method, feature
+from waflib import Task, Utils
+from waflib.TaskGen import after_method, before_method, feature
 
 import os
 
@@ -35,6 +36,33 @@ def px4_dynamic_env(self):
     self.env.prepend_value('CXXFLAGS', _dynamic_env_data['cxx_flags'])
     self.env.prepend_value('CXXFLAGS', _dynamic_env_data['definitions'])
     self.env.append_value('DEFINES', _dynamic_env_data['DEFINES'])
+
+# Single static library
+# NOTE: This only works only for local static libraries dependencies - fake
+# libraries aren't supported yet
+@feature('px4_ap_program')
+@after_method('apply_link')
+@before_method('process_use')
+def px4_import_objects_from_use(self):
+    queue = Utils.to_list(getattr(self, 'use', []))
+    names = set()
+
+    while queue:
+        name = queue.pop(0)
+        if name in names:
+            continue
+        names.add(name)
+
+        try:
+            tg = self.bld.get_tgen_by_name(name)
+        except Errors.WafError:
+            continue
+
+        tg.post()
+        for t in getattr(tg, 'compiled_tasks', []):
+            self.link_task.set_inputs(t.outputs)
+
+        queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
 def configure(cfg):
     cfg.load('cmake')
