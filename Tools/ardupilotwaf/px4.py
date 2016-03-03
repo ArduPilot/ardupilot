@@ -5,10 +5,11 @@
 Waf tool for PX4 build
 """
 
-from waflib import Task, Utils
+from waflib import Logs, Task, Utils
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
+import sys
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -124,11 +125,12 @@ def _update_firmware_sig(fw_task, firmware):
 
 _cp_px4io = None
 _firmware_semaphorish_tasks = []
+_upload_task = []
 
 @feature('px4_ap_program')
 @after_method('process_source')
 def px4_firmware(self):
-    global _cp_px4io, _firmware_semaphorish_tasks
+    global _cp_px4io, _firmware_semaphorish_tasks, _upload_task
     version = self.env.get_flat('PX4_VERSION')
 
     if self.env.PX4_USE_PX4IO and not _cp_px4io:
@@ -171,6 +173,14 @@ def px4_firmware(self):
     git_hashes = self.create_task('px4_add_git_hashes', firmware, fw_dest)
     git_hashes.set_run_after(fw_task)
     _firmware_semaphorish_tasks.append(git_hashes)
+
+    if self.bld.options.upload:
+        if _upload_task:
+            Logs.warn('PX4: upload for %s ignored' % self.name)
+            return
+        _upload_task = self.create_cmake_build_task('px4', 'upload')
+        _upload_task.set_run_after(fw_task)
+        _firmware_semaphorish_tasks.append(_upload_task)
 
 def _px4_taskgen(bld, **kw):
     if 'cls_keyword' in kw and not callable(kw['cls_keyword']):
