@@ -6,6 +6,11 @@
 void Plane::set_nav_controller(void)
 {
     switch ((AP_Navigation::ControllerType)g.nav_controller.get()) {
+
+    default:
+    case AP_Navigation::CONTROLLER_DEFAULT:
+        // fall through to L1 as default controller
+
     case AP_Navigation::CONTROLLER_L1:
         nav_controller = &L1_controller;
         break;
