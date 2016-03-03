@@ -107,7 +107,8 @@ enum autopilot_modes {
     FLIP =         14,  // automatically flip the vehicle on the roll axis
     AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    BRAKE =        17   // full-brake using inertial/GPS system, no pilot input
+    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
+	THROW =        18   // throw to launch mode using inertial/GPS system, no pilot input
 };
 
 // Tuning enumeration
@@ -229,6 +230,15 @@ enum FlipState {
     Flip_Pitch_B,
     Flip_Recover,
     Flip_Abandon
+};
+
+// Throw states
+enum ThrowModeState {
+    Throw_Disarmed,
+    Throw_Detecting,
+    Throw_Uprighting,
+    Throw_HgtStabilise,
+    Throw_PosHold
 };
 
 // LAND state

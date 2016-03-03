@@ -147,6 +147,7 @@ public:
 
         // AP_ADSB Library
         k_param_adsb,                   // 72
+		k_param_notify, 				// 73
 
         // 74: precision landing object
         k_param_precland = 74,
@@ -179,6 +180,7 @@ public:
         k_param_motors = 90,
         k_param_disarm_delay,
         k_param_fs_crash_check,
+		k_param_throw_motor_start,
 
         // 97: RSSI
         k_param_rssi = 97,
@@ -450,6 +452,8 @@ public:
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
+
+    AP_Int8         throw_motor_start;
 
 #if FRAME_CONFIG ==     SINGLE_FRAME
     // Single
