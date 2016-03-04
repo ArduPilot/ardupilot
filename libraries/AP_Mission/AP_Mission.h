@@ -56,7 +56,7 @@ public:
         float seconds;          // period of delay in seconds
     };
 
-    // condition delay command structure
+    // condition distance command structure
     struct PACKED Conditional_Distance_Command {
         float meters;           // distance from next waypoint in meters
     };
