@@ -176,6 +176,22 @@ void AP_Mission::update()
         return;
     }
 
+    // check if we have an active do command
+    if (!_flags.do_cmd_loaded) {
+        advance_current_do_cmd();
+    } else {
+        // run the active do command
+        if (_cmd_verify_fn(_do_cmd)) {
+            // market _nav_cmd as complete (it will be started on the next iteration)
+            _flags.do_cmd_loaded = false;
+        }
+    }
+
+    // do not advance state machine if do-conditional-delay command is active
+    if (_flags.do_cmd_loaded && (_do_cmd.id == MAV_CMD_CONDITION_DELAY)) {
+        return;
+    }
+
     // check if we have an active nav command
     if (!_flags.nav_cmd_loaded || _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
         // advance in mission if no active nav command
@@ -195,17 +211,6 @@ void AP_Mission::update()
                 complete();
                 return;
             }
-        }
-    }
-
-    // check if we have an active do command
-    if (!_flags.do_cmd_loaded) {
-        advance_current_do_cmd();
-    }else{
-        // run the active do command
-        if (_cmd_verify_fn(_do_cmd)) {
-            // market _nav_cmd as complete (it will be started on the next iteration)
-            _flags.do_cmd_loaded = false;
         }
     }
 }
