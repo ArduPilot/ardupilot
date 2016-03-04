@@ -7,13 +7,18 @@
 //Documentation of Aux Switch Flags:
 static union {
     struct {
-        uint8_t CH6_flag            : 2; // 0, 1    // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH7_flag            : 2; // 2, 3    // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH8_flag            : 2; // 4, 5    // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH9_flag            : 2; // 6, 7    // ch9 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH10_flag           : 2; // 8, 9    // ch10 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH11_flag           : 2; // 10,11   // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH12_flag           : 2; // 12,13   // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH6_flag            : 2; // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH7_flag            : 2; // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH8_flag            : 2; // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH9_flag            : 2; // ch9 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH10_flag           : 2; // ch10 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH11_flag           : 2; // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH12_flag           : 2; // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH13_flag           : 2; // ch13 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH14_flag           : 2; // ch14 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH15_flag           : 2; // ch15 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH16_flag           : 2; // ch16 aux switch : 0 is low or false, 1 is center or true, 2 is high
+
     };
     uint32_t value;
 } aux_con;
@@ -77,30 +82,54 @@ void Copter::read_control_switch()
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
 bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
-    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check 
-                || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
+  bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check
+              || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check
+              || g.ch13_option == auxsw_mode_check || g.ch14_option == auxsw_mode_check || g.ch15_option == auxsw_mode_check
+              || g.ch16_option == auxsw_mode_check;
 
-    return ret;
+  return ret;
 }
 
-// check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated
+// check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated. To be revised with easier method
 bool Copter::check_duplicate_auxsw(void)
 {
     bool ret = ((g.ch7_option != AUXSW_DO_NOTHING) && (g.ch7_option == g.ch8_option ||
-                g.ch7_option == g.ch9_option || g.ch7_option == g.ch10_option ||
-                g.ch7_option == g.ch11_option || g.ch7_option == g.ch12_option));
+                  g.ch7_option == g.ch9_option || g.ch7_option == g.ch10_option ||
+                  g.ch7_option == g.ch11_option || g.ch7_option == g.ch12_option ||
+                  g.ch7_option == g.ch13_option || g.ch7_option == g.ch14_option ||
+                  g.ch7_option == g.ch15_option || g.ch7_option == g.ch16_option));
 
     ret = ret || ((g.ch8_option != AUXSW_DO_NOTHING) && (g.ch8_option == g.ch9_option ||
                     g.ch8_option == g.ch10_option || g.ch8_option == g.ch11_option ||
-                    g.ch8_option == g.ch12_option));
+                    g.ch8_option == g.ch12_option || g.ch8_option == g.ch13_option ||
+                    g.ch8_option == g.ch14_option || g.ch8_option == g.ch15_option ||
+                    g.ch8_option == g.ch16_option));
 
     ret = ret || ((g.ch9_option != AUXSW_DO_NOTHING) && (g.ch9_option == g.ch10_option ||
-                    g.ch9_option == g.ch11_option || g.ch9_option == g.ch12_option));
+                    g.ch9_option == g.ch11_option || g.ch9_option == g.ch12_option ||
+                    g.ch9_option == g.ch13_option || g.ch9_option == g.ch14_option ||
+                    g.ch9_option == g.ch15_option || g.ch9_option == g.ch16_option));
 
     ret = ret || ((g.ch10_option != AUXSW_DO_NOTHING) && (g.ch10_option == g.ch11_option ||
-                    g.ch10_option == g.ch12_option));
+                    g.ch10_option == g.ch12_option || g.ch10_option == g.ch13_option ||
+                    g.ch10_option == g.ch14_option || g.ch10_option == g.ch15_option ||
+                    g.ch10_option == g.ch16_option));
 
-    ret = ret || ((g.ch11_option != AUXSW_DO_NOTHING) && (g.ch11_option == g.ch12_option));
+    ret = ret || ((g.ch11_option != AUXSW_DO_NOTHING) && (g.ch11_option == g.ch12_option ||
+                    g.ch11_option == g.ch13_option || g.ch11_option == g.ch14_option ||
+                    g.ch11_option == g.ch15_option || g.ch11_option == g.ch16_option ));
+
+    ret = ret || ((g.ch12_option != AUXSW_DO_NOTHING) && (g.ch12_option == g.ch13_option ||
+                    g.ch12_option == g.ch14_option || g.ch12_option == g.ch15_option ||
+                    g.ch12_option == g.ch16_option));
+
+    ret = ret || ((g.ch13_option != AUXSW_DO_NOTHING) && (g.ch13_option == g.ch14_option ||
+                    g.ch13_option == g.ch15_option || g.ch13_option == g.ch16_option ));
+
+    ret = ret || ((g.ch14_option != AUXSW_DO_NOTHING) && (g.ch14_option == g.ch15_option ||
+                    g.ch14_option == g.ch16_option ));
+
+    ret = ret || ((g.ch15_option != AUXSW_DO_NOTHING) && (g.ch15_option == g.ch16_option));
 
     return ret;
 }
@@ -189,21 +218,62 @@ void Copter::read_aux_switches()
         // invoke the appropriate function
         do_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
     }
+    // check if Ch13 switch has changed position
+    switch_position = read_3pos_switch(g.rc_13.radio_in);
+    if (aux_con.CH13_flag != switch_position) {
+        // set the CH13 flag
+        aux_con.CH13_flag = switch_position;
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch13_option, aux_con.CH13_flag);
+    }
+    // check if Ch14 switch has changed position
+    switch_position = read_3pos_switch(g.rc_14.radio_in);
+    if (aux_con.CH14_flag != switch_position) {
+        // set the CH14 flag
+        aux_con.CH14_flag = switch_position;
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch14_option, aux_con.CH14_flag);
+    }
+    // check if Ch15 switch has changed position
+    switch_position = read_3pos_switch(g.rc_15.radio_in);
+    if (aux_con.CH15_flag != switch_position) {
+        // set the CH15 flag
+        aux_con.CH15_flag = switch_position;
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch15_option, aux_con.CH15_flag);
+    }
+    // check if Ch16 switch has changed position
+    switch_position = read_3pos_switch(g.rc_16.radio_in);
+    if (aux_con.CH16_flag != switch_position) {
+        // set the CH16 flag
+        aux_con.CH16_flag = switch_position;
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch16_option, aux_con.CH16_flag);
+    }
+
 #endif
 }
 
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
 void Copter::init_aux_switches()
 {
-    // set the CH7 ~ CH12 flags
+    // set the CH7 ~ CH16 flags
     aux_con.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
     aux_con.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
     aux_con.CH10_flag = read_3pos_switch(g.rc_10.radio_in);
     aux_con.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
 
-    // ch9, ch12 only supported on some boards
+    // ch9, ch16 only supported on some boards
     aux_con.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
     aux_con.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
+    aux_con.CH13_flag = read_3pos_switch(g.rc_13.radio_in);
+    aux_con.CH14_flag = read_3pos_switch(g.rc_14.radio_in);
+    aux_con.CH15_flag = read_3pos_switch(g.rc_15.radio_in);
+    aux_con.CH16_flag = read_3pos_switch(g.rc_16.radio_in);
 
     // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
@@ -211,14 +281,18 @@ void Copter::init_aux_switches()
     init_aux_switch_function(g.ch10_option, aux_con.CH10_flag);
     init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
 
-    // ch9, ch12 only supported on some boards
+    // ch9, ch16 only supported on some boards
     init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
+    init_aux_switch_function(g.ch13_option, aux_con.CH13_flag);
+    init_aux_switch_function(g.ch14_option, aux_con.CH14_flag);
+    init_aux_switch_function(g.ch15_option, aux_con.CH15_flag);
+    init_aux_switch_function(g.ch16_option, aux_con.CH16_flag);
 }
 
 // init_aux_switch_function - initialize aux functions
 void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
-{    
+{
     // init channel options
     switch(ch_option) {
         case AUXSW_SIMPLE_MODE:
@@ -502,7 +576,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // enable or disable accel limiting by restoring defaults
             attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
             break;
-        
+
 #if MOUNT == ENABLE
         case AUXSW_RETRACT_MOUNT:
             switch (ch_flag) {
@@ -641,4 +715,3 @@ void Copter::auto_trim()
         }
     }
 }
-
