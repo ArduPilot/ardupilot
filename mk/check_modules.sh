@@ -38,16 +38,16 @@ done
         git submodule status
         exit 1
     }
-cat <<EOF
-==============================
-git submodules are initialised
-
-Please see http://dev.ardupilot.com/wiki/git-submodules/
-
-Please restart the build
-==============================
-EOF
-exit 1
+    for m in $MODULE_LIST; do
+        [ -d modules/$m ] || {
+            echo "modules/$m missing - failed module init"
+            exit 1
+        }
+        [ -f modules/$m/.git ] || {
+            echo "modules/$m/.git missing - failed module init"
+            exit 1
+        }
+    done
 }
 
 for m in $MODULE_LIST; do
