@@ -84,12 +84,6 @@ void Plane::parachute_emergency_check()
         return;
     }
 
-    // do not release if vehicle is not flying
-    if (!is_flying()) {
-        control_loss_ms = 0;
-        return;
-    }
-
     // do not release if taking off or landing
     if (auto_state.takeoff_complete == false || mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
         control_loss_ms = 0;
