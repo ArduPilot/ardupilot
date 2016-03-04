@@ -250,3 +250,12 @@ class pxfmini(linux):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXFMINI',
         )
+
+class edronic(linux):
+    def configure_env(self, env):
+        super(pxfmini, self).configure_env(env)
+
+        env.TOOLCHAIN = 'arm-linux-gnueabihf'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_EDRONIC',
+        )
