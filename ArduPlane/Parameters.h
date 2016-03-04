@@ -148,6 +148,7 @@ public:
         k_param_parachute_channel,
         k_param_crash_accel_threshold,
         k_param_override_safety,
+        k_param_land_throttle_slewrate, // 104
 
         // 105: Extra parameters
         k_param_fence_retalt = 105,
@@ -283,6 +284,7 @@ public:
         k_param_scaling_speed,
         k_param_quadplane,
         k_param_rtl_radius,
+        k_param_land_then_servos_neutral,
 
         //
         // 210: flight modes
@@ -463,6 +465,7 @@ public:
     AP_Int32 RTL_altitude_cm;
     AP_Float land_flare_alt;
     AP_Int8 land_disarm_delay;
+    AP_Int8 land_then_servos_neutral;
     AP_Int8 land_abort_throttle_enable;
     AP_Float land_pre_flare_alt;
     AP_Float land_pre_flare_sec;
@@ -490,6 +493,7 @@ public:
     AP_Float takeoff_tdrag_speed1;
     AP_Float takeoff_rotate_speed;
     AP_Int8 takeoff_throttle_slewrate;
+    AP_Int8 land_throttle_slewrate;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;

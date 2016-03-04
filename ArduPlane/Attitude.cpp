@@ -522,8 +522,13 @@ void Plane::calc_nav_roll()
 void Plane::throttle_slew_limit(int16_t last_throttle)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
-    if (control_mode==AUTO && auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
-        slewrate = g.takeoff_throttle_slewrate;
+    if (control_mode==AUTO) {
+        if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
+            slewrate = g.takeoff_throttle_slewrate;
+        } else if (g.land_throttle_slewrate != 0 &&
+                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
+            slewrate = g.land_throttle_slewrate;
+        }
     }
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
@@ -917,6 +922,49 @@ void Plane::set_servos(void)
                 }
             }
         }
+
+        uint32_t now = millis();
+        if (battery.overpower_detected()) {
+            // overpower detected, cut back on the throttle if we're maxing it out by calculating a limiter value
+            // throttle limit will attack by 10% per second
+
+            if (channel_throttle->servo_out > 0 && // demanding too much positive thrust
+                throttle_watt_limit_max < max_throttle - 25 &&
+                now - throttle_watt_limit_timer_ms >= 1) {
+                // always allow for 25% throttle available regardless of battery status
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_max++;
+
+            } else if (channel_throttle->servo_out < 0 &&
+                min_throttle < 0 && // reverse thrust is available
+                throttle_watt_limit_min < -(min_throttle) - 25 &&
+                now - throttle_watt_limit_timer_ms >= 1) {
+                // always allow for 25% throttle available regardless of battery status
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_min++;
+            }
+
+        } else if (now - throttle_watt_limit_timer_ms >= 1000) {
+            // it has been 1 second since last over-current, check if we can resume higher throttle.
+            // this throttle release is needed to allow raising the max_throttle as the battery voltage drains down
+            // throttle limit will release by 1% per second
+            if (channel_throttle->servo_out > throttle_watt_limit_max && // demanding max forward thrust
+                throttle_watt_limit_max > 0) { // and we're currently limiting it
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_max--;
+
+            } else if (channel_throttle->servo_out < throttle_watt_limit_min && // demanding max negative thrust
+                throttle_watt_limit_min > 0) { // and we're limiting it
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_min--;
+            }
+        }
+
+        max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
+        if (min_throttle < 0) {
+            min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
+        }
+
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
                                                       min_throttle,
                                                       max_throttle);
@@ -1023,7 +1071,8 @@ void Plane::set_servos(void)
     RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, auto_flap_percent);
     RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, manual_flap_percent);
 
-    if (control_mode >= FLY_BY_WIRE_B) {
+    if (control_mode >= FLY_BY_WIRE_B ||
+        quadplane.in_assisted_flight()) {
         /* only do throttle slew limiting in modes where throttle
          *  control is automatic */
         throttle_slew_limit(last_throttle);
@@ -1082,6 +1131,24 @@ void Plane::set_servos(void)
         }
     }
 #endif
+
+    if (g.land_then_servos_neutral > 0 &&
+            control_mode == AUTO &&
+            g.land_disarm_delay > 0 &&
+            auto_state.land_complete &&
+            !arming.is_armed()) {
+        // after an auto land and auto disarm, set the servos to be neutral just
+        // in case we're upside down or some crazy angle and straining the servos.
+        if (g.land_then_servos_neutral == 1) {
+            channel_roll->radio_out = channel_roll->radio_trim;
+            channel_pitch->radio_out = channel_pitch->radio_trim;
+            channel_rudder->radio_out = channel_rudder->radio_trim;
+        } else if (g.land_then_servos_neutral == 2) {
+            channel_roll->disable_out();
+            channel_pitch->disable_out();
+            channel_rudder->disable_out();
+        }
+    }
 
     // send values to the PWM timers for output
     // ----------------------------------------

@@ -57,7 +57,16 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     AP_GROUPINFO("_CAPACITY", 6, AP_BattMonitor, _pack_capacity[0], AP_BATT_CAPACITY_DEFAULT),
 
     // 7 & 8 were used for VOLT2_PIN and VOLT2_MULT
-    // 9..10 left for future expansion
+
+    // @Param: _WATT_MAX
+    // @DisplayName: Maximum allowed power (Watts)
+    // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
+    // @Units: Watts
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_WATT_MAX", 9, AP_BattMonitor, _watt_max[0], AP_BATT_MAX_WATT_DEFAULT),
+
+    // 10 is left for future expansion
 
 #if AP_BATT_MONITOR_MAX_INSTANCES > 1
     // @Param: 2_MONITOR
@@ -108,6 +117,15 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("2_CAPACITY", 17, AP_BattMonitor, _pack_capacity[1], AP_BATT_CAPACITY_DEFAULT),
+
+
+    // @Param: 2_WATT_MAX
+    // @DisplayName: Maximum allowed current
+    // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
+    // @Units: Amps
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("2_WATT_MAX", 18, AP_BattMonitor, _watt_max[1], AP_BATT_MAX_WATT_DEFAULT),
 
 #endif // AP_BATT_MONITOR_MAX_INSTANCES > 1
 
@@ -301,5 +319,24 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
     }
 
     // if we've gotten this far battery is ok
+    return false;
+}
+
+// return true if any battery is pushing too much power
+bool AP_BattMonitor::overpower_detected() const
+{
+    bool result = false;
+    for (int instance = 0; instance < AP_BATT_MONITOR_MAX_INSTANCES; instance++) {
+        result |= overpower_detected(instance);
+    }
+    return result;
+}
+
+bool AP_BattMonitor::overpower_detected(uint8_t instance) const
+{
+    if (instance < AP_BATT_MONITOR_MAX_INSTANCES && _watt_max[instance] > 0) {
+        float power = _BattMonitor_STATE(instance).current_amps * _BattMonitor_STATE(instance).voltage;
+        return _BattMonitor_STATE(instance).healthy && (power > _watt_max[instance]);
+    }
     return false;
 }

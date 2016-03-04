@@ -17,9 +17,7 @@
 //
 /// @file	AverageFilter.h
 /// @brief	A class to provide the average of a number of samples
-
-#ifndef __AVERAGE_FILTER_H__
-#define __AVERAGE_FILTER_H__
+#pragma once
 
 #include "FilterClass.h"
 #include "FilterWithBuffer.h"
@@ -107,5 +105,3 @@ void AverageFilter<T,U,FILTER_SIZE>::        reset()
     // clear our variable
     _num_samples = 0;
 }
-
-#endif // __AVERAGE_FILTER_H__

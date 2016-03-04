@@ -1,17 +1,16 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_AIRSPEED_H__
-#define __AP_AIRSPEED_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
 #include "AP_Airspeed_Backend.h"
-#include "AP_Airspeed_analog.h"
-#include "AP_Airspeed_PX4.h"
 #include "AP_Airspeed_I2C.h"
+#include "AP_Airspeed_PX4.h"
+#include "AP_Airspeed_analog.h"
 
 class Airspeed_Calibration {
 public:
@@ -40,19 +39,10 @@ class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed(const AP_Vehicle::FixedWing &parms) :
-        _raw_airspeed(0.0f),
-        _airspeed(0.0f),
-        _last_pressure(0.0f),
-        _raw_pressure(0.0f),
-        _EAS2TAS(1.0f),
-        _healthy(false),
-        _hil_set(false),
-        _last_update_ms(0),
-        _calibration(parms),
-        _last_saved_ratio(0.0f),
-        _counter(0),
-        analog(_pin)
+    AP_Airspeed(const AP_Vehicle::FixedWing &parms)
+        : _EAS2TAS(1.0f)
+        , _calibration(parms)
+        , analog(_pin)
     {
 		AP_Param::setup_object_defaults(this, var_info);
     };
@@ -149,7 +139,7 @@ public:
     // return health status of sensor
     bool healthy(void) const { return _healthy && fabsf(_offset) > 0; }
 
-    void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; };
+    void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; }
 
     // return time in ms of last update
     uint32_t last_update_ms(void) const { return _last_update_ms; }
@@ -158,9 +148,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE =0, 
-                            PITOT_TUBE_ORDER_NEGATIVE =1, 
-                            PITOT_TUBE_ORDER_AUTO     =2};
+    enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE = 0,
+                            PITOT_TUBE_ORDER_NEGATIVE = 1,
+                            PITOT_TUBE_ORDER_AUTO     = 2 };
 
 private:
     AP_Float        _offset;
@@ -194,9 +184,3 @@ private:
     AP_Airspeed_I2C    digital;
 #endif
 };
-
-// the virtual pin for digital airspeed sensors
-#define AP_AIRSPEED_I2C_PIN 65
-
-#endif // __AP_AIRSPEED_H__
-

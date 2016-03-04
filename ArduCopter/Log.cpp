@@ -638,7 +638,7 @@ void Copter::Log_Write_Home_And_Origin()
 {
     // log ekf origin if set
     Location ekf_orig;
-    if (ahrs.get_NavEKF_const().getOriginLLH(ekf_orig)) {
+    if (ahrs.get_origin(ekf_orig)) {
         DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
 

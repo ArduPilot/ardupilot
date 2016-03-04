@@ -23,6 +23,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
 #include "AP_Math.h"
+#include "location.h"
 
 // scaling factor from 1e-7 degrees to meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
@@ -209,12 +210,12 @@ float wrap_180_cd_float(float angle)
  */
 float wrap_PI(float angle_in_radians)
 {
-    if (angle_in_radians > 10*PI || angle_in_radians < -10*PI) {
+    if (angle_in_radians > 10*M_PI || angle_in_radians < -10*M_PI) {
         // for very large numbers use modulus
-        angle_in_radians = fmodf(angle_in_radians, 2*PI);
+        angle_in_radians = fmodf(angle_in_radians, 2*M_PI);
     }
-    while (angle_in_radians > PI) angle_in_radians -= 2*PI;
-    while (angle_in_radians < -PI) angle_in_radians += 2*PI;
+    while (angle_in_radians > M_PI) angle_in_radians -= 2*M_PI;
+    while (angle_in_radians < -M_PI) angle_in_radians += 2*M_PI;
     return angle_in_radians;
 }
 
@@ -223,12 +224,12 @@ float wrap_PI(float angle_in_radians)
  */
 float wrap_2PI(float angle)
 {
-    if (angle > 10*PI || angle < -10*PI) {
+    if (angle > 10*M_PI || angle < -10*M_PI) {
         // for very large numbers use modulus
-        angle = fmodf(angle, 2*PI);
+        angle = fmodf(angle, 2*M_PI);
     }
-    while (angle > 2*PI) angle -= 2*PI;
-    while (angle < 0) angle += 2*PI;
+    while (angle > 2*M_PI) angle -= 2*M_PI;
+    while (angle < 0) angle += 2*M_PI;
     return angle;
 }
 
@@ -237,6 +238,28 @@ float wrap_2PI(float angle)
  */
 bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {
     return (loc1.lat == loc2.lat) && (loc1.lng == loc2.lng);
+}
+
+/*
+ * convert invalid waypoint with useful data. return true if location changed
+ */
+bool location_sanitize(const struct Location &defaultLoc, struct Location &loc)
+{
+    bool has_changed = false;
+    // convert lat/lng=0 to mean current point
+    if (loc.lat == 0 && loc.lng == 0) {
+        loc.lat = defaultLoc.lat;
+        loc.lng = defaultLoc.lng;
+        has_changed = true;
+    }
+
+    // convert relative alt=0 to mean current alt
+    if (loc.alt == 0 && loc.flags.relative_alt) {
+        loc.flags.relative_alt = false;
+        loc.alt = defaultLoc.alt;
+        has_changed = true;
+    }
+    return has_changed;
 }
 
 /*

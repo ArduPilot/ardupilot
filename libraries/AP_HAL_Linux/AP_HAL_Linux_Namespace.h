@@ -1,11 +1,11 @@
-
-#ifndef __AP_HAL_LINUX_NAMESPACE_H__
-#define __AP_HAL_LINUX_NAMESPACE_H__
+#pragma once
 
 namespace Linux {
     class UARTDriver;
     class SPIUARTDriver;
     class RPIOUARTDriver;
+    class I2CDevice;
+    class I2CDeviceManager;
     class I2CDriver;
     class SPIDeviceManager;
     class SPIDeviceDriver;
@@ -19,6 +19,7 @@ namespace Linux {
     class Storage_FRAM;
     class DigitalSource;
     class DigitalSource_Sysfs;
+    class PeriodicThread;
     class PWM_Sysfs;
     class PWM_Sysfs_Bebop;
     class PWM_Sysfs_Base;
@@ -27,6 +28,7 @@ namespace Linux {
     class RCInput_AioPRU;
     class RCInput_RPI;
     class RCInput_Raspilot;
+    class RCInput_Navio2;
     class RCInput_ZYNQ;
     class RCInput_UART;
     class RCInput_UDP;
@@ -44,6 +46,7 @@ namespace Linux {
     class Util;
     class UtilRPI;
     class ToneAlarm;
+    class Thread;
     class Heat;
     class HeatPwm;
     class CameraSensor;
@@ -53,6 +56,3 @@ namespace Linux {
     class Flow_PX4;
     class Perf_Lttng;
 }
-
-#endif // __AP_HAL_LINUX_NAMESPACE_H__
-

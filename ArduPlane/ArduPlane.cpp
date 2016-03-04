@@ -29,10 +29,11 @@
 
 /*
   scheduler table - all regular tasks are listed here, along with how
-  often they should be called (in 20ms units) and the maximum time
+  often they should be called (in Hz) and the maximum time
   they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
+                           // Units:   Hz      us
     SCHED_TASK(read_radio,             50,    700),
     SCHED_TASK(check_short_failsafe,   50,   1000),
     SCHED_TASK(ahrs_update,           400,   6400),
@@ -306,9 +307,6 @@ void Plane::update_aux(void)
 
 void Plane::one_second_loop()
 {
-    if (should_log(MASK_LOG_CURRENT))
-        Log_Write_Current();
-
     // send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
 
@@ -764,25 +762,15 @@ void Plane::update_navigation()
             // on every loop
             auto_state.checked_for_autoland = true;
         }
-        // fall through to LOITER
-        if (g.rtl_radius < 0) {
-            loiter.direction = -1;
-        } else {
-            loiter.direction = 1;
-        }
         radius = abs(g.rtl_radius);
+        if (radius > 0) {
+            loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
+        }
+        // fall through to LOITER
 
     case LOITER:
     case GUIDED:
-        // allow loiter direction to be changed in flight
-        if (radius == 0) {
-            if (g.loiter_radius < 0) {
-                loiter.direction = -1;
-            } else {
-                loiter.direction = 1;
-            }
-        }
-        update_loiter(abs(radius));
+        update_loiter(radius);
         break;
 
     case CRUISE:
@@ -876,11 +864,27 @@ void Plane::update_alt()
 
     update_flight_stage();
 
+    bool is_doing_auto_land = (control_mode == AUTO) && (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND);
+    float distance_beyond_land_wp = 0;
+    if (is_doing_auto_land && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+        distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
+    }
+
     if (auto_throttle_mode && !throttle_suppressed) {        
+
+        // set Flight stage for controller. If not in AUTO then assume normal operation.
+        // this prevents TECS from being stuck in the wrong stage if you switch from
+        // AUTO to, say, FBWB during an aborted landing
+        AP_SpdHgtControl::FlightStage fs = flight_stage;
+        if (control_mode != AUTO) {
+            fs = AP_SpdHgtControl::FLIGHT_NORMAL;
+        }
+
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
-                                                 flight_stage,
-                                                 mission.get_current_nav_cmd().id,
+                                                 fs,
+                                                 is_doing_auto_land,
+                                                 distance_beyond_land_wp,
                                                  auto_state.takeoff_pitch_cd,
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),

@@ -18,8 +18,7 @@
   Compass driver backend class. Each supported compass sensor type
   needs to have an object derived from this class.
  */
-#ifndef __AP_COMPASS_BACKEND_H__
-#define __AP_COMPASS_BACKEND_H__
+#pragma once
 
 #include "Compass.h"
 
@@ -81,5 +80,3 @@ protected:
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);
 };
-
-#endif // __AP_COMPASS_BACKEND_H__

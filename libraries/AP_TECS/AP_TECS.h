@@ -47,7 +47,8 @@ public:
     void update_pitch_throttle(int32_t hgt_dem_cm,
                                int32_t EAS_dem_cm,
                                enum FlightStage flight_stage,
-                               uint8_t mission_cmd_id,
+                               bool is_doing_auto_land,
+                               float distance_beyond_land_wp,
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
@@ -147,9 +148,13 @@ private:
     AP_Float _timeConst;
     AP_Float _landTimeConst;
     AP_Float _ptchDamp;
+    AP_Float _land_pitch_damp;
     AP_Float _landDamp;
     AP_Float _thrDamp;
+    AP_Float _land_throttle_damp;
     AP_Float _integGain;
+    AP_Float _integGain_takeoff;
+    AP_Float _integGain_land;
     AP_Float _vertAccLim;
     AP_Float _rollComp;
     AP_Float _spdWeight;
@@ -157,6 +162,7 @@ private:
     AP_Float _landThrottle;
     AP_Float _landAirspeed;
     AP_Float _land_sink;
+    AP_Float _land_sink_rate_change;
     AP_Int8  _pitch_max;
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
@@ -252,8 +258,8 @@ private:
     // auto mode flightstage
     enum FlightStage _flight_stage;
 
-    // auto mode mission item
-    uint8_t _mission_cmd_id;
+    // true when plane is in auto mode and executing a land mission item
+    bool _is_doing_auto_land;
 
     // pitch demand before limiting
     float _pitch_dem_unc;
@@ -292,6 +298,8 @@ private:
     // percent traveled along the previous and next waypoints
     float _path_proportion;
 
+    float _distance_beyond_land_wp;
+
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);
 
@@ -312,6 +320,9 @@ private:
 
     // Update Demanded Throttle Non-Airspeed
     void _update_throttle_option(int16_t throttle_nudge);
+
+    // get integral gain which is flight_stage dependent
+    float _get_i_gain(void);
 
     // Detect Bad Descent
     void _detect_bad_descent(void);

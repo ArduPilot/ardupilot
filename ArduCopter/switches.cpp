@@ -567,6 +567,9 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // control signal in tradheli
             motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
 
+            // remember the current value of the motor interlock so that this condition can be restored if we exit the throw mode early
+            throw_early_exit_interlock = motors.get_interlock();
+
             // Log new status
             if (motors.get_interlock()){
                 Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
@@ -582,6 +585,18 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }else{
                 // return to flight mode switch's flight mode if we are currently in BRAKE
                 if (control_mode == BRAKE) {
+                    reset_control_switch();
+                }
+            }
+            break;
+
+        case AUXSW_THROW:
+            // throw flight mode
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                set_mode(THROW);
+            } else {
+                // return to flight mode switch's flight mode if we are currently in throw mode
+                if (control_mode == THROW) {
                     reset_control_switch();
                 }
             }

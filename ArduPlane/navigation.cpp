@@ -6,6 +6,11 @@
 void Plane::set_nav_controller(void)
 {
     switch ((AP_Navigation::ControllerType)g.nav_controller.get()) {
+
+    default:
+    case AP_Navigation::CONTROLLER_DEFAULT:
+        // fall through to L1 as default controller
+
     case AP_Navigation::CONTROLLER_L1:
         nav_controller = &L1_controller;
         break;
@@ -129,8 +134,10 @@ void Plane::calc_gndspeed_undershoot()
 
 void Plane::update_loiter(uint16_t radius)
 {
-    if (radius == 0) {
-        radius = abs(g.loiter_radius);
+    if (radius <= 1) {
+        // if radius is <=1 then use the general loiter radius. if it's small, use default
+        radius = (abs(g.loiter_radius <= 1)) ? LOITER_RADIUS_DEFAULT : abs(g.loiter_radius);
+        loiter.direction = (g.loiter_radius < 0) ? -1 : 1;
     }
 
     if (loiter.start_time_ms == 0 &&

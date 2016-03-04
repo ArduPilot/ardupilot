@@ -510,54 +510,67 @@ void NOINLINE Plane::send_rpm(mavlink_channel_t chan)
 void Plane::send_pid_tuning(mavlink_channel_t chan)
 {
     const Vector3f &gyro = ahrs.get_gyro();
+    const DataFlash_Class::PID_Info *pid_info;
     if (g.gcs_pid_mask & 1) {
-        const DataFlash_Class::PID_Info &pid_info = rollController.get_pid_info();
+        if (quadplane.in_vtol_mode()) {
+            pid_info = &quadplane.pid_rate_roll.get_pid_info();
+        } else {
+            pid_info = &rollController.get_pid_info();
+        }
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL, 
-                                    pid_info.desired,
+                                    pid_info->desired,
                                     degrees(gyro.x),
-                                    pid_info.FF,
-                                    pid_info.P,
-                                    pid_info.I,
-                                    pid_info.D);
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
     }
     if (g.gcs_pid_mask & 2) {
-        const DataFlash_Class::PID_Info &pid_info = pitchController.get_pid_info();
+        if (quadplane.in_vtol_mode()) {
+            pid_info = &quadplane.pid_rate_pitch.get_pid_info();
+        } else {
+            pid_info = &pitchController.get_pid_info();
+        }
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH, 
-                                    pid_info.desired,
+                                    pid_info->desired,
                                     degrees(gyro.y),
-                                    pid_info.FF,
-                                    pid_info.P,
-                                    pid_info.I,
-                                    pid_info.D);
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
     }
     if (g.gcs_pid_mask & 4) {
-        const DataFlash_Class::PID_Info &pid_info = yawController.get_pid_info();
+        if (quadplane.in_vtol_mode()) {
+            pid_info = &quadplane.pid_rate_yaw.get_pid_info();
+        } else {
+            pid_info = &yawController.get_pid_info();
+        }
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
-                                    pid_info.desired,
+                                    pid_info->desired,
                                     degrees(gyro.z),
-                                    pid_info.FF,
-                                    pid_info.P,
-                                    pid_info.I,
-                                    pid_info.D);
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const DataFlash_Class::PID_Info &pid_info = steerController.get_pid_info();
+        pid_info = &steerController.get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER, 
-                                    pid_info.desired,
+                                    pid_info->desired,
                                     degrees(gyro.z),
-                                    pid_info.FF,
-                                    pid_info.P,
-                                    pid_info.I,
-                                    pid_info.D);
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -581,15 +594,6 @@ void Plane::send_rangefinder(mavlink_channel_t chan)
 void Plane::send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
-}
-
-void Plane::send_statustext(mavlink_channel_t chan)
-{
-    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
-    mavlink_msg_statustext_send(
-        chan,
-        s->severity,
-        s->text);
 }
 
 // are we still delaying telemetry to try to avoid Xbee bricking?
@@ -730,9 +734,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_STATUSTEXT:
-        CHECK_PAYLOAD_SIZE(STATUSTEXT);
-        plane.send_statustext(chan);
-        break;
+        // depreciated, use GCS_MAVLINK::send_statustext*
+        return false;
 
 #if GEOFENCE_ENABLED == ENABLED
     case MSG_FENCE_STATUS:
@@ -2032,14 +2035,7 @@ void Plane::gcs_update(void)
 
 void Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].send_text(severity, str);
-        }
-    }
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(str);
-#endif
+    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
 }
 
 /*
@@ -2049,22 +2045,12 @@ void Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
  */
 void Plane::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
+    char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)severity;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
-            sizeof(gcs[0].pending_status.text), fmt, arg_list);
+    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     va_end(arg_list);
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
-#endif
-    gcs[0].send_message(MSG_STATUSTEXT);
-    for (uint8_t i=1; i<num_gcs; i++) {
-        if (gcs[i].initialised) {
-            gcs[i].pending_status = gcs[0].pending_status;
-            gcs[i].send_message(MSG_STATUSTEXT);
-        }
-    }
+    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
 }
 
 /*
@@ -2088,4 +2074,5 @@ void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
 void Plane::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
+    GCS_MAVLINK::service_statustext();
 }

@@ -106,7 +106,8 @@ public:
 	// select which navigation controller to use by setting the
 	// NAV_CONTROLLER parameter
 	enum ControllerType {
-		CONTROLLER_L1     = 1
+	    CONTROLLER_DEFAULT      = 0,
+		CONTROLLER_L1           = 1
 	};
 };
 

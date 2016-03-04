@@ -20,9 +20,7 @@
 ///         This is implemented separately to the base Filter class to get around
 ///         restrictions caused by the use of templates which makes different sizes essentially
 ///         completely different classes
-
-#ifndef __FILTER_WITH_BUFFER_H__
-#define __FILTER_WITH_BUFFER_H__
+#pragma once
 
 #include "FilterClass.h"
 
@@ -116,8 +114,3 @@ T FilterWithBuffer<T,FILTER_SIZE>::        apply(T sample)
     // base class doesn't know what filtering to do so we just return the raw sample
     return sample;
 }
-
-#endif
-
-
-

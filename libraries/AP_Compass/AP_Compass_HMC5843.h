@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_Compass_HMC5843_H
-#define AP_Compass_HMC5843_H
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -120,5 +119,3 @@ private:
     AuxiliaryBusSlave *_slave = nullptr;
     bool _started = false;
 };
-
-#endif

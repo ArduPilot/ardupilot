@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_GPIO_H__
-#define __AP_HAL_GPIO_H__
+#pragma once
 
 #include <stdint.h>
 
@@ -48,5 +46,3 @@ public:
     /* return true if USB cable is connected */
     virtual bool    usb_connected(void) = 0;
 };
-
-#endif // __AP_HAL_GPIO_H__

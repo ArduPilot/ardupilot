@@ -361,7 +361,7 @@ AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250(AP_InertialSensor &ins,
 {
     // Only initialize members. Fails are handled by configure or while
     // getting the semaphore
-    _bus = ins.get_auxiliary_bus(HAL_INS_MPU9250, mpu9250_instance);
+    _bus = ins.get_auxiliary_bus(HAL_INS_MPU9250_SPI, mpu9250_instance);
     if (!_bus)
         AP_HAL::panic("Cannot get MPU9250 auxiliary bus");
 

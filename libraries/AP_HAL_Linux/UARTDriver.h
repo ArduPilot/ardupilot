@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_UARTDRIVER_H__
-#define __AP_HAL_LINUX_UARTDRIVER_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -93,5 +91,3 @@ protected:
     virtual int _read_fd(uint8_t *buf, uint16_t n);
 
 };
-
-#endif // __AP_HAL_LINUX_UARTDRIVER_H__

@@ -1,4 +1,4 @@
-
+#include "SPIDevice.h"
 #include "SPIDriver.h"
 
 using namespace Empty;
@@ -46,3 +46,8 @@ AP_HAL::SPIDeviceDriver* SPIDeviceManager::device(enum AP_HAL::SPIDeviceType, ui
     return &_device;
 }
 
+AP_HAL::OwnPtr<AP_HAL::SPIDevice>
+SPIDeviceManager::get_device(const char *name)
+{
+    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice());
+}

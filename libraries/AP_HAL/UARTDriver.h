@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_UART_DRIVER_H__
-#define __AP_HAL_UART_DRIVER_H__
+#pragma once
 
 #include <stdint.h>
 
@@ -54,6 +52,3 @@ public:
     void printf(const char *s, ...) FMT_PRINTF(2, 3);
     void vprintf(const char *s, va_list ap);
 };
-
-#endif // __AP_HAL_UART_DRIVER_H__
-

@@ -4,6 +4,8 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/SPIDevice.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -344,7 +346,9 @@ AP_InertialSensor::AP_InertialSensor() :
     _log_raw_data(false),
     _backends_detected(false),
     _dataflash(NULL),
-    _accel_cal_requires_reboot(false)
+    _accel_cal_requires_reboot(false),
+    _startup_error_counts_set(false),
+    _startup_ms(0)
 {
     if (_s_instance) {
         AP_HAL::panic("Too many inertial sensors");
@@ -372,6 +376,9 @@ AP_InertialSensor::AP_InertialSensor() :
         _delta_angle_acc_dt[i] = 0;
         _last_delta_angle[i].zero();
         _last_raw_gyro[i].zero();
+
+        _accel_startup_error_count[i] = 0;
+        _gyro_startup_error_count[i] = 0;
     }
     for (uint8_t i=0; i<INS_VIBRATION_CHECK_INSTANCES; i++) {
         _accel_vibe_floor_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ);
@@ -515,34 +522,34 @@ AP_InertialSensor::detect_backends(void)
         return;
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    _add_backend(AP_InertialSensor_SITL::detect(*this));    
+    _add_backend(AP_InertialSensor_SITL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
-    _add_backend(AP_InertialSensor_MPU6000::detect_spi(*this));
+    _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
+#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C
+    _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR)));
 #elif HAL_INS_DEFAULT == HAL_INS_BH
-    _add_backend(AP_InertialSensor_MPU6000::detect_i2c(*this, hal.i2c, HAL_INS_MPU60XX_I2C_ADDR));
-    _add_backend(AP_InertialSensor_MPU9250::detect(*this, hal.spi->device(AP_HAL::SPIDevice_MPU9250)));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C && HAL_INS_MPU60XX_I2C_BUS == 2
-    _add_backend(AP_InertialSensor_MPU6000::detect_i2c(*this, hal.i2c2, HAL_INS_MPU60XX_I2C_ADDR));
+    _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR)));
+    _add_backend(AP_InertialSensor_MPU9250::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
 #elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
     _add_backend(AP_InertialSensor_PX4::detect(*this));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU9250
-    _add_backend(AP_InertialSensor_MPU9250::detect(*this, hal.spi->device(AP_HAL::SPIDevice_MPU9250)));
+#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI
+    _add_backend(AP_InertialSensor_MPU9250::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
 #elif HAL_INS_DEFAULT == HAL_INS_FLYMAPLE
     _add_backend(AP_InertialSensor_Flymaple::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_LSM9DS0
-    _add_backend(AP_InertialSensor_LSM9DS0::detect(*this));
+    _add_backend(AP_InertialSensor_LSM9DS0::probe(*this,
+                 hal.spi->get_device(HAL_INS_LSM9DS0_G_NAME),
+                 hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)));
 #elif HAL_INS_DEFAULT == HAL_INS_L3G4200D
-    _add_backend(AP_InertialSensor_L3G4200D::detect(*this));
+    _add_backend(AP_InertialSensor_L3G4200D::probe(*this, hal.i2c_mgr->get_device(HAL_INS_L3G4200D_I2C_BUS, HAL_INS_L3G4200D_I2C_ADDR));
 #elif HAL_INS_DEFAULT == HAL_INS_RASPILOT
     //_add_backend(AP_InertialSensor_L3GD20::detect);
     //_add_backend(AP_InertialSensor_LSM303D::detect);
-    _add_backend(AP_InertialSensor_MPU6000::detect_spi(*this));
+    _add_backend(AP_InertialSensor_MPU6000::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250_I2C
-    _add_backend(AP_InertialSensor_MPU9250::detect_i2c(*this,
-                                                       HAL_INS_MPU9250_I2C_POINTER,
-                                                       HAL_INS_MPU9250_I2C_ADDR));
+    _add_backend(AP_InertialSensor_MPU9250::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU9250_I2C_BUS, HAL_INS_MPU9250_I2C_ADDR));
 #elif HAL_INS_DEFAULT == HAL_INS_QFLIGHT
     _add_backend(AP_InertialSensor_QFLIGHT::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_QURT
@@ -928,25 +935,47 @@ void AP_InertialSensor::update(void)
             _delta_angle_acc_dt[i] = 0;
         }
 
+        if (!_startup_error_counts_set) {
+            for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+                _accel_startup_error_count[i] = _accel_error_count[i];
+                _gyro_startup_error_count[i] = _gyro_error_count[i];
+            }
+
+            if (_startup_ms == 0) {
+                _startup_ms = AP_HAL::millis();
+            } else if (AP_HAL::millis()-_startup_ms > 2000) {
+                _startup_error_counts_set = true;
+            }
+        }
+
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_accel_error_count[i] < _accel_startup_error_count[i]) {
+                _accel_startup_error_count[i] = _accel_error_count[i];
+            }
+            if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
+                _gyro_startup_error_count[i] = _gyro_error_count[i];
+            }
+        }
+
         // adjust health status if a sensor has a non-zero error count
         // but another sensor doesn't.
         bool have_zero_accel_error_count = false;
         bool have_zero_gyro_error_count = false;
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _accel_error_count[i] == 0) {
+            if (_accel_healthy[i] && _accel_error_count[i] <= _accel_startup_error_count[i]) {
                 have_zero_accel_error_count = true;
             }
-            if (_gyro_healthy[i] && _gyro_error_count[i] == 0) {
+            if (_gyro_healthy[i] && _gyro_error_count[i] <= _gyro_startup_error_count[i]) {
                 have_zero_gyro_error_count = true;
             }
         }
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _gyro_error_count[i] != 0 && have_zero_gyro_error_count) {
+            if (_gyro_healthy[i] && _gyro_error_count[i] > _gyro_startup_error_count[i] && have_zero_gyro_error_count) {
                 // we prefer not to use a gyro that has had errors
                 _gyro_healthy[i] = false;
             }
-            if (_accel_healthy[i] && _accel_error_count[i] != 0 && have_zero_accel_error_count) {
+            if (_accel_healthy[i] && _accel_error_count[i] > _accel_startup_error_count[i] && have_zero_accel_error_count) {
                 // we prefer not to use a accel that has had errors
                 _accel_healthy[i] = false;
             }

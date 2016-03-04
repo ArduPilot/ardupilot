@@ -52,9 +52,11 @@ uint32_t PX4Storage::_mtd_signature(void)
     if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
         AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
     }
+    bus_lock(true);
     if (read(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
         AP_HAL::panic("Failed to read signature from " MTD_PARAMS_FILE);
     }
+    bus_lock(false);
     close(mtd_fd);
     return v;
 }
@@ -72,9 +74,11 @@ void PX4Storage::_mtd_write_signature(void)
     if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
         AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
     }
+    bus_lock(true);
     if (write(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
         AP_HAL::panic("Failed to write signature in " MTD_PARAMS_FILE);
     }
+    bus_lock(false);
     close(mtd_fd);
 }
 
@@ -104,10 +108,12 @@ void PX4Storage::_upgrade_to_mtd(void)
     }
     close(old_fd);
     ssize_t ret;
+    bus_lock(true);
     if ((ret=::write(mtd_fd, _buffer, sizeof(_buffer))) != sizeof(_buffer)) {
         ::printf("mtd write of %u bytes returned %d errno=%d\n", sizeof(_buffer), ret, errno);
         AP_HAL::panic("Unable to write MTD for upgrade");
     }
+    bus_lock(false);
     close(mtd_fd);
 #if STORAGE_RENAME_OLD_FILE
     rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
@@ -157,7 +163,9 @@ void PX4Storage::_storage_open(void)
 	}
         const uint16_t chunk_size = 128;
         for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
+            bus_lock(true);
             ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
+            bus_lock(false);
             if (ret != chunk_size) {
                 ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
                          (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
@@ -215,6 +223,26 @@ void PX4Storage::write_block(uint16_t loc, const void *src, size_t n)
 	}
 }
 
+void PX4Storage::bus_lock(bool lock)
+{
+#if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
+    /*
+      this is needed on Pixracer where the ms5611 may be on the same
+      bus as FRAM, and the NuttX ramtron driver does not go via the
+      PX4 spi bus abstraction. The ramtron driver relies on
+      SPI_LOCK(). We need to prevent the ms5611 reads which happen in
+      interrupt context from interfering with the FRAM operations. As
+      the px4 spi bus abstraction just uses interrupt blocking as the
+      locking mechanism we need to block interrupts here as well.
+     */
+    if (lock) {
+        irq_state = irqsave();
+    } else {
+        irqrestore(irq_state);
+    }
+#endif
+}
+
 void PX4Storage::_timer_tick(void)
 {
 	if (!_initialised || _dirty_mask == 0) {
@@ -264,12 +292,15 @@ void PX4Storage::_timer_tick(void)
 	 */
 	if (lseek(_fd, i<<PX4_STORAGE_LINE_SHIFT, SEEK_SET) == (i<<PX4_STORAGE_LINE_SHIFT)) {
 		_dirty_mask &= ~write_mask;
-		if (write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT) != n<<PX4_STORAGE_LINE_SHIFT) {
-			// write error - likely EINTR
-			_dirty_mask |= write_mask;
-			close(_fd);
-			_fd = -1;
-			perf_count(_perf_errors);
+                bus_lock(true);
+		ssize_t ret = write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT);
+                bus_lock(false);
+                if (ret != n<<PX4_STORAGE_LINE_SHIFT) {
+                    // write error - likely EINTR
+                    _dirty_mask |= write_mask;
+                    close(_fd);
+                    _fd = -1;
+                    perf_count(_perf_errors);
 		}
 	}
 	perf_end(_perf_storage);

@@ -104,10 +104,9 @@ def ap_program(bld, program_group='bin',
     kw['features'] = common_features(bld) + kw.get('features', [])
 
     name = os.path.join(program_group, program_name)
-    target = bld.bldnode.find_or_declare(name)
 
     tg = bld.program(
-        target=target,
+        target='#%s' % name,
         name=name,
         **kw
     )
@@ -185,6 +184,7 @@ def ap_find_tests(bld, use=[]):
             program_name=f.change_ext('').name,
             program_group='tests',
             use_legacy_defines=False,
+            cxxflags=['-Wno-undef'],
         )
 
 @conf
@@ -306,7 +306,7 @@ def _select_programs_from_group(bld):
             bld.targets += ',' + tg.name
 
 def options(opt):
-    g = opt.add_option_group('Ardupilot build options')
+    g = opt.ap_groups['build']
     g.add_option('--program-group',
         action='append',
         default=[],
@@ -314,6 +314,11 @@ def options(opt):
              'build. Example: `waf --program-group examples` builds all ' +
              'examples. The special group "all" selects all programs.',
     )
+
+    g = opt.ap_groups['check']
+    g.add_option('--check-verbose',
+                 action='store_true',
+                 help='Output all test programs')
 
 def build(bld):
     global LAST_IDX

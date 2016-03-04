@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_H__
-#define __AP_HAL_LINUX_H__
+#pragma once
 
 /* Your layer exports should depend on AP_HAL.h ONLY. */
 #include <AP_HAL/AP_HAL.h>
@@ -25,5 +23,3 @@
 #include "HAL_Linux_Class.h"
 
 #endif // CONFIG_HAL_BOARD
-#endif //__AP_HAL_LINUX_H__
-

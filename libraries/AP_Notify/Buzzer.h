@@ -17,6 +17,8 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
  # define BUZZER_PIN    32
 #else

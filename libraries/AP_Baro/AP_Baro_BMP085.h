@@ -1,13 +1,15 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
+#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/utility/OwnPtr.h>
+
 #include "AP_Baro_Backend.h"
 
 class AP_Baro_BMP085 : public AP_Baro_Backend
 {
 public:
-    // Constructor
-    AP_Baro_BMP085(AP_Baro &baro);
+    AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     /* AP_Baro public interface: */
     void update();
@@ -20,6 +22,8 @@ private:
     void _read_temp();
     void _calculate();
     bool _data_ready();
+
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 
     uint8_t _instance;
     float _temp_sum;

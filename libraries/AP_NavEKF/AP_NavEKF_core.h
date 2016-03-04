@@ -35,8 +35,7 @@
 #define OPT_MATHS
 #endif
 
-// #define MATH_CHECK_INDEXES 1
-// #define EKF_DISABLE_INTERRUPTS 1
+#define EKF_DISABLE_INTERRUPTS 0
 
 #include <AP_Math/vectorN.h>
 
@@ -58,7 +57,7 @@ public:
     friend class NavEKF;
     
     typedef float ftype;
-#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
+#if MATH_CHECK_INDEXES
     typedef VectorN<ftype,2> Vector2;
     typedef VectorN<ftype,3> Vector3;
     typedef VectorN<ftype,4> Vector4;

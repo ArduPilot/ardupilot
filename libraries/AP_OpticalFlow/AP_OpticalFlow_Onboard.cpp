@@ -22,7 +22,11 @@
     (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI)
-//#define FLOWONBOARD_DEBUG 1
+
+#ifndef OPTICALFLOW_ONBOARD_DEBUG
+#define OPTICALFLOW_ONBOARD_DEBUG 0
+#endif
+
 #define OPTICALFLOW_ONBOARD_ID 1
 extern const AP_HAL::HAL& hal;
 
@@ -83,7 +87,7 @@ void AP_OpticalFlow_Onboard::update()
     // copy results to front end
     _update_frontend(state);
 
-#if FLOWONBOARD_DEBUG
+#if OPTICALFLOW_ONBOARD_DEBUG
     hal.console->printf("FLOW_ONBOARD qual:%u FlowRateX:%4.2f Y:%4.2f"
                         "BodyRateX:%4.2f Y:%4.2f, delta_time = %u\n",
                         (unsigned)state.surface_quality,

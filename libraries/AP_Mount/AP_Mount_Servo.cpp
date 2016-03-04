@@ -154,7 +154,7 @@ void AP_Mount_Servo::stabilize()
         // lead filter
         const Vector3f &gyro = _frontend._ahrs.get_gyro();
 
-        if (_state._stab_roll && !is_zero(_state._roll_stb_lead) && fabsf(_frontend._ahrs.pitch) < M_PI_F/3.0f) {
+        if (_state._stab_roll && !is_zero(_state._roll_stb_lead) && fabsf(_frontend._ahrs.pitch) < M_PI/3.0f) {
             // Compute rate of change of euler roll angle
             float roll_rate = gyro.x + (_frontend._ahrs.sin_pitch() / _frontend._ahrs.cos_pitch()) * (gyro.y * _frontend._ahrs.sin_roll() + gyro.z * _frontend._ahrs.cos_roll());
             _angle_bf_output_deg.x -= degrees(roll_rate) * _state._roll_stb_lead;

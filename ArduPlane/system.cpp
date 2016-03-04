@@ -114,6 +114,8 @@ void Plane::init_ardupilot()
     // initialise serial ports
     serial_manager.init();
 
+    GCS_MAVLINK::set_dataflash(&DataFlash);
+
     // allow servo set on all channels except first 4
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
@@ -309,7 +311,7 @@ void Plane::startup_ground(void)
     serial_manager.set_blocking_writes_all(false);
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);    
+    ins.set_dataflash(&DataFlash);
 
     gcs_send_text(MAV_SEVERITY_INFO,"Ready to fly");
 }

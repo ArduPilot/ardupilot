@@ -19,9 +19,7 @@
   Management for hal.storage to allow for backwards compatible mapping
   of storage offsets to available storage
  */
-
-#ifndef _STORAGEMANAGER_H_
-#define _STORAGEMANAGER_H_
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -99,5 +97,3 @@ private:
     const StorageManager::StorageType type;
     uint16_t total_size;
 };
-
-#endif // _STORAGEMANAGER_H_

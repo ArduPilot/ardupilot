@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_UARTDRIVER_H__
-#define __AP_HAL_EMPTY_UARTDRIVER_H__
+#pragma once
 
 #include "AP_HAL_Empty.h"
 
@@ -25,5 +23,3 @@ public:
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 };
-
-#endif // __AP_HAL_EMPTY_UARTDRIVER_H__

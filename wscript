@@ -39,20 +39,35 @@ def init(ctx):
         c.variant = env.BOARD
 
 def options(opt):
-    opt.load('ardupilotwaf')
-    boards_names = boards.get_boards_names()
-
     opt.load('compiler_cxx compiler_c waf_unit_test python')
-    opt.add_option('--board',
+
+    opt.ap_groups = {
+        'configure': opt.add_option_group('Ardupilot configure options'),
+        'build': opt.add_option_group('Ardupilot build options'),
+        'check': opt.add_option_group('Ardupilot check options'),
+    }
+
+    opt.load('ardupilotwaf')
+
+    g = opt.ap_groups['configure']
+    boards_names = boards.get_boards_names()
+    g.add_option('--board',
                    action='store',
                    choices=boards_names,
                    default='sitl',
                    help='Target board to build, choices are %s' % boards_names)
 
-    g = opt.add_option_group('Check options')
-    g.add_option('--check-verbose',
+    g.add_option('--no-submodule-update',
+                 dest='submodule_update',
+                 action='store_false',
+                 default=True,
+                 help='Don\'t update git submodules. Useful for building ' +
+                      'with submodules at specific revisions.')
+
+    g.add_option('--enable-benchmarks',
                  action='store_true',
-                 help='Output all test programs')
+                 default=False,
+                 help='Enable benchmarks')
 
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
@@ -61,19 +76,7 @@ def configure(cfg):
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
-    board_dict = boards.BOARDS[cfg.env.BOARD].get_merged_dict()
-
-    # Always prepend so that arguments passed in the command line get
-    # the priority.
-    for k in board_dict:
-        val = board_dict[k]
-        # Dictionaries (like 'DEFINES') are converted to lists to
-        # conform to waf conventions.
-        if isinstance(val, dict):
-            for item in val.items():
-                cfg.env.prepend_value(k, '%s=%s' % item)
-        else:
-            cfg.env.prepend_value(k, val)
+    boards.get_board(cfg.env.BOARD).configure(cfg)
 
     cfg.load('toolchain')
     cfg.load('compiler_cxx compiler_c')
@@ -81,7 +84,8 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('git_submodule')
-    cfg.load('gbenchmark')
+    if cfg.options.enable_benchmarks:
+        cfg.load('gbenchmark')
     cfg.load('gtest')
     cfg.load('static_linking')
 
@@ -108,6 +112,9 @@ def configure(cfg):
     cfg.env.prepend_value('DEFINES', [
         'SKETCHBOOK="' + cfg.srcnode.abspath() + '"',
     ])
+
+    if cfg.options.submodule_update:
+        cfg.env.SUBMODULE_UPDATE = True
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -158,6 +165,9 @@ def _build_common_taskgens(bld):
     )
 
     bld.libgtest()
+
+    if bld.env.HAS_GBENCHMARK:
+        bld.libbenchmark()
 
 def _build_recursion(bld):
     common_dirs_patterns = [
@@ -210,9 +220,10 @@ def build(bld):
 
     _build_cmd_tweaks(bld)
 
-    bld.add_group('git_submodules')
-    for name in bld.env.GIT_SUBMODULES:
-        bld.git_submodule(name)
+    if bld.env.SUBMODULE_UPDATE:
+        bld.add_group('git_submodules')
+        for name in bld.env.GIT_SUBMODULES:
+            bld.git_submodule(name)
 
     bld.add_group('dynamic_sources')
     _build_dynamic_sources(bld)

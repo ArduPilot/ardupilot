@@ -38,7 +38,7 @@ void loop()
     for( i=0; i<300; i++ ) {
 
         // new data value
-        new_value = sinf((float)i*2*PI*5/50.0f);  // 5hz
+        new_value = sinf((float)i*2*M_PI*5/50.0f);  // 5hz
 
         // output to user
         hal.console->printf("applying: %6.4f", new_value);

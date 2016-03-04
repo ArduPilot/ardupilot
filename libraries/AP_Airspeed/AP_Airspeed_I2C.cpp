@@ -18,25 +18,26 @@
 /*
   backend driver for airspeed from a I2C MS4525D0 sensor
  */
+#include "AP_Airspeed_I2C.h"
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include "AP_Airspeed_I2C.h"
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
-#define I2C_ADDRESS_MS4525DO	0x28
+#define I2C_ADDRESS_MS4525DO 0x28
 
 // probe and initialise the sensor
-bool AP_Airspeed_I2C::init(void)
+bool AP_Airspeed_I2C::init()
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
     // take i2c bus sempahore
-    if (!i2c_sem->take(200))
+    if (!i2c_sem->take(200)) {
         return false;
+    }
 
     _measure();
     hal.scheduler->delay(10);
@@ -50,7 +51,7 @@ bool AP_Airspeed_I2C::init(void)
 }
 
 // start a measurement
-void AP_Airspeed_I2C::_measure(void)
+void AP_Airspeed_I2C::_measure()
 {
     _measurement_started_ms = 0;
     if (hal.i2c->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
@@ -59,7 +60,7 @@ void AP_Airspeed_I2C::_measure(void)
 }
 
 // read the values from the sensor
-void AP_Airspeed_I2C::_collect(void)
+void AP_Airspeed_I2C::_collect()
 {
     uint8_t data[4];
 
@@ -68,46 +69,45 @@ void AP_Airspeed_I2C::_collect(void)
     if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
         return;
     }
-    
-	uint8_t status = data[0] & 0xC0;
-	if (status == 2) {
+
+    uint8_t status = data[0] & 0xC0;
+    if (status == 2 || status == 3) {
         return;
-	} else if (status == 3) {
-        return;
-	}
+    }
 
-	int16_t dp_raw, dT_raw;
-	dp_raw = (data[0] << 8) + data[1];
-	dp_raw = 0x3FFF & dp_raw;
-	dT_raw = (data[2] << 8) + data[3];
-	dT_raw = (0xFFE0 & dT_raw) >> 5;
+    int16_t dp_raw, dT_raw;
+    dp_raw = (data[0] << 8) + data[1];
+    dp_raw = 0x3FFF & dp_raw;
+    dT_raw = (data[2] << 8) + data[3];
+    dT_raw = (0xFFE0 & dT_raw) >> 5;
 
-	const float P_min = -1.0f;
-	const float P_max = 1.0f;
-	const float PSI_to_Pa = 6894.757f;
-	/*
-	  this equation is an inversion of the equation in the
-	  pressure transfer function figure on page 4 of the datasheet
+    const float P_min = -1.0f;
+    const float P_max = 1.0f;
+    const float PSI_to_Pa = 6894.757f;
+    /*
+      this equation is an inversion of the equation in the
+      pressure transfer function figure on page 4 of the datasheet
 
-	  We negate the result so that positive differential pressures
-	  are generated when the bottom port is used as the static
-	  port on the pitot and top port is used as the dynamic port
-	 */
-	float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
+      We negate the result so that positive differential pressures
+      are generated when the bottom port is used as the static
+      port on the pitot and top port is used as the dynamic port
+     */
+    float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
 
-	_pressure = diff_press_PSI * PSI_to_Pa;
-	_temperature = ((200.0f * dT_raw) / 2047) - 50;
+    _pressure = diff_press_PSI * PSI_to_Pa;
+    _temperature = ((200.0f * dT_raw) / 2047) - 50;
 
     _last_sample_time_ms = AP_HAL::millis();
 }
 
 // 1kHz timer
-void AP_Airspeed_I2C::_timer(void)
+void AP_Airspeed_I2C::_timer()
 {
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
-    if (!i2c_sem->take_nonblocking())
+    if (!i2c_sem->take_nonblocking()) {
         return;
+    }
 
     if (_measurement_started_ms == 0) {
         _measure();
@@ -141,5 +141,3 @@ bool AP_Airspeed_I2C::get_temperature(float &temperature)
     temperature = _temperature;
     return true;
 }
-
-

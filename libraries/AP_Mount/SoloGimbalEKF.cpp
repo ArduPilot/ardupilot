@@ -887,19 +887,19 @@ float SoloGimbalEKF::calcMagHeadingInnov()
     float innovation = atan2f(magMeasNED.y,magMeasNED.x) - declination;
 
     // wrap the innovation so it sits on the range from +-pi
-    if (innovation > M_PI_F) {
-        innovation = innovation - 2*M_PI_F;
-    } else if (innovation < -M_PI_F) {
-        innovation = innovation + 2*M_PI_F;
+    if (innovation > M_PI) {
+        innovation = innovation - 2*M_PI;
+    } else if (innovation < -M_PI) {
+        innovation = innovation + 2*M_PI;
     }
 
     // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
-    if (innovation - lastInnovation > M_PI_F) {
+    if (innovation - lastInnovation > M_PI) {
         // Angle has wrapped in the positive direction to subtract an additional 2*Pi
-        innovationIncrement -= 2*M_PI_F;
-    } else if (innovation -innovationIncrement < -M_PI_F) {
+        innovationIncrement -= 2*M_PI;
+    } else if (innovation -innovationIncrement < -M_PI) {
         // Angle has wrapped in the negative direction so add an additional 2*Pi
-        innovationIncrement += 2*M_PI_F;
+        innovationIncrement += 2*M_PI;
     }
     lastInnovation = innovation;
 

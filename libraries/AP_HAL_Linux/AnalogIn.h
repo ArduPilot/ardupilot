@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_LINUX_ANALOGIN_H__
-#define __AP_HAL_LINUX_ANALOGIN_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -29,4 +27,3 @@ public:
     float board_voltage(void) { return 0.0f; }
 
 };
-#endif // __AP_HAL_LINUX_ANALOGIN_H__

@@ -43,10 +43,6 @@ public:
 
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
-    void     begin_atomic();
-    void     end_atomic();
-
-    bool     system_initializing();
     void     system_initialized();
 
     void     reboot(bool hold_in_bootloader);

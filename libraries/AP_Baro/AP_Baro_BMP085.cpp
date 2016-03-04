@@ -15,13 +15,12 @@
  */
 #include "AP_Baro_BMP085.h"
 
+#include <utility>
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL &hal;
-
-// 0xEE >> 1
-#define BMP085_ADDRESS 0x77
 
 #ifndef BMP085_EOC
 #define BMP085_EOC -1
@@ -30,16 +29,17 @@ extern const AP_HAL::HAL &hal;
 // oversampling 3 gives 26ms conversion time. We then average
 #define OVERSAMPLING 3
 
-AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro)
+AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_Baro_Backend(baro)
+    , _dev(std::move(dev))
 {
     uint8_t buff[22];
 
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore *sem = _dev->get_semaphore();
 
     // take i2c bus sempahore
-    if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("BMP085: unable to get semaphore");
     }
 
@@ -49,7 +49,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro)
     }
 
     // We read the calibration data registers
-    if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
+    if (!_dev->read_registers(0xAA, buff, 22)) {
         AP_HAL::panic("BMP085: bad calibration registers");
     }
 
@@ -75,7 +75,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro)
 
     BMP085_State = 0;
 
-    i2c_sem->give();
+    sem->give();
 }
 
 /*
@@ -83,15 +83,14 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro)
  */
 void AP_Baro_BMP085::accumulate(void)
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore *sem = _dev->get_semaphore();
 
     if (!_data_ready()) {
         return;
     }
 
     // take i2c bus sempahore
-    if (!i2c_sem->take(1)) {
+    if (!sem->take(1)) {
         return;
     }
 
@@ -109,7 +108,7 @@ void AP_Baro_BMP085::accumulate(void)
         _cmd_read_pressure();
     }
 
-    i2c_sem->give();
+    sem->give();
 }
 
 /*
@@ -138,8 +137,7 @@ void AP_Baro_BMP085::update(void)
 void AP_Baro_BMP085::_cmd_read_pressure()
 {
     // Mode 0x34+(OVERSAMPLING << 6) is osrs=3 when OVERSAMPLING=3 => 25.5ms conversion time
-    hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4,
-                           0x34 + (OVERSAMPLING << 6));
+    _dev->write_register(0xF4, 0x34 + (OVERSAMPLING << 6));
     _last_press_read_command_time = AP_HAL::millis();
 }
 
@@ -148,9 +146,9 @@ bool AP_Baro_BMP085::_read_pressure()
 {
     uint8_t buf[3];
 
-    if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xF6, 3, buf) != 0) {
+    if (!_dev->read_registers(0xF6, buf, 3)) {
         _retry_time = AP_HAL::millis() + 1000;
-        hal.i2c->setHighSpeed(false);
+        _dev->set_speed(AP_HAL::Device::SPEED_LOW);
         return false;
     }
 
@@ -163,7 +161,7 @@ bool AP_Baro_BMP085::_read_pressure()
 // Send Command to Read Temperature
 void AP_Baro_BMP085::_cmd_read_temp()
 {
-    hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4, 0x2E);
+    _dev->write_register(0xF4, 0x2E);
     _last_temp_read_command_time = AP_HAL::millis();
 }
 
@@ -173,8 +171,8 @@ void AP_Baro_BMP085::_read_temp()
     uint8_t buf[2];
     int32_t _temp_sensor;
 
-    if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xF6, 2, buf) != 0) {
-        hal.i2c->setHighSpeed(false);
+    if (!_dev->read_registers(0xF6, buf, 2)) {
+        _dev->set_speed(AP_HAL::Device::SPEED_LOW);
         return;
     }
     _temp_sensor = buf[0];

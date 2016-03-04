@@ -310,10 +310,6 @@ bool VRBRAINScheduler::in_timerprocess()
     return getpid() != _main_task_pid;
 }
 
-bool VRBRAINScheduler::system_initializing() {
-    return !_initialized;
-}
-
 void VRBRAINScheduler::system_initialized() {
     if (_initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called"

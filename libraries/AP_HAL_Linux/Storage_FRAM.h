@@ -1,5 +1,4 @@
-#ifndef __AP_HAL_LINUX_STORAGE_FRAM_H__
-#define __AP_HAL_LINUX_STORAGE_FRAM_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_Linux_Namespace.h"
@@ -37,4 +36,3 @@ private:
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;
 };
-#endif // __AP_HAL_LINUX_STORAGE_H__

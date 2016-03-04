@@ -17,11 +17,18 @@
 #include "MAVLink_routing.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN)
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
+
+#if HAL_CPU_CLASS <= HAL_CPU_CLASS_150 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    #define GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY          5
+#else
+    #define GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY          30
+#endif
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
@@ -94,6 +101,13 @@ public:
         msg_snoop = _msg_snoop;
     }
 
+    struct statustext_t {
+        uint8_t                 bitmask;
+        mavlink_statustext_t    msg;
+    };
+    static ObjectArray<statustext_t> _statustext_queue;
+
+
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
@@ -118,10 +132,6 @@ public:
 
     // see if we should send a stream now. Called at 50Hz
     bool        stream_trigger(enum streams stream_num);
-
-	// this costs us 51 bytes per instance, but means that low priority
-	// messages don't block the CPU
-    mavlink_statustext_t pending_status;
 
     // call to reset the timeout window for entering the cli
     void reset_cli_timeout();
@@ -160,11 +170,13 @@ public:
     static uint8_t active_channel_mask(void) { return mavlink_active; }
 
     /*
-      send a statustext message to all active MAVLink
-      connections. This function is static so it can be called from
-      any library
+    send a statustext message to active MAVLink connections, or a specific
+    one. This function is static so it can be called from any library.
     */
     static void send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...);
+    static void send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan, const char *fmt, ...);
+    static void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text);
+    static void service_statustext(void);
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
@@ -181,6 +193,13 @@ public:
      */
     static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
 
+    /*
+      set a dataflash pointer for logging
+     */
+    static void set_dataflash(DataFlash_Class *dataflash) {
+        dataflash_p = dataflash;
+    }
+    
 private:
     void        handleMessage(mavlink_message_t * msg);
 
@@ -280,6 +299,9 @@ private:
     // mavlink routing object
     static MAVLink_routing routing;
 
+    // pointer to static dataflash for logging of text messages
+    static DataFlash_Class *dataflash_p;
+    
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
 

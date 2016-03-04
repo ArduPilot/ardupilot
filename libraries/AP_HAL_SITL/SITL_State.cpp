@@ -24,7 +24,6 @@
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
-using namespace SITL;
 
 void SITL_State::_set_param_default(const char *parm)
 {
@@ -93,10 +92,10 @@ void SITL_State::_sitl_setup(const char *home_str)
         _update_gps(0, 0, 0, 0, 0, 0, false);
 #endif
         if (enable_gimbal) {
-            gimbal = new Gimbal(_sitl->state);
+            gimbal = new SITL::Gimbal(_sitl->state);
         }
         if (enable_ADSB) {
-            adsb = new ADSB(_sitl->state, home_str);
+            adsb = new SITL::ADSB(_sitl->state, home_str);
         }
 
         fg_socket.connect("127.0.0.1", 5503);
@@ -254,7 +253,7 @@ void SITL_State::_output_to_flightgear(void)
  */
 void SITL_State::_fdm_input_local(void)
 {
-    Aircraft::sitl_input input;
+    SITL::Aircraft::sitl_input input;
 
     // check for direct RC input
     _fdm_input();
@@ -315,7 +314,7 @@ void SITL_State::_apply_servo_filter(float deltat)
 /*
   create sitl_input structure for sending to FDM
  */
-void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
+void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 {
     static uint32_t last_update_usec;
 
