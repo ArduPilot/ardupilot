@@ -217,7 +217,7 @@ private:
     EKF_TYPE active_EKF_type(void) const;
 
     bool always_use_EKF() const {
-        return _flags & FLAG_ALWAYS_USE_EKF;
+        return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
 
     NavEKF &EKF1;
@@ -232,7 +232,7 @@ private:
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms = 0;
-    Flags _flags;
+    Flags _ekf_flags;
 
     uint8_t ekf_type(void) const;
     void update_DCM(void);
