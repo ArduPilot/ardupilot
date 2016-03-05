@@ -91,7 +91,8 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         ToneAlarm_Linux tonealarm;
         NotifyDevice *AP_Notify::_devices[] = {&toshibaled, &tonealarm};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-        NotifyDevice *AP_Notify::_devices[0];
+    #define CONFIG_NOTIFY_DEVICES_COUNT 0
+        NotifyDevice *AP_Notify::_devices[] = { };
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
         AP_BoardLED boardled;
@@ -112,7 +113,9 @@ struct AP_Notify::notify_events_type AP_Notify::events;
     NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled};
 #endif
 
+#ifndef CONFIG_NOTIFY_DEVICES_COUNT
 #define CONFIG_NOTIFY_DEVICES_COUNT (ARRAY_SIZE(AP_Notify::_devices))
+#endif
 
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
