@@ -470,6 +470,73 @@ void AP_GPS::time_week_utc(uint8_t instance, uint16_t &day, uint16_t &hour, uint
     day = day_ms / (24 * 60 * 60 * 1000);
 }
 
+// get milliseconds from now to a target time of week expressed as day, hour, min, sec, ms
+//    match starts from first non-zero value specified.  I.e. specifying day=0, hour=10 will ignore the day and return time until 10am (utc)
+//    to match with sunday, specify day as 7.  To match with midnight specify hour as 24.
+uint32_t AP_GPS::get_ms_until_time_of_week(uint16_t day, uint16_t hour, uint16_t min, uint16_t sec, uint16_t ms) const
+{
+    // determine highest value specified (0=none, 1=ms, 2=sec, 3=min, 4=hour, 5=day)
+    int8_t largest_element = 0;
+    if (ms != 0) largest_element = 1;
+    if (sec != 0) largest_element = 2;
+    if (min != 0) largest_element = 3;
+    if (hour != 0) largest_element = 4;
+    if (day != 0) largest_element = 5;
+
+    // exit immediately if no time specified
+    if (largest_element == 0) {
+        return 0;
+    }
+
+    // get start_time_ms as d, h, m, s, ms
+    uint16_t curr_day, curr_hour, curr_min, curr_sec, curr_ms;
+    time_week_utc(curr_day, curr_hour, curr_min, curr_sec, curr_ms);
+    int32_t total_delay_ms = 0;
+
+    // calculate ms to target
+    if (largest_element >= 1) {
+        total_delay_ms += ms - curr_ms;
+    }
+    if (largest_element == 1 && total_delay_ms < 0) {
+        total_delay_ms += 1000;
+    }
+
+    // calculate sec to target
+    if (largest_element >= 2) {
+        total_delay_ms += (sec - curr_sec)*1000;
+    }
+    if (largest_element == 2 && total_delay_ms < 0) {
+        total_delay_ms += (60*1000);
+    }
+
+    // calculate min to target
+    if (largest_element >= 3) {
+        total_delay_ms += (min - curr_min)*60*1000;
+    }
+    if (largest_element == 3 && total_delay_ms < 0) {
+        total_delay_ms += (60*60*1000);
+    }
+
+    // calculate hours to target
+    if (largest_element >= 4) {
+        total_delay_ms += (hour - curr_hour)*60*60*1000;
+    }
+    if (largest_element == 4 && total_delay_ms < 0) {
+        total_delay_ms += (24*60*60*1000);
+    }
+
+    // calculate days to target
+    if (largest_element >= 5) {
+        total_delay_ms += (day - curr_day)*24*60*60*1000;
+    }
+    if (largest_element == 5 && total_delay_ms < 0) {
+        total_delay_ms += (7*24*60*60*1000);
+    }
+
+    // total delay in milliseconds
+    return (uint32_t)total_delay_ms;
+}
+
 /*
   set HIL (hardware in the loop) status for a GPS instance
  */
