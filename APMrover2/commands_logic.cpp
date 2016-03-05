@@ -271,7 +271,14 @@ bool Rover::verify_RTL()
 void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
 	condition_start = millis();
-	condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
+    if (!is_zero(cmd.content.delay.seconds)) {
+        // relative delay
+        condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
+    } else {
+        // absolute delay to utc time
+        condition_value = gps.get_ms_until_time_of_week(cmd.content.delay.day_utc, cmd.content.delay.hour_utc, cmd.content.delay.min_utc, cmd.content.delay.sec_utc, 0);
+    }
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(condition_value/1000));
 }
 
 void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
