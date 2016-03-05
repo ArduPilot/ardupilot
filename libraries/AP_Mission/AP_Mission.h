@@ -54,9 +54,13 @@ public:
     // condition delay command structure
     struct PACKED Conditional_Delay_Command {
         float seconds;          // period of delay in seconds
+        uint8_t day_utc;        // absolute time's day of week (utc)
+        uint8_t hour_utc;       // absolute time's hour (utc)
+        uint8_t min_utc;        // absolute time's min (utc)
+        uint8_t sec_utc;        // absolute time's sec (utc)
     };
 
-    // condition delay command structure
+    // condition distance command structure
     struct PACKED Conditional_Distance_Command {
         float meters;           // distance from next waypoint in meters
     };

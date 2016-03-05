@@ -721,7 +721,14 @@ bool Copter::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 void Copter::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
     condition_start = millis();
-    condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
+    if (!is_zero(cmd.content.delay.seconds)) {
+        // relative delay
+        condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
+    } else {
+        // absolute delay to utc time
+        condition_value = gps.get_ms_until_time_of_week(cmd.content.delay.day_utc, cmd.content.delay.hour_utc, cmd.content.delay.min_utc, cmd.content.delay.sec_utc, 0);
+    }
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(condition_value/1000));
 }
 
 void Copter::do_change_alt(const AP_Mission::Mission_Command& cmd)
@@ -915,3 +922,4 @@ void Copter::do_mount_control(const AP_Mission::Mission_Command& cmd)
     camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }
+

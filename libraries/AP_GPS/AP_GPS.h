@@ -250,6 +250,13 @@ public:
         return time_week(primary_instance);
     }
 
+    // GPS time of week in days, hours, minutes, seconds, milliseconds
+    void time_week_utc(uint8_t instance, uint16_t &day, uint16_t &hour, uint16_t &min, uint16_t &sec, uint16_t &ms) const;
+    void time_week_utc(uint16_t &day, uint16_t &hour, uint16_t &min, uint16_t &sec, uint16_t &ms) const {
+        return time_week_utc(primary_instance, day, hour, min, sec, ms);
+    }
+    uint32_t get_ms_until_time_of_week(uint16_t day, uint16_t hour, uint16_t min, uint16_t sec, uint16_t ms) const;
+
     // horizontal dilution of precision
     uint16_t get_hdop(uint8_t instance) const {
         return state[instance].hdop;
