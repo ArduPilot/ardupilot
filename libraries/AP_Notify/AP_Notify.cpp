@@ -96,6 +96,9 @@ struct AP_Notify::notify_events_type AP_Notify::events;
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
         AP_BoardLED boardled;
         NotifyDevice *AP_Notify::_devices[] = {&boardled};
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDRONIC
+        AP_BoardLED boardled;
+        NotifyDevice *AP_Notify::_devices[] = {&boardled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
         AP_BoardLED boardled;
         RCOutputRGBLed bhled(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE);

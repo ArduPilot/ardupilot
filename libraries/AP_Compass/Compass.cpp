@@ -443,6 +443,7 @@ void Compass::_detect_backends(void)
       CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MINLURE
     _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c));
     _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
+    _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 1));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     _add_backend(AP_Compass_HIL::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
