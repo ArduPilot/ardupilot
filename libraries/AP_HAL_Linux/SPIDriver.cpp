@@ -72,10 +72,14 @@ SPIDeviceDriver SPIDeviceManager::_device[] = {
 };
 #else
 // empty device table
-SPIDeviceDriver SPIDeviceManager::_device[0];
+SPIDeviceDriver SPIDeviceManager::_device[] = { };
+#define LINUX_SPI_DEVICE_NUM_DEVICES 0
 #endif
 
+#ifndef LINUX_SPI_DEVICE_NUM_DEVICES
 #define LINUX_SPI_DEVICE_NUM_DEVICES ARRAY_SIZE(SPIDeviceManager::_device)
+#endif
+
 const uint8_t SPIDeviceManager::_n_device_desc = LINUX_SPI_DEVICE_NUM_DEVICES;
 
 SPIDeviceDriver::SPIDeviceDriver(const char *name, uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
