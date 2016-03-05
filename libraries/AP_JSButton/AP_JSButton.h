@@ -1,17 +1,17 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_JBUTTONMAPPER_H
-#define AP_JBUTTONMAPPER_H
+#ifndef AP_JSBUTTON_H
+#define AP_JSBUTTON_H
 
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 
-class JButtonMapper
+class JSButton
 {
 public:
     /// Constructor
     ///
-    JButtonMapper();
+    JSButton();
 
     /// roll - return input channel number for roll / aileron input
     uint8_t function(bool shift = false) const {
