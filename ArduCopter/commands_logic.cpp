@@ -728,7 +728,7 @@ void Copter::do_wait_delay(const AP_Mission::Mission_Command& cmd)
         // absolute delay to utc time
         condition_value = gps.get_ms_until_time_of_week(cmd.content.delay.day_utc, cmd.content.delay.hour_utc, cmd.content.delay.min_utc, cmd.content.delay.sec_utc, 0);
     }
-    gcs_send_text_fmt(MAV_SEVERITY_CRITICAL, "Delaying %u sec",(unsigned int)(condition_value/1000));
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(condition_value/1000));
 }
 
 void Copter::do_change_alt(const AP_Mission::Mission_Command& cmd)
