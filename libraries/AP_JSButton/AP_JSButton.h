@@ -55,7 +55,7 @@ public:
 		k_trim_roll_inc         = 44,           ///< increase roll trim
 		k_trim_roll_dec         = 45,           ///< decrease roll trim
 		k_trim_pitch_inc        = 46,           ///< increase pitch trim
-		k_trim_pitch_inc        = 47,           ///< decrease pitch trim
+		k_trim_pitch_dec        = 47,           ///< decrease pitch trim
 		k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
 	} button_function_t;
 
