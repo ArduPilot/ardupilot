@@ -52,17 +52,17 @@ void Sub::althold_run()
     bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()));
 
 //    // Alt Hold State Machine Determination
-//    if(!ap.auto_armed) {
-//        althold_state = AltHold_Disarmed;
+    if(!ap.auto_armed) {
+        althold_state = AltHold_Disarmed;
 //    } else if (!motors.get_interlock()){
 //        althold_state = AltHold_MotorStop;
 //    } else if (takeoff_state.running || takeoff_triggered){
 //        althold_state = AltHold_Takeoff;
 //    } else if (ap.land_complete){
 //        althold_state = AltHold_Landed;
-//    } else {
+    } else {
         althold_state = AltHold_Flying;
-//    }
+    }
 
     // Alt Hold State Machine
     switch (althold_state) {
@@ -71,7 +71,7 @@ void Sub::althold_run()
     	// Multicopter do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        pos_control.relax_alt_hold_controllers(0);
         break;
 
     case AltHold_MotorStop:
@@ -125,12 +125,11 @@ void Sub::althold_run()
         	pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
             pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
         } else if(ap.at_surface) {
-        	if(pos_control.get_vel_target_z() > 0.0) {
-        		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
-        		pos_control.set_alt_target(g.surface_depth); // set alt target to the same depth that triggers the surface detector.
-        	}
-        	if(target_climb_rate < 0) { // Dive if the pilot wants to
+        	if(target_climb_rate < 0.0) { // Dive if the pilot wants to
             	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        	} else if(pos_control.get_vel_target_z() > 0.0) {
+        		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
+        		pos_control.set_alt_target(g.surface_depth*100); // set alt target to the same depth that triggers the surface detector.
         	}
         } else {
         	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
