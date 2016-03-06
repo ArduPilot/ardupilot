@@ -87,9 +87,11 @@ report_pull_failure() {
 
 oldhash=$(cd APM && git rev-parse HEAD)
 
+echo "Updating APM"
 pushd APM
 git checkout -f master
 git fetch origin
+git submodule update
 git reset --hard origin/master
 git pull || report_pull_failure
 git clean -f -f -x -d -d
@@ -98,39 +100,6 @@ cp ../config.mk .
 popd
 
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
-
-pushd PX4Firmware
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
-
-pushd PX4NuttX
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
-
-pushd uavcan
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
 
 echo "Updating pymavlink"
 pushd mavlink/pymavlink
