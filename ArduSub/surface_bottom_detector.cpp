@@ -7,7 +7,6 @@
 static uint32_t bottom_detector_count = 0;
 static uint32_t surface_detector_count = 0;
 static float current_depth = 0;
-static float start_depth = 0; // the depth when we first hit downward throttle limit
 
 // checks if we have have hit bottom or surface and updates the ap.at_bottom and ap.at_surface flags
 // called at MAIN_LOOP_RATE
