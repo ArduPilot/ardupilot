@@ -157,7 +157,7 @@ void Sub::land_nogps_run()
     }
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    if(!ap.auto_armed || ap.at_surface || !motors.get_interlock()) {
     	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -168,8 +168,8 @@ void Sub::land_nogps_run()
         }
 #else
         // disarm when the landing detector says we've landed
-        if (ap.land_complete) {
-            init_disarm_motors();
+        if (ap.at_surface) {
+        	set_mode(ALT_HOLD);
         }
 #endif
         return;
