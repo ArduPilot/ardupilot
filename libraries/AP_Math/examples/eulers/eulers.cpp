@@ -234,8 +234,8 @@ void test_frame_transforms(void)
 // generate a random float between -1 and 1
 static float rand_num(void)
 {
-    float ret = ((unsigned)random()) % 2000000;
-    return (ret - 1.0e6f) / 1.0e6f;
+    float ret = random();
+    return 2.0f * ret / RAND_MAX - 1.0f;
 }
 
 void test_matrix_rotate(void)
