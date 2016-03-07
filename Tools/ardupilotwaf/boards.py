@@ -98,8 +98,12 @@ Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 def get_boards_names():
     return sorted(list(_board_classes.keys()))
 
+_board = None
 def get_board(name):
-    return _board_classes[name]()
+    global _board
+    if not _board:
+        _board = _board_classes[name]()
+    return _board
 
 # NOTE: Keeping all the board definitions together so we can easily
 # identify opportunities to simplify common flags. In the future might
