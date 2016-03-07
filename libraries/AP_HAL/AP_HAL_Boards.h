@@ -35,6 +35,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_DISCO      1014
 #define HAL_BOARD_SUBTYPE_LINUX_AERO       1015
 #define HAL_BOARD_SUBTYPE_LINUX_DARK       1016
+#define HAL_BOARD_SUBTYPE_LINUX_URUS       1017
 
 /* HAL PX4 sub-types, starting at 2000 */
 #define HAL_BOARD_SUBTYPE_PX4_V1           2000
