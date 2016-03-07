@@ -29,6 +29,8 @@
 .settings/
 .autotools
 .vagrant
+.tags
+.tags_sorted_by_file
 /.lock-waf*
 /.waf*
 /tmp/*
@@ -96,3 +98,6 @@ status.txt
 tags
 test.ArduCopter/*
 Thumbs.db
+cscope.in.out
+cscope.out
+cscope.po.out
