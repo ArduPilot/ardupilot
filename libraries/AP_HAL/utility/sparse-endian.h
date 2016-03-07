@@ -21,7 +21,10 @@
 #ifndef SPARSE_ENDIAN_H
 #define SPARSE_ENDIAN_H
 
+#if !defined(HAVE_BYTESWAP_H) || HAVE_BYTESWAP_H
 #include <byteswap.h>
+#endif
+
 #include <endian.h>
 #include <stdint.h>
 
