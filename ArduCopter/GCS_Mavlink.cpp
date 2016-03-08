@@ -1070,9 +1070,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
         break;
     }
+    
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
+    {
+        if (handle_mission_item(msg, copter.mission)) {
+            copter.DataFlash.Log_Write_EntireMission(copter.mission);
+        }
+        break;
+    }
 
     // read an individual command from EEPROM and send it to the GCS
-    case MAVLINK_MSG_ID_MISSION_REQUEST:     // MAV ID: 40
+    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
+    case MAVLINK_MSG_ID_MISSION_REQUEST:     // MAV ID: 40, 51
     {
         handle_mission_request(copter.mission, msg);
         break;
