@@ -1565,8 +1565,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-
     // XXX read a WP from EEPROM and send it to the GCS
+    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
     case MAVLINK_MSG_ID_MISSION_REQUEST:
     {
         handle_mission_request(plane.mission, msg);
@@ -1632,6 +1632,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
+    {
+        if (handle_mission_item(msg, plane.mission)) {
+            plane.DataFlash.Log_Write_EntireMission(plane.mission);
+        }
+        break;
+    }
+    
+    // GCS has sent us a mission item, store to EEPROM
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     {
         if (handle_mission_item(msg, plane.mission)) {
             plane.DataFlash.Log_Write_EntireMission(plane.mission);
