@@ -71,6 +71,18 @@ class Board:
             '-Wno-redundant-decls',
         ]
 
+        if 'clang' in cfg.env.COMPILER_CC:
+            env.CFLAGS += [
+                '-fcolor-diagnostics',
+
+                '-Wno-gnu-designator',
+                '-Wno-inconsistent-missing-override',
+                '-Wno-mismatched-tags',
+                '-Wno-gnu-variable-sized-type-not-at-end',
+                '-Wno-unknown-pragmas',
+                '-Wno-c++11-narrowing'
+            ]
+
         env.CXXFLAGS += [
             '-std=gnu++11',
 
@@ -92,11 +104,26 @@ class Board:
             '-Wno-redundant-decls',
             '-Werror=format-security',
             '-Werror=array-bounds',
-            '-Werror=unused-but-set-variable',
             '-Werror=uninitialized',
             '-Werror=init-self',
             '-Wfatal-errors',
         ]
+
+        if 'clang++' in cfg.env.COMPILER_CXX:
+            env.CXXFLAGS += [
+                '-fcolor-diagnostics',
+
+                '-Wno-gnu-designator',
+                '-Wno-inconsistent-missing-override',
+                '-Wno-mismatched-tags',
+                '-Wno-gnu-variable-sized-type-not-at-end',
+                '-Wno-unknown-pragmas',
+                '-Wno-c++11-narrowing'
+            ]
+        else:
+            env.CXXFLAFS += [
+                '-Werror=unused-but-set-variable'
+            ]
 
         env.LINKFLAGS += [
             '-Wl,--gc-sections',
