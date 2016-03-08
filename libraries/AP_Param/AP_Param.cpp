@@ -935,7 +935,13 @@ bool AP_Param::load(void)
         // if the value isn't stored in EEPROM then set the default value
         if (ginfo != NULL) {
             ptrdiff_t base = (ptrdiff_t)info->ptr;
-            set_value((enum ap_var_type)phdr.type, (void*)(base + ginfo->offset),
+
+            // add in nested group offset
+            ptrdiff_t group_offset = 0;
+            for (uint8_t i=0; i<group_nesting.level; i++) {
+                group_offset += group_nesting.group_ret[i]->offset;
+            }
+            set_value((enum ap_var_type)phdr.type, (void*)(base + ginfo->offset + group_offset),
                       get_default_value(&ginfo->def_value));
         } else {
             set_value((enum ap_var_type)phdr.type, (void*)info->ptr, 
