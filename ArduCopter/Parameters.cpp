@@ -298,7 +298,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     // @Range: 300 700
     // @Units: Percent*10
-    // @Increment: 1
+    // @Increment: 10
     GSCALAR(throttle_mid,        "THR_MID",    THR_MID_DEFAULT),
 
     // @Param: THR_DZ
@@ -471,7 +471,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: RC Feel Roll/Pitch
     // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 being crisp
     // @Range: 0 100
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
     GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_MEDIUM),
@@ -782,6 +782,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Throttle acceleration controller P gain
     // @Description: Throttle acceleration controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
     // @Range: 0.500 1.500
+    // @Increment: 0.05
     // @User: Standard
 
     // @Param: ACCEL_Z_I
