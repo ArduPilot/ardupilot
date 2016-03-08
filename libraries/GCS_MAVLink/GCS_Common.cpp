@@ -674,8 +674,8 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     MAV_MISSION_RESULT result = MAV_MISSION_ACCEPTED;
     struct AP_Mission::Mission_Command cmd = {};
     bool mission_is_complete = false;
-    uint8_t seq=0;
-    uint8_t current = 0;
+    uint16_t seq=0;
+    uint16_t current = 0;
     
     if (msg->msgid == MAVLINK_MSG_ID_MISSION_ITEM) {      
         mavlink_mission_item_t packet;    
