@@ -39,33 +39,54 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define HMC5843_I2C_ADDR     0x1E
-#define ConfigRegA           0x00
-#define ConfigRegB           0x01
-#define magGain              0x20
-#define PositiveBiasConfig   0x11
-#define NegativeBiasConfig   0x12
-#define NormalOperation      0x10
-#define ModeRegister         0x02
-#define ContinuousConversion 0x00
-#define SingleConversion     0x01
+/*
+ * Defaul address: 0x1E
+ */
 
-// ConfigRegA valid sample averaging for 5883L
-#define SampleAveraging_1    0x00
-#define SampleAveraging_2    0x01
-#define SampleAveraging_4    0x02
-#define SampleAveraging_8    0x03
+#define HMC5843_REG_CONFIG_A 0x00
+// Valid sample averaging for 5883L
+#define HMC5843_SAMPLE_AVERAGING_1 (0x00 << 5)
+#define HMC5843_SAMPLE_AVERAGING_2 (0x01 << 5)
+#define HMC5843_SAMPLE_AVERAGING_4 (0x02 << 5)
+#define HMC5843_SAMPLE_AVERAGING_8 (0x03 << 5)
+// Valid data output rates for 5883L
+#define HMC5843_OSR_0_75HZ (0x00 << 2)
+#define HMC5843_OSR_1_5HZ  (0x01 << 2)
+#define HMC5843_OSR_3HZ    (0x02 << 2)
+#define HMC5843_OSR_7_5HZ  (0x03 << 2)
+#define HMC5843_OSR_15HZ   (0x04 << 2)
+#define HMC5843_OSR_30HZ   (0x05 << 2)
+#define HMC5843_OSR_75HZ   (0x06 << 2)
+// Sensor operation modes
+#define HMC5843_OPMODE_NORMAL 0x00
+#define HMC5843_OPMODE_POSITIVE_BIAS 0x01
+#define HMC5843_OPMODE_NEGATIVE_BIAS 0x02
+#define HMC5843_OPMODE_MASK 0x03
 
-// ConfigRegA valid data output rates for 5883L
-#define DataOutputRate_0_75HZ 0x00
-#define DataOutputRate_1_5HZ  0x01
-#define DataOutputRate_3HZ    0x02
-#define DataOutputRate_7_5HZ  0x03
-#define DataOutputRate_15HZ   0x04
-#define DataOutputRate_30HZ   0x05
-#define DataOutputRate_75HZ   0x06
+#define HMC5843_REG_CONFIG_B 0x01
+#define HMC5883L_GAIN_0_88_GA (0x00 << 5)
+#define HMC5883L_GAIN_1_30_GA (0x01 << 5)
+#define HMC5883L_GAIN_1_90_GA (0x02 << 5)
+#define HMC5883L_GAIN_2_50_GA (0x03 << 5)
+#define HMC5883L_GAIN_4_00_GA (0x04 << 5)
+#define HMC5883L_GAIN_4_70_GA (0x05 << 5)
+#define HMC5883L_GAIN_5_60_GA (0x06 << 5)
+#define HMC5883L_GAIN_8_10_GA (0x07 << 5)
 
-#define REG_DATA_OUTPUT_X_MSB 0x03
+#define HMC5843_GAIN_0_70_GA (0x00 << 5)
+#define HMC5843_GAIN_1_00_GA (0x01 << 5)
+#define HMC5843_GAIN_1_50_GA (0x02 << 5)
+#define HMC5843_GAIN_2_00_GA (0x03 << 5)
+#define HMC5843_GAIN_3_20_GA (0x04 << 5)
+#define HMC5843_GAIN_3_80_GA (0x05 << 5)
+#define HMC5843_GAIN_4_50_GA (0x06 << 5)
+#define HMC5843_GAIN_6_50_GA (0x07 << 5)
+
+#define HMC5843_REG_MODE 0x02
+#define HMC5843_MODE_CONTINUOUS 0x00
+#define HMC5843_MODE_SINGLE     0x01
+
+#define HMC5843_REG_DATA_OUTPUT_X_MSB 0x03
 
 AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus)
     : AP_Compass_Backend(compass)
@@ -140,7 +161,7 @@ bool AP_Compass_HMC5843::init()
         goto errout;
     }
 
-    if (!_re_initialize()) {
+    if (!_setup_sampling_mode()) {
         goto errout;
     }
 
@@ -216,7 +237,7 @@ void AP_Compass_HMC5843::accumulate()
    // accumulate more than 8 before a read
    // get raw_field - sensor frame, uncorrected
    Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
-   raw_field *= _gain_multiple;
+   raw_field *= _gain_scale;
 
    // rotate raw_field from sensor frame to body frame
    rotate_field(raw_field, _compass_instance);
@@ -282,12 +303,11 @@ void AP_Compass_HMC5843::read()
     publish_filtered_field(field, _compass_instance);
 }
 
-
-bool AP_Compass_HMC5843::_re_initialize()
+bool AP_Compass_HMC5843::_setup_sampling_mode()
 {
-    if (!_bus->register_write(ConfigRegA, _base_config) ||
-        !_bus->register_write(ConfigRegB, magGain) ||
-        !_bus->register_write(ModeRegister, ContinuousConversion)) {
+    if (!_bus->register_write(HMC5843_REG_CONFIG_A, _base_config) ||
+        !_bus->register_write(HMC5843_REG_CONFIG_B, _gain_config) ||
+        !_bus->register_write(HMC5843_REG_MODE, HMC5843_MODE_CONTINUOUS)) {
         return false;
     }
     return true;
@@ -309,7 +329,7 @@ bool AP_Compass_HMC5843::_read_sample()
         return false;
     }
 
-    if (!_bus->block_read(REG_DATA_OUTPUT_X_MSB, (uint8_t *) &val, sizeof(val))){
+    if (!_bus->block_read(HMC5843_REG_DATA_OUTPUT_X_MSB, (uint8_t *) &val, sizeof(val))){
         _retry_time = AP_HAL::millis() + 1000;
         return false;
     }
@@ -340,16 +360,21 @@ bool AP_Compass_HMC5843::_detect_version()
 {
     _base_config = 0x0;
 
-    if (!_bus->register_write(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
-        !_bus->register_read(ConfigRegA, &_base_config)) {
+    uint8_t try_config = HMC5843_SAMPLE_AVERAGING_8 | HMC5843_OSR_75HZ | HMC5843_OPMODE_NORMAL;
+    if (!_bus->register_write(HMC5843_REG_CONFIG_A, try_config) ||
+        !_bus->register_read(HMC5843_REG_CONFIG_A, &_base_config)) {
         return false;
     }
 
-    if (_base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
+    if (_base_config == try_config) {
         /* a 5883L supports the sample averaging config */
         _product_id = AP_COMPASS_TYPE_HMC5883L;
-    } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
+        _gain_config = HMC5883L_GAIN_1_30_GA;
+        _gain_scale = (1.0f / 1090) * 1000;
+    } else if (_base_config == (HMC5843_OPMODE_NORMAL | HMC5843_OSR_75HZ)) {
         _product_id = AP_COMPASS_TYPE_HMC5843;
+        _gain_config = HMC5843_GAIN_1_00_GA;
+        _gain_scale = (1.0f / 1300) * 1000;
     } else {
         /* not behaving like either supported compass type */
         return false;
@@ -360,39 +385,46 @@ bool AP_Compass_HMC5843::_detect_version()
 
 bool AP_Compass_HMC5843::_calibrate()
 {
-    uint8_t calibration_gain = 0x20;
-    uint16_t expected_x = 715;
-    uint16_t expected_yz = 715;
+    uint8_t calibration_gain;
+    uint16_t expected_x;
+    uint16_t expected_yz;
     int numAttempts = 0, good_count = 0;
     bool success = false;
 
-    _gain_multiple = (1.0f / 1300) * 1000;
-
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
-        calibration_gain = 0x60;
+        calibration_gain = HMC5883L_GAIN_2_50_GA;
         /*
-          note that the HMC5883 datasheet gives the x and y expected
-          values as 766 and the z as 713. Experiments have shown the x
-          axis is around 766, and the y and z closer to 713.
+         * note that the HMC5883 datasheet gives the x and y expected
+         * values as 766 and the z as 713. Experiments have shown the x
+         * axis is around 766, and the y and z closer to 713.
          */
         expected_x = 766;
         expected_yz  = 713;
-        _gain_multiple = (1.0f / 1090) * 1000;
+    } else {
+        calibration_gain = HMC5843_GAIN_1_00_GA;
+        expected_x = 715;
+        expected_yz = 715;
     }
+
+    uint8_t old_config = _base_config & ~(HMC5843_OPMODE_MASK);
 
     while (success == 0 && numAttempts < 25 && good_count < 5) {
         numAttempts++;
 
         // force positiveBias (compass should return 715 for all channels)
-        if (!_bus->register_write(ConfigRegA, PositiveBiasConfig))
-            continue;   // compass not responding on the bus
+        if (!_bus->register_write(HMC5843_REG_CONFIG_A,
+                                  old_config | HMC5843_OPMODE_POSITIVE_BIAS)) {
+            // compass not responding on the bus
+            continue;
+        }
 
         hal.scheduler->delay(50);
 
         // set gains
-        if (!_bus->register_write(ConfigRegB, calibration_gain) ||
-            !_bus->register_write(ModeRegister, SingleConversion))
+        if (!_bus->register_write(HMC5843_REG_CONFIG_B, calibration_gain) ||
+            !_bus->register_write(HMC5843_REG_MODE, HMC5843_MODE_SINGLE)) {
             continue;
+        }
 
         // read values from the compass
         hal.scheduler->delay(50);
@@ -400,8 +432,6 @@ bool AP_Compass_HMC5843::_calibrate()
             // we didn't read valid values
             continue;
         }
-
-        hal.scheduler->delay(10);
 
         float cal[3];
 
@@ -417,7 +447,6 @@ bool AP_Compass_HMC5843::_calibrate()
         // still be changing its state from the application of the
         // strap excitation. After that we accept values in a
         // reasonable range
-
         if (numAttempts <= 2) {
             continue;
         }
@@ -516,7 +545,7 @@ bool AP_HMC5843_BusDriver_Auxiliary::block_read(uint8_t reg, uint8_t *buf, uint3
          * We can only read a block when reading the block of sample values -
          * calling with any other value is a mistake
          */
-        assert(reg == REG_DATA_OUTPUT_X_MSB);
+        assert(reg == HMC5843_REG_DATA_OUTPUT_X_MSB);
 
         int n = _slave->read(buf);
         return n == static_cast<int>(size);
@@ -553,7 +582,7 @@ bool AP_HMC5843_BusDriver_Auxiliary::configure()
 
 bool AP_HMC5843_BusDriver_Auxiliary::start_measurements()
 {
-    if (_bus->register_periodic_read(_slave, REG_DATA_OUTPUT_X_MSB, 6) < 0) {
+    if (_bus->register_periodic_read(_slave, HMC5843_REG_DATA_OUTPUT_X_MSB, 6) < 0) {
         return false;
     }
 
