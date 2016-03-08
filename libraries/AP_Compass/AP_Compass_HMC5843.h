@@ -33,7 +33,7 @@ private:
 
     bool _detect_version();
     bool _calibrate();
-    bool _re_initialize();
+    bool _setup_sampling_mode();
 
     /* Read a single sample */
     bool _read_sample();
@@ -41,7 +41,7 @@ private:
     AP_HMC5843_BusDriver *_bus;
 
     float _scaling[3];
-    float _gain_multiple;
+    float _gain_scale;
     uint32_t _last_accum_time;
 
     // when unhealthy the millis() value to retry at
@@ -57,6 +57,7 @@ private:
 
     uint8_t _base_config;
     uint8_t _compass_instance;
+    uint8_t _gain_config;
     uint8_t _product_id;
 
     bool _initialised;
