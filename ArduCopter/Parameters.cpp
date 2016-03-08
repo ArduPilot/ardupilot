@@ -650,7 +650,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
     // @Range: 0.08 0.30
-    // @Increment: 0.005
+    // @Increment: 0.05
     // @User: Standard
 
     // @Param: RATE_RLL_I
