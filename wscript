@@ -119,6 +119,11 @@ def configure(cfg):
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
     globs = Utils.to_list(globs)
+
+    if bld.bldnode.is_child_of(bld.srcnode):
+        kw['excl'] = Utils.to_list(kw.get('excl', []))
+        kw['excl'].append(bld.bldnode.path_from(bld.srcnode))
+
     for g in globs:
         for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
             dirs.append(d.parent.relpath())
