@@ -204,6 +204,7 @@ private:
         float initial_correction;
         uint32_t last_correction_time_ms;
         uint8_t in_range_count;
+        float height_estimate;
     } rangefinder_state;
 #endif
 

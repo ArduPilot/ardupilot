@@ -565,7 +565,7 @@ void Plane::rangefinder_height_update(void)
         }
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
-        height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
+        rangefinder_state.height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
 
         // we consider ourselves to be fully in range when we have 10
         // good samples (0.2s) that are different by 5% of the maximum
@@ -580,11 +580,12 @@ void Plane::rangefinder_height_update(void)
             rangefinder_state.in_range = true;
             if (!rangefinder_state.in_use &&
                 (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) &&
+                 flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
+                 flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+                 control_mode == QLAND) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)height_estimate);
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
         }
     } else {
