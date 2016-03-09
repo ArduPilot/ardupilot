@@ -16,6 +16,7 @@ addons:
     branch_pattern: coverity_scan
 
 before_install:
+  - export PATH=$(echo ${PATH} | awk -v RS=':' -v ORS=':' '/clang/ {next} {print}' | sed 's/:*$//')
   - APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/configure-ci.sh && . ~/.profile && popd
 
 script:
@@ -30,6 +31,8 @@ notifications:
     on_failure: always  # options: [always|never|change] default: always
     on_start: false     # default: false
 
+compiler: gcc
+
 env:
   global:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
@@ -39,3 +42,10 @@ env:
     - CI_BUILD_TARGET="px4-v2 sitl linux"
     - CI_BUILD_TARGET="navio raspilot minlure bebop"
     - CI_BUILD_TARGET="sitltest"
+
+matrix:
+  include:
+    - compiler: clang
+      env: CI_BUILD_TARGET="sitl linux minlure"
+    - compiler: clang
+      env: CI_BUILD_TARGET="navio raspilot bebop"
