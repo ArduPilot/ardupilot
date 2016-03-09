@@ -124,7 +124,17 @@ px4-cleandep: clean
 	$(v) find $(UAVCAN_DIRECTORY) -type f -name '*.d' | xargs rm -f
 	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
 
-px4-v2-upload-solo: px4-v2
+px4-v2-solo: EXTRAFLAGS += -DAP_NOTIFY_OREOLED=1
+px4-v2-solo: EXTRAFLAGS += -DAP_NOTIFY_SOLO_TONES=1
+px4-v2-solo: EXTRAFLAGS += -DAP_MOTORS_DENSITY_COMP=0
+px4-v2-solo: EXTRAFLAGS += -DGNDEFFECT_COMPENSATION=ENABLED
+px4-v2-solo: EXTRAFLAGS += -DPREARM_DISPLAY_PERIOD=2
+px4-v2-solo: EXTRAFLAGS += -DDISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
+px4-v2-solo: EXTRAFLAGS += -DCAL_ALWAYS_REBOOT
+px4-v2-solo: EXTRAFLAGS += -DARMING_DELAY_SEC=2.0f
+px4-v2-solo: px4-v2
+
+px4-v2-upload-solo: px4-v2-solo
 	scp $(SKETCH)-v2.px4 root@10.1.1.10:/tmp/
 	ssh root@10.1.1.10 PYTHONUNBUFFERED=1 loadPixhawk.py /tmp/ArduCopter-v2.px4
 	ssh root@10.1.1.10 rm /tmp/ArduCopter-v2.px4;
