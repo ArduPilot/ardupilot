@@ -695,6 +695,15 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case GUIDED:
         port->print("Guided");
         break;
+    case QSTABILIZE:
+        port->print("QStabilize");
+        break;
+    case QHOVER:
+        port->print("QHover");
+        break;
+    case QLOITER:
+        port->print("QLoiter");
+        break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
         break;
