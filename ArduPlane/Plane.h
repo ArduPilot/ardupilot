@@ -567,6 +567,9 @@ private:
     AP_Parachute parachute {relay};
 #endif
 
+    // automatic parachute deployment check, continuous duration of lost control
+    uint32_t chute_control_loss_ms;
+
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain {ahrs, mission, rally};
