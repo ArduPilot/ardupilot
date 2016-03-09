@@ -21,7 +21,7 @@ sudo apt-get -qq -y update
 sudo apt-get -qq -y install $PKGS
 sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-3.7 37 \
     --slave /usr/bin/clang++ clang++ /usr/bin/clang++-3.7
-sudo pip install mavproxy
+pip install --user mavproxy
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 90 \
     --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
 
@@ -56,9 +56,9 @@ ln -s /usr/bin/ccache ~/bin/arm-none-eabi-gcc
 ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-g++
 ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-gcc
 
-exportline="export PATH=$HOME/bin:"
-exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin:"
-exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:"
+exportline="export PATH=$HOME/bin"
+exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin"
+exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
 exportline="${exportline}:\$PATH"
 
 if grep -Fxq "$exportline" ~/.profile; then
