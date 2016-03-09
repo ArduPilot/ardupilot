@@ -342,27 +342,32 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
 // note: caller should set yaw_mode
 void Copter::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f target_pos;
-
-    // get current position
-    Vector3f curr_pos = inertial_nav.get_position();
-
-    // default to use position provided
-    target_pos = pv_location_to_vector(cmd.content.location);
+    // convert back to location
+    Location_Class target_loc(cmd.content.location);
 
     // use current location if not provided
-    if(cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-        wp_nav.get_wp_stopping_point_xy(target_pos);
+    if (target_loc.lat == 0 && target_loc.lng == 0) {
+        // To-Do: make this simpler
+        Vector3f temp_pos;
+        wp_nav.get_wp_stopping_point_xy(temp_pos);
+        target_loc.offset(temp_pos.x * 100.0f, temp_pos.y * 100.0f);
     }
 
     // use current altitude if not provided
     // To-Do: use z-axis stopping point instead of current alt
-    if( cmd.content.location.alt == 0 ) {
-        target_pos.z = curr_pos.z;
+    if (target_loc.alt == 0) {
+        // set to current altitude but in command's alt frame
+        int32_t curr_alt;
+        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
+            target_loc.set_alt(curr_alt, target_loc.get_alt_frame());
+        } else {
+            // default to current altitude as alt-above-home
+            target_loc.set_alt(current_loc.alt, current_loc.get_alt_frame());
+        }
     }
 
     // start way point navigator and provide it the desired location
-    auto_wp_start(target_pos);
+    auto_wp_start(target_loc);
 }
 
 // do_circle - initiate moving in a circle
@@ -411,26 +416,8 @@ void Copter::do_circle(const AP_Mission::Mission_Command& cmd)
 // note: caller should set yaw_mode
 void Copter::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f target_pos;
-
-    // get current position
-    Vector3f curr_pos = inertial_nav.get_position();
-
-    // default to use position provided
-    target_pos = pv_location_to_vector(cmd.content.location);
-
-    // use current location if not provided
-    if(cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-        wp_nav.get_wp_stopping_point_xy(target_pos);
-    }
-
-    // use current altitude if not provided
-    if( cmd.content.location.alt == 0 ) {
-        target_pos.z = curr_pos.z;
-    }
-
-    // start way point navigator and provide it the desired location
-    auto_wp_start(target_pos);
+    // re-use loiter unlimited
+    do_loiter_unlimited(cmd);
 
     // setup loiter timer
     loiter_time     = 0;
