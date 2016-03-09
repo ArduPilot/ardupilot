@@ -453,37 +453,65 @@ void Copter::auto_rtl_run()
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
 //  we assume the caller has set the circle's circle with circle_nav.set_center()
 //  we assume the caller has performed all required GPS_ok checks
-void Copter::auto_circle_movetoedge_start()
+void Copter::auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m)
 {
+    // convert location to vector from ekf origin
+    Vector3f circle_center_neu;
+    if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
+        // default to current position and log error
+        circle_center_neu = inertial_nav.get_position();
+    }
+    circle_nav.set_center(circle_center_neu);
+
+    // set circle radius
+    if (!is_zero(radius_m)) {
+        circle_nav.set_radius(radius_m * 100.0f);
+    }
+
     // check our distance from edge of circle
-    Vector3f circle_edge;
-    circle_nav.get_closest_point_on_circle(circle_edge);
+    Vector3f circle_edge_neu;
+    circle_nav.get_closest_point_on_circle(circle_edge_neu);
+    float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
 
-    // set the state to move to the edge of the circle
-    auto_mode = Auto_CircleMoveToEdge;
+    // if more than 3m then fly to edge
+    if (dist_to_edge > 300.0f) {
+        // set the state to move to the edge of the circle
+        auto_mode = Auto_CircleMoveToEdge;
 
-    // initialise wpnav to move to edge of circle
-    wp_nav.set_wp_destination(circle_edge);
+        // convert circle_edge_neu to Location_Class
+        Location_Class circle_edge(circle_edge_neu);
 
-    // if we are outside the circle, point at the edge, otherwise hold yaw
-    const Vector3f &curr_pos = inertial_nav.get_position();
-    const Vector3f &circle_center = circle_nav.get_center();
-    float dist_to_center = pythagorous2(circle_center.x - curr_pos.x, circle_center.y - curr_pos.y);
-    if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        // convert altitude to same as command
+        circle_edge.set_alt(circle_center.alt, circle_center.get_alt_frame());
+
+        // initialise wpnav to move to edge of circle
+        if (!wp_nav.set_wp_destination(circle_edge)) {
+            // failure to set destination (likely because of missing terrain data)
+            Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+            // To-Do: handle failure
+        }
+
+        // if we are outside the circle, point at the edge, otherwise hold yaw
+        const Vector3f &curr_pos = inertial_nav.get_position();
+        float dist_to_center = pythagorous2(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+        if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
+            set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        } else {
+            // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
     } else {
-        // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
-        set_auto_yaw_mode(AUTO_YAW_HOLD);
+        auto_circle_start();
     }
 }
 
 // auto_circle_start - initialises controller to fly a circle in AUTO flight mode
+//   assumes that circle_nav object has already been initialised with circle center and radius
 void Copter::auto_circle_start()
 {
     auto_mode = Auto_Circle;
 
     // initialise circle controller
-    // center was set in do_circle so initialise with current center
     circle_nav.init(circle_nav.get_center());
 }
 

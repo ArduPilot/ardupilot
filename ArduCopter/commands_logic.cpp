@@ -373,43 +373,33 @@ void Copter::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 // do_circle - initiate moving in a circle
 void Copter::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f curr_pos = inertial_nav.get_position();
-    Vector3f circle_center = pv_location_to_vector(cmd.content.location);
+    Location_Class circle_center(cmd.content.location);
+
+    // default lat/lon to current position if not provided
+    // To-Do: use stopping point or position_controller's target instead of current location to avoid jerk?
+    if (circle_center.lat == 0 && circle_center.lng == 0) {
+        circle_center.lat = current_loc.lat;
+        circle_center.lng = current_loc.lng;
+    }
+
+    // default target altitude to current altitude if not provided
+    if (circle_center.alt == 0) {
+        int32_t curr_alt;
+        if (current_loc.get_alt_cm(circle_center.get_alt_frame(),curr_alt)) {
+            // circle altitude uses frame from command
+            circle_center.set_alt(curr_alt,circle_center.get_alt_frame());
+        } else {
+            // default to current altitude above origin
+            circle_center.set_alt(current_loc.alt, current_loc.get_alt_frame());
+            Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
+        }
+    }
+
+    // calculate radius
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
-    bool move_to_edge_required = false;
 
-    // set target altitude if not provided
-    if (cmd.content.location.alt == 0) {
-        circle_center.z = curr_pos.z;
-    } else {
-        move_to_edge_required = true;
-    }
-
-    // set lat/lon position if not provided
-    // To-Do: use previous command's destination if it was a straight line or spline waypoint command
-    if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-        circle_center.x = curr_pos.x;
-        circle_center.y = curr_pos.y;
-    } else {
-        move_to_edge_required = true;
-    }
-
-    // set circle controller's center
-    circle_nav.set_center(circle_center);
-
-    // set circle radius
-    if (circle_radius_m != 0) {
-        circle_nav.set_radius((float)circle_radius_m * 100.0f);
-    }
-
-    // check if we need to move to edge of circle
-    if (move_to_edge_required) {
-        // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
-        auto_circle_movetoedge_start();
-    } else {
-        // start circling
-        auto_circle_start();
-    }
+    // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
+    auto_circle_movetoedge_start(circle_center, circle_radius_m);
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
