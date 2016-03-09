@@ -133,14 +133,48 @@ void Plane::takeoff_calc_pitch(void)
     }
 
     if (ahrs.airspeed_sensor_enabled()) {
+        int16_t takeoff_pitch_min_cd = get_takeoff_pitch_min_cd();
         calc_nav_pitch();
-        if (nav_pitch_cd < auto_state.takeoff_pitch_cd) {
-            nav_pitch_cd = auto_state.takeoff_pitch_cd;
+        if (nav_pitch_cd < takeoff_pitch_min_cd) {
+            nav_pitch_cd = takeoff_pitch_min_cd;
         }
     } else {
         nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
         nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
     }
+}
+
+/*
+ * get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
+ */
+int16_t Plane::get_takeoff_pitch_min_cd(void)
+{
+    if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+        return auto_state.takeoff_pitch_cd;
+    }
+
+    int32_t relative_alt_cm = adjusted_relative_altitude_cm();
+    int32_t remaining_height_to_target_cm = (auto_state.takeoff_altitude_rel_cm - relative_alt_cm);
+
+    // seconds to target alt method
+    if (g.takeoff_pitch_limit_reduction_sec > 0) {
+        // if height-below-target has been initialized then use it to create and apply a scaler to the pitch_min
+        if (auto_state.height_below_takeoff_to_level_off_cm != 0) {
+            float scalar = remaining_height_to_target_cm / (float)auto_state.height_below_takeoff_to_level_off_cm;
+            return auto_state.takeoff_pitch_cd * scalar;
+        }
+
+        // are we entering the region where we want to start leveling off before we reach takeoff alt?
+        float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
+        if (sec_to_target > 0 &&
+            relative_alt_cm >= 1000 &&
+            sec_to_target <= g.takeoff_pitch_limit_reduction_sec) {
+            // make a note of that altitude to use it as a start height for scaling
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", remaining_height_to_target_cm/100);
+            auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
+        }
+    }
+    return auto_state.takeoff_pitch_cd;
 }
 
 /*
