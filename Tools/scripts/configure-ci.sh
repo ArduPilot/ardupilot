@@ -63,9 +63,9 @@ ln -s /usr/bin/ccache ~/bin/arm-none-eabi-gcc
 ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-g++
 ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-gcc
 
-exportline="export PATH=$HOME/bin:"
-exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin:"
-exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:"
+exportline="export PATH=$HOME/bin"
+exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin"
+exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
 exportline="${exportline}:\$PATH"
 
 if grep -Fxq "$exportline" ~/.profile; then
