@@ -50,7 +50,7 @@ before_script:
 
 script:
 - pushd ArduCopter
-- EXTRAFLAGS="-DAP_NOTIFY_OREOLED=1 -DAP_NOTIFY_SOLO_TONES=1 -DAP_MOTORS_DENSITY_COMP=0" make px4-v2-quad -j8
+- make px4-v2-solo -j8
 - popd
 
 before_deploy:
