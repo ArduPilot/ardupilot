@@ -725,7 +725,7 @@ private:
     void auto_land_run();
     void auto_rtl_start();
     void auto_rtl_run();
-    void auto_circle_movetoedge_start();
+    void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
     void auto_circle_start();
     void auto_circle_run();
     void auto_nav_guided_start();
