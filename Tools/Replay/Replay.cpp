@@ -218,6 +218,7 @@ public:
 
     bool check_solution = false;
     const char *log_filename = NULL;
+    bool generate_fpe = true;
 
     /*
       information about a log from find_log_info
@@ -309,6 +310,7 @@ void Replay::usage(void)
     ::printf("\t--tolerance-vel    tolerance for velocity in meters/second\n");
     ::printf("\t--nottypes         list of msg types not to output, comma separated\n");
     ::printf("\t--downsample       downsampling rate for output\n");
+    ::printf("\t--no-fpe           do not generate floating point exceptions\n");
 }
 
 
@@ -319,7 +321,8 @@ enum {
     OPT_TOLERANCE_POS,
     OPT_TOLERANCE_VEL,
     OPT_NOTTYPES,
-    OPT_DOWNSAMPLE
+    OPT_DOWNSAMPLE,
+    OPT_NO_FPE,
 };
 
 void Replay::flush_dataflash(void) {
@@ -357,6 +360,7 @@ const char **Replay::parse_list_from_string(const char *str_in)
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 {
     const struct GetOptLong::option options[] = {
+        // name           has_arg flag   val
         {"parm",            true,   0, 'p'},
         {"param",           true,   0, 'p'},
         {"help",            false,  0, 'h'},
@@ -371,6 +375,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"tolerance-vel",   true,   0, OPT_TOLERANCE_VEL},
         {"nottypes",        true,   0, OPT_NOTTYPES},
         {"downsample",      true,   0, OPT_DOWNSAMPLE},
+        {"no-fpe",          false,  0, OPT_NO_FPE},
         {0, false, 0, 0}
     };
 
@@ -439,6 +444,10 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
         case OPT_DOWNSAMPLE:
             downsample = atoi(gopt.optarg);
+            break;
+
+        case OPT_NO_FPE:
+            generate_fpe = false;
             break;
 
         case 'h':
@@ -590,8 +599,23 @@ void Replay::setup()
         logreader.set_save_chek_messages(true);
     }
 
-    // _parse_command_line sets up an FPE handler.  We can do better:
-    signal(SIGFPE, _replay_sig_fpe);
+    if (generate_fpe) {
+        // SITL_State::_parse_command_line sets up an FPE handler.  We
+        // can do better:
+        feenableexcept(FE_INVALID | FE_OVERFLOW);
+        signal(SIGFPE, _replay_sig_fpe);
+    } else {
+        // disable floating point exception generation:
+        int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
+#ifndef __i386__
+        // i386 with gcc doesn't work with FE_INVALID
+        exceptions |= FE_INVALID;
+#endif
+        if (feclearexcept(exceptions)) {
+            ::fprintf(stderr, "Failed to disable floating point exceptions: %s", strerror(errno));
+        }
+        signal(SIGFPE, SIG_IGN);
+    }
 
     hal.console->printf("Processing log %s\n", filename);
 
@@ -614,9 +638,6 @@ void Replay::setup()
 
     inhibit_gyro_cal();
     set_ins_update_rate(log_info.update_rate);
-
-    feenableexcept(FE_INVALID | FE_OVERFLOW);
-
 
     plotf = fopen("plot.dat", "w");
     plotf2 = fopen("plot2.dat", "w");
