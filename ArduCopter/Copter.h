@@ -583,6 +583,15 @@ private:
     } gndeffect_state;
 #endif // GNDEFFECT_COMPENSATION == ENABLED
 
+#if MOTOR_FAIL_RECOVERY == ENABLED
+    struct {
+        uint8_t last_highest_motor = 0;
+        uint32_t motor_fail_start_time = 0;
+        uint32_t motor_recovery_start_time = 0;
+        float motor_out_pct_filtered[AP_MOTORS_MAX_NUM_MOTORS];
+    } motor_recovery_state;
+#endif // MOTOR_FAIL_RECOVERY == ENABLED
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -901,6 +910,9 @@ private:
 #if GNDEFFECT_COMPENSATION == ENABLED
     void update_ground_effect_detector(void);
 #endif // GNDEFFECT_COMPENSATION == ENABLED
+#if MOTOR_FAIL_RECOVERY == ENABLED
+    void update_motor_fail_detector();
+#endif // MOTOR_FAIL_RECOVERY == ENABLED
     void landinggear_update();
     void update_notify();
     void motor_test_output();
