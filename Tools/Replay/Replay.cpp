@@ -134,7 +134,6 @@ void ReplayVehicle::setup(void)
     ins.set_hil_mode();
 }
 
-
 Replay replay(replayvehicle);
 
 void Replay::usage(void)
@@ -154,6 +153,7 @@ void Replay::usage(void)
     ::printf("\t--downsample       downsampling rate for output\n");
     ::printf("\t--logmatch         match logging rate to source\n");
     ::printf("\t--no-params        don't use parameters from the log\n");
+    ::printf("\t--no-fpe           do not generate floating point exceptions\n");
 }
 
 
@@ -167,7 +167,8 @@ enum {
     OPT_DOWNSAMPLE,
     OPT_LOGMATCH,
     OPT_NOPARAMS,
-    OPT_PARAM_FILE
+    OPT_PARAM_FILE,
+    OPT_NO_FPE,
 };
 
 void Replay::flush_dataflash(void) {
@@ -205,6 +206,7 @@ const char **Replay::parse_list_from_string(const char *str_in)
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 {
     const struct GetOptLong::option options[] = {
+        // name           has_arg flag   val
         {"parm",            true,   0, 'p'},
         {"param",           true,   0, 'p'},
         {"param-file",      true,   0, OPT_PARAM_FILE},
@@ -222,6 +224,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"downsample",      true,   0, OPT_DOWNSAMPLE},
         {"logmatch",        false,  0, OPT_LOGMATCH},
         {"no-params",       false,  0, OPT_NOPARAMS},
+        {"no-fpe",          false,  0, OPT_NO_FPE},
         {0, false, 0, 0}
     };
 
@@ -301,6 +304,10 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             load_param_file(gopt.optarg);
             break;
             
+        case OPT_NO_FPE:
+            generate_fpe = false;
+            break;
+
         case 'h':
         default:
             usage();
@@ -493,8 +500,23 @@ void Replay::setup()
         logreader.set_save_chek_messages(true);
     }
 
-    // _parse_command_line sets up an FPE handler.  We can do better:
-    signal(SIGFPE, _replay_sig_fpe);
+    if (generate_fpe) {
+        // SITL_State::_parse_command_line sets up an FPE handler.  We
+        // can do better:
+        feenableexcept(FE_INVALID | FE_OVERFLOW);
+        signal(SIGFPE, _replay_sig_fpe);
+    } else {
+        // disable floating point exception generation:
+        int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
+#ifndef __i386__
+        // i386 with gcc doesn't work with FE_INVALID
+        exceptions |= FE_INVALID;
+#endif
+        if (feclearexcept(exceptions)) {
+            ::fprintf(stderr, "Failed to disable floating point exceptions: %s", strerror(errno));
+        }
+        signal(SIGFPE, SIG_IGN);
+    }
 
     hal.console->printf("Processing log %s\n", filename);
 
@@ -528,9 +550,6 @@ void Replay::setup()
     }
     
     set_ins_update_rate(log_info.update_rate);
-
-    feenableexcept(FE_INVALID | FE_OVERFLOW);
-
 
     plotf = fopen("plot.dat", "w");
     plotf2 = fopen("plot2.dat", "w");
