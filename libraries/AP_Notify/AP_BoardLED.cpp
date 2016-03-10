@@ -98,7 +98,7 @@ void AP_BoardLED::update(void)
     static uint8_t arm_counter = 0;
 	if (AP_Notify::flags.armed) {
         // red led solid
-        hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+//        hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
     }else{
         if ((counter2 & 0x2) == 0) {
             arm_counter++;
@@ -125,6 +125,25 @@ void AP_BoardLED::update(void)
             // failed pre-arm checks so double flash
             switch(arm_counter) {
                 case 0:
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+                break;
+            case 1:
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
+                break;
+            case 2:
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+                break;
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
+                break;
+            default:
+                arm_counter = -1;
+                break;
+            /*
+                case 0:
                 case 1:
                     hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
                     break;
@@ -142,6 +161,7 @@ void AP_BoardLED::update(void)
                 default:
                     arm_counter = -1;
                     break;
+                    */
             }
         }
     }
