@@ -30,7 +30,7 @@
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
 #include <time.h>
-#include <dirent.h>
+//#include <dirent.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #ifdef __APPLE__
 #include <sys/param.h>
