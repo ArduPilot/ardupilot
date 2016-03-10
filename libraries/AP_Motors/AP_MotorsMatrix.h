@@ -78,8 +78,6 @@ protected:
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
-
-    int16_t             _max_motor_out[AP_MOTORS_MAX_NUM_MOTORS];
 };
 
 #endif  // AP_MOTORSMATRIX

@@ -97,6 +97,11 @@ public:
     // get_throttle_limit - throttle limit ratio - for logging purposes only
     float               get_throttle_limit() const { return _throttle_limit; }
 
+    int16_t get_pwm_out_min() { return apply_thrust_curve_and_volt_scaling(_throttle_radio_min + _min_throttle, _throttle_radio_min + _min_throttle, _throttle_radio_max); }
+    int16_t get_pwm_out_max() { return apply_thrust_curve_and_volt_scaling(_throttle_radio_max, _throttle_radio_min + _min_throttle, _throttle_radio_max); }
+    void do_motor_recovery() {  for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) _max_motor_out[i] = 0; }
+    bool using_channel(uint8_t ch) { return motor_enabled[ch]; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -176,5 +181,7 @@ protected:
     int16_t             _batt_timer;            // timer used in battery resistance calcs
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
+
+    int16_t             _max_motor_out[AP_MOTORS_MAX_NUM_MOTORS];
 };
 #endif  // __AP_MOTORS_MULTICOPTER_H__
