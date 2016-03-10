@@ -414,6 +414,8 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         if (_drdy_pin_a == nullptr) {
             AP_HAL::panic("LSM9DS0: null accel data-ready GPIO channel\n");
         }
+
+        _drdy_pin_a->mode(HAL_GPIO_INPUT);
     }
 
     if (_drdy_pin_num_g >= 0) {
@@ -421,6 +423,8 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         if (_drdy_pin_g == nullptr) {
             AP_HAL::panic("LSM9DS0: null gyro data-ready GPIO channel\n");
         }
+
+        _drdy_pin_g->mode(HAL_GPIO_INPUT);
     }
 
     hal.scheduler->suspend_timer_procs();
