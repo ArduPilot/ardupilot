@@ -285,6 +285,10 @@ void Copter::fast_loop()
     // check if we've landed or crashed
     update_land_and_crash_detectors();
 
+#if MOTOR_FAIL_RECOVERY == ENABLED
+    update_motor_fail_detector();
+#endif
+
 #if MOUNT == ENABLED
     // camera mount's fast update
     camera_mount.update_fast();
