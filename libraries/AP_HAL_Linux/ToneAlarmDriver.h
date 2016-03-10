@@ -113,10 +113,10 @@ class Linux::ToneAlarm{
 public:
 	ToneAlarm();
 	void set_tune(uint8_t tone);
-	bool init();
+	virtual bool init();
+	virtual void stop();
+	virtual bool play();
 	bool is_tune_comp();
-	void stop();
-	bool play();
 	bool set_note();
 	bool init_tune();
 
