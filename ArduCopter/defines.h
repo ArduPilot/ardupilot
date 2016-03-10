@@ -252,6 +252,7 @@ enum ThrowModeState {
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
 #define LOG_PID_MSG                     0x0E    // deprecated
+#define LOG_DMP_MSG                     0x10
 #define LOG_INAV_MSG                    0x11    // deprecated
 #define LOG_CAMERA_MSG_DEPRECATED       0x12    // deprecated
 #define LOG_ERROR_MSG                   0x13
@@ -268,6 +269,13 @@ enum ThrowModeState {
 #define LOG_HELI_MSG                    0x20
 #define LOG_PRECLAND_MSG                0x21
 #define LOG_GUIDEDTARGET_MSG            0x22
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+ #define LOG_DATA_INT8_MSG              0x1D
+#elif CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
+ #define LOG_DATA_INT8_MSG              0x1D
+#endif
+
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
