@@ -429,15 +429,15 @@ then
     echo "Found ETS airspeed sensor"
 fi
 
-if meas_airspeed start
-then
-    echo "Found MEAS airspeed sensor"
-else
-    if meas_airspeed start -b 2
-    then
-        echo "Found MEAS airspeed sensor (bus2)"
-    fi
-fi
+#if meas_airspeed start
+#then
+#    echo "Found MEAS airspeed sensor"
+#else
+#    if meas_airspeed start -b 2
+#    then
+#        echo "Found MEAS airspeed sensor (bus2)"
+#    fi
+#fi
 
 # optional Range Finder sensor
 if ll40ls -X start
