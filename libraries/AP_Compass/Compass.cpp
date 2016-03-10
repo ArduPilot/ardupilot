@@ -440,25 +440,23 @@ void Compass::_detect_backends(void)
     if (backend) {
         _add_backend(backend);
     } else {
-        _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
     }
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QFLIGHT
     _add_backend(AP_Compass_QFLIGHT::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
-    _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
+    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
     _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843_MPU6000
     _add_backend(AP_Compass_HMC5843::probe_mpu6000(*this));
 #elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C
-    _add_backend(AP_Compass_AK8963::detect_i2c(*this, hal.i2c1,
-                                               HAL_COMPASS_AK8963_I2C_ADDR));
+    _add_backend(AP_Compass_AK8963::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250_I2C
-    _add_backend(AP_Compass_AK8963::detect_mpu9250_i2c(*this, HAL_COMPASS_AK8963_I2C_POINTER,
-                                                       HAL_COMPASS_AK8963_I2C_ADDR));
+    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)));
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
-    _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
+    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
