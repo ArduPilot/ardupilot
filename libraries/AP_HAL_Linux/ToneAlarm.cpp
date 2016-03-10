@@ -2,7 +2,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include "ToneAlarmDriver.h"
+#include "ToneAlarm.h"
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -2,7 +2,7 @@
 
 #include "AP_HAL_Linux.h"
 
-#include "ToneAlarmDriver.h"
+#include "ToneAlarm.h"
 
 class Linux::ToneAlarm_Raspilot : public Linux::ToneAlarm {
 public:

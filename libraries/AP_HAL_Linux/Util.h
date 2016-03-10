@@ -4,7 +4,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_HAL_Linux_Namespace.h"
-#include "ToneAlarmDriver.h"
+#include "ToneAlarm.h"
 #include "Semaphores.h"
 
 enum hw_type {
