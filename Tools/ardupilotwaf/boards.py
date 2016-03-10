@@ -13,12 +13,15 @@ class BoardMeta(type):
         super(BoardMeta, cls).__init__(name, bases, dct)
         if name == 'Board':
             return
-        _board_classes[name] = cls
+        board_name = getattr(cls, 'name', name)
+        if board_name in _board_classes:
+            raise Exception('board named %s already exists' % board_name)
+        _board_classes[board_name] = cls
 
 class Board:
     def configure(self, cfg):
         env = waflib.ConfigSet.ConfigSet()
-        self.configure_env(env)
+        self.configure_env(cfg, env)
 
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
@@ -37,7 +40,10 @@ class Board:
             else:
                 cfg.env[k] = val
 
-    def configure_env(self, env):
+        cfg.load('toolchain')
+        cfg.load('compiler_cxx compiler_c')
+
+    def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
         # make easy to override them. Convert back to list before consumption.
         env.DEFINES = {}
@@ -90,6 +96,9 @@ class Board:
             '-Wl,--gc-sections',
         ]
 
+    def build(self, bld):
+        pass
+
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def get_boards_names():
@@ -103,8 +112,8 @@ def get_board(name):
 # be worthy to keep board definitions in files of their own.
 
 class sitl(Board):
-    def configure_env(self, env):
-        super(sitl, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(sitl, self).configure_env(cfg, env)
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
@@ -123,8 +132,8 @@ class sitl(Board):
         ]
 
 class linux(Board):
-    def configure_env(self, env):
-        super(linux, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(linux, self).configure_env(cfg, env)
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
@@ -143,8 +152,8 @@ class linux(Board):
         ]
 
 class minlure(linux):
-    def configure_env(self, env):
-        super(minlure, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(minlure, self).configure_env(cfg, env)
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_MINLURE',
@@ -152,8 +161,8 @@ class minlure(linux):
 
 
 class erleboard(linux):
-    def configure_env(self, env):
-        super(erleboard, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(erleboard, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
@@ -161,8 +170,8 @@ class erleboard(linux):
         )
 
 class navio(linux):
-    def configure_env(self, env):
-        super(navio, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(navio, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
@@ -179,8 +188,8 @@ class navio2(linux):
         )
 
 class zynq(linux):
-    def configure_env(self, env):
-        super(zynq, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(zynq, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-xilinx-linux-gnueabi'
         env.DEFINES.update(
@@ -188,8 +197,8 @@ class zynq(linux):
         )
 
 class bbbmini(linux):
-    def configure_env(self, env):
-        super(bbbmini, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(bbbmini, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
@@ -197,8 +206,8 @@ class bbbmini(linux):
         )
 
 class pxf(linux):
-    def configure_env(self, env):
-        super(pxf, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(pxf, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
@@ -206,8 +215,8 @@ class pxf(linux):
         )
 
 class bebop(linux):
-    def configure_env(self, env):
-        super(bebop, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(bebop, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
@@ -216,8 +225,8 @@ class bebop(linux):
         env.STATIC_LINKING = True
 
 class raspilot(linux):
-    def configure_env(self, env):
-        super(raspilot, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(raspilot, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
@@ -225,8 +234,8 @@ class raspilot(linux):
         )
 
 class erlebrain2(linux):
-    def configure_env(self, env):
-        super(erlebrain2, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(erlebrain2, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
@@ -234,8 +243,8 @@ class erlebrain2(linux):
         )
 
 class bhat(linux):
-    def configure_env(self, env):
-        super(bhat, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(bhat, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
@@ -243,10 +252,78 @@ class bhat(linux):
         )
 
 class pxfmini(linux):
-    def configure_env(self, env):
-        super(pxfmini, self).configure_env(env)
+    def configure_env(self, cfg, env):
+        super(pxfmini, self).configure_env(cfg, env)
 
         env.TOOLCHAIN = 'arm-linux-gnueabihf'
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_PXFMINI',
         )
+
+class px4(Board):
+    def __init__(self):
+        self.version = None
+
+    def configure(self, cfg):
+        if not self.version:
+            cfg.fatal('configure: px4: version required')
+
+        super(px4, self).configure(cfg)
+        cfg.load('px4')
+
+    def configure_env(self, cfg, env):
+        super(px4, self).configure_env(cfg, env)
+
+        env.TOOLCHAIN = 'arm-none-eabi'
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_PX4',
+            HAVE_STD_NULLPTR_T = 0,
+        )
+        env.prepend_value('INCLUDES', [
+            cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
+        ])
+        env.CXXFLAGS += [
+            '-Wno-error=double-promotion',
+            '-Wno-error=missing-declarations',
+            '-Wframe-larger-than=1300',
+            '-Wno-error=float-equal',
+            '-Wno-error=undef',
+            '-fsingle-precision-constant',
+        ]
+        env.AP_LIBRARIES += [
+            'AP_HAL_PX4',
+        ]
+        env.GIT_SUBMODULES += [
+            'PX4Firmware',
+            'PX4NuttX',
+            'uavcan',
+        ]
+
+        env.PX4_VERSION = self.version
+        env.PX4_USE_PX4IO = True
+
+        env.AP_PROGRAM_AS_STLIB = True
+
+    def build(self, bld):
+        super(px4, self).build(bld)
+        bld.load('px4')
+
+class px4_v1(px4):
+    name = 'px4-v1'
+    def __init__(self):
+        super(px4, self).__init__()
+        self.use_px4io = False
+        self.version = '1'
+
+class px4_v2(px4):
+    name = 'px4-v2'
+    def __init__(self):
+        super(px4, self).__init__()
+        self.version = '2'
+
+class px4_v4(px4):
+    name = 'px4-v4'
+    def __init__(self):
+        super(px4, self).__init__()
+        self.version = '4'
+        self.use_px4io = False

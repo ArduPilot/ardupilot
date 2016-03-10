@@ -78,8 +78,6 @@ def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     boards.get_board(cfg.env.BOARD).configure(cfg)
 
-    cfg.load('toolchain')
-    cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
@@ -229,6 +227,7 @@ def build(bld):
     _build_dynamic_sources(bld)
 
     bld.add_group('build')
+    boards.get_board(bld.env.BOARD).build(bld)
     _build_common_taskgens(bld)
 
     _build_recursion(bld)
