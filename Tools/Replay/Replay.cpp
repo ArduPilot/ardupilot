@@ -765,6 +765,7 @@ void Replay::log_check_solution(void)
 
 void Replay::loop()
 {
+    uint64_t last_timestamp = 0;
     while (true) {
         char type[5];
 
@@ -780,6 +781,16 @@ void Replay::loop()
             fclose(plotf);
             break;
         }
+
+        if (last_timestamp != 0) {
+            uint64_t gap = AP_HAL::micros64() - last_timestamp;
+            if (gap > 40000) {
+                ::printf("Gap in log at timestamp=%lu of length %luus\n",
+                         last_timestamp, gap);
+            }
+        }
+        last_timestamp = AP_HAL::micros64();
+
         read_sensors(type);
 
         if (streq(type,"ATT")) {
