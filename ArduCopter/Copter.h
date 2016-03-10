@@ -1008,6 +1008,7 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_roi(const AP_Mission::Mission_Command& cmd);
     void do_mount_control(const AP_Mission::Mission_Command& cmd);
+    uint32_t get_ms_until_time_of_week(uint16_t day, uint16_t hour, uint16_t min, uint16_t sec, uint16_t ms) const;
 #if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);

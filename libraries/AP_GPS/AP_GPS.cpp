@@ -449,6 +449,28 @@ AP_GPS::update(void)
 }
 
 /*
+  GPS time of week in days, hours, minutes, seconds, milliseconds
+*/
+void AP_GPS::time_week_utc(uint8_t instance, uint16_t &day, uint16_t &hour, uint16_t &min, uint16_t &sec, uint16_t &ms) const
+{
+    // get time of week in ms
+    uint32_t time_ms = time_week_ms(instance);
+
+    // separate time into ms, sec, min, hour and days but all expressed in milliseconds
+    ms = time_ms % 1000;
+    uint32_t sec_ms = (time_ms % (60 * 1000)) - ms;
+    uint32_t min_ms = (time_ms % (60 * 60 * 1000)) - sec_ms - ms;
+    uint32_t hour_ms = (time_ms % (24 * 60 * 60 * 1000)) - min_ms - sec_ms - ms;
+    uint32_t day_ms = time_ms - hour_ms - min_ms - sec_ms - ms;
+
+    // convert times as milliseconds into appropriate units
+    sec = sec_ms / 1000;
+    min = min_ms / (60 * 1000);
+    hour = hour_ms / (60 * 60 * 1000);
+    day = day_ms / (24 * 60 * 60 * 1000);
+}
+
+/*
   set HIL (hardware in the loop) status for a GPS instance
  */
 void 
