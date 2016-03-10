@@ -285,6 +285,22 @@ void PX4RCOutput::read(uint16_t* period_us, uint8_t len)
     }
 }
 
+uint16_t PX4RCOutput::read_last_sent(uint8_t ch)
+{
+    if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
+        return 0;
+    }
+
+    return _period[ch];
+}
+
+void PX4RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
+{
+    for (uint8_t i=0; i<len; i++) {
+        period_us[i] = read_last_sent(i);
+    }
+}
+
 /*
   update actuator armed state
  */

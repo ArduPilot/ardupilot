@@ -67,9 +67,15 @@ public:
     virtual void     push() { }
 
     /* Read back current output state, as either single channel or
-     * array of channels. */
+     * array of channels. On boards that have a separate IO controller,
+     * this returns the latest output value that the IO controller has
+     * reported */
     virtual uint16_t read(uint8_t ch) = 0;
     virtual void     read(uint16_t* period_us, uint8_t len) = 0;
+
+    /* Read the current input state. This returns the last value that was written. */
+    virtual uint16_t read_last_sent(uint8_t ch) { return read(ch); }
+    virtual void     read_last_sent(uint16_t* period_us, uint8_t len) { read(period_us, len); };
 
     /*
       set PWM to send to a set of channels when the safety switch is
