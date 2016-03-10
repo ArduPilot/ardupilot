@@ -2,7 +2,7 @@
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 
-#include "ToneAlarmDriver_Raspilot.h"
+#include "ToneAlarm_Raspilot.h"
 
 #include <errno.h>
 #include <fcntl.h>
