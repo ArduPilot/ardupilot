@@ -71,10 +71,10 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
 
     // @Param: SBUS_OUT
-    // @DisplayName:  Enable use of SBUS output
-    // @Description: Enabling this option on a Pixhawk enables SBUS servo output from the SBUS output connector
-    // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, _sbus_out_enable, 0),
+    // @DisplayName:  SBUS output rate
+    // @Description: This sets the SBUS output frame rate in Hz
+    // @Values: 0:Disabled,1:50Hz,2:75Hz,3:100Hz,4:150Hz,5:200Hz,6:250Hz,7:300Hz
+    AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, _sbus_out_rate, 0),
     
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
@@ -137,14 +137,40 @@ void AP_BoardConfig::init()
         hal.rcout->force_safety_off();
     }
 
-    if (_sbus_out_enable.get() == 1) {
+    if (_sbus_out_rate.get() >= 1) {
         fd = open("/dev/px4io", 0);
-        if (fd == -1 || ioctl(fd, SBUS_SET_PROTO_VERSION, 1) != 0) {
-            hal.console->printf("SBUS: Unable to setup SBUS output\n");
-        }
-        if (fd != -1) {
+        if (fd == -1) {
+            hal.console->printf("SBUS: Unable to open px4io for sbus\n");
+        } else {
+            static const struct {
+                uint8_t value;
+                uint16_t rate;
+            } rates[] = {
+                { 1, 50 },
+                { 2, 75 },
+                { 3, 100 },
+                { 4, 150 },
+                { 5, 200 },
+                { 6, 250 },
+                { 7, 300 }
+            };
+            uint16_t rate = 300;
+            for (uint8_t i=0; i<ARRAY_SIZE(rates); i++) {
+                if (rates[i].value == _sbus_out_rate) {
+                    rate = rates[i].rate;
+                }
+            }
+            for (uint8_t tries=0; tries<10; tries++) {
+                if (ioctl(fd, SBUS_SET_PROTO_VERSION, 1) != 0) {
+                    continue;
+                }
+                if (ioctl(fd, PWM_SERVO_SET_SBUS_RATE, rate) != 0) {
+                    continue;
+                }
+                break;
+            }
             close(fd);
-        }   
+        }
     }
 
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
