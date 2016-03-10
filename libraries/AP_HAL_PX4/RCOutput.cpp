@@ -265,16 +265,6 @@ uint16_t PX4RCOutput::read(uint8_t ch)
     if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
         return 0;
     }
-    // if px4io has given us a value for this channel use that,
-    // otherwise use the value we last sent. This makes it easier to
-    // observe the behaviour of failsafe in px4io
-    for (uint8_t i=0; i<ORB_MULTI_MAX_INSTANCES; i++) {
-        if (_outputs[i].pwm_sub >= 0 && 
-            ch < _outputs[i].outputs.noutputs &&
-            _outputs[i].outputs.output[ch] > 0) {
-            return _outputs[i].outputs.output[ch];
-        }
-    }
     return _period[ch];
 }
 
