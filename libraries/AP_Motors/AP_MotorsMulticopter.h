@@ -114,6 +114,12 @@ public:
         _thrust_compensation_callback = callback;
     }
     
+    // specifically for motor recovery
+    int16_t get_pwm_out_min() { return apply_thrust_curve_and_volt_scaling(_throttle_radio_min + _min_throttle, _throttle_radio_min + _min_throttle, _throttle_radio_max); }
+    int16_t get_pwm_out_max() { return apply_thrust_curve_and_volt_scaling(_throttle_radio_max, _throttle_radio_min + _min_throttle, _throttle_radio_max); }
+    void do_motor_recovery() {  for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) _max_motor_out[i] = 0; }
+    bool using_channel(uint8_t ch) { return motor_enabled[ch]; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -192,4 +198,6 @@ protected:
 
     // vehicle supplied callback for thrust compensation. Used for tiltrotors and tiltwings
     thrust_compensation_fn_t _thrust_compensation_callback;
+
+    int16_t             _max_motor_out[AP_MOTORS_MAX_NUM_MOTORS];
 };
