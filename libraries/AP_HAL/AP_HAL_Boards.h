@@ -409,7 +409,6 @@
 #define HAL_BARO_DEFAULT          HAL_BARO_MS5611_SPI
 #define HAL_BARO_MS5611_NAME "ms5611"
 #define HAL_COMPASS_DEFAULT       HAL_COMPASS_AK8963_MPU9250
-/* HMC5843 can be an external compass */
 #define HAL_COMPASS_HMC5843_I2C_BUS 1
 #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
 #define HAL_GPIO_A_LED_PIN        24
@@ -506,7 +505,6 @@
 #define HAL_BARO_MS5611_I2C_BUS 0
 #define HAL_BARO_MS5611_I2C_ADDR 0xEE
 #define HAL_INS_MPU60x0_NAME "mpu6000"
-
 
 # define HAL_GPIO_A_LED_PIN        36  // BLUE
 # define HAL_GPIO_B_LED_PIN        37  // YELLOW OPTIONAL (not included)
