@@ -135,7 +135,7 @@ px4-v2-solo: EXTRAFLAGS += -DARMING_DELAY_SEC=2.0f
 px4-v2-solo: EXTRAFLAGS += -DMOTOR_FAIL_RECOVERY=ENABLED
 px4-v2-solo: px4-v2
 
-px4-v2-upload-solo: px4-v2-solo
+px4-v2-solo-upload: px4-v2-solo
 	scp $(SKETCH)-v2.px4 root@10.1.1.10:/tmp/
 	ssh root@10.1.1.10 PYTHONUNBUFFERED=1 loadPixhawk.py /tmp/ArduCopter-v2.px4
 	ssh root@10.1.1.10 rm /tmp/ArduCopter-v2.px4;
