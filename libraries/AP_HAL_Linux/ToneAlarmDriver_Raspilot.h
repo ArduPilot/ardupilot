@@ -1,5 +1,4 @@
-#ifndef __TONE_ALARM_DRIVER_RASPILOT_H__
-#define __TONE_ALARM_DRIVER_RASPILOT_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -7,22 +6,15 @@
 
 class Linux::ToneAlarm_Raspilot : public Linux::ToneAlarm {
 public:
-  ToneAlarm_Raspilot();
-  bool init();
-	void stop();
-	bool play();
+    ToneAlarm_Raspilot();
+    bool init() override;
+    void stop() override;
+    bool play() override;
 
 private:
-  int  mem_fd;
-  void *gpio_map;
-  void *pwm_map;
-  void *clk_map;
-  volatile uint32_t *gpio;
-  volatile uint32_t *pwm;
-  volatile uint32_t *clk;
+    void _set_pwm0_period(uint32_t time_us);
+    void _set_pwm0_duty(uint8_t percent);
 
-  void setPWM0Period(uint32_t time_us);
-  void setPWM0Duty(uint8_t percent);
+    volatile uint32_t *_pwm;
+    volatile uint32_t *_clk;
 };
-
-#endif
