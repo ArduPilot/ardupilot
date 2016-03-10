@@ -15,7 +15,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
     // @Param: TYPE
     // @DisplayName: Fence Type
     // @Description: Enabled fence types held as bitmask
-    // @Values: 0:None,1:Altitude,2:Circle,3:Altitude and Circle
+    // @Values: 0:None,1:Altitude,2:Circle,3:Altitude and Circle,4:Altitude Circle and Low-Altitude
     // @User: Standard
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _enabled_fences,  AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE),
 
@@ -50,7 +50,27 @@ const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
     // @Range: 1 10
     // @User: Standard
     AP_GROUPINFO("MARGIN",      5,  AC_Fence,   _margin, AC_FENCE_MARGIN_DEFAULT),
-    
+
+    // (low-alt)
+
+    // @Param: ALT_MIN
+    // @DisplayName: Fence Minimum Altitude
+    // @Description: Minimum altitude allowed before Fence triggers
+    // @Units: Meters
+    // @Range: 10 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ALT_MIN",     6,  AC_Fence,   _alt_min,       AC_FENCE_ALT_MIN_DEFAULT),
+
+    // @Param: LOW_RADIUS
+    // @DisplayName: Low-alt fence-active radius
+    // @Description: Radius beyond which low-altitude fence is active
+    // @Units: Meters
+    // @Range: 10 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LOW_RADIUS",     7,  AC_Fence,   _lowalt_radius,       AC_FENCE_LOWALT_RADIUS_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -58,8 +78,10 @@ const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
 AC_Fence::AC_Fence(const AP_InertialNav& inav) :
     _inav(inav),
     _alt_max_backup(0),
+    _alt_min_backup(0),
     _circle_radius_backup(0),
     _alt_max_breach_distance(0),
+    _alt_min_breach_distance(0),
     _circle_breach_distance(0),
     _home_distance(0),
     _breached_fences(AC_FENCE_TYPE_NONE),
@@ -69,12 +91,26 @@ AC_Fence::AC_Fence(const AP_InertialNav& inav) :
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    // check for silly fence values
+    // check for silly fence values:
+
+    // max altitude
     if (_alt_max < 0.0f) {
         _alt_max.set_and_save(AC_FENCE_ALT_MAX_DEFAULT);
     }
+
+    // circle
     if (_circle_radius < 0) {
         _circle_radius.set_and_save(AC_FENCE_CIRCLE_RADIUS_DEFAULT);
+    }
+
+    // min altitude
+    if(_alt_min < 0.0f) {
+        _alt_min.set_and_save(AC_FENCE_ALT_MIN_DEFAULT);
+    }
+
+    // low-alt radius
+    if(_lowalt_radius < 0.0) {
+        _lowalt_radius.set_and_save(AC_FENCE_LOWALT_RADIUS_DEFAULT);
     }
 }
 
@@ -158,6 +194,31 @@ uint8_t AC_Fence::check_fence(float curr_alt)
                 _alt_max_backup = 0.0f;
                 _alt_max_breach_distance = 0.0f;
             }
+        }
+    }
+
+    // min-altitude fence check
+    if ((_enabled_fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
+        // check if we are on/outside the low-alt fence trigger radius
+        // and under the minimum-altitude fence
+        if(_home_distance >= _lowalt_radius && curr_alt <= _alt_min) {
+            // record distance below breach
+            _alt_min_breach_distance = _alt_min - curr_alt;
+
+            // check for a new breach or a breach of the backup fence
+            if ((_breached_fences & AC_FENCE_TYPE_ALT_MIN) == 0 || (!is_zero(_alt_min_backup) && curr_alt <= _alt_min_backup)) {
+
+                // record that we have breached the upper limit
+                record_breach(AC_FENCE_TYPE_ALT_MIN);
+                ret = ret | AC_FENCE_TYPE_ALT_MIN;
+
+                // create a backup fence 1m lower
+                _alt_min_backup = curr_alt - AC_FENCE_ALT_MIN_BACKUP_DISTANCE;
+            }
+        } else {
+            clear_breach(AC_FENCE_TYPE_ALT_MIN);
+            _alt_min_backup = 0.0f;
+            _alt_max_breach_distance = 0.0f;
         }
     }
 
