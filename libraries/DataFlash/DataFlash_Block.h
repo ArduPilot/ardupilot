@@ -27,6 +27,10 @@ public:
     bool NeedPrep(void);
     void Prep();
 
+    uint16_t dfEE_Write(const void *pBuffer, uint16_t WriteAddr, uint16_t NumByteToWrite);
+    uint32_t dfEE_WriteBuffer(uint8_t* pBuffer, uint16_t WriteAddr, uint16_t NumByteToWrite);
+
+
     /* Write a block of data at current offset */
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
 
@@ -67,15 +71,20 @@ private:
     // offset from adding FMT messages to log data
     bool adding_fmt_headers;
 
-    /*
-      functions implemented by the board specific backends
-     */
+    /*functions implemented by the board specific backends*/
+/*
+#if CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
+    virtual void WaitReady() = 0;
+    virtual void Flash_Jedec_EraseSector(uint32_t chip_offset) = 0;
+    virtual void BlockWrite(uint32_t IntPageAdr, const void *pHeader, uint8_t hdr_size, const void *pBuffer, uint16_t size) = 0;
+    virtual bool BlockRead(uint32_t IntPageAdr, void *pBuffer, uint16_t size) = 0;
+#else
+*/
     virtual void WaitReady() = 0;
     virtual void BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t wait) = 0;
     virtual void PageToBuffer(uint8_t BufferNum, uint16_t PageAdr) = 0;
     virtual void PageErase(uint16_t PageAdr) = 0;
     virtual void BlockErase(uint16_t BlockAdr) = 0;
-    virtual void ChipErase() = 0;
 
     // write size bytes of data to a page. The caller must ensure that
     // the data fits within the page, otherwise it will wrap to the
@@ -88,6 +97,7 @@ private:
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
     virtual bool BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size) = 0;
+//#endif
 
     // erase handling
     bool NeedErase(void);
@@ -119,6 +129,8 @@ protected:
     // page handling
     uint16_t df_PageSize;
     uint16_t df_NumPages;
+//    uint16_t df_eeStartPage;
+//    uint16_t df_eeNumPages;
 
     virtual void ReadManufacturerID() = 0;
 };
