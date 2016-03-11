@@ -77,7 +77,6 @@ void OreoLED_PX4::update()
 {
     static uint8_t counter = 0;     // counter to reduce rate from 50hz to 10hz
     static uint8_t step = 0;        // step to control pattern
-    static uint8_t last_stage = 1;  // unique id of the last messages sent to the LED, used to reduce resends which disrupt some patterns
 
     // return immediately if not healthy
     if (!_overall_health) {
@@ -134,8 +133,6 @@ void OreoLED_PX4::update()
                 set_rgb(OREOLED_INSTANCE_ALL, 0, 0, 0);
                 break;
         }
-        // record stage
-        last_stage = 2;
         // exit so no other status modify this pattern
         return;
     }
@@ -166,33 +163,23 @@ void OreoLED_PX4::update()
                 set_rgb(OREOLED_BACKRIGHT, OREOLED_BRIGHT, 0, 0);
                 break;
         }
-        // record stage
-        last_stage = 3;
         // exit so no other status modify this pattern
         return;
     }
 
-    // send colours (later we will set macro if required)
-    if (last_stage < 10) {
-        set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
-        last_stage = 10;
-    } else if (last_stage >= 10) {
-        static uint8_t previous_autopilot_mode = -1;
-        if (previous_autopilot_mode != AP_Notify::flags.autopilot_mode) {
-
-            if (AP_Notify::flags.autopilot_mode) {
-                // autopilot flight modes start breathing macro
-                set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
-                set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_BREATH);
-            } else {
-                // manual flight modes stop breathing -- solid color
-                set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
-            }
-
-            // record we have processed this change
-            previous_autopilot_mode = AP_Notify::flags.autopilot_mode;
+    static bool first_run = true;
+    if (AP_Notify::flags.autopilot_mode != _flags.autopilot_mode || first_run) {
+        if (AP_Notify::flags.autopilot_mode) {
+            // autopilot flight modes start breathing macro
+            set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
+            set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_BREATH);
+        } else {
+            // manual flight modes stop breathing -- solid color
+            set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
         }
-        last_stage = 11;
+
+        _flags.autopilot_mode = AP_Notify::flags.autopilot_mode;
+        first_run = false;
     }
 }
 

@@ -78,6 +78,10 @@ private:
         }
     };
 
+    struct {
+        uint8_t autopilot_mode : 1;
+    } _flags;
+
     // private members
     bool    _overall_health;                        // overall health
     int     _oreoled_fd;                            // file descriptor
