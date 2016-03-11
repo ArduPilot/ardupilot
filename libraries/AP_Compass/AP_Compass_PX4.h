@@ -17,7 +17,7 @@ public:
 
 private:
     uint8_t  _num_sensors;
-    
+
     uint8_t  _instance[COMPASS_MAX_INSTANCES];
     int      _mag_fd[COMPASS_MAX_INSTANCES];
     Vector3f _sum[COMPASS_MAX_INSTANCES];
