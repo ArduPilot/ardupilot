@@ -11,8 +11,6 @@ _board_classes = {}
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):
         super(BoardMeta, cls).__init__(name, bases, dct)
-        if name == 'Board':
-            return
 
         if 'abstract' not in cls.__dict__:
             cls.abstract = False
@@ -25,6 +23,8 @@ class BoardMeta(type):
         _board_classes[board_name] = cls
 
 class Board:
+    abstract = True
+
     def configure(self, cfg):
         env = waflib.ConfigSet.ConfigSet()
         self.configure_env(cfg, env)
