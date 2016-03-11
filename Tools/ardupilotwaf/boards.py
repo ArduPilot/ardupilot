@@ -13,6 +13,12 @@ class BoardMeta(type):
         super(BoardMeta, cls).__init__(name, bases, dct)
         if name == 'Board':
             return
+
+        if 'abstract' not in cls.__dict__:
+            cls.abstract = False
+        if cls.abstract:
+            return
+
         board_name = getattr(cls, 'name', name)
         if board_name in _board_classes:
             raise Exception('board named %s already exists' % board_name)
