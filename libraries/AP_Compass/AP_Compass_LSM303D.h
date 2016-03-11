@@ -5,7 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
-#include "Compass.h"
+#include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
 
 class AP_Compass_LSM303D : public AP_Compass_Backend

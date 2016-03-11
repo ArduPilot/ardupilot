@@ -7,7 +7,7 @@
 #include <AP_HAL/SPIDevice.h>
 #include <AP_Math/AP_Math.h>
 
-#include "Compass.h"
+#include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
 
 class AuxiliaryBus;
