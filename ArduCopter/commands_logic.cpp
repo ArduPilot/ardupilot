@@ -417,8 +417,23 @@ void Copter::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 // do_spline_wp - initiate move to next waypoint
 void Copter::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
-    const Vector3f& curr_pos = inertial_nav.get_position();
-    Vector3f local_pos = pv_location_to_vector_with_default(cmd.content.location, curr_pos);
+    Location_Class target_loc(cmd.content.location);
+    // use current lat, lon if zero
+    if (target_loc.lat == 0 && target_loc.lng == 0) {
+        target_loc.lat = current_loc.lat;
+        target_loc.lng = current_loc.lng;
+    }
+    // use current altitude if not provided
+    if (target_loc.alt == 0) {
+        // set to current altitude but in command's alt frame
+        int32_t curr_alt;
+        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
+            target_loc.set_alt(curr_alt, target_loc.get_alt_frame());
+        } else {
+            // default to current altitude as alt-above-home
+            target_loc.set_alt(current_loc.alt, current_loc.get_alt_frame());
+        }
+    }
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -429,7 +444,6 @@ void Copter::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     bool stopped_at_start = true;
     AC_WPNav::spline_segment_end_type seg_end_type = AC_WPNav::SEGMENT_END_STOP;
     AP_Mission::Mission_Command temp_cmd;
-    Vector3f next_destination;      // end of next segment
 
     // if previous command was a wp_nav command with no delay set stopped_at_start to false
     // To-Do: move processing of delay into wp-nav controller to allow it to determine the stopped_at_start value itself?
@@ -443,19 +457,34 @@ void Copter::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // if there is no delay at the end of this segment get next nav command
+    Location_Class next_loc;
     if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+        next_loc = temp_cmd.content.location;
+        // default lat, lon to first waypoint's lat, lon
+        if (next_loc.lat == 0 && next_loc.lng == 0) {
+            next_loc.lat = target_loc.lat;
+            next_loc.lng = target_loc.lng;
+        }
+        // default alt to first waypoint's alt but in next waypoint's alt frame
+        if (next_loc.alt == 0) {
+            int32_t next_alt;
+            if (target_loc.get_alt_cm(next_loc.get_alt_frame(), next_alt)) {
+                next_loc.set_alt(next_alt, next_loc.get_alt_frame());
+            } else {
+                // default to first waypoints altitude
+                next_loc.set_alt(target_loc.alt, target_loc.get_alt_frame());
+            }
+        }
         // if the next nav command is a waypoint set end type to spline or straight
         if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT) {
             seg_end_type = AC_WPNav::SEGMENT_END_STRAIGHT;
-            next_destination = pv_location_to_vector_with_default(temp_cmd.content.location, local_pos);
         }else if (temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) {
             seg_end_type = AC_WPNav::SEGMENT_END_SPLINE;
-            next_destination = pv_location_to_vector_with_default(temp_cmd.content.location, local_pos);
         }
     }
 
     // set spline navigation target
-    auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_destination);
+    auto_spline_start(target_loc, stopped_at_start, seg_end_type, next_loc);
 }
 
 #if NAV_GUIDED == ENABLED
