@@ -122,24 +122,6 @@ public:
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
-    // raw/unfiltered measurement interface
-    uint32_t raw_meas_time_us(uint8_t i) const { return _state[i].raw_meas_time_us; }
-    uint32_t raw_meas_time_us() const { return _state[get_primary()].raw_meas_time_us; }
-    uint32_t unfiltered_meas_time_us(uint8_t i) const { return _state[i].raw_meas_time_us; }
-    uint32_t unfiltered_meas_time_us() const { return _state[get_primary()].raw_meas_time_us; }
-
-    bool has_raw_field(uint8_t i) const { return _state[i].has_raw_field; }
-    bool has_raw_field() const { return has_raw_field(get_primary()); }
-
-    bool has_unfiltered_field(uint8_t i) const { return _state[i].has_unfiltered_field; }
-    bool has_unfiltered_field() const { return has_unfiltered_field(get_primary()); }
-
-    const Vector3f &get_raw_field(uint8_t i) const { return _state[i].raw_field; }
-    const Vector3f &get_raw_field(void) const { return get_raw_field(get_primary()); }
-
-    const Vector3f &get_unfiltered_field(uint8_t i) const { return _state[i].unfiltered_field; }
-    const Vector3f &get_unfiltered_field(void) const { return get_unfiltered_field(get_primary()); }
-
     // compass calibrator interface
     void compass_cal_update();
 
@@ -395,14 +377,6 @@ private:
         // when we last got data
         uint32_t    last_update_ms;
         uint32_t    last_update_usec;
-
-        uint32_t    raw_meas_time_us;
-        bool        has_raw_field;
-        bool        has_unfiltered_field;
-        bool        updated_raw_field;
-        bool        updated_unfiltered_field;
-        Vector3f    raw_field;
-        Vector3f    unfiltered_field;
     } _state[COMPASS_MAX_INSTANCES];
 
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
