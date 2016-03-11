@@ -809,8 +809,6 @@ bool Copter::verify_yaw()
 // do_guided - start guided mode
 bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f pos_or_vel;    // target location or velocity
-
     // only process guided waypoint if we are in guided mode
     if (control_mode != GUIDED && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
         return false;
@@ -820,11 +818,12 @@ bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
     switch (cmd.id) {
 
         case MAV_CMD_NAV_WAYPOINT:
+        {
             // set wp_nav's destination
-            pos_or_vel = pv_location_to_vector(cmd.content.location);
-            guided_set_destination(pos_or_vel);
-            return true;
+            Location_Class dest(cmd.content.location);
+            return guided_set_destination(dest);
             break;
+        }
 
         case MAV_CMD_CONDITION_YAW:
             do_yaw(cmd);

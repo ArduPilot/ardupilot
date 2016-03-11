@@ -51,20 +51,26 @@ bool Copter::guided_init(bool ignore_checks)
 
 
 // guided_takeoff_start - initialises waypoint controller to implement take-off
-void Copter::guided_takeoff_start(float final_alt_above_home)
+bool Copter::guided_takeoff_start(float final_alt_above_home)
 {
     guided_mode = Guided_TakeOff;
-    
+
     // initialise wpnav destination
-    Vector3f target_pos = inertial_nav.get_position();
-    target_pos.z = pv_alt_above_origin(final_alt_above_home);
-    wp_nav.set_wp_destination(target_pos);
+    Location_Class target_loc = current_loc;
+    target_loc.set_alt(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
+
+    if (!wp_nav.set_wp_destination(target_loc)) {
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        return false;
+    }
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 
     // clear i term when we're taking off
     set_throttle_takeoff();
+
+    return true;
 }
 
 // initialise guided mode's position controller
@@ -167,6 +173,26 @@ void Copter::guided_set_destination(const Vector3f& destination)
 
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+}
+
+// sets guided mode's target from a Location object
+// returns false if destination could not be set (probably caused by missing terrain data)
+bool Copter::guided_set_destination(const Location_Class& dest_loc)
+{
+    // ensure we are in position control mode
+    if (guided_mode != Guided_WP) {
+        guided_pos_control_start();
+    }
+
+    if (!wp_nav.set_wp_destination(dest_loc)) {
+        // failure to set destination (likely because of missing terrain data)
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        return false;
+    }
+
+    // log target
+    Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+    return true;
 }
 
 // guided_set_velocity - sets guided mode's target velocity
@@ -289,7 +315,9 @@ void Copter::guided_takeoff_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    wp_nav.update_wpnav();
+    if (wp_nav.update_wpnav()) {
+        // To-Do: handle failure to update probably caused by missing terrain data
+    }
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -330,7 +358,11 @@ void Copter::guided_pos_control_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    wp_nav.update_wpnav();
+    if (!wp_nav.update_wpnav()) {
+        // failures to update probably caused by missing terrain data
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_UPDATE_TARGET);
+        // To-Do: handle failure by triggering RTL after 5 seconds with no update?
+    }
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
