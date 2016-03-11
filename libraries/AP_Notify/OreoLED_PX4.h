@@ -42,9 +42,6 @@ public:
     // healthy - return true if at least one LED is responding
     bool healthy() const { return _overall_health; }
 
-    // handle a LED_CONTROL message, by default device ignore message
-    void handle_led_control(mavlink_message_t *msg);
-
 private:
     // update_timer - called by scheduler and updates PX4 driver with commands
     void update_timer(void);
@@ -88,7 +85,6 @@ private:
     volatile bool _state_desired_semaphore;         // true when we are updating the state desired values to ensure they are not sent prematurely
     oreo_state _state_desired[OREOLED_NUM_LEDS];    // desired state
     oreo_state _state_sent[OREOLED_NUM_LEDS];       // last state sent to led
-    uint8_t _pattern_override;                      // holds last processed pattern override, 0 if we are not overriding a pattern
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
