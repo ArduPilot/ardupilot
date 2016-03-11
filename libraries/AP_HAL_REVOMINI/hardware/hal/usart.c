@@ -34,8 +34,8 @@ static usart_dev usart2 =
 	    .max_baud = 2250000UL,
 	    .irq = USART2_IRQn,
 	    .tx_timeout = 10000,
-	    .rx_pin = BOARD_USART2_RX_PIN,
-	    .tx_pin = BOARD_USART2_TX_PIN,
+	    .rx_pin = 255,
+	    .tx_pin = 255,
 	    .gpio_af = GPIO_AF_USART2
     };
 /** USART2 device */
@@ -52,8 +52,8 @@ static usart_dev usart3 =
 	    .max_baud = 2250000UL,
 	    .irq = USART3_IRQn,
 	    .tx_timeout = 10000,
-	    .rx_pin = BOARD_USART3_RX_PIN,
-	    .tx_pin = BOARD_USART3_TX_PIN,
+	    .rx_pin = 255, //BOARD_USART3_RX_PIN,
+	    .tx_pin = 255, //BOARD_USART3_TX_PIN,
 	    .gpio_af = GPIO_AF_USART3
     };
 /** USART3 device */
@@ -70,8 +70,8 @@ static usart_dev uart4 =
 	    .max_baud = 2250000UL,
 	    .irq = UART4_IRQn,
 	    .tx_timeout = 10000,
-	    .rx_pin = BOARD_UART4_RX_PIN,
-	    .tx_pin = BOARD_UART4_TX_PIN,
+	    .rx_pin = 255,
+	    .tx_pin = 255,
 	    .gpio_af = GPIO_AF_UART4
     };
 /** UART4 device */
@@ -88,8 +88,8 @@ static usart_dev uart5 =
 	    .max_baud = 2250000UL,
 	    .irq = UART5_IRQn,
 	    .tx_timeout = 10000,
-	    .rx_pin = BOARD_UART5_RX_PIN,
-	    .tx_pin = BOARD_UART5_TX_PIN,
+	    .rx_pin = 255,
+	    .tx_pin = 255,
 	    .gpio_af = GPIO_AF_UART5
     };
 /** UART5 device */
@@ -106,8 +106,8 @@ static usart_dev usart6 =
 	    .max_baud = 2250000UL,
 	    .irq = USART6_IRQn,
 	    .tx_timeout = 10000,
-	    .rx_pin = 200,
-	    .tx_pin = 200,
+	    .rx_pin = BOARD_USART6_RX_PIN,
+	    .tx_pin = BOARD_USART6_TX_PIN,
 	    .gpio_af = GPIO_AF_USART6
     };
 /** UART6 device */

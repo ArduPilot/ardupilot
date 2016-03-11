@@ -18,13 +18,17 @@ void boardInit(void) {
     hal.gpio->pinMode(BOARD_RFM22B_INT_PIN,HAL_GPIO_INPUT);
     // Init HMC5883 DRDY EXT_INT pin
     hal.gpio->pinMode(BOARD_HMC5883_DRDY_PIN,HAL_GPIO_INPUT);
+
+/* Configure PA.13 (JTMS/SWDIO), PA.14 (JTCK/SWCLK) as output push-pull */
+    // Use PA13 LED and PA14 BUZZER
+    afio_cfg_debug_ports(AFIO_DEBUG_SW_ONLY);
 }
 
 extern const stm32_pin_info PIN_MAP[BOARD_NR_GPIO_PINS] = {
 
     /* Top header */
 
-	{_GPIOB,   NULL, NULL, 10, 0, ADCx}, /* D0/PB10  0*/
+	    {_GPIOB,   NULL, NULL, 10, 0, ADCx}, /* D0/PB10  0 0 USART3_TX/I2C2-SCL */
 	    {_GPIOB,   NULL, NULL,  2, 0, ADCx}, /* D1/PB2   1*/
 	    {_GPIOB,   NULL, NULL, 12, 0, ADCx}, /* D2/PB12  2*/
 	    {_GPIOB,   NULL, NULL, 13, 0, ADCx}, /* D3/PB13  3*/
@@ -43,13 +47,13 @@ extern const stm32_pin_info PIN_MAP[BOARD_NR_GPIO_PINS] = {
 	    {_GPIOC,   NULL, NULL, 10, 0, ADCx}, /* D16/PC10 6 SPI3_SCLK */
 	    {_GPIOC,   NULL, NULL, 11, 0, ADCx}, /* D17/PC11 7 SPI3_MISO */
 	    {_GPIOC,   NULL, NULL, 12, 0, ADCx}, /* D18/PC12 8 SPI3_MOSI */
-	    {_GPIOC,   NULL, NULL, 13, 0, ADCx}, /* D19/PC13 9*/
-	    {_GPIOC,   NULL, NULL, 14, 0, ADCx}, /* D20/PC14 20*/
-	    {_GPIOC,   NULL, NULL, 15, 0, ADCx}, /* D21/PC15 1*/
+    {_GPIOC,   NULL, NULL, 13, 0, ADCx}, /* D19/PC13 9 NOT CONNECTED */
+    {_GPIOC,   NULL, NULL, 14, 0, ADCx}, /* D20/PC14 20 NOT CONNECTED*/
+    {_GPIOC,   NULL, NULL, 15, 0, ADCx}, /* D21/PC15 1 NOT CONNECTED*/
 	    {_GPIOA, TIMER1, NULL,  8, 1, ADCx}, /* D22/PA8  2*/
 	    {_GPIOA, TIMER1, NULL,  9, 2, ADCx}, /* D23/PA9  3 USART1_TX */
 	    {_GPIOA, TIMER1, NULL, 10, 3, ADCx}, /* D24/PA10 4 USART1_RX */
-	    {_GPIOB, TIMER4, NULL,  9, 4, ADCx}, /* D25/PB9  5 I2C1_SDA */
+    {_GPIOB,   NULL, NULL,  9, 0, ADCx}, /* D25/PB9  5 I2C1_SDA */
 	    {_GPIOD,   NULL, NULL,  2, 0, ADCx}, /* D26/PD2 6 EXTI_RFM22B */
 	    {_GPIOD,   NULL, NULL,  3, 0, ADCx}, /* D27/PD3  7*/
 	    {_GPIOD,   NULL, NULL,  6, 0, ADCx}, /* D28/PD6  8*/
@@ -63,22 +67,22 @@ extern const stm32_pin_info PIN_MAP[BOARD_NR_GPIO_PINS] = {
 	    {_GPIOB, TIMER3, NULL,  5, 2, ADCx}, /* D36/PB5  6 LED_BLUE */
 	    {_GPIOB, TIMER4, NULL,  6, 1, ADCx}, /* D37/PB6  7 LED_YELLOW - OPTIONAL*/
 	    {_GPIOB, TIMER4, NULL,  7, 2, ADCx}, /* D38/PB7  8 DRDY_HMC5883 */
-	    {_GPIOF,   NULL, _ADC3,  6, 0,    4}, /* D39/PF6 9*/
-	    {_GPIOF,   NULL, _ADC3,  7, 0,    5}, /* D40/PF7 40*/
-	    {_GPIOF,   NULL, _ADC3,  8, 0,    6}, /* D41/PF8 1*/
-	    {_GPIOF,   NULL, _ADC3,  9, 0,    7}, /* D42/PF9 2*/
-	    {_GPIOF,   NULL, _ADC3, 10, 0,    8}, /* D43/PF10 3*/
+    {_GPIOF,   NULL,_ADC3,  6, 0,    4}, /* D39/PF6  9*/
+    {_GPIOF,   NULL,_ADC3,  7, 0,    5}, /* D40/PF7  40*/
+    {_GPIOF,   NULL,_ADC3,  8, 0,    6}, /* D41/PF8  1*/
+    {_GPIOF,   NULL,_ADC3,  9, 0,    7}, /* D42/PF9  2*/
+    {_GPIOF,   NULL,_ADC3, 10, 0,    8}, /* D43/PF10 3*/
 	    {_GPIOF,   NULL, NULL, 11, 0, ADCx}, /* D44/PF11 4*/
-	    {_GPIOB, TIMER3, _ADC1,  1, 4,    9}, /* D45/PB1 5 SERVO2 */
-	    {_GPIOB, TIMER3, _ADC1,  0, 3,    8}, /* D46/PB0 6 SERVO1 */
-	    {_GPIOA, TIMER2, _ADC1,  0, 1,    0}, /* D47/PA0 7 SERVO6 */
-	    {_GPIOA, TIMER2, _ADC1,  1, 2,    1}, /* D48/PA1 8 SERVO5 */
-	    {_GPIOA, TIMER2, _ADC1,  2, 3,    2}, /* D49/PA2 9 SERVO4 */
-	    {_GPIOA, TIMER2, _ADC1,  3, 4,    3}, /* D50/PA3 50 SERVO3 */
-	    {_GPIOA,   NULL, _ADC1,  4, 0,    4}, /* D51/PA4 1 CS_MPU6000 */
-	    {_GPIOA,   NULL, _ADC1,  5, 0,    5}, /* D52/PA5 2 SPI1_CLK */
-	    {_GPIOA, TIMER3, _ADC1,  6, 1,    6}, /* D53/PA6 3 SPI1_MISO */
-	    {_GPIOA, TIMER3, _ADC1,  7, 2,    7}, /* D54/PA7 4 SPI1_MOSI */
+    {_GPIOB, TIMER3,_ADC1,  1, 4,    9}, /* D45/PB1  5 SERVO2 */
+    {_GPIOB, TIMER3,_ADC1,  0, 3,    8}, /* D46/PB0  6 SERVO1 */
+    {_GPIOA, TIMER2,_ADC1,  0, 1,    0}, /* D47/PA0  7 SERVO6 */
+    {_GPIOA, TIMER2,_ADC1,  1, 2,    1}, /* D48/PA1  8 SERVO5 */
+    {_GPIOA, TIMER2,_ADC1,  2, 3,    2}, /* D49/PA2  9 SERVO4 */
+    {_GPIOA, TIMER2,_ADC1,  3, 4,    3}, /* D50/PA3  50 SERVO3 */
+    {_GPIOA,   NULL,_ADC1,  4, 0,    4}, /* D51/PA4  1 CS_MPU6000 */
+    {_GPIOA,   NULL,_ADC1,  5, 0,    5}, /* D52/PA5  2 SPI1_CLK */
+    {_GPIOA, TIMER3,_ADC1,  6, 1,    6}, /* D53/PA6  3 SPI1_MISO */
+    {_GPIOA, TIMER3,_ADC1,  7, 2,    7}, /* D54/PA7  4 SPI1_MOSI */
 	    {_GPIOF,   NULL, NULL,  0, 0, ADCx}, /* D55/PF0  5*/
 	    {_GPIOD,   NULL, NULL, 11, 0, ADCx}, /* D56/PD11 6*/
 	    {_GPIOD, TIMER4, NULL, 14, 3, ADCx}, /* D57/PD14 7*/
@@ -124,15 +128,16 @@ extern const stm32_pin_info PIN_MAP[BOARD_NR_GPIO_PINS] = {
 	    {_GPIOD,   NULL, NULL,  9, 0, ADCx}, /* D97/PD9  7*/
 	    {_GPIOG,   NULL, NULL,  5, 0, ADCx}, /* D98/PG5  8*/
 	    {_GPIOD,   NULL, NULL, 10, 0, ADCx}, /* D99/PD10 9*/
-	    {_GPIOB,   NULL, NULL, 11, 0, ADCx}, /* D100/PB11 100 USART3_RX */
+    {_GPIOB,   NULL, NULL, 11, 0, ADCx}, /* D100/PB11 100 USART3_RX/I2C2-SDA*/
 	    {_GPIOB,   NULL, NULL,  8, 0, ADCx}, /* D101/PB8 I2C1_SCL  */
 	    {_GPIOE,   NULL, NULL,  2, 0, ADCx},  /* D102/PE2 */
-
 	    {_GPIOA,   NULL, NULL, 15, 0, ADCx}, /* D103/PA15 CS_RFM22B */
 	    {_GPIOB,   NULL, NULL,  3, 0, ADCx}, /* D104/PB3 CS_FLASH */
-	    {_GPIOB,   NULL, NULL,  4, 0, ADCx}  /* D105/PB4 LED_RED */
-	};
-
+    {_GPIOB,   NULL, NULL,  4, 0, ADCx}, /* D105/PB4 LED_RED */
+    {_GPIOA,   NULL, NULL, 13, 0, ADCx}, /* D106/PA13 LED_MOTOR */
+    {_GPIOA,   NULL, NULL, 14, 0, ADCx}  /* D107/PA14 BUZZER */
+};
+/*
 extern const uint8_t boardPWMPins[BOARD_NR_PWM_PINS] __FLASH__ = {
     13, 14, 15, 16, 23, 24, 25, 26, 38, 39, 46, 47, 48, 49, 50, 51, 54, 55
 };
@@ -148,6 +153,6 @@ extern const uint8_t boardUsedPins[BOARD_NR_USED_PINS] __FLASH__ = {
     56, 58, 59, 61, 62, 64, 65, 67, 68, 70, 71, 73, 74, 76, 77, 78, 79, 81,
     82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100
 };
-
+*/
 
 #endif

@@ -19,7 +19,7 @@
 
 class REVOMINI::REVOMINII2CDriver : public AP_HAL::I2CDriver {
 public:
-    REVOMINII2CDriver(i2c_dev *dev, AP_HAL::Semaphore* semaphore) : _dev(dev),_semaphore(semaphore) {}
+    REVOMINII2CDriver(i2c_dev *dev, AP_HAL::Semaphore* semaphore);
     void begin();
     void end();
     void setTimeout(uint16_t ms){ _timeoutDelay = ms; }

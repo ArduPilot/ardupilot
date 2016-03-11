@@ -12,6 +12,7 @@ cSRCS_$(d) :=
 
 cppSRCS_$(d) :=
 cppSRCS_$(d) += AnalogIn.cpp
+cppSRCS_$(d) += AnalogSource.cpp
 cppSRCS_$(d) += GPIO.cpp
 cppSRCS_$(d) += HAL_REVOMINI_Class.cpp
 cppSRCS_$(d) += I2CDriver.cpp

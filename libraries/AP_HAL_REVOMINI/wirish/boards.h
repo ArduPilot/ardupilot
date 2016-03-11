@@ -119,7 +119,26 @@ extern void boardInit(void);
 
 /* FIXME HACK put boards/ before these paths once IDE uses make. */
 
+#if defined(BOARD_laserlab_MP32V1F1)
+#include "laserlab_MP32V1F1.h"
+#elif defined(BOARD_laserlab_MP32V3F1)
+#include "laserlab_MP32V3F1.h"
+#elif defined(BOARD_laserlab_MP32V1F4)
+#include "laserlab_MP32V1F4.h"
+#elif defined(BOARD_revomini_MP32V1F4)
 #include "revomini_MP32V1F4.h"
+#else
+/*
+ * TODO turn this into a warning so people can:
+ *
+ * #include "my_board_config.h"
+ * #include "wirish.h"
+ *
+ * This will enable third-party board support without requiring that
+ * anybody hack around in libmaple itself.
+ */
+#error "Board type has not been selected correctly."
+#endif
 
 /* Set derived definitions */
 
