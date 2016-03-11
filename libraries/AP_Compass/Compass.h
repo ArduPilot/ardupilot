@@ -1,14 +1,16 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <inttypes.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include "CompassCalibrator.h"
+
 #include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_Declination/AP_Declination.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
+#include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
 
 // compass product id
@@ -410,12 +412,3 @@ private:
 
     AP_Float _calibration_threshold;
 };
-
-#include "AP_Compass_Backend.h"
-#include "AP_Compass_HMC5843.h"
-#include "AP_Compass_HIL.h"
-#include "AP_Compass_AK8963.h"
-#include "AP_Compass_PX4.h"
-#include "AP_Compass_LSM303D.h"
-#include "AP_Compass_qflight.h"
-#include "AP_Compass_QURT.h"
