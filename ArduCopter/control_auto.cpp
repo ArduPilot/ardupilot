@@ -269,14 +269,18 @@ void Copter::auto_wp_run()
 
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
 //  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
-void Copter::auto_spline_start(const Vector3f& destination, bool stopped_at_start, 
+void Copter::auto_spline_start(const Location_Class& destination, bool stopped_at_start,
                                AC_WPNav::spline_segment_end_type seg_end_type, 
-                               const Vector3f& next_destination)
+                               const Location_Class& next_destination)
 {
     auto_mode = Auto_Spline;
 
     // initialise wpnav
-    wp_nav.set_spline_destination(destination, stopped_at_start, seg_end_type, next_destination);
+    if (!wp_nav.set_spline_destination(destination, stopped_at_start, seg_end_type, next_destination)) {
+        // failure to set destination (likely because of missing terrain data)
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        // To-Do: handle failure
+    }
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
