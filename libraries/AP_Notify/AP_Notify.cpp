@@ -148,11 +148,3 @@ void AP_Notify::update(void)
     //reset the events
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
 }
-
-// handle a LED_CONTROL message
-void AP_Notify::handle_led_control(mavlink_message_t *msg)
-{
-    for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
-        _devices[i]->handle_led_control(msg);
-    }
-}
