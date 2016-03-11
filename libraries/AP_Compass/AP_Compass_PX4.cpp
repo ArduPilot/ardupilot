@@ -148,9 +148,6 @@ void AP_Compass_PX4::accumulate(void)
             // correct raw_field for known errors
             correct_field(raw_field, frontend_instance);
 
-            // publish raw_field (corrected point sample) for EKF use
-            publish_unfiltered_field(raw_field, time_us, frontend_instance);
-
             // accumulate into averaging filter
             _sum[i] += raw_field;
             _count[i]++;

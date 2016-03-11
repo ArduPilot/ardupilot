@@ -88,9 +88,6 @@ void AP_Compass_QURT::timer_update(void)
     // correct raw_field for known errors
     correct_field(raw_field, instance);
 
-    // publish raw_field (corrected point sample) for EKF use
-    publish_unfiltered_field(raw_field, data.timestamp, instance);
-
     // accumulate into averaging filter
     sum += raw_field;
     count++;
