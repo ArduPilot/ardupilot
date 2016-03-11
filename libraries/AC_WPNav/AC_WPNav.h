@@ -196,23 +196,35 @@ public:
     // get_yaw - returns target yaw in centi-degrees (used for wp and spline navigation)
     float get_yaw() const { return _yaw; }
 
-    /// set_spline_destination waypoint using position vector (distance from home in cm)
+    /// set_spline_destination waypoint using location class
+    ///     returns false if conversion from location to vector from ekf origin cannot be calculated
+    ///     terrain_alt should be true if destination.z is a desired altitude above terrain (false if its desired altitude above ekf origin)
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin
     ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
-    void set_spline_destination(const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
+    bool set_spline_destination(const Location_Class& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location_Class next_destination);
+
+    /// set_spline_destination waypoint using position vector (distance from home in cm)
+    ///     returns false if conversion from location to vector from ekf origin cannot be calculated
+    ///     terrain_alt should be true if destination.z is a desired altitudes above terrain (false if its desired altitudes above ekf origin)
+    ///     stopped_at_start should be set to true if vehicle is stopped at the origin
+    ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
+    ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
+    ///     next_destination.z  must be in the same "frame" as destination.z (i.e. if destination is a alt-above-terrain, next_destination should be too)
+    bool set_spline_destination(const Vector3f& destination, bool terrain_alt, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
 
     /// set_spline_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
+    ///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if desired altitudes above ekf origin)
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin
     ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
-    void set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
+    bool set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
 
     /// reached_spline_destination - true when we have come within RADIUS cm of the waypoint
     bool reached_spline_destination() const { return _flags.reached_destination; }
 
     /// update_spline - update spline controller
-    void update_spline();
+    bool update_spline();
 
     ///
     /// shared methods
@@ -274,7 +286,8 @@ protected:
     void update_spline_solution(const Vector3f& origin, const Vector3f& dest, const Vector3f& origin_vel, const Vector3f& dest_vel);
 
     /// advance_spline_target_along_track - move target location along track from origin to destination
-    void advance_spline_target_along_track(float dt);
+    ///     returns false if it is unable to advance (most likely because of missing terrain data)
+    bool advance_spline_target_along_track(float dt);
 
     /// calc_spline_pos_vel - update position and velocity from given spline time
     /// 	relies on update_spline_solution being called since the previous

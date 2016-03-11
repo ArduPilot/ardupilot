@@ -814,11 +814,43 @@ void AC_WPNav::calculate_wp_leash_length()
 /// spline methods
 ///
 
-/// set_spline_destination waypoint using position vector (distance from home in cm)
+/// set_spline_destination waypoint using location class
+///     returns false if conversion from location to vector from ekf origin cannot be calculated
 ///     stopped_at_start should be set to true if vehicle is stopped at the origin
 ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
 ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
-void AC_WPNav::set_spline_destination(const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination)
+bool AC_WPNav::set_spline_destination(const Location_Class& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location_Class next_destination)
+{
+    // convert destination location to vector
+    Vector3f dest_neu;
+    bool dest_terr_alt;
+    if (!get_vector_NEU(destination, dest_neu, dest_terr_alt)) {
+        return false;
+    }
+
+    // make altitude frames consistent
+    if (!next_destination.change_alt_frame(destination.get_alt_frame())) {
+        return false;
+    }
+
+    // convert next destination to vector
+    Vector3f next_dest_neu;
+    bool next_dest_terr_alt;
+    if (!get_vector_NEU(next_destination, next_dest_neu, next_dest_terr_alt)) {
+        return false;
+    }
+
+    // set target as vector from EKF origin
+    return set_spline_destination(dest_neu, dest_terr_alt, stopped_at_start, seg_end_type, next_dest_neu);
+}
+
+/// set_spline_destination waypoint using position vector (distance from home in cm)
+///     returns false if conversion from location to vector from ekf origin cannot be calculated
+///     terrain_alt should be true if destination.z is a desired altitudes above terrain (false if its desired altitudes above ekf origin)
+///     stopped_at_start should be set to true if vehicle is stopped at the origin
+///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
+///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
+bool AC_WPNav::set_spline_destination(const Vector3f& destination, bool terrain_alt, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination)
 {
     Vector3f origin;
 
@@ -831,13 +863,23 @@ void AC_WPNav::set_spline_destination(const Vector3f& destination, bool stopped_
         _pos_control.get_stopping_point_z(origin);
     }
 
+    // convert origin to alt-above-terrain
+    if (terrain_alt) {
+        float origin_terr_offset;
+        if (!get_terrain_offset(origin, origin_terr_offset)) {
+            return false;
+        }
+        origin.z -= origin_terr_offset;
+    }
+
     // set origin and destination
-    set_spline_origin_and_destination(origin, destination, stopped_at_start, seg_end_type, next_destination);
+    return set_spline_origin_and_destination(origin, destination, terrain_alt, stopped_at_start, seg_end_type, next_destination);
 }
 
 /// set_spline_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
+///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if desired altitudes above ekf origin)
 ///     seg_type should be calculated by calling function based on the mission
-void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination)
+bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination)
 {
     // mission is "active" if wpnav has been called recently and vehicle reached the previous waypoint
     bool prev_segment_exists = (_flags.reached_destination && ((AP_HAL::millis() - _wp_last_update) < 1000));
@@ -925,26 +967,38 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     // store origin and destination locations
     _origin = origin;
     _destination = destination;
+    _terrain_alt = terrain_alt;
 
     // calculate slow down distance
     calc_slow_down_distance(_wp_speed_cms, _wp_accel_cms);
 
+    // get origin's alt-above-terrain
+    float origin_terr_offset = 0.0f;
+    if (terrain_alt) {
+        if (!get_terrain_offset(origin, origin_terr_offset)) {
+            return false;
+        }
+    }
+
     // initialise intermediate point to the origin
-    _pos_control.set_pos_target(origin);
+    _pos_control.set_pos_target(origin + Vector3f(0,0,origin_terr_offset));
     _flags.reached_destination = false;
     _flags.segment_type = SEGMENT_SPLINE;
     _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
+
+    return true;
 }
 
 /// update_spline - update spline controller
-void AC_WPNav::update_spline()
+bool AC_WPNav::update_spline()
 {
     // exit immediately if this is not a spline segment
     if (_flags.segment_type != SEGMENT_SPLINE) {
-        return;
+        return false;
     }
 
     float dt = _pos_control.time_since_last_xy_update();
+    bool ret = true;
 
     // run at poscontrol update rate
     if (dt >= _pos_control.get_dt_xy()) {
@@ -954,7 +1008,10 @@ void AC_WPNav::update_spline()
         }
 
         // advance the target if necessary
-        advance_spline_target_along_track(dt);
+        if (!advance_spline_target_along_track(dt)) {
+            // To-Do: handle failure to advance along track (due to missing terrain data)
+            ret = false;
+        }
 
         // freeze feedforwards during known discontinuities
         // TODO: why always consider Z axis discontinuous?
@@ -969,6 +1026,7 @@ void AC_WPNav::update_spline()
 
         _wp_last_update = AP_HAL::millis();
     }
+    return ret;
 }
 
 /// update_spline_solution - recalculates hermite_spline_solution grid
@@ -982,7 +1040,7 @@ void AC_WPNav::update_spline_solution(const Vector3f& origin, const Vector3f& de
  }
 
 /// advance_spline_target_along_track - move target location along track from origin to destination
-void AC_WPNav::advance_spline_target_along_track(float dt)
+bool AC_WPNav::advance_spline_target_along_track(float dt)
 {
     if (!_flags.reached_destination) {
         Vector3f target_pos, target_vel;
@@ -995,7 +1053,16 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
 
         // get current location
         Vector3f curr_pos = _inav.get_position();
+
+        // get terrain altitude offset for origin and current position (i.e. change in terrain altitude from a position vs ekf origin)
+        float curr_terr_offset = 0.0f;
+        if (_terrain_alt && !get_terrain_offset(curr_pos, curr_terr_offset)) {
+            return false;
+        }
+
+        // calculate position error
         Vector3f track_error = curr_pos - target_pos;
+        track_error.z -= curr_terr_offset;
 
         // calculate the horizontal error
         float track_error_xy = pythagorous2(track_error.x, track_error.y);
@@ -1043,6 +1110,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         }
 
         // update target position
+        target_pos.z += curr_terr_offset;
         _pos_control.set_pos_target(target_pos);
 
         // update the yaw
@@ -1057,6 +1125,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
             _flags.reached_destination = true;
         }
     }
+    return true;
 }
 
 // calc_spline_pos_vel_accel - calculates target position, velocity and acceleration for the given "spline_time"
