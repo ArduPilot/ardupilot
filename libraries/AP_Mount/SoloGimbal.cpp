@@ -33,7 +33,7 @@ gimbal_mode_t SoloGimbal::get_mode()
         return GIMBAL_MODE_IDLE;
     } else if (!_ekf.getStatus()) {
         return GIMBAL_MODE_POS_HOLD;
-    } else if (_calibrator.running() || _lockedToBody) {
+    } else if (_calibrator.running() || _lockedToBody || _ahrs.get_compass()->is_calibrating()) {
         return GIMBAL_MODE_POS_HOLD_FF;
     } else {
         return GIMBAL_MODE_STABILIZE;
