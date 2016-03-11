@@ -1415,9 +1415,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     compassNumber = 2;
                 }
                 if (compassNumber != -1) {
-                    char buf[80];
-                    sprintf(buf, "set %d %.2f %.2f %.2f", compassNumber, packet.param2, packet.param3, packet.param4);
-                    send_text(MAV_SEVERITY_INFO, buf);
                     copter.compass.set_and_save_offsets(compassNumber, packet.param2, packet.param3, packet.param4);
                     result = MAV_RESULT_ACCEPTED;
                 }
