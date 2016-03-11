@@ -20,7 +20,7 @@
  */
 #pragma once
 
-#include "Compass.h"
+#include "AP_Compass.h"
 
 class Compass;  // forward declaration
 class AP_Compass_Backend
