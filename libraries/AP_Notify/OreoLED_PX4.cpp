@@ -45,8 +45,7 @@ OreoLED_PX4::OreoLED_PX4() : NotifyDevice(),
     _overall_health(false),
     _oreoled_fd(-1),
     _send_required(false),
-    _state_desired_semaphore(false),
-    _pattern_override(0)
+    _state_desired_semaphore(false)
 {
     // initialise desired and sent state
     memset(_state_desired,0,sizeof(_state_desired));
@@ -93,13 +92,6 @@ void OreoLED_PX4::update()
         // Force a syncronisation before setting the free-running colour cycle macro
         send_sync();
         set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_COLOUR_CYCLE);
-        return;
-    }
-
-    // return immediately if custom pattern has been sent
-    if (OreoLED_PX4::_pattern_override != 0) {
-        // reset stage so patterns will be resent once override clears
-        last_stage = 0;
         return;
     }
 
@@ -362,39 +354,6 @@ void OreoLED_PX4::update_timer(void)
 
     // flag updates sent
     _send_required = false;
-}
-
-// handle a LED_CONTROL message
-void OreoLED_PX4::handle_led_control(mavlink_message_t *msg)
-{
-    // exit immediately if unhealthy
-    if (!_overall_health) {
-        return;
-    }
-
-    // decode mavlink message
-    mavlink_led_control_t packet;
-    mavlink_msg_led_control_decode(msg, &packet);
-
-    // exit immediately if instance is invalid
-    if (packet.instance >= OREOLED_NUM_LEDS && packet.instance != OREOLED_INSTANCE_ALL) {
-        return;
-    }
-
-    // if pattern is OFF, we clear pattern override so normal lighting should resume
-    if (packet.pattern == LED_CONTROL_PATTERN_OFF) {
-        _pattern_override = 0;
-        return;
-    }
-
-    // custom patterns not implemented
-    if (packet.pattern == LED_CONTROL_PATTERN_CUSTOM) {
-        return;
-    }
-
-    // other patterns sent as macro
-    set_macro(packet.instance, (oreoled_macro)packet.pattern);
-    _pattern_override = packet.pattern;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
