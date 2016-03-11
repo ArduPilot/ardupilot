@@ -576,8 +576,12 @@ void Copter::auto_loiter_run()
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // run waypoint and z-axis postion controller
-    wp_nav.update_wpnav();
+    // run waypoint and z-axis position controller
+    if (!wp_nav.update_wpnav()) {
+        // failures to update probably caused by missing terrain data
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_UPDATE_TARGET);
+        // To-Do: handle failure by triggering RTL after 5 seconds with no update?
+    }
     pos_control.update_z_controller();
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 }
