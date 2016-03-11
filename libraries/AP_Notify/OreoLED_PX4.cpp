@@ -77,10 +77,7 @@ void OreoLED_PX4::update()
 {
     static uint8_t counter = 0;     // counter to reduce rate from 50hz to 10hz
     static uint8_t step = 0;        // step to control pattern
-    static uint8_t last_stage = 0;  // unique id of the last messages sent to the LED, used to reduce resends which disrupt some patterns
-    static uint8_t initialization_done = 0;   // Keep track if initialization has begun.  There is a period when the driver
-                                              // is running but initialization has not yet begun -- this prevents post-initialization
-                                              // LED patterns from displaying before initialization has completed.
+    static uint8_t last_stage = 1;  // unique id of the last messages sent to the LED, used to reduce resends which disrupt some patterns
 
     // return immediately if not healthy
     if (!_overall_health) {
@@ -106,20 +103,6 @@ void OreoLED_PX4::update()
     step++;
     if (step >= 10) {
         step = 0;
-    }
-
-    // Pre-initialization pattern is all solid green
-    if (!initialization_done) {
-        set_rgb(OREOLED_ALL_INSTANCES, 0, OREOLED_BRIGHT, 0);
-    }
-
-    // initialising pattern
-    if (AP_Notify::flags.initialising) {
-        initialization_done = 1;  // Record initialization has begun
-        last_stage = 1;   // record stage
-
-        // exit so no other status modify this pattern
-        return;
     }
 
     // save trim and esc calibration pattern
@@ -190,7 +173,7 @@ void OreoLED_PX4::update()
     }
 
     // send colours (later we will set macro if required)
-    if (last_stage < 10 && initialization_done) {
+    if (last_stage < 10) {
         set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
         last_stage = 10;
     } else if (last_stage >= 10) {
