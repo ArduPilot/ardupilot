@@ -26,6 +26,7 @@ bool Copter::is_valid_flight_mode(uint8_t mode)
         case AUTOTUNE:
         case POSHOLD:
         case BRAKE:
+        case THROW:
             return true;
     }
 
