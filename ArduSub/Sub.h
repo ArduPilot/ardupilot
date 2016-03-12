@@ -89,6 +89,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
+#include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 
 // Configuration
 #include "defines.h"
