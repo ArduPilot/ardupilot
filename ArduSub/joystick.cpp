@@ -24,6 +24,12 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	if ( tnow_ms - buttonDebounce > 50 ) {
 		buttonDebounce = tnow_ms;
 
+		for ( uint8_t i = 0 ; i < 16 ; i++ ) {
+			if ( buttons & (1 << i) ) {
+//				handle_jsbutton_press(i);
+			}
+		}
+
 		// Button logic to arm/disarm motors (Start and back buttons)
 		if ( buttons & (1 << 4) ) {
 			init_arm_motors(true);
@@ -76,3 +82,5 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	// record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
 	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
 }
+
+//void Sub::handle_jsbutton_press(uint8_t button);

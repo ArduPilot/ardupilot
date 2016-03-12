@@ -576,6 +576,70 @@ const AP_Param::Info Sub::var_info[] = {
     GGROUP(rc_14,                   "RC14_", RC_Channel_aux),
 #endif
 
+	// @Group: BTN0_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_0,                   "BTN0_", JSButton),
+
+	// @Group: BTN1_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_1,                   "BTN1_", JSButton),
+
+	// @Group: BTN2_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_2,                   "BTN2_", JSButton),
+
+	// @Group: BTN3_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_3,                   "BTN3_", JSButton),
+
+	// @Group: BTN4_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_4,                   "BTN4_", JSButton),
+
+	// @Group: BTN5_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_5,                   "BTN5_", JSButton),
+
+	// @Group: BTN6_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_6,                   "BTN6_", JSButton),
+
+	// @Group: BTN7_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_7,                   "BTN7_", JSButton),
+
+	// @Group: BTN8_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_8,                   "BTN8_", JSButton),
+
+	// @Group: BTN9_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_9,                   "BTN9_", JSButton),
+
+	// @Group: BTN10_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_10,                   "BTN10_", JSButton),
+
+	// @Group: BTN11_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_11,                   "BTN11_", JSButton),
+
+	// @Group: BTN12_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_12,                   "BTN12_", JSButton),
+
+	// @Group: BTN13_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_13,                   "BTN13_", JSButton),
+
+	// @Group: BTN14_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_14,                   "BTN14_", JSButton),
+
+	// @Group: BTN15_
+	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
+	GGROUP(jbtn_15,                   "BTN15_", JSButton),
+
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
