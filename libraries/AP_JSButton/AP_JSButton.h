@@ -34,8 +34,12 @@ public:
 		k_arm                   = 3,            ///< arm vehicle
 		k_disarm                = 4,            ///< disarm vehicle
 		k_mode_toggle           = 5,            ///< toggle through available modes
-		k_mode_stab             = 6,            ///< enter stabilize mode
-		k_mode_althold          = 7,            ///< enter altHold mode
+		k_mode_1                = 6,            ///< enter mode 1
+		k_mode_2                = 7,            ///< enter mode 2
+		k_mode_3                = 8,            ///< enter mode 3
+		k_mode_4                = 9,            ///< enter mode 4
+		k_mode_5                = 10,           ///< enter mode 5
+		k_mode_6                = 11,           ///< enter mode 6
 		// 8-20 reserved for future mode functions
 		k_mount_center          = 21,           ///< move mount to center
 		k_mount_tilt_up         = 22,           ///< tilt mount up
