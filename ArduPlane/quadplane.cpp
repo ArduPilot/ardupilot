@@ -399,6 +399,10 @@ bool QuadPlane::setup(void)
         setup_default_channels(8);
         motors = new AP_MotorsOcta(plane.ins.get_sample_rate());
         break;
+    case FRAME_CLASS_OCTAQUAD:
+        setup_default_channels(8);
+         motors = new AP_MotorsOctaQuad(plane.ins.get_sample_rate());
+        break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
         goto failed;
