@@ -335,7 +335,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Quad, 1:Hexa, 2:Octa
+    // @Values: 0:Quad, 1:Hexa, 2:Octa, 3:OctaQuad
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 0),
 
@@ -875,6 +875,11 @@ void QuadPlane::update(void)
         return;
     }
 
+    if (motor_test.running) {
+        motor_test_output();
+        return;
+    }
+    
     if (!in_vtol_mode()) {
         update_transition();
     } else {
