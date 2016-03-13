@@ -584,6 +584,18 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
             }
             break;
+
+        case AUXSW_THROW:
+            // throw flight mode
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                set_mode(THROW);
+            } else {
+                // return to flight mode switch's flight mode if we are currently in throw mode
+                if (control_mode == THROW) {
+                    reset_control_switch();
+                }
+            }
+            break;
     }
 }
 
