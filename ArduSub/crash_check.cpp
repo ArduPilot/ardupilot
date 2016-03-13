@@ -144,6 +144,9 @@ void Sub::parachute_release()
 
     // release parachute
     parachute.release();
+
+    // deploy landing gear
+    landinggear.set_cmd_mode(LandingGear_Deploy);
 }
 
 // parachute_manual_release - trigger the release of the parachute, after performing some checks for pilot error
