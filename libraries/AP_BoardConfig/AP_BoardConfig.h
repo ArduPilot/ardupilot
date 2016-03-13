@@ -28,7 +28,7 @@ private:
     AP_Int8 _ser1_rtscts;
     AP_Int8 _ser2_rtscts;
     AP_Int8 _safety_enable;
-    AP_Int8 _sbus_out_enable;
+    AP_Int8 _sbus_out_rate;
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     AP_Int8 _can_enable;
 #endif

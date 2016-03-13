@@ -6,6 +6,11 @@
 void Plane::set_nav_controller(void)
 {
     switch ((AP_Navigation::ControllerType)g.nav_controller.get()) {
+
+    default:
+    case AP_Navigation::CONTROLLER_DEFAULT:
+        // fall through to L1 as default controller
+
     case AP_Navigation::CONTROLLER_L1:
         nav_controller = &L1_controller;
         break;
@@ -29,7 +34,10 @@ void Plane::loiter_angle_update(void)
 {
     int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
-    if (loiter.sum_cd == 0) {
+    if (loiter.sum_cd == 0 && !nav_controller->reached_loiter_target()) {
+        // we don't start summing until we are doing the real loiter
+        loiter_delta_cd = 0;
+    } else if (loiter.sum_cd == 0) {
         // use 1 cd for initial delta
         loiter_delta_cd = 1;
     } else {

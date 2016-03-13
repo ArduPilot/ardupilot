@@ -118,7 +118,9 @@ private:
     void control_hover(void);
 
     void init_loiter(void);
+    void init_land(void);
     void control_loiter(void);
+    void check_land_complete(void);
 
     float assist_climb_rate_cms(void);
 

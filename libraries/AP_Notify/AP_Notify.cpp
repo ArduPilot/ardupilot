@@ -91,7 +91,8 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         ToneAlarm_Linux tonealarm;
         NotifyDevice *AP_Notify::_devices[] = {&toshibaled, &tonealarm};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-        NotifyDevice *AP_Notify::_devices[0];
+        RCOutputRGBLedOff led(15, 13, 14, 255);
+        NotifyDevice *AP_Notify::_devices[] = { &led };
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
         AP_BoardLED boardled;

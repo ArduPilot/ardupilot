@@ -544,10 +544,7 @@ void Plane::update_flight_mode(void)
     }
 
     // ensure we are fly-forward
-    if (effective_mode == QSTABILIZE ||
-        effective_mode == QHOVER ||
-        effective_mode == QLOITER ||
-        quadplane.in_vtol_auto()) {
+    if (quadplane.in_vtol_mode()) {
         ahrs.set_fly_forward(false);
     } else {
         ahrs.set_fly_forward(true);
@@ -709,7 +706,8 @@ void Plane::update_flight_mode(void)
 
     case QSTABILIZE:
     case QHOVER:
-    case QLOITER: {
+    case QLOITER:
+    case QLAND: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
@@ -789,6 +787,7 @@ void Plane::update_navigation()
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
+    case QLAND:
         // nothing to do
         break;
     }
@@ -936,9 +935,7 @@ void Plane::update_flight_stage(void)
         } else {
             set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
-    } else if (control_mode == QSTABILIZE ||
-               control_mode == QHOVER ||
-               control_mode == QLOITER ||
+    } else if (quadplane.in_vtol_mode() ||
                quadplane.in_assisted_flight()) {
         set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
     } else {

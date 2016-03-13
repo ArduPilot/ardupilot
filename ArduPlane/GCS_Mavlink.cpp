@@ -42,6 +42,7 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
+    case QLAND:
     case CRUISE:
         base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
@@ -178,6 +179,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     case AUTOTUNE:
     case QSTABILIZE:
     case QHOVER:
+    case QLAND:
     case QLOITER:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
@@ -1153,7 +1155,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
 
         // do command
-        send_text(MAV_SEVERITY_INFO,"Command received: ");
 
         switch(packet.command) {
 

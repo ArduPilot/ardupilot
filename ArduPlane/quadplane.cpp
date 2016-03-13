@@ -320,7 +320,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     // @Range: 300 700
     // @Units: Percent*10
-    // @Increment: 1
+    // @Increment: 10
     AP_GROUPINFO("THR_MID", 28, QuadPlane, throttle_mid, 500),
 
     // @Param: TRAN_PIT_MAX
@@ -569,6 +569,14 @@ void QuadPlane::init_loiter(void)
     init_throttle_wait();
 }
 
+void QuadPlane::init_land(void)
+{
+    init_loiter();
+    throttle_wait = false;
+    land_state = QLAND_DESCEND;
+    motors_lower_limit_start_ms = 0;
+}
+
 
 // helper for is_flying()
 bool QuadPlane::is_flying(void)
@@ -644,8 +652,23 @@ void QuadPlane::control_loiter()
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
 
-    // update altitude target and call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(get_pilot_desired_climb_rate_cms(), plane.G_Dt, false);
+    if (plane.control_mode == QLAND) {
+        if (land_state == QLAND_DESCEND) {
+            if (plane.g.rangefinder_landing && plane.rangefinder_state.in_range) {
+                if (plane.rangefinder_state.height_estimate < land_final_alt) {
+                    land_state = QLAND_FINAL;
+                }
+            } else if (plane.adjusted_relative_altitude_cm() < land_final_alt*100) {
+                land_state = QLAND_FINAL;                
+            }
+        }
+        float descent_rate = (land_state == QLAND_FINAL)?land_speed_cms:wp_nav->get_speed_down();
+        pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
+        check_land_complete();
+    } else {
+        // update altitude target and call position controller
+        pos_control->set_alt_target_from_climb_rate_ff(get_pilot_desired_climb_rate_cms(), plane.G_Dt, false);
+    }
     pos_control->update_z_controller();
 }
 
@@ -848,12 +871,7 @@ void QuadPlane::update(void)
         return;
     }
 
-    bool quad_mode = (plane.control_mode == QSTABILIZE ||
-                      plane.control_mode == QHOVER ||
-                      plane.control_mode == QLOITER ||
-                      in_vtol_auto());
-    
-    if (!quad_mode) {
+    if (!in_vtol_mode()) {
         update_transition();
     } else {
         assisted_flight = false;
@@ -898,8 +916,8 @@ void QuadPlane::control_run(void)
         control_hover();
         break;
     case QLOITER:
+    case QLAND:
         control_loiter();
-        break;
     default:
         break;
     }
@@ -930,6 +948,9 @@ bool QuadPlane::init_mode(void)
         break;
     case QLOITER:
         init_loiter();
+        break;
+    case QLAND:
+        init_land();
         break;
     default:
         break;
@@ -997,6 +1018,7 @@ bool QuadPlane::in_vtol_mode(void)
     return (plane.control_mode == QSTABILIZE ||
             plane.control_mode == QHOVER ||
             plane.control_mode == QLOITER ||
+            plane.control_mode == QLAND ||
             in_vtol_auto());
 }
 
@@ -1220,6 +1242,17 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     return true;
 }
 
+void QuadPlane::check_land_complete(void)
+{
+    if (land_state == QLAND_FINAL &&
+        (motors_lower_limit_start_ms != 0 &&
+         millis() - motors_lower_limit_start_ms > 5000)) {
+        plane.disarm_motors();
+        land_state = QLAND_COMPLETE;
+        plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
+    }
+}
+
 /*
   check if a VTOL landing has completed
  */
@@ -1247,12 +1280,6 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
         plane.gcs_send_text(MAV_SEVERITY_INFO,"Land final started");
     }
 
-    if (land_state == QLAND_FINAL &&
-        (motors_lower_limit_start_ms != 0 &&
-         millis() - motors_lower_limit_start_ms > 5000)) {
-        plane.disarm_motors();
-        land_state = QLAND_COMPLETE;
-        plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
-    }
+    check_land_complete();
     return false;
 }
