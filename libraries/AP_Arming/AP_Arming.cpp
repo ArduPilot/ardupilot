@@ -366,7 +366,10 @@ bool AP_Arming::battery_checks(bool report)
         for (int i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
             if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
                 if (report) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d voltage below minimum", i);
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d voltage %.1f below minimum %.1f",
+                            i+1,
+                            (double)_battery.voltage(i),
+                            (double)_min_voltage[i]);
                 }
                 return false;
             }
