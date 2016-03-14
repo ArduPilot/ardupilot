@@ -21,7 +21,7 @@ void Sub::update_surface_and_bottom_detector()
 	if (ap.depth_sensor_present) { // we can use the external pressure sensor for a very accurate and current measure of our z axis position
 		current_depth = barometer.get_altitude();
 
-		set_surfaced(current_depth > g.surface_depth); // If we are above surface depth, we are surfaced
+		set_surfaced(current_depth > g.surface_depth/100.0); // If we are above surface depth, we are surfaced
 
 		if(motors.limit.throttle_lower && vel_stationary) {
 			// bottom criteria met - increment the counter and check if we've triggered
