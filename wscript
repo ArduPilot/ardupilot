@@ -78,8 +78,6 @@ def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     boards.get_board(cfg.env.BOARD).configure(cfg)
 
-    cfg.load('toolchain')
-    cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
@@ -119,6 +117,11 @@ def configure(cfg):
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
     globs = Utils.to_list(globs)
+
+    if bld.bldnode.is_child_of(bld.srcnode):
+        kw['excl'] = Utils.to_list(kw.get('excl', []))
+        kw['excl'].append(bld.bldnode.path_from(bld.srcnode))
+
     for g in globs:
         for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
             dirs.append(d.parent.relpath())
@@ -229,6 +232,7 @@ def build(bld):
     _build_dynamic_sources(bld)
 
     bld.add_group('build')
+    boards.get_board(bld.env.BOARD).build(bld)
     _build_common_taskgens(bld)
 
     _build_recursion(bld)

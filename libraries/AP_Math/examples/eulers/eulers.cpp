@@ -234,8 +234,12 @@ void test_frame_transforms(void)
 // generate a random float between -1 and 1
 static float rand_num(void)
 {
-    float ret = ((unsigned)random()) % 2000000;
-    return (ret - 1.0e6f) / 1.0e6f;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    /* random() isn't implemented for PX4 */
+    return 2.0f * rand() / MAX_RAND - 1.0f;
+#else
+    return 2.0f * random() / RAND_MAX - 1.0f;
+#endif
 }
 
 void test_matrix_rotate(void)

@@ -48,7 +48,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'Filter',
     'GCS_MAVLink',
     'RC_Channel',
-    'SITL',
     'StorageManager',
 ]
 
@@ -72,6 +71,8 @@ def ap_get_all_libraries(bld):
         if name in IGNORED_AP_LIBRARIES:
             continue
         if name.startswith('AP_HAL'):
+            continue
+        if name == 'SITL':
             continue
         libraries.append(name)
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
@@ -101,13 +102,23 @@ def ap_program(bld, program_group='bin',
     if use_legacy_defines:
         kw['defines'].extend(_get_legacy_defines(bld.path.name))
 
-    kw['features'] = common_features(bld) + kw.get('features', [])
+    kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
 
     name = os.path.join(program_group, program_name)
 
-    tg = bld.program(
+    tg_constructor = bld.program
+    if bld.env.AP_PROGRAM_AS_STLIB:
+        tg_constructor = bld.stlib
+    else:
+        if bld.env.STATIC_LINKING:
+            kw['features'].append('static_linking')
+
+
+    tg = tg_constructor(
         target='#%s' % name,
         name=name,
+        program_name=program_name,
+        program_group=program_group,
         **kw
     )
     _grouped_programs.setdefault(program_group, []).append(tg)
@@ -128,12 +139,6 @@ def _get_next_idx():
     LAST_IDX += 1
     return LAST_IDX
 
-def common_features(bld):
-    features = []
-    if bld.env.STATIC_LINKING:
-        features.append('static_linking')
-    return features
-
 @conf
 def ap_stlib(bld, **kw):
     if 'name' not in kw:
@@ -153,6 +158,7 @@ def ap_stlib(bld, **kw):
         lib_sources = lib_node.ant_glob(SOURCE_EXTS + UTILITY_SOURCE_EXTS)
         sources.extend(lib_sources)
 
+    kw['features'] = kw.get('features', []) + bld.env.AP_STLIB_FEATURES
     kw['source'] = sources
     kw['target'] = kw['name']
     kw['defines'] = _get_legacy_defines(kw['vehicle'])
@@ -165,7 +171,7 @@ def ap_find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
         return
 
-    features = common_features(bld)
+    features = []
     if bld.cmd == 'check':
         features.append('test')
 
@@ -197,7 +203,7 @@ def ap_find_benchmarks(bld, use=[]):
     for f in bld.path.ant_glob(incl='*.cpp'):
         ap_program(
             bld,
-            features=common_features(bld) + ['gbenchmark'],
+            features=['gbenchmark'],
             includes=includes,
             source=[f],
             use=use,
@@ -315,10 +321,18 @@ def options(opt):
              'examples. The special group "all" selects all programs.',
     )
 
+    g.add_option('--upload',
+        action='store_true',
+        help='Upload applicable targets to a connected device. Not all ' +
+             'platforms may support this. Example: `waf copter --upload` ' +
+             'means "build arducopter and upload it to my board".',
+    )
+
     g = opt.ap_groups['check']
     g.add_option('--check-verbose',
                  action='store_true',
                  help='Output all test programs')
+
 
 def build(bld):
     global LAST_IDX
