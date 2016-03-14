@@ -402,8 +402,8 @@ void PX4RCOutput::_timer_tick(void)
         if (_max_channel <= _servo_count) {
             ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
         } else {
-            // we're using both sets of outputs
-            ::write(_pwm_fd, _period, _servo_count*sizeof(_period[0]));
+            // we're using both sets of outputs, but write all channels to PX4IO to allow >8ch S.BUS out
+            ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
             if (_alt_fd != -1 && _alt_servo_count > 0) {
                 uint8_t n = _max_channel - _servo_count;
                 if (n > _alt_servo_count) {
