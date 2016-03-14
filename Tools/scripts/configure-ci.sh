@@ -4,7 +4,7 @@
 set -ex
 
 PKGS="build-essential gawk ccache genromfs libc6-i386 \
-      python-argparse python-empy python-serial python-pexpect python-dev python-pip zlib1g-dev gcc-4.9 g++-4.9"
+      python-argparse python-empy python-serial python-pexpect python-dev python-pip zlib1g-dev gcc-4.9 g++-4.9 cmake cmake-data"
 
 ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
@@ -12,9 +12,16 @@ ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 RPI_ROOT="master"
 RPI_TARBALL="$RPI_ROOT.tar.gz"
 
+read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
+
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+
+if [ "$UBUNTU_CODENAME" = "precise" ]; then
+    sudo add-apt-repository ppa:george-edison55/precise-backports -y
+fi
+
 sudo apt-get -qq -y update
-sudo apt-get -qq -y install $PKGS
+sudo apt-get -y install $PKGS
 sudo pip install mavproxy
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 90 \
     --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
