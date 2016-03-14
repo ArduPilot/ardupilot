@@ -129,7 +129,7 @@ void Sub::althold_run()
             	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         	} else if(pos_control.get_vel_target_z() > 0.0) {
         		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
-        		pos_control.set_alt_target(g.surface_depth*100); // set alt target to the same depth that triggers the surface detector.
+        		pos_control.set_alt_target(g.surface_depth); // set alt target to the same depth that triggers the surface detector.
         	}
         } else {
         	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
