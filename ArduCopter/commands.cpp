@@ -49,6 +49,9 @@ bool Copter::set_home_to_current_location() {
 bool Copter::set_home_to_current_location_and_lock()
 {
     if (set_home_to_current_location()) {
+        // tell barometer about GPS altitude (for air pressure drift compensation)
+        barometer.set_home_alt(gps.location().alt*0.01f);
+
         set_home_state(HOME_SET_AND_LOCKED);
         return true;
     }
@@ -78,6 +81,9 @@ bool Copter::set_home(const Location& loc)
 
     // set ahrs home (used for RTL)
     ahrs.set_home(loc);
+
+    // tell barometer about HOME altitude (for air pressure drift compensation)
+    barometer.set_home_alt(loc.alt*0.01f);
 
     // init inav and compass declination
     if (ap.home_state == HOME_UNSET) {

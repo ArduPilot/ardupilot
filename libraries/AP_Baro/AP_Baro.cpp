@@ -42,6 +42,12 @@
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
+#define GPS_LOOP_FREQ     50.f                  // GPS loop frequency in Hz
+#define GPS_DT            1.f/GPS_LOOP_FREQ
+#define ADJ_RATE_DEFAULT  0                     // disabled
+#define ADJ_DELAY_DEFAULT 120                   // no of GPS alt samples to be collected after last alt_target change
+#define ADJ_TC_DEFAULT    180                   // default GPS filtering TC (=30 sec)
+
 
 extern const AP_HAL::HAL& hal;
 
@@ -129,15 +135,43 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // Slot 12 used to be TEMP3
 #endif
 
+    // @Param: ADJ_RATE
+    // @DisplayName: baro adjustment rate
+    // @Description: Rate of barometer adjustment using GPS. If enabled (>=0.1), the barometer ground pressure is slowly adjusted during flight segments with constant altitude target by using GPS information.  Recommended value: 1cm/sec
+    // @Units: cm/second
+    // @Range: 0 10
+    // @Increment: 0.1
+    AP_GROUPINFO("ADJ_RATE", 13, AP_Baro, _adj_step, ADJ_RATE_DEFAULT),
+
+    // @Param: ADJ_TC
+    // @DisplayName: GPS filter time constant
+    // @Description: Time constant for the low pass filter applied to the GPS signal. As we only want to compensate for long-term trends, the should be fairly large (30sec...several mintes)
+    // @Units: seconds
+    // @Range: 10 600
+    // @Increment: 1
+    AP_GROUPINFO("ADJ_TC", 14, AP_Baro, _adj_timeconstant, ADJ_TC_DEFAULT),
+
+    // @Param: ADJ_DELAY
+    // @DisplayName: Alt adjust delay
+    // @Description: Dead time before alt tuning starts after constant alt target has been reached.
+    // @Units: seconds
+    // @Range: 10 600
+    // @Increment: 1
+    AP_GROUPINFO("ADJ_DELAY", 15, AP_Baro, _adj_delay, ADJ_DELAY_DEFAULT),
+
     AP_GROUPEND
 };
 
 /*
   AP_Baro constructor
  */
-AP_Baro::AP_Baro()
+AP_Baro::AP_Baro() :
+        _home_alt(0.f),
+        _last_alt_target(0.f),
+        _adj_sample_count(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    _gps_alt_over_home.set_cutoff_frequency(1.f/float(_adj_timeconstant.get()));
 }
 
 // calibrate the barometer. This must be called at least once before
@@ -241,6 +275,9 @@ void AP_Baro::update_calibration()
 
     // force EAS2TAS to recalculate
     _EAS2TAS = 0;
+
+    // reset alt offset on calibration
+    _alt_offset.set_and_save(0);
 }
 
 // return altitude difference in meters between current pressure and a
@@ -588,4 +625,60 @@ bool AP_Baro::all_healthy(void) const
          }
      }
      return _num_sensors > 0;
+}
+
+
+// update altitude_target
+// alt_target: cm above home
+void AP_Baro::update_alt_target(float alt_target)
+{
+    if (_adj_step < 0.1f) {
+        // disabled
+        return;
+    }
+
+    if (fabsf(alt_target - _last_alt_target) > 0.02f*_adj_step) {
+        // alt target changed significantly (>2 steps), trigger GPS filter reset
+        _adj_sample_count = 0;
+        _last_alt_target = alt_target;
+    }
+    else {
+        // alt target is constant
+        if (_adj_sample_count >= _adj_delay*GPS_LOOP_FREQ) {
+            // enough GPS samples, start adjusting, with a max rate of one inc per second (0.1 m/s)
+            const float difference = _gps_alt_over_home.get() - get_altitude();
+
+            // check difference with hysteresis of 3 steps
+            if (fabsf(difference) > 0.03f*_adj_step) {
+                // if we see a 1 hz pulsing as a result, we should do 1/10 steps in update() instead
+                _alt_offset.set(_alt_offset.get() + copysignf(_adj_step*0.01f, difference));
+            }
+        }
+    }
+}
+
+
+// store and buffer a single GPS alt reading
+// gps_alt: GPS altitude in cm (AMSL)
+void AP_Baro::update_gps_alt(float gps_alt)
+{
+    // re-initialize filter after alt change
+    if (_adj_sample_count == 0) {
+        _gps_alt_over_home.reset(gps_alt - _home_alt);
+    }
+    else {
+        _gps_alt_over_home.apply(gps_alt - _home_alt, GPS_DT);
+    }
+
+
+    if (_adj_sample_count < _adj_delay*GPS_LOOP_FREQ) {
+        _adj_sample_count++;
+    }
+}
+
+
+// set altitude reference (in meters)
+void AP_Baro::set_home_alt(float gps_alt)
+{
+    _home_alt = gps_alt;
 }
