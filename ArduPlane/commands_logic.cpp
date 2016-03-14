@@ -1027,7 +1027,11 @@ bool Plane::verify_loiter_heading(bool init)
     if (labs(heading_err_cd) <= 1000  ||
             loiter.sum_cd > loiter.total_cd) {
         // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
-        next_WP_loc = current_loc;
+
+        // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        if (next_WP_loc.flags.loiter_xtrack) {
+            next_WP_loc = current_loc;
+        }
         return true;
     }
     return false;
