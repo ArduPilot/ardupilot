@@ -18,6 +18,8 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
 
 if [ "$UBUNTU_CODENAME" = "precise" ]; then
     sudo add-apt-repository ppa:george-edison55/precise-backports -y
+elif [ "$UBUNTU_CODENAME" = "trusty" ]; then
+    sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
 fi
 
 sudo apt-get -qq -y update
