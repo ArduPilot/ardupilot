@@ -2,6 +2,8 @@
 
 #include "Plane.h"
 
+#define PARACHUTE_CHECK_TRIGGER_MS         1000  // 1 second of loss of control triggers the parachute
+
 
 /*
    call parachute library update
@@ -60,9 +62,6 @@ bool Plane::parachute_manual_release()
     return true;
 }
 
-// Code to detect loss of control for ArduPlane
-#define PARACHUTE_CHECK_TRIGGER_SEC         1  // 1 second of loss of control triggers the parachute
-
 /*
   parachute_emergency_check - trigger the release of the parachute
   automatically if a critical situation is detected
@@ -72,42 +71,42 @@ void Plane::parachute_emergency_check()
     uint32_t now = millis();
 
     // exit immediately if parachute or automatic release is not enabled, or already released
-    if (!parachute.enabled() || parachute.released() || g.parachute_auto_enabled == 0) {
-        chute_control_loss_ms = 0;
+    if (!parachute.auto_enabled() || parachute.released()) {
+        parachute.control_loss_ms(0);
         return;
     }
 
     // only automatically release in AUTO mode
     if (control_mode != AUTO) {
-        chute_control_loss_ms = 0;
+        parachute.control_loss_ms(0);
         return;
     }
 
     // do not release if taking off or landing
     if (auto_state.takeoff_complete == false || mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
-        chute_control_loss_ms = 0;
+        parachute.control_loss_ms(0);
         return;
     }
 
     if (relative_altitude() < parachute.alt_min()) {
-        chute_control_loss_ms = 0;
+        parachute.control_loss_ms(0);
         return;
     }
 
     // do not release if we are flying within given error
-    if (altitude_error_cm < g.parachute_auto_error * 100.0f) {
-        chute_control_loss_ms = 0;
+    if (altitude_error_cm < parachute.auto_error_cm()) {
+        parachute.control_loss_ms(0);
         return;
     }
 
     // at this point we consider control lost
-    if (chute_control_loss_ms == 0) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Crash: Starting to lose control, %d m error", altitude_error_cm / 100);
-        chute_control_loss_ms = now;
-    } else if (now - chute_control_loss_ms > PARACHUTE_CHECK_TRIGGER_SEC * 1000) {
+    if (parachute.control_loss_ms() == 0) {
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Crash: Starting to lose control, %d m error", altitude_error_cm * 0.01f);
+        parachute.control_loss_ms(now);
+    } else if (now - parachute.control_loss_ms() > PARACHUTE_CHECK_TRIGGER_MS) {
         // we have lost control for too long
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Crash: Critical altitude error %d m", altitude_error_cm / 100);
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Crash: Critical altitude error %d m", altitude_error_cm * 0.01f);
         parachute_release();
-        chute_control_loss_ms = 0;
+        parachute.control_loss_ms(0);
     }
 }

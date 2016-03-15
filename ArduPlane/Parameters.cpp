@@ -1062,22 +1062,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
     GOBJECT(parachute,		"CHUTE_", AP_Parachute),
 
-    // @Param: CHUTE_AUTO_ON
-    // @DisplayName: Parachute automatic emergency release
-    // @Description: Parachute automatic emergency release enabled or disabled.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(parachute_auto_enabled,    "CHUTE_AUTO_ON",   0),
-
-    // @Param: CHUTE_AUTO_ERROR
-    // @DisplayName: Altitude deviation for parachute release
-    // @Description: Altitude deviation at which to release parachute if in AUTO and CHUTE_AUTO_ON.
-    // @Units: Meters
-    // @Range: 10 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(parachute_auto_error,      "CHUTE_AUTO_ERROR",      20),
-
     // @Param: CHUTE_CHAN
     // @DisplayName: Parachute release channel
     // @Description: If set to a non-zero value then this is an RC input channel number to use for manually releasing the parachute. When this channel goes above 1700 the parachute will be released

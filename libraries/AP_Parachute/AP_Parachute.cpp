@@ -52,6 +52,24 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ALT_MIN", 4, AP_Parachute, _alt_min, AP_PARACHUTE_ALT_MIN_DEFAULT),
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // @Param: CHUTE_AUTO_ENABLED
+    // @DisplayName: Parachute automatic emergency release
+    // @Description: Parachute automatic emergency release enabled or disabled.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("AUTO_ENABLED", 5, AP_Parachute, _auto_enabled, AP_PARACHUTE_AUTO_ON_DEFAULT),
+
+    // @Param: CHUTE_AUTO_ERROR
+    // @DisplayName: Altitude deviation for parachute release
+    // @Description: Altitude deviation at which to release parachute if in AUTO and CHUTE_AUTO_ON.
+    // @Units: Meters
+    // @Range: 10 32767
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("AUTO_ERROR", 6, AP_Parachute, _auto_error, AP_PARACHUTE_AUTO_ERROR_DEFAULT),
+#endif
+
     AP_GROUPEND
 };
 
@@ -120,3 +138,10 @@ void AP_Parachute::update()
         AP_Notify::flags.parachute_release = 0;
     }
 }
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+void AP_Parachute::control_loss_ms(uint32_t time)
+{
+    _control_loss_ms = time;
+}
+#endif

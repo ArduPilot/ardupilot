@@ -9,6 +9,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Relay/AP_Relay.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_0       0
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_1       1
@@ -23,6 +24,9 @@
 #define AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT     1100    // default PWM value to move servo to when shutter is deactivated
 
 #define AP_PARACHUTE_ALT_MIN_DEFAULT            10     // default min altitude the vehicle should have before parachute is released
+
+#define AP_PARACHUTE_AUTO_ON_DEFAULT            0      // automatic emergency parachute release is off by default
+#define AP_PARACHUTE_AUTO_ERROR_DEFAULT         20     // altitude error at which to deploy parachute automatically
 
 /// @class	AP_Parachute
 /// @brief	Class managing the release of a parachute
@@ -59,6 +63,17 @@ public:
     ///   0 = altitude check disabled
     int16_t alt_min() const { return _alt_min; }
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    /// the time when control of aircraft was continuously lost
+    void control_loss_ms(uint32_t time);
+    uint32_t control_loss_ms() const { return _control_loss_ms; }
+
+    int16_t auto_error_cm() const { return _auto_error * 100.0f; }
+
+    /// auto_enabled - returns true if parachute automatic emergency release is enabled
+    bool auto_enabled() const { return enabled() && _auto_enabled; }
+#endif
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
@@ -68,12 +83,19 @@ private:
     AP_Int16    _servo_on_pwm;  // PWM value to move servo to when shutter is activated
     AP_Int16    _servo_off_pwm; // PWM value to move servo to when shutter is deactivated
     AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    AP_Int16    _auto_enabled;  // 1 if automatic emergency parachute release is enabled
+    AP_Int16    _auto_error;    // altitude error in metres at which to deploy parachute automatically (if enabled)
+#endif
 
     // internal variables
     AP_Relay   &_relay;         // pointer to relay object from the base class Relay.
     uint32_t    _release_time;  // system time that parachute is ordered to be released (actual release will happen 0.5 seconds later)
     bool        _release_in_progress:1;  // true if the parachute release is in progress
     bool        _released:1;    // true if the parachute has been released
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    uint32_t    _control_loss_ms;  // automatic parachute deployment check, start of continuously lost control
+#endif
 };
 
 #endif /* AP_PARACHUTE_H */
