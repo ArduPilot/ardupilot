@@ -425,7 +425,7 @@ const AP_Param::Info Rover::var_info[] = {
 	// variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/Compass.cpp
+    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
 	GOBJECT(compass,                "COMPASS_",	Compass),
 
     // @Group: SCHED_
