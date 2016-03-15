@@ -1261,7 +1261,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param2 : new speed in m/s
             // param3 : unused
             // param4 : unused
-            if (packet.param2 > 0.0f) {
+            if (packet.param2 >= 0.0f) {
                 copter.wp_nav.set_speed_xy(packet.param2 * 100.0f);
                 result = MAV_RESULT_ACCEPTED;
             } else {
