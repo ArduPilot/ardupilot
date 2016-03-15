@@ -144,14 +144,10 @@ void Plane::init_ardupilot()
     usb_connected = true;
     check_usb_mux();
 
-    // setup serial port for telem1
-    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
-
-    // setup serial port for telem2
-    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
-
-    // setup serial port for fourth telemetry port (not used by default)
-    gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
+    // setup all other telem slots with  serial ports
+    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+        gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, (i - 1));
+    }
 
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
