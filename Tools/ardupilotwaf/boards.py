@@ -26,6 +26,9 @@ class Board:
     abstract = True
 
     def configure(self, cfg):
+        cfg.load('toolchain')
+        cfg.load('compiler_cxx compiler_c')
+
         env = waflib.ConfigSet.ConfigSet()
         self.configure_env(cfg, env)
 
@@ -45,9 +48,6 @@ class Board:
                 cfg.env.prepend_value(k, val)
             else:
                 cfg.env[k] = val
-
-        cfg.load('toolchain')
-        cfg.load('compiler_cxx compiler_c')
 
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
