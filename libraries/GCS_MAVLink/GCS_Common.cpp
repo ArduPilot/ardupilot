@@ -746,6 +746,19 @@ GCS_MAVLINK::handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps)
 
 }
 
+/*
+  handle a RALLY_REQUEST_LIST mavlink packet
+ */
+void GCS_MAVLINK::handle_rally_request_list(AP_Rally &rally, mavlink_message_t *msg)
+{
+    // decode
+    mavlink_rally_request_list_t packet;
+    mavlink_msg_rally_request_list_decode(msg, &packet);
+
+    // reply with number of commands in the mission.  The GCS will then request each command separately
+    mavlink_msg_rally_count_send(chan,msg->sysid, msg->compid, rally.get_rally_total());
+}
+
 // send a message using mavlink, handling message queueing
 void GCS_MAVLINK::send_message(enum ap_message id)
 {
