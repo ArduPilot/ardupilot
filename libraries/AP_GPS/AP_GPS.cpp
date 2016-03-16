@@ -424,11 +424,12 @@ AP_GPS::update(void)
 
         switch (_auto_switch) {
         default:
-        case 0: // auto-switch disabled, always use GPS1 as primary
+        case GPS_AUTO_SWITCH_DISABLED:
+            // auto-switch disabled, always use GPS1 as primary
             primary_instance = 0;
             break;
 
-        case 1: // Use the better lock
+        case GPS_AUTO_SWITCH_BETTER_LOCK:
             if (state[0].status > state[1].status) {
                 // there is a higher status lock, change GPS
                 primary_instance = 0;
@@ -438,7 +439,7 @@ AP_GPS::update(void)
             }
             break;
 
-        case 2: // Treat GPS2 as backup
+        case GPS_AUTO_SWITCH_GPS2_AS_BACKUP:
             if (state[0].status >= GPS_OK_FIX_3D || // GPS1 has a lock
                     state[0].status >= state[1].status || // GPS1 lock >= GPS2 lock
                     timing[0].last_fix_time_ms == 0) { // GPS1 has never locked before. GPS2 is an in-flight backup, not pre-flight backup.
