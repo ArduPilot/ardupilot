@@ -24,11 +24,11 @@ void Sub::update_land_and_crash_detectors()
 // called at MAIN_LOOP_RATE
 void Sub::update_land_detector()
 {
-	if(barometer.num_instances() > 1 && barometer.get_altitude() > LAND_END_DEPTH && ap.throttle_zero) {
-		set_land_complete(true);
-	} else {
+//	if(barometer.num_instances() > 1 && barometer.get_altitude() > LAND_END_DEPTH && ap.throttle_zero) {
+//		set_land_complete(true);
+//	} else {
 		set_land_complete(false);
-	}
+//	}
 }
 
 void Sub::set_land_complete(bool b)
