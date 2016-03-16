@@ -1888,6 +1888,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
 #if AC_RALLY == ENABLED
+    // GCS request the full list of commands, we return just the number and leave the GCS to then request each command individually
+    case MAVLINK_MSG_ID_RALLY_REQUEST_LIST:       // MAV ID: 227
+    {
+        handle_rally_request_list(copter.rally, msg);
+        break;
+    }
+
     // receive a rally point from GCS and store in EEPROM
     case MAVLINK_MSG_ID_RALLY_POINT: {
         mavlink_rally_point_t packet;
