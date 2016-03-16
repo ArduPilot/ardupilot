@@ -44,7 +44,7 @@ class Board:
                     keys.sort()
                 val = ['%s=%s' % (vk, val[vk]) for vk in keys]
 
-            if k in cfg.env and isinstance(cfg.env, list):
+            if k in cfg.env and isinstance(cfg.env[k], list):
                 cfg.env.prepend_value(k, val)
             else:
                 cfg.env[k] = val
