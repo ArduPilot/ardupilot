@@ -31,8 +31,12 @@
 #include <AP_InertialSensor/AuxiliaryBus.h>
 
 extern const AP_HAL::HAL& hal;
+#if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
+ #define HMC5843_I2C_ADDR     0x3C
+#else
+ #define HMC5843_I2C_ADDR     0x1E
+#endif
 
-#define HMC5843_I2C_ADDR     0x1E
 #define ConfigRegA           0x00
 #define ConfigRegB           0x01
 #define magGain              0x20
