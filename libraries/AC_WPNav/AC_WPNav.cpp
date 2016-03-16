@@ -214,6 +214,7 @@ void AC_WPNav::loiter_soften_for_landing()
     const Vector3f& curr_pos = _inav.get_position();
 
     // set target position to current position
+    _pos_control.init_xy_controller(true);
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
     _pos_control.freeze_ff_xy();
 }
