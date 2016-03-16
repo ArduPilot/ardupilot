@@ -98,6 +98,8 @@ public:
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
+    void inject_data(uint8_t *data, uint8_t len);
+    
     bool is_configured(void) {
         if (!gps._auto_config) {
             return true;
