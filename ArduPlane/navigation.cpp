@@ -143,13 +143,20 @@ void Plane::update_loiter(uint16_t radius)
         loiter.direction = (g.loiter_radius < 0) ? -1 : 1;
     }
 
-    if (loiter.start_time_ms == 0 &&
-        control_mode == AUTO &&
-        !auto_state.no_crosstrack &&
+    if (control_mode == AUTO &&
         get_distance(current_loc, next_WP_loc) > radius*2) {
-        // if never reached loiter point and using crosstrack and somewhat far away from loiter point
-        // navigate to it like in auto-mode for normal crosstrack behavior
-        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+        // if we've a little bit away from the waypoint then navigate like a normal waypoint
+
+        if (loiter.start_time_ms == 0 &&
+            !auto_state.no_crosstrack &&
+            !location_passed_point(current_loc,prev_WP_loc, next_WP_loc)) {
+            // if we havn't reached loiter then navigate like a normal
+            nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+        } else {
+            // we've somehow passed the waypoint or we're not cross tracking,
+            // navigate from where we're at like normal
+            nav_controller->update_waypoint(current_loc, next_WP_loc);
+        }
     } else {
         nav_controller->update_loiter(next_WP_loc, radius, loiter.direction);
     }
