@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
     // @Description: Automatic switchover to GPS reporting best lock
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Use the better lock,2:Treat GPS2 as backup
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
 
@@ -401,47 +401,60 @@ AP_GPS::update_instance(uint8_t instance)
 void
 AP_GPS::update(void)
 {
+    uint32_t now = AP_HAL::millis();
+
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         update_instance(i);
     }
 
-    // work out which GPS is the primary, and how many sensors we have
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
-        if (state[i].status != NO_GPS) {
-            num_instances = i+1;
-        }
-        if (_auto_switch) {            
-            if (i == primary_instance) {
-                continue;
-            }
-            if (state[i].status > state[primary_instance].status) {
-                // we have a higher status lock, change GPS
-                primary_instance = i;
-                continue;
-            }
-
-            bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
-
-            if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
-
-                uint32_t now = AP_HAL::millis();
-                bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
-
-                if ( (another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
-                     (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000 ) ) {
-                // this GPS has more satellites than the
-                // current primary, switch primary. Once we switch we will
-                // then tend to stick to the new GPS as primary. We don't
-                // want to switch too often as it will look like a
-                // position shift to the controllers.
-                primary_instance = i;
-                _last_instance_swap_ms = now;
-                }
-            }
-        } else {
-            primary_instance = 0;
-        }
+    // work out how many sensors we have
+    uint8_t num_instances_temp = 0;
+    if (state[0].status != NO_GPS) {
+        num_instances_temp = 1;
     }
+    if (state[1].status != NO_GPS) {
+        num_instances_temp = 2;
+    }
+    num_instances = num_instances_temp;
+
+    // work out which GPS is the primary
+    if (now - _last_instance_swap_ms > 10000) {
+        // don't allow switches any faster than every 10 seconds
+        uint8_t primary_index = primary_instance;
+
+        switch (_auto_switch) {
+        default:
+        case 0: // auto-switch disabled, always use GPS1 as primary
+            primary_instance = 0;
+            break;
+
+        case 1: // Use the better lock
+            if (state[0].status > state[1].status) {
+                // there is a higher status lock, change GPS
+                primary_instance = 0;
+            } else if (state[1].status > state[0].status) {
+                // there is a higher status lock, change GPS
+                primary_instance = 1;
+            }
+            break;
+
+        case 2: // Treat GPS2 as backup
+            if (state[0].status >= GPS_OK_FIX_3D || // GPS1 has a lock
+                    state[0].status >= state[1].status || // GPS1 lock >= GPS2 lock
+                    timing[0].last_fix_time_ms == 0) { // GPS1 has never locked before. GPS2 is an in-flight backup, not pre-flight backup.
+                primary_instance = 0;
+            } else {
+                primary_instance = 1;
+            }
+            break;
+        } // switch
+
+        // if primary index changed note the time to inhibit doing this too often
+        if (primary_index != primary_instance) {
+            _last_instance_swap_ms = now;
+        }
+    } // if >10s
+
 
 	// update notify with gps status. We always base this on the primary_instance
     AP_Notify::flags.gps_status = state[primary_instance].status;
