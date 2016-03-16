@@ -369,6 +369,8 @@ private:
 
     /// primary GPS instance
     uint8_t primary_instance:2;
+    uint8_t primary_instance_change_request:2;
+    uint32_t primary_instance_change_debounce_ms;
 
     /// number of GPS instances present
     uint8_t num_instances:2;

@@ -418,9 +418,9 @@ AP_GPS::update(void)
     num_instances = num_instances_temp;
 
     // work out which GPS is the primary
-    if (now - _last_instance_swap_ms > 10000) {
-        // don't allow switches any faster than every 10 seconds
-        uint8_t primary_index = primary_instance;
+    if (now - _last_instance_swap_ms > 20000 ||
+            state[primary_instance].status < GPS_OK_FIX_3D) {
+        // don't allow switches any faster than every 20 seconds except if primary is in trouble
 
         switch (_auto_switch) {
         default:
@@ -430,12 +430,12 @@ AP_GPS::update(void)
             break;
 
         case GPS_AUTO_SWITCH_BETTER_LOCK:
-            if (state[0].status > state[1].status) {
-                // there is a higher status lock, change GPS
-                primary_instance = 0;
-            } else if (state[1].status > state[0].status) {
-                // there is a higher status lock, change GPS
-                primary_instance = 1;
+            if (state[0].status > state[1].status && (state[0].num_sats >= state[1].num_sats + 2)) {
+                // there is a higher status lock or 2+ sats, change GPS
+                primary_instance_change_request = 0;
+            } else if (state[1].status > state[0].status && (state[1].num_sats >= state[0].num_sats + 2)) {
+                // there is a higher status lock or 2+ sats, change GPS
+                primary_instance_change_request = 1;
             }
             break;
 
@@ -443,16 +443,26 @@ AP_GPS::update(void)
             if (state[0].status >= GPS_OK_FIX_3D || // GPS1 has a lock
                     state[0].status >= state[1].status || // GPS1 lock >= GPS2 lock
                     timing[0].last_fix_time_ms == 0) { // GPS1 has never locked before. GPS2 is an in-flight backup, not pre-flight backup.
-                primary_instance = 0;
+                primary_instance_change_request = 0;
             } else {
-                primary_instance = 1;
+                primary_instance_change_request = 1;
             }
             break;
         } // switch
 
-        // if primary index changed note the time to inhibit doing this too often
-        if (primary_index != primary_instance) {
-            _last_instance_swap_ms = now;
+        // if primary index changed note the time to inhibit doing this too often with a 1000ms debounce
+        if (primary_instance_change_request != primary_instance) {
+            // to protect against glitches, require the instance change request to persist for 1000ms
+            if (primary_instance_change_debounce_ms == 0) {
+                primary_instance_change_debounce_ms = now;
+            } else if (now - primary_instance_change_debounce_ms >= 1000) {
+                // a change request has persisted, do the swap
+                _last_instance_swap_ms = now;
+                primary_instance = primary_instance_change_request;
+                primary_instance_change_debounce_ms = 0;
+            }
+        } else {
+            primary_instance_change_debounce_ms = 0;
         }
     } // if >10s
 
