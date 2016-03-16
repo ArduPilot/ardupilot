@@ -3,7 +3,7 @@
 #include "Sub.h"
 
 #ifdef USERHOOK_INIT
-void Copter::userhook_init()
+void Sub::userhook_init()
 {
     // put your initialisation code here
     // this will be called once at start-up
@@ -11,35 +11,35 @@ void Copter::userhook_init()
 #endif
 
 #ifdef USERHOOK_FASTLOOP
-void Copter::userhook_FastLoop()
+void Sub::userhook_FastLoop()
 {
     // put your 100Hz code here
 }
 #endif
 
 #ifdef USERHOOK_50HZLOOP
-void Copter::userhook_50Hz()
+void Sub::userhook_50Hz()
 {
     // put your 50Hz code here
 }
 #endif
 
 #ifdef USERHOOK_MEDIUMLOOP
-void Copter::userhook_MediumLoop()
+void Sub::userhook_MediumLoop()
 {
     // put your 10Hz code here
 }
 #endif
 
 #ifdef USERHOOK_SLOWLOOP
-void Copter::userhook_SlowLoop()
+void Sub::userhook_SlowLoop()
 {
     // put your 3.3Hz code here
 }
 #endif
 
 #ifdef USERHOOK_SUPERSLOWLOOP
-void Copter::userhook_SuperSlowLoop()
+void Sub::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
 }
