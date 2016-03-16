@@ -82,8 +82,6 @@ static inline void adc_disable_all(void) {
     adc_foreach(adc_disable);
 }
 
-uint16_t temp_read(void);
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

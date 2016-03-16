@@ -5,6 +5,7 @@
 #include <HardwareTimer.h>
 #include <systick.h>
 #include <AP_Notify/AP_Notify.h>
+#include "GPIO.h"
 
 using namespace REVOMINI;
 
@@ -189,7 +190,7 @@ void REVOMINIScheduler::_timer_isr_event() {
 
     uint32 fms=systick_uptime();
 
-    if(fms - _scheduler_last_call >= 500)
+    if(fms - _scheduler_last_call >= 100)
 	{
 	 if (_scheduler_led == 1)
 	     {

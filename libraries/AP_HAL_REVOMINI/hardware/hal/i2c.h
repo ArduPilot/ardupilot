@@ -42,7 +42,7 @@
 #define sEE_LONG_TIMEOUT         ((uint32_t)(10 * sEE_FLAG_TIMEOUT))
 
 /* Maximum number of trials for sEE_WaitEepromStandbyState() function */
-#define sEE_MAX_TRIALS_NUMBER     1000 // 300
+#define sEE_MAX_TRIALS_NUMBER     300
 
 /* Defintions for the state of the DMA transfer */
 #define sEE_STATE_READY           0
@@ -53,125 +53,62 @@
 #define sEE_FAIL                  1
 
 
-#define sEE_I2C                          I2C1
+#define sEE_I2C2                          I2C2
+#define sEE_I2C1                          I2C1
 
-//#define sEE_I2C_CLK                      RCC_APB1Periph_I2C1
-//#define sEE_I2C_SCL_PIN                  GPIO_Pin_6                  /* PB.06 */
-//#define sEE_I2C_SCL_GPIO_PORT            GPIOB                       /* GPIOB */
-//#define sEE_I2C_SCL_GPIO_CLK             RCC_AHB1Periph_GPIOB
-//#define sEE_I2C_SCL_SOURCE               GPIO_PinSource6
-//#define sEE_I2C_SCL_AF                   GPIO_AF_I2C1
-//#define sEE_I2C_SDA_PIN                  GPIO_Pin_9                  /* PB.09 */
-//#define sEE_I2C_SDA_GPIO_PORT            GPIOB                       /* GPIOB */
-//#define sEE_I2C_SDA_GPIO_CLK             RCC_AHB1Periph_GPIOB
-//#define sEE_I2C_SDA_SOURCE               GPIO_PinSource9
-//#define sEE_I2C_SDA_AF                   GPIO_AF_I2C1
-//#define sEE_M24C64_32
-
-
-/*
-#define sEE_I2C_DMA                      DMA1
-#define sEE_I2C_DMA_CHANNEL              DMA_Channel_1 // i2c2-DMA_Channel_7
-#define sEE_I2C_DMA_STREAM_TX            DMA1_Stream6 //DMA1_Stream7
-#define sEE_I2C_DMA_STREAM_RX            DMA1_Stream0 // DMA1_Stream2
-#define sEE_I2C_DMA_CLK                  RCC_AHB1Periph_DMA1
-#define sEE_I2C_DR_Address               ((uint32_t)0x40005410) // I2C1
+/* Maximum number of trials for sEE_WaitEepromStandbyState() function */
+#define sEE_MAX_TRIALS_NUMBER     300
 #define sEE_USE_DMA
-#define sEE_I2C_DMA_TX_IRQn              DMA1_Stream6_IRQn
-#define sEE_I2C_DMA_RX_IRQn              DMA1_Stream0_IRQn
-#define sEE_I2C_DMA_TX_IRQHandler        DMA1_Stream6_IRQHandler
-#define sEE_I2C_DMA_RX_IRQHandler        DMA1_Stream0_IRQHandler
-#define sEE_I2C_DMA_PREPRIO              0
-#define sEE_I2C_DMA_SUBPRIO              0
 
-#define sEE_TX_DMA_FLAG_FEIF             DMA_FLAG_FEIF6
-#define sEE_TX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF6
-#define sEE_TX_DMA_FLAG_TEIF             DMA_FLAG_TEIF6
-#define sEE_TX_DMA_FLAG_HTIF             DMA_FLAG_HTIF6
-#define sEE_TX_DMA_FLAG_TCIF             DMA_FLAG_TCIF6
-#define sEE_RX_DMA_FLAG_FEIF             DMA_FLAG_FEIF0
-#define sEE_RX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF0
-#define sEE_RX_DMA_FLAG_TEIF             DMA_FLAG_TEIF0
-#define sEE_RX_DMA_FLAG_HTIF             DMA_FLAG_HTIF0
-#define sEE_RX_DMA_FLAG_TCIF             DMA_FLAG_TCIF0
-*/
-/*
-#define sEE_I2C_DMA                      DMA1
-#define sEE_I2C_DMA_CHANNEL              DMA_Channel_1 // i2c2-DMA_Channel_7
-#define sEE_I2C_DMA_STREAM_TX            DMA1_Stream6 //DMA1_Stream7
-#define sEE_I2C_DMA_STREAM_RX            DMA1_Stream5 // DMA1_Stream2
-#define sEE_I2C_DMA_CLK                  RCC_AHB1Periph_DMA1
-#define sEE_I2C_DR_Address               ((uint32_t)0x40005410) // I2C1
-#define sEE_USE_DMA
-#define sEE_I2C_DMA_TX_IRQn              DMA1_Stream6_IRQn
-#define sEE_I2C_DMA_RX_IRQn              DMA1_Stream5_IRQn
-#define sEE_I2C_DMA_TX_IRQHandler        DMA1_Stream6_IRQHandler
-#define sEE_I2C_DMA_RX_IRQHandler        DMA1_Stream5_IRQHandler
-#define sEE_I2C_DMA_PREPRIO              0
-#define sEE_I2C_DMA_SUBPRIO              0
+#define sEE_I2C2_DMA                      DMA1
+#define sEE_I2C2_DMA_CHANNEL              DMA_Channel_7
+#define sEE_I2C2_DMA_STREAM_TX            DMA1_Stream7
+#define sEE_I2C2_DMA_STREAM_RX            DMA1_Stream2
+#define sEE_I2C2_DMA_CLK                  RCC_AHB1Periph_DMA1
+#define sEE_I2C2_DR_Address               ((uint32_t)0x40005810)
 
-#define sEE_TX_DMA_FLAG_FEIF             DMA_FLAG_FEIF6
-#define sEE_TX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF6
-#define sEE_TX_DMA_FLAG_TEIF             DMA_FLAG_TEIF6
-#define sEE_TX_DMA_FLAG_HTIF             DMA_FLAG_HTIF6
-#define sEE_TX_DMA_FLAG_TCIF             DMA_FLAG_TCIF6
-#define sEE_RX_DMA_FLAG_FEIF             DMA_FLAG_FEIF5
-#define sEE_RX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF5
-#define sEE_RX_DMA_FLAG_TEIF             DMA_FLAG_TEIF5
-#define sEE_RX_DMA_FLAG_HTIF             DMA_FLAG_HTIF5
-#define sEE_RX_DMA_FLAG_TCIF             DMA_FLAG_TCIF5
-*/
-/*
-#define sEE_I2C_DMA                      DMA1
-#define sEE_I2C_DMA_CHANNEL              DMA_Channel_1 // i2c2-DMA_Channel_7
-#define sEE_I2C_DMA_STREAM_TX            DMA1_Stream7 //DMA1_Stream7
-#define sEE_I2C_DMA_STREAM_RX            DMA1_Stream0 // DMA1_Stream2
-#define sEE_I2C_DMA_CLK                  RCC_AHB1Periph_DMA1
-#define sEE_I2C_DR_Address               ((uint32_t)0x40005410) // I2C1
-#define sEE_USE_DMA
-#define sEE_I2C_DMA_TX_IRQn              DMA1_Stream7_IRQn
-#define sEE_I2C_DMA_RX_IRQn              DMA1_Stream0_IRQn
-#define sEE_I2C_DMA_TX_IRQHandler        DMA1_Stream7_IRQHandler
-#define sEE_I2C_DMA_RX_IRQHandler        DMA1_Stream0_IRQHandler
-#define sEE_I2C_DMA_PREPRIO              0
-#define sEE_I2C_DMA_SUBPRIO              0
+#define sEE_I2C2_DMA_TX_IRQn              DMA1_Stream7_IRQn
+#define sEE_I2C2_DMA_RX_IRQn              DMA1_Stream2_IRQn
+#define sEE_I2C2_DMA_TX_IRQHandler        DMA1_Stream7_IRQHandler
+#define sEE_I2C2_DMA_RX_IRQHandler        DMA1_Stream2_IRQHandler
+#define sEE_I2C2_DMA_PREPRIO              0
+#define sEE_I2C2_DMA_SUBPRIO              0
 
-#define sEE_TX_DMA_FLAG_FEIF             DMA_FLAG_FEIF7
-#define sEE_TX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF7
-#define sEE_TX_DMA_FLAG_TEIF             DMA_FLAG_TEIF7
-#define sEE_TX_DMA_FLAG_HTIF             DMA_FLAG_HTIF7
-#define sEE_TX_DMA_FLAG_TCIF             DMA_FLAG_TCIF7
-#define sEE_RX_DMA_FLAG_FEIF             DMA_FLAG_FEIF0
-#define sEE_RX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF0
-#define sEE_RX_DMA_FLAG_TEIF             DMA_FLAG_TEIF0
-#define sEE_RX_DMA_FLAG_HTIF             DMA_FLAG_HTIF0
-#define sEE_RX_DMA_FLAG_TCIF             DMA_FLAG_TCIF0
-*/
+#define sEE_I2C1_DMA                      DMA1
+#define sEE_I2C1_DMA_CHANNEL              DMA_Channel_1
+#define sEE_I2C1_DMA_STREAM_TX            DMA1_Stream6
+#define sEE_I2C1_DMA_STREAM_RX            DMA1_Stream5
+#define sEE_I2C1_DMA_CLK                  RCC_AHB1Periph_DMA1
+#define sEE_I2C1_DR_Address               ((uint32_t)0x40005410)
 
-#define sEE_I2C_DMA                      DMA1
-#define sEE_I2C_DMA_CHANNEL              DMA_Channel_1 // i2c2-DMA_Channel_7
-#define sEE_I2C_DMA_STREAM_TX            DMA1_Stream7 //DMA1_Stream7
-#define sEE_I2C_DMA_STREAM_RX            DMA1_Stream5 // DMA1_Stream2
-#define sEE_I2C_DMA_CLK                  RCC_AHB1Periph_DMA1
-#define sEE_I2C_DR_Address               ((uint32_t)0x40005410) // I2C1
-#define sEE_USE_DMA
-#define sEE_I2C_DMA_TX_IRQn              DMA1_Stream7_IRQn
-#define sEE_I2C_DMA_RX_IRQn              DMA1_Stream5_IRQn
-#define sEE_I2C_DMA_TX_IRQHandler        DMA1_Stream7_IRQHandler
-#define sEE_I2C_DMA_RX_IRQHandler        DMA1_Stream5_IRQHandler
-#define sEE_I2C_DMA_PREPRIO              0
-#define sEE_I2C_DMA_SUBPRIO              0
+#define sEE_I2C1_DMA_TX_IRQn              DMA1_Stream6_IRQn
+#define sEE_I2C1_DMA_RX_IRQn              DMA1_Stream5_IRQn
+#define sEE_I2C1_DMA_TX_IRQHandler        DMA1_Stream6_IRQHandler
+#define sEE_I2C1_DMA_RX_IRQHandler        DMA1_Stream5_IRQHandler
+#define sEE_I2C1_DMA_PREPRIO              0
+#define sEE_I2C1_DMA_SUBPRIO              0
 
-#define sEE_TX_DMA_FLAG_FEIF             DMA_FLAG_FEIF7
-#define sEE_TX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF7
-#define sEE_TX_DMA_FLAG_TEIF             DMA_FLAG_TEIF7
-#define sEE_TX_DMA_FLAG_HTIF             DMA_FLAG_HTIF7
-#define sEE_TX_DMA_FLAG_TCIF             DMA_FLAG_TCIF7
-#define sEE_RX_DMA_FLAG_FEIF             DMA_FLAG_FEIF5
-#define sEE_RX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF5
-#define sEE_RX_DMA_FLAG_TEIF             DMA_FLAG_TEIF5
-#define sEE_RX_DMA_FLAG_HTIF             DMA_FLAG_HTIF5
-#define sEE_RX_DMA_FLAG_TCIF             DMA_FLAG_TCIF5
+#define sEE2_TX_DMA_FLAG_FEIF             DMA_FLAG_FEIF7
+#define sEE2_TX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF7
+#define sEE2_TX_DMA_FLAG_TEIF             DMA_FLAG_TEIF7
+#define sEE2_TX_DMA_FLAG_HTIF             DMA_FLAG_HTIF7
+#define sEE2_TX_DMA_FLAG_TCIF             DMA_FLAG_TCIF7
+#define sEE2_RX_DMA_FLAG_FEIF             DMA_FLAG_FEIF2
+#define sEE2_RX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF2
+#define sEE2_RX_DMA_FLAG_TEIF             DMA_FLAG_TEIF2
+#define sEE2_RX_DMA_FLAG_HTIF             DMA_FLAG_HTIF2
+#define sEE2_RX_DMA_FLAG_TCIF             DMA_FLAG_TCIF2
+
+#define sEE1_TX_DMA_FLAG_FEIF             DMA_FLAG_FEIF6
+#define sEE1_TX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF6
+#define sEE1_TX_DMA_FLAG_TEIF             DMA_FLAG_TEIF6
+#define sEE1_TX_DMA_FLAG_HTIF             DMA_FLAG_HTIF6
+#define sEE1_TX_DMA_FLAG_TCIF             DMA_FLAG_TCIF6
+#define sEE1_RX_DMA_FLAG_FEIF             DMA_FLAG_FEIF5
+#define sEE1_RX_DMA_FLAG_DMEIF            DMA_FLAG_DMEIF5
+#define sEE1_RX_DMA_FLAG_TEIF             DMA_FLAG_TEIF5
+#define sEE1_RX_DMA_FLAG_HTIF             DMA_FLAG_HTIF5
+#define sEE1_RX_DMA_FLAG_TCIF             DMA_FLAG_TCIF5
 
 #define sEE_DIRECTION_TX                 0
 #define sEE_DIRECTION_RX                 1
@@ -192,6 +129,7 @@ typedef struct i2c_dev {
     uint8_t gpio_af;     
     IRQn_Type ev_nvic_line;  /* Event IRQ number */
     IRQn_Type er_nvic_line;  /* Error IRQ number */        
+    uint32_t timeout;
 } i2c_dev;
 
 #ifdef __cplusplus
@@ -211,10 +149,10 @@ uint32_t i2c_read(i2c_dev *dev, uint8_t addr, uint8_t *tx_buff, uint8_t txlen, u
 void     sEE_DeInit(void);
 void     sEE_Init(void);
 
-uint32_t sEE_ReadBuffer(uint8_t* pBuffer, uint16_t ReadAddr, uint16_t* NumByteToRead);
-uint32_t sEE_WritePage(uint8_t* pBuffer, uint16_t WriteAddr, uint8_t* NumByteToWrite);
-uint32_t sEE_WriteBuffer(uint8_t* pBuffer, uint16_t WriteAddr, uint16_t NumByteToWrite);
-uint32_t sEE_WaitEepromStandbyState(void);
+uint32_t sEE_ReadBuffer(i2c_dev *dev, uint8_t* pBuffer, uint16_t ReadAddr, uint16_t* NumByteToRead);
+uint32_t sEE_WritePage(i2c_dev *dev, uint8_t* pBuffer, uint16_t WriteAddr, uint8_t* NumByteToWrite);
+uint32_t sEE_WriteBuffer(i2c_dev *dev, uint8_t* pBuffer, uint16_t WriteAddr, uint16_t NumByteToWrite);
+uint32_t sEE_WaitEepromStandbyState(i2c_dev *dev);
 
 void i2c_master_release_bus(const i2c_dev *dev);
 void i2c_bus_reset(const i2c_dev *dev);

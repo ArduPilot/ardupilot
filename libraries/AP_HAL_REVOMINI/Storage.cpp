@@ -40,7 +40,7 @@ extern const AP_HAL::HAL& hal;
 const uint32_t last_flash_page = 0x0800c000;
 
 // This is the size of each FLASH ROM page
-const uint32 pageSize  = 0x4000;
+const uint32 pageSize  = 0x1000;
 
 // This defines the base addresses of the 2 FLASH ROM pages that will be used to emulate EEPROM
 // These are the 2 16k pages in the FLASH ROM address space on the STM32F4 used by VRBrain

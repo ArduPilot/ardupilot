@@ -24,6 +24,7 @@ extern const AP_HAL::HAL& hal;
 
 /* private variables to communicate with input capture isr */
 volatile uint16_t REVOMINIRCInput::_pulse_capt[REVOMINI_RC_INPUT_NUM_CHANNELS] = {0};
+volatile uint32_t REVOMINIRCInput::_last_pulse[REVOMINI_RC_INPUT_NUM_CHANNELS] = {0};
 volatile uint8_t  REVOMINIRCInput::_valid_channels = 0;
 volatile uint64_t REVOMINIRCInput::_timestamp_last_signal;
 
@@ -67,6 +68,8 @@ void REVOMINIRCInput::rxIntPPMSUM(uint8_t state, uint16_t value)
         if (channel_ctr < REVOMINI_RC_INPUT_NUM_CHANNELS) {
     	    _timestamp_last_signal =  systick_uptime();
             _pulse_capt[channel_ctr] = value;
+            _last_pulse[channel_ctr] = systick_uptime();
+
             channel_ctr++;
             if (channel_ctr == REVOMINI_RC_INPUT_NUM_CHANNELS) {
                 _valid_channels = REVOMINI_RC_INPUT_NUM_CHANNELS;
@@ -98,8 +101,8 @@ void REVOMINIRCInput::init()
 
     /*initial check for pin2-pin3 bridge. If detected switch to PPMSUM  */
     //default to standard PPM
-    _iboard = 2;
 
+/*  _iboard = 2;
     uint8_t channel3_status = 0;
     uint8_t pin2, pin3;
     //input pin 2
@@ -139,6 +142,9 @@ void REVOMINIRCInput::init()
     //if counter is 3 then we are in PPMSUM
     if (channel3_status == 3)
 	_iboard = 11;
+*/
+
+    _iboard = 11;
 
     if (_iboard < 10) //PWM
 	{
@@ -188,6 +194,8 @@ uint8_t REVOMINIRCInput::num_channels()
 uint16_t REVOMINIRCInput::read(uint8_t ch)
     {
     uint16_t data;
+    uint32_t pulse;
+
     noInterrupts();
     _last_read = _timestamp_last_signal;
     
@@ -200,11 +208,15 @@ uint16_t REVOMINIRCInput::read(uint8_t ch)
     else
 	{
 	data = _pulse_capt[ch];
+	pulse = _last_pulse[ch];
 	}
     interrupts();
 
     /* Check for override */
     uint16_t over = _override[ch];
+
+    if((_iboard >= 10) && (ch == 2) && (systick_uptime() - pulse > 50))
+            data = 900;
 
     return (over == 0) ? data : over;
     }
@@ -216,8 +228,12 @@ uint8_t REVOMINIRCInput::read(uint16_t* periods, uint8_t len)
 	{
 	    if (_iboard < 10)
 		periods[i] = pwmRead(i);
+	    else{
+		if ( i == 2 && (systick_uptime() - _last_pulse[i] > 50) )
+		   periods[i] = 900;
 	    else
 		periods[i] = _pulse_capt[i];
+	}
 
 	    if (_override[i] != 0)
 		periods[i] = _override[i];

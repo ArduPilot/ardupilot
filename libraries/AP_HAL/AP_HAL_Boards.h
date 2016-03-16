@@ -478,11 +478,12 @@
 #define HAL_INS_MPU60x0_NAME "mpu6000"
 
 
-# define HAL_GPIO_A_LED_PIN        36  // BLUE
-# define HAL_GPIO_B_LED_PIN        37  // YELLOW OPTIONAL (not included)
-# define HAL_GPIO_C_LED_PIN        105 // RED
-# define HAL_GPIO_LED_ON           LOW
-# define HAL_GPIO_LED_OFF          HIGH
+//# define HAL_GPIO_A_LED_PIN        36  // BLUE
+//# define HAL_GPIO_B_LED_PIN        37  // YELLOW OPTIONAL (not included)
+# define HAL_GPIO_B_LED_PIN        106  //  LED PA13
+//# define HAL_GPIO_C_LED_PIN        105 // RED
+//# define HAL_GPIO_LED_ON           LOW
+//# define HAL_GPIO_LED_OFF          HIGH
 
 #else
  #error "Unknown CONFIG_HAL_BOARD type"

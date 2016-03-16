@@ -33,7 +33,7 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = 0x20020000;    /* end of 128K RAM */
+_estack = 0x20010000;    /* end of 64K RAM */
 
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0;      /* required amount of heap  */
@@ -53,13 +53,12 @@ MEMORY
 SECTIONS
 {
   /* The startup code goes first into FLASH */
-  /*.isr_vector :*/
-  .text0 :
+  .isr_vector :
   {
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASH0
+  } >FLASH
 
   /* The program code and other data goes into FLASH */
   .text :

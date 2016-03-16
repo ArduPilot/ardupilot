@@ -3,8 +3,8 @@
 ifeq ($(BOARD), revomini_MP32V1F4)
    MCU            := STM32F407VG
    PRODUCT_ID     := 0003
-   ERROR_LED_PORT := GPIOC
-   ERROR_LED_PIN  := 15
+   ERROR_LED_PORT := GPIOB
+   ERROR_LED_PIN  := 4
    DENSITY        := STM32_HIGH_DENSITY
    FLASH_SIZE     := 1048576
    SRAM_SIZE      := 131072

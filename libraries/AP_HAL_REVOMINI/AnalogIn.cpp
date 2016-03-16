@@ -1,92 +1,142 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
+  Copied from: Flymaple port by Mike McCauley
+ */
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
 
 #include <AP_HAL/AP_HAL.h>
 #include "AnalogIn.h"
 #include <adc.h>
 #include <boards.h>
 #include <gpio_hal.h>
-#include <AP_HAL_REVOMINI/GPIO.h>
+#include "GPIO.h"
 
 extern const AP_HAL::HAL& hal;
 
 using namespace REVOMINI;
 
-REVOMINIAnalogSource::REVOMINIAnalogSource(int16_t pin, float initial_value) :
-    _pin(pin),
-    _value(initial_value),
-    _last_value(initial_value)
-{
-    if ((_pin < 0) || (_pin >= BOARD_NR_GPIO_PINS)) {
-            _pin = 200;
-        }
+/* CHANNEL_READ_REPEAT: how many reads on a channel before using the value.
+ * This seems to be determined empirically */
+#define CHANNEL_READ_REPEAT 1
 
-    hal.gpio->pinMode(_pin, INPUT_ANALOG);
+REVOMINIAnalogIn::REVOMINIAnalogIn():
+	_vcc(REVOMINIAnalogSource(ANALOG_INPUT_BOARD_VCC))
+{}
+
+void REVOMINIAnalogIn::init() {
+
+    /* Register REVOMINIAnalogIn::_timer_event with the scheduler. */
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&REVOMINIAnalogIn::_timer_event,void));
+    /* Register each private channel with REVOMINIAnalogIn. */
+    _register_channel(&_vcc);
 }
 
-float REVOMINIAnalogSource::read_average() {
-    float temp;
-    temp = (read_latest() * 0.8) + (_last_value * 0.2f);
-    _last_value = _value;
-    return temp;
+REVOMINIAnalogSource* REVOMINIAnalogIn::_create_channel(uint8_t chnum) {
+
+    REVOMINIAnalogSource *ch = new REVOMINIAnalogSource(chnum);
+    _register_channel(ch);
+    return ch;
 }
 
-float REVOMINIAnalogSource::read_latest() {
-    if ((_pin < 0) || (_pin >= BOARD_NR_GPIO_PINS)) {
-            return 0.0;
+void REVOMINIAnalogIn::_register_channel(REVOMINIAnalogSource* ch) {
+    if (_num_channels >= REVOMINI_INPUT_MAX_CHANNELS) {
+        for(;;) {
+            hal.console->print("Error: AP_HAL_REVOMINI::REVOMINIAnalogIn out of channels\r\n");
+            hal.scheduler->delay(1000);
         }
-
-    const adc_dev *dev = PIN_MAP[_pin].adc_device;
-    if (dev == NULL) {
-        return 0.0;
     }
-    _value = adc_read(dev, PIN_MAP[_pin].adc_channel);
-    return _value;
-}
-float REVOMINIAnalogSource::voltage_average_ratiometric(){
-    return _value;
-}
-void REVOMINIAnalogSource::set_stop_pin(uint8_t p){}
-void REVOMINIAnalogSource::set_settle_time(uint16_t settle_time_ms){}
-/*
-  return voltage in Volts
- */
-float REVOMINIAnalogSource::voltage_average()
-{
-    return (3.3f/4096.0f) * read_average();
-}
-float REVOMINIAnalogSource::voltage_latest()
-{
-    return (3.3f/4096.0f) * read_latest();
+    _channels[_num_channels] = ch;
+
+    hal.console->printf("Register Channel:%u on pin:%u \n", _num_channels, ch->_pin );
+
+    /* Need to lock to increment _num_channels as it is used
+     * by the interrupt to access _channels */
+    noInterrupts();
+    _num_channels++;
+    interrupts();
 }
 
 
-void REVOMINIAnalogSource::set_pin(uint8_t pin)
+void REVOMINIAnalogIn::_timer_event(void)
 {
-    if(pin == _pin)
-	return;
-    if ((_pin < 0) || (_pin >= BOARD_NR_GPIO_PINS)) {
+
+
+    if (_num_channels == 0)
+    {
+        /* No channels are registered - nothing to be done. */
             return;
         }
-    _pin = pin;
-    hal.gpio->pinMode(_pin, INPUT_ANALOG);
-}
 
 
-REVOMINIAnalogIn::REVOMINIAnalogIn() : 
-    _board_voltage(0),
-    _servorail_voltage(0),
-    _power_flags(0)
-{}
+    //adc_reg_map *regs = ADC1->regs;
+    const adc_dev *dev = _channels[_active_channel]->_find_device();
 
-void REVOMINIAnalogIn::init()
-{}
+    if (_channels[_active_channel]->_pin == ANALOG_INPUT_NONE) {
+        _channels[_active_channel]->new_sample(0);
+        goto next_channel;
+    }
 
-AP_HAL::AnalogSource* REVOMINIAnalogIn::channel(int16_t pin) {
-    /*
-    if ((pin < 0) || (pin >= BOARD_NR_GPIO_PINS)) {
-            return new EmptyAnalogSource(0.0);
+    if (!(dev->adcx->SR & ADC_SR_EOC))
+	{
+	    /* ADC Conversion is still running - this should not happen, as we
+	     * are called at 1khz. */
+	    return;
         }
-    */
-    return new REVOMINIAnalogSource(pin, 0.0);
+
+    _channel_repeat_count++;
+    if (_channel_repeat_count < CHANNEL_READ_REPEAT ||
+        !_channels[_active_channel]->reading_settled()) 
+    {
+        /* Start a new conversion, throw away the current conversion */
+        dev->adcx->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+        return;
+    }
+
+    _channel_repeat_count = 0;
+    {
+        // Need this block because of declared variabled and goto
+        uint16_t sample = (uint16)(dev->adcx->DR & ADC_DR_DATA);
+        /* Give the active channel a new sample */
+        _channels[_active_channel]->new_sample( sample );
+    }
+next_channel:
+    /* stop the previous channel, if a stop pin is defined */
+    _channels[_active_channel]->stop_read();
+    /* Move to the next channel */
+    _active_channel = (_active_channel + 1) % _num_channels;
+    /* Setup the next channel's conversion */
+    _channels[_active_channel]->setup_read();
+
+    dev = _channels[_active_channel]->_find_device();
+
+    if(dev != NULL)
+    /* Start conversion */
+    dev->adcx->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 }
 
 
+AP_HAL::AnalogSource* REVOMINIAnalogIn::channel(int16_t ch)
+{
+    if ((uint8_t)ch == ANALOG_INPUT_BOARD_VCC) {
+            return &_vcc;
+    } else {
+        return _create_channel((uint8_t)ch);
+    }
+}
+
+#endif

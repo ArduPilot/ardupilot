@@ -258,6 +258,11 @@ jtag-program:
 # fetch dependency info from a previous build if any of it exists
 -include $(ALLDEPS)
 
+
+revomini-clean: clean
+	$(v) /bin/rm -rf $(WIRISH_PATH)/*.d $(HARDWARE_PATH)/*.d $(HAL_PATH)/*.d $(STM32_PATH)/*.d $(STM32USB_PATH)/*.d \
+	$(WIRISH_PATH)/boards/revomini_MP32V1F4/*.d $(STM32USB_PATH)/MDK-ARM-GCC/build/*.d $(STM32_PATH)/src/*.d $(WIRISH_PATH)/comm/*.d $(STM32_PATH)/Libraries/STM32F4xx_StdPeriph_Driver/src/*.d
+
 # Link the final object
 $(SKETCHELF):	$(LIBOBJS) $(SKETCHOBJS) $(TGT_BIN) $(BUILD_PATH)/main.o
 #	@echo LIBOBJS=$(LIBOBJS)

@@ -2,6 +2,17 @@
 #ifndef __AP_HAL_REVOMINI_H__
 #define __AP_HAL_REVOMINI_H__
 
+/*-------------EXTERNAL IMU-----------------*/
+/* To use External IMU connected to SPI3, uuncomment this line */
+//#define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000_EXT
+/*-------------END EXTERNAL IMU-----------------*/
+
+/*------------EXTERNAL COMPASS----------------*/
+/* To use external compass uncomment this line. */
+/* this is still beta and only works by tweaking the libraries. */
+#define COMPASS_EXT
+/*-----------ND EXTERNAL COMPASS--------------*/
+
 /* Your layer exports should depend on AP_HAL.h ONLY. */
 #include <AP_HAL/AP_HAL.h>
 
@@ -28,9 +39,5 @@
  */
 
 #include "HAL_REVOMINI_Class.h"
-//#include "AP_HAL_REVOMINI_Main.h"
-
-#include <DataFlash/DataFlash.h>
-//extern  DataFlash_REVOMINI DataFlash;
 
 #endif //__AP_HAL_REVOMINI_H__

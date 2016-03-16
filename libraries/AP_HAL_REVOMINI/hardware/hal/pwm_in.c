@@ -32,6 +32,7 @@
 #include <stdbool.h>
 #include "hal_types.h"
 #include "timer.h"
+#include <systick.h>
 
 #include <boards.h>
 
@@ -74,8 +75,8 @@ static struct TIM_Channel
     //CH1 also for PPMSUM
 	    { // RC_IN1
 		    TIM12,
-		    RCC_APB1Periph_TIM12, //RCC_APB2Periph_TIM8,
-		    RCC_APB1PeriphClockCmd, //RCC_APB2PeriphClockCmd,
+		    RCC_APB1Periph_TIM12,
+		    RCC_APB1PeriphClockCmd,
 		    TIM8_BRK_TIM12_IRQn,
 		    TIM_Channel_1,
 		    TIM_IT_CC1,
@@ -88,8 +89,8 @@ static struct TIM_Channel
 	    },
 	    { // RC_IN2
 		    TIM12,
-		    RCC_APB1Periph_TIM12, //RCC_APB2Periph_TIM8,
-		    RCC_APB1PeriphClockCmd, // RCC_APB2PeriphClockCmd,
+		    RCC_APB1Periph_TIM12,
+		    RCC_APB1PeriphClockCmd,
 		    TIM8_BRK_TIM12_IRQn,
 		    TIM_Channel_2,
 		    TIM_IT_CC2,
@@ -165,6 +166,7 @@ static struct PWM_State
 	uint16_t fall;
 	uint16_t capture;
 	uint16_t error;
+	uint32_t last_pulse;
     } Inputs[8];
 
 static TIM_ICInitTypeDef TIM_ICInitStructure;
@@ -208,6 +210,7 @@ static inline void pwmIRQHandler(TIM_TypeDef *tim)
 	    TIM_ClearITPendingBit(channel.tim, channel.tim_cc);
 	    val = TIM_GetCapture1(channel.tim);
 
+	    input->last_pulse = systick_uptime();
 	    input->rise = val;
 
 	    if (input->rise > last_val)
@@ -238,6 +241,8 @@ static inline void pwmIRQHandler(TIM_TypeDef *tim)
 	    if (channel.tim == tim
 		    && (TIM_GetITStatus(tim, channel.tim_cc) == SET))
 		{
+
+		input->last_pulse = systick_uptime();
 		TIM_ClearITPendingBit(channel.tim, channel.tim_cc);
 
 		switch (channel.tim_channel)
@@ -431,6 +436,7 @@ void pwmInit(bool ppmsum)
 	Inputs[i].rise = 0;
 	Inputs[i].fall = 0;
 	Inputs[i].error = 0;
+	Inputs[i].last_pulse = 0;
 	}
 
     if (ppmsum)
@@ -443,5 +449,10 @@ void pwmInit(bool ppmsum)
 
 uint16_t pwmRead(uint8_t channel)
     {
+    if(channel == 2) {
+	if(systick_uptime() - Inputs[channel].last_pulse > 50) {
+	    return 900;
+	}
+    }
     return Inputs[channel].capture;
     }

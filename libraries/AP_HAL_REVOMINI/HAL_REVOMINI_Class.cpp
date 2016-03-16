@@ -24,14 +24,12 @@ using namespace REVOMINI;
 
 // XXX make sure these are assigned correctly
 static REVOMINIUARTDriver uartADriver(_USART1,1);
-static REVOMINIUARTDriver uartBDriver(_USART3,0);
-static REVOMINIUARTDriver uartCDriver(_USART2,0);
-
+static REVOMINIUARTDriver uartBDriver(_USART6,0);
 
 static REVOMINISemaphore  i2cSemaphore;
-//static REVOMINISemaphore  i2c2Semaphore;
+static REVOMINISemaphore  i2c2Semaphore;
 static REVOMINII2CDriver  i2cDriver(_I2C1,&i2cSemaphore);
-//static REVOMINII2CDriver  i2c2Driver(_I2C1,&i2c2Semaphore);
+static REVOMINII2CDriver  i2c2Driver(_I2C1,&i2c2Semaphore);
 static REVOMINISPIDeviceManager spiDeviceManager;
 static REVOMINIAnalogIn analogIn;
 static REVOMINIStorage storageDriver;
@@ -47,13 +45,13 @@ HAL_REVOMINI::HAL_REVOMINI() :
     AP_HAL::HAL(
         &uartADriver,  /* uartA */
         &uartBDriver,  /* uartB */
-        &uartCDriver,  /* uartC */
+        NULL,  /* no uartC */
         NULL,  /* no uartD */
         NULL,  /* no uartE */
         NULL,
         &i2cDriver, /* i2c */
-        NULL,   /* only 1 i2c */
-        NULL,   /* only 1 i2c */
+        &i2c2Driver,  /* 2 i2c */
+        NULL,   /* only 2 i2c */
         &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
         &storageDriver, /* storage */
@@ -108,12 +106,15 @@ void HAL_REVOMINI::run(int argc,char* const argv[], Callbacks* callbacks) const
     /* uartA is the serial port used for the console, so lets make sure
      * it is initialized at boot */
     uartA->begin(57600);
+    uartB->begin(57600);
 
     rcin->init();
     rcout->init();
     spi->init();
     i2c->begin();
     i2c->setTimeout(100);
+    i2c2->begin();
+    i2c2->setTimeout(100);
     analogin->init();
     storage->init(); // Uses EEPROM.*, flash_stm* copied from AeroQuad_v3.2
 

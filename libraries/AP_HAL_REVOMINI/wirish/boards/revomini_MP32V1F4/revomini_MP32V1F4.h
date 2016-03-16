@@ -25,20 +25,17 @@ void boardInit(void);
 #define STM32_PCLK1   (CYCLES_PER_MICROSECOND*1000000/4)
 #define STM32_PCLK2   (CYCLES_PER_MICROSECOND*1000000/2)
 
-#define BOARD_LED_PIN           36
-#define BOARD_BUTTON_PIN        19 // PC13 - not used pin!
+//#define BOARD_LED_PIN           36
+//#define BOARD_BUTTON_PIN        19 // PC13 - not used pin!
 
 #define BOARD_NR_USARTS         5
 #define BOARD_USART1_TX_PIN     23 
 #define BOARD_USART1_RX_PIN     24 
-#define BOARD_USART2_TX_PIN     200
-#define BOARD_USART2_RX_PIN     200
 #define BOARD_USART3_TX_PIN     0
 #define BOARD_USART3_RX_PIN     100
-#define BOARD_UART4_TX_PIN      200
-#define BOARD_UART4_RX_PIN      200
-#define BOARD_UART5_TX_PIN      200
-#define BOARD_UART5_RX_PIN      200
+#define BOARD_USART6_TX_PIN     12
+#define BOARD_USART6_RX_PIN     13
+
        
 #define BOARD_NR_SPI            3
 #define BOARD_SPI1_NSS_PIN      D51
@@ -46,10 +43,10 @@ void boardInit(void);
 #define BOARD_SPI1_MISO_PIN     D53
 #define BOARD_SPI1_MOSI_PIN     D54
 #define BOARD_SPI1_CS_BR_PIN    51
-#define BOARD_SPI2_NSS_PIN      200
-#define BOARD_SPI2_SCK_PIN      200
-#define BOARD_SPI2_MISO_PIN     200
-#define BOARD_SPI2_MOSI_PIN     200
+#define BOARD_SPI2_NSS_PIN      255
+#define BOARD_SPI2_SCK_PIN      255
+#define BOARD_SPI2_MISO_PIN     255
+#define BOARD_SPI2_MOSI_PIN     255
 #define BOARD_SPI3_NSS_PIN      104
 #define BOARD_SPI3_MOSI_PIN     18
 #define BOARD_SPI3_MISO_PIN     17
@@ -63,32 +60,8 @@ void boardInit(void);
 
 #define MPU6000_CS_PIN		51
 
-#define BOARD_NR_GPIO_PINS      106
-#define BOARD_NR_PWM_PINS       18
-#define BOARD_NR_ADC_PINS       21
-#define BOARD_NR_USED_PINS      43
-#define BOARD_JTMS_SWDIO_PIN    101
-#define BOARD_JTCK_SWCLK_PIN    102
-#define BOARD_JTDI_PIN          103
-#define BOARD_JTDO_PIN          104
-#define BOARD_NJTRST_PIN        105
+#define BOARD_NR_GPIO_PINS      108
 
-#define BOARD_USB_DISC_DEV      GPIOC
-#define BOARD_USB_DISC_BIT      7
-
-#define ADC_CHIP_SELECT D77
-
-/* ADC *****************************************************/
-/*
-#define BOARD_ADC_CH0 D47
-#define BOARD_ADC_CH1 D51
-#define BOARD_ADC_CH2 D6
-#define BOARD_ADC_CH3 D7
-#define BOARD_ADC_CH4 D8
-#define BOARD_ADC_CH5 D9
-#define BOARD_ADC_CH6 D10
-#define BOARD_ADC_CH7 D11
-*/
 #ifndef MOTOR_PWM_FREQ
   #define MOTOR_PWM_FREQ 60
 #endif
