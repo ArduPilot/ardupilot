@@ -389,6 +389,10 @@ private:
     AP_Frsky_Telem frsky_telemetry;
 #endif
 
+#if DEVO_TELEM_ENABLED == ENABLED
+    AP_Devo_Telem devo_telemetry;
+#endif
+
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
@@ -975,6 +979,7 @@ private:
     void update_auto_armed();
     void check_usb_mux(void);
     void frsky_telemetry_send(void);
+    void devo_telemetry_send(void);
     bool should_log(uint32_t mask);
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);

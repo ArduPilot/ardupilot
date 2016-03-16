@@ -157,6 +157,9 @@ void Plane::init_ardupilot()
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.init(serial_manager);
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry.init(serial_manager);
+#endif
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -767,6 +770,12 @@ bool Plane::should_log(uint32_t mask)
 void Plane::frsky_telemetry_send(void)
 {
     frsky_telemetry.send_frames((uint8_t)control_mode);
+}
+#endif
+#if DEVO_TELEM_ENABLED == ENABLED
+void Plane::devo_telemetry_send(void)
+{
+    devo_telemetry.send_frames((uint8_t)control_mode);
 }
 #endif
 

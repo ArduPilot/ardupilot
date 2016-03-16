@@ -42,6 +42,7 @@ LIBRARIES += AP_BattMonitor
 LIBRARIES += AP_Arming
 LIBRARIES += AP_BoardConfig
 LIBRARIES += AP_Frsky_Telem
+LIBRARIES += AP_Devo_Telem
 LIBRARIES += AP_ServoRelayEvents
 LIBRARIES += AP_Rally
 LIBRARIES += AP_OpticalFlow
