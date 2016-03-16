@@ -447,6 +447,7 @@ struct PACKED log_Precland {
     float bf_angle_y;
     float ef_angle_x;
     float ef_angle_y;
+    float size_rad;
     float pos_x;
     float pos_y;
 };
@@ -468,10 +469,11 @@ void Copter::Log_Write_Precland()
         LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
         time_ms         : hal.scheduler->millis(),
         healthy         : precland.healthy(),
-       bf_angle_x      : degrees(bf_angle.x),
+        bf_angle_x      : degrees(bf_angle.x),
         bf_angle_y      : degrees(bf_angle.y),
         ef_angle_x      : degrees(ef_angle.x),
         ef_angle_y      : degrees(ef_angle.y),
+        size_rad        : precland.last_size_rad(),
         pos_x           : target_pos_ofs.x,
         pos_y           : target_pos_ofs.y
     };
@@ -735,7 +737,7 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",   "IBffffff",   "TimeMS,Heal,bX,bY,eX,eY,pX,pY" },
+      "PL",   "IBffffff",   "TimeMS,Heal,bX,bY,eX,eY,sz,pX,pY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
