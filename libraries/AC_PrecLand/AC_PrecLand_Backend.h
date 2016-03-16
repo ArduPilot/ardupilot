@@ -31,7 +31,14 @@ public:
     //  returns true if angles are available, false if not (i.e. no target)
     //  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
     //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
-    virtual bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const = 0;
+    //virtual bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const = 0;
+
+    // get_angle_to_target - returns body frame angles (in radians) to target
+    //  returns true if angles are available, false if not (i.e. no target)
+    //  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
+    //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
+    //  size_rad : target's size in radians
+    virtual bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad, float &size_rad) const = 0;
 
 protected:
 

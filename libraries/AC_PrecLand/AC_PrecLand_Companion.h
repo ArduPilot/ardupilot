@@ -29,11 +29,13 @@ public:
     //  returns true if angles are available, false if not (i.e. no target)
     //  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
     //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
-    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const;
+    //  size_rad : apparently size of target in radians
+    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad, float &size_rad) const;
 
 private:
 
     mavlink_channel_t   _chan;      // mavlink channel used to communicate with companion computer
+    float               _size_rad;              // apparent size of target in radians
 
 };
 #endif	// __AC_PRECLAND_COMPANION_H__

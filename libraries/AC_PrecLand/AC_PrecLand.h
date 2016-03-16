@@ -89,11 +89,12 @@ private:
     AP_Float                    _speed_xy;          // maximum horizontal speed in cm/s
 
     // internal variables
-    float                       _dt;                // time difference (in seconds) between calls from the main program
+    //float                       _dt;                // time difference (in seconds) between calls from the main program
 
     // output from sensor (stored for logging)
     Vector2f                    _bf_angle_to_target;// last body-frame angle to target
     Vector2f                    _ef_angle_to_target;// last earth-frame angle to target
+    float                       _size_rad;          // target's apparent size in the frame in radians
 
     // output from controller
     bool                        _have_estimate;     // true if we have a recent estimated position offset
