@@ -163,6 +163,11 @@ public:
      */
     void log_terrain_data(DataFlash_Class &dataflash);
 
+    /*
+      get some statistics for TERRAIN_REPORT
+     */
+    void get_statistics(uint16_t &pending, uint16_t &loaded);
+
 private:
     // allocate the terrain subsystem data
     bool allocate(void);
@@ -293,7 +298,6 @@ private:
       get some statistics for TERRAIN_REPORT
      */
     uint8_t bitcount64(uint64_t b);
-    void get_statistics(uint16_t &pending, uint16_t &loaded);
 
     /*
       disk IO functions
