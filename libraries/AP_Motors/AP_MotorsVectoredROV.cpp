@@ -104,19 +104,10 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
     int16_t strafe_pwm;                                             // forward pwm value, +/- 400
     int16_t out_min_pwm = 1100;      // minimum pwm value we can send to the motors
     int16_t out_max_pwm = 1900;                      // maximum pwm value we can send to the motors
-//    int16_t out_mid_pwm = 1500;              // mid pwm value we can send to the motors
-                                      // the is the best throttle we can come up which provides good control without climbing
-
-    float rpy_scale = 1.0;                                          // this is used to scale the roll, pitch and yaw to fit within the motor limits
 
     int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
     int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
     int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final outputs sent to the motors
-
-    int16_t rpy_low = 0;    // lowest motor value
-    int16_t rpy_high = 0;   // highest motor value
-    int16_t yaw_allowed;    // amount of yaw we can fit in
-    int16_t thr_adj;        // the difference between the pilot's desired throttle and out_best_thr_pwm (the throttle that is actually provided)
 
     // initialize limits flags
     limit.roll_pitch = false;
@@ -153,7 +144,7 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
         }
     }
 
-    int16_t forward_coupling_limit = 400-_forwardVerticalCouplingFactor*fabs(throttle_radio_output);
+    int16_t forward_coupling_limit = 400-float(_forwardVerticalCouplingFactor)*fabs(throttle_radio_output);
     if ( forward_coupling_limit < 0 ) {
     	forward_coupling_limit = 0;
     }
