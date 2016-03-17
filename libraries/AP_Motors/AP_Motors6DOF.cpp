@@ -151,7 +151,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
 //    int16_t out_mid_pwm = 1500;              // mid pwm value we can send to the motors
                                       // the is the best throttle we can come up which provides good control without climbing
 
-    float rpy_scale = 1.0;                                          // this is used to scale the roll, pitch and yaw to fit within the motor limits
+    //float rpy_scale = 1.0;                                          // this is used to scale the roll, pitch and yaw to fit within the motor limits
 
     int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
     int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
