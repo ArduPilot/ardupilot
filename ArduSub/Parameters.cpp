@@ -41,6 +41,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format
     // @User: Advanced
+	// @ReadOnly: True
     GSCALAR(format_version, "SYSID_SW_MREV",   0),
 
     // @Param: SYSID_SW_TYPE
@@ -48,6 +49,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
     // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover
     // @User: Advanced
+	// @ReadOnly: True
     GSCALAR(software_type,  "SYSID_SW_TYPE",   Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV

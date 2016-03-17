@@ -1,7 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#ifndef _SUB_H
-#define _SUB_H
+#pragma once
 
 #define THISFIRMWARE "ArduSub V3.4-dev"
 #define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_DEV
@@ -1027,5 +1026,3 @@ extern Sub sub;
 
 using AP_HAL::millis;
 using AP_HAL::micros;
-
-#endif // _SUB_H_
