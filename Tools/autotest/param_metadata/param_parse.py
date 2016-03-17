@@ -6,6 +6,7 @@ from param import *
 from wikiemit import WikiEmit
 from xmlemit import XmlEmit
 from htmlemit import HtmlEmit
+from rstemit import RSTEmit
 
 from optparse import OptionParser
 parser = OptionParser("param_parse.py [options]")
@@ -179,6 +180,7 @@ for library in libraries:
             validate(param)
     
     def do_emit(emit):
+        emit.set_annotate_with_vehicle(len(vehicles) > 1)
         for vehicle in vehicles:
             emit.emit(vehicle, f)
         
@@ -193,5 +195,6 @@ for library in libraries:
     do_emit(XmlEmit())
     do_emit(WikiEmit())
     do_emit(HtmlEmit())
+    do_emit(RSTEmit())
 
 sys.exit(error_count)
