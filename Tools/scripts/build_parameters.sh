@@ -39,6 +39,9 @@ generate_parameters() {
     VEHICLE_PARAMS_DIR="$PARAMS_DIR/$VEHICLE"
     mkdir -p "$VEHICLE_PARAMS_DIR"
     /bin/cp Parameters.wiki Parameters.html *.pdef.xml "$VEHICLE_PARAMS_DIR/"
+    if [ -e "Parameters.rst" ]; then
+	/bin/cp Parameters.rst "$VEHICLE_PARAMS_DIR/"
+    fi
 }
 
 
