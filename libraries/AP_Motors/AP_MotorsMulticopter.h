@@ -137,7 +137,7 @@ protected:
 
     // flag bitmask
     struct {
-        spool_up_down_mode     spool_mode       : 4;    // motor's current spool mode
+        spool_up_down_mode     spool_mode       : 3;    // motor's current spool mode
     } _multicopter_flags;
 
     // parameters
