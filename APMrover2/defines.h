@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef _DEFINES_H
-#define _DEFINES_H
+#pragma once
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
@@ -126,5 +124,3 @@ enum mode {
 
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)
-
-#endif // _DEFINES_H

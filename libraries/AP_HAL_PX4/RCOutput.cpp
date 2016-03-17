@@ -399,11 +399,10 @@ void PX4RCOutput::_timer_tick(void)
     if (_need_update && _pwm_fd != -1) {
         _need_update = false;
         perf_begin(_perf_rcout);
-        if (_max_channel <= _servo_count) {
-            ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
-        } else {
-            // we're using both sets of outputs
-            ::write(_pwm_fd, _period, _servo_count*sizeof(_period[0]));
+        // always send all outputs to first PWM device. This ensures that SBUS is properly updated in px4io
+        ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
+        if (_max_channel > _servo_count) {
+            // maybe send updates to alt_fd
             if (_alt_fd != -1 && _alt_servo_count > 0) {
                 uint8_t n = _max_channel - _servo_count;
                 if (n > _alt_servo_count) {

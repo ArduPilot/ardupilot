@@ -1,5 +1,4 @@
-#ifndef AP_MSGHANDLER_H
-#define AP_MSGHANDLER_H
+#pragma once
 
 #include <DataFlash/DataFlash.h>
 #include "VehicleType.h"
@@ -152,5 +151,3 @@ inline void MsgHandler::field_value_for_type_at_offset(uint8_t *msg,
         exit(1);
     }
 }
-
-#endif

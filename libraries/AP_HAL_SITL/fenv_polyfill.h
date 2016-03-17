@@ -1,6 +1,4 @@
-
-#ifndef __FENV_POLYFILL_H__
-#define __FENV_POLYFILL_H__
+#pragma once
 
 #if (defined __APPLE__) && (defined(__i386__) || defined(__x86_64__))
 
@@ -27,6 +25,3 @@ feenableexcept (unsigned int excepts)
 }
 
 #endif // APPLE
-
-#endif // __FENV_POLYFILL_H__
-

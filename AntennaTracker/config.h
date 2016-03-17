@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
+#pragma once
+
 #include "defines.h"
 
 #include "APM_Config.h" // <== THIS INCLUDE, DO NOT EDIT IT. EVER.

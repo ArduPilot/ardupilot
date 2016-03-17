@@ -35,6 +35,8 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
 
     if (strstr(frame_str, "-octa-quad")) {
         frame_type = "octa-quad";
+    } else if (strstr(frame_str, "-octaquad")) {
+        frame_type = "octa-quad";
     } else if (strstr(frame_str, "-octa")) {
         frame_type = "octa";
     } else if (strstr(frame_str, "-hexax")) {

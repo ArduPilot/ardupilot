@@ -786,7 +786,7 @@ void AP_Param::notify() const {
         param_header_type = info->type;
     }
 
-    send_parameter(name, (enum ap_var_type)param_header_type);
+    send_parameter(name, (enum ap_var_type)param_header_type, idx);
 }
 
 
@@ -839,7 +839,7 @@ bool AP_Param::save(bool force_save)
     if (scan(&phdr, &ofs)) {
         // found an existing copy of the variable
         eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
-        send_parameter(name, (enum ap_var_type)phdr.type);
+        send_parameter(name, (enum ap_var_type)phdr.type, idx);
         return true;
     }
     if (ofs == (uint16_t) ~0) {
@@ -879,7 +879,7 @@ bool AP_Param::save(bool force_save)
     eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
 
-    send_parameter(name, (enum ap_var_type)phdr.type);
+    send_parameter(name, (enum ap_var_type)phdr.type, idx);
     return true;
 }
 
@@ -1650,22 +1650,37 @@ float AP_Param::get_default_value(const float *def_value_ptr)
 }
 
 
-void AP_Param::send_parameter(char *name, enum ap_var_type param_header_type) const
+void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8_t idx) const
 {
-    if (param_header_type != AP_PARAM_VECTOR3F) {
+    if (idx != 0 && var_type == AP_PARAM_VECTOR3F) {
+        var_type = AP_PARAM_FLOAT;
+    }
+    if (var_type > AP_PARAM_VECTOR3F) {
+        // invalid
+        return;
+    }
+    if (var_type != AP_PARAM_VECTOR3F) {
         // nice and simple for scalar types
-        GCS_MAVLINK::send_parameter_value_all(name, param_header_type, cast_to_float(param_header_type));
+        GCS_MAVLINK::send_parameter_value_all(name, var_type, cast_to_float(var_type));
         return;
     }
 
-    // for vectors we need to send 3 messages
+    // for vectors we need to send 3 messages. Note that we also come here for the case
+    // of a set of the first element of a AP_Vector3f. This happens as the ap->save() call can't
+    // distinguish between a vector and scalar save. It means that setting first element of a vector
+    // via MAVLink results in sending all 3 elements to the GCS
     const Vector3f &v = ((AP_Vector3f *)this)->get();
-    char &name_axis = name[strlen(name)-1];
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v.x);
+    char name2[AP_MAX_NAME_SIZE+1];
+    strncpy(name2, name, AP_MAX_NAME_SIZE);
+    name2[AP_MAX_NAME_SIZE] = 0;
+    char &name_axis = name2[strlen(name)-1];
+    
+    name_axis = 'X';
+    GCS_MAVLINK::send_parameter_value_all(name2, AP_PARAM_FLOAT, v.x);
     name_axis = 'Y';
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v.y);
+    GCS_MAVLINK::send_parameter_value_all(name2, AP_PARAM_FLOAT, v.y);
     name_axis = 'Z';
-    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v.z);
+    GCS_MAVLINK::send_parameter_value_all(name2, AP_PARAM_FLOAT, v.z);
 }
 
 /*

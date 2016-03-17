@@ -13,6 +13,12 @@
 
 const AP_Param::Info Rover::var_info[] = {
 	GSCALAR(format_version,         "FORMAT_VERSION",   1),
+    
+    // @Param: SYSID_SW_TYPE
+    // @DisplayName: Software Type
+    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
+    // @User: Advanced
+    // @ReadOnly: True
 	GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
 
 	// misc

@@ -30,21 +30,31 @@ void NavEKF2_core::controlMagYawReset()
 
     // In-Flight reset for vehicle that cannot use a zero sideslip assumption
     // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
+    // Perform the reset earlier if high yaw and velocity innovations indicate that 'toilet bowling' is occurring
     // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
     // Delay if rotated too far since the last check as rapid rotations will produce errors in the magnetic field states
-    if (!assume_zero_sideslip() && inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -5.0f && deltaRot < 0.1745f) {
-        firstMagYawInit = true;
-        // reset the timer used to prevent magnetometer fusion from affecting attitude until initial field learning is complete
-        magFuseTiltInhibit_ms =  imuSampleTime_ms;
-        // Update the yaw  angle and earth field states using the magnetic field measurements
-        Quaternion tempQuat;
-        Vector3f eulerAngles;
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-        tempQuat = stateStruct.quat;
-        stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
-        // calculate the change in the quaternion state and apply it to the ouput history buffer
-        tempQuat = stateStruct.quat/tempQuat;
-        StoreQuatRotate(tempQuat);
+    if (!firstMagYawInit && !assume_zero_sideslip() && inFlight && deltaRot < 0.1745f) {
+        // check that we have reached a height where ground magnetic interference effects are insignificant
+        bool hgtCheckPassed = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
+
+        // check for 'toilet bowling' which is characterised by large yaw and velocity innovations and caused by bad yaw alignment
+        // this can occur if there is severe magnetic interference on the ground
+        bool toiletBowling = (yawTestRatio > 1.0f) && (velTestRatio > 1.0f);
+
+        if (hgtCheckPassed || toiletBowling) {
+            firstMagYawInit = true;
+            // reset the timer used to prevent magnetometer fusion from affecting attitude until initial field learning is complete
+            magFuseTiltInhibit_ms =  imuSampleTime_ms;
+            // Update the yaw  angle and earth field states using the magnetic field measurements
+            Quaternion tempQuat;
+            Vector3f eulerAngles;
+            stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+            tempQuat = stateStruct.quat;
+            stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+            // calculate the change in the quaternion state and apply it to the ouput history buffer
+            tempQuat = stateStruct.quat/tempQuat;
+            StoreQuatRotate(tempQuat);
+        }
     }
 
     // In-Flight reset for vehicles that can use a zero sideslip assumption (Planes)

@@ -1,5 +1,4 @@
-#ifndef AP_LR_MSGHANDLER_H
-#define AP_LR_MSGHANDLER_H
+#pragma once
 
 #include "MsgHandler.h"
 
@@ -414,6 +413,3 @@ public:
 private:
     Vector3f &sim_attitude;
 };
-
-
-#endif

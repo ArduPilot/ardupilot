@@ -3,9 +3,7 @@
 /// @file	GCS.h
 /// @brief	Interface definition for the various Ground Control System
 // protocols.
-
-#ifndef __GCS_H
-#define __GCS_H
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -345,5 +343,3 @@ private:
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
 };
-
-#endif // __GCS_H

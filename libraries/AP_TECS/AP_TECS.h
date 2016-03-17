@@ -18,9 +18,7 @@
  *  - Relative ease of tuning through use of intuitive time constant, trim rate and damping parameters and the use
  *    of easy to measure aircraft performance data
  */
-
-#ifndef AP_TECS_H
-#define AP_TECS_H
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -348,5 +346,3 @@ private:
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
 							   "TECS", "Qffffffffffff", "TimeUS,h,dh,h_dem,dh_dem,sp_dem,sp,dsp,ith,iph,th,ph,dsp_dem" }
-
-#endif //AP_TECS_H

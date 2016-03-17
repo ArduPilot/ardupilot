@@ -18,7 +18,7 @@ public:
 
 private:
     void timer_update(void);
-    
+
     uint8_t  instance;
     Vector3f sum;
     uint32_t count;

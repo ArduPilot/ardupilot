@@ -1,10 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
 /// @file	AC_PID.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
-
-#ifndef __AC_PID_H__
-#define __AC_PID_H__
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -106,5 +104,3 @@ protected:
 
     DataFlash_Class::PID_Info        _pid_info;
 };
-
-#endif // __AC_PID_H__

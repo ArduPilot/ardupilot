@@ -16,9 +16,7 @@
 
 // Copyright 2012 Andrew Tridgell, all rights reserved.
 // Refactored by Jonathan Challinger
-
-#ifndef QUATERNION_H
-#define QUATERNION_H
+#pragma once
 
 #include <math.h>
 #if MATH_CHECK_INDEXES
@@ -124,4 +122,3 @@ public:
     Quaternion &operator*=(const Quaternion &v);
     Quaternion operator/(const Quaternion &v) const;
 };
-#endif // QUATERNION_H

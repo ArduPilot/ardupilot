@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __RPM_H__
-#define __RPM_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -97,4 +95,3 @@ private:
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);  
 };
-#endif // __RPM_H__

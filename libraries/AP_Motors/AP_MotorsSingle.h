@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsSingle.h
 /// @brief	Motor and Servo control class for Singlecopters
-
-#ifndef __AP_MOTORS_SING_H__
-#define __AP_MOTORS_SING_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -74,5 +72,3 @@ protected:
     RC_Channel&         _servo3;
     RC_Channel&         _servo4;
 };
-
-#endif  // AP_MOTORSSINGLE

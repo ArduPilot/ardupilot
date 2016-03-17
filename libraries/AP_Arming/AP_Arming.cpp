@@ -51,16 +51,33 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCTHRESH",    3,     AP_Arming,  accel_error_threshold,  AP_ARMING_ACCEL_ERROR_THRESHOLD),
 
+    // @Param: MIN_VOLT
+    // @DisplayName: Minimum arming voltage on the first battery
+    // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
+    // @Units: Volts
+    // @Increment: 0.1 
+    // @User: Standard
+    AP_GROUPINFO("MIN_VOLT",      4,     AP_Arming,  _min_voltage[0],  0),
+
+    // @Param: MIN_VOLT2
+    // @DisplayName: Minimum arming voltage on the second battery
+    // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
+    // @Units: Volts
+    // @Increment: 0.1 
+    // @User: Standard
+    AP_GROUPINFO("MIN_VOLT2",     5,     AP_Arming,  _min_voltage[1],  0),
+
     AP_GROUPEND
 };
 
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const enum HomeState &home_set) :
+                     const AP_BattMonitor &battery, const enum HomeState &home_set) :
     ahrs(ahrs_ref),
     barometer(baro),
     _compass(compass),
+    _battery(battery),
     home_is_set(home_set),
     armed(false),
     logging_available(false),
@@ -345,8 +362,19 @@ bool AP_Arming::battery_checks(bool report)
             }
             return false;
         }
-    }
 
+        for (int i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+            if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
+                if (report) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d voltage %.1f below minimum %.1f",
+                            i+1,
+                            (double)_battery.voltage(i),
+                            (double)_min_voltage[i]);
+                }
+                return false;
+            }
+        }
+     }
     return true;
 }
 

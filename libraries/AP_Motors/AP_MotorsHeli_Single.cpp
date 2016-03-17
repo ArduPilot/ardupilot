@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Param: FLYBAR_MODE
     // @DisplayName: Flybar Mode Selector
     // @Description: Flybar present or not.  Affects attitude controller used during ACRO flight mode
-    // @Values: 0:NoFlybar 1:Flybar
+    // @Values: 0:NoFlybar,1:Flybar
     // @User: Standard
     AP_GROUPINFO("FLYBAR_MODE", 9, AP_MotorsHeli_Single, _flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
   

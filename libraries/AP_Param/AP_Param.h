@@ -210,10 +210,7 @@ public:
     /// Notify GCS of current parameter value
     ///
     void notify() const;
-
-    // send a parameter to all GCS instances
-    void send_parameter(char *name, enum ap_var_type param_header_type) const;
-
+    
     /// Save the current value of the variable to EEPROM.
     ///
     /// @param  force_save     If true then force save even if default
@@ -440,6 +437,9 @@ private:
     static bool load_defaults_file(const char *filename);
 #endif
 
+    // send a parameter to all GCS instances
+    void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
+    
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;

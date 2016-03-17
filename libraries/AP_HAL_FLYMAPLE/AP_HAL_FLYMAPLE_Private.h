@@ -15,9 +15,7 @@
 /*
   Flymaple port by Mike McCauley
  */
-
-#ifndef __AP_HAL_FLYMAPLE_PRIVATE_H__
-#define __AP_HAL_FLYMAPLE_PRIVATE_H__
+#pragma once
 
 /* Umbrella header for all private headers of the AP_HAL_FLYMAPLE module.
  * Only import this header from inside AP_HAL_FLYMAPLE
@@ -34,6 +32,3 @@
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "Util.h"
-
-#endif // __AP_HAL_FLYMAPLE_PRIVATE_H__
-

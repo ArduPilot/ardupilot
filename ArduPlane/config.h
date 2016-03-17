@@ -19,6 +19,7 @@
 //
 // - Try to keep this file organised in the same order as APM_Config.h.example
 //
+#pragma once
 
 #include "defines.h"
 

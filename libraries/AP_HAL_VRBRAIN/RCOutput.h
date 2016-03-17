@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_VRBRAIN_RCOUTPUT_H__
-#define __AP_HAL_VRBRAIN_RCOUTPUT_H__
+#pragma once
 
 #include "AP_HAL_VRBRAIN.h"
 #include <systemlib/perf_counter.h>
@@ -41,5 +39,3 @@ private:
 
     void _init_alt_channels(void);
 };
-
-#endif // __AP_HAL_VRBRAIN_RCOUTPUT_H__
