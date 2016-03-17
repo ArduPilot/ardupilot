@@ -197,6 +197,18 @@ void NavEKF2_core::readMagData()
             }
         }
 
+        // detect changes to magnetometer offset parameters and reset states
+        Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
+        bool changeDetected = lastMagOffsetsValid && (!is_equal(nowMagOffsets.x,lastMagOffsets.x) || !is_equal(nowMagOffsets.y,lastMagOffsets.y) || !is_equal(nowMagOffsets.z,lastMagOffsets.z));
+        if (changeDetected) {
+            // zero the learned magnetometer bias states
+            stateStruct.body_magfield.zero();
+            // clear the measurement buffer
+            storedMag.reset();
+        }
+        lastMagOffsets = nowMagOffsets;
+        lastMagOffsetsValid = true;
+
         // store time of last measurement update
         lastMagUpdate_us = _ahrs->get_compass()->last_update_usec(magSelectIndex);
 

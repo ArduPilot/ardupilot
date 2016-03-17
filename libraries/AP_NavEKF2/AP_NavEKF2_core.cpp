@@ -249,6 +249,7 @@ void NavEKF2_core::InitialiseVariables()
     imuDataDownSampledNew.delVelDT = 0.0f;
     runUpdates = false;
     framesSincePredict = 0;
+    lastMagOffsetsValid = false;
 
     // zero data buffers
     storedIMU.reset();
