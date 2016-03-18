@@ -46,6 +46,10 @@
 // invisible
 #define AP_PARAM_FLAG_ENABLE        4
 
+// don't shift index 0 to index 63. Use this when you know there will be
+// no conflict with the parent
+#define AP_PARAM_NO_SHIFT           8
+
 // a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
 // is constant and known at compile time

@@ -114,7 +114,7 @@ void AP_Param::erase_all(void)
 */
 uint32_t AP_Param::group_id(const struct GroupInfo *grpinfo, uint8_t base, uint8_t i, uint8_t shift)
 {
-    if (grpinfo[i].idx == 0 && shift != 0) {
+    if (grpinfo[i].idx == 0 && shift != 0 && !(grpinfo[i].flags & AP_PARAM_NO_SHIFT)) {
         /*
           this is a special case for a bug in the original design. An
           idx of 0 shifted by n bits is still zero, which makes it
