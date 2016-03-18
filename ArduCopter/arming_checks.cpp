@@ -199,11 +199,6 @@ bool Copter::pre_arm_checks(bool display_failure)
 
     }
 
-    // check GPS
-    if (!pre_arm_gps_checks(display_failure)) {
-        return false;
-    }
-
     #if AC_FENCE == ENABLED
     // check fence is initialised
     if (!fence.pre_arm_check()) {
@@ -302,6 +297,12 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
     }
+
+    // check GPS
+    if (!pre_arm_gps_checks(display_failure)) {
+        return false;
+    }
+
     #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
     #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     // check board voltage
