@@ -556,6 +556,14 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // check accels and gyro are healthy
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
+        // check accelerometers have been calibrated
+        if (!ins.accel_calibrated_ok_all()) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: INS not calibrated");
+            }
+            return false;
+        }
+
         //check if accelerometers have calibrated and require reboot
         if (ins.accel_cal_requires_reboot()) {
             if (display_failure) {
