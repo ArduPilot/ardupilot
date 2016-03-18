@@ -29,7 +29,7 @@ bool SoloGimbal::aligned()
 
 gimbal_mode_t SoloGimbal::get_mode()
 {
-    if ((_gimbalParams.initialized() && is_zero(_gimbalParams.get_K_rate())) || (_ahrs.get_rotation_body_to_ned().c.z < 0 && !(_lockedToBody || _calibrator.running()))) {
+    if ((_gimbalParams.initialized() && is_zero(_gimbalParams.get_K_rate())) || (_ahrs.get_rotation_body_to_ned().c.z < 0 && !(_lockedToBody || _calibrator.running() || _ahrs.get_compass()->is_calibrating()))) {
         return GIMBAL_MODE_IDLE;
     } else if (!_ekf.getStatus()) {
         return GIMBAL_MODE_POS_HOLD;
