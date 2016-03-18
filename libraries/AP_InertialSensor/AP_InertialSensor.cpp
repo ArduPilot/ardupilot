@@ -1310,6 +1310,15 @@ bool AP_InertialSensor::is_still()
            (vibe.z < _still_threshold);
 }
 
+bool AP_InertialSensor::calibrating_accel() const
+{
+    if (_acal == NULL) {
+        return false;
+    } else {
+        return _acal->get_status() == ACCEL_CAL_WAITING_FOR_ORIENTATION || _acal->get_status() == ACCEL_CAL_COLLECTING_SAMPLE;
+    }
+}
+
 // initialise and register accel calibrator
 // called during the startup of accel cal
 void AP_InertialSensor::acal_init()
