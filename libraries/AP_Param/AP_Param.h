@@ -101,7 +101,7 @@ public:
     struct GroupInfo {
         uint8_t type; // AP_PARAM_*
         uint8_t idx;  // identifier within the group
-        const char name[AP_MAX_NAME_SIZE+1];
+        const char *name;
         ptrdiff_t offset; // offset within the object
         union {
             const struct GroupInfo *group_info;
@@ -111,7 +111,7 @@ public:
     };
     struct Info {
         uint8_t type; // AP_PARAM_*
-        const char name[AP_MAX_NAME_SIZE+1];
+        const char *name;
         uint16_t key; // k_param_*
         const void *ptr;    // pointer to the variable in memory
         union {
@@ -123,7 +123,7 @@ public:
         uint16_t old_key; // k_param_*
         uint8_t old_group_element; // index in old object
         enum ap_var_type type; // AP_PARAM_*
-        const char new_name[AP_MAX_NAME_SIZE+1];        
+        const char *new_name;
     };
 
     // called once at startup to setup the _var_info[] table. This
