@@ -317,9 +317,6 @@ AP_Compass_LSM303D::init()
             if (_data_ready()) {
                 _spi_sem->give();
                 break;
-            } else {
-                hal.console->println(
-                                       "LSM303D startup failed: no data ready");
             }
             _spi_sem->give();
         }
