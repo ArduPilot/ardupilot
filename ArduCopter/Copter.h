@@ -344,11 +344,11 @@ private:
     bool rtl_state_complete; // set to true if the current state is completed
 
     struct {
-        // NEU w/ origin-relative altitude
-        Vector3f origin_point;
-        Vector3f climb_target;
-        Vector3f return_target;
-        Vector3f descent_target;
+        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
+        Location_Class origin_point;
+        Location_Class climb_target;
+        Location_Class return_target;
+        Location_Class descent_target;
         bool land;
     } rtl_path;
 
@@ -830,7 +830,7 @@ private:
     void rtl_land_start();
     void rtl_land_run();
     void rtl_build_path();
-    float rtl_compute_return_alt_above_origin(float rtl_return_dist);
+    void rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target);
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
