@@ -98,6 +98,21 @@ bool Copter::pre_arm_checks(bool display_failure)
         return true;
     }
 
+    // check if sensors are calibrating
+    if (compass.is_calibrating()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Compass calibration running");
+        }
+        return false;
+    }
+
+    if (ins.calibrating_accel()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Accelerometer calibration running");
+        }
+        return false;
+    }
+
     // pre-arm rc checks a prerequisite
     pre_arm_rc_checks();
     if (!ap.pre_arm_rc_check) {
@@ -523,6 +538,21 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     start_logging();
     #endif
 
+    // check if sensors are calibrating
+    if (compass.is_calibrating()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Compass calibration running");
+        }
+        return false;
+    }
+
+    if (ins.calibrating_accel()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Accelerometer calibration running");
+        }
+        return false;
+    }
+
     // check accels and gyro are healthy
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         //check if accelerometers have calibrated and require reboot
@@ -562,12 +592,6 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
-    if (compass.is_calibrating()) {
-        if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Compass calibration running");
-        }
-        return false;
-    }
 
     //check if compass has calibrated and requires reboot
     if (compass.compass_cal_requires_reboot()) {
