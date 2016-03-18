@@ -1401,6 +1401,10 @@ void AP_InertialSensor::_acal_save_calibrations()
         _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers
     }
 
+}
+
+void AP_InertialSensor::_acal_event_success()
+{
     _accel_cal_requires_reboot = true;
 }
 

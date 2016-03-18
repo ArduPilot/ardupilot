@@ -417,6 +417,7 @@ private:
 
     //save accelerometer bias and scale factors
     void _acal_save_calibrations();
+    void _acal_event_success();
     void _acal_event_failure();
 
     // Returns AccelCalibrator objects pointer for specified acceleromter
