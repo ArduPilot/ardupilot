@@ -314,10 +314,21 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
         // set state to fly to location
         land_state = LAND_STATE_FLY_TO_LOCATION;
 
-        // calculate and set desired location above landing target
-        Vector3f pos = pv_location_to_vector(cmd.content.location);
-        pos.z = inertial_nav.get_altitude();
-        auto_wp_start(pos);
+        // convert to location class
+        Location_Class target_loc(cmd.content.location);
+
+        // decide if we will use terrain following
+        int32_t curr_terr_alt_cm, target_terr_alt_cm;
+        if (current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
+            target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
+            curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
+            // if using terrain, set target altitude to current altitude above terrain
+            target_loc.set_alt(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
+        } else {
+            // set target altitude to current altitude above home
+            target_loc.set_alt(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+        }
+        auto_wp_start(target_loc);
     }else{
         // set landing state
         land_state = LAND_STATE_DESCENDING;
