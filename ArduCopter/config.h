@@ -251,7 +251,7 @@
 
 // arming check's maximum acceptable rotation rate difference (in rad/sec) between primary and backup gyros
 #ifndef PREARM_MAX_GYRO_VECTOR_DIFF
-  #define PREARM_MAX_GYRO_VECTOR_DIFF       0.0873f  // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.0873 rad/sec (=5deg/sec)
+  #define PREARM_MAX_GYRO_VECTOR_DIFF       radians(20.0f)  // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.0873 rad/sec (=5deg/sec)
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
