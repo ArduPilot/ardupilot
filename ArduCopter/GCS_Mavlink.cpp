@@ -1384,10 +1384,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } else if (is_equal(packet.param5,1.0f)) {
                 // 3d accel calibration
                 result = MAV_RESULT_ACCEPTED;
-                if (!copter.calibrate_gyros()) {
+                /*if (!copter.calibrate_gyros()) {
                     result = MAV_RESULT_FAILED;
                     break;
-                }
+                }*/
                 copter.ins.acal_init();
                 copter.ins.get_acal()->start(this);
                 
