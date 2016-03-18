@@ -18,7 +18,9 @@ Compass::compass_cal_update()
             AP_Notify::events.compass_cal_failed = 1;
         }
 
-        if (_calibrator[i].check_for_timeout()) {
+        _calibrator[i].check_for_timeout();
+
+        if (_calibrator[i].get_status() == COMPASS_CAL_FAILED) {
             AP_Notify::events.compass_cal_failed = 1;
             cancel_calibration_all();
         }
