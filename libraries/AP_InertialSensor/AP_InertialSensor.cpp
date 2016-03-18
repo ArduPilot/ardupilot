@@ -1408,7 +1408,7 @@ void AP_InertialSensor::_acal_event_failure()
 {
     for (uint8_t i=0; i<_accel_count; i++) {
         _accel_offset[i].set_and_save(Vector3f(0,0,0));
-        _accel_scale[i].set_and_save(Vector3f(0,0,0));
+        _accel_scale[i].set_and_save(Vector3f(1,1,1));
     }
 }
 
