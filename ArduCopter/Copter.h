@@ -945,6 +945,9 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void epm_update();
+    void terrain_update();
+    void terrain_logging();
+    bool terrain_use();
     void report_batt_monitor();
     void report_frame();
     void report_radio();
