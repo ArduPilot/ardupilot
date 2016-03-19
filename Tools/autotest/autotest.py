@@ -328,40 +328,31 @@ def write_fullresults():
     results.addglob('DataFlash Log', '*-log.bin')
     results.addglob("MAVLink log", '*.tlog')
     results.addglob("GPX track", '*.gpx')
-    results.addfile('ArduPlane build log', 'ArduPlane.txt')
-    results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
-    results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
-    results.addfile('ArduPlane defaults', 'default_params/ArduPlane-defaults.parm')
-    results.addglob("ArduPlane log", 'ArduPlane-*.BIN')
-    results.addglob("ArduPlane core", 'ArduPlane.core')
-    results.addglob("ArduPlane ELF", 'ArduPlane.elf')
-    results.addfile('ArduCopter build log', 'ArduCopter.txt')
-    results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
-    results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
-    results.addfile('ArduCopter defaults', 'default_params/ArduCopter-defaults.parm')
-    results.addglob("ArduCopter log", 'ArduCopter-*.BIN')
-    results.addglob("ArduCopter core", 'ArduCopter.core')
-    results.addglob("ArduCopter elf", 'ArduCopter.elf')
+
+    # results common to all vehicles:
+    vehicle_files = [ ('{vehicle} build log', '{vehicle}.txt'),
+                      ('{vehicle} code size', '{vehicle}.sizes.txt'),
+                      ('{vehicle} stack sizes', '{vehicle}.framesizes.txt'),
+                      ('{vehicle} defaults', 'default_params/{vehicle}-defaults.parm'),
+                      ('{vehicle} core', '{vehicle}.core'),
+                      ('{vehicle} ELF', '{vehicle}.elf'),
+    ]
+    vehicle_globs = [('{vehicle} log', '{vehicle}-*.BIN'),
+    ]
+    for vehicle in 'ArduPlane','ArduCopter','APMrover2','AntennaTracker', 'ArduSub':
+        subs = { 'vehicle': vehicle }
+        for vehicle_file in vehicle_files:
+            description = vehicle_file[0].format(**subs)
+            filename = vehicle_file[1].format(**subs)
+            results.addfile(description, filename)
+        for vehicle_glob in vehicle_globs:
+            description = vehicle_glob[0].format(**subs)
+            glob = vehicle_glob[1].format(**subs)
+            results.addglob(description, glob)
+
     results.addglob("CopterAVC log", 'CopterAVC-*.BIN')
-    results.addglob("CopterAVC core", 'CopterAVC.core')
-    results.addfile('APMrover2 build log', 'APMrover2.txt')
-    results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
-    results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
-    results.addfile('APMrover2 defaults', 'default_params/APMrover2-defaults.parm')
-    results.addglob("APMrover2 log", 'APMrover2-*.BIN')
-    results.addglob("APMrover2 core", 'APMrover2.core')
-    results.addglob("APMrover2 ELF", 'APMrover2.elf')
-    results.addfile('AntennaTracker build log', 'AntennaTracker.txt')
-    results.addfile('AntennaTracker code size', 'AntennaTracker.sizes.txt')
-    results.addfile('AntennaTracker stack sizes', 'AntennaTracker.framesizes.txt')
-    results.addglob("AntennaTracker ELF", 'AntennaTracker.elf')
-    results.addfile('ArduSub build log', 'ArduSub.txt')
-    results.addfile('ArduSub code size', 'ArduSub.sizes.txt')
-    results.addfile('ArduSub stack sizes', 'ArduSub.framesizes.txt')
-    results.addfile('ArduSub defaults', 'default_params/ArduSub-defaults.parm')
-    results.addglob("ArduSub log", 'ArduSub-*.BIN')
-    results.addglob("ArduSub core", 'ArduSub.core')
-    results.addglob("ArduSub ELF", 'ArduSub.elf')
+    results.addfile("CopterAVC core", 'CopterAVC.core')
+
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
