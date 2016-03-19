@@ -960,6 +960,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(throw_motor_start, "THROW_MOT_START", 0),
 
+    // @Param: TERRAIN_USE
+    // @DisplayName: Terrain use control
+    // @Description: Control how terrain data is used
+    // @Values: 0:NeverUse, 1:AlwaysUse
+    // @User: Standard
+    GSCALAR(terrain_use, "TERRAIN_USE", 0),
+
     AP_VAREND
 };
 
