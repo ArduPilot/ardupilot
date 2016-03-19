@@ -115,6 +115,9 @@ addfwversion() {
 	version=$(grep 'define.THISFIRMWARE' *.pde *.h 2> /dev/null | cut -d'"' -f2)
 	echo >> "$destdir/git-version.txt"
 	echo "APMVERSION: $version" >> "$destdir/git-version.txt"
+	echo "PWD"
+	`pwd`
+	python $BASEDIR/Tools/PrintVersion.py >"$destdir/firmware-version.txt"
     }    
 }
 
