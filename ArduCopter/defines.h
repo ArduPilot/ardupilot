@@ -380,6 +380,8 @@ enum ThrowModeState {
 #define ERROR_SUBSYSTEM_BARO                18
 #define ERROR_SUBSYSTEM_CPU                 19
 #define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20
+#define ERROR_SUBSYSTEM_TERRAIN             21
+#define ERROR_SUBSYSTEM_NAVIGATION          22
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -398,6 +400,11 @@ enum ThrowModeState {
 #define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
+// subsystem specific error codes -- terrain
+#define ERROR_CODE_MISSING_TERRAIN_DATA     2
+// subsystem specific error codes -- navigation
+#define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
+#define ERROR_CODE_FAILED_TO_UPDATE_TARGET  3
 
 // parachute failed to deploy because of low altitude or landed
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
