@@ -397,10 +397,17 @@ void PX4RCOutput::_timer_tick(void)
     }
     
     if (_need_update && _pwm_fd != -1) {
+        uint16_t _period2[PX4_NUM_OUTPUT_CHANNELS];
+        memcpy(_period2, _period, _max_channel*sizeof(uint16_t));
+
+        // channel swap for H6 helis
+        _period2[2] = _period[5];
+        _period2[5] = _period[2];
+
         _need_update = false;
         perf_begin(_perf_rcout);
         // always send all outputs to first PWM device. This ensures that SBUS is properly updated in px4io
-        ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
+        ::write(_pwm_fd, _period2, _max_channel*sizeof(_period2[0]));
         if (_max_channel > _servo_count) {
             // maybe send updates to alt_fd
             if (_alt_fd != -1 && _alt_servo_count > 0) {
@@ -408,7 +415,7 @@ void PX4RCOutput::_timer_tick(void)
                 if (n > _alt_servo_count) {
                     n = _alt_servo_count;
                 }
-                ::write(_alt_fd, &_period[_servo_count], n*sizeof(_period[0]));
+                ::write(_alt_fd, &_period2[_servo_count], n*sizeof(_period2[0]));
             }
         }
 
