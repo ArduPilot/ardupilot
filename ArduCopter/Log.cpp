@@ -737,7 +737,7 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",   "IBffffff",   "TimeMS,Heal,bX,bY,eX,eY,sz,pX,pY" },
+      "PL",   "IBfffffff",   "TimeMS,Heal,bX,bY,eX,eY,sz,pX,pY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
