@@ -1058,21 +1058,39 @@ void AP_InertialSensor::wait_for_sample(void)
 
 check_sample:
     if (!_hil_mode) {
-        // we also wait for at least one backend to have a sample of both
-        // accel and gyro. This normally completes immediately.
-        bool gyro_available = false;
-        bool accel_available = false;
-        while (!gyro_available || !accel_available) {
+        // we wait for all healthy sensors to have a sample for a maximum of 2ms, after which
+        // we will return if there is at least one sample of both accel and gyro. this normally
+        // completes immediately.
+
+        uint32_t start_time_us = AP_HAL::micros();
+        bool any_gyro_available = false;
+        bool any_accel_available = false;
+        while (true) {
             for (uint8_t i=0; i<_backend_count; i++) {
                 _backends[i]->accumulate();
             }
+
+            bool all_healthy_gyros_available = true;
+            bool all_healthy_accels_available = true;
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-                gyro_available |= _new_gyro_data[i];
-                accel_available |= _new_accel_data[i];
+                if (_new_gyro_data[i]) {
+                    any_gyro_available = true;
+                } else if (_gyro_healthy[i]) {
+                    all_healthy_gyros_available = false;
+                }
+
+                if (_new_accel_data[i]) {
+                    any_accel_available = true;
+                } else if (_accel_healthy[i]) {
+                    all_healthy_accels_available = false;
+                }
             }
-            if (!gyro_available || !accel_available) {
-                hal.scheduler->delay_microseconds(100);
+
+            if ((all_healthy_gyros_available && all_healthy_accels_available) ||
+                (AP_HAL::micros()-start_time_us > 2000 && any_accel_available && any_gyro_available)) {
+                break;
             }
+            hal.scheduler->delay_microseconds(100);
         }
     }
 
