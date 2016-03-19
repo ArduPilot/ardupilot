@@ -185,8 +185,15 @@ void AP_MotorsTri::output_armed_stabilizing()
     pitch_thrust = _pitch_in * get_compensation_gain();
     yaw_thrust = _yaw_in * get_compensation_gain()*sinf(radians(_yaw_servo_angle_max_deg)); // we scale this so a thrust request of 1.0f will ask for full servo deflection at full rear throttle
     throttle_thrust = get_throttle() * get_compensation_gain();
-    float pivot_angle_request_max = asin(yaw_thrust);
-    float pivot_thrust_max = cosf(pivot_angle_request_max);
+
+    // calculate angle of yaw pivot
+    _pivot_angle = safe_asin(yaw_thrust);
+    if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
+        limit.yaw = true;
+        _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
+    }
+
+    float pivot_thrust_max = cosf(_pivot_angle);
     float thrust_max = 1.0f;
 
     // sanity check throttle is above zero and below current limited throttle
@@ -268,23 +275,6 @@ void AP_MotorsTri::output_armed_stabilizing()
     _thrust_left = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_left;
     _thrust_rear = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_rear;
 
-    // calculate angle of yaw pivot
-    if(is_zero(_thrust_rear)){
-        limit.yaw = true;
-        if(yaw_thrust > 0.0f){
-            _pivot_angle = radians(_yaw_servo_angle_max_deg);
-        }else if(yaw_thrust < 0.0f){
-            _pivot_angle = -radians(_yaw_servo_angle_max_deg);
-        } else {
-            _pivot_angle = 0.0f;
-        }
-    } else {
-        _pivot_angle = atan(yaw_thrust/_thrust_rear);
-        if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
-            limit.yaw = true;
-            _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
-        }
-    }
     // scale pivot thrust to account for pivot angle
     // we should not need to check for divide by zero as _pivot_angle should always be much less than 90 degrees
     _thrust_rear = _thrust_rear/cosf(_pivot_angle);
