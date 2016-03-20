@@ -254,6 +254,8 @@ void NavEKF2_core::InitialiseVariables()
     magDecAng = 0.0f;
     filtYawRate = 0.0f;
     lastLearnedDecl = 0.0f;
+    referenceYawAngle = 0.0f;
+    posdAtLastYawReset = 0.0f;
 
     // zero data buffers
     storedIMU.reset();

@@ -28,32 +28,53 @@ void NavEKF2_core::controlMagYawReset()
     deltaQuat.to_axis_angle(deltaRotVec);
     float deltaRot = deltaRotVec.length();
 
+    // sample the yaw angle before we takeoff
+    if (onGround) {
+        referenceYawAngle = atan2f(prevTnb.a.y,prevTnb.a.x);
+        posdAtLastYawReset = stateStruct.position.z;
+    }
+
     // In-Flight reset for vehicle that cannot use a zero sideslip assumption
     // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
-    // Perform the reset earlier if high yaw and velocity innovations indicate that 'toilet bowling' is occurring
-    // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
-    // Delay if rotated too far since the last check as rapid rotations will produce errors in the magnetic field states
+    // Perform a reset earlier if bad initial yaw from on-ground magnetic field distoration is detected.
+    // Don't reset if rotating rapidly as timing errors will produce large errors in the yaw estimate.
     if (!firstMagYawInit && !assume_zero_sideslip() && inFlight && deltaRot < 0.1745f) {
         // check that we have reached a height where ground magnetic interference effects are insignificant
         bool hgtCheckPassed = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
 
-        // check for 'toilet bowling' which is characterised by large yaw and velocity innovations and caused by bad yaw alignment
-        // this can occur if there is severe magnetic interference on the ground
-        bool toiletBowling = (yawTestRatio > 1.0f) && (velTestRatio > 1.0f);
+        // Calculate the ratio of yaw change to max allowed innovation
+        float yawChange = wrap_PI(atan2f(prevTnb.a.y,prevTnb.a.x) - referenceYawAngle);
+        float yawChangeRatio = sq(yawChange) / (sq(MAX(0.01f * (float)frontend->_yawInnovGate, 1.0f)) * sq(fmaxf(frontend->_yawNoise,0.01f)));
 
-        if (hgtCheckPassed || toiletBowling) {
-            firstMagYawInit = true;
+        // A combination of large yaw innovation, increasing height and lack of significant yaw angle change from takeoff is
+        // indicative of a bad initial yaw
+        bool badInitialYaw = (yawTestRatio > 1.0f) && (yawChangeRatio < 1.0f) && (stateStruct.position.z < (posdAtLastYawReset - 0.5f));
+
+        // if we have bad initial yaw or have achieved the height, do a full yaw and mag field state reset
+        if (hgtCheckPassed || badInitialYaw) {
             // reset the timer used to prevent magnetometer fusion from affecting attitude until initial field learning is complete
             magFuseTiltInhibit_ms =  imuSampleTime_ms;
+
             // Update the yaw  angle and earth field states using the magnetic field measurements
             Quaternion tempQuat;
             Vector3f eulerAngles;
             stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
             tempQuat = stateStruct.quat;
             stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+
+            // Update the reference yaw angle and reset reference data
+            stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+            referenceYawAngle = eulerAngles.z;
+            posdAtLastYawReset = stateStruct.position.z;
+
             // calculate the change in the quaternion state and apply it to the ouput history buffer
             tempQuat = stateStruct.quat/tempQuat;
             StoreQuatRotate(tempQuat);
+
+            // Lock out further resets when we have achieved the required height
+            if (hgtCheckPassed) {
+                firstMagYawInit = true;
+            }
         }
     }
 
@@ -662,7 +683,7 @@ void NavEKF2_core::fuseEulerYaw()
     float q3 = stateStruct.quat[3];
 
     // compass measurement error variance (rad^2)
-    const float R_YAW = 0.25f;
+    float R_YAW = fmaxf(frontend->_yawNoise,0.01f);
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
     // determine if a 321 or 312 Euler sequence is best
@@ -799,7 +820,8 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
+    float maxYawInnov2 = sq(fmaxf(0.01f * (float)frontend->_yawInnovGate, 1.0f)) * varInnov;
+    yawTestRatio = sq(innovation) / maxYawInnov2;
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {
@@ -814,10 +836,11 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // limit the innovation so that initial corrections are not too large
-    if (innovation > 0.5f) {
-        innovation = 0.5f;
-    } else if (innovation < -0.5f) {
-        innovation = -0.5f;
+    float maxYawInnov = sqrt(maxYawInnov2);
+    if (innovation > maxYawInnov) {
+        innovation = maxYawInnov;
+    } else if (innovation < -maxYawInnov) {
+        innovation = -maxYawInnov;
     }
 
     // correct the state vector

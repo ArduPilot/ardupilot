@@ -779,6 +779,8 @@ private:
     float filtYawRate;              // filtered yaw rate used to activate rapid yaw protection (rad/sec)
     float lastLearnedDecl;          // last value of declination learned (rad)
     float declObsVar;               // variance of the magentic declination observation (rad)^2
+    float referenceYawAngle;        // Euler yaw angle measured at takeoff and after a yaw reset (rad)
+    float posdAtLastYawReset;       // Verticl position at last height reset (m)
 
     // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
