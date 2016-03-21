@@ -177,8 +177,6 @@ void AP_MotorsCoax::output_armed_stabilizing()
     float   thrust_min_rp;              // the minimum throttle setting that will not limit the roll and pitch output
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
     float   thrust_out;                 //
-    float   throttle_thrust_hover = get_hover_throttle_as_high_end_pct();   // throttle hover thrust value, 0.0 - 1.0
-    float   throttle_thrust_rpy_mix;    // partial calculation of throttle_thrust_best_rpy
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   actuator_allowed = 0.0f;    // amount of yaw we can fit in
 
@@ -197,7 +195,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
         throttle_thrust = _throttle_thrust_max;
         limit.throttle_upper = true;
     }
-    throttle_thrust_rpy_mix = MAX(throttle_thrust, throttle_thrust*MAX(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
+
+    _throttle_ave_max = constrain_float(_throttle_ave_max, throttle_thrust, _throttle_thrust_max);
 
     float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
 
@@ -220,15 +219,15 @@ void AP_MotorsCoax::output_armed_stabilizing()
     // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
     thrust_min_rp = MAX(fabsf(rpy_scale * roll_thrust), fabsf(rpy_scale * pitch_thrust));
 
-    thr_adj = throttle_thrust - throttle_thrust_rpy_mix;
-    if (thr_adj < (thrust_min_rp - throttle_thrust_rpy_mix)) {
+    thr_adj = throttle_thrust - _throttle_ave_max;
+    if (thr_adj < (thrust_min_rp - _throttle_ave_max)) {
         // Throttle can't be reduced to the desired level because this would mean roll or pitch control
         // would not be able to reach the desired level because of lack of thrust.
-        thr_adj = MIN(thrust_min_rp, throttle_thrust_rpy_mix) - throttle_thrust_rpy_mix;
+        thr_adj = MIN(thrust_min_rp, _throttle_ave_max) - _throttle_ave_max;
     }
 
     // calculate the throttle setting for the lift fan
-    thrust_out = MIN(throttle_thrust_rpy_mix + thr_adj, 1.0f-(0.5*yaw_thrust));
+    thrust_out = MIN(_throttle_ave_max + thr_adj, 1.0f-(0.5*yaw_thrust));
 
     _thrust_yt_ccw = thrust_out + 0.5f * yaw_thrust;
     _thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
