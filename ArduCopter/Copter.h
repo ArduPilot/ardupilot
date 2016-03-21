@@ -412,9 +412,6 @@ private:
     // SmartRTL
     SmartRTLState smart_rtl_state;  // records state of SmartRTL
 
-    // Circle
-    bool circle_pilot_yaw_override; // true if pilot is overriding yaw
-
     // SIMPLE Mode
     // Used to track the orientation of the vehicle for Simple mode. This value is reset at each arming
     // or in SuperSimple mode when the vehicle leaves a 20m radius from home.
@@ -839,8 +836,6 @@ private:
     bool brake_init(bool ignore_checks);
     void brake_run();
     void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
-    bool circle_init(bool ignore_checks);
-    void circle_run();
     bool drift_init(bool ignore_checks);
     void drift_run();
     float get_throttle_assist(float velz, float pilot_throttle_scaled);
@@ -1138,6 +1133,8 @@ private:
     Copter::FlightMode_ALTHOLD flightmode_althold{*this};
 
     Copter::FlightMode_AUTO flightmode_auto{*this, mission, circle_nav};
+
+    Copter::FlightMode_CIRCLE flightmode_circle{*this, circle_nav};
 
 #if FRAME_CONFIG == HELI_FRAME
     Copter::FlightMode_STABILIZE_Heli flightmode_stabilize{*this};
