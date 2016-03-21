@@ -57,6 +57,30 @@ extern const AP_HAL::HAL& hal;
 #define FRSKY_ID_VOLTS_BP       0x3A
 #define FRSKY_ID_VOLTS_AP       0x3B
 
+// FrSky SmartPort sensor IDs
+#define SMARTPORT_ID_RSSI          0xf101
+#define SMARTPORT_ID_RXA1          0xf102   // supplied by RX
+#define SMARTPORT_ID_RXA2          0xf103   // supplied by RX
+#define SMARTPORT_ID_BATV          0xf104
+#define SMARTPORT_ID_SWR           0xf105
+#define SMARTPORT_ID_T1            0x0400
+#define SMARTPORT_ID_T2            0x0410
+#define SMARTPORT_ID_RPM           0x0500
+#define SMARTPORT_ID_FUEL          0x0600
+#define SMARTPORT_ID_ALT           0x0100
+#define SMARTPORT_ID_VARIO         0x0110
+#define SMARTPORT_ID_ACCX          0x0700
+#define SMARTPORT_ID_ACCY          0x0710
+#define SMARTPORT_ID_ACCZ          0x0720
+#define SMARTPORT_ID_CURR          0x0200
+#define SMARTPORT_ID_VFAS          0x0210
+#define SMARTPORT_ID_CELLS         0x0300
+#define SMARTPORT_ID_GPS_LON_LAT   0x0800
+#define SMARTPORT_ID_GPS_ALT       0x0820
+#define SMARTPORT_ID_GPS_SPD       0x0830
+#define SMARTPORT_ID_GPS_CRS       0x0840
+#define SMARTPORT_ID_GPS_TIME      0x0850
+
 // Default sensor data IDs (Physical IDs + CRC)
 #define DATA_ID_VARIO            0x00 // 0
 #define DATA_ID_FLVSS            0xA1 // 1
@@ -98,6 +122,8 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
     _alt_gps_cm(0),
     _speed_in_meter(0),
     _speed_in_centimeter(0),
+    _lon(0.f),
+    _lat(0.f),
     _baro_data_ready(false),
     _baro_alt_meters(0),
     _baro_alt_cm(0),
@@ -107,7 +133,8 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
     _gps_call(0),
     _vario_call(0),
     _various_call(0),
-    _sport_status(0)
+    _sport_status(0),
+    _gps(_ahrs.get_gps())
     {}
 
 // init - perform require initialisation including detecting which protocol to use
@@ -293,42 +320,24 @@ void AP_Frsky_Telem::sport_tick(void)
                 if (_gps_data_ready) {
                     switch (_gps_call) {
                     case 0:
-                        send_gps_lat_dd();
+                        send_smart_gps_lat();
                         break;
                     case 1:
-                        send_gps_lat_mm();
+                        send_smart_gps_lon();
                         break;
                     case 2:
-                        send_gps_lat_ns();
+                        send_smart_gps_alt();
                         break;
                     case 3:
-                        send_gps_lon_dd();
+                        send_smart_gps_spd();
                         break;
                     case 4:
-                        send_gps_lon_mm();
-                        break;
-                    case 5:
-                        send_gps_lon_ew();
-                        break;
-                    case 6:
-                        send_gps_speed_meter();
-                        break;
-                    case 7:
-                        send_gps_speed_cm();
-                        break;
-                    case 8:
-                        send_gps_alt_meter();
-                        break;
-                    case 9:
-                        send_gps_alt_cm();
-                        break;
-                    case 10:
-                        send_heading();
+                        send_smart_gps_cog();
                         break;
                     }
 
                     _gps_call++;
-                    if (_gps_call > 10) {
+                    if (_gps_call > 4) {
                         _gps_call = 0;
                         _gps_data_ready = false;
                     }
@@ -463,7 +472,7 @@ void AP_Frsky_Telem::frsky_send_sport_prim()
 
 
 /**
- * Sends one data id/value pair.
+ * Sends one data id/value pair. Used for both old D frames and new S frames in compatibility mode
  */
 void  AP_Frsky_Telem::frsky_send_data(uint8_t id, int16_t data)
 {
@@ -490,6 +499,33 @@ void  AP_Frsky_Telem::frsky_send_data(uint8_t id, int16_t data)
         frsky_send_byte(zero);
         send_crc();
     }
+}
+
+
+/**
+ * Sends one data id/value pair. Used for S frames only using new Smart Port sensor ids and 32bit data
+ */
+void AP_Frsky_Telem::frsky_send_data_smart(uint16_t id, uint32_t data) {
+    union {
+        int32_t word;
+        uint8_t byte[4];
+    } buf;
+
+    frsky_send_sport_prim();
+
+    // 16 bit id, LSB first
+    buf.word = id;
+    for (int i = 0; i < 2; i++) {
+        frsky_send_byte(buf.byte[i]);
+    }
+
+    // 32 bit data, LSB first
+    buf.word = data;
+    for (int i = 0; i < 4; i++) {
+        frsky_send_byte(buf.byte[i]);
+    }
+
+    send_crc();
 }
 
 /*
@@ -531,21 +567,22 @@ void AP_Frsky_Telem::calc_gps_position()
 {
     _course_in_degrees = (_ahrs.yaw_sensor / 100) % 360;
 
-    const AP_GPS &gps = _ahrs.get_gps();
     float lat;
     float lon ;
     float alt ;
     float speed;
-    _pos_gps_ok = (gps.status() >= 3);
+    _pos_gps_ok = (_gps.status() >= 3);
     if (_pos_gps_ok) {
-        Location loc = gps.location();//get gps instance 0
+        Location loc = _gps.location();//get gps instance 0
     
-        lat = frsky_format_gps(fabsf(loc.lat/10000000.0f));
+        _lat = loc.lat*.0000001f;
+        lat = frsky_format_gps(fabsf(_lat));
         _latdddmm = lat;
         _latmmmm = (lat - _latdddmm) * 10000;
         _lat_ns = (loc.lat < 0) ? 'S' : 'N';
         
-        lon = frsky_format_gps(fabsf(loc.lng/10000000.0f));
+        _lon = loc.lng*.0000001f;
+        lon = frsky_format_gps(fabsf(_lon));
         _londddmm = lon;
         _lonmmmm = (lon - _londddmm) * 10000;
         _lon_ew = (loc.lng < 0) ? 'W' : 'E';
@@ -554,7 +591,7 @@ void AP_Frsky_Telem::calc_gps_position()
         _alt_gps_meters = (int16_t)alt;
         _alt_gps_cm = (alt - abs(_alt_gps_meters)) * 100;
         
-        speed = gps.ground_speed();
+        speed = _gps.ground_speed();
         _speed_in_meter = speed;
         _speed_in_centimeter = (speed - _speed_in_meter) * 100;
     } else {
@@ -569,6 +606,7 @@ void AP_Frsky_Telem::calc_gps_position()
         _speed_in_centimeter = 0;
     }
 }
+
 
 /*
  * prepare battery information stored in member variables
@@ -586,8 +624,7 @@ void AP_Frsky_Telem::calc_battery()
 void AP_Frsky_Telem::calc_gps_sats()
 {
     // GPS status is sent as num_sats*10 + status, to fit into a uint8_t
-    const AP_GPS &gps = _ahrs.get_gps();
-    gps_sats = gps.num_sats() * 10 + gps.status();
+    gps_sats = _gps.num_sats() * 10 + _gps.status();
 }
 
 /*
@@ -653,6 +690,65 @@ void AP_Frsky_Telem::send_heading(void)
 {
     frsky_send_data(FRSKY_ID_GPS_COURS_BP, _course_in_degrees);
 }
+
+
+/*
+ * send gps latitude, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_gps_lat(void)
+{
+    /* convert to 30 bit signed magnitude degrees*6E5 with MSb = 0 and bit 30=sign */
+    uint32_t iLat = 6E5 * fabsf(_lat);
+
+    if (_lat < 0) {
+        iLat |= (1 << 30);
+    }
+    frsky_send_data_smart(SMARTPORT_ID_GPS_LON_LAT, iLat);
+}
+
+/*
+ * send gps longitude, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_gps_lon(void)
+{
+    /* convert to 30 bit signed magnitude degrees*6E5 with MSb = 1 and bit 30=sign */
+    uint32_t iLon = 6E5 * fabsf(_lon);
+    iLon |= (1 << 31);
+
+    if (_lon < 0) {
+        iLon |= (1 << 30);
+    }
+    frsky_send_data_smart(SMARTPORT_ID_GPS_LON_LAT, iLon);
+}
+
+/*
+ * send gps alt, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_gps_alt(void)
+{
+    // convert to 100 * m/sec
+    frsky_send_data_smart(SMARTPORT_ID_GPS_ALT, _gps.location().alt);
+}
+
+/*
+ * send gps speed, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_gps_spd(void)
+{
+    // send 100 * knots
+    uint32_t ispeed = (int)(194.384f * _gps.ground_speed());
+    frsky_send_data_smart(SMARTPORT_ID_GPS_SPD, ispeed);
+}
+
+/*
+ * send gps COG, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_gps_cog(void)
+{
+    // course over ground in centridegrees
+    frsky_send_data_smart(SMARTPORT_ID_GPS_CRS, _gps.ground_course_cd());
+}
+
 
 /*
  * send gps lattitude degree and minute integer part; Initialize gps info

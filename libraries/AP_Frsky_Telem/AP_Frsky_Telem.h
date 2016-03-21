@@ -65,6 +65,7 @@ private:
     void frsky_send_hub_startstop();
     void frsky_send_sport_prim();
     void frsky_send_data(uint8_t id, int16_t data);
+    void frsky_send_data_smart(uint16_t id, uint32_t data);
 
     // methods to convert flight controller data to frsky telemetry format
     void calc_baro_alt();
@@ -83,6 +84,11 @@ private:
     void send_current(void);
     void send_prearm_error(void);
     void send_heading(void);
+    void send_smart_gps_lat(void);
+    void send_smart_gps_lon(void);
+    void send_smart_gps_cog(void);
+    void send_smart_gps_alt(void);
+    void send_smart_gps_spd(void);
     void send_gps_lat_dd(void);
     void send_gps_lat_mm(void);
     void send_gps_lat_ns(void);
@@ -125,6 +131,9 @@ private:
     int16_t _speed_in_meter;
     uint16_t _speed_in_centimeter;
 
+    float _lon;
+    float _lat;
+
     bool _baro_data_ready;
     int16_t _baro_alt_meters;
     uint16_t _baro_alt_cm;
@@ -138,4 +147,6 @@ private:
     uint8_t _various_call;
 
     uint8_t _sport_status;
+
+    const AP_GPS& _gps;
 };
