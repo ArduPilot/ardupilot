@@ -770,8 +770,6 @@ private:
     void log_picture();
     MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
     void delay(uint32_t ms);
-    bool acro_init(bool ignore_checks);
-    void acro_run();
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
     bool althold_init(bool ignore_checks);
     void althold_run();
@@ -969,8 +967,6 @@ private:
     void update_heli_control_dynamics(void);
     void heli_update_landing_swash();
     void heli_update_rotor_speed_targets();
-    bool heli_acro_init(bool ignore_checks);
-    void heli_acro_run();
     bool heli_stabilize_init(bool ignore_checks);
     void heli_stabilize_run();
     void read_inertia();
@@ -1138,6 +1134,13 @@ private:
 #include "FlightMode.h"
 
     Copter::FlightMode *flightmode;
+
+#if FRAME_CONFIG == HELI_FRAME
+    Copter::FlightMode_ACRO_Heli flightmode_acro{*this};
+#else
+    Copter::FlightMode_ACRO flightmode_acro{*this};
+#endif
+
 
 public:
     void mavlink_delay_cb();
