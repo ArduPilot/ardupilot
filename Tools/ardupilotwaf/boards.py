@@ -31,7 +31,6 @@ class Board:
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = self.toolchain
         cfg.load('toolchain')
-        cfg.load('compiler_cxx compiler_c')
 
         env = waflib.ConfigSet.ConfigSet()
         self.configure_env(cfg, env)
