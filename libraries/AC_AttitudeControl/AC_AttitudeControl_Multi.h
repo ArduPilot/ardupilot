@@ -59,7 +59,7 @@ public:
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
     // calculate total body frame throttle required to produce the given earth frame throttle
-    float get_boosted_throttle(float throttle_in);
+    float get_throttle_boosted(float throttle_in);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
