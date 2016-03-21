@@ -55,7 +55,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case ALT_HOLD:
-            success = althold_init(ignore_checks);
+            success = flightmode_althold.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_althold;
+            }
             break;
 
         case AUTO:
@@ -197,10 +200,6 @@ void Copter::update_flight_mode()
             #else
                 stabilize_run();
             #endif
-            break;
-
-        case ALT_HOLD:
-            althold_run();
             break;
 
         case AUTO:
@@ -412,9 +411,6 @@ void Copter::notify_flight_mode()
     switch (control_mode) {
         case STABILIZE:
             notify.set_flight_mode_str("STAB");
-            break;
-        case ALT_HOLD:
-            notify.set_flight_mode_str("ALTH");
             break;
         case AUTO:
             notify.set_flight_mode_str("AUTO");
