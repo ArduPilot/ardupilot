@@ -1006,10 +1006,10 @@ private:
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
-    bool mode_requires_GPS(control_mode_t mode);
+    bool mode_requires_GPS();
     bool mode_has_manual_throttle(control_mode_t mode);
-    bool mode_allows_arming(control_mode_t mode, bool arming_from_gcs);
-    void notify_flight_mode(control_mode_t mode);
+    bool mode_allows_arming(bool arming_from_gcs);
+    void notify_flight_mode();
     void heli_init();
     void check_dynamic_flight(void);
     void update_heli_control_dynamics(void);

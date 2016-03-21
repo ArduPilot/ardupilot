@@ -378,7 +378,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     }
 
     // check if flight mode requires GPS
-    bool mode_requires_gps = copter.mode_requires_GPS(copter.control_mode);
+    bool mode_requires_gps = copter.mode_requires_GPS();
 
     // check if fence requires GPS
     bool fence_requires_gps = false;
@@ -586,7 +586,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     control_mode_t control_mode = copter.control_mode;
 
     // always check if the current mode allows arming
-    if (!copter.mode_allows_arming(control_mode, arming_from_gcs)) {
+    if (!copter.mode_allows_arming(arming_from_gcs)) {
         if (display_failure) {
             gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Mode not armable");
         }
