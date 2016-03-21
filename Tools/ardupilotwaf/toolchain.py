@@ -43,44 +43,44 @@ def find_realexec_path(cfg, filename, path_list=[]):
 def configure(cfg):
     toolchain = cfg.env.TOOLCHAIN
 
-    if toolchain != 'native':
-        cfg.msg('Using toolchain prefix', toolchain)
-        prefix = toolchain + '-'
+    if toolchain == 'native':
+        return
 
-        c_compiler = cfg.options.check_c_compiler or 'gcc'
-        cxx_compiler = cfg.options.check_cxx_compiler or 'g++'
+    cfg.msg('Using toolchain', toolchain)
+    prefix = toolchain + '-'
 
-        if 'gcc' == c_compiler or 'g++' == cxx_compiler or 'clang' == c_compiler or 'clang++' == cxx_compiler:
-            toolchain_path = os.path.abspath(os.path.join(find_realexec_path(cfg, prefix + 'ar'), '..'))
-            cfg.msg('Using toolchain path', toolchain_path)
+    c_compiler = cfg.options.check_c_compiler or 'gcc'
+    cxx_compiler = cfg.options.check_cxx_compiler or 'g++'
 
-            if 'gcc' == c_compiler or 'g++' == cxx_compiler:
-                cfg.env['AR'] = prefix + 'ar'
-                cfg.env['CXX'] = prefix + 'g++'
-                cfg.env['CC'] = prefix + 'gcc'
+    if c_compiler in ('gcc', 'clang') or cxx_compiler in ('g++', 'clang++'):
+        cfg.env['AR'] = prefix + 'ar'
 
-            if 'clang' == c_compiler or 'clang++' == cxx_compiler:
-                sysroot = cfg.cmd_and_log([prefix + 'gcc', '--print-sysroot'], quiet=Context.BOTH)[:-1]
-                clang_flags = [
-                    '--target=' + toolchain,
-                    '--gcc-toolchain=' + toolchain_path,
-                    '--sysroot=' + sysroot,
-                    '-B' + os.path.join(toolchain_path, 'bin')
-                ]
-                cfg.env.LINKFLAGS += clang_flags
+    if 'clang' == c_compiler or 'clang++' == cxx_compiler:
+        toolchain_path = os.path.join(find_realexec_path(cfg, prefix + 'ar'),
+                                      '..')
+        toolchain_path = os.path.abspath(toolchain_path)
+        cfg.msg('Using toolchain path', toolchain_path)
 
-        if 'gcc' == c_compiler:
-            cfg.env['CC'] = prefix + 'gcc'
+        sysroot = cfg.cmd_and_log(
+            [prefix + 'gcc', '--print-sysroot'],
+            quiet=Context.BOTH,
+        )[:-1]
+        clang_flags = [
+            '--target=' + toolchain,
+            '--gcc-toolchain=' + toolchain_path,
+            '--sysroot=' + sysroot,
+            '-B' + os.path.join(toolchain_path, 'bin')
+        ]
+        cfg.env.LINKFLAGS += clang_flags
 
-        elif 'clang' == c_compiler:
-            cfg.env['CC'] = c_compiler
-            cfg.env['AR'] = prefix + 'ar'
-            cfg.env.CFLAGS += clang_flags
+    if 'gcc' == c_compiler:
+        cfg.env['CC'] = prefix + 'gcc'
+    elif 'clang' == c_compiler:
+        cfg.env['CC'] = 'clang'
+        cfg.env.CFLAGS += clang_flags
 
-        if 'g++' == cxx_compiler:
-            cfg.env['CXX'] = prefix + 'g++'
-
-        elif 'clang++' == cxx_compiler:
-            cfg.env['CXX'] = cxx_compiler
-            cfg.env['AR'] = prefix + 'ar'
-            cfg.env.CXXFLAGS += clang_flags
+    if 'g++' == cxx_compiler:
+        cfg.env['CXX'] = prefix + 'g++'
+    elif 'clang++' == cxx_compiler:
+        cfg.env['CXX'] = 'clang++'
+        cfg.env.CXXFLAGS += clang_flags
