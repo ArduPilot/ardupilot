@@ -600,20 +600,6 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
     }
 }
 
-void AC_AttitudeControl::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
-{
-    _throttle_in = throttle_in;
-    _throttle_in_filt.apply(throttle_in, _dt);
-    _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (apply_angle_boost) {
-        _motors.set_throttle(get_boosted_throttle(throttle_in));
-    }else{
-        _motors.set_throttle(throttle_in);
-        // Clear angle_boost for logging purposes
-        _angle_boost = 0.0f;
-    }
-}
-
 void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
 {
     _throttle_in = throttle_in;

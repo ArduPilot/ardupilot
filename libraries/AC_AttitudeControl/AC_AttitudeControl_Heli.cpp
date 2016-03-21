@@ -404,11 +404,12 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_rads)
 // throttle functions
 //
 
-// returns a throttle including compensation for roll/pitch angle
-// throttle value should be 0 ~ 1000
-float AC_AttitudeControl_Heli::get_boosted_throttle(float throttle_in)
+void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
 {
-    // no angle boost for trad helis
+    _throttle_in = throttle_in;
+    _throttle_in_filt.apply(throttle_in, _dt);
+    _motors.set_throttle_filter_cutoff(filter_cutoff);
+    _motors.set_throttle(throttle_in);
+    // Clear angle_boost for logging purposes
     _angle_boost = 0.0f;
-    return throttle_in;
 }

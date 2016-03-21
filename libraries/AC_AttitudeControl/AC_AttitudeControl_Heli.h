@@ -95,6 +95,9 @@ public:
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
     void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
 
+    // Set output throttle
+    void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
