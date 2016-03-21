@@ -1,15 +1,15 @@
 """
 WAF Tool to select the correct toolchain based on the target archtecture.
 
-This tool must be loaded before compiler tools. Use the environment variable
-TOOLCHAIN to define the toolchain prefix.
+This tool loads compiler_c and compiler_cxx, so you don't need to load them
+(and you must not load them before this tool). Use the environment variable
+TOOLCHAIN to define the toolchain.
 
 Example::
 
     def configure(cfg):
         cfg.env.TOOLCHAIN = 'arm-linux-gnueabihf'
         cfg.load('toolchain')
-        cfg.load('cxx_compiler')
 """
 
 from waflib import Utils, Context
@@ -44,6 +44,7 @@ def configure(cfg):
     toolchain = cfg.env.TOOLCHAIN
 
     if toolchain == 'native':
+        cfg.load('compiler_cxx compiler_c')
         return
 
     cfg.msg('Using toolchain', toolchain)
@@ -84,3 +85,5 @@ def configure(cfg):
     elif 'clang++' == cxx_compiler:
         cfg.env['CXX'] = 'clang++'
         cfg.env.CXXFLAGS += clang_flags
+
+    cfg.load('compiler_cxx compiler_c')
