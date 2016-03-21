@@ -3,6 +3,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
 #include "AP_Compass.h"
@@ -11,18 +12,24 @@
 class AP_Compass_LSM303D : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(Compass &compass);
+    static AP_Compass_Backend *probe(Compass &compass,
+                                     AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     bool init() override;
     void read() override;
 
-private:
-    AP_Compass_LSM303D(Compass &compass);
+    virtual ~AP_Compass_LSM303D() { }
 
-    bool _read_raw();
+private:
+    AP_Compass_LSM303D(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val);
     void _register_modify(uint8_t reg, uint8_t clearbits, uint8_t setbits);
+    bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
+
+    bool _read_sample();
+
     bool _data_ready();
     bool _hardware_init();
     void _update();
@@ -30,9 +37,8 @@ private:
     bool _mag_set_range(uint8_t max_ga);
     bool _mag_set_samplerate(uint16_t frequency);
 
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
     AP_HAL::DigitalSource *_drdy_pin_m;
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
     float _mag_range_scale;
     float _mag_x_accum;
