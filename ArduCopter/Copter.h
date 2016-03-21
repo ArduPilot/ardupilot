@@ -796,8 +796,6 @@ private:
     MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
     void delay(uint32_t ms);
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
-    bool althold_init(bool ignore_checks);
-    void althold_run();
     bool auto_init(bool ignore_checks);
     void auto_run();
     void auto_takeoff_start(const Location& dest_loc);
@@ -1171,6 +1169,7 @@ private:
     Copter::FlightMode_ACRO flightmode_acro{*this};
 #endif
 
+    Copter::FlightMode_ALTHOLD flightmode_althold{*this};
 
 public:
     void mavlink_delay_cb();
