@@ -341,3 +341,35 @@ private:
     AP_Mission &mission;
     AC_Circle *&circle_nav;
 };
+
+
+
+class FlightMode_CIRCLE : public FlightMode {
+
+public:
+
+    FlightMode_CIRCLE(Copter &copter, AC_Circle *& _circle_nav) :
+        Copter::FlightMode(copter),
+        circle_nav(_circle_nav)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override; // should be called at 100hz or more
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "CIRCLE"; }
+    const char *name4() const override { return "CIRC"; }
+
+private:
+
+    // Circle
+    bool pilot_yaw_override = false; // true if pilot is overriding yaw
+    AC_Circle *&circle_nav;
+
+};
