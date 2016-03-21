@@ -494,7 +494,12 @@ private:
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-    AC_AttitudeControl *attitude_control;
+#if FRAME_CONFIG == HELI_FRAME
+    #define AC_AttitudeControl_t AC_AttitudeControl_Heli
+#else
+    #define AC_AttitudeControl_t AC_AttitudeControl_Multi
+#endif
+    AC_AttitudeControl_t *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
     AC_Circle *circle_nav;
@@ -1129,6 +1134,10 @@ private:
     void init_capabilities(void);
     void dataflash_periodic(void);
     void accel_cal_update(void);
+
+#include "FlightMode.h"
+
+    Copter::FlightMode *flightmode;
 
 public:
     void mavlink_delay_cb();
