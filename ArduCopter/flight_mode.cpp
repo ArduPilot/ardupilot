@@ -24,7 +24,6 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return true;
     }
 
-
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
@@ -32,6 +31,12 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         goto failed;
     }
 #endif
+
+    // for transition, we assume no flightmode object will be used in
+    // the new mode, and if the transition fails we reset the
+    // flightmode to the previous value
+    Copter::FlightMode* old_flightmode = flightmode;
+    flightmode = nullptr;
 
     switch (mode) {
         case ACRO:
@@ -160,6 +165,7 @@ failed:
 #endif
         
     } else {
+        flightmode = old_flightmode;
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
@@ -180,6 +186,10 @@ void Copter::update_flight_mode()
 {
     // Update EKF speed limit - used to limit speed when we are using optical flow
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+
+    if (flightmode != nullptr) {
+        flightmode->run();
+    }
 
     switch (control_mode) {
         case ACRO:
@@ -332,6 +342,9 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 // returns true or false whether mode requires GPS
 bool Copter::mode_requires_GPS(control_mode_t mode)
 {
+    if (flightmode != nullptr) {
+        return flightmode->requires_GPS();
+    }
     switch (mode) {
         case AUTO:
         case GUIDED:
@@ -366,6 +379,9 @@ bool Copter::mode_has_manual_throttle(control_mode_t mode)
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
 bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
 {
+    if (flightmode != nullptr) {
+        return flightmode->allows_arming(arming_from_gcs);
+    }
     if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && (mode == GUIDED || mode == GUIDED_NOGPS))) {
         return true;
     }
@@ -377,6 +393,11 @@ void Copter::notify_flight_mode(control_mode_t mode)
 {
     AP_Notify::flags.flight_mode = mode;
 
+    if (flightmode != nullptr) {
+        AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
+        notify.set_flight_mode_str(flightmode->name4());
+        return;
+    }
     switch (mode) {
         case AUTO:
         case GUIDED:
