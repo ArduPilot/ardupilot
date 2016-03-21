@@ -441,7 +441,19 @@ void DataFlash_Class::Log_Write_Mode(uint8_t mode, uint8_t reason)
 
 void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
 {
+    bool writes_disabled = false;
+    if (_next_backend != 0) {
+	writes_disabled = !backends[0]->GetWritesEnabled();
+    }
+    if (writes_disabled) {
+	// temporary enable writes
+	EnableWrites(true);
+    }
     FOR_EACH_BACKEND(Log_Write_Parameter(name, value));
+    if (writes_disabled) {
+	// disable writes if disabled before
+	EnableWrites(false);
+    }
 }
 
 void DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
