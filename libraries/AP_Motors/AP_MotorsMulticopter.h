@@ -14,7 +14,6 @@
 
 #define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
-#define AP_MOTORS_THR_LOW_CMP_DEFAULT   0.5f    // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 #define AP_MOTORS_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
 #define AP_MOTORS_SPIN_MAX_DEFAULT      0.95f   // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
 #define AP_MOTORS_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
@@ -22,9 +21,6 @@
 #define AP_MOTORS_BAT_CURR_MAX_DEFAULT  0.0f    // current limiting max default
 #define AP_MOTORS_CURRENT_LIMIT_P       0.2f    // replace with parameter - Sets the current limit P term
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
-#define AP_MOTORS_THR_MIX_MIN_DEFAULT   0.1f    // minimum throttle mix
-#define AP_MOTORS_THR_MIX_MID_DEFAULT   0.5f    // manual throttle mix
-#define AP_MOTORS_THR_MIX_MAX_DEFAULT   0.5f    // maximum throttle mix default
 
 // spool definition
 #define AP_MOTORS_SPOOL_UP_TIME         0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
@@ -47,16 +43,6 @@ public:
 
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
-
-    // set_throttle_rpy_mix - set desired throttle_thr_mix (actual throttle_thr_mix is slewed towards this value over 1~2 seconds)
-    //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
-    //  has no effect when throttle is above hover throttle
-    void                set_throttle_mix_min() { _throttle_rpy_mix_desired = _thr_mix_min; }
-    void                set_throttle_mix_mid() { _throttle_rpy_mix_desired = AP_MOTORS_THR_MIX_MID_DEFAULT; }
-    void                set_throttle_mix_max() { _throttle_rpy_mix_desired = _thr_mix_max; }
-
-    // get_throttle_rpy_mix - get low throttle compensation value
-    bool                is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
     // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
     // also sets minimum and maximum pwm values that will be sent to the motors
@@ -134,9 +120,6 @@ protected:
     // update_battery_resistance - calculate battery resistance when throttle is above hover_out
     void                update_battery_resistance();
 
-    // update_throttle_rpy_mix - updates thr_low_comp value towards the target
-    void                update_throttle_rpy_mix();
-
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
 
@@ -163,15 +146,11 @@ protected:
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
-    AP_Float            _thr_mix_min;           // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
-    AP_Float            _thr_mix_max;           // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
     AP_Int16            _pwm_min;               // minimum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's min pwm used)
     AP_Int16            _pwm_max;               // maximum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's max pwm used)
 
     // internal variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
-    float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
-    float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
     int16_t             _throttle_radio_min;        // minimum PWM from RC input's throttle channel (i.e. minimum PWM input from receiver, RC3_MIN)

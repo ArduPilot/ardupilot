@@ -85,19 +85,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BAT_CURR_MAX", 12, AP_MotorsMulticopter, _batt_current_max, AP_MOTORS_BAT_CURR_MAX_DEFAULT),
 
-    // @Param: THR_MIX_MIN
-    // @DisplayName: Throttle Mix Minimum
-    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
-    // @Range: 0.1 0.25
-    // @User: Advanced
-    AP_GROUPINFO("THR_MIX_MIN", 13, AP_MotorsMulticopter, _thr_mix_min, AP_MOTORS_THR_MIX_MIN_DEFAULT),
-
-    // @Param: THR_MIX_MAX
-    // @DisplayName: Throttle Mix Maximum
-    // @Description: Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
-    // @Range: 0.5 0.9
-    // @User: Advanced
-    AP_GROUPINFO("THR_MIX_MAX", 14, AP_MotorsMulticopter, _thr_mix_max, AP_MOTORS_THR_MIX_MAX_DEFAULT),
+    // 13, 14 were used by THR_MIX_MIN, THR_MIX_MAX
 
     // @Param: PWM_TYPE
     // @DisplayName: Output PWM type
@@ -126,8 +114,6 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 // Constructor
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
-    _throttle_rpy_mix_desired(AP_MOTORS_THR_LOW_CMP_DEFAULT),
-    _throttle_rpy_mix(AP_MOTORS_THR_LOW_CMP_DEFAULT),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
@@ -289,20 +275,6 @@ void AP_MotorsMulticopter::update_battery_resistance()
     }
 }
 
-// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
-void AP_MotorsMulticopter::update_throttle_rpy_mix()
-{
-    // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
-    if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
-        // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f/_loop_rate, _throttle_rpy_mix_desired-_throttle_rpy_mix);
-    } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
-        // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f/_loop_rate, _throttle_rpy_mix-_throttle_rpy_mix_desired);
-    }
-    _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
-}
-
 float AP_MotorsMulticopter::get_hover_throttle_as_high_end_pct() const
 {
     return (MAX(0,(float)_hover_out-_min_throttle) / (float)(1000-_min_throttle));
@@ -394,8 +366,6 @@ void AP_MotorsMulticopter::output_logic()
             // set and increment ramp variables
             _throttle_low_end_pct = 0.0f;
             _throttle_thrust_max = 0.0f;
-            _throttle_rpy_mix = 0.0f;
-            _throttle_rpy_mix_desired = 0.0f;
             break;
 
         case SPIN_WHEN_ARMED: {
@@ -432,8 +402,6 @@ void AP_MotorsMulticopter::output_logic()
                 _throttle_low_end_pct += constrain_float(spin_when_armed_low_end_pct-_throttle_low_end_pct, -spool_step, spool_step);
             }
             _throttle_thrust_max = 0.0f;
-            _throttle_rpy_mix = 0.0f;
-            _throttle_rpy_mix_desired = 0.0f;
             break;
         }
         case SPOOL_UP:
@@ -455,8 +423,6 @@ void AP_MotorsMulticopter::output_logic()
             // set and increment ramp variables
             _throttle_low_end_pct = 1.0f;
             _throttle_thrust_max += 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
-            _throttle_rpy_mix = 0.0f;
-            _throttle_rpy_mix_desired = 0.0f;
 
             // constrain ramp value and update mode
             if (_throttle_thrust_max >= MIN(get_throttle(), get_current_limit_max_throttle())) {
@@ -486,7 +452,6 @@ void AP_MotorsMulticopter::output_logic()
             // set and increment ramp variables
             _throttle_low_end_pct = 1.0f;
             _throttle_thrust_max = get_current_limit_max_throttle();
-            update_throttle_rpy_mix();
             break;
 
         case SPOOL_DOWN:
@@ -508,19 +473,14 @@ void AP_MotorsMulticopter::output_logic()
             // set and increment ramp variables
             _throttle_low_end_pct = 1.0f;
             _throttle_thrust_max -= 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
-            _throttle_rpy_mix -= 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
-            _throttle_rpy_mix_desired = _throttle_rpy_mix;
 
             // constrain ramp value and update mode
             if (_throttle_thrust_max <= 0.0f){
                 _throttle_thrust_max = 0.0f;
             }
-            if (_throttle_rpy_mix <= 0.0f){
-                _throttle_rpy_mix = 0.0f;
-            }
             if (_throttle_thrust_max >= get_current_limit_max_throttle()) {
                 _throttle_thrust_max = get_current_limit_max_throttle();
-            } else if (is_zero(_throttle_thrust_max) && is_zero(_throttle_rpy_mix)) {
+            } else if (is_zero(_throttle_thrust_max)) {
                 _multicopter_flags.spool_mode = SPIN_WHEN_ARMED;
             }
             break;
