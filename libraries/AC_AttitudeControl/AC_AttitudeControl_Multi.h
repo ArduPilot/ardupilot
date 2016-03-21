@@ -55,6 +55,9 @@ public:
     // get lean angle max for pilot input that prioritises altitude hold over lean angle
     float get_althold_lean_angle_max() const;
 
+    // Set output throttle
+    void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
+
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_boosted_throttle(float throttle_in);
 
