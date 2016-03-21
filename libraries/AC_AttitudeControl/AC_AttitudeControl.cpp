@@ -87,6 +87,20 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_yaw, "ANG_YAW_", 15, AC_AttitudeControl, AC_P),
 
+    // @Param: THR_MIX_MIN
+    // @DisplayName: Throttle Mix Minimum
+    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
+    // @Range: 0.1 0.25
+    // @User: Advanced
+    AP_GROUPINFO("THR_MIX_MIN", 16, AC_AttitudeControl, _thr_mix_min, AC_ATTITUDE_CONTROL_MIN_DEFAULT),
+
+    // @Param: THR_MIX_MAX
+    // @DisplayName: Throttle Mix Maximum
+    // @Description: Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
+    // @Range: 0.5 0.9
+    // @User: Advanced
+    AP_GROUPINFO("THR_MIX_MAX", 17, AC_AttitudeControl, _thr_mix_max, AC_ATTITUDE_CONTROL_MAX_DEFAULT),
+
     AP_GROUPEND
 };
 

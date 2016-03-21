@@ -52,7 +52,7 @@ public:
     AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
 
-    // get lean angle max for pilot input that prioritises altitude hold over lean angle
+    // get lean angle max for pilot input that prioritizes altitude hold over lean angle
     float get_althold_lean_angle_max() const;
 
     // Set output throttle
@@ -60,6 +60,9 @@ public:
 
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_throttle_boosted(float throttle_in);
+
+    // calculate total body frame throttle required to produce the given earth frame throttle
+    float get_throttle_ave_max(float throttle_in);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

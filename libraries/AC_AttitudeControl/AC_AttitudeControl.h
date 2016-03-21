@@ -42,6 +42,12 @@
 
 #define AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ   1.0f    // filter (in hz) of throttle filter used to limit lean angle so that vehicle does not lose altitude
 
+#define AC_ATTITUDE_CONTROL_MIN_DEFAULT   0.1f    // minimum throttle mix
+#define AC_ATTITUDE_CONTROL_MID_DEFAULT   0.5f    // manual throttle mix
+#define AC_ATTITUDE_CONTROL_MAX_DEFAULT   0.5f    // maximum throttle mix default
+
+#define AC_ATTITUDE_CONTROL_THR_LOW_CMP_DEFAULT   0.5f    // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
+
 class AC_AttitudeControl {
 public:
     AC_AttitudeControl( AP_AHRS &ahrs,
@@ -55,6 +61,8 @@ public:
         _angle_boost(0),
         _att_ctrl_use_accel_limit(true),
         _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ),
+    _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_LOW_CMP_DEFAULT),
+    _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_LOW_CMP_DEFAULT),
         _ahrs(ahrs),
         _aparm(aparm),
         _motors(motors)
@@ -196,6 +204,22 @@ public:
     // Set output throttle and disable stabilization
     void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
 
+    /// set_throttle_hover - update estimated throttle required to maintain hover
+    void set_throttle_hover(float throttle) { _throttle_hover = throttle; }
+
+    // set_throttle_rpy_mix - set desired throttle_thr_mix (actual throttle_thr_mix is slewed towards this value over 1~2 seconds)
+    //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
+    //  has no effect when throttle is above hover throttle
+    void                set_throttle_mix_min() { _throttle_rpy_mix_desired = _thr_mix_min; }
+    void                set_throttle_mix_mid() { _throttle_rpy_mix_desired = AC_ATTITUDE_CONTROL_MID_DEFAULT; }
+    void                set_throttle_mix_max() { _throttle_rpy_mix_desired = _thr_mix_max; }
+
+    // get_throttle_rpy_mix - get low throttle compensation value
+    bool                is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
+
+    // update_throttle_rpy_mix - updates thr_low_comp value towards the target
+    virtual void update_throttle_rpy_mix() = 0;
+
     // get throttle passed into attitude controller (i.e. throttle_in provided to set_throttle_out)
     float get_throttle_in() const { return _throttle_in; }
 
@@ -266,6 +290,9 @@ protected:
     // Compute a throttle value that is adjusted for the tilt angle of the vehicle
     virtual float get_throttle_boosted(float throttle_in) = 0;
 
+    // Compute a throttle value that is adjusted for the tilt angle of the vehicle
+    virtual float get_throttle_ave_max(float throttle_in) = 0;
+
     // Return angle in radians to be added to roll angle. Used by heli to counteract
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
     virtual float get_roll_trim_rad() { return 0;}
@@ -302,6 +329,9 @@ protected:
 
     // Enable/Disable angle boost
     AP_Int8             _angle_boost_enabled;
+
+    AP_Float            _thr_mix_min;           // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
+    AP_Float            _thr_mix_max;           // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
 
     // angle controller P objects
     AC_P                _p_angle_roll;
@@ -348,6 +378,10 @@ protected:
 
     // Filtered throttle input - used to limit lean angle when throttle is saturated
     LowPassFilterFloat  _throttle_in_filt;
+
+    float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
+    float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
+    float               _throttle_hover;        // estimated throttle required to maintain a level hover
 
     // References to external libraries
     const AP_AHRS&      _ahrs;
