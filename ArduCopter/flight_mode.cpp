@@ -40,11 +40,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 
     switch (mode) {
         case ACRO:
-            #if FRAME_CONFIG == HELI_FRAME
-                success = heli_acro_init(ignore_checks);
-            #else
-                success = acro_init(ignore_checks);
-            #endif
+                success = flightmode_acro.init(ignore_checks);
+                if (success) {
+                    flightmode = &flightmode_acro;
+                }
             break;
 
         case STABILIZE:
@@ -192,14 +191,6 @@ void Copter::update_flight_mode()
     }
 
     switch (control_mode) {
-        case ACRO:
-            #if FRAME_CONFIG == HELI_FRAME
-                heli_acro_run();
-            #else
-                acro_run();
-            #endif
-            break;
-
         case STABILIZE:
             #if FRAME_CONFIG == HELI_FRAME
                 heli_stabilize_run();
@@ -421,9 +412,6 @@ void Copter::notify_flight_mode()
     switch (control_mode) {
         case STABILIZE:
             notify.set_flight_mode_str("STAB");
-            break;
-        case ACRO:
-            notify.set_flight_mode_str("ACRO");
             break;
         case ALT_HOLD:
             notify.set_flight_mode_str("ALTH");

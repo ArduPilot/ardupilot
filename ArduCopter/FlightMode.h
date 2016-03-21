@@ -151,3 +151,50 @@ protected:
 
     // end pass-through functions
 };
+
+
+class FlightMode_ACRO : public FlightMode {
+
+public:
+
+    FlightMode_ACRO(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override; // should be called at 100hz or more
+
+    virtual bool is_autopilot() const override { return false; }
+    virtual bool requires_GPS() const override { return false; }
+    virtual bool has_manual_throttle() const override { return true; }
+    virtual bool allows_arming(bool from_gcs) const override { return true; };
+
+protected:
+
+    const char *name() const override { return "ACRO"; }
+    const char *name4() const override { return "ACRO"; }
+
+    void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
+
+private:
+
+};
+
+#if FRAME_CONFIG == HELI_FRAME
+class FlightMode_ACRO_Heli : public FlightMode_ACRO {
+
+public:
+
+    FlightMode_ACRO_Heli(Copter &copter) :
+        Copter::FlightMode_ACRO(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override; // should be called at 100hz or more
+
+    void get_pilot_desired_yaw_rate(int16_t yaw_in, float &yaw_out);
+
+protected:
+private:
+};
+#endif
+
