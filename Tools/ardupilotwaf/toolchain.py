@@ -16,14 +16,6 @@ from waflib import Utils, Context
 
 import os
 
-suffixes = dict(
-    AS='gcc',
-    AR='ar',
-    LD='g++',
-    GDB='gdb',
-    OBJCOPY='objcopy',
-)
-
 def find_realexec_path(cfg, filename, path_list=[]):
     if not filename:
         return ''
@@ -59,12 +51,13 @@ def configure(cfg):
         cxx_compiler = cfg.options.check_cxx_compiler or 'g++'
 
         if 'gcc' == c_compiler or 'g++' == cxx_compiler or 'clang' == c_compiler or 'clang++' == cxx_compiler:
-            toolchain_path = os.path.abspath(os.path.join(find_realexec_path(cfg, prefix + suffixes['AR']), '..'))
+            toolchain_path = os.path.abspath(os.path.join(find_realexec_path(cfg, prefix + 'ar'), '..'))
             cfg.msg('Using toolchain path', toolchain_path)
 
             if 'gcc' == c_compiler or 'g++' == cxx_compiler:
-                for k in suffixes:
-                    cfg.env[k] = [prefix + suffixes[k]]
+                cfg.env['AR'] = prefix + 'ar'
+                cfg.env['CXX'] = prefix + 'g++'
+                cfg.env['CC'] = prefix + 'gcc'
 
             if 'clang' == c_compiler or 'clang++' == cxx_compiler:
                 sysroot = cfg.cmd_and_log([prefix + 'gcc', '--print-sysroot'], quiet=Context.BOTH)[:-1]
@@ -77,17 +70,17 @@ def configure(cfg):
                 cfg.env.LINKFLAGS += clang_flags
 
         if 'gcc' == c_compiler:
-            cfg.env['CC'] = [prefix + 'gcc']
+            cfg.env['CC'] = prefix + 'gcc'
 
         elif 'clang' == c_compiler:
-            cfg.env['CC'] = [c_compiler]
-            cfg.env['AR'] = [prefix + suffixes['AR']]
+            cfg.env['CC'] = c_compiler
+            cfg.env['AR'] = prefix + 'ar'
             cfg.env.CFLAGS += clang_flags
 
         if 'g++' == cxx_compiler:
-            cfg.env['CXX'] = [prefix + 'g++']
+            cfg.env['CXX'] = prefix + 'g++'
 
         elif 'clang++' == cxx_compiler:
-            cfg.env['CXX'] = [cxx_compiler]
-            cfg.env['AR'] = [prefix + suffixes['AR']]
+            cfg.env['CXX'] = cxx_compiler
+            cfg.env['AR'] = prefix + 'ar'
             cfg.env.CXXFLAGS += clang_flags
