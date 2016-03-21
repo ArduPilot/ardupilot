@@ -236,6 +236,11 @@ bool AP_Compass_LSM303D::_read_sample()
         return false;
     }
 
+    /* check for overrun */
+    if ((rx.status & 0x70) != 0) {
+        return false;
+    }
+
     if (is_zero(rx.x) && is_zero(rx.y) && is_zero(rx.z)) {
         return false;
     }
