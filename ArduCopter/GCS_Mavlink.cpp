@@ -1538,7 +1538,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_msg_set_attitude_target_decode(msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
-        if ((copter.control_mode != GUIDED) && (copter.control_mode != GUIDED_NOGPS) && !(copter.control_mode == AUTO && copter.auto_mode == Auto_NavGuided)) {
+        if ((copter.control_mode != GUIDED) && (copter.control_mode != GUIDED_NOGPS) && !(copter.control_mode == AUTO && copter.flightmode_auto.mode() == Auto_NavGuided)) {
             break;
         }
 
@@ -1580,7 +1580,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
-        if ((copter.control_mode != GUIDED) && !(copter.control_mode == AUTO && copter.auto_mode == Auto_NavGuided)) {
+        if ((copter.control_mode != GUIDED) && !(copter.control_mode == AUTO && copter.flightmode_auto.mode() == Auto_NavGuided)) {
             break;
         }
 
@@ -1658,7 +1658,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_msg_set_position_target_global_int_decode(msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
-        if ((copter.control_mode != GUIDED) && !(copter.control_mode == AUTO && copter.auto_mode == Auto_NavGuided)) {
+        if ((copter.control_mode != GUIDED) && !(copter.control_mode == AUTO && copter.flightmode_auto.mode() == Auto_NavGuided)) {
             break;
         }
 
