@@ -173,7 +173,7 @@ failed:
 
     // update notify object
     if (success) {
-        notify_flight_mode(control_mode);
+        notify_flight_mode();
     }
 
     // return success or failure
@@ -339,13 +339,13 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 #endif //HELI_FRAME
 }
 
-// returns true or false whether mode requires GPS
-bool Copter::mode_requires_GPS(control_mode_t mode)
+// returns true or false whether current control mode requires GPS
+bool Copter::mode_requires_GPS()
 {
     if (flightmode != nullptr) {
         return flightmode->requires_GPS();
     }
-    switch (mode) {
+    switch (control_mode) {
         case AUTO:
         case GUIDED:
         case LOITER:
@@ -375,30 +375,31 @@ bool Copter::mode_has_manual_throttle(control_mode_t mode)
     }
 }
 
-// mode_allows_arming - returns true if vehicle can be armed in the specified mode
+// mode_allows_arming - returns true if vehicle can be armed in the current mode
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
-bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
+bool Copter::mode_allows_arming(bool arming_from_gcs)
 {
     if (flightmode != nullptr) {
         return flightmode->allows_arming(arming_from_gcs);
     }
+    control_mode_t mode = control_mode;
     if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && (mode == GUIDED || mode == GUIDED_NOGPS))) {
         return true;
     }
     return false;
 }
 
-// notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device
-void Copter::notify_flight_mode(control_mode_t mode)
+// notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
+void Copter::notify_flight_mode()
 {
-    AP_Notify::flags.flight_mode = mode;
+    AP_Notify::flags.flight_mode = control_mode;
 
     if (flightmode != nullptr) {
         AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
         notify.set_flight_mode_str(flightmode->name4());
         return;
     }
-    switch (mode) {
+    switch (control_mode) {
         case AUTO:
         case GUIDED:
         case RTL:
@@ -417,7 +418,7 @@ void Copter::notify_flight_mode(control_mode_t mode)
     }
 
     // set flight mode string
-    switch (mode) {
+    switch (control_mode) {
         case STABILIZE:
             notify.set_flight_mode_str("STAB");
             break;
