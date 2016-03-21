@@ -117,6 +117,36 @@ const AP_Param::GroupInfo APM_OBC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAX_COM_LOSS", 14, APM_OBC, _max_comms_loss, 0),
 
+    // @Param: GEOFENCE
+    // @DisplayName: Enable geofence Advanced Failsafe
+    // @Description: This enables the geofence part of the AFS. Will only be in effect if AFS_ENABLE is also 1
+    // @User: Advanced
+    AP_GROUPINFO("GEOFENCE",     15, APM_OBC, _enable_geofence_fs, 1),
+
+    // @Param: GPS
+    // @DisplayName: Enable GPS Advanced Failsafe
+    // @Description: This enables the GPS part of the AFS. Will only be in effect if AFS_ENABLE is also 1
+    // @User: Advanced
+    AP_GROUPINFO("GPS",          16, APM_OBC, _enable_gps_fs, 1),
+
+    // @Param: RC
+    // @DisplayName: Enable RC Advanced Failsafe
+    // @Description: This enables the RC part of the AFS. Will only be in effect if AFS_ENABLE is also 1
+    // @User: Advanced
+    AP_GROUPINFO("RC",           17, APM_OBC, _enable_RC_fs, 1),
+
+    // @Param: GCS
+    // @DisplayName: Enable Ground Control Station Advanced Failsafe
+    // @Description: This enables the Ground Control station part of the AFS. Will only be in effect if AFS_ENABLE is also 1.
+    // @User: Advanced
+    AP_GROUPINFO("GCS",          18, APM_OBC, _enable_gcs_fs, 1),
+
+    // @Param: RC_MANUAL
+    // @DisplayName: Enable RC Termination only in Manual modes
+    // @Description: If this parameter is set to 1, then an RC loss will only cause the plane to terminate in manual control modes. If it is 0, then the plane will terminate in any flight mode.
+    // @User: Advanced
+    AP_GROUPINFO("RC_MANUAL",    19, APM_OBC, _rc_term_manual_only, 1),
+
     AP_GROUPEND
 };
 
