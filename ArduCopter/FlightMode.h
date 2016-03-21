@@ -270,3 +270,74 @@ private:
 
 };
 #endif
+
+
+
+class FlightMode_AUTO : public FlightMode {
+
+public:
+
+    FlightMode_AUTO(Copter &copter, AP_Mission &_mission, AC_Circle *& _circle_nav) :
+        Copter::FlightMode(copter),
+        mission(_mission),
+        circle_nav(_circle_nav)
+        { }
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override; // should be called at 100hz or more
+
+    virtual bool is_autopilot() const override { return true; }
+    virtual bool requires_GPS() const override { return true; }
+    virtual bool has_manual_throttle() const override { return false; }
+    virtual bool allows_arming(bool from_gcs) const override { return false; };
+
+    // Auto
+    AutoMode mode() { return _mode; }
+
+    bool loiter_start();
+    void rtl_start();
+    void takeoff_start(const Location& dest_loc);
+    void wp_start(const Vector3f& destination);
+    void wp_start(const Location_Class& dest_loc);
+    void land_start();
+    void land_start(const Vector3f& destination);
+    void circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
+    void circle_start();
+    void spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
+    void spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
+    void nav_guided_start();
+
+    bool landing_gear_should_be_deployed();
+
+    void payload_place_start();
+
+protected:
+
+    const char *name() const override { return "AUTO"; }
+    const char *name4() const override { return "AUTO"; }
+
+//    void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
+
+private:
+
+    void takeoff_run();
+    void wp_run();
+    void spline_run();
+    void land_run();
+    void rtl_run();
+    void circle_run();
+    void nav_guided_run();
+    void loiter_run();
+
+    void payload_place_start(const Vector3f& destination);
+    void payload_place_run();
+    bool payload_place_run_should_run();
+    void payload_place_run_loiter();
+    void payload_place_run_descend();
+    void payload_place_run_release();
+
+    AutoMode _mode = Auto_TakeOff;   // controls which auto controller is run
+
+    AP_Mission &mission;
+    AC_Circle *&circle_nav;
+};
