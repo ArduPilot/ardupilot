@@ -392,9 +392,6 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
-    // Auto
-    AutoMode auto_mode;   // controls which auto controller is run
-
     // Guided
     GuidedMode guided_mode;  // controls which controller is run (pos or vel)
 
@@ -796,34 +793,7 @@ private:
     MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
     void delay(uint32_t ms);
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
-    bool auto_init(bool ignore_checks);
-    void auto_run();
-    void auto_takeoff_start(const Location& dest_loc);
-    void auto_takeoff_run();
-    void auto_wp_start(const Vector3f& destination);
-    void auto_wp_start(const Location_Class& dest_loc);
-    void auto_wp_run();
-    void auto_spline_run();
-    void auto_land_start();
-    void auto_land_start(const Vector3f& destination);
-    void auto_land_run();
     void do_payload_place(const AP_Mission::Mission_Command& cmd);
-    void auto_payload_place_start();
-    void auto_payload_place_start(const Vector3f& destination);
-    void auto_payload_place_run();
-    bool auto_payload_place_run_should_run();
-    void auto_payload_place_run_loiter();
-    void auto_payload_place_run_descend();
-    void auto_payload_place_run_release();
-    void auto_rtl_start();
-    void auto_rtl_run();
-    void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
-    void auto_circle_start();
-    void auto_circle_run();
-    void auto_nav_guided_start();
-    void auto_nav_guided_run();
-    bool auto_loiter_start();
-    void auto_loiter_run();
     uint8_t get_default_auto_yaw_mode(bool rtl);
     void set_auto_yaw_mode(uint8_t yaw_mode);
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle);
@@ -1166,6 +1136,8 @@ private:
 #endif
 
     Copter::FlightMode_ALTHOLD flightmode_althold{*this};
+
+    Copter::FlightMode_AUTO flightmode_auto{*this, mission, circle_nav};
 
 #if FRAME_CONFIG == HELI_FRAME
     Copter::FlightMode_STABILIZE_Heli flightmode_stabilize{*this};
