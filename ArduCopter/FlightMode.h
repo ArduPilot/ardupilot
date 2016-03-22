@@ -475,3 +475,38 @@ private:
     GuidedMode guided_mode = Guided_TakeOff;
 
 };
+
+
+
+class FlightMode_LAND : public FlightMode {
+
+public:
+
+    FlightMode_LAND(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override; // should be called at 100hz or more
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return true; }
+
+    float get_land_descent_speed();
+    bool landing_with_GPS();
+    void do_not_use_GPS();
+
+    int32_t get_alt_above_ground(void);
+
+protected:
+
+    const char *name() const override { return "LAND"; }
+    const char *name4() const override { return "LAND"; }
+
+private:
+
+    void gps_run();
+    void nogps_run();
+};

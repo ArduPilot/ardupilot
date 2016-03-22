@@ -1,15 +1,16 @@
 #include "Copter.h"
 
+// FIXME? why are these static?
 static bool land_with_gps;
 
 static uint32_t land_start_time;
 static bool land_pause;
 
 // land_init - initialise land controller
-bool Copter::land_init(bool ignore_checks)
+bool Copter::FlightMode_LAND::init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
-    land_with_gps = position_ok();
+    land_with_gps = _copter.position_ok();
     if (land_with_gps) {
         // set target to stopping point
         Vector3f stopping_point;
@@ -39,19 +40,19 @@ bool Copter::land_init(bool ignore_checks)
 
 // land_run - runs the land controller
 // should be called at 100hz or more
-void Copter::land_run()
+void Copter::FlightMode_LAND::run()
 {
     if (land_with_gps) {
-        land_gps_run();
+        gps_run();
     }else{
-        land_nogps_run();
+        nogps_run();
     }
 }
 
 // land_gps_run - runs the land controller
 //      horizontal position controlled with loiter controller
 //      should be called at 100hz or more
-void Copter::land_gps_run()
+void Copter::FlightMode_LAND::gps_run()
 {
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
@@ -68,7 +69,7 @@ void Copter::land_gps_run()
 
         // disarm when the landing detector says we've landed
         if (ap.land_complete) {
-            init_disarm_motors();
+            _copter.init_disarm_motors();
         }
         return;
     }
@@ -81,24 +82,24 @@ void Copter::land_gps_run()
         land_pause = false;
     }
     
-    land_run_horizontal_control();
-    land_run_vertical_control(land_pause);
+    _copter.land_run_horizontal_control();
+    _copter.land_run_vertical_control(land_pause);
 }
 
 // land_nogps_run - runs the land controller
 //      pilot controls roll and pitch angles
 //      should be called at 100hz or more
-void Copter::land_nogps_run()
+void Copter::FlightMode_LAND::nogps_run()
 {
     float target_roll = 0.0f, target_pitch = 0.0f;
     float target_yaw_rate = 0;
 
     // process pilot inputs
-    if (!failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+    if (!_copter.failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && _copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
-            set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
+            _copter.set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
         }
 
         if (g.land_repositioning) {
@@ -106,7 +107,7 @@ void Copter::land_nogps_run()
             update_simple_mode();
 
             // get pilot desired lean angles
-            get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+            get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max);
         }
 
         // get pilot's desired yaw rate
@@ -127,7 +128,7 @@ void Copter::land_nogps_run()
 
         // disarm when the landing detector says we've landed
         if (ap.land_complete) {
-            init_disarm_motors();
+            _copter.init_disarm_motors();
         }
         return;
     }
@@ -143,21 +144,21 @@ void Copter::land_nogps_run()
         land_pause = false;
     }
 
-    land_run_vertical_control(land_pause);
+    _copter.land_run_vertical_control(land_pause);
 }
 
 /*
   get a height above ground estimate for landing
  */
-int32_t Copter::land_get_alt_above_ground(void)
+int32_t Copter::FlightMode_LAND::get_alt_above_ground(void)
 {
     int32_t alt_above_ground;
-    if (rangefinder_alt_ok()) {
-        alt_above_ground = rangefinder_state.alt_cm_filt.get();
+    if (_copter.rangefinder_alt_ok()) {
+        alt_above_ground = _copter.rangefinder_state.alt_cm_filt.get();
     } else {
         bool navigating = pos_control->is_active_xy();
-        if (!navigating || !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
-            alt_above_ground = current_loc.alt;
+        if (!navigating || !_copter.current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
+            alt_above_ground = _copter.current_loc.alt;
         }
     }
     return alt_above_ground;
@@ -176,7 +177,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
     // compute desired velocity
     const float precland_acceptable_error = 15.0f;
     const float precland_min_descent_speed = 10.0f;
-    int32_t alt_above_ground = land_get_alt_above_ground();
+    int32_t alt_above_ground = flightmode_land.get_alt_above_ground();
 
     float cmb_rate = 0;
     if (!pause_descent) {
@@ -280,7 +281,7 @@ void Copter::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        int alt_above_ground = land_get_alt_above_ground();
+        int alt_above_ground = flightmode_land.get_alt_above_ground();
         float attitude_limit_cd = linear_interpolate(700, aparm.angle_max, alt_above_ground,
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
         float total_angle_cd = norm(nav_roll, nav_pitch);
@@ -299,10 +300,10 @@ void Copter::land_run_horizontal_control()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate, get_smoothing_gain());
 }
 
-// land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
+// do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
 //  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
 //  has no effect if we are not already in LAND mode
-void Copter::land_do_not_use_GPS()
+void Copter::FlightMode_LAND::do_not_use_GPS()
 {
     land_with_gps = false;
 }

@@ -840,14 +840,8 @@ private:
     void flip_run();
     bool guided_nogps_init(bool ignore_checks);
     void guided_nogps_run();
-    bool land_init(bool ignore_checks);
-    void land_run();
-    void land_gps_run();
-    void land_nogps_run();
-    int32_t land_get_alt_above_ground(void);
     void land_run_vertical_control(bool pause_descent = false);
     void land_run_horizontal_control();
-    void land_do_not_use_GPS();
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
     bool poshold_init(bool ignore_checks);
@@ -1103,6 +1097,8 @@ private:
     Copter::FlightMode_CIRCLE flightmode_circle{*this, circle_nav};
 
     Copter::FlightMode_GUIDED flightmode_guided{*this};
+
+    Copter::FlightMode_LAND flightmode_land{*this};
 
     Copter::FlightMode_LOITER flightmode_loiter{*this};
 
