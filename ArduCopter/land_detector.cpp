@@ -57,7 +57,7 @@ void Copter::update_land_detector()
         bool motor_at_lower_limit = motors.limit.throttle_lower;
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
-        bool motor_at_lower_limit = motors.limit.throttle_lower && motors.is_throttle_mix_min();
+        bool motor_at_lower_limit = motors.limit.throttle_lower && attitude_control.is_throttle_mix_min();
 #endif
 
         // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
@@ -125,16 +125,16 @@ void Copter::update_throttle_thr_mix()
 #if FRAME_CONFIG != HELI_FRAME
     // if disarmed or landed prioritise throttle
     if(!motors.armed() || ap.land_complete) {
-        motors.set_throttle_mix_min();
+        attitude_control.set_throttle_mix_min();
         return;
     }
 
     if (mode_has_manual_throttle(control_mode)) {
         // manual throttle
         if(channel_throttle->get_control_in() <= 0) {
-            motors.set_throttle_mix_min();
+            attitude_control.set_throttle_mix_min();
         } else {
-            motors.set_throttle_mix_mid();
+            attitude_control.set_throttle_mix_mid();
         }
     } else {
         // autopilot controlled throttle
@@ -156,9 +156,9 @@ void Copter::update_throttle_thr_mix()
         bool descent_not_demanded = pos_control.get_desired_velocity().z >= 0.0f;
 
         if ( large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
-            motors.set_throttle_mix_max();
+            attitude_control.set_throttle_mix_max();
         } else {
-            motors.set_throttle_mix_min();
+            attitude_control.set_throttle_mix_min();
         }
     }
 #endif
