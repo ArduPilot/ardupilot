@@ -16,6 +16,8 @@
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
 #define AP_MOTORS_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
 #define AP_MOTORS_SPIN_MAX_DEFAULT      0.95f   // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+#define AP_MOTORS_THST_HOVER_DEFAULT    0.5f    // the estimated hover throttle, 0 ~ 1
+#define AP_MOTORS_THST_HOVER_TC         10.0f   // time constant used to update estimated hover throttle, 0 ~ 1
 #define AP_MOTORS_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
 #define AP_MOTORS_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
 #define AP_MOTORS_BAT_CURR_MAX_DEFAULT  0.0f    // current limiting max default
@@ -48,9 +50,9 @@ public:
     // also sets minimum and maximum pwm values that will be sent to the motors
     void                set_throttle_range(uint16_t min_throttle, int16_t radio_min, int16_t radio_max);
 
-    // set_hover_throttle - sets the mid throttle which is close to the hover throttle of the copter
-    // this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
-    void                set_hover_throttle(uint16_t hov_thr) { _hover_out = hov_thr; }
+    // update estimated throttle required to hover
+    void                update_throttle_hover(float dt);
+    virtual float       get_throttle_hover() const { return _throttle_hover; };
 
     // spool up states
     enum spool_up_down_mode {
@@ -123,9 +125,6 @@ protected:
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
 
-    // get_hover_throttle_as_high_end_pct - return hover throttle in the 0 to 1 range
-    float               get_hover_throttle_as_high_end_pct() const;
-
     // convert thrust (0~1) range back to pwm range
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
 
@@ -148,11 +147,11 @@ protected:
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
     AP_Int16            _pwm_min;               // minimum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's min pwm used)
     AP_Int16            _pwm_max;               // maximum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's max pwm used)
+    AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
 
     // internal variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
     int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
-    int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
     int16_t             _throttle_radio_min;        // minimum PWM from RC input's throttle channel (i.e. minimum PWM input from receiver, RC3_MIN)
     int16_t             _throttle_radio_max;        // maximum PWM from RC input's throttle channel (i.e. maximum PWM input from receiver, RC3_MAX)
     float               _throttle_thrust_max;       // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max

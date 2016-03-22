@@ -71,6 +71,7 @@ public:
     float               get_pitch() const { return _pitch_in; }
     float               get_yaw() const { return _yaw_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
+    virtual float       get_throttle_hover() const = 0;
 
     // spool up states
     enum spool_up_down_desired {

@@ -108,13 +108,19 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 0),
 
+    // @Param: THST_HOVER
+    // @DisplayName: Thrust Hover Value
+    // @Description: Motor thrust needed to hover expressed as a number from 0 to 1
+    // @Range: 0.25 0.8
+    // @User: Advanced
+    AP_GROUPINFO("THST_HOVER", 21, AP_MotorsMulticopter, _throttle_hover, AP_MOTORS_THST_HOVER_DEFAULT),
+
     AP_GROUPEND
 };
 
 // Constructor
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
-    _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
@@ -209,8 +215,7 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
     _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
 
     // limit max throttle
-    float throttle_thrust_hover = get_hover_throttle_as_high_end_pct();
-    return throttle_thrust_hover + ((1.0-throttle_thrust_hover)*_throttle_limit);
+    return get_throttle_hover() + ((1.0-get_throttle_hover())*_throttle_limit);
 }
 
 // apply_thrust_curve_and_volt_scaling - returns throttle in the range 0 ~ 1
@@ -263,7 +268,7 @@ void AP_MotorsMulticopter::update_battery_resistance()
     } else {
         // update battery resistance when throttle is over hover throttle
         if ((_batt_timer < 400) && ((_batt_current_resting*2.0f) < _batt_current)) {
-            if (get_throttle() >= _hover_out) {
+            if (get_throttle() >= get_throttle_hover()) {
                 // filter reaches 90% in 1/4 the test time
                 _batt_resistance += 0.05f*(( (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting) ) - _batt_resistance);
                 _batt_timer += 1;
@@ -273,11 +278,6 @@ void AP_MotorsMulticopter::update_battery_resistance()
             }
         }
     }
-}
-
-float AP_MotorsMulticopter::get_hover_throttle_as_high_end_pct() const
-{
-    return (MAX(0,(float)_hover_out-_min_throttle) / (float)(1000-_min_throttle));
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const
@@ -336,6 +336,12 @@ void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t rad
     }
     // update _min_throttle
     _min_throttle = (float)min_throttle * ((get_pwm_output_max() - get_pwm_output_min()) / 1000.0f);
+}
+
+// update the throttle input filter.  should be called at 100hz
+void AP_MotorsMulticopter::update_throttle_hover(float dt)
+{
+        _throttle_hover = _throttle_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC))*(_throttle_in-_throttle_hover);
 }
 
 void AP_MotorsMulticopter::output_logic()
