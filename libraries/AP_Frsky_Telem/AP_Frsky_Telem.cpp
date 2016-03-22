@@ -80,6 +80,9 @@ extern const AP_HAL::HAL& hal;
 #define SMARTPORT_ID_GPS_SPD       0x0830
 #define SMARTPORT_ID_GPS_CRS       0x0840
 #define SMARTPORT_ID_GPS_TIME      0x0850
+#define SMARTPORT_ID_ADC3          0x0900
+#define SMARTPORT_ID_ADC4          0x0910
+
 
 // Default sensor data IDs (Physical IDs + CRC)
 #define DATA_ID_VARIO            0x00 // 0
@@ -376,9 +379,12 @@ void AP_Frsky_Telem::sport_tick(void)
                         _mode_data_ready = false;
                     }
                     break;
+                case 2:
+                    send_smart_attitude();
+                    break;
                 }
                 _various_call++;
-                if (_various_call > 1) {
+                if (_various_call > 2) {
                     _various_call = 0;
                 }
                 break;
@@ -680,6 +686,18 @@ void AP_Frsky_Telem::send_smart_vario(void)
         int32_t vario = _baro->get_climb_rate()*100;
         frsky_send_data_smart(SMARTPORT_ID_VARIO, vario);
     }
+}
+
+/*
+ * send attitude, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_attitude(void)
+{
+    // transmit pitch angle in deg*100
+    uint32_t pitch = _ahrs.pitch_sensor+18000;
+    uint32_t roll  = _ahrs.roll_sensor+18000;
+    uint32_t attitude = (roll << 16) | pitch;
+    frsky_send_data_smart(SMARTPORT_ID_ADC3, attitude);
 }
 
 /*
