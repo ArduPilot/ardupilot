@@ -95,7 +95,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case DRIFT:
-            success = drift_init(ignore_checks);
+            success = flightmode_drift.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_drift;
+            }
             break;
 
         case SPORT:
@@ -193,10 +196,6 @@ void Copter::update_flight_mode()
 
     switch (control_mode) {
 
-        case DRIFT:
-            drift_run();
-            break;
-
         case SPORT:
             sport_run();
             break;
@@ -293,7 +292,6 @@ bool Copter::mode_requires_GPS()
         return flightmode->requires_GPS();
     }
     switch (control_mode) {
-        case DRIFT:
         case POSHOLD:
         case BRAKE:
         case AVOID_ADSB:
@@ -354,9 +352,6 @@ void Copter::notify_flight_mode()
 
     // set flight mode string
     switch (control_mode) {
-        case DRIFT:
-            notify.set_flight_mode_str("DRIF");
-            break;
         case SPORT:
             notify.set_flight_mode_str("SPRT");
             break;
@@ -397,9 +392,6 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         return;
     }
     switch (mode) {
-    case DRIFT:
-        port->printf("DRIFT");
-        break;
     case SPORT:
         port->printf("SPORT");
         break;
