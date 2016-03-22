@@ -94,9 +94,10 @@ extern const AP_HAL::HAL& hal;
 
 
 //constructor
-AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
+AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery, AP_Baro *baro) :
     _ahrs(ahrs),
     _battery(battery),
+    _baro(baro),
     _port(NULL),
     _initialised_uart(false),
     _protocol(FrSkyUnknown),
@@ -124,6 +125,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery) :
     _speed_in_centimeter(0),
     _lon(0.f),
     _lat(0.f),
+    _baro_alt(0.f),
     _baro_data_ready(false),
     _baro_alt_meters(0),
     _baro_alt_cm(0),
@@ -347,10 +349,10 @@ void AP_Frsky_Telem::sport_tick(void)
                 if (_baro_data_ready) {
                     switch (_vario_call) {
                     case 0 :
-                        send_baro_alt_m();
+                        send_smart_baro_alt();
                         break;
                     case 1:
-                        send_baro_alt_cm();
+                        send_smart_vario();
                         break;
                     }
                     _vario_call ++;
@@ -534,20 +536,19 @@ void AP_Frsky_Telem::frsky_send_data_smart(uint16_t id, uint32_t data) {
 void AP_Frsky_Telem::calc_baro_alt()
 {
     struct Location loc;
-    float baro_alt = 0; // in meters
     bool posok = _ahrs.get_position(loc);
     if  (posok) {
-        baro_alt = loc.alt * 0.01f; // convert to meters
+        _baro_alt = loc.alt * 0.01f; // convert to meters
         if (!loc.flags.relative_alt) {
-            baro_alt -= _ahrs.get_home().alt * 0.01f; // subtract home if set
+            _baro_alt -= _ahrs.get_home().alt * 0.01f; // subtract home if set
         }
     }
     /*
       Note that this isn't actually barometric altitude, it is the
       inertial nav estimate of altitude above home.
     */
-    _baro_alt_meters = (int16_t)baro_alt;
-    _baro_alt_cm = (baro_alt - abs(_baro_alt_meters)) * 100;
+    _baro_alt_meters = (int16_t)_baro_alt;
+    _baro_alt_cm = (_baro_alt - abs(_baro_alt_meters)) * 100;
 }
 
 /**
@@ -657,6 +658,28 @@ void AP_Frsky_Telem::send_baro_alt_m(void)
 void AP_Frsky_Telem::send_baro_alt_cm(void)
 {
     frsky_send_data(FRSKY_ID_BARO_ALT_AP, _baro_alt_cm);
+}
+
+/*
+ * send barometer altitude, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_baro_alt(void)
+{
+    // send baro alt in cm
+    int32_t alt = (int32_t)_baro_alt*100;
+    frsky_send_data_smart(SMARTPORT_ID_ALT, alt);
+}
+
+/*
+ * send barometer altitude, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_vario(void)
+{
+    if (_baro) {
+        // send vario value if available, in cm
+        int32_t vario = _baro->get_climb_rate()*100;
+        frsky_send_data_smart(SMARTPORT_ID_VARIO, vario);
+    }
 }
 
 /*

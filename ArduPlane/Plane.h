@@ -383,7 +383,7 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry {ahrs, battery};
+    AP_Frsky_Telem frsky_telemetry {ahrs, battery, &barometer};
 #endif
 
     // Airspeed Sensors

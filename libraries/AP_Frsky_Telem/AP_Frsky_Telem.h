@@ -29,7 +29,7 @@ class AP_Frsky_Telem
 {
 public:
     //constructor
-    AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery);
+    AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery, AP_Baro* baro = NULL);
 
     // supported protocols
     enum FrSkyProtocol {
@@ -79,6 +79,9 @@ private:
     void send_mode(void);
     void send_baro_alt_m(void);
     void send_baro_alt_cm(void);
+    void send_smart_baro_alt(void);
+    void send_smart_vario(void);
+    void send_smart_attitude(void);
     void send_batt_remain(void);
     void send_batt_volts(void);
     void send_current(void);
@@ -104,6 +107,7 @@ private:
 
     AP_AHRS &_ahrs;                         // reference to attitude estimate
     AP_BattMonitor &_battery;               // reference to battery monitor object
+    AP_Baro *_baro;                         // pointer to (optional) baro object
     AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
     bool _initialised_uart;                 // true when we have detected the protocol and UART has been initialised
     enum FrSkyProtocol _protocol;           // protocol used - detected using SerialManager's SERIALX_PROTOCOL parameter
@@ -135,6 +139,7 @@ private:
 
     float _lon;
     float _lat;
+    float _baro_alt;
 
     bool _baro_data_ready;
     int16_t _baro_alt_meters;
