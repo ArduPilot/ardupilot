@@ -5,7 +5,7 @@
  */
 
 // sport_init - initialise sport controller
-bool Copter::sport_init(bool ignore_checks)
+bool Copter::FlightMode_SPORT::init(bool ignore_checks)
 {
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -22,7 +22,7 @@ bool Copter::sport_init(bool ignore_checks)
 
 // sport_run - runs the sport controller
 // should be called at 100hz or more
-void Copter::sport_run()
+void Copter::FlightMode_SPORT::run()
 {
     SportModeState sport_state;
     float takeoff_climb_rate = 0.0f;
@@ -51,6 +51,7 @@ void Copter::sport_run()
     int32_t pitch_angle = wrap_180_cd(att_target.y);
     target_pitch_rate -= constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
 
+    AP_Vehicle::MultiCopter &aparm = _copter.aparm;
     if (roll_angle > aparm.angle_max){
         target_roll_rate -=  g.acro_rp_p*(roll_angle-aparm.angle_max);
     }else if (roll_angle < -aparm.angle_max) {
@@ -156,7 +157,7 @@ void Copter::sport_run()
         attitude_control->input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
 
         // adjust climb rate using rangefinder
-        if (rangefinder_alt_ok()) {
+        if (_copter.rangefinder_alt_ok()) {
             // if rangefinder is ok, use surface tracking
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
         }
