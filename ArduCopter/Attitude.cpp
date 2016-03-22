@@ -98,11 +98,9 @@ float Copter::get_look_ahead_yaw()
 //  should be called at 100hz
 void Copter::update_thr_average()
 {
-    // ensure throttle_average has been initialised
-    if( is_zero(throttle_average) ) {
-        throttle_average = 0.5f;
-        // update position controller
-        pos_control.set_throttle_hover(throttle_average);
+    // ensure throttle_average has been initialized
+    if( is_zero(motors.get_throttle_hover()) ) {
+        motors.set_throttle_hover(0.5f);
     }
 
     // if not armed or landed exit
@@ -115,9 +113,7 @@ void Copter::update_thr_average()
 
     // calc average throttle if we are in a level hover
     if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_average = throttle_average * 0.99f + throttle * 0.01f;
-        // update position controller
-        pos_control.set_throttle_hover(throttle_average);
+        motors.update_throttle_hover();
     }
 }
 
