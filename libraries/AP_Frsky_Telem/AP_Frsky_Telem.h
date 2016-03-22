@@ -76,7 +76,9 @@ private:
 
     // methods to send individual pieces of data down telemetry link
     void send_gps_sats(void);
+    void send_smart_gps_sats(void);
     void send_mode(void);
+    void send_smart_mode(void);
     void send_baro_alt_m(void);
     void send_baro_alt_cm(void);
     void send_smart_baro_alt(void);

@@ -369,13 +369,13 @@ void AP_Frsky_Telem::sport_tick(void)
                 switch (_various_call) {
                 case 0 :
                     if ( _sats_data_ready ) {
-                        send_gps_sats();
+                        send_smart_gps_sats();
                         _sats_data_ready = false;
                     }
                     break;
                 case 1:
                     if ( _mode_data_ready ) {
-                        send_mode();
+                        send_smart_mode();
                         _mode_data_ready = false;
                     }
                     break;
@@ -643,11 +643,32 @@ void AP_Frsky_Telem::send_gps_sats()
 }
 
 /*
+ * send number of gps satellite and gps status, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_gps_sats()
+{
+    // send GPS status word containing the following information:
+    //   lower 16bit: num_sats*10 + status
+    //   upper 16bit: hdop in cm (lower 8 bits used)
+    uint32_t status = gps_sats;
+    status |= (_gps.get_hdop()<<16);
+    frsky_send_data_smart(SMARTPORT_ID_T2, status);
+}
+
+/*
  * send control_mode as Temperature 1 (TEMP1)
  */
 void AP_Frsky_Telem::send_mode(void)
 {
     frsky_send_data(FRSKY_ID_TEMP1, _mode);
+}
+
+/*
+ * send control_mode as Temperature 1 (TEMP1)
+ */
+void AP_Frsky_Telem::send_smart_mode(void)
+{
+    frsky_send_data_smart(SMARTPORT_ID_T1, _mode);
 }
 
 /*
