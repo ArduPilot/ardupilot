@@ -125,9 +125,6 @@ private:
     //
     // throttle methods
     //
-
-    // calculate total body frame throttle required to produce the given earth frame throttle
-    float get_throttle_boosted(float throttle_in);
     
     // pass through for roll and pitch
     int16_t _passthrough_roll;

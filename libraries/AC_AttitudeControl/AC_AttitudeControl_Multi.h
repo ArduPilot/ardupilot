@@ -64,6 +64,9 @@ public:
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_throttle_ave_max(float throttle_in);
 
+    // update_throttle_rpy_mix - updates thr_low_comp value towards the target
+    void update_throttle_rpy_mix();
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

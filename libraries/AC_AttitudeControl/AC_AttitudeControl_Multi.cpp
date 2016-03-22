@@ -161,20 +161,6 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
     }
 }
 
-// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
-void AP_MotorsMulticopter::update_throttle_rpy_mix()
-{
-    // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
-    if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
-        // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f/_loop_rate, _throttle_rpy_mix_desired-_throttle_rpy_mix);
-    } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
-        // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f/_loop_rate, _throttle_rpy_mix-_throttle_rpy_mix_desired);
-    }
-    _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
-}
-
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
@@ -200,4 +186,18 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
 float AC_AttitudeControl_Multi::get_throttle_ave_max(float throttle_in)
 {
     return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_throttle_hover*_throttle_rpy_mix);
+}
+
+// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
+void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
+{
+    // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
+    if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
+        // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
+        _throttle_rpy_mix += MIN(2.0f*_dt, _throttle_rpy_mix_desired-_throttle_rpy_mix);
+    } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
+        // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
+        _throttle_rpy_mix -= MIN(0.5f*_dt, _throttle_rpy_mix-_throttle_rpy_mix_desired);
+    }
+    _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
 }

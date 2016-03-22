@@ -413,3 +413,4 @@ void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_ang
     // Clear angle_boost for logging purposes
     _angle_boost = 0.0f;
 }
+
