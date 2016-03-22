@@ -117,7 +117,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case FLIP:
-            success = flip_init(ignore_checks);
+            success = flightmode_flip.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_flip;
+            }
             break;
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -217,10 +220,6 @@ void Copter::update_flight_mode()
     }
 
     switch (control_mode) {
-
-        case FLIP:
-            flip_run();
-            break;
 
 #if AUTOTUNE_ENABLED == ENABLED
         case AUTOTUNE:
@@ -382,9 +381,6 @@ void Copter::notify_flight_mode()
 
     // set flight mode string
     switch (control_mode) {
-        case FLIP:
-            notify.set_flight_mode_str("FLIP");
-            break;
         case AUTOTUNE:
             notify.set_flight_mode_str("ATUN");
             break;
