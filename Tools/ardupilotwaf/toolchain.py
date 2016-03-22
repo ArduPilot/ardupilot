@@ -13,7 +13,7 @@ Example::
 """
 
 from waflib import Errors, Context, Utils
-from waflib.Tools import gxx, gcc
+from waflib.Tools import clang, clangxx, gcc, gxx
 
 import os
 
@@ -66,45 +66,67 @@ def _set_toolchain_prefix_wrapper(tool_module, var, compiler_names):
 _set_toolchain_prefix_wrapper(gxx, 'CXX', ('g++', 'c++'))
 _set_toolchain_prefix_wrapper(gcc, 'CC', ('gcc', 'cc'))
 
-def configure(cfg):
-    toolchain = cfg.env.TOOLCHAIN
+def _clang_cross_support(cfg):
+    if _clang_cross_support.called:
+        return
 
-    if toolchain == 'native':
+    prefix = cfg.env.TOOLCHAIN + '-'
+
+    cfg.find_program(prefix + 'gcc', var='CROSS_GCC')
+    toolchain_path = os.path.join(find_realexec_path(cfg, prefix + 'ar'),
+                                  '..')
+    toolchain_path = os.path.abspath(toolchain_path)
+
+    cfg.msg('Using toolchain path for clang', toolchain_path)
+
+    sysroot = cfg.cmd_and_log(
+        [cfg.env.CROSS_GCC[0], '--print-sysroot'],
+        quiet=Context.BOTH,
+    ).strip()
+
+    cfg.env.CLANG_FLAGS = [
+        '--target=' + cfg.env.TOOLCHAIN,
+        '--gcc-toolchain=' + toolchain_path,
+        '--sysroot=' + sysroot,
+        '-B' + os.path.join(toolchain_path, 'bin')
+    ]
+
+_clang_cross_support.called = False
+
+def _set_clang_crosscompilation_wrapper(tool_module):
+    original_configure = tool_module.configure
+    def new_configure(cfg):
+        if cfg.env.TOOLCHAIN == 'native':
+            original_configure(cfg)
+            return
+
+        cfg.env.stash()
+        try:
+            _clang_cross_support(cfg)
+            original_configure(cfg)
+        except Errors.ConfigurationError as e:
+            cfg.env.revert()
+            raise
+        else:
+            cfg.env.commit()
+    tool_module.configure = new_configure
+
+_set_clang_crosscompilation_wrapper(clang)
+_set_clang_crosscompilation_wrapper(clangxx)
+
+def configure(cfg):
+    if cfg.env.TOOLCHAIN == 'native':
         cfg.load('compiler_cxx compiler_c')
         return
 
-    cfg.msg('Using toolchain', toolchain)
-    prefix = toolchain + '-'
-
-    c_compiler = cfg.options.check_c_compiler or 'gcc'
-    cxx_compiler = cfg.options.check_cxx_compiler or 'g++'
-
-    cfg.env['AR'] = prefix + 'ar'
-
-    if 'clang' == c_compiler or 'clang++' == cxx_compiler:
-        toolchain_path = os.path.join(find_realexec_path(cfg, prefix + 'ar'),
-                                      '..')
-        toolchain_path = os.path.abspath(toolchain_path)
-        cfg.msg('Using toolchain path', toolchain_path)
-
-        sysroot = cfg.cmd_and_log(
-            [prefix + 'gcc', '--print-sysroot'],
-            quiet=Context.BOTH,
-        )[:-1]
-        clang_flags = [
-            '--target=' + toolchain,
-            '--gcc-toolchain=' + toolchain_path,
-            '--sysroot=' + sysroot,
-            '-B' + os.path.join(toolchain_path, 'bin')
-        ]
-        cfg.env.LINKFLAGS += clang_flags
-
-    if 'clang' == c_compiler:
-        cfg.env['CC'] = 'clang'
-        cfg.env.CFLAGS += clang_flags
-
-    if 'clang++' == cxx_compiler:
-        cfg.env['CXX'] = 'clang++'
-        cfg.env.CXXFLAGS += clang_flags
-
+    cfg.env.AR = cfg.env.TOOLCHAIN + '-ar'
+    cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
     cfg.load('compiler_cxx compiler_c')
+
+    if cfg.env.COMPILER_CC == 'clang':
+        cfg.env.CFLAGS += cfg.env.CLANG_FLAGS
+        cfg.env.LINKFLAGS_cprogram += cfg.env.CLANG_FLAGS
+
+    if cfg.env.COMPILER_CXX == 'clang++':
+        cfg.env.CXXFLAGS += cfg.env.CLANG_FLAGS
+        cfg.env.LINKFLAGS_cxxprogram += cfg.env.CLANG_FLAGS
