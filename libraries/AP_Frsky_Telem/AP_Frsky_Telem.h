@@ -82,6 +82,8 @@ private:
     void send_batt_remain(void);
     void send_batt_volts(void);
     void send_current(void);
+    void send_smart_batt_volts(void);
+    void send_smart_current(void);
     void send_prearm_error(void);
     void send_heading(void);
     void send_smart_gps_lat(void);

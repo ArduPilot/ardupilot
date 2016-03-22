@@ -303,10 +303,10 @@ void AP_Frsky_Telem::sport_tick(void)
                 if (_battery_data_ready) {
                     switch (_fas_call) {
                     case 0:
-                        send_batt_volts();
+                        send_smart_batt_volts();
                         break;
                     case 1:
-                        send_current();
+                        send_smart_current();
                         break;
                     }
                     _fas_call++;
@@ -681,6 +681,25 @@ void AP_Frsky_Telem::send_batt_volts(void)
 void AP_Frsky_Telem::send_current(void)
 {
     frsky_send_data(FRSKY_ID_CURRENT, _batt_amps);
+}
+
+
+/*
+ * send battery voltage, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_batt_volts(void)
+{
+    // battery voltage * 100 (already multiplied by 10 previously)
+    int32_t volts = (int)_batt_volts*10;
+    frsky_send_data_smart(SMARTPORT_ID_VFAS, volts);
+}
+
+/*
+ * send current consumptiom, Smart Port format
+ */
+void AP_Frsky_Telem::send_smart_current(void)
+{
+    frsky_send_data_smart(SMARTPORT_ID_CURR, (int32_t)_batt_amps);
 }
 
 /*
