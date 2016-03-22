@@ -187,7 +187,7 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Multi::get_throttle_ave_max(float throttle_in)
 {
-    return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_throttle_hover*_throttle_rpy_mix);
+    return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_motors.get_throttle_hover()*_throttle_rpy_mix);
 }
 
 // update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value

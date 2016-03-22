@@ -204,9 +204,6 @@ public:
     // Set output throttle and disable stabilization
     void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
 
-    /// set_throttle_hover - update estimated throttle required to maintain hover
-    void set_throttle_hover(float throttle) { _throttle_hover = throttle; }
-
     // set_throttle_rpy_mix - set desired throttle_thr_mix (actual throttle_thr_mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
     //  has no effect when throttle is above hover throttle
@@ -381,7 +378,6 @@ protected:
 
     float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
     float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
-    float               _throttle_hover;        // estimated throttle required to maintain a level hover
 
     // References to external libraries
     const AP_AHRS&      _ahrs;
