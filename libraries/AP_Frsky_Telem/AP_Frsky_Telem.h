@@ -44,7 +44,7 @@ public:
     // send_frames - sends updates down telemetry link for both DPORT and SPORT protocols
     //  should be called by main program at 50hz to allow poll for serial bytes
     //  coming from the receiver for the SPort protocol
-    void send_frames(uint8_t control_mode);
+    void send_frames(uint8_t control_mode, bool armed);
 
 private:
 
@@ -149,6 +149,7 @@ private:
 
     bool _mode_data_ready;
     uint8_t _mode; 
+    bool _armed;
 
     uint8_t _fas_call;
     uint8_t _gps_call;

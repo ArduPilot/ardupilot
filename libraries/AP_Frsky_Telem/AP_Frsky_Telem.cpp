@@ -134,6 +134,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery, AP_Baro *
     _baro_alt_cm(0),
     _mode_data_ready(false),
     _mode(0),
+    _armed(false),
     _fas_call(0),
     _gps_call(0),
     _vario_call(0),
@@ -176,7 +177,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
   should be called by main program at 50hz to allow poll for serial bytes
   coming from the receiver for the SPort protocol
 */
-void AP_Frsky_Telem::send_frames(uint8_t control_mode)
+void AP_Frsky_Telem::send_frames(uint8_t control_mode, bool armed)
 {
     // return immediately if not initialised
     if (!_initialised_uart) {
@@ -206,6 +207,7 @@ void AP_Frsky_Telem::send_frames(uint8_t control_mode)
         }
     } else {
         _mode=control_mode;
+        _armed=armed;
         send_hub_frame();
     }
 }
@@ -660,7 +662,8 @@ void AP_Frsky_Telem::send_smart_gps_sats()
  */
 void AP_Frsky_Telem::send_mode(void)
 {
-    frsky_send_data(FRSKY_ID_TEMP1, _mode);
+    uint16_t mode = (uint8_t)_armed<<8 | _mode;
+    frsky_send_data(FRSKY_ID_TEMP1, mode);
 }
 
 /*
@@ -668,7 +671,8 @@ void AP_Frsky_Telem::send_mode(void)
  */
 void AP_Frsky_Telem::send_smart_mode(void)
 {
-    frsky_send_data_smart(SMARTPORT_ID_T1, _mode);
+    uint32_t mode = (uint8_t)_armed<<8 | _mode;
+    frsky_send_data_smart(SMARTPORT_ID_T1, mode);
 }
 
 /*
