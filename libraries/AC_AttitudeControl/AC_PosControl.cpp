@@ -41,7 +41,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _dt_xy(POSCONTROL_DT_50HZ),
     _last_update_xy_ms(0),
     _last_update_z_ms(0),
-    _throttle_hover(POSCONTROL_THROTTLE_HOVER),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
@@ -304,7 +303,7 @@ void AC_PosControl::init_takeoff()
     freeze_ff_z();
 
     // shift difference between last motor out and hover throttle into accelerometer I
-    _pid_accel_z.set_integrator(_motors.get_throttle()-_throttle_hover);
+    _pid_accel_z.set_integrator(_motors.get_throttle()-_motors.get_throttle_hover());
 }
 
 // is_active_z - returns true if the z-axis position controller has been run very recently
@@ -480,7 +479,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // get d term
     d = _pid_accel_z.get_d();
 
-    float thr_out = (p+i+d)/1000.0f +_throttle_hover;
+    float thr_out = (p+i+d)/1000.0f +_motors.get_throttle_hover();
 
     // send throttle to attitude controller with angle boost
     _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
