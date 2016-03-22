@@ -578,7 +578,7 @@ void Copter::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 > 0) {
         // initialise guided limits
-        guided_limit_init_time_and_pos();
+        flightmode_guided.limit_init_time_and_pos();
 
         // set spline navigation target
         flightmode_auto.nav_guided_start();
@@ -649,7 +649,7 @@ void Copter::do_gripper(const AP_Mission::Mission_Command& cmd)
 // do_guided_limits - pass guided limits to guided controller
 void Copter::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 {
-    guided_limit_set(cmd.p1 * 1000, // convert seconds to ms
+    flightmode_guided.limit_set(cmd.p1 * 1000, // convert seconds to ms
                      cmd.content.guided_limits.alt_min * 100.0f,    // convert meters to cm
                      cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
                      cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
@@ -1005,7 +1005,7 @@ bool Copter::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
     }
 
     // check time and position limits
-    return guided_limit_check();
+    return flightmode_guided.limit_check();
 }
 #endif  // NAV_GUIDED
 
@@ -1104,7 +1104,7 @@ bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
         {
             // set wp_nav's destination
             Location_Class dest(cmd.content.location);
-            return guided_set_destination(dest);
+            return flightmode_guided.set_destination(dest);
         }
 
         case MAV_CMD_CONDITION_YAW:

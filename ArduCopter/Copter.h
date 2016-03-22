@@ -392,9 +392,6 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
-    // Guided
-    GuidedMode guided_mode;  // controls which controller is run (pos or vel)
-
     // RTL
     RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
     bool rtl_state_complete; // set to true if the current state is completed
@@ -841,31 +838,8 @@ private:
     float get_throttle_assist(float velz, float pilot_throttle_scaled);
     bool flip_init(bool ignore_checks);
     void flip_run();
-    bool guided_init(bool ignore_checks);
-    bool guided_takeoff_start(float final_alt_above_home);
-    void guided_pos_control_start();
-    void guided_vel_control_start();
-    void guided_posvel_control_start();
-    void guided_angle_control_start();
-    bool guided_set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    bool guided_set_destination(const Location_Class& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    void guided_set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
-    void guided_run();
-    void guided_takeoff_run();
-    void guided_pos_control_run();
-    void guided_vel_control_run();
-    void guided_posvel_control_run();
-    void guided_angle_control_run();
-    void guided_set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
-    void guided_limit_clear();
-    void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    void guided_limit_init_time_and_pos();
-    bool guided_limit_check();
     bool guided_nogps_init(bool ignore_checks);
     void guided_nogps_run();
-    void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     bool land_init(bool ignore_checks);
     void land_run();
     void land_gps_run();
@@ -1127,6 +1101,8 @@ private:
     Copter::FlightMode_AUTO flightmode_auto{*this, mission, circle_nav};
 
     Copter::FlightMode_CIRCLE flightmode_circle{*this, circle_nav};
+
+    Copter::FlightMode_GUIDED flightmode_guided{*this};
 
     Copter::FlightMode_LOITER flightmode_loiter{*this};
 
