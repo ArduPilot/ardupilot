@@ -153,12 +153,14 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
     _throttle_in_filt.apply(throttle_in, _dt);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     if (apply_angle_boost) {
-        _motors.set_throttle(get_throttle_boosted(throttle_in));
+        // Apply angle boost
+        throttle_in = get_throttle_boosted(throttle_in);
     }else{
-        _motors.set_throttle(throttle_in);
         // Clear angle_boost for logging purposes
         _angle_boost = 0.0f;
     }
+    _motors.set_throttle(throttle_in);
+    _motors.set_throttle_ave_max(get_throttle_ave_max(throttle_in));
 }
 
 // returns a throttle including compensation for roll/pitch angle
