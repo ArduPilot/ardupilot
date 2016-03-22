@@ -876,14 +876,6 @@ private:
     void land_do_not_use_GPS();
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
-    bool loiter_init(bool ignore_checks);
-    void loiter_run();
-#if PRECISION_LANDING == ENABLED
-    bool do_precision_loiter();
-    void precision_loiter_xy();
-    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
-    bool _precision_loiter_enabled;
-#endif
     bool poshold_init(bool ignore_checks);
     void poshold_run();
     void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
@@ -1135,6 +1127,8 @@ private:
     Copter::FlightMode_AUTO flightmode_auto{*this, mission, circle_nav};
 
     Copter::FlightMode_CIRCLE flightmode_circle{*this, circle_nav};
+
+    Copter::FlightMode_LOITER flightmode_loiter{*this};
 
 #if FRAME_CONFIG == HELI_FRAME
     Copter::FlightMode_STABILIZE_Heli flightmode_stabilize{*this};

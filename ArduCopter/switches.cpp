@@ -562,10 +562,10 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #if PRECISION_LANDING == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
-                    set_precision_loiter_enabled(true);
+                    flightmode_loiter.set_precision_loiter_enabled(true);
                     break;
                 case AUX_SWITCH_LOW:
-                    set_precision_loiter_enabled(false);
+                    flightmode_loiter.set_precision_loiter_enabled(false);
                     break;
             }
 #endif
