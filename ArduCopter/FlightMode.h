@@ -577,3 +577,32 @@ private:
     // Loiter timer - Records how long we have been in loiter
     uint32_t _loiter_start_time = 0;
 };
+
+
+
+class FlightMode_DRIFT : public FlightMode {
+
+public:
+
+    FlightMode_DRIFT(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override; // should be called at 100hz or more
+
+    virtual bool requires_GPS() const override { return true; }
+    virtual bool has_manual_throttle() const override { return false; }
+    virtual bool allows_arming(bool from_gcs) const override { return true; };
+    virtual bool is_autopilot() const override { return false; }
+
+protected:
+
+    const char *name() const override { return "DRIFT"; }
+    const char *name4() const override { return "DRIF"; }
+
+private:
+
+    float get_throttle_assist(float velz, float pilot_throttle_scaled);
+
+};

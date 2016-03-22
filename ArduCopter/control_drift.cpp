@@ -27,9 +27,9 @@
 #endif
 
 // drift_init - initialise drift controller
-bool Copter::drift_init(bool ignore_checks)
+bool Copter::FlightMode_DRIFT::init(bool ignore_checks)
 {
-    if (position_ok() || ignore_checks) {
+    if (_copter.position_ok() || ignore_checks) {
         return true;
     }else{
         return false;
@@ -38,7 +38,7 @@ bool Copter::drift_init(bool ignore_checks)
 
 // drift_run - runs the drift controller
 // should be called at 100hz or more
-void Copter::drift_run()
+void Copter::FlightMode_DRIFT::run()
 {
     static float breaker = 0.0f;
     static float roll_input = 0.0f;
@@ -59,7 +59,7 @@ void Copter::drift_run()
     }
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max);
 
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
@@ -108,7 +108,7 @@ void Copter::drift_run()
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity
-float Copter::get_throttle_assist(float velz, float pilot_throttle_scaled)
+float Copter::FlightMode_DRIFT::get_throttle_assist(float velz, float pilot_throttle_scaled)
 {
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 213 ~ 787
