@@ -852,8 +852,6 @@ private:
     void smart_rtl_land();
     void smart_rtl_save_position();
 
-    bool sport_init(bool ignore_checks);
-    void sport_run();
     void crash_check();
     void parachute_check();
     void parachute_release();
@@ -1080,6 +1078,7 @@ private:
     Copter::FlightMode_STABILIZE flightmode_stabilize{*this};
 #endif
 
+    Copter::FlightMode_SPORT flightmode_sport{*this};
 
 public:
     void mavlink_delay_cb();
