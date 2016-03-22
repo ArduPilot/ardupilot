@@ -103,10 +103,9 @@ private:
     AP_Int8  _max_gps_loss;
     AP_Int8  _max_comms_loss;
     AP_Int8  _enable_geofence_fs;
-    AP_Int8  _enable_gps_fs;
     AP_Int8  _enable_RC_fs;
-    AP_Int8  _enable_gcs_fs;
     AP_Int8  _rc_term_manual_only;
+    AP_Int8  _enable_dual_loss;
 
     bool _heartbeat_pin_value;
 
