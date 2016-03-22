@@ -65,12 +65,17 @@ public:
     void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
     void                set_throttle_ave_max(float throttle_ave_max) { _throttle_ave_max = constrain_float(throttle_ave_max,0.0f,1.0f); };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
+    void                set_throttle_hover(float throttle_hover) { _throttle_hover = throttle_hover; }
+
+    // update the throttle input filter
+    void                update_throttle_hover() { _throttle_hover = _throttle_hover * 0.99f + get_throttle() * 0.01f; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
     float               get_pitch() const { return _pitch_in; }
     float               get_yaw() const { return _yaw_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
+    float               get_throttle_hover() const { return _throttle_hover; }
 
     // spool up states
     enum spool_up_down_desired {
@@ -163,6 +168,7 @@ protected:
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
+    float               _throttle_hover;            // the estimated hover throttle, 0 ~ +1
     float               _throttle_ave_max;          // last throttle input from set_throttle_ave_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
