@@ -12,7 +12,8 @@ Example::
         cfg.load('toolchain')
 """
 
-from waflib import Utils, Context
+from waflib import Errors, Context, Utils
+from waflib.Tools import gxx, gcc
 
 import os
 
@@ -40,6 +41,31 @@ def find_realexec_path(cfg, filename, path_list=[]):
 
     cfg.fatal('Could not find real exec path to %s in path_list %s:' % (filename, path_list))
 
+def _set_toolchain_prefix_wrapper(tool_module, var, compiler_names):
+    original_configure = tool_module.configure
+    def new_configure(cfg):
+        if cfg.env.TOOLCHAIN == 'native':
+            original_configure(cfg)
+            return
+
+        last_exception = None
+        for name in compiler_names:
+            cfg.env.stash()
+            try:
+                cfg.env[var] = '%s-%s' % (cfg.env.TOOLCHAIN, name)
+                original_configure(cfg)
+            except Errors.ConfigurationError as e:
+                cfg.env.revert()
+                last_exception = e
+            else:
+                cfg.env.commit()
+                return
+        raise last_exception
+    tool_module.configure = new_configure
+
+_set_toolchain_prefix_wrapper(gxx, 'CXX', ('g++', 'c++'))
+_set_toolchain_prefix_wrapper(gcc, 'CC', ('gcc', 'cc'))
+
 def configure(cfg):
     toolchain = cfg.env.TOOLCHAIN
 
@@ -53,8 +79,7 @@ def configure(cfg):
     c_compiler = cfg.options.check_c_compiler or 'gcc'
     cxx_compiler = cfg.options.check_cxx_compiler or 'g++'
 
-    if c_compiler in ('gcc', 'clang') or cxx_compiler in ('g++', 'clang++'):
-        cfg.env['AR'] = prefix + 'ar'
+    cfg.env['AR'] = prefix + 'ar'
 
     if 'clang' == c_compiler or 'clang++' == cxx_compiler:
         toolchain_path = os.path.join(find_realexec_path(cfg, prefix + 'ar'),
@@ -74,15 +99,11 @@ def configure(cfg):
         ]
         cfg.env.LINKFLAGS += clang_flags
 
-    if 'gcc' == c_compiler:
-        cfg.env['CC'] = prefix + 'gcc'
-    elif 'clang' == c_compiler:
+    if 'clang' == c_compiler:
         cfg.env['CC'] = 'clang'
         cfg.env.CFLAGS += clang_flags
 
-    if 'g++' == cxx_compiler:
-        cfg.env['CXX'] = prefix + 'g++'
-    elif 'clang++' == cxx_compiler:
+    if 'clang++' == cxx_compiler:
         cfg.env['CXX'] = 'clang++'
         cfg.env.CXXFLAGS += clang_flags
 
