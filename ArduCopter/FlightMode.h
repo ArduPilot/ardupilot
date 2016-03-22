@@ -510,3 +510,70 @@ private:
     void gps_run();
     void nogps_run();
 };
+
+
+
+class FlightMode_RTL : public FlightMode {
+
+public:
+
+    FlightMode_RTL(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override { // should be called at 100hz or more
+        return run(true);
+    }
+    void run(bool disarm_on_land); // should be called at 100hz or more
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return true; }
+
+    RTLState state() { return _state; }
+
+    // this should probably not be exposed
+    bool state_complete() { return _state_complete; }
+
+    bool landing_gear_should_be_deployed();
+
+    void restart_without_terrain();
+
+protected:
+
+    const char *name() const override { return "RTL"; }
+    const char *name4() const override { return "RTL "; }
+
+private:
+
+    void climb_start();
+    void return_start();
+    void climb_return_run();
+    void loiterathome_start();
+    void loiterathome_run();
+    void descent_start();
+    void descent_run();
+    void land_start();
+    void land_run(bool disarm_on_land);
+    void build_path(bool terrain_following_allowed);
+    void compute_return_target(bool terrain_following_allowed);
+
+    // RTL
+    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
+    bool _state_complete = false; // set to true if the current state is completed
+
+    struct {
+        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
+        Location_Class origin_point;
+        Location_Class climb_target;
+        Location_Class return_target;
+        Location_Class descent_target;
+        bool land;
+        bool terrain_used;
+    } rtl_path;
+
+    // Loiter timer - Records how long we have been in loiter
+    uint32_t _loiter_start_time = 0;
+};
