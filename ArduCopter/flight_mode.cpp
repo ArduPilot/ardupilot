@@ -75,7 +75,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case LOITER:
-            success = loiter_init(ignore_checks);
+            success = flightmode_loiter.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_loiter;
+            }
             break;
 
         case GUIDED:
@@ -199,9 +202,6 @@ void Copter::update_flight_mode()
     }
 
     switch (control_mode) {
-        case LOITER:
-            loiter_run();
-            break;
 
         case GUIDED:
             guided_run();
@@ -326,7 +326,6 @@ bool Copter::mode_requires_GPS()
     }
     switch (control_mode) {
         case GUIDED:
-        case LOITER:
         case RTL:
         case SMART_RTL:
         case DRIFT:
@@ -396,9 +395,6 @@ void Copter::notify_flight_mode()
     switch (control_mode) {
         case GUIDED:
             notify.set_flight_mode_str("GUID");
-            break;
-        case LOITER:
-            notify.set_flight_mode_str("LOIT");
             break;
         case RTL:
             notify.set_flight_mode_str("RTL ");
