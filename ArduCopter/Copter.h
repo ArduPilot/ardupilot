@@ -392,20 +392,6 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
-    // RTL
-    RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
-    bool rtl_state_complete; // set to true if the current state is completed
-
-    struct {
-        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
-        Location_Class origin_point;
-        Location_Class climb_target;
-        Location_Class return_target;
-        Location_Class descent_target;
-        bool land;
-        bool terrain_used;
-    } rtl_path;
-
     // SmartRTL
     SmartRTLState smart_rtl_state;  // records state of SmartRTL
 
@@ -532,8 +518,6 @@ private:
     uint32_t fast_loopTimer;
     // Counter of main loop executions.  Used for performance monitoring and failsafe processing
     uint16_t mainLoop_count;
-    // Loiter timer - Records how long we have been in loiter
-    uint32_t rtl_loiter_start_time;
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
     uint32_t arm_time_ms;
 
@@ -862,20 +846,6 @@ private:
     bool throw_height_good();
     bool throw_position_good();
 
-    bool rtl_init(bool ignore_checks);
-    void rtl_restart_without_terrain();
-    void rtl_run(bool disarm_on_land=true);
-    void rtl_climb_start();
-    void rtl_return_start();
-    void rtl_climb_return_run();
-    void rtl_loiterathome_start();
-    void rtl_loiterathome_run();
-    void rtl_descent_start();
-    void rtl_descent_run();
-    void rtl_land_start();
-    void rtl_land_run(bool disarm_on_land);
-    void rtl_build_path(bool terrain_following_allowed);
-    void rtl_compute_return_target(bool terrain_following_allowed);
     bool smart_rtl_init(bool ignore_checks);
     void smart_rtl_exit();
     void smart_rtl_run();
@@ -884,6 +854,7 @@ private:
     void smart_rtl_pre_land_position_run();
     void smart_rtl_land();
     void smart_rtl_save_position();
+
     bool sport_init(bool ignore_checks);
     void sport_run();
     void crash_check();
@@ -1101,6 +1072,8 @@ private:
     Copter::FlightMode_LAND flightmode_land{*this};
 
     Copter::FlightMode_LOITER flightmode_loiter{*this};
+
+    Copter::FlightMode_RTL flightmode_rtl{*this};
 
 #if FRAME_CONFIG == HELI_FRAME
     Copter::FlightMode_STABILIZE_Heli flightmode_stabilize{*this};
