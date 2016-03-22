@@ -27,7 +27,7 @@ This list is automatically generated from the latest ardupilot source code, and 
 .. DO NOT EDIT
 
 
-.. _ parameters:
+.. _parameters:
 
 Complete Parameter List
 =======================
