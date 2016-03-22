@@ -970,7 +970,7 @@ bool Copter::verify_circle(const AP_Mission::Mission_Command& cmd)
 // returns true with RTL has completed successfully
 bool Copter::verify_RTL()
 {
-    return (rtl_state_complete && (rtl_state == RTL_FinalDescent || rtl_state == RTL_Land));
+    return (flightmode_rtl.state_complete() && (flightmode_rtl.state() == RTL_FinalDescent || flightmode_rtl.state() == RTL_Land));
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline

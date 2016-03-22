@@ -33,8 +33,6 @@ Copter::Copter(void)
     home_bearing(0),
     home_distance(0),
     wp_distance(0),
-    rtl_state(RTL_InitialClimb),
-    rtl_state_complete(false),
     smart_rtl_state(SmartRTL_PathFollow),
     simple_cos_yaw(1.0f),
     simple_sin_yaw(0.0f),
@@ -62,7 +60,6 @@ Copter::Copter(void)
     pmTest1(0),
     fast_loopTimer(0),
     mainLoop_count(0),
-    rtl_loiter_start_time(0),
     auto_trim_counter(0),
     in_mavlink_delay(false),
     param_loader(var_info)
