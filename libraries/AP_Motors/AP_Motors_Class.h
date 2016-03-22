@@ -157,7 +157,7 @@ protected:
     } _flags;
 
     // internal variables
-    uint16_t            _loop_rate;                 // rate at which output() function is called (normally 400hz)
+    uint16_t            _loop_rate;                 // rate in Hz at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
