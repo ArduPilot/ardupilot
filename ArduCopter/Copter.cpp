@@ -33,7 +33,6 @@ Copter::Copter(void)
     home_bearing(0),
     home_distance(0),
     wp_distance(0),
-    guided_mode(Guided_TakeOff),
     rtl_state(RTL_InitialClimb),
     rtl_state_complete(false),
     smart_rtl_state(SmartRTL_PathFollow),

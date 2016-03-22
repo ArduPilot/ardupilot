@@ -37,11 +37,11 @@ void Copter::calc_wp_distance()
         break;
 
     case GUIDED:
-        if (guided_mode == Guided_WP) {
+        if (flightmode_guided.mode() == Guided_WP) {
             wp_distance = wp_nav->get_wp_distance_to_destination();
             break;
         }
-        if (guided_mode == Guided_PosVel) {
+        if (flightmode_guided.mode() == Guided_PosVel) {
             wp_distance = pos_control->get_distance_to_target();
             break;
         }
@@ -69,11 +69,11 @@ void Copter::calc_wp_bearing()
         break;
 
     case GUIDED:
-        if (guided_mode == Guided_WP) {
+        if (flightmode_guided.mode() == Guided_WP) {
             wp_bearing = wp_nav->get_wp_bearing_to_destination();
             break;
         }
-        if (guided_mode == Guided_PosVel) {
+        if (flightmode_guided.mode() == Guided_PosVel) {
             wp_bearing = pos_control->get_bearing_to_target();
             break;
         }
