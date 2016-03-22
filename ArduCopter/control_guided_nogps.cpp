@@ -8,7 +8,7 @@
 bool Copter::guided_nogps_init(bool ignore_checks)
 {
     // start in angle control mode
-    guided_angle_control_start();
+    flightmode_guided.angle_control_start();
     return true;
 }
 
@@ -17,6 +17,6 @@ bool Copter::guided_nogps_init(bool ignore_checks)
 void Copter::guided_nogps_run()
 {
     // run angle controller
-    guided_angle_control_run();
+    flightmode_guided.angle_control_run();
 }
 
