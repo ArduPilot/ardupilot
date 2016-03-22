@@ -817,9 +817,6 @@ private:
     bool brake_init(bool ignore_checks);
     void brake_run();
     void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
-    bool drift_init(bool ignore_checks);
-    void drift_run();
-    float get_throttle_assist(float velz, float pilot_throttle_scaled);
     bool flip_init(bool ignore_checks);
     void flip_run();
     bool guided_nogps_init(bool ignore_checks);
@@ -1066,6 +1063,8 @@ private:
     Copter::FlightMode_AUTO flightmode_auto{*this, mission, circle_nav};
 
     Copter::FlightMode_CIRCLE flightmode_circle{*this, circle_nav};
+
+    Copter::FlightMode_DRIFT flightmode_drift{*this};
 
     Copter::FlightMode_GUIDED flightmode_guided{*this};
 
