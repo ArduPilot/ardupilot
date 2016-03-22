@@ -81,7 +81,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case LAND:
-            success = land_init(ignore_checks);
+            success = flightmode_land.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_land;
+            }
             break;
 
         case RTL:
@@ -186,10 +189,6 @@ void Copter::update_flight_mode()
     }
 
     switch (control_mode) {
-
-        case LAND:
-            land_run();
-            break;
 
         case RTL:
             rtl_run();
@@ -347,11 +346,10 @@ void Copter::notify_flight_mode()
         case RTL:
         case AVOID_ADSB:
         case GUIDED_NOGPS:
-        case LAND:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
             break;
-        default:
+    default:
             // all other are manual flight modes
             AP_Notify::flags.autopilot_mode = false;
             break;
@@ -361,9 +359,6 @@ void Copter::notify_flight_mode()
     switch (control_mode) {
         case RTL:
             notify.set_flight_mode_str("RTL ");
-            break;
-        case LAND:
-            notify.set_flight_mode_str("LAND");
             break;
         case DRIFT:
             notify.set_flight_mode_str("DRIF");
@@ -410,9 +405,6 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     switch (mode) {
     case RTL:
         port->printf("RTL");
-        break;
-    case LAND:
-        port->printf("LAND");
         break;
     case DRIFT:
         port->printf("DRIFT");
