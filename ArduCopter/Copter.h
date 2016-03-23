@@ -997,6 +997,8 @@ private:
 
     Copter::FlightMode_GUIDED_NOGPS flightmode_guided_nogps{*this};
 
+    Copter::FlightMode *flightmode_for_mode(const uint8_t mode);
+
 public:
     void mavlink_delay_cb();
     void failsafe_check();
