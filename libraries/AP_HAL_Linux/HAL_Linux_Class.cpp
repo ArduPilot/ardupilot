@@ -54,13 +54,11 @@ static I2CDriver i2cDriver2(2);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 static I2CDriver i2cDriver0(2);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-static const std::vector<const char *> i2c_devpaths({
+static I2CDriver  i2cDriver0({
     /* UEFI with lpss set to ACPI */
     "platform/80860F41:05",
     /* UEFI with lpss set to PCI */
-    "pci0000:00/0000:00:18.6",
-});
-static I2CDriver  i2cDriver0(i2c_devpaths);
+    "pci0000:00/0000:00:18.6" });
 /* One additional emulated bus */
 static I2CDriver  i2cDriver1(10);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
