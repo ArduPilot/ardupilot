@@ -88,6 +88,11 @@ def options(opt):
                  default=False,
                  help='Enable benchmarks')
 
+    opt.recurse(
+        [info['dirname'] for info in _main_products.values()],
+        mandatory=False,
+    )
+
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     # use a different variant for each board
