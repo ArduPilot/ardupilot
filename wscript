@@ -25,6 +25,25 @@ from waflib import Build, ConfigSet, Context, Utils
 
 # TODO: set git version as part of build preparation.
 
+_main_products = dict(
+    antennatracker=dict(
+        program='antennatracker',
+        dirname='AntennaTracker',
+    ),
+    copter=dict(
+        program='arducopter',
+        dirname='ArduCopter',
+    ),
+    plane=dict(
+        program='arduplane',
+        dirname='ArduPlane',
+    ),
+    rover=dict(
+        program='ardurover',
+        dirname='APMrover2',
+    ),
+)
+
 def init(ctx):
     env = ConfigSet.ConfigSet()
     try:
@@ -246,22 +265,11 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-ardupilotwaf.build_command('antennatracker',
-    targets='bin/antennatracker',
-    doc='builds antennatracker',
-)
-ardupilotwaf.build_command('copter',
-    targets='bin/arducopter',
-    doc='builds arducopter',
-)
-ardupilotwaf.build_command('plane',
-    targets='bin/arduplane',
-    doc='builds arduplane',
-)
-ardupilotwaf.build_command('rover',
-    targets='bin/ardurover',
-    doc='builds ardurover',
-)
+for short_name, info in _main_products.items():
+    ardupilotwaf.build_command(short_name,
+        targets='bin/%s' % info['program'],
+        doc='builds %s' % info['program'],
+    )
 
 for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
     ardupilotwaf.build_command(program_group,
