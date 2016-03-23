@@ -766,3 +766,35 @@ private:
 
 };
 #endif
+
+
+
+class FlightMode_BRAKE : public FlightMode {
+
+public:
+
+    FlightMode_BRAKE(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override; // should be called at 100hz or more
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return false; }
+
+    void timeout_to_loiter_ms(uint32_t timeout_ms);
+
+protected:
+
+    const char *name() const override { return "BRAKE"; }
+    const char *name4() const override { return "BRAK"; }
+
+private:
+
+    uint32_t _timeout_start;
+    uint32_t _timeout_ms;
+
+};

@@ -142,7 +142,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 #endif
 
         case BRAKE:
-            success = brake_init(ignore_checks);
+            success = flightmode_brake.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_brake;
+            }
             break;
 
         case THROW:
@@ -227,10 +230,6 @@ void Copter::update_flight_mode()
 
     switch (control_mode) {
 
-        case BRAKE:
-            brake_run();
-            break;
-
         case THROW:
             throw_run();
             break;
@@ -314,7 +313,6 @@ bool Copter::mode_requires_GPS()
     }
     switch (control_mode) {
         case SMART_RTL:
-        case BRAKE:
         case AVOID_ADSB:
         case THROW:
             return true;
@@ -374,9 +372,6 @@ void Copter::notify_flight_mode()
 
     // set flight mode string
     switch (control_mode) {
-        case BRAKE:
-            notify.set_flight_mode_str("BRAK");
-            break;
         case THROW:
             notify.set_flight_mode_str("THRW");
             break;

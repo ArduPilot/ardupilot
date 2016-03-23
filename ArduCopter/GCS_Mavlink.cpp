@@ -1291,7 +1291,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
                     if (!shot_mode) {
                         if (copter.set_mode(BRAKE, MODE_REASON_GCS_COMMAND)) {
-                            copter.brake_timeout_to_loiter_ms(2500);
+                            copter.flightmode_brake.timeout_to_loiter_ms(2500);
                         } else {
                             copter.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
                         }
