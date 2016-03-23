@@ -246,6 +246,10 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
+ardupilotwaf.build_command('antennatracker',
+    targets='bin/antennatracker',
+    doc='builds antennatracker',
+)
 ardupilotwaf.build_command('copter',
     targets='bin/arducopter',
     doc='builds arducopter',
