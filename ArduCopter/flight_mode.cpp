@@ -126,7 +126,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 
 #if POSHOLD_ENABLED == ENABLED
         case POSHOLD:
-            success = poshold_init(ignore_checks);
+            success = flightmode_poshold.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_poshold;
+            }
             break;
 #endif
 
@@ -205,12 +208,6 @@ void Copter::update_flight_mode()
 
     switch (control_mode) {
 
-#if POSHOLD_ENABLED == ENABLED
-        case POSHOLD:
-            poshold_run();
-            break;
-#endif
-
         case BRAKE:
             brake_run();
             break;
@@ -287,7 +284,6 @@ bool Copter::mode_requires_GPS()
         return flightmode->requires_GPS();
     }
     switch (control_mode) {
-        case POSHOLD:
         case BRAKE:
         case AVOID_ADSB:
         case THROW:
@@ -347,9 +343,6 @@ void Copter::notify_flight_mode()
 
     // set flight mode string
     switch (control_mode) {
-        case POSHOLD:
-            notify.set_flight_mode_str("PHLD");
-            break;
         case BRAKE:
             notify.set_flight_mode_str("BRAK");
             break;
@@ -378,9 +371,6 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         return;
     }
     switch (mode) {
-    case POSHOLD:
-        port->printf("POSHOLD");
-        break;
     case BRAKE:
         port->printf("BRAKE");
         break;
