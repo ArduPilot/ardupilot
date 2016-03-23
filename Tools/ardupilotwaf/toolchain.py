@@ -13,6 +13,7 @@ Example::
 """
 
 from waflib import Errors, Context, Utils
+from waflib.Tools import compiler_c, compiler_cxx
 from waflib.Tools import clang, clangxx, gcc, gxx
 
 import os
@@ -102,10 +103,23 @@ def _set_clang_crosscompilation_wrapper(tool_module):
 _set_clang_crosscompilation_wrapper(clang)
 _set_clang_crosscompilation_wrapper(clangxx)
 
+def _filter_supported_c_compilers(*compilers):
+    for k in compiler_c.c_compiler:
+        l = compiler_c.c_compiler[k]
+        compiler_c.c_compiler[k] = [c for c in l if c in compilers]
+
+def _filter_supported_cxx_compilers(*compilers):
+    for k in compiler_cxx.cxx_compiler:
+        l = compiler_cxx.cxx_compiler[k]
+        compiler_cxx.cxx_compiler[k] = [c for c in l if c in compilers]
+
 def configure(cfg):
     if cfg.env.TOOLCHAIN == 'native':
         cfg.load('compiler_cxx compiler_c')
         return
+
+    _filter_supported_c_compilers('gcc', 'clang')
+    _filter_supported_cxx_compilers('g++', 'clang++')
 
     cfg.env.AR = cfg.env.TOOLCHAIN + '-ar'
     cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
