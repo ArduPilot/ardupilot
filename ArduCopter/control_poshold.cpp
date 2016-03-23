@@ -73,10 +73,10 @@ static struct {
 } poshold;
 
 // poshold_init - initialise PosHold controller
-bool Copter::poshold_init(bool ignore_checks)
+bool Copter::FlightMode_POSHOLD::init(bool ignore_checks)
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!position_ok() && !ignore_checks) {
+    if (!_copter.position_ok() && !ignore_checks) {
         return false;
     }
     
@@ -124,7 +124,7 @@ bool Copter::poshold_init(bool ignore_checks)
 
 // poshold_run - runs the PosHold controller
 // should be called at 100hz or more
-void Copter::poshold_run()
+void Copter::FlightMode_POSHOLD::run()
 {
     float target_roll, target_pitch;  // pilot's roll and pitch angle inputs
     float target_yaw_rate = 0;          // pilot desired yaw rate in centi-degrees/sec
@@ -150,7 +150,7 @@ void Copter::poshold_run()
     }
 
     // process pilot inputs
-    if (!failsafe.radio) {
+    if (!_copter.failsafe.radio) {
         // apply SIMPLE mode transform to pilot inputs
         update_simple_mode();
 
@@ -204,7 +204,7 @@ void Copter::poshold_run()
         return;
     }else{
         // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max);
 
         // convert inertial nav earth-frame velocities to body-frame
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
@@ -520,14 +520,15 @@ void Copter::poshold_run()
         }
         
         // constrain target pitch/roll angles
-        poshold.roll = constrain_int16(poshold.roll, -aparm.angle_max, aparm.angle_max);
-        poshold.pitch = constrain_int16(poshold.pitch, -aparm.angle_max, aparm.angle_max);
+        float angle_max = _copter.aparm.angle_max;
+        poshold.roll = constrain_int16(poshold.roll, -angle_max, angle_max);
+        poshold.pitch = constrain_int16(poshold.pitch, -angle_max, angle_max);
 
         // update attitude controller targets
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(poshold.roll, poshold.pitch, target_yaw_rate, get_smoothing_gain());
 
         // adjust climb rate using rangefinder
-        if (rangefinder_alt_ok()) {
+        if (_copter.rangefinder_alt_ok()) {
             // if rangefinder is ok, use surface tracking
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
         }
@@ -543,7 +544,7 @@ void Copter::poshold_run()
 }
 
 // poshold_update_pilot_lean_angle - update the pilot's filtered lean angle with the latest raw input received
-void Copter::poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw)
+void Copter::FlightMode_POSHOLD::poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw)
 {
     // if raw input is large or reversing the vehicle's lean angle immediately set the fitlered angle to the new raw angle
     if ((lean_angle_filtered > 0 && lean_angle_raw < 0) || (lean_angle_filtered < 0 && lean_angle_raw > 0) || (fabsf(lean_angle_raw) > POSHOLD_STICK_RELEASE_SMOOTH_ANGLE)) {
@@ -565,7 +566,7 @@ void Copter::poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &
 
 // poshold_mix_controls - mixes two controls based on the mix_ratio
 //  mix_ratio of 1 = use first_control completely, 0 = use second_control completely, 0.5 = mix evenly
-int16_t Copter::poshold_mix_controls(float mix_ratio, int16_t first_control, int16_t second_control)
+int16_t Copter::FlightMode_POSHOLD::poshold_mix_controls(float mix_ratio, int16_t first_control, int16_t second_control)
 {
     mix_ratio = constrain_float(mix_ratio, 0.0f, 1.0f);
     return (int16_t)((mix_ratio * first_control) + ((1.0f-mix_ratio)*second_control));
@@ -574,7 +575,7 @@ int16_t Copter::poshold_mix_controls(float mix_ratio, int16_t first_control, int
 // poshold_update_brake_angle_from_velocity - updates the brake_angle based on the vehicle's velocity and brake_gain
 //  brake_angle is slewed with the wpnav.poshold_brake_rate and constrained by the wpnav.poshold_braking_angle_max
 //  velocity is assumed to be in the same direction as lean angle so for pitch you should provide the velocity backwards (i.e. -ve forward velocity)
-void Copter::poshold_update_brake_angle_from_velocity(int16_t &brake_angle, float velocity)
+void Copter::FlightMode_POSHOLD::poshold_update_brake_angle_from_velocity(int16_t &brake_angle, float velocity)
 {
     float lean_angle;
     int16_t brake_rate = g.poshold_brake_rate;
@@ -600,7 +601,7 @@ void Copter::poshold_update_brake_angle_from_velocity(int16_t &brake_angle, floa
 
 // poshold_update_wind_comp_estimate - updates wind compensation estimate
 //  should be called at the maximum loop rate when loiter is engaged
-void Copter::poshold_update_wind_comp_estimate()
+void Copter::FlightMode_POSHOLD::poshold_update_wind_comp_estimate()
 {
     // check wind estimate start has not been delayed
     if (poshold.wind_comp_start_timer > 0) {
@@ -636,7 +637,7 @@ void Copter::poshold_update_wind_comp_estimate()
 
 // poshold_get_wind_comp_lean_angles - retrieve wind compensation angles in body frame roll and pitch angles
 //  should be called at the maximum loop rate
-void Copter::poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle)
+void Copter::FlightMode_POSHOLD::poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle)
 {
     // reduce rate to 10hz
     poshold.wind_comp_timer++;
@@ -651,7 +652,7 @@ void Copter::poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pit
 }
 
 // poshold_roll_controller_to_pilot_override - initialises transition from a controller submode (brake or loiter) to a pilot override on roll axis
-void Copter::poshold_roll_controller_to_pilot_override()
+void Copter::FlightMode_POSHOLD::poshold_roll_controller_to_pilot_override()
 {
     poshold.roll_mode = POSHOLD_CONTROLLER_TO_PILOT_OVERRIDE;
     poshold.controller_to_pilot_timer_roll = POSHOLD_CONTROLLER_TO_PILOT_MIX_TIMER;
@@ -662,7 +663,7 @@ void Copter::poshold_roll_controller_to_pilot_override()
 }
 
 // poshold_pitch_controller_to_pilot_override - initialises transition from a controller submode (brake or loiter) to a pilot override on roll axis
-void Copter::poshold_pitch_controller_to_pilot_override()
+void Copter::FlightMode_POSHOLD::poshold_pitch_controller_to_pilot_override()
 {
     poshold.pitch_mode = POSHOLD_CONTROLLER_TO_PILOT_OVERRIDE;
     poshold.controller_to_pilot_timer_pitch = POSHOLD_CONTROLLER_TO_PILOT_MIX_TIMER;
