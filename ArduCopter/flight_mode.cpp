@@ -5,197 +5,144 @@
  * flight modes is in control_acro.cpp, control_stabilize.cpp, etc
  */
 
+// return the static controller object corresponding to supplied mode
+Copter::FlightMode *Copter::flightmode_for_mode(const uint8_t mode)
+{
+    Copter::FlightMode *ret = nullptr;
+
+    switch (mode) {
+        case ACRO:
+            ret = &flightmode_acro;
+            break;
+
+        case STABILIZE:
+            ret = &flightmode_stabilize;
+            break;
+
+        case ALT_HOLD:
+            ret = &flightmode_althold;
+            break;
+
+        case AUTO:
+            ret = &flightmode_auto;
+            break;
+
+        case CIRCLE:
+            ret = &flightmode_circle;
+            break;
+
+        case LOITER:
+            ret = &flightmode_loiter;
+            break;
+
+        case GUIDED:
+            ret = &flightmode_guided;
+            break;
+
+        case LAND:
+            ret = &flightmode_land;
+            break;
+
+        case RTL:
+            ret = &flightmode_rtl;
+            break;
+
+        case DRIFT:
+            ret = &flightmode_drift;
+            break;
+
+        case SPORT:
+            ret = &flightmode_sport;
+            break;
+
+        case FLIP:
+            ret = &flightmode_flip;
+            break;
+
+#if AUTOTUNE_ENABLED == ENABLED
+        case AUTOTUNE:
+            ret = &flightmode_autotune;
+            break;
+#endif
+
+#if POSHOLD_ENABLED == ENABLED
+        case POSHOLD:
+            ret = &flightmode_poshold;
+            break;
+#endif
+
+        case BRAKE:
+            ret = &flightmode_brake;
+            break;
+
+        case THROW:
+            ret = &flightmode_throw;
+            break;
+
+        case AVOID_ADSB:
+            ret = &flightmode_avoid_adsb;
+            break;
+
+        case GUIDED_NOGPS:
+            ret = &flightmode_guided_nogps;
+            break;
+
+        case SMART_RTL:
+            ret = &flightmode_smartrtl;
+            break;
+
+        default:
+            break;
+    }
+
+    return ret;
+}
+
+
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 {
-    // boolean to record if flight mode could be set
-    bool success = false;
-    bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
-        prev_control_mode = control_mode;
-        prev_control_mode_reason = control_mode_reason;
-
         control_mode_reason = reason;
         return true;
+    }
+
+    Copter::FlightMode *new_flightmode = flightmode_for_mode(mode);
+    if (new_flightmode == nullptr) {
+        gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        return false;
+    }
+
+    bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+
+    if (! new_flightmode->init(ignore_checks)) {
+        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        return false;
     }
 
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
     if (!ignore_checks && !mode_has_manual_throttle(mode) && !motors->rotor_runup_complete()){
-        goto failed;
+        return false;
     }
 #endif
 
-    // for transition, we assume no flightmode object will be used in
-    // the new mode, and if the transition fails we reset the
-    // flightmode to the previous value
-    Copter::FlightMode* old_flightmode = flightmode;
-    flightmode = nullptr;
+    // perform any cleanup required by previous flight mode
+    exit_mode(control_mode, mode);
 
-    switch (mode) {
-        case ACRO:
-                success = flightmode_acro.init(ignore_checks);
-                if (success) {
-                    flightmode = &flightmode_acro;
-                }
-            break;
-
-        case STABILIZE:
-                success = flightmode_stabilize.init(ignore_checks);
-                if (success) {
-                    flightmode = &flightmode_stabilize;
-                }
-            break;
-
-        case ALT_HOLD:
-            success = flightmode_althold.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_althold;
-            }
-            break;
-
-        case AUTO:
-            success = flightmode_auto.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_auto;
-            }
-            break;
-
-        case CIRCLE:
-            success = flightmode_circle.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_circle;
-            }
-            break;
-
-        case LOITER:
-            success = flightmode_loiter.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_loiter;
-            }
-            break;
-
-        case GUIDED:
-            success = flightmode_guided.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_guided;
-            }
-            break;
-
-        case LAND:
-            success = flightmode_land.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_land;
-            }
-            break;
-
-        case RTL:
-            success = flightmode_rtl.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_rtl;
-            }
-            break;
-
-        case DRIFT:
-            success = flightmode_drift.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_drift;
-            }
-            break;
-
-        case SPORT:
-            success = flightmode_sport.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_sport;
-            }
-            break;
-
-        case FLIP:
-            success = flightmode_flip.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_flip;
-            }
-            break;
-
-#if AUTOTUNE_ENABLED == ENABLED
-        case AUTOTUNE:
-            success = flightmode_autotune.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_autotune;
-            }
-            break;
-#endif
-
-#if POSHOLD_ENABLED == ENABLED
-        case POSHOLD:
-            success = flightmode_poshold.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_poshold;
-            }
-            break;
-#endif
-
-        case BRAKE:
-            success = flightmode_brake.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_brake;
-            }
-            break;
-
-        case THROW:
-            success = flightmode_throw.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_throw;
-            }
-            break;
-
-        case AVOID_ADSB:
-            success = flightmode_avoid_adsb.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_avoid_adsb;
-            }
-            break;
-
-        case GUIDED_NOGPS:
-            success = flightmode_guided_nogps.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_guided_nogps;
-            }
-            break;
-
-        case SMART_RTL:
-            success = flightmode_guided_nogps.init(ignore_checks);
-            if (success) {
-                flightmode = &flightmode_smartrtl;
-            }
-            break;
-
-        default:
-            success = false;
-            break;
-    }
-
-#if FRAME_CONFIG == HELI_FRAME
-failed:
-#endif
-    
     // update flight mode
-    if (success) {
-        // perform any cleanup required by previous flight mode
-        exit_mode(control_mode, mode);
-        
-        prev_control_mode = control_mode;
-        prev_control_mode_reason = control_mode_reason;
-
-        control_mode = mode;
-        control_mode_reason = reason;
-        DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+    flightmode = new_flightmode;
+    control_mode = mode;
+    control_mode_reason = reason;
+    DataFlash.Log_Write_Mode(control_mode);
 
         adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
 
@@ -203,7 +150,7 @@ failed:
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
         // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
         // but it should be harmless to disable the fence temporarily in these situations as well
-        fence.manual_recovery_start();
+    fence.manual_recovery_start();
 #endif
         
 #if FRSKY_TELEM_ENABLED == ENABLED
@@ -212,21 +159,12 @@ failed:
 #if CAMERA == ENABLED
         camera.set_is_auto_mode(control_mode == AUTO);
 #endif
-        
-    } else {
-        flightmode = old_flightmode;
-        // Log error that we failed to enter desired flight mode
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
-    }
 
     // update notify object
-    if (success) {
-        notify_flight_mode();
-    }
+    notify_flight_mode();
 
-    // return success or failure
-    return success;
+    // return success
+    return true;
 }
 
 // update_flight_mode - calls the appropriate attitude controllers based on flight mode

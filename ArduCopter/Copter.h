@@ -1010,6 +1010,8 @@ private:
 
     Copter::FlightMode_SMARTRTL flightmode_smartrtl{*this};
 
+    Copter::FlightMode *flightmode_for_mode(const uint8_t mode);
+
 public:
     void mavlink_delay_cb();
     void failsafe_check();
