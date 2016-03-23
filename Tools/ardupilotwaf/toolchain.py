@@ -17,30 +17,6 @@ from waflib.Tools import clang, clangxx, gcc, gxx
 
 import os
 
-def find_realexec_path(cfg, filename, path_list=[]):
-    if not filename:
-        return ''
-
-    if not path_list:
-        path_list = cfg.environ.get('PATH','').split(os.pathsep)
-
-    for dir in path_list:
-        path = os.path.abspath(os.path.expanduser(os.path.join(dir, filename)))
-
-        if os.path.isfile(path):
-            if os.path.islink(path):
-                realpath = os.path.realpath(path)
-
-                if filename not in os.path.basename(realpath):
-                    continue
-                else:
-                    return os.path.dirname(realpath)
-
-            else:
-                return os.path.dirname(path)
-
-    cfg.fatal('Could not find real exec path to %s in path_list %s:' % (filename, path_list))
-
 def _set_toolchain_prefix_wrapper(tool_module, var, compiler_names):
     original_configure = tool_module.configure
     def new_configure(cfg):
@@ -73,10 +49,22 @@ def _clang_cross_support(cfg):
     prefix = cfg.env.TOOLCHAIN + '-'
 
     cfg.find_program(prefix + 'gcc', var='CROSS_GCC')
-    toolchain_path = os.path.join(find_realexec_path(cfg, prefix + 'ar'),
-                                  '..')
-    toolchain_path = os.path.abspath(toolchain_path)
 
+    environ = dict(os.environ)
+    if 'TOOLCHAIN_CROSS_AR' in environ:
+        # avoid OS's environment to mess up toolchain path finding
+        del environ['TOOLCHAIN_CROSS_AR']
+    try:
+        cfg.find_program(
+            prefix + 'ar',
+            var='TOOLCHAIN_CROSS_AR',
+            environ=environ,
+        )
+    except Errors.ConfigurationError as e:
+        cfg.fatal('toolchain: clang: couldn\'t find toolchain path', ex=e)
+
+    toolchain_path = os.path.join(cfg.env.TOOLCHAIN_CROSS_AR[0], '..', '..')
+    toolchain_path = os.path.abspath(toolchain_path)
     cfg.msg('Using toolchain path for clang', toolchain_path)
 
     sysroot = cfg.cmd_and_log(
