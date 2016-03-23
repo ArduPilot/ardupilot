@@ -788,15 +788,6 @@ private:
     void land_run_horizontal_control();
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
-    bool poshold_init(bool ignore_checks);
-    void poshold_run();
-    void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
-    int16_t poshold_mix_controls(float mix_ratio, int16_t first_control, int16_t second_control);
-    void poshold_update_brake_angle_from_velocity(int16_t &brake_angle, float velocity);
-    void poshold_update_wind_comp_estimate();
-    void poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle);
-    void poshold_roll_controller_to_pilot_override();
-    void poshold_pitch_controller_to_pilot_override();
 
     // Throw to launch functionality
     bool throw_init(bool ignore_checks);
@@ -1038,6 +1029,10 @@ private:
     Copter::FlightMode_LAND flightmode_land{*this};
 
     Copter::FlightMode_LOITER flightmode_loiter{*this};
+
+#if POSHOLD_ENABLED == ENABLED
+    Copter::FlightMode_POSHOLD flightmode_poshold{*this};
+#endif
 
     Copter::FlightMode_RTL flightmode_rtl{*this};
 
