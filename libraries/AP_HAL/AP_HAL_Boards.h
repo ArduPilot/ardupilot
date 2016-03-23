@@ -423,6 +423,10 @@
 #error "no Linux board subtype set"
 #endif
 
+#ifndef HAL_COMPASS_DEFAULT
+#define HAL_COMPASS_DEFAULT -1
+#endif
+
 #ifndef HAL_LINUX_UARTS_ON_TIMER_THREAD
 #define HAL_LINUX_UARTS_ON_TIMER_THREAD 0
 #endif
