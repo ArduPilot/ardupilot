@@ -389,10 +389,6 @@ private:
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
-    // Brake
-    uint32_t brake_timeout_start;
-    uint32_t brake_timeout_ms;
-
     // Delay the next navigation command
     int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
     uint32_t nav_delay_time_start;
@@ -751,9 +747,6 @@ private:
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
-    bool brake_init(bool ignore_checks);
-    void brake_run();
-    void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
     bool guided_nogps_init(bool ignore_checks);
     void guided_nogps_run();
     void land_run_vertical_control(bool pause_descent = false);
@@ -994,6 +987,8 @@ private:
 #if AUTOTUNE_ENABLED == ENABLED
     Copter::FlightMode_AUTOTUNE flightmode_autotune{*this};
 #endif
+
+    Copter::FlightMode_BRAKE flightmode_brake{*this};
 
     Copter::FlightMode_CIRCLE flightmode_circle{*this, circle_nav};
 
