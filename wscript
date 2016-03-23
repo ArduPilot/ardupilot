@@ -138,6 +138,11 @@ def configure(cfg):
     if cfg.options.submodule_update:
         cfg.env.SUBMODULE_UPDATE = True
 
+    cfg.recurse(
+        [info['dirname'] for info in _main_products.values()],
+        mandatory=False,
+    )
+
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
     globs = Utils.to_list(globs)
