@@ -236,15 +236,7 @@ void Copter::update_flight_mode()
     // Update EKF speed limit - used to limit speed when we are using optical flow
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-    if (flightmode != nullptr) {
-        flightmode->run();
-    }
-
-    switch (control_mode) {
-
-        default:
-            break;
-    }
+    flightmode->run();
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
@@ -324,42 +316,8 @@ bool Copter::mode_has_manual_throttle(control_mode_t mode)
     }
 }
 
-// mode_allows_arming - returns true if vehicle can be armed in the current mode
-//  arming_from_gcs should be set to true if the arming request comes from the ground station
-bool Copter::mode_allows_arming(bool arming_from_gcs)
-{
-    if (flightmode != nullptr) {
-        return flightmode->allows_arming(arming_from_gcs);
-    }
-    control_mode_t mode = control_mode;
-    if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && (mode == GUIDED || mode == GUIDED_NOGPS))) {
-        return true;
-    }
-    return false;
-}
-
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
-void Copter::notify_flight_mode()
-{
-    AP_Notify::flags.flight_mode = control_mode;
-
-    if (flightmode != nullptr) {
-        AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
-        notify.set_flight_mode_str(flightmode->name4());
-        return;
-    }
-    switch (control_mode) {
-            break;
-    default:
-            // all other are manual flight modes
-            AP_Notify::flags.autopilot_mode = false;
-            break;
-    }
-
-    // set flight mode string
-    switch (control_mode) {
-        default:
-            notify.set_flight_mode_str("----");
-            break;
-    }
+void Copter::notify_flight_mode() {
+    AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
+    notify.set_flight_mode_str(flightmode->name4());
 }
