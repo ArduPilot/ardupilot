@@ -1848,6 +1848,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         if (hal.rcin->set_overrides(v, 8)) {
             plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
+            plane.failsafe.AFS_last_valid_rc_ms =  plane.failsafe.last_valid_rc_ms;
         }
 
         // a RC override message is consiered to be a 'heartbeat' from
