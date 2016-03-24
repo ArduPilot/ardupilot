@@ -35,5 +35,6 @@ def build(bld):
 
     bld.ap_program(
         program_name='arducopter',
+        program_groups=['bin', 'copter'],
         use=vehicle + '_libs',
     )
