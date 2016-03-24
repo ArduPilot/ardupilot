@@ -25,6 +25,25 @@ from waflib import Build, ConfigSet, Context, Utils
 
 # TODO: set git version as part of build preparation.
 
+_main_products = dict(
+    antennatracker=dict(
+        program='antennatracker',
+        dirname='AntennaTracker',
+    ),
+    copter=dict(
+        program='arducopter',
+        dirname='ArduCopter',
+    ),
+    plane=dict(
+        program='arduplane',
+        dirname='ArduPlane',
+    ),
+    rover=dict(
+        program='ardurover',
+        dirname='APMrover2',
+    ),
+)
+
 def init(ctx):
     env = ConfigSet.ConfigSet()
     try:
@@ -68,6 +87,11 @@ def options(opt):
                  action='store_true',
                  default=False,
                  help='Enable benchmarks')
+
+    opt.recurse(
+        [info['dirname'] for info in _main_products.values()],
+        mandatory=False,
+    )
 
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
@@ -113,6 +137,11 @@ def configure(cfg):
 
     if cfg.options.submodule_update:
         cfg.env.SUBMODULE_UPDATE = True
+
+    cfg.recurse(
+        [info['dirname'] for info in _main_products.values()],
+        mandatory=False,
+    )
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -246,18 +275,11 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-ardupilotwaf.build_command('copter',
-    targets='bin/arducopter',
-    doc='builds arducopter',
-)
-ardupilotwaf.build_command('plane',
-    targets='bin/arduplane',
-    doc='builds arduplane',
-)
-ardupilotwaf.build_command('rover',
-    targets='bin/ardurover',
-    doc='builds ardurover',
-)
+for short_name, info in _main_products.items():
+    ardupilotwaf.build_command(short_name,
+        targets='bin/%s' % info['program'],
+        doc='builds %s' % info['program'],
+    )
 
 for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
     ardupilotwaf.build_command(program_group,

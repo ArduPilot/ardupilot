@@ -1,6 +1,27 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+def options(opt):
+    g = opt.add_option_group('Copter configure options')
+
+    frame_type_choices = (
+        'quad', 'tri', 'hexa', 'y6', 'octa', 'octa-quad', 'heli', 'single',
+        'coax',
+    )
+
+    g.add_option(
+        '--copter-frame-type',
+        action='store',
+        choices=frame_type_choices,
+        default='quad',
+        help='Copter frame type. Choices are: %s' % ', '.join(frame_type_choices),
+    )
+
+def configure(cfg):
+    frame = cfg.options.copter_frame_type
+    cfg.msg('Copter frame type', frame)
+    cfg.env.COPTER_FRAME_CONFIG = frame.upper().replace('-', '_') + '_FRAME'
+
 def build(bld):
     vehicle = bld.path.name
     bld.ap_stlib(
@@ -36,4 +57,5 @@ def build(bld):
     bld.ap_program(
         program_name='arducopter',
         use=vehicle + '_libs',
+        defines=['FRAME_CONFIG=%s' % bld.env.COPTER_FRAME_CONFIG],
     )
