@@ -85,10 +85,12 @@ def ap_common_vehicle_libraries(bld):
 _grouped_programs = {}
 
 @conf
-def ap_program(bld, program_group='bin',
-            use_legacy_defines=True,
-            program_name=None,
-            **kw):
+def ap_program(bld,
+               program_group='bin',
+               program_dir=None,
+               use_legacy_defines=True,
+               program_name=None,
+               **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
     if 'defines' not in kw:
@@ -104,7 +106,10 @@ def ap_program(bld, program_group='bin',
 
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
 
-    name = os.path.join(program_group, program_name)
+    if not program_dir:
+        program_dir = program_group
+
+    name = os.path.join(program_dir, program_name)
 
     tg_constructor = bld.program
     if bld.env.AP_PROGRAM_AS_STLIB:
@@ -118,7 +123,7 @@ def ap_program(bld, program_group='bin',
         target='#%s' % name,
         name=name,
         program_name=program_name,
-        program_group=program_group,
+        program_dir=program_dir,
         **kw
     )
     _grouped_programs.setdefault(program_group, []).append(tg)

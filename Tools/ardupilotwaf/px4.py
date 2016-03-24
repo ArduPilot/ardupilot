@@ -168,7 +168,7 @@ def px4_firmware(self):
     _update_firmware_sig(fw_task, firmware)
 
     fw_dest = self.bld.bldnode.make_node(
-        os.path.join(self.program_group, '%s.px4' % self.program_name)
+        os.path.join(self.program_dir, '%s.px4' % self.program_name)
     )
     git_hashes = self.create_task('px4_add_git_hashes', firmware, fw_dest)
     git_hashes.set_run_after(fw_task)
