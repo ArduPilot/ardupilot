@@ -36,5 +36,6 @@ def build(bld):
 
     bld.ap_program(
         program_name='arduplane',
+        program_groups=['bin', 'plane'],
         use=vehicle + '_libs',
     )
