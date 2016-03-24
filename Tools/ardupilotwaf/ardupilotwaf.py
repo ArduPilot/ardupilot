@@ -86,7 +86,7 @@ _grouped_programs = {}
 
 @conf
 def ap_program(bld,
-               program_group='bin',
+               program_groups='bin',
                program_dir=None,
                use_legacy_defines=True,
                program_name=None,
@@ -106,8 +106,10 @@ def ap_program(bld,
 
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
 
+    program_groups = Utils.to_list(program_groups)
+
     if not program_dir:
-        program_dir = program_group
+        program_dir = program_groups[0]
 
     name = os.path.join(program_dir, program_name)
 
@@ -126,11 +128,13 @@ def ap_program(bld,
         program_dir=program_dir,
         **kw
     )
-    _grouped_programs.setdefault(program_group, []).append(tg)
+
+    for group in program_groups:
+        _grouped_programs.setdefault(group, []).append(tg)
 
 @conf
 def ap_example(bld, **kw):
-    kw['program_group'] = 'examples'
+    kw['program_groups'] = 'examples'
     ap_program(bld, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
@@ -193,7 +197,7 @@ def ap_find_tests(bld, use=[]):
             source=[f],
             use=use,
             program_name=f.change_ext('').name,
-            program_group='tests',
+            program_groups='tests',
             use_legacy_defines=False,
             cxxflags=['-Wno-undef'],
         )
@@ -213,7 +217,7 @@ def ap_find_benchmarks(bld, use=[]):
             source=[f],
             use=use,
             program_name=f.change_ext('').name,
-            program_group='benchmarks',
+            program_groups='benchmarks',
             use_legacy_defines=False,
         )
 

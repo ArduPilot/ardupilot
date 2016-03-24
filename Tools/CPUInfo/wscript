@@ -4,5 +4,5 @@
 def build(bld):
     bld.ap_program(
         use='ap',
-        program_group='tools',
+        program_groups='tools',
     )
