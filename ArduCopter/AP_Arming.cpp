@@ -586,7 +586,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     control_mode_t control_mode = copter.control_mode;
 
     // always check if the current mode allows arming
-    if (!copter.mode_allows_arming(arming_from_gcs)) {
+    if (!copter.flightmode->allows_arming(arming_from_gcs)) {
         if (display_failure) {
             gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Mode not armable");
         }

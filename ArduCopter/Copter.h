@@ -805,7 +805,6 @@ private:
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
     bool mode_requires_GPS();
     bool mode_has_manual_throttle(control_mode_t mode);
-    bool mode_allows_arming(bool arming_from_gcs);
     void notify_flight_mode();
     void heli_init();
     void check_dynamic_flight(void);
