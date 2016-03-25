@@ -164,8 +164,10 @@ void Plane::read_radio()
 
     if(!failsafe.ch3_failsafe)
     {
-        failsafe.last_valid_rc_ms = millis();
+        failsafe.AFS_last_valid_rc_ms = millis();
     }
+
+    failsafe.last_valid_rc_ms = millis();
 
     elevon.ch1_temp = channel_roll->read();
     elevon.ch2_temp = channel_pitch->read();
