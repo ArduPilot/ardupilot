@@ -70,7 +70,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
     // @Param: YAW_SV_ANGLE
     // @DisplayName: Yaw Servo Max Lean Angle
     // @Description: Yaw servo's maximum lean angle
-    // @Range: 0 90
+    // @Range: 5 80
     // @Units: Degrees
     // @Increment: 1
     // @User: Standard
@@ -180,6 +180,9 @@ void AP_MotorsTri::output_armed_stabilizing()
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
     float   throttle_thrust_hover = get_hover_throttle_as_high_end_pct();   // throttle hover thrust value, 0.0 - 1.0
 
+    // sanity check YAW_SV_ANGLE parameter value to avoid divide by zero
+    _yaw_servo_angle_max_deg = constrain_float(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX);
+
     // apply voltage and air pressure compensation
     roll_thrust = _roll_in * get_compensation_gain();
     pitch_thrust = _pitch_in * get_compensation_gain();
@@ -276,7 +279,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     _thrust_rear = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_rear;
 
     // scale pivot thrust to account for pivot angle
-    // we should not need to check for divide by zero as _pivot_angle should always be much less than 90 degrees
+    // we should not need to check for divide by zero as _pivot_angle is constrained to the 5deg ~ 80 deg range
     _thrust_rear = _thrust_rear/cosf(_pivot_angle);
 
     // constrain all outputs to 0.0f to 1.0f
