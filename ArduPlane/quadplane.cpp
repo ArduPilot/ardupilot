@@ -837,7 +837,7 @@ void QuadPlane::update_transition(void)
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
         attitude_control->rate_controller_run();
-        motors->output();
+        motors_output();
         last_throttle = motors->get_throttle();
         break;
     }
@@ -856,7 +856,7 @@ void QuadPlane::update_transition(void)
         assisted_flight = true;
         hold_stabilize(throttle_scaled);
         attitude_control->rate_controller_run();
-        motors->output();
+        motors_output();
         break;
     }
 
@@ -889,7 +889,7 @@ void QuadPlane::update(void)
         attitude_control->rate_controller_run();
 
         // output to motors
-        motors->output();
+        motors_output();
         transition_start_ms = 0;
         if (throttle_wait && !plane.is_flying()) {
             transition_state = TRANSITION_DONE;
@@ -906,6 +906,15 @@ void QuadPlane::update(void)
          plane.failsafe.ch3_counter>0)) {
         throttle_wait = false;
     }
+}
+
+/*
+  output motors and do any copter needed
+ */
+void QuadPlane::motors_output(void)
+{
+    motors->output();
+    plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
 }
 
 /*
