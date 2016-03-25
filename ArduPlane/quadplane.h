@@ -56,7 +56,19 @@ public:
     uint8_t throttle_percentage(void) const {
         return last_throttle * 0.1f;
     }
-    
+
+    struct PACKED log_QControl_Tuning {
+        LOG_PACKET_HEADER;
+        uint64_t time_us;
+        int16_t  angle_boost;
+        float    throttle_out;
+        float    desired_alt;
+        float    inav_alt;
+        int32_t  baro_alt;
+        int16_t  desired_climb_rate;
+        int16_t  climb_rate;
+    };
+        
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
@@ -129,6 +141,7 @@ private:
 
     bool should_relax(void);
     void motors_output(void);
+    void Log_Write_QControl_Tuning();
     
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
