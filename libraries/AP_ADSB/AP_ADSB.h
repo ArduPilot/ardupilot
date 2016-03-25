@@ -37,7 +37,8 @@ public:
         ADSB_BEHAVIOR_NONE = 0,
         ADSB_BEHAVIOR_LOITER = 1,
         ADSB_BEHAVIOR_LOITER_AND_DESCEND = 2,
-        ADSB_BEHAVIOR_GUIDED = 3
+        ADSB_BEHAVIOR_GUIDED = 3,
+        ADSB_BEHAVIOR_LAND = 4
     };
 
     enum ADSB_THREAT_LEVEL {
@@ -70,6 +71,8 @@ public:
 
     bool get_possible_threat()  { return _enabled && _another_vehicle_within_radius; }
 
+    void set_enabled(uint8_t enabled )  { _enabled.set(enabled); }
+    void set_behavior(ADSB_BEHAVIOR behavior )  { _behavior.set(behavior); }
     ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(_behavior.get()); }
     bool get_is_evading_threat()  { return _enabled && _is_evading_threat; }
     void set_is_evading_threat(bool is_evading) { if (_enabled) { _is_evading_threat = is_evading; } }
