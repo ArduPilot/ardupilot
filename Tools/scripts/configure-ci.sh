@@ -41,14 +41,14 @@ pushd $HOME/opt
 # PX4 toolchain
 compiler=$ARM_ROOT
 if [ ! -d "$HOME/opt/$compiler" ]; then
-  wget http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL
+  wget http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL
   tar -xf $ARM_TARBALL
 fi
 
 # RPi/BBB toolchain
 compiler="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
 if [ ! -d "$HOME/opt/$compiler" ]; then
-  wget http://firmware.diydrones.com/Tools/Travis/NavIO/$RPI_TARBALL
+  wget http://firmware.ardupilot.org/Tools/Travis/NavIO/$RPI_TARBALL
   tar -xf $RPI_TARBALL
 fi
 
