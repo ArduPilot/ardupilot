@@ -248,16 +248,19 @@ private:
     float _STEdotErrLast;
 
     // Underspeed condition
-    bool _underspeed;
+    bool _underspeed:1;
 
     // Bad descent condition caused by unachievable airspeed demand
-    bool _badDescent;
+    bool _badDescent:1;
+
+    // true when plane is in auto mode and executing a land mission item
+    bool _is_doing_auto_land:1;
+
+    // time when underspeed started
+    uint32_t _underspeed_start_ms;
 
     // auto mode flightstage
     enum FlightStage _flight_stage;
-
-    // true when plane is in auto mode and executing a land mission item
-    bool _is_doing_auto_land;
 
     // pitch demand before limiting
     float _pitch_dem_unc;

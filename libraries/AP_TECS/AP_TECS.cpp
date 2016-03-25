@@ -524,6 +524,15 @@ void AP_TECS::_update_height_demand(void)
 
 void AP_TECS::_detect_underspeed(void)
 {
+    // see if we can clear a previous underspeed condition. We clear
+    // it if we are now more than 15% above min speed, and haven't
+    // been below min speed for at least 3 seconds.
+    if (_underspeed &&
+        _integ5_state >= _TASmin * 1.15f &&
+        AP_HAL::millis() - _underspeed_start_ms > 3000U) {
+        _underspeed = false;
+    }
+
     if (_flight_stage == AP_TECS::FLIGHT_VTOL) {
         _underspeed = false;
     } else if (((_integ5_state < _TASmin * 0.9f) &&
@@ -532,6 +541,10 @@ void AP_TECS::_detect_underspeed(void)
             ((_height < _hgt_dem_adj) && _underspeed))
     {
         _underspeed = true;
+        if (_integ5_state < _TASmin * 0.9f) {
+            // reset start time as we are still underspeed
+            _underspeed_start_ms = AP_HAL::millis();
+        }
     }
     else
     {
