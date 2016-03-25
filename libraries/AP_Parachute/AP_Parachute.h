@@ -84,7 +84,7 @@ private:
     AP_Int16    _servo_off_pwm; // PWM value to move servo to when shutter is deactivated
     AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    AP_Int16    _auto_enabled;  // 1 if automatic emergency parachute release is enabled
+    AP_Int8     _auto_enabled;  // 1 if automatic emergency parachute release is enabled
     AP_Int16    _auto_error;    // altitude error in metres at which to deploy parachute automatically (if enabled)
 #endif
 
