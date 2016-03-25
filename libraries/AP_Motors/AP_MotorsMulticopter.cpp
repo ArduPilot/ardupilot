@@ -207,7 +207,7 @@ float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) co
 {
     float throttle_ratio = thrust;
     // apply thrust curve - domain 0.0 to 1.0, range 0.0 to 1.0
-    if (_thrust_curve_expo > 0.0f){
+    if (_thrust_curve_expo > 0.0f && !is_zero(_batt_voltage_filt.get())){
         throttle_ratio = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*thrust))/(2.0f*_thrust_curve_expo*_batt_voltage_filt.get());
     }
 
@@ -336,7 +336,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = true;
 
             // make sure the motors are spooling in the correct direction
-            if(_spool_desired != DESIRED_SHUT_DOWN){
+            if (_spool_desired != DESIRED_SHUT_DOWN) {
                 _multicopter_flags.spool_mode = SPIN_WHEN_ARMED;
                 break;
             }
@@ -348,9 +348,9 @@ void AP_MotorsMulticopter::output_logic()
             _throttle_rpy_mix_desired = 0.0f;
             break;
 
-        case SPIN_WHEN_ARMED:{
+        case SPIN_WHEN_ARMED: {
             // Motors should be stationary or at spin when armed.
-            // Servoes should be moving to correct the current attitude.
+            // Servos should be moving to correct the current attitude.
 
             // set limits flags
             limit.roll_pitch = true;
@@ -397,7 +397,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = false;
 
             // make sure the motors are spooling in the correct direction
-            if(_spool_desired != DESIRED_THROTTLE_UNLIMITED ){
+            if (_spool_desired != DESIRED_THROTTLE_UNLIMITED ){
                 _multicopter_flags.spool_mode = SPOOL_DOWN;
                 break;
             }
@@ -428,7 +428,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = false;
 
             // make sure the motors are spooling in the correct direction
-            if(_spool_desired != DESIRED_THROTTLE_UNLIMITED ){
+            if (_spool_desired != DESIRED_THROTTLE_UNLIMITED) {
                 _multicopter_flags.spool_mode = SPOOL_DOWN;
                 break;
             }
@@ -450,7 +450,7 @@ void AP_MotorsMulticopter::output_logic()
             limit.throttle_upper = false;
 
             // make sure the motors are spooling in the correct direction
-            if(_spool_desired == DESIRED_THROTTLE_UNLIMITED ){
+            if (_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
                 _multicopter_flags.spool_mode = SPOOL_UP;
                 break;
             }
