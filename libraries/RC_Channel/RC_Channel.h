@@ -140,6 +140,10 @@ public:
 
     static RC_Channel *rc_channel(uint8_t i);
 
+    static RC_Channel **rc_channel_array(void) {
+        return rc_ch;
+    }
+    
     bool in_trim_dz();
 
 private:
