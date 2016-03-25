@@ -360,25 +360,30 @@ void AP_MotorsMulticopter::output_logic()
 
             // set and increment ramp variables
             float spool_step = 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
-            if(_spool_desired == DESIRED_SHUT_DOWN){
+            if (_spool_desired == DESIRED_SHUT_DOWN){
                 _throttle_low_end_pct -= spool_step;
-            } else if(_spool_desired == DESIRED_THROTTLE_UNLIMITED ){
+                // constrain ramp value and update mode
+                if (_throttle_low_end_pct <= 0.0f) {
+                    _throttle_low_end_pct = 0.0f;
+                    _multicopter_flags.spool_mode = SHUT_DOWN;
+                }
+            } else if(_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
                 _throttle_low_end_pct += spool_step;
-            }else{
-                _throttle_low_end_pct += constrain_float(spin_when_armed_low_end_pct()-_throttle_low_end_pct, -spool_step, spool_step);
+                // constrain ramp value and update mode
+                if (_throttle_low_end_pct >= 1.0f) {
+                    _throttle_low_end_pct = 1.0f;
+                    _multicopter_flags.spool_mode = SPOOL_UP;
+                }
+            } else {    // _spool_desired == SPIN_WHEN_ARMED
+                float spin_when_armed_low_end_pct = 0.0f;
+                if (_min_throttle > 0) {
+                    spin_when_armed_low_end_pct = (float)_spin_when_armed / _min_throttle;
+                }
+                _throttle_low_end_pct += constrain_float(spin_when_armed_low_end_pct-_throttle_low_end_pct, -spool_step, spool_step);
             }
             _throttle_thrust_max = 0.0f;
             _throttle_rpy_mix = 0.0f;
             _throttle_rpy_mix_desired = 0.0f;
-
-            // constrain ramp value and update mode
-            if (_throttle_low_end_pct <= 0.0f) {
-                _throttle_low_end_pct = 0.0f;
-                _multicopter_flags.spool_mode = SHUT_DOWN;
-            } else if (_throttle_low_end_pct >= 1.0f) {
-                _throttle_low_end_pct = 1.0f;
-                _multicopter_flags.spool_mode = SPOOL_UP;
-            }
             break;
         }
         case SPOOL_UP:

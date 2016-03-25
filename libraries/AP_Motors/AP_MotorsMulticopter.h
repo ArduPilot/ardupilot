@@ -132,9 +132,6 @@ protected:
     // convert thrust (0~1) range back to pwm range
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
 
-    // spin when armed as a percentage of the 0~1 range from 0 to throttle_min
-    float               spin_when_armed_low_end_pct() { return (float)_spin_when_armed.get() / _min_throttle; }
-
     // flag bitmask
     struct {
         spool_up_down_mode     spool_mode       : 3;    // motor's current spool mode
