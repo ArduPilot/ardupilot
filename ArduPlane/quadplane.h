@@ -60,7 +60,7 @@ public:
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
-        int16_t  angle_boost;
+        float    angle_boost;
         float    throttle_out;
         float    desired_alt;
         float    inav_alt;
