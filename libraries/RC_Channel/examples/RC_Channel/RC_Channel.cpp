@@ -26,8 +26,9 @@ static RC_Channel rc_5(CH_5);
 static RC_Channel rc_6(CH_6);
 static RC_Channel rc_7(CH_7);
 static RC_Channel rc_8(CH_8);
-static RC_Channel *rc = &rc_1;
+static RC_Channel rc = rc_1;
 
+static RC_Channel get_chan(int8_t i);
 static void print_pwm(void);
 static void print_radio_values();
 static void copy_input_output(void);
@@ -41,28 +42,30 @@ void setup()
 
     // set type of output, symmetrical angles or a number range;
     rc_1.set_angle(4500);
-    rc_1.set_default_dead_zone(80);
+    rc_1.set_default_dead_zone(20);
     rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     rc_2.set_angle(4500);
-    rc_2.set_default_dead_zone(80);
+    rc_2.set_default_dead_zone(20);
     rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     rc_3.set_range(0,1000);
     rc_3.set_default_dead_zone(20);
 
     rc_4.set_angle(6000);
-    rc_4.set_default_dead_zone(500);
+    rc_4.set_default_dead_zone(20);
     rc_4.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     rc_5.set_range(0,1000);
-    rc_6.set_range(200,800);
+    rc_6.set_range(0,800);
 
     rc_7.set_range(0,1000);
 
     rc_8.set_range(0,1000);
     for (int i=0; i<NUM_CHANNELS; i++) {
-        rc[i].enable_out();
+        rc = get_chan(i);
+        rc.enable_out();
+        hal.console->println((int)rc.control_in);
     }
 }
 
@@ -76,10 +79,17 @@ void loop()
     hal.scheduler->delay(20);
 }
 
+static RC_Channel get_chan(int8_t i)
+{
+    rc = *RC_Channel::rc_channel(i);
+    return rc;
+}
+
 static void print_pwm(void)
 {
     for (int i=0; i<NUM_CHANNELS; i++) {
-	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc[i].control_in);
+        rc = get_chan(i);
+	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc.control_in);
     }
     hal.console->printf("\n");
 }
@@ -88,10 +98,11 @@ static void print_pwm(void)
 static void print_radio_values()
 {
     for (int i=0; i<NUM_CHANNELS; i++) {
+         rc = get_chan(i);
 	     hal.console->printf("CH%u: %u|%u\n",
 			  (unsigned)i+1, 
-			  (unsigned)rc[i].radio_min, 
-			  (unsigned)rc[i].radio_max); 
+			  (unsigned)rc.radio_min, 
+			  (unsigned)rc.radio_max); 
     }
 }
 
@@ -102,9 +113,10 @@ static void print_radio_values()
 static void copy_input_output(void)
 {
     for (int i=0; i<NUM_CHANNELS; i++) {
-        rc[i].servo_out = rc[i].control_in;
-        rc[i].calc_pwm();
-        rc[i].output();
+        rc = get_chan(i);
+        rc.servo_out = rc.control_in;
+        rc.calc_pwm();
+        rc.output();
     }
 }
 
