@@ -375,7 +375,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         last_pwm_output[i] = pwm_output[i];
     }
 
-    float engine_mul = _sitl?_sitl->engine_mul:1;
+    float engine_mul = _sitl?_sitl->engine_mul.get():1;
     bool motors_on = false;
     
     if (_vehicle == ArduPlane) {
