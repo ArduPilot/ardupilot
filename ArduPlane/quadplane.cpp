@@ -389,7 +389,7 @@ void QuadPlane::hold_stabilize(float throttle_in)
 // quadplane stabilize mode
 void QuadPlane::control_stabilize(void)
 {
-    int16_t pilot_throttle_scaled = plane.channel_throttle->control_in * 10;
+    float pilot_throttle_scaled = plane.channel_throttle->control_in / 100.0f;
     hold_stabilize(pilot_throttle_scaled);
 
 }
