@@ -5,7 +5,9 @@
 
 set -ex
 
-. ~/.profile
+if [ `uname -s` != "Darwin" ]; then
+  . ~/.profile
+fi
 
 # CXX and CC are exported by default by travis
 c_compiler=${CC:-gcc}
