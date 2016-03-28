@@ -1,12 +1,4 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#include "Copter.h"
-
-/*
-
- * control_recovery.pde - init and run calls for attitude re-initialization flight mode
-
- */
  
  /*
    This program is free software: you can redistribute it and/or modify
@@ -19,6 +11,14 @@
    GNU General Public License for more details.
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "Copter.h"
+
+/*
+
+ * control_recovery.pde - init and run calls for attitude re-initialization flight mode
+
  */
 
 
