@@ -114,14 +114,16 @@ static void run_test()
         // read samples from ins
         ins.update();
 
-        for (uint8_t ii = 0; ii<ins_count; ii++)
+        if (counter++ % 50 == 0)
         {
-            accel = ins.get_accel(ii);
-            gyro = ins.get_gyro(ii);
+            // print each accel/gyro result every 50 cycles
+            for (uint8_t ii = 0; ii<ins_count; ii++)
+            {
+                accel = ins.get_accel(ii);
+                gyro = ins.get_gyro(ii);
 
-            length = accel.length();
+                length = accel.length();
 
-            if (counter++ % 50 == 0) {
                 // display results
                 hal.console->printf("%u - Accel X:%6.2f Y:%6.2f Z:%6.2f norm:%5.2f    Gyro X:%6.2f Y:%6.2f Z:%6.2f\n",
                         ii, accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
