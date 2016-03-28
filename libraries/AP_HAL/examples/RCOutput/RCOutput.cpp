@@ -6,9 +6,13 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+#define RC_SPEED 50
+
 void setup (void) 
 {
     hal.console->println("Starting AP_HAL::RCOutput test");
+    hal.rcout->set_freq(0xFF, RC_SPEED);   // Set RC Speed
+
     for (uint8_t i=0; i<14; i++) {
         hal.rcout->enable_ch(i);
     }
@@ -31,7 +35,7 @@ void loop (void)
             hal.console->printf("reversing\n");
         }
     }
-    hal.scheduler->delay(5);
+    hal.scheduler->delay(10);
 }
 
 AP_HAL_MAIN();
