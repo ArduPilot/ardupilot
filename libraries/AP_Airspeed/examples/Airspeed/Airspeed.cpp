@@ -27,6 +27,8 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_Vehicle::FixedWing aparm;
 
+float temperature;
+
 AP_Airspeed airspeed(aparm);
 
 void setup()
@@ -47,7 +49,9 @@ void loop(void)
     if((AP_HAL::millis() - timer) > 100) {
         timer = AP_HAL::millis();
         airspeed.read();
-        hal.console->printf("airspeed %.2f healthy=%u\n", airspeed.get_airspeed(), airspeed.healthy());
+        airspeed.get_temperature(temperature);
+
+        hal.console->printf("airspeed %5.2f temperature %6.2f healthy = %u\n", airspeed.get_airspeed(), temperature, airspeed.healthy());
     }
     hal.scheduler->delay(1);
 }
