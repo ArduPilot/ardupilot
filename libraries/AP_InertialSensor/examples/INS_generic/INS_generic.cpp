@@ -25,7 +25,7 @@ void setup(void)
     display_offsets_and_scaling();
 
     // display number of detected accels/gyros
-    hal.console->printf("Number of detected IMUs : %d\n\n",ins.get_count());
+    hal.console->printf("\nNumber of detected IMUs : %d\n\n",ins.get_count());
 
     hal.console->println("Complete. Reading:");
 }
@@ -95,6 +95,7 @@ static void run_test()
     Vector3f gyro;
     float length;
 	uint8_t counter = 0;
+	uint8_t ins_count = ins.get_count();
 
     // flush any user input
     while( hal.console->available() ) {
@@ -112,16 +113,20 @@ static void run_test()
 
         // read samples from ins
         ins.update();
-        accel = ins.get_accel();
-        gyro = ins.get_gyro();
 
-        length = accel.length();
+        for (uint8_t ii = 0; ii<ins_count; ii++)
+        {
+            accel = ins.get_accel(ii);
+            gyro = ins.get_gyro(ii);
 
-		if (counter++ % 50 == 0) {
-			// display results
-			hal.console->printf("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n", 
-								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
-		}
+            length = accel.length();
+
+            if (counter++ % 50 == 0) {
+                // display results
+                hal.console->printf("%u - Accel X:%5.2f Y:%5.2f Z:%5.2f norm:%4.2f    Gyro X:%5.2f Y:%5.2f Z:%5.2f\n",
+                        ii, accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
+            }
+        }
     }
 
     // clear user input
