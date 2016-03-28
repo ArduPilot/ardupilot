@@ -23,6 +23,10 @@ void setup(void)
 
     // display initial values
     display_offsets_and_scaling();
+
+    // display number of detected accels/gyros
+    hal.console->printf("Number of detected IMUs : %d\n\n",ins.get_count());
+
     hal.console->println("Complete. Reading:");
 }
 

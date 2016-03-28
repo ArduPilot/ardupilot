@@ -114,6 +114,9 @@ public:
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
     const Vector3f     &get_accel(void) const { return get_accel(_primary_accel); }
 
+    // return the number of accel/gyro instances.  Assume n_accel = n_gyro.
+    uint8_t get_count(void) const { return _accel_count; }
+
     uint32_t get_gyro_error_count(uint8_t i) const { return _gyro_error_count[i]; }
     uint32_t get_accel_error_count(uint8_t i) const { return _accel_error_count[i]; }
 
