@@ -417,8 +417,13 @@ private:
 
     //save accelerometer bias and scale factors
     void _acal_save_calibrations();
+    void _acal_event_start();
     void _acal_event_success();
     void _acal_event_failure();
+
+    // gyro calibration functionality
+    Vector3f _acal_delta_ang_sum[INS_MAX_INSTANCES];
+    float _acal_time_sum[INS_MAX_INSTANCES];
 
     // Returns AccelCalibrator objects pointer for specified acceleromter
     AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):NULL; }

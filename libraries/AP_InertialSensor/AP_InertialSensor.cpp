@@ -1419,6 +1419,21 @@ void AP_InertialSensor::_acal_save_calibrations()
         _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers
     }
 
+    // save accumulated gyro biases
+    for (uint8_t i=0; i<_gyro_count; i++) {
+        if (_accel_calibrator[i].get_status() == ACCEL_CAL_SUCCESS && !is_zero(_acal_time_sum[i])) {
+            _gyro_offset[i].set_and_save(_acal_delta_ang_sum[i]/_acal_time_sum[i]);
+        }
+    }
+}
+
+void AP_InertialSensor::_acal_event_start()
+{
+    // reset gyro calibration state
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        _acal_delta_ang_sum[i].zero();
+        _acal_time_sum[i] = 0;
+    }
 }
 
 void AP_InertialSensor::_acal_event_success()
