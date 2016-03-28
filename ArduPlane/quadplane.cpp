@@ -19,7 +19,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Group: ATC_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
-    AP_SUBGROUPPTR(attitude_control,  "A_", 9, QuadPlane, AC_AttitudeControl),
+    AP_SUBGROUPPTR(attitude_control,  "A_", 9, QuadPlane, AC_AttitudeControl_Multi),
 
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
