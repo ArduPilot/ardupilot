@@ -515,6 +515,9 @@ private:
         // debounce timer
         uint32_t debounce_timer_ms;
 
+        // delay time for debounce to count to
+        uint32_t debounce_time_total_ms;
+
         // length of time impact_detected has been true. Times out after a few seconds. Used to clip isFlyingProbability
         uint32_t impact_timer_ms;
     } crash_state;
