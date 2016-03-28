@@ -123,7 +123,7 @@ static void run_test()
 
             if (counter++ % 50 == 0) {
                 // display results
-                hal.console->printf("%u - Accel X:%5.2f Y:%5.2f Z:%5.2f norm:%4.2f    Gyro X:%5.2f Y:%5.2f Z:%5.2f\n",
+                hal.console->printf("%u - Accel X:%6.2f Y:%6.2f Z:%6.2f norm:%4.2f    Gyro X:%6.2f Y:%6.2f Z:%6.2f\n",
                         ii, accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
             }
         }
