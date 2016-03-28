@@ -345,6 +345,7 @@ class px4(Board):
             '-Wno-error=float-equal',
             '-Wno-error=undef',
             '-Wno-error=cpp',
+            '-Wno-error=unknown-pragmas',
         ]
         env.AP_LIBRARIES += [
             'AP_HAL_PX4',
