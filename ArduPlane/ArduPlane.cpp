@@ -884,7 +884,7 @@ void Plane::update_alt()
                                                  fs,
                                                  is_doing_auto_land,
                                                  distance_beyond_land_wp,
-                                                 auto_state.takeoff_pitch_cd,
+                                                 get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
                                                  aerodynamic_load_factor);

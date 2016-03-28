@@ -2,6 +2,8 @@
 
 #include "Plane.h"
 
+#define TAKEOFF_PITCH_LIMIT_REDUCTION_SEC       1.0f
+
 /*   Check for automatic takeoff conditions being met using the following sequence:
  *   1) Check for adequate GPS lock - if not return false
  *   2) Check the gravity compensated longitudinal acceleration against the threshold and start the timer if true
@@ -132,15 +134,47 @@ void Plane::takeoff_calc_pitch(void)
         return;
     }
 
+    int16_t takeoff_pitch_min_cd = get_takeoff_pitch_min_cd();
     if (ahrs.airspeed_sensor_enabled()) {
         calc_nav_pitch();
-        if (nav_pitch_cd < auto_state.takeoff_pitch_cd) {
-            nav_pitch_cd = auto_state.takeoff_pitch_cd;
+        if (nav_pitch_cd < takeoff_pitch_min_cd) {
+            nav_pitch_cd = takeoff_pitch_min_cd;
         }
     } else {
-        nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
-        nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
+        nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * takeoff_pitch_min_cd;
+        nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_min_cd);
     }
+}
+
+/*
+ * get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
+ */
+int16_t Plane::get_takeoff_pitch_min_cd(void)
+{
+    if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+        return auto_state.takeoff_pitch_cd;
+    }
+
+    int32_t relative_alt_cm = adjusted_relative_altitude_cm();
+    int32_t remaining_height_to_target_cm = (auto_state.takeoff_altitude_rel_cm - relative_alt_cm);
+
+    // seconds to target alt method
+    // if height-below-target has been initialized then use it to create and apply a scaler to the pitch_min
+    if (auto_state.height_below_takeoff_to_level_off_cm != 0) {
+        float scalar = remaining_height_to_target_cm / (float)auto_state.height_below_takeoff_to_level_off_cm;
+        return auto_state.takeoff_pitch_cd * scalar;
+    }
+
+    // are we entering the region where we want to start leveling off before we reach takeoff alt?
+    float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
+    if (sec_to_target > 0 &&
+        relative_alt_cm >= 1000 &&
+        sec_to_target <= TAKEOFF_PITCH_LIMIT_REDUCTION_SEC) {
+        // make a note of that altitude to use it as a start height for scaling
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", remaining_height_to_target_cm/100);
+        auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
+    }
+    return auto_state.takeoff_pitch_cd;
 }
 
 /*
