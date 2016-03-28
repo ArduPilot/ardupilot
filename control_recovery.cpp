@@ -188,7 +188,7 @@ void Copter::recovery_run()
 
       if (position_ok() && mission.num_commands() > 1) {             
       
-      gcs_send_text_P(SEVERITY_HIGH,PSTR("Auto Mode Engaged"));
+      //gcs_send_text_P(SEVERITY_HIGH,PSTR("Auto Mode Engaged"));
       
       set_mode(AUTO);
 
@@ -201,7 +201,7 @@ void Copter::recovery_run()
         const Vector3f& curr_pos = inertial_nav.get_position();
         pos_control.set_pos_target(curr_pos);
         
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("Stabilize Mode Engaged"));  
+        //gcs_send_text_P(SEVERITY_HIGH,PSTR("Stabilize Mode Engaged"));  
         
         attitude_control.set_throttle_out(500, false, g.throttle_filt);
         
