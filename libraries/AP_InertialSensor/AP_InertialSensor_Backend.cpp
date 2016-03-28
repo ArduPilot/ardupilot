@@ -56,6 +56,20 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
     _imu._delta_angle_dt[instance] = _imu._delta_angle_acc_dt[instance];
     _imu._delta_angle_valid[instance] = true;
+
+    // gyro calibration
+    if (_imu._accel_calibrator != NULL && _imu._accel_calibrator[instance].get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
+        Vector3f cal_sample = _imu._delta_angle[instance];
+
+        //remove rotation
+        cal_sample.rotate_inverse(_imu._board_orientation);
+
+        // remove offsets
+        cal_sample += _imu._gyro_offset[instance].get() * _imu._delta_angle_dt[instance];
+
+        _imu._acal_delta_ang_sum[instance] += cal_sample;
+        _imu._acal_time_sum[instance] += _imu._delta_angle_dt[instance];
+    }
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
