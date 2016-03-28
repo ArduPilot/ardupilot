@@ -56,7 +56,7 @@ CXXFLAGS       +=   -std=gnu++11 $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(MISS
 CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS) $(DEFINES) $(DSP_FLAGS)
 
 ARM_INC=-I$(HEXAGON_SDK_ROOT)/lib/common/remote/ship/UbuntuARM_Debug -I$(SKETCHBOOK)/libraries/
-ARM_WARN=-Wno-unused-parameter
+ARM_WARN=-Wno-unused-parameter -Wno-unknown-pragmas
 ARM_CFLAGS=$(ARM_WARN) -fPIC -mword-relocations -mthumb-interwork -mfloat-abi=hard -mfpu=neon -mtune=cortex-a8 -march=armv7-a -g -O0 -fno-strict-aliasing -DARM_ARCH_7A -DUSE_SYSLOG $(ARM_INC) -I$(HEXAGON_SDK_ROOT)/inc/stddef -DCONFIG_HAL_BOARD=HAL_BOARD_LINUX -DCONFIG_HAL_BOARD_SUBTYPE=HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 
 ifeq ($(VERBOSE),)
