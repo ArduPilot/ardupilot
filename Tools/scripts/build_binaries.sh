@@ -54,7 +54,7 @@ checkout() {
 
         git checkout -f "$vtag2" && {
             echo "Using frame specific tag $vtag2"
-            [ -f $BASEDIR/.gitmodules ] && git submodule update
+            [ -f $BASEDIR/.gitmodules ] && git submodule update --recursive -f
             git log -1
             return 0
         }
@@ -65,14 +65,14 @@ checkout() {
 
     git checkout -f "$vtag2" && {
         echo "Using board specific tag $vtag2"
-        [ -f $BASEDIR/.gitmodules ] && git submodule update
+        [ -f $BASEDIR/.gitmodules ] && git submodule update --recursive -f
         git log -1
         return 0
     }
 
     git checkout -f "$vtag" && {
         echo "Using generic tag $vtag"
-        [ -f $BASEDIR/.gitmodules ] && git submodule update
+        [ -f $BASEDIR/.gitmodules ] && git submodule update --recursive -f
         git log -1
         return 0
     }
@@ -350,7 +350,7 @@ build_antennatracker() {
 
 [ -f .gitmodules ] && {
     git submodule init
-    git submodule update
+    git submodule update --recursive -f
 }
 
 export BUILDROOT="$TMPDIR/binaries.build"
