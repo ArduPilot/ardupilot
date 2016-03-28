@@ -19,7 +19,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         auto_state.land_pre_flare = false;
         auto_state.sink_rate = 0;
 
-        // set takeoff_complete to true so we don't add extra evevator
+        // set takeoff_complete to true so we don't add extra elevator
         // except in a takeoff
         auto_state.takeoff_complete = true;
 
