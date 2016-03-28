@@ -79,6 +79,7 @@ private:
 
     // events
     virtual void _acal_save_calibrations() = 0;
+    virtual void _acal_event_start() {};
     virtual void _acal_event_success() {};
     virtual void _acal_event_cancellation() {};
     virtual void _acal_event_failure() {};

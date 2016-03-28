@@ -170,6 +170,10 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
     _step = 0;
 
     update_status();
+
+    for(uint8_t i=0 ; i < _num_clients ; i++) {
+        _clients[i]->_acal_event_start();
+    }
 }
 
 void AP_AccelCal::success()
