@@ -23,6 +23,12 @@ void setup(void)
 
     // display initial values
     display_offsets_and_scaling();
+
+    // display number of detected accels/gyros
+    hal.console->printf("\n");
+    hal.console->printf("Number of detected accels : %d\n",ins.get_accel_count());
+    hal.console->printf("Number of detected gyros  : %d\n\n",ins.get_gyro_count());
+
     hal.console->println("Complete. Reading:");
 }
 
@@ -89,8 +95,12 @@ static void run_test()
 {
     Vector3f accel;
     Vector3f gyro;
-    float length;
 	uint8_t counter = 0;
+	static uint8_t accel_count = ins.get_accel_count();
+	static uint8_t gyro_count = ins.get_gyro_count();
+	static uint8_t ins_count;
+	char accel_state;
+	char gyro_state;
 
     // flush any user input
     while( hal.console->available() ) {
@@ -108,16 +118,47 @@ static void run_test()
 
         // read samples from ins
         ins.update();
-        accel = ins.get_accel();
-        gyro = ins.get_gyro();
 
-        length = accel.length();
+        // print each accel/gyro result every 50 cycles
+        if (counter++ % 50 == 0)
+        {
+            // determine how many sensors to print for
+            if (accel_count>gyro_count)
+            {
+                ins_count = accel_count;
+            }
+            else
+            {
+                ins_count = gyro_count;
+            }
 
-		if (counter++ % 50 == 0) {
-			// display results
-			hal.console->printf("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n", 
-								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
-		}
+            // loop and print each sensor
+            for (uint8_t ii = 0; ii<ins_count; ii++)
+            {
+                hal.console->printf("%u - ",ii);
+
+                // print accel
+                accel = ins.get_accel(ii);
+
+                if (ins.get_accel_health(ii)) { accel_state = 'h'; } // Healthy accel
+                else if (ii+1>accel_count) { accel_state = '-'; }    // No accel present
+                else { accel_state = 'x'; }                          // Accel present but not healthy
+
+                hal.console->printf("Accel (%c) : X:%6.2f Y:%6.2f Z:%6.2f norm:%5.2f",
+                                       accel_state, accel.x, accel.y, accel.z, accel.length());
+
+                // print gyro
+                gyro = ins.get_gyro(ii);
+
+                if (ins.get_gyro_health(ii)) { gyro_state = 'h'; } // Healthy gyro
+                else if (ii+1>gyro_count) { gyro_state = '-'; }    // No gyro present
+                else { gyro_state = 'x'; }                         // Gyro present but not healthy
+
+                hal.console->printf("   Gyro (%c) : X:%6.2f Y:%6.2f Z:%6.2f\n",
+                        gyro_state,gyro.x, gyro.y, gyro.z);
+
+            }
+        }
     }
 
     // clear user input
