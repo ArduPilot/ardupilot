@@ -347,10 +347,10 @@ void NavEKF2_core::getMagXYZ(Vector3f &magXYZ) const
 
 // return magnetometer offsets
 // return true if offsets are valid
-bool NavEKF2_core::getMagOffsets(Vector3f &magOffsets) const
+bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
     // compass offsets are valid if we have finalised magnetic field initialisation and magnetic field learning is not prohibited and primary compass is valid
-    if (firstMagYawInit && (frontend->_magCal != 2) && _ahrs->get_compass()->healthy(magSelectIndex)) {
+    if (mag_idx == magSelectIndex && firstMagYawInit && (frontend->_magCal != 2) && _ahrs->get_compass()->healthy(magSelectIndex)) {
         magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
         return true;
     } else {
