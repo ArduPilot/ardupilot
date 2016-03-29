@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.5f
 
 // maximum allowed gyro bias (rad/sec)
-#define GYRO_BIAS_LIMIT 0.349066f
+#define GYRO_BIAS_LIMIT 0.5f
 
 // constructor
 NavEKF2_core::NavEKF2_core(void) :
