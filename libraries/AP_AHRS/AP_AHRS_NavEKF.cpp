@@ -34,7 +34,7 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gp
     AP_AHRS_DCM(ins, baro, gps),
     EKF1(_EKF1),
     EKF2(_EKF2),
-    _flags(flags)
+    _ekf_flags(flags)
 {
     _dcm_matrix.identity();
 }
@@ -713,9 +713,15 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
 #endif
     }
 
+    /*
+      fixed wing and rover when in fly_forward mode will fall back to
+      DCM if the EKF doesn't have GPS. This is the safest option as
+      DCM is very robust
+     */
     if (ret != EKF_TYPE_NONE &&
-            (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-             _vehicle_class == AHRS_VEHICLE_GROUND)) {
+        (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
+         _vehicle_class == AHRS_VEHICLE_GROUND) &&
+        _flags.fly_forward) {
         nav_filter_status filt_state;
         if (ret == EKF_TYPE1) {
             EKF1.getFilterStatus(filt_state);

@@ -36,7 +36,7 @@
 #include "RCOutput_qflight.h"
 #include "Semaphores.h"
 #include "Scheduler.h"
-#include "ToneAlarmDriver.h"
+#include "ToneAlarm.h"
 #include "Util.h"
 #include "Util_RPI.h"
 #include "Heat.h"

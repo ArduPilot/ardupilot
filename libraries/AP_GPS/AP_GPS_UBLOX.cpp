@@ -1177,3 +1177,13 @@ AP_GPS_UBLOX::_configure_rate(void)
     msg.timeref         = 0;     // UTC time
     _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
 }
+
+void
+AP_GPS_UBLOX::inject_data(uint8_t *data, uint8_t len)
+{
+    if (port->txspace() > len) {
+        port->write(data, len);
+    } else {
+        Debug("UBX: Not enough TXSPACE");
+    }
+}

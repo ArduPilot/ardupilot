@@ -223,7 +223,7 @@ I2CDeviceManager::I2CDeviceManager()
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
 I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address)
 {
-    const char *dirname = "/sys/class/i2c-dev";
+    const char *dirname = "/sys/class/i2c-dev/";
     struct dirent *de = nullptr;
     DIR *d;
 
@@ -245,7 +245,7 @@ I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address
         }
 
         abs_str_device = realpath(str_device, nullptr);
-        if (!abs_str_device || !(p = startswith(abs_str_device, "/sys"))) {
+        if (!abs_str_device || !(p = startswith(abs_str_device, "/sys/devices/"))) {
             free(abs_str_device);
             free(str_device);
             continue;

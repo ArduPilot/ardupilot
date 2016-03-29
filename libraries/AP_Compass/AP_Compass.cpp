@@ -1,7 +1,16 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
-#include "Compass.h"
 #include <AP_Vehicle/AP_Vehicle.h>
+
+#include "AP_Compass_AK8963.h"
+#include "AP_Compass_Backend.h"
+#include "AP_Compass_HIL.h"
+#include "AP_Compass_HMC5843.h"
+#include "AP_Compass_LSM303D.h"
+#include "AP_Compass_PX4.h"
+#include "AP_Compass_QURT.h"
+#include "AP_Compass_qflight.h"
+#include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
 
@@ -346,7 +355,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, 8.0f),
-    
+
     AP_GROUPEND
 };
 
@@ -424,45 +433,39 @@ void Compass::_detect_backends(void)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c));
-    _add_backend(AP_Compass_LSM303D::detect_spi(*this));
+#if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
+    _add_backend(AP_Compass_HIL::detect(*this));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
+    _add_backend(AP_Compass_PX4::detect(*this));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
+    _add_backend(AP_Compass_QURT::detect(*this));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_RASPILOT
+    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
+    _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device("lsm9ds0_am")));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BH
     // detect_mpu9250() failed will cause panic if no actual mpu9250 backend,
     // in BH, only one compass should be detected
-    AP_Compass_Backend *backend = AP_Compass_HMC5843::detect_i2c(*this, hal.i2c);
+    AP_Compass_Backend *backend = AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR));
     if (backend) {
         _add_backend(backend);
     } else {
-        _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
+        _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
     }
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && \
-      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && \
-      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_BEBOP && \
-      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_QFLIGHT && \
-      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MINLURE
-    _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c));
-    _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
-    _add_backend(AP_Compass_HIL::detect(*this));
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
-    _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c));
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843_MPU6000
-    _add_backend(AP_Compass_HMC5843::detect_mpu6000(*this));
-#elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C && HAL_INS_AK8963_I2C_BUS == 1
-    _add_backend(AP_Compass_AK8963::detect_i2c(*this, hal.i2c1,
-                                               HAL_COMPASS_AK8963_I2C_ADDR));
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250_I2C
-    _add_backend(AP_Compass_AK8963::detect_mpu9250_i2c(*this, HAL_COMPASS_AK8963_I2C_POINTER,
-                                                       HAL_COMPASS_AK8963_I2C_ADDR));
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
-    _add_backend(AP_Compass_PX4::detect(*this));
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
-    _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QFLIGHT
     _add_backend(AP_Compass_QFLIGHT::detect(*this));
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
-    _add_backend(AP_Compass_QURT::detect(*this));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
+    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
+    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843_MPU6000
+    _add_backend(AP_Compass_HMC5843::probe_mpu6000(*this));
+#elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C
+    _add_backend(AP_Compass_AK8963::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250_I2C
+    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
+    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
+    _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
@@ -473,22 +476,22 @@ void Compass::_detect_backends(void)
     }
 }
 
-void 
+void
 Compass::accumulate(void)
-{    
+{
     for (uint8_t i=0; i< _backend_count; i++) {
         // call accumulate on each of the backend
         _backends[i]->accumulate();
     }
 }
 
-bool 
+bool
 Compass::read(void)
 {
     for (uint8_t i=0; i< _backend_count; i++) {
         // call read on each of the backend. This call updates field[i]
         _backends[i]->read();
-    }    
+    }
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
         _state[i].healthy = (AP_HAL::millis() - _state[i].last_update_ms < 500);
     }
@@ -623,12 +626,12 @@ Compass::get_declination() const
   calculate a compass heading given the attitude from DCM and the mag vector
  */
 float
-Compass::calculate_heading(const Matrix3f &dcm_matrix) const
+Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 {
     float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
-    const Vector3f &field = get_field();
+    const Vector3f &field = get_field(i);
 
     float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
@@ -741,7 +744,7 @@ void Compass::setHIL(uint8_t instance, const Vector3f &mag)
     _state[instance].last_update_usec = AP_HAL::micros();
 }
 
-const Vector3f& Compass::getHIL(uint8_t instance) const 
+const Vector3f& Compass::getHIL(uint8_t instance) const
 {
     return _hil.field[instance];
 }
@@ -751,7 +754,7 @@ void Compass::_setup_earth_field(void)
 {
     // assume a earth field strength of 400
     _hil.Bearth(400, 0, 0);
-    
+
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
     Matrix3f R;

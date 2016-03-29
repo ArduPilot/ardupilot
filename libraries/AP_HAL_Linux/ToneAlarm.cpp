@@ -2,7 +2,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include "ToneAlarmDriver.h"
+#include "ToneAlarm.h"
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -12,11 +13,6 @@
 #include <iostream>
 
 using namespace Linux;
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-#include "GPIO.h"
-#define RASPILOT_TONE_PIN RPI_GPIO_18
-#endif
 
 extern const AP_HAL::HAL& hal;
 static uint16_t notes[] = { 0,
@@ -55,16 +51,10 @@ ToneAlarm::ToneAlarm()
 bool ToneAlarm::init()
 {
     tune_num = 0;                    //play startup tune
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    hal.gpio->pinMode(RASPILOT_TONE_PIN, HAL_GPIO_ALT, 5);
-#else
     if((period_fd == -1) || (duty_fd == -1) || (run_fd == -1)){
         hal.console->printf("ToneAlarm: Error!! please check if PWM overlays are loaded correctly");
         return false;
     }
-#endif
-
     return true;
 }
 
@@ -80,11 +70,7 @@ bool ToneAlarm::is_tune_comp()
 
 void ToneAlarm::stop()
 {
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    hal.gpio->setPWMDuty(RASPILOT_TONE_PIN, 0);
-#else
     dprintf(run_fd,"0");
-#endif
 }
 
 bool ToneAlarm::play()
@@ -95,15 +81,10 @@ bool ToneAlarm::play()
         return true;
     }
     if(cur_note != 0){
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-        hal.gpio->setPWMPeriod(RASPILOT_TONE_PIN, 1000000/cur_note);
-        hal.gpio->setPWMDuty(RASPILOT_TONE_PIN, 50);
-#else
         dprintf(run_fd,"0");
         dprintf(period_fd,"%u",1000000000/cur_note);
         dprintf(duty_fd,"%u",500000000/cur_note);
         dprintf(run_fd,"1");
-#endif
         cur_note =0;
         prev_time = cur_time;
     }
@@ -128,7 +109,7 @@ bool ToneAlarm::set_note(){
     uint16_t scale,note,num =0;
     duration = 0;
 
-    while(isdigit(tune[tune_num][tune_pos])){                   //this is a safe while loop as it can't go further than 
+    while(isdigit(tune[tune_num][tune_pos])){                   //this is a safe while loop as it can't go further than
                                                                 //the length of the rtttl tone string
         num = (num * 10) + (tune[tune_num][tune_pos++] - '0');
     }
@@ -209,6 +190,7 @@ bool ToneAlarm::set_note(){
         cur_note = 0;
         return true;
     }
+
 }
 
 bool ToneAlarm::init_tune(){

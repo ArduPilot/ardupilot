@@ -1,5 +1,4 @@
-#ifndef __EEPROM_H
-#define __EEPROM_H
+#pragma once
 
 #define EEPROM_USES_16BIT_WORDS
 
@@ -95,5 +94,3 @@ private:
 };
 
 extern EEPROMClass EEPROM;
-
-#endif	/* __EEPROM_H */

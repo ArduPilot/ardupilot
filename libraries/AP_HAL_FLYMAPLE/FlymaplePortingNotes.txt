@@ -139,7 +139,7 @@ Flymaple)
 
 Now download ardupilot:
 cd ~
-git clone https://github.com/diydrones/ardupilot.git
+git clone https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
 
 edit config.mk to be something like:

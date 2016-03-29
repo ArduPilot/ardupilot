@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
-#include "Compass.h"
+#include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
 
 class AP_Compass_PX4 : public AP_Compass_Backend
@@ -17,7 +17,7 @@ public:
 
 private:
     uint8_t  _num_sensors;
-    
+
     uint8_t  _instance[COMPASS_MAX_INSTANCES];
     int      _mag_fd[COMPASS_MAX_INSTANCES];
     Vector3f _sum[COMPASS_MAX_INSTANCES];

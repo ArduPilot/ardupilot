@@ -20,9 +20,7 @@
   serial ports and provides helper functions so objects (like a gimbal) can
   find which serial port they should use
  */
-
-#ifndef _AP_SERIALMANAGER_
-#define _AP_SERIALMANAGER_
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
@@ -131,5 +129,3 @@ private:
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 };
-
-#endif // _AP_SERIALMANAGER_

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Compass.h"
+#include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
 
 class AP_Compass_QURT : public AP_Compass_Backend
@@ -18,7 +18,7 @@ public:
 
 private:
     void timer_update(void);
-    
+
     uint8_t  instance;
     Vector3f sum;
     uint32_t count;

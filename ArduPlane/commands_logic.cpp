@@ -19,7 +19,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         auto_state.land_pre_flare = false;
         auto_state.sink_rate = 0;
 
-        // set takeoff_complete to true so we don't add extra evevator
+        // set takeoff_complete to true so we don't add extra elevator
         // except in a takeoff
         auto_state.takeoff_complete = true;
 
@@ -619,7 +619,7 @@ bool Plane::verify_loiter_time()
     update_loiter(0);
 
     if (loiter.start_time_ms == 0) {
-        if (nav_controller->reached_loiter_target()) {
+        if (nav_controller->reached_loiter_target() && loiter.sum_cd > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
         }
@@ -649,7 +649,7 @@ bool Plane::verify_loiter_turns()
 
     if (condition_value != 0) {
         // primary goal, loiter time
-        if (loiter.sum_cd > loiter.total_cd) {
+        if (loiter.sum_cd > loiter.total_cd && loiter.sum_cd > 1) {
             // primary goal completed, initialize secondary heading goal
             condition_value = 0;
             result = verify_loiter_heading(true);
@@ -678,7 +678,7 @@ bool Plane::verify_loiter_to_alt()
     //has target altitude been reached?
     if (condition_value != 0) {
         // primary goal, loiter alt
-        if (labs(condition_value - current_loc.alt) < 500) {
+        if (labs(condition_value - current_loc.alt) < 500 && loiter.sum_cd > 1) {
             // primary goal completed, initialize secondary heading goal
             condition_value = 0;
             result = verify_loiter_heading(true);

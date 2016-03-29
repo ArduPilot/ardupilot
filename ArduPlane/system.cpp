@@ -461,6 +461,7 @@ void Plane::set_mode(enum FlightMode mode)
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
+    case QLAND:
         if (!quadplane.init_mode()) {
             control_mode = previous_mode;
         } else {
@@ -505,6 +506,7 @@ bool Plane::mavlink_set_mode(uint8_t mode)
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
+    case QLAND:
         set_mode((enum FlightMode)mode);
         return true;
     }
@@ -694,6 +696,18 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case GUIDED:
         port->print("Guided");
+        break;
+    case QSTABILIZE:
+        port->print("QStabilize");
+        break;
+    case QHOVER:
+        port->print("QHover");
+        break;
+    case QLOITER:
+        port->print("QLoiter");
+        break;
+    case QLAND:
+        port->print("QLand");
         break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);

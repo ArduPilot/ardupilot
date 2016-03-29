@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <stdio.h>
 #include <stdarg.h>
@@ -11,6 +12,7 @@
 
 extern const AP_HAL::HAL& hal;
 
+#include "ToneAlarm_Raspilot.h"
 #include "Util.h"
 #include "Heat_Pwm.h"
 
@@ -18,7 +20,11 @@ using namespace Linux;
 
 
 static int state;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+ToneAlarm_Raspilot Util::_toneAlarm;
+#else
 ToneAlarm Util::_toneAlarm;
+#endif
 
 void Util::init(int argc, char * const *argv) {
     saved_argc = argc;

@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#ifndef AP_RangeFinder_PX4_PWM_H
-#define AP_RangeFinder_PX4_PWM_H
+#pragma once
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
@@ -43,5 +41,3 @@ private:
     uint32_t _good_sample_count;
     float _last_sample_distance_cm;
 };
-
-#endif // AP_RangeFinder_PX4_PWM_H

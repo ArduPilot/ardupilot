@@ -1,5 +1,4 @@
-#ifndef __AP_RANGEFINDER_PRU_H__
-#define __AP_RANGEFINDER_PRU_H__
+#pragma once
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
@@ -33,4 +32,3 @@ public:
 private:
 
 };
-#endif  // __AP_RANGEFINDER_PRU_H__

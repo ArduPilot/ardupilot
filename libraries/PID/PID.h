@@ -2,9 +2,7 @@
 
 /// @file	PID.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
-
-#ifndef __PID_H__
-#define __PID_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -120,5 +118,3 @@ private:
     ///
     static const uint8_t        _fCut = 20;
 };
-
-#endif

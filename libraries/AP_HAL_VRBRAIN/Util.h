@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_VRBRAIN_UTIL_H__
-#define __AP_HAL_VRBRAIN_UTIL_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_VRBRAIN_Namespace.h"
@@ -27,5 +25,3 @@ public:
 private:
     int _safety_handle;
 };
-
-#endif // __AP_HAL_VRBRAIN_UTIL_H__

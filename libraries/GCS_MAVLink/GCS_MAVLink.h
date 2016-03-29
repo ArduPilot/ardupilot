@@ -2,9 +2,7 @@
 
 /// @file	GCS_MAVLink.h
 /// @brief	One size fits all header for MAVLink integration.
-
-#ifndef GCS_MAVLink_h
-#define GCS_MAVLink_h
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -94,5 +92,3 @@ uint8_t mav_var_type(enum ap_var_type t);
 uint8_t mavlink_get_message_crc(uint8_t msgid);
 
 #pragma GCC diagnostic pop
-
-#endif // GCS_MAVLink_h

@@ -12,8 +12,7 @@
  *   - accounts for the DO_JUMP command
  *
  */
-#ifndef AP_Mission_h
-#define AP_Mission_h
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -467,5 +466,3 @@ private:
     // last time that mission changed
     uint32_t _last_change_time_ms;
 };
-
-#endif

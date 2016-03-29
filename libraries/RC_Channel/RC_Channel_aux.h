@@ -3,9 +3,7 @@
 /// @file	RC_Channel_aux.h
 /// @brief	RC_Channel manager for auxiliary channels (5..8), with EEPROM-backed storage of constants.
 /// @author Amilcar Lucas
-
-#ifndef __RC_CHANNEL_AUX_H__
-#define __RC_CHANNEL_AUX_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "RC_Channel.h"
@@ -151,5 +149,3 @@ private:
 
     void aux_servo_function_setup(void);
 };
-
-#endif /* RC_CHANNEL_AUX_H_ */

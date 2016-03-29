@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsMulticopter.h
 /// @brief	Motor control class for Multicopters
-
-#ifndef __AP_MOTORS_MULTICOPTER_H__
-#define __AP_MOTORS_MULTICOPTER_H__
+#pragma once
 
 #include "AP_Motors_Class.h"
 
@@ -177,4 +175,3 @@ protected:
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
 };
-#endif  // __AP_MOTORS_MULTICOPTER_H__

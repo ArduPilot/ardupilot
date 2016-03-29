@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsHeli_Single.h
 /// @brief	Motor control class for traditional heli
-
-#ifndef __AP_MOTORS_HELI_SINGLE_H__
-#define __AP_MOTORS_HELI_SINGLE_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
@@ -186,5 +184,3 @@ protected:
 
     bool            _acro_tail = false;
 };
-
-#endif  // __AP_MOTORS_HELI_SINGLE_H__

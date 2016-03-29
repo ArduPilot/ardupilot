@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#ifndef AP_RPM_PX4_PWM_H
-#define AP_RPM_PX4_PWM_H
+#pragma once
 
 #include "AP_RPM.h"
 #include "RPM_Backend.h"
@@ -41,5 +39,3 @@ private:
 
     ModeFilterFloat_Size5 signal_quality_filter {3};
 };
-
-#endif // AP_RPM_PX4_PWM_H

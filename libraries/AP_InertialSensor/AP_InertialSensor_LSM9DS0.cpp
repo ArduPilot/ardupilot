@@ -24,6 +24,14 @@
 
 extern const AP_HAL::HAL &hal;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+#define LSM9DS0_DRY_X_PIN RPI_GPIO_17
+#define LSM9DS0_DRY_G_PIN RPI_GPIO_6
+#else
+#define LSM9DS0_DRY_X_PIN -1
+#define LSM9DS0_DRY_G_PIN -1
+#endif
+
 #define LSM9DS0_G_WHOAMI    0xD4
 #define LSM9DS0_XM_WHOAMI   0x49
 
@@ -388,11 +396,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel)
 {
-    int drdy_pin_num_a = -1, drdy_pin_num_g = -1;
-
     AP_InertialSensor_LSM9DS0 *sensor =
         new AP_InertialSensor_LSM9DS0(_imu, std::move(dev_gyro), std::move(dev_accel),
-                                      drdy_pin_num_a, drdy_pin_num_g);
+                                      LSM9DS0_DRY_X_PIN, LSM9DS0_DRY_G_PIN);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;
@@ -414,6 +420,8 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         if (_drdy_pin_a == nullptr) {
             AP_HAL::panic("LSM9DS0: null accel data-ready GPIO channel\n");
         }
+
+        _drdy_pin_a->mode(HAL_GPIO_INPUT);
     }
 
     if (_drdy_pin_num_g >= 0) {
@@ -421,6 +429,8 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         if (_drdy_pin_g == nullptr) {
             AP_HAL::panic("LSM9DS0: null gyro data-ready GPIO channel\n");
         }
+
+        _drdy_pin_g->mode(HAL_GPIO_INPUT);
     }
 
     hal.scheduler->suspend_timer_procs();
@@ -529,8 +539,37 @@ void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val)
     _dev_gyro->write_register(reg, val);
 }
 
+void AP_InertialSensor_LSM9DS0::_gyro_disable_i2c()
+{
+    uint8_t retries = 10;
+    while (retries--) {
+        // add retries
+        uint8_t a = _register_read_g(0x05);
+        _register_write_g(0x05, (0x20 | a));
+        if (_register_read_g(0x05) == (a | 0x20)) {
+            return;
+        }
+    }
+    AP_HAL::panic("LSM9DS0_G: Unable to disable I2C");
+}
+
+void AP_InertialSensor_LSM9DS0::_accel_disable_i2c()
+{
+    uint8_t a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0x10 | a));
+    a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0xF7 & a));
+    a = _register_read_xm(0x15);
+    _register_write_xm(0x15, (0x80 | a));
+    a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0xE7 & a));
+}
+
 void AP_InertialSensor_LSM9DS0::_gyro_init()
 {
+    _gyro_disable_i2c();
+    hal.scheduler->delay(1);
+
     _register_write_g(CTRL_REG1_G,
                       CTRL_REG1_G_DR_760Hz_BW_50Hz |
                       CTRL_REG1_G_PD |
@@ -560,6 +599,9 @@ void AP_InertialSensor_LSM9DS0::_gyro_init()
 
 void AP_InertialSensor_LSM9DS0::_accel_init()
 {
+    _accel_disable_i2c();
+    hal.scheduler->delay(1);
+
     _register_write_xm(CTRL_REG0_XM, 0x00);
     hal.scheduler->delay(1);
 
@@ -669,7 +711,7 @@ bool AP_InertialSensor_LSM9DS0::_gyro_data_ready()
         return _drdy_pin_g->read() != 0;
     }
 
-    uint8_t status = _register_read_xm(STATUS_REG_G);
+    uint8_t status = _register_read_g(STATUS_REG_G);
     return status & STATUS_REG_G_ZYXDA;
 }
 
@@ -704,6 +746,13 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     }
 
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    // LSM303D on RasPilot
+    // FIXME: wrong way to provide rotation per-board
+    gyro_data.rotate(ROTATION_YAW_90);
+#endif
+
     gyro_data *= _gyro_scale;
 
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);

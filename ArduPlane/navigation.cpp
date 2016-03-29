@@ -34,7 +34,10 @@ void Plane::loiter_angle_update(void)
 {
     int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
-    if (loiter.sum_cd == 0) {
+    if (loiter.sum_cd == 0 && !nav_controller->reached_loiter_target()) {
+        // we don't start summing until we are doing the real loiter
+        loiter_delta_cd = 0;
+    } else if (loiter.sum_cd == 0) {
         // use 1 cd for initial delta
         loiter_delta_cd = 1;
     } else {
@@ -152,7 +155,8 @@ void Plane::update_loiter(uint16_t radius)
     }
 
     if (loiter.start_time_ms == 0) {
-        if (nav_controller->reached_loiter_target()) {
+        if (nav_controller->reached_loiter_target() ||
+            auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
             if (control_mode == GUIDED) {
