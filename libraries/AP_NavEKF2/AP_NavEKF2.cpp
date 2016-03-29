@@ -12,102 +12,48 @@
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-// copter defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_BODY_PNOISE_DEFAULT 2.5E-02f
-#define MAG_EARTH_PNOISE_DEFAULT 2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
-#define MAG_GATE_DEFAULT        300
-#define MAG_CAL_DEFAULT         3
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
-#define CHECK_SCALER_DEFAULT    100
 
-#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
-// rover defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       2.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
-#define MAG_GATE_DEFAULT        300
-#define MAG_CAL_DEFAULT         2
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
-#define CHECK_SCALER_DEFAULT    100
+#define VELNE_NOISE_DEFAULT       0.5f
+#define VELD_NOISE_DEFAULT        0.7f
+#define POSNE_NOISE_DEFAULT       0.5f
+#define MAG_NOISE_DEFAULT         0.05f
+#define GYRO_PNOISE_DEFAULT       0.025f
+#define ACC_PNOISE_DEFAULT        0.25f
+#define ABIAS_PNOISE_DEFAULT      3.0E-05f
+#define MAG_BODY_PNOISE_DEFAULT   1.25E-03f
+#define MAG_EARTH_PNOISE_DEFAULT  2.5E-03f
+#define VEL_GATE_DEFAULT          300
+#define POS_GATE_DEFAULT          300
+#define GLITCH_RADIUS_DEFAULT     25
+#define FLOW_MEAS_DELAY           10
+#define FLOW_NOISE_DEFAULT        0.25f
+#define FLOW_GATE_DEFAULT         300
+#define GSCALE_PNOISE_DEFAULT     3.0E-04f
+#define CHECK_SCALER_DEFAULT      100
+
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+// rover-specfic defaults
+#define GBIAS_PNOISE_DEFAULT      1.75E-06f
+#define MAG_CAL_DEFAULT           2
+#define ALT_NOISE_DEFAULT         2.0f
+#define HGT_GATE_DEFAULT          300
+#define MAG_GATE_DEFAULT          300
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-// plane defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        400
-#define MAG_GATE_DEFAULT        200
-#define MAG_CAL_DEFAULT         0
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
-#define CHECK_SCALER_DEFAULT    150
+// plane-specific defaults
+#define GBIAS_PNOISE_DEFAULT      3.5E-06f
+#define MAG_CAL_DEFAULT           0
+#define ALT_NOISE_DEFAULT         1.0f
+#define HGT_GATE_DEFAULT          400
+#define MAG_GATE_DEFAULT          200
 
 #else
-// build type not specified, use copter defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    3.5E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
-#define MAG_GATE_DEFAULT        300
-#define MAG_CAL_DEFAULT         3
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
-#define CHECK_SCALER_DEFAULT    100
+// copter-specific defaults
+#define GBIAS_PNOISE_DEFAULT      1.75E-06f
+#define MAG_CAL_DEFAULT           3
+#define ALT_NOISE_DEFAULT         2.0f
+#define HGT_GATE_DEFAULT          300
+#define MAG_GATE_DEFAULT          300
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -430,20 +376,20 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: YAW_NOISE
     // @DisplayName: Magnetomeer yaw measurement noise (rad)
-    // @Description: This is the RMS value of noise in the magnetometer yaw measurement which is used instead of 3-axis magnetometer observations if magnetic field learning is disabled. Increasing it reduces the weighting on the yaw measurement.
+    // @Description: This is the RMS value of noise in the magnetometer yaw measurement which is used instead of 3-axis magnetometer observations if magnetic field learning is disabled. Increasing it reduces the weighting on the yaw measurement. This parameter is only used inflight.
     // @Range: 0.1 0.5
     // @Increment: 0.01
     // @User: Advanced
     // @Units: rad
-    AP_GROUPINFO("YAW_NOISE", 36, NavEKF2, _yawNoise, 0.25f),
+    AP_GROUPINFO("YAW_NOISE", 36, NavEKF2, _yawNoise, 0.3f),
 
     // @Param: YAW_GATE
     // @DisplayName: Magnetometer yaw measurement gate size
-    // @Description: This sets the percentage number of standard deviations applied to the magnetometer yaw measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Description: This sets the percentage number of standard deviations applied to the magnetometer yaw measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted. This parameter is only used inflight.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("YAW_GATE", 37, NavEKF2, _yawInnovGate, 300),
+    AP_GROUPINFO("YAW_GATE", 37, NavEKF2, _yawInnovGate, 260),
 
     // @Param: MAGE_PNOISE
     // @DisplayName: Earth magnetic field process noise (gauss/s)
