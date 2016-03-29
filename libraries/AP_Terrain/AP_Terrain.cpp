@@ -83,7 +83,7 @@ AP_Terrain::AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rall
 
   This function costs about 20 microseconds on Pixhawk
  */
-bool AP_Terrain::height_amsl(const Location &loc, float &height)
+bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolate)
 {
     if (!enable || !allocate()) {
         return false;
@@ -103,13 +103,14 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
     // find the grid
     const struct grid_block &grid = find_grid_cache(info).grid;
 
+    // if grid_block is empty, find the nearest non-empty grid
+
     /*
       note that we rely on the one square overlap to ensure these
       calculations don't go past the end of the arrays
      */
     ASSERT_RANGE(info.idx_x, 0, TERRAIN_GRID_BLOCK_SIZE_X-2);
     ASSERT_RANGE(info.idx_y, 0, TERRAIN_GRID_BLOCK_SIZE_Y-2);
-
 
     // check we have all 4 required heights
     if (!check_bitmap(grid, info.idx_x,   info.idx_y) ||
@@ -146,14 +147,22 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height)
     return true;
 }
 
+bool AP_Terrain::height_amsl_new(const Location &loc, float &height)
+{
+    height = 0;
+    return find_nearest_grid_cache(loc);
+}
 
 /* 
-   find difference between home terrain height and the terrain height
-   at a given location, in meters. A positive result means the terrain
-   is higher than home.
+   find difference between home terrain height and the terrain
+   height at the current location in meters. A positive result
+   means the terrain is higher than home.
 
-   return false is terrain at the given location or at home
+   return false is terrain at the current location or at home
    location is not available
+
+   If extrapolate is true then allow return of an extrapolated
+   terrain altitude based on the last available data
 */
 bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool extrapolate)
 {

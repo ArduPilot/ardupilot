@@ -105,7 +105,9 @@ public:
 
     // return terrain height in meters above sea level for a location
     // return false if not available
-    bool height_amsl(const Location &loc, float &height);
+    bool height_amsl(const Location &loc, float &height, bool extrapolate = false);
+
+    bool height_amsl_new(const Location &loc, float &height);
 
     /* 
        find difference between home terrain height and the terrain
@@ -270,6 +272,17 @@ private:
       find a grid structure given a grid_info
     */
     struct grid_cache &find_grid_cache(const struct grid_info &info);
+
+    /*
+      find nearest grid structure given a location
+    */
+    //bool find_nearest_grid_cache(const Location &loc, struct grid_cache &nearest_cache);
+    bool find_nearest_grid_cache(const Location &loc);
+
+    /*
+      find nearest grid_info structure given a grid_info
+    */
+    //bool find_nearest_id_and_height(const Location &loc, const struct &grid_cache, grid_info &info);
 
     /*
       calculate bit number in grid_block bitmap. This corresponds to a
