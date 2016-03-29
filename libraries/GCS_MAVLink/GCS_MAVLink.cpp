@@ -54,7 +54,7 @@ void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = NULL;
  */
 void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
 {
-    if (_chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if(!valid_chan(chan)) {
         return;
     }
     if (lock) {
@@ -89,7 +89,7 @@ uint8_t mav_var_type(enum ap_var_type t)
 uint8_t comm_receive_ch(mavlink_channel_t chan)
 {
     // sanity check chan
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if(!valid_chan(chan)) {
         return 0;
     }
 
@@ -103,7 +103,7 @@ uint8_t comm_receive_ch(mavlink_channel_t chan)
 uint16_t comm_get_txspace(mavlink_channel_t chan)
 {
     // sanity check chan
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if(!valid_chan(chan)) {
         return 0;
     }
     if ((1U<<chan) & mavlink_locked_mask) {
@@ -123,7 +123,7 @@ uint16_t comm_get_txspace(mavlink_channel_t chan)
 uint16_t comm_get_available(mavlink_channel_t chan)
 {
     // sanity check chan
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if(!valid_chan(chan)) {
         return 0;
     }
     if ((1U<<chan) & mavlink_locked_mask) {
@@ -142,7 +142,7 @@ uint16_t comm_get_available(mavlink_channel_t chan)
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 {
     // sanity check chan
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if(!valid_chan(chan)) {
         return;
     }
     mavlink_comm_port[chan]->write(buf, len);
