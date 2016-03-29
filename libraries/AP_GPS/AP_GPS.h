@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __AP_GPS_H__
-#define __AP_GPS_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <inttypes.h>
@@ -70,6 +68,7 @@ public:
         GPS_TYPE_SBF   = 10,
 		GPS_TYPE_GSOF  = 11,
 		GPS_TYPE_QURT  = 12,
+        GPS_TYPE_ERB = 13,
     };
 
     /// GPS status codes
@@ -379,6 +378,7 @@ private:
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
+        struct ERB_detect_state erb_detect_state;
     } detect_state[GPS_MAX_INSTANCES];
 
     struct {
@@ -408,5 +408,4 @@ private:
 #include "AP_GPS_QURT.h"
 #include "AP_GPS_SBF.h"
 #include "AP_GPS_GSOF.h"
-
-#endif // __AP_GPS_H__
+#include "AP_GPS_ERB.h"

@@ -1,7 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef APM_OBC_H
-#define APM_OBC_H
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -132,5 +131,3 @@ private:
 
 // map from ArduPlane control_mode to APM_OBC::control_mode
 #define OBC_MODE(control_mode) (auto_throttle_mode?APM_OBC::OBC_AUTO:(control_mode==MANUAL?APM_OBC::OBC_MANUAL:APM_OBC::OBC_FBW))
-
-#endif // APM_OBC_H

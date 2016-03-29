@@ -1,21 +1,21 @@
 [submodule "modules/PX4Firmware"]
 	path = modules/PX4Firmware
-	url = git://github.com/diydrones/PX4Firmware.git
+	url = git://github.com/ArduPilot/PX4Firmware.git
 [submodule "modules/PX4NuttX"]
 	path = modules/PX4NuttX
-	url = git://github.com/diydrones/PX4NuttX.git
+	url = git://github.com/ArduPilot/PX4NuttX.git
 [submodule "modules/uavcan"]
 	path = modules/uavcan
-	url = git://github.com/diydrones/uavcan.git
+	url = git://github.com/ArduPilot/uavcan.git
 [submodule "modules/waf"]
 	path = modules/waf
-	url = git://github.com/diydrones/waf.git
+	url = git://github.com/ArduPilot/waf.git
 [submodule "modules/gbenchmark"]
 	path = modules/gbenchmark
 	url = git://github.com/google/benchmark.git
 [submodule "modules/mavlink"]
 	path = modules/mavlink
-	url = git://github.com/diydrones/mavlink
+	url = git://github.com/ArduPilot/mavlink
 [submodule "gtest"]
 	path = modules/gtest
-	url = git://github.com/diydrones/googletest
+	url = git://github.com/ArduPilot/googletest

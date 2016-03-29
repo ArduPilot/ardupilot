@@ -5,10 +5,7 @@
   filter if available, and falls back to the AP_InertialNav filter
   when EKF is not available
  */
-
-
-#ifndef __AP_INERTIALNAV_NAVEKF_H__
-#define __AP_INERTIALNAV_NAVEKF_H__
+#pragma once
 
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
@@ -124,5 +121,3 @@ private:
     bool _haveabspos;
     AP_AHRS_NavEKF &_ahrs_ekf;
 };
-
-#endif // __AP_INERTIALNAV_NAVEKF_H__

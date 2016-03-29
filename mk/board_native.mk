@@ -20,7 +20,8 @@ WARNFLAGSCXX    = \
         -Werror=uninitialized \
         -Werror=init-self \
         -Wfatal-errors \
-        -Wundef
+        -Wundef \
+        -Wno-unknown-warning-option
 
 DEPFLAGS        =   -MD -MP -MT $@
 

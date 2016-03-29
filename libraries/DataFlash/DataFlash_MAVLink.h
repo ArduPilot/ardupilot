@@ -5,9 +5,7 @@
 
    - transfers blocks of the open log file to a client using MAVLink
  */
-
-#ifndef DATAFLASH_MAVLINK_H
-#define DATAFLASH_MAVLINK_H
+#pragma once
 
 #define DATAFLASH_MAVLINK_SUPPORT 1
 
@@ -192,6 +190,3 @@ private:
 };
 
 #endif // DATAFLASH_MAVLINK_SUPPORT
-
-#endif // DATAFLASH_MAVLINK_H
-

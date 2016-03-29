@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
-#ifndef __ARDUCOPTER_CONFIG_H__
-#define __ARDUCOPTER_CONFIG_H__
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -307,7 +307,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Precision Landing with companion computer or IRLock sensor
 #ifndef PRECISION_LANDING
- # define PRECISION_LANDING DISABLED
+ # define PRECISION_LANDING ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -769,5 +769,3 @@
 #else
 #define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
 #endif
-
-#endif // __ARDUCOPTER_CONFIG_H__

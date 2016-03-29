@@ -2,9 +2,7 @@
 
 /// @file	RC_Channel.h
 /// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
-
-#ifndef __RC_CHANNEL_H__
-#define __RC_CHANNEL_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -142,6 +140,10 @@ public:
 
     static RC_Channel *rc_channel(uint8_t i);
 
+    static RC_Channel **rc_channel_array(void) {
+        return rc_ch;
+    }
+    
     bool in_trim_dz();
 
 private:
@@ -162,5 +164,3 @@ protected:
 
 // This is ugly, but it fixes poorly architected library
 #include "RC_Channel_aux.h"
-
-#endif

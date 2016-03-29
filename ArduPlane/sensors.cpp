@@ -128,6 +128,10 @@ void Plane::read_battery(void)
         battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         low_battery_event();
     }
+    
+    if (should_log(MASK_LOG_CURRENT)) {
+        Log_Write_Current();
+    }
 }
 
 // read the receiver RSSI as an 8 bit number for MAVLink

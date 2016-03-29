@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef PARAMETERS_H
-#define PARAMETERS_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 
@@ -180,6 +178,7 @@ public:
         k_param_motors = 90,
         k_param_disarm_delay,
         k_param_fs_crash_check,
+        k_param_throw_motor_start,
 
         // 97: RSSI
         k_param_rssi = 97,
@@ -450,6 +449,8 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
+    AP_Int8         throw_motor_start;
+
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
     RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
@@ -586,6 +587,3 @@ public:
 };
 
 extern const AP_Param::Info        var_info[];
-
-#endif // PARAMETERS_H
-

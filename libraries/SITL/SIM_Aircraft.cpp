@@ -328,10 +328,14 @@ void Aircraft::set_speedup(float speedup)
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
     float delta_time = frame_time_us * 1.0e-6f;
-
+    
     // update rotational rates in body frame
     gyro += rot_accel * delta_time;
 
+    gyro.x = constrain_float(gyro.x, -radians(2000), radians(2000));
+    gyro.y = constrain_float(gyro.y, -radians(2000), radians(2000));
+    gyro.z = constrain_float(gyro.z, -radians(2000), radians(2000));
+    
     // update attitude
     dcm.rotate(gyro * delta_time);
     dcm.normalize();

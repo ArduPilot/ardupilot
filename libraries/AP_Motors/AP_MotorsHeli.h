@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsHeli.h
 /// @brief	Motor control class for Traditional Heli
-
-#ifndef __AP_MOTORS_HELI_H__
-#define __AP_MOTORS_HELI_H__
+#pragma once
 
 #include <inttypes.h>
 
@@ -246,5 +244,3 @@ protected:
     int16_t         _collective_range = 0;           // maximum absolute collective pitch range (500 - 1000)
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 };
-
-#endif  // AP_MOTORSHELI

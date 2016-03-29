@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AC_FENCE_H
-#define AC_FENCE_H
+#pragma once
 
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
@@ -124,4 +123,3 @@ private:
 
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
 };
-#endif	// AC_FENCE_H

@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AC_POSCONTROL_H
-#define AC_POSCONTROL_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -407,4 +406,3 @@ private:
     Vector2f    _accel_target_jerk_limited; // acceleration target jerk limited to 100deg/s/s
     LowPassFilterVector2f _accel_target_filter; // acceleration target filter
 };
-#endif	// AC_POSCONTROL_H

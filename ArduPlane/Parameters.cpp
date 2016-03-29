@@ -24,6 +24,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Software Type
     // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
     // @User: Advanced
+    // @ReadOnly: True
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
@@ -197,6 +198,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 1
     // @User: User
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
+
+    // @Param: LAND_THR_SLEW
+    // @DisplayName: Landing throttle slew rate
+    // @Description: This parameter sets the slew rate for the throttle during auto landing. When this is zero the THR_SLEWRATE parameter is used during landing. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on landing. Values below 50 are not recommended as it may cause a stall when airspeed is low and you can not throttle up fast enough.
+    // @Units: percent
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: User
+    GSCALAR(land_throttle_slewrate, "LAND_THR_SLEW",  0),
 
     // @Param: TKOFF_FLAP_PCNT
     // @DisplayName: Takeoff flap percentage
@@ -1173,7 +1183,7 @@ const AP_Param::Info Plane::var_info[] = {
 	// variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/Compass.cpp
+    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,                "COMPASS_",     Compass),
 
     // @Group: SCHED_
@@ -1326,6 +1336,23 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
     { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
     { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
+
+    // these are needed to cope with the change to treat nested index 0 as index 63
+    { Parameters::k_param_quadplane,          3,      AP_PARAM_FLOAT, "Q_RT_RLL_P" },
+    { Parameters::k_param_quadplane,          4,      AP_PARAM_FLOAT, "Q_RT_PIT_P" },
+    { Parameters::k_param_quadplane,          5,      AP_PARAM_FLOAT, "Q_RT_YAW_P" },
+
+    { Parameters::k_param_quadplane,          6,      AP_PARAM_FLOAT, "Q_STB_R_P" },
+    { Parameters::k_param_quadplane,          7,      AP_PARAM_FLOAT, "Q_STB_P_P" },
+    { Parameters::k_param_quadplane,          8,      AP_PARAM_FLOAT, "Q_STB_Y_P" },
+
+    { Parameters::k_param_quadplane,         12,      AP_PARAM_FLOAT, "Q_PZ_P" },
+    { Parameters::k_param_quadplane,         13,      AP_PARAM_FLOAT, "Q_PXY_P" },
+    { Parameters::k_param_quadplane,         14,      AP_PARAM_FLOAT, "Q_VXY_P" },
+    { Parameters::k_param_quadplane,         15,      AP_PARAM_FLOAT, "Q_VZ_P" },
+    { Parameters::k_param_quadplane,         16,      AP_PARAM_FLOAT, "Q_AZ_P" },
+    
+    
 };
 
 void Plane::load_parameters(void)

@@ -143,6 +143,7 @@ void Plane::stabilize_stick_mixing_direct()
         control_mode == QSTABILIZE ||
         control_mode == QHOVER ||
         control_mode == QLOITER ||
+        control_mode == QLAND ||
         control_mode == TRAINING) {
         return;
     }
@@ -165,6 +166,7 @@ void Plane::stabilize_stick_mixing_fbw()
         control_mode == QSTABILIZE ||
         control_mode == QHOVER ||
         control_mode == QLOITER ||
+        control_mode == QLAND ||
         control_mode == TRAINING ||
         (control_mode == AUTO && g.auto_fbw_steer)) {
         return;
@@ -364,7 +366,8 @@ void Plane::stabilize()
         stabilize_acro(speed_scaler);
     } else if (control_mode == QSTABILIZE ||
                control_mode == QHOVER ||
-               control_mode == QLOITER) {
+               control_mode == QLOITER ||
+               control_mode == QLAND) {
         quadplane.control_run();
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
@@ -522,8 +525,13 @@ void Plane::calc_nav_roll()
 void Plane::throttle_slew_limit(int16_t last_throttle)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
-    if (control_mode==AUTO && auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
-        slewrate = g.takeoff_throttle_slewrate;
+    if (control_mode==AUTO) {
+        if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
+            slewrate = g.takeoff_throttle_slewrate;
+        } else if (g.land_throttle_slewrate != 0 &&
+                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE)) {
+            slewrate = g.land_throttle_slewrate;
+        }
     }
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
@@ -917,6 +925,49 @@ void Plane::set_servos(void)
                 }
             }
         }
+
+        uint32_t now = millis();
+        if (battery.overpower_detected()) {
+            // overpower detected, cut back on the throttle if we're maxing it out by calculating a limiter value
+            // throttle limit will attack by 10% per second
+
+            if (channel_throttle->servo_out > 0 && // demanding too much positive thrust
+                throttle_watt_limit_max < max_throttle - 25 &&
+                now - throttle_watt_limit_timer_ms >= 1) {
+                // always allow for 25% throttle available regardless of battery status
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_max++;
+
+            } else if (channel_throttle->servo_out < 0 &&
+                min_throttle < 0 && // reverse thrust is available
+                throttle_watt_limit_min < -(min_throttle) - 25 &&
+                now - throttle_watt_limit_timer_ms >= 1) {
+                // always allow for 25% throttle available regardless of battery status
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_min++;
+            }
+
+        } else if (now - throttle_watt_limit_timer_ms >= 1000) {
+            // it has been 1 second since last over-current, check if we can resume higher throttle.
+            // this throttle release is needed to allow raising the max_throttle as the battery voltage drains down
+            // throttle limit will release by 1% per second
+            if (channel_throttle->servo_out > throttle_watt_limit_max && // demanding max forward thrust
+                throttle_watt_limit_max > 0) { // and we're currently limiting it
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_max--;
+
+            } else if (channel_throttle->servo_out < throttle_watt_limit_min && // demanding max negative thrust
+                throttle_watt_limit_min > 0) { // and we're limiting it
+                throttle_watt_limit_timer_ms = now;
+                throttle_watt_limit_min--;
+            }
+        }
+
+        max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
+        if (min_throttle < 0) {
+            min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
+        }
+
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
                                                       min_throttle,
                                                       max_throttle);
@@ -946,10 +997,7 @@ void Plane::set_servos(void)
                    guided_throttle_passthru) {
             // manual pass through of throttle while in GUIDED
             channel_throttle->radio_out = channel_throttle->radio_in;
-        } else if (control_mode == QSTABILIZE ||
-                   control_mode == QHOVER ||
-                   control_mode == QLOITER ||
-                   quadplane.in_vtol_auto()) {
+        } else if (quadplane.in_vtol_mode()) {
             // no forward throttle for now
             channel_throttle->servo_out = 0;
             channel_throttle->calc_pwm();

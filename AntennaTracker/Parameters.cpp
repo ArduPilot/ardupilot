@@ -25,6 +25,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
     // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover
     // @User: Advanced
+    // @ReadOnly: True
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
@@ -213,7 +214,7 @@ const AP_Param::Info Tracker::var_info[] = {
     GOBJECT(barometer, "GND_", AP_Baro),
 
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/Compass.cpp
+    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,                "COMPASS_",     Compass),
 
     // @Group: SCHED_

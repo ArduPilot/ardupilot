@@ -2,9 +2,7 @@
 
 /// @file	AP_Parachute.h
 /// @brief	Parachute release library
-
-#ifndef AP_PARACHUTE_H
-#define AP_PARACHUTE_H
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
@@ -83,6 +81,7 @@ private:
     AP_Int16    _servo_on_pwm;  // PWM value to move servo to when shutter is activated
     AP_Int16    _servo_off_pwm; // PWM value to move servo to when shutter is deactivated
     AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
+    AP_Int16    _delay_ms;      // delay before chute release for motors to stop
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     AP_Int8     _auto_enabled;  // 1 if automatic emergency parachute release is enabled
     AP_Int16    _auto_error;    // altitude error in metres at which to deploy parachute automatically (if enabled)
@@ -97,5 +96,3 @@ private:
     uint32_t    _control_loss_ms;  // automatic parachute deployment check, start of continuously lost control
 #endif
 };
-
-#endif /* AP_PARACHUTE_H */

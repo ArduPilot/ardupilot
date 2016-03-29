@@ -17,9 +17,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef AP_NavEKF2_core
-#define AP_NavEKF2_core
+#pragma once
 
 #pragma GCC optimize("O3")
 
@@ -595,13 +593,10 @@ private:
     void alignMagStateDeclination();
 
     // Fuse compass measurements using a simple declination observation (doesn't require magnetic field states)
-    void fuseCompass();
+    void fuseEulerYaw();
 
     // Fuse declination angle to keep earth field declination from changing when we don't have earth relative observations.
     void FuseDeclination();
-
-    // Calculate compass heading innovation
-    float calcMagHeadingInnov();
 
     // Propagate PVA solution forward from the fusion time horizon to the current time horizon
     // using a simple observer
@@ -937,5 +932,3 @@ private:
     // vehicle specific initial gyro bias uncertainty
     float InitialGyroBiasUncertainty(void) const;
 };
-
-#endif // AP_NavEKF2_core

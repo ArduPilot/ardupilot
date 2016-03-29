@@ -52,13 +52,22 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ALT_MIN", 4, AP_Parachute, _alt_min, AP_PARACHUTE_ALT_MIN_DEFAULT),
 
+    // @Param: DELAY_MS
+    // @DisplayName: Parachute release delay
+    // @Description: Delay in millseconds between motor stop and chute release
+    // @Range: 0 5000
+    // @Units: Milliseconds
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     // @Param: AUTO_ON
     // @DisplayName: Parachute automatic emergency release
     // @Description: Parachute automatic emergency release enabled or disabled.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("AUTO_ON", 5, AP_Parachute, _auto_enabled, AP_PARACHUTE_AUTO_ON_DEFAULT),
+    AP_GROUPINFO("AUTO_ON", 6, AP_Parachute, _auto_enabled, AP_PARACHUTE_AUTO_ON_DEFAULT),
 
     // @Param: AUTO_ERROR
     // @DisplayName: Altitude deviation for parachute release
@@ -67,7 +76,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Range: 10 32767
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("AUTO_ERROR", 6, AP_Parachute, _auto_error, AP_PARACHUTE_AUTO_ERROR_DEFAULT),
+    AP_GROUPINFO("AUTO_ERROR", 7, AP_Parachute, _auto_error, AP_PARACHUTE_AUTO_ERROR_DEFAULT),
 #endif
 
     AP_GROUPEND
@@ -109,10 +118,11 @@ void AP_Parachute::update()
 
     // calc time since release
     uint32_t time_diff = AP_HAL::millis() - _release_time;
-
+    uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
+    
     // check if we should release parachute
     if ((_release_time != 0) && !_release_in_progress) {
-        if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS) {
+        if (time_diff >= delay_ms) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
                 RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_on_pwm);
@@ -123,7 +133,7 @@ void AP_Parachute::update()
             _release_in_progress = true;
             _released = true;
         }
-    }else if ((_release_time == 0) || time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS + AP_PARACHUTE_RELEASE_DURATION_MS) {
+    }else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
             RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_off_pwm);

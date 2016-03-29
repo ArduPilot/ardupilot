@@ -376,47 +376,6 @@ void Copter::Log_Write_Attitude()
     DataFlash.Log_Write_POS(ahrs);
 }
 
-struct PACKED log_Rate {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float   control_roll;
-    float   roll;
-    float   roll_out;
-    float   control_pitch;
-    float   pitch;
-    float   pitch_out;
-    float   control_yaw;
-    float   yaw;
-    float   yaw_out;
-    float   control_accel;
-    float   accel;
-    float   accel_out;
-};
-
-// Write an rate packet
-void Copter::Log_Write_Rate()
-{
-    const Vector3f &rate_targets = attitude_control.rate_bf_targets();
-    const Vector3f &accel_target = pos_control.get_accel_target();
-    struct log_Rate pkt_rate = {
-        LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
-        time_us         : AP_HAL::micros64(),
-        control_roll    : (float)rate_targets.x,
-        roll            : (float)(ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100),
-        roll_out        : motors.get_roll(),
-        control_pitch   : (float)rate_targets.y,
-        pitch           : (float)(ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100),
-        pitch_out       : motors.get_pitch(),
-        control_yaw     : (float)rate_targets.z,
-        yaw             : (float)(ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100),
-        yaw_out         : motors.get_yaw(),
-        control_accel   : (float)accel_target.z,
-        accel           : (float)(-(ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
-        accel_out       : motors.get_throttle()
-    };
-    DataFlash.WriteBlock(&pkt_rate, sizeof(pkt_rate));
-}
-
 struct PACKED log_MotBatt {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -638,7 +597,7 @@ void Copter::Log_Write_Home_And_Origin()
 {
     // log ekf origin if set
     Location ekf_orig;
-    if (ahrs.get_NavEKF_const().getOriginLLH(ekf_orig)) {
+    if (ahrs.get_origin(ekf_orig)) {
         DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
 
@@ -773,8 +732,6 @@ const struct LogStructure Copter::log_structure[] = {
       "CTUN", "Qhhfffecchh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "QHHIhBH",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
-    { LOG_RATE_MSG, sizeof(log_Rate),
-      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
@@ -878,7 +835,6 @@ void Copter::Log_Write_Nav_Tuning() {}
 void Copter::Log_Write_Control_Tuning() {}
 void Copter::Log_Write_Performance() {}
 void Copter::Log_Write_Attitude(void) {}
-void Copter::Log_Write_Rate() {}
 void Copter::Log_Write_MotBatt() {}
 void Copter::Log_Write_Startup() {}
 void Copter::Log_Write_Event(uint8_t id) {}

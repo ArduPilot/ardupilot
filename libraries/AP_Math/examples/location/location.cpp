@@ -194,9 +194,9 @@ static const struct {
 static const struct {
     float v, wv;
 } wrap_PI_tests[] = {
-    { 0.2f*PI,            0.2f*PI },
-    { 0.2f*PI + 100*PI,  0.2f*PI },
-    { -0.2f*PI - 100*PI,  -0.2f*PI },
+    { 0.2f*M_PI,            0.2f*M_PI },
+    { 0.2f*M_PI + 100*M_PI,  0.2f*M_PI },
+    { -0.2f*M_PI - 100*M_PI,  -0.2f*M_PI },
 };
 
 static void test_wrap_cd(void)

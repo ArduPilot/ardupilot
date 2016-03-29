@@ -1,7 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef __AP_HAL_SITL_UART_DRIVER_H__
-#define __AP_HAL_SITL_UART_DRIVER_H__
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -101,5 +100,3 @@ private:
 };
 
 #endif
-#endif // __AP_HAL_SITL_UART_DRIVER_H__
-

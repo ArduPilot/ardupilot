@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AP_AHRS_NAVEKF_H__
-#define __AP_AHRS_NAVEKF_H__
+#pragma once
+
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -217,7 +217,7 @@ private:
     EKF_TYPE active_EKF_type(void) const;
 
     bool always_use_EKF() const {
-        return _flags & FLAG_ALWAYS_USE_EKF;
+        return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
 
     NavEKF &EKF1;
@@ -232,7 +232,7 @@ private:
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms = 0;
-    Flags _flags;
+    Flags _ekf_flags;
 
     uint8_t ekf_type(void) const;
     void update_DCM(void);
@@ -245,5 +245,3 @@ private:
 #endif    
 };
 #endif
-
-#endif // __AP_AHRS_NAVEKF_H__

@@ -2,7 +2,7 @@
 
 echo "Checking modules"
 
-MODULE_LIST="PX4Firmware PX4NuttX uavcan mavlink"
+MODULE_LIST="PX4Firmware PX4NuttX mavlink uavcan uavcan/dsdl uavcan/libuavcan/dsdl_compiler/pyuavcan"
 
 NEED_INIT=0
 
@@ -25,24 +25,29 @@ done
     set -x
     git submodule init || {
         echo "git submodule init failed"
-        git submodule status
+        git submodule status --recursive
         exit 1
     }
-    git submodule update || {
+    (cd modules/uavcan && git submodule init) || {
+        echo "init of uavcan failed"
+        git submodule status --recursive
+        exit 1
+    }
+    git submodule update --recursive || {
         echo "git submodule update failed"        
-        git submodule status
+        git submodule status --recursive
         exit 1
     }
-cat <<EOF
-==============================
-git submodules are initialised
-
-Please see http://dev.ardupilot.com/wiki/git-submodules/
-
-Please restart the build
-==============================
-EOF
-exit 1
+    for m in $MODULE_LIST; do
+        [ -d modules/$m ] || {
+            echo "modules/$m missing - failed module init"
+            exit 1
+        }
+        [ -f modules/$m/.git ] || {
+            echo "modules/$m/.git missing - failed module init"
+            exit 1
+        }
+    done
 }
 
 for m in $MODULE_LIST; do

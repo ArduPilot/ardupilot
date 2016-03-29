@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_PX4_RCOUTPUT_H__
-#define __AP_HAL_PX4_RCOUTPUT_H__
+#pragma once
 
 #include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
@@ -20,6 +18,8 @@ public:
     void     write(uint8_t ch, uint16_t period_us) override;
     uint16_t read(uint8_t ch) override;
     void     read(uint16_t* period_us, uint8_t len) override;
+    uint16_t read_last_sent(uint8_t ch) override;
+    void     read_last_sent(uint16_t* period_us, uint8_t len) override;
     void     set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
     void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
     bool     force_safety_on(void) override;
@@ -61,5 +61,3 @@ private:
     void _arm_actuators(bool arm);
     void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz);
 };
-
-#endif // __AP_HAL_PX4_RCOUTPUT_H__

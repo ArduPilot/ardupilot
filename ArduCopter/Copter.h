@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef _COPTER_H
-#define _COPTER_H
+#pragma once
 
 #define THISFIRMWARE "APM:Copter V3.4-dev"
 #define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_DEV
@@ -375,6 +373,12 @@ private:
     // Flip
     Vector3f flip_orig_attitude;         // original copter attitude before flip
 
+    // Throw
+    bool throw_early_exit_interlock = true; // value of the throttle interlock that must be restored when exiting throw mode early
+    bool throw_flight_commenced = false;    // true when the throw has been detected and the motors and control loops are running
+    uint32_t throw_free_fall_start_ms = 0;  // system time free fall was detected
+    float throw_free_fall_start_velz = 0.0f;// vertical velocity when free fall was detected
+
     // Battery Sensors
     AP_BattMonitor battery;
 
@@ -648,7 +652,6 @@ private:
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
-    void Log_Write_Rate();
     void Log_Write_MotBatt();
     void Log_Write_Startup();
     void Log_Write_Event(uint8_t id);
@@ -801,6 +804,14 @@ private:
     void poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle);
     void poshold_roll_controller_to_pilot_override();
     void poshold_pitch_controller_to_pilot_override();
+
+    // Throw to launch functionality
+    bool throw_init(bool ignore_checks);
+    void throw_exit();
+    void throw_run();
+    bool throw_detected();
+    bool throw_attitude_good();
+    bool throw_height_good();
 
     bool rtl_init(bool ignore_checks);
     void rtl_run();
@@ -1054,5 +1065,3 @@ extern Copter copter;
 
 using AP_HAL::millis;
 using AP_HAL::micros;
-
-#endif // _COPTER_H_

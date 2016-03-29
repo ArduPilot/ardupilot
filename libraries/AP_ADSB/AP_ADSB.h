@@ -1,7 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef AP_ADSB_H
-#define AP_ADSB_H
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -117,4 +116,3 @@ private:
     uint16_t    _highest_threat_index = 0;
     float       _highest_threat_distance = 0;
 };
-#endif // AP_ADSB_H

@@ -2,9 +2,7 @@
 
 /// @file	AP_Camera.h
 /// @brief	Photo or video camera manager, with EEPROM-backed storage of constants.
-
-#ifndef AP_CAMERA_H
-#define AP_CAMERA_H
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
@@ -102,5 +100,3 @@ private:
     bool            _timer_installed:1;
     uint8_t         _last_pin_state;
 };
-
-#endif /* AP_CAMERA_H */

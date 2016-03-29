@@ -1,7 +1,4 @@
-
-
-#ifndef __AP_HAL_PX4_STORAGE_H__
-#define __AP_HAL_PX4_STORAGE_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_PX4_Namespace.h"
@@ -43,5 +40,3 @@ private:
 #endif
     void bus_lock(bool lock);
 };
-
-#endif // __AP_HAL_PX4_STORAGE_H__

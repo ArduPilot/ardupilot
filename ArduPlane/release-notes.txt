@@ -1,3 +1,107 @@
+Release 3.5.2, 26th March 2016
+------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.2 of APM:Plane. This is a minor release with small
+changes.
+
+The main reason for this release over 3.5.1 is a fix for a bug where
+the px4io co-processor on a Pixhawk can run out of memory while
+booting. This causes the board to be unresponsive on boot. It only
+happens if you have a more complex servo setup and is caused by too
+much memory used by the IO failsafe mixer.
+
+The second motivation for this release is to fix an issue where during
+a geofence altitude failsafe that happens at low speed an aircraft may
+dive much further than it should to gain speed. This only happened if
+the thrust line of the aircraft combined with low pitch integrator
+gain led to the aircraft not compensating sufficiently with elevator
+at full throttle in a TECS underspeed state. To fix this two changes
+have been made:
+
+ - a minimum level of integrator in the pitch controller has been
+   added. This level has a sufficiently small time constant to avoid
+   the problem with the TECS controller in an underspeed state.
+
+ - the underspeed state in TECS has been modified so that underspeed
+   can end before the full target altitude has been reached, as long
+   as the airspeed has risen sufficiently past the minimum airspeed
+   for a sufficient period of time (by 15% above minimum airspeed for
+   3 seconds).
+
+The default P gains for both roll and pitch have also been raised from
+0.4 to 0.6. This is to help for users that fly with the default
+parameters. A value of 0.6 is safe for all aircraft that I have
+analysed logs for.
+
+The default gains and filter frequencies of the QuadPlane code have
+also been adjusted to better reflect the types of aircraft users have
+been building.
+
+Other changes include:
+
+ - improved QuadPlane logging for better analysis and tuning (adding
+   RATE and QTUN messages)
+ - fixed a bug introduced in 3.5.1 in rangefinder landing
+ - added TECS logging of speed_weight and flags
+ - improvements to the lsm303d driver for Linux
+ - improvements to the waf build system
+
+
+Release 3.5.1, 21st March 2016
+------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.1 of APM:Plane. This is a minor release with primarily
+small changes.
+
+The changes in this release are:
+
+ - update uavcan to new protocol
+ - always exit loiter in AUTO towards next waypoint
+ - support more multicopter types in quadplane
+ - added support for reverse thrust landings
+ - added LAND_THR_SLEW parameter
+ - added LAND_THEN_NEUTRL parameter
+ - fixed reporting of armed state with safety switch
+ - added optional arming check for minimum voltage
+ - support motor test for quadplanes
+ - added QLAND flight mode (quadplane land mode)
+ - added TECS_LAND_SRC (land sink rate change)
+ - use throttle slew in quadplane transition
+ - added PID tuning for quadplane
+ - improved text message queueing to ground stations
+ - added LAND_THR_SLEW parameter
+ - re-organisation of HAL_Linux bus API
+ - improved NMEA parsing in GPS driver
+ - changed TECS_LAND_SPDWGT default to -1
+ - improved autoconfig of uBlox GPS driver
+ - support a wider range of Lightware serial Lidars
+ - improved non-GPS performance of EKF2
+ - allow for indoor flight of quadplanes
+ - improved compass fusion in EKF2
+ - improved support for Pixracer board
+ - improved NavIO2 support
+ - added BATT_WATT_MAX parameter
+
+The reverse thrust landing is particulary exciting as that adds a
+whole new range of possibilities for landing in restricted areas. Many
+thanks to Tom for the great work on getting this done.
+
+The uavcan change to the new protocol has been a long time coming, and
+I'd like to thank Holger for both his great work on this and his
+patience given how long it has taken to be in a release. This adds
+support for automatic canbus node assignment which makes setup much
+easier, and also supports the latest versions of the Zubax canbus GPS.
+
+My apologies if your favourite feature didn't make it into this
+release! There are a lot more changes pending but we needed to call a
+halt for the release eventually. This release has had a lot of flight
+testing and I'm confident it will be a great release.
+
+Happy flying!
+
+
 Release 3.5.0, 30th January 2016
 --------------------------------
 

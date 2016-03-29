@@ -40,7 +40,7 @@ lock_file() {
 
         if test -f "$lck" && kill -0 $pid 2> /dev/null; then
 	    LOCKAGE=$(($(date +%s) - $(stat -c '%Y' "build.lck")))
-	    test $LOCKAGE -gt 30000 && {
+	    test $LOCKAGE -gt 60000 && {
                 echo "old lock file $lck is valid for $pid with age $LOCKAGE seconds"
 	    }
             return 1
@@ -71,7 +71,7 @@ report() {
     cat <<EOF | mail -s 'build failed' drones-discuss@googlegroups.com
 A build of $d failed at `date`
 
-You can view the build logs at http://autotest.diydrones.com/
+You can view the build logs at http://autotest.ardupilot.org/
 
 A log of the commits since the last attempted build is below
 
@@ -87,9 +87,11 @@ report_pull_failure() {
 
 oldhash=$(cd APM && git rev-parse HEAD)
 
+echo "Updating APM"
 pushd APM
 git checkout -f master
 git fetch origin
+git submodule update
 git reset --hard origin/master
 git pull || report_pull_failure
 git clean -f -f -x -d -d
@@ -98,39 +100,6 @@ cp ../config.mk .
 popd
 
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
-
-pushd PX4Firmware
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
-
-pushd PX4NuttX
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
-
-pushd uavcan
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
 
 echo "Updating pymavlink"
 pushd mavlink/pymavlink

@@ -307,9 +307,6 @@ void Plane::update_aux(void)
 
 void Plane::one_second_loop()
 {
-    if (should_log(MASK_LOG_CURRENT))
-        Log_Write_Current();
-
     // send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
 
@@ -547,10 +544,7 @@ void Plane::update_flight_mode(void)
     }
 
     // ensure we are fly-forward
-    if (effective_mode == QSTABILIZE ||
-        effective_mode == QHOVER ||
-        effective_mode == QLOITER ||
-        quadplane.in_vtol_auto()) {
+    if (quadplane.in_vtol_mode()) {
         ahrs.set_fly_forward(false);
     } else {
         ahrs.set_fly_forward(true);
@@ -712,7 +706,8 @@ void Plane::update_flight_mode(void)
 
     case QSTABILIZE:
     case QHOVER:
-    case QLOITER: {
+    case QLOITER:
+    case QLAND: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
@@ -765,25 +760,15 @@ void Plane::update_navigation()
             // on every loop
             auto_state.checked_for_autoland = true;
         }
-        // fall through to LOITER
-        if (g.rtl_radius < 0) {
-            loiter.direction = -1;
-        } else {
-            loiter.direction = 1;
-        }
         radius = abs(g.rtl_radius);
+        if (radius > 0) {
+            loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
+        }
+        // fall through to LOITER
 
     case LOITER:
     case GUIDED:
-        // allow loiter direction to be changed in flight
-        if (radius == 0) {
-            if (g.loiter_radius < 0) {
-                loiter.direction = -1;
-            } else {
-                loiter.direction = 1;
-            }
-        }
-        update_loiter(abs(radius));
+        update_loiter(radius);
         break;
 
     case CRUISE:
@@ -802,6 +787,7 @@ void Plane::update_navigation()
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
+    case QLAND:
         // nothing to do
         break;
     }
@@ -949,9 +935,7 @@ void Plane::update_flight_stage(void)
         } else {
             set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
-    } else if (control_mode == QSTABILIZE ||
-               control_mode == QHOVER ||
-               control_mode == QLOITER ||
+    } else if (quadplane.in_vtol_mode() ||
                quadplane.in_assisted_flight()) {
         set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
     } else {

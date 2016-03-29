@@ -10,13 +10,13 @@ PYTHON_PKGS="pymavlink MAVProxy droneapi"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs"
-UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386"
+UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc++6:i386"
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
 ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
-ARM_TARBALL_URL="http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL"
+ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
 
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"

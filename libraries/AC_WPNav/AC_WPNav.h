@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AC_WPNAV_H
-#define AC_WPNAV_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -321,4 +320,3 @@ protected:
     float       _spline_vel_scaler;	    //
     float       _yaw;                   // heading according to yaw
 };
-#endif	// AC_WPNAV_H

@@ -1,10 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+#pragma once
 
 /// @file    AC_AttitudeControl_Heli.h
 /// @brief   ArduCopter attitude control library for traditional helicopters
-
-#ifndef AC_ATTITUDECONTROL_HELI_H
-#define AC_ATTITUDECONTROL_HELI_H
 
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsHeli.h>
@@ -133,5 +131,3 @@ private:
     LowPassFilterFloat yaw_acceleration_feedforward_filter;
 
 };
-
-#endif //AC_ATTITUDECONTROL_HELI_H

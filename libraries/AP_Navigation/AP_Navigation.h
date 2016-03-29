@@ -9,9 +9,7 @@
   interface. All variables used by controllers should be in their
   own class.
  */
-
-#ifndef AP_NAVIGATION_H
-#define AP_NAVIGATION_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 
@@ -106,9 +104,7 @@ public:
 	// select which navigation controller to use by setting the
 	// NAV_CONTROLLER parameter
 	enum ControllerType {
-		CONTROLLER_L1     = 1
+	    CONTROLLER_DEFAULT      = 0,
+		CONTROLLER_L1           = 1
 	};
 };
-
-
-#endif // AP_NAVIGATION_H

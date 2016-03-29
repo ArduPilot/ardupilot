@@ -46,6 +46,10 @@
 // invisible
 #define AP_PARAM_FLAG_ENABLE        4
 
+// don't shift index 0 to index 63. Use this when you know there will be
+// no conflict with the parent
+#define AP_PARAM_NO_SHIFT           8
+
 // a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
 // is constant and known at compile time
@@ -97,7 +101,7 @@ public:
     struct GroupInfo {
         uint8_t type; // AP_PARAM_*
         uint8_t idx;  // identifier within the group
-        const char name[AP_MAX_NAME_SIZE+1];
+        const char *name;
         ptrdiff_t offset; // offset within the object
         union {
             const struct GroupInfo *group_info;
@@ -107,7 +111,7 @@ public:
     };
     struct Info {
         uint8_t type; // AP_PARAM_*
-        const char name[AP_MAX_NAME_SIZE+1];
+        const char *name;
         uint16_t key; // k_param_*
         const void *ptr;    // pointer to the variable in memory
         union {
@@ -119,7 +123,7 @@ public:
         uint16_t old_key; // k_param_*
         uint8_t old_group_element; // index in old object
         enum ap_var_type type; // AP_PARAM_*
-        const char new_name[AP_MAX_NAME_SIZE+1];        
+        const char *new_name;
     };
 
     // called once at startup to setup the _var_info[] table. This
@@ -146,9 +150,25 @@ public:
         uint32_t group_element : 18;
     } ParamToken;
 
+    
+    // nesting structure for recursive call states
+    struct GroupNesting {
+        static const uint8_t numlevels = 2;
+        uint8_t level;
+        const struct GroupInfo *group_ret[numlevels];
+    };
+    
     // return true if AP_Param has been initialised via setup()
     static bool initialised(void);
 
+    // the 'group_id' of a element of a group is the 18 bit identifier
+    // used to distinguish between this element of the group and other
+    // elements of the same group. It is calculated using a bit shift per
+    // level of nesting, so the first level of nesting gets 6 bits the 2nd
+    // level gets the next 6 bits, and the 3rd level gets the last 6
+    // bits. This limits groups to having at most 64 elements.
+    static uint32_t group_id(const struct GroupInfo *grpinfo, uint8_t base, uint8_t i, uint8_t shift);
+    
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
     ///
@@ -163,7 +183,7 @@ public:
     ///
     void copy_name_info(const struct AP_Param::Info *info,
                         const struct GroupInfo *ginfo,
-                        const struct GroupInfo *ginfo0,
+                        const struct GroupNesting &group_nesting,
                         uint8_t idx, char *buffer, size_t bufferSize, bool force_scalar=false) const;
     
     /// Copy the variable's name, prefixed by any containing group name, to a
@@ -210,10 +230,7 @@ public:
     /// Notify GCS of current parameter value
     ///
     void notify() const;
-
-    // send a parameter to all GCS instances
-    void send_parameter(char *name, enum ap_var_type param_header_type) const;
-
+    
     /// Save the current value of the variable to EEPROM.
     ///
     /// @param  force_save     If true then force save even if default
@@ -263,6 +280,9 @@ public:
 
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size);
+
+    // convert a single parameter with scaling
+    static void         convert_old_parameter(const struct ConversionInfo *info, float scaler);
 
     /// Erase all variables in EEPROM.
     ///
@@ -365,22 +385,22 @@ private:
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
                                     uint16_t                    vindex,
-                                    uint8_t                     group_base,
+                                    uint32_t                    group_base,
                                     uint8_t                     group_shift,
                                     ptrdiff_t                   group_offset,
                                     uint32_t *                  group_element,
                                     const struct GroupInfo *   &group_ret,
-                                    const struct GroupInfo *   &group_ret0,
+                                    struct GroupNesting        &group_nesting,
                                     uint8_t *                   idx) const;
     const struct Info *         find_var_info(
                                     uint32_t *                group_element,
                                     const struct GroupInfo *  &group_ret,
-                                    const struct GroupInfo *  &group_ret0,
+                                    struct GroupNesting       &group_nesting,
                                     uint8_t *                 idx) const;
     const struct Info *			find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo *  &group_ret,
-                                                    const struct GroupInfo *  &group_ret0,
+                                                    struct GroupNesting       &group_nesting,
                                                     uint8_t *                  idx) const;
     static const struct Info *  find_by_header_group(
                                     struct Param_header phdr, void **ptr,
@@ -440,6 +460,9 @@ private:
     static bool load_defaults_file(const char *filename);
 #endif
 
+    // send a parameter to all GCS instances
+    void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
+    
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;
@@ -459,9 +482,6 @@ private:
     static const uint8_t        k_EEPROM_magic0      = 0x50;
     static const uint8_t        k_EEPROM_magic1      = 0x41; ///< "AP"
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
-
-    // convert old vehicle parameters to new object parameters
-    static void         convert_old_parameter(const struct ConversionInfo *info);
 };
 
 /// Template class for scalar variables.
