@@ -348,7 +348,7 @@ void NavEKF2_core::detectFlight()
     prevInFlight = inFlight;
 
     // Store vehicle height and range prior to takeoff for use in post takeoff checks
-    if (onGround && prevOnGround) {
+    if (onGround) {
         // store vertical position at start of flight to use as a reference for ground relative checks
         posDownAtTakeoff = stateStruct.position.z;
         // store the range finder measurement which will be used as a reference to detect when we have taken off
