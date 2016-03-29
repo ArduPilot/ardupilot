@@ -118,6 +118,7 @@ void AP_MotorsMatrix::output_to_motors()
             break;
     }
 
+#if AP_MOTORS_SLEW_LIMIT == 1
     // apply slew rate limiter
     static const int16_t slew_per_step = 6;
     static const int16_t slew_minimum = 1330;
@@ -139,6 +140,7 @@ void AP_MotorsMatrix::output_to_motors()
             motor_out[i] = MIN(motor_out[i], _max_motor_out[i]);
         }
     }
+#endif
 
     // send output to each motor
     hal.rcout->cork();

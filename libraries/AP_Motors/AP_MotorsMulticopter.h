@@ -10,6 +10,10 @@
 #define AP_MOTORS_DENSITY_COMP 1
 #endif
 
+#ifndef AP_MOTORS_SLEW_LIMIT
+#define AP_MOTORS_SLEW_LIMIT 0
+#endif
+
 #define AP_MOTORS_DEFAULT_MID_THROTTLE  500
 
 #define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
