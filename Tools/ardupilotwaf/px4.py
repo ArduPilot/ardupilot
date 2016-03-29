@@ -198,6 +198,31 @@ def _px4_taskgen(bld, **kw):
 
     return bld(**kw)
 
+@feature('_px4_romfs')
+def _process_romfs(self):
+    bld = self.bld
+    file_list = (
+        'firmware/oreoled.bin',
+        'init.d/rc.APM',
+        'init.d/rc.error',
+        'init.d/rcS',
+        (bld.env.PX4_BOOTLOADER, 'bootloader/fmu_bl.bin'),
+    )
+
+    romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
+    romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
+
+    for item in file_list:
+        if isinstance(item, str):
+            src = romfs_src.make_node(item)
+            dst = romfs_bld.make_node(item)
+        else:
+            src = bld.srcnode.make_node(item[0])
+            dst = romfs_bld.make_node(item[1])
+
+        dst.parent.mkdir()
+        self.create_task('px4_copy', src, dst)
+
 def configure(cfg):
     cfg.load('cmake')
     cfg.find_program('cp')
@@ -282,35 +307,8 @@ def build(bld):
         cmake_output_patterns='px4fmu-v%s/NuttX/nuttx-export/**/*.h' % version,
     )
 
-    # ROMFS static files
-    romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
-    bld.env.PX4_ROMFS_SRC_ABS = romfs_src.abspath()
-    romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
-    romfs_src_files = romfs_src.ant_glob('**')
-    romfs_bld_files = []
-    for node in romfs_src_files:
-        bld_node = romfs_bld.make_node(node.path_from(romfs_src))
-        romfs_bld_files.append(bld_node)
-
-    _px4_taskgen(
-        bld,
+    bld(
         name='px4_romfs_static_files',
-        cls_keyword='Copying ROMFS to build directory',
-        cls_str='%s -> %s' % (bld.env.PX4_ROMFS_SRC, bld.env.PX4_ROMFS_BLD),
-        source=romfs_src_files,
-        target=romfs_bld_files,
         group='dynamic_sources',
-        rule='${CP} -a -T ${PX4_ROMFS_SRC_ABS} ${PX4_ROMFS_BLD}',
-    )
-
-    romfs_bootloader = romfs_bld.make_node('bootloader/fmu_bl.bin')
-    romfs_bootloader.parent.mkdir()
-    _px4_taskgen(
-        bld,
-        name='px4_romfs_bootloader',
-        cls_keyword='Copying bootloader to ROMFS',
-        source=bld.env.PX4_BOOTLOADER,
-        target=romfs_bootloader,
-        group='dynamic_sources',
-        rule='${CP} ${SRC} ${TGT}',
+        features='_px4_romfs',
     )
