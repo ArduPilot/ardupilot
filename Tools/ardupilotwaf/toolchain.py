@@ -49,7 +49,10 @@ def _clang_cross_support(cfg):
 
     prefix = cfg.env.TOOLCHAIN + '-'
 
-    cfg.find_program(prefix + 'gcc', var='CROSS_GCC')
+    try:
+        cfg.find_program(prefix + 'gcc', var='CROSS_GCC')
+    except Errors.ConfigurationError as e:
+        cfg.fatal('toolchain: clang: couldn\'t find cross GCC', ex=e)
 
     environ = dict(os.environ)
     if 'TOOLCHAIN_CROSS_AR' in environ:
