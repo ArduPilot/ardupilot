@@ -708,7 +708,7 @@ void NavEKF2_core::fuseEulerYaw()
     Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
 
     // Use the difference between the horizontal projection and declination to give the measured yaw
-    float measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+    float measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + Compass::get_declination());
 
     // Calculate the innovation
     float innovation = wrap_PI(predicted_yaw - measured_yaw);
@@ -856,7 +856,7 @@ void NavEKF2_core::FuseDeclination()
     }
 
     // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+    float magDecAng = use_compass() ? Compass::get_declination() : 0;
 
     // Calculate the innovation
     float innovation = atanf(t4) - magDecAng;
@@ -919,7 +919,7 @@ void NavEKF2_core::FuseDeclination()
 void NavEKF2_core::alignMagStateDeclination()
 {
     // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+    float magDecAng = use_compass() ? Compass::get_declination() : 0;
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = stateStruct.earth_magfield;
