@@ -155,7 +155,7 @@ public:
 
     // get compass offset estimates
     // true if offsets are valid
-    bool getMagOffsets(Vector3f &magOffsets);
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets);
 
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const override;
