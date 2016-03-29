@@ -72,6 +72,7 @@ class Board:
             '-Wno-missing-field-initializers',
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
+            '-Wno-unknown-pragmas',
         ]
 
         if 'clang' in cfg.env.COMPILER_CC:
@@ -82,7 +83,6 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
-                '-Wno-unknown-pragmas',
                 '-Wno-c++11-narrowing'
             ]
 
@@ -105,6 +105,7 @@ class Board:
             '-Wno-missing-field-initializers',
             '-Wno-reorder',
             '-Wno-redundant-decls',
+            '-Wno-unknown-pragmas',
             '-Werror=format-security',
             '-Werror=array-bounds',
             '-Werror=uninitialized',
@@ -120,7 +121,6 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
-                '-Wno-unknown-pragmas',
                 '-Wno-c++11-narrowing'
             ]
         else:
