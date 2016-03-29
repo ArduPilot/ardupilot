@@ -518,6 +518,13 @@ void Copter::one_hz_loop()
 
     // log terrain data
     terrain_logging();
+
+    // debug
+    if (control_mode == GUIDED) {
+        Location_Class targ = wp_nav.get_wp_destination();
+        float height;
+        terrain.height_amsl_new(targ, height);
+    }
 }
 
 // called at 50hz
