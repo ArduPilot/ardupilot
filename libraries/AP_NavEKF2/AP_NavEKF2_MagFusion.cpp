@@ -683,7 +683,12 @@ void NavEKF2_core::fuseEulerYaw()
     float q3 = stateStruct.quat[3];
 
     // compass measurement error variance (rad^2)
-    float R_YAW = fmaxf(frontend->_yawNoise,0.01f);
+    float R_YAW;
+    if (inFlight) {
+        R_YAW = sq(fmaxf(frontend->_yawNoise,0.01f));
+    } else {
+        R_YAW = sq(0.1745f);
+    }
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
     // determine if a 321 or 312 Euler sequence is best
