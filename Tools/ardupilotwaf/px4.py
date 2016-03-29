@@ -106,6 +106,9 @@ class px4_copy(Task.Task):
     def keyword(self):
         return "PX4: Copying %s to" % self.inputs[0].name
 
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
 class px4_add_git_hashes(Task.Task):
     run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} --uavcan ${PX4_UAVCAN_ROOT} ${SRC} ${TGT}'
     color = 'CYAN'
