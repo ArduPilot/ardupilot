@@ -4,7 +4,7 @@
 
 export PATH=$PATH:/bin:/usr/bin
 
-export TMPDIR=$PWD/build.tmp.$$
+export TMPDIR=$PWD/build.tmp.binaries
 echo $TMDIR
 rm -rf $TMPDIR
 echo "Building in $TMPDIR"
