@@ -38,6 +38,11 @@
 #include <AP_InertialSensor/AuxiliaryBus.h>
 
 extern const AP_HAL::HAL& hal;
+#if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
+ #define HMC5843_I2C_ADDR     0x3C
+#else
+ #define HMC5843_I2C_ADDR     0x1E
+#endif
 
 /*
  * Defaul address: 0x1E
