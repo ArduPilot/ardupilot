@@ -58,7 +58,8 @@ class Board:
         env.DEFINES = {}
 
         env.prepend_value('INCLUDES', [
-            cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
+            cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath(),
+            cfg.srcnode.find_dir('build').abspath()
         ])
 
         env.CFLAGS += [
