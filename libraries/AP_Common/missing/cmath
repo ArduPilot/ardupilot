@@ -1,0 +1,12 @@
+#pragma once
+
+#include_next <cmath>
+
+#if defined(_GLIBCXX_CMATH)
+
+using std::isnan;
+using std::isfinite;
+using std::isinf;
+
+#endif
+
