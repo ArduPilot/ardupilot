@@ -108,7 +108,7 @@ GLOBAL_FLAGS    += $(WARNFLAGS) $(DEPFLAGS) -nostdlib
 GLOBAL_CFLAGS   := $(cpu_flags)
 GLOBAL_CFLAGS   += -mthumb             #Generate code for the Thumb instruction set
 GLOBAL_CFLAGS   += -ggdb               #Produce debugging information in the operating system’s native format
-#GLOBAL_CFLAGS   += -O0                 #Reduce compilation time and make debugging produce the expected results. This is the default
+GLOBAL_CFLAGS   += -Os                 #Reduce compilation time and make debugging produce the expected results. This is the default
 #GLOBAL_CFLAGS   += -nostdlib           #Do not use the standard system startup files or libraries when linking
 GLOBAL_CFLAGS   += -Wall               #This enables all the warnings about constructions that some users consider questionable, and that are easy to avoid (or modify to prevent the warning), even in conjunction with macros
 GLOBAL_CFLAGS   += -ffunction-sections
@@ -127,7 +127,7 @@ GLOBAL_CXXFLAGS += $(GLOBAL_FLAGS)
 GLOBAL_ASFLAGS  := $(cpu_flags)
 GLOBAL_ASFLAGS  += -mthumb
 GLOBAL_CFLAGS   += -ggdb                 #Produce debugging information in the operating system’s native format
-#GLOBAL_CFLAGS   += -O0                #Reduce compilation time and make debugging produce the expected results. This is the default
+GLOBAL_CFLAGS   += -Os                #Reduce compilation time and make debugging produce the expected results. This is the default
 GLOBAL_ASFLAGS  += -x assembler-with-cpp
 GLOBAL_ASFLAGS  += $(GLOBAL_FLAGS)
 # GLOBAL_LDFLAGS ----------------------------------------------------------------------------------
