@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 #include "px4io_protocol.h"
 
 using namespace Linux;

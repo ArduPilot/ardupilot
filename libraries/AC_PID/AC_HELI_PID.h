@@ -7,7 +7,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 #include "AC_PID.h"
 
 #define AC_PID_LEAK_MIN     500.0  // Default I-term Leak Minimum

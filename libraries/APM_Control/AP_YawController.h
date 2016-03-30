@@ -5,7 +5,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <DataFlash/DataFlash.h>
-#include <math.h>
+#include <cmath>
 
 class AP_YawController {
 public:                      
