@@ -1140,7 +1140,7 @@ avrdude>
 
 //************************************************************************
 #ifdef ENABLE_MONITOR
-#include	<math.h>
+#include	<cmath>
 
 unsigned long	gRamIndex;
 unsigned long	gFlashIndex;

@@ -21,7 +21,7 @@
 #define THISFIRMWARE "ArduRover v2.51-beta"
 #define FIRMWARE_VERSION 2,51,0,FIRMWARE_VERSION_TYPE_BETA
 
-#include <math.h>
+#include <cmath>
 #include <stdarg.h>
 
 // Libraries

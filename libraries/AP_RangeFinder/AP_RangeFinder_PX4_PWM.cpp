@@ -30,7 +30,7 @@
 #include <uORB/topics/pwm_input.h>
 #include <stdio.h>
 #include <errno.h>
-#include <math.h>
+#include <cmath>
 
 extern const AP_HAL::HAL& hal;
 

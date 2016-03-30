@@ -18,7 +18,7 @@
 // Refactored by Jonathan Challinger
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif

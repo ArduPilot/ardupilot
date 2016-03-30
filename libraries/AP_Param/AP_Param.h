@@ -23,7 +23,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 
 #include <AP_HAL/AP_HAL.h>
 #include <StorageManager/StorageManager.h>
