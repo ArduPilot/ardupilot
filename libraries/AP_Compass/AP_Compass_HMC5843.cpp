@@ -31,7 +31,11 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
+#if  CONFIG_HAL_BOARD != HAL_BOARD_REVOMINI
 #include <AP_HAL/utility/sparse-endian.h>
+#else
+#include <stm32f4xx.h>
+#endif
 
 #include "AP_Compass_HMC5843.h"
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -315,13 +319,21 @@ bool AP_Compass_HMC5843::_setup_sampling_mode()
  */
 bool AP_Compass_HMC5843::_read_sample()
 {
+// 
+#if CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
+ struct PACKED {
+        uint16_t rx;
+        uint16_t ry;
+        uint16_t rz;
+    } val;
+#else
     struct PACKED {
         be16_t rx;
         be16_t ry;
         be16_t rz;
     } val;
     int16_t rx, ry, rz;
-
+#endif
     if (_retry_time > AP_HAL::millis()) {
         return false;
     }
@@ -330,10 +342,15 @@ bool AP_Compass_HMC5843::_read_sample()
         _retry_time = AP_HAL::millis() + 1000;
         return false;
     }
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
+    int16_t rx = (int16_t)__REV16(val.rx);
+    int16_t ry = (int16_t)__REV16(val.ry);
+    int16_t rz = (int16_t)__REV16(val.rz);
+#else
     rx = be16toh(val.rx);
     ry = be16toh(val.ry);
     rz = be16toh(val.rz);
+#endif
 
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
         std::swap(ry, rz);
