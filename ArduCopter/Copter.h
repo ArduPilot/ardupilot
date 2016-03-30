@@ -169,7 +169,7 @@ private:
     AP_Int8 *flight_modes;
 
     AP_Baro barometer;
-    Compass compass;
+    Compass& compass;
     AP_InertialSensor ins;
 
 #if CONFIG_SONAR == ENABLED
