@@ -1,0 +1,14 @@
+#pragma once
+
+#include <toolchain.h>
+
+#include_next <cmath>
+
+#if defined(HAVE_CMATH)
+
+using std::isnan;
+using std::isfinite;
+using std::isinf;
+
+#endif
+
