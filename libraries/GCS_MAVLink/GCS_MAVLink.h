@@ -47,11 +47,7 @@ static inline bool valid_channel(mavlink_channel_t chan)
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
-        return false;
-    }
-
-    return true;
+    return chan < MAVLINK_COMM_NUM_BUFFERS;
 #pragma clang diagnostic pop
 }
 
