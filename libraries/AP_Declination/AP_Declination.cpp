@@ -25,7 +25,7 @@
  */
 #include "AP_Declination.h"
 
-#include <math.h>
+#include <cmath>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>

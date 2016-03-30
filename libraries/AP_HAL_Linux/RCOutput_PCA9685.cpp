@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 
 #define PCA9685_RA_MODE1           0x00
 #define PCA9685_RA_MODE2           0x01
