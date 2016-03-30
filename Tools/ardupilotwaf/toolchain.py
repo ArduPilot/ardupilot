@@ -119,6 +119,7 @@ def _filter_supported_cxx_compilers(*compilers):
 def configure(cfg):
     if cfg.env.TOOLCHAIN == 'native':
         cfg.load('compiler_cxx compiler_c')
+        cfg.load('configuration_helper')
         return
 
     _filter_supported_c_compilers('gcc', 'clang')
@@ -127,6 +128,8 @@ def configure(cfg):
     cfg.env.AR = cfg.env.TOOLCHAIN + '-ar'
     cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
     cfg.load('compiler_cxx compiler_c')
+
+    cfg.load('configuration_helper')
 
     if cfg.env.COMPILER_CC == 'clang':
         cfg.env.CFLAGS += cfg.env.CLANG_FLAGS
