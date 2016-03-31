@@ -691,7 +691,7 @@ private:
     Vector24 processNoise;          // process noise added to diagonals of predicted covariance matrix
     Vector25 SF;                    // intermediate variables used to calculate predicted covariance matrix
     Vector5 SG;                     // intermediate variables used to calculate predicted covariance matrix
-    Vector8 SQ;                     // intermediate variables used to calculate predicted covariance matrix
+    Vector10 SQ;                    // intermediate variables used to calculate predicted covariance matrix
     Vector23 SPP;                   // intermediate variables used to calculate predicted covariance matrix
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
