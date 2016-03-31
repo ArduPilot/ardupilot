@@ -441,6 +441,8 @@ private:
     // heading when in yaw_look_ahead_bearing
     float yaw_look_ahead_bearing;
 
+    bool compasses_consistent;
+
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;

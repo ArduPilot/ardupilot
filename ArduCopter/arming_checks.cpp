@@ -190,7 +190,11 @@ bool Copter::pre_arm_checks(bool display_failure)
         }
 
         // check all compasses point in roughly same direction
-        if (!compass.consistent()) {
+        if (!compasses_consistent && compass.consistent()) {
+            compasses_consistent = true;
+        }
+
+        if (!compasses_consistent) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent compasses");
             }
