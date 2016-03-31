@@ -31,6 +31,8 @@
 #define RGB_LED_LOW     1
 #define RGB_LED_MEDIUM  2
 #define RGB_LED_HIGH    3
+#define BUZZER_ON       1
+#define BUZZER_OFF      0
 
 class AP_Notify
 {
@@ -97,8 +99,10 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    bool buzzer_enabled() const { return _buzzer_enable; }
 private:
     static NotifyDevice* _devices[];
 
     AP_Int8 _rgb_led_brightness;
+    AP_Int8 _buzzer_enable;
 };

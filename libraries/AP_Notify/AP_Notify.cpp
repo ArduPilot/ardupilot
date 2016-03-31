@@ -41,6 +41,13 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LED_BRIGHT", 0, AP_Notify, _rgb_led_brightness, RGB_LED_HIGH),
 
+    // @Param: BUZZ_ENABLE
+    // @DisplayName: Buzzer enable
+    // @Description: Enable or disable the buzzer. Only for Linux and PX4 based boards.
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ON),
+
     AP_GROUPEND
 };
 
