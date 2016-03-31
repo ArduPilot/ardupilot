@@ -3,7 +3,7 @@
 /// @file	PID.cpp
 /// @brief	Generic PID algorithm
 
-#include <math.h>
+#include <cmath>
 
 #include "PID.h"
 #include <AP_HAL/AP_HAL.h>

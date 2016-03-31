@@ -7,7 +7,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_ADC/AP_ADC.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <math.h>
+#include <cmath>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>

@@ -28,7 +28,7 @@
 
 #include <uORB/uORB.h>
 
-#include <math.h>
+#include <cmath>
 
 extern const AP_HAL::HAL& hal;
 
