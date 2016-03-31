@@ -684,6 +684,11 @@ void NavEKF2_core::selectHeightForFusion()
         if (getTakeoffExpected() || getTouchdownExpected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;
         }
+        // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
+        // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
+        if (motorsArmed && getTakeoffExpected()) {
+            hgtMea = MAX(hgtMea, meaHgtAtTakeOff);
+        }
     } else {
         fuseHgtData = false;
     }
