@@ -177,7 +177,8 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	
 	// Calculate the NE position of WP B relative to WP A
     Vector2f AB = location_diff(prev_WP, next_WP);
-	
+    float AB_length = AB.length();
+    
 	// Check for AB zero length and track directly to the destination
 	// if too small
 	if (AB.length() < 1.0e-6f) {
@@ -207,7 +208,15 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
 		Nu = atan2f(xtrackVel,ltrackVel);
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
-
+    } else if (alongTrackDist > AB_length + groundSpeed*3) {
+        // we have passed point B by 3 seconds. Head towards B
+        // Calc Nu to fly To WP B
+        Vector2f B_air = location_diff(next_WP, _current_loc);
+		Vector2f B_air_unit = (B_air).normalized(); // Unit vector from WP B to aircraft
+		xtrackVel = _groundspeed_vector % (-B_air_unit); // Velocity across line
+		ltrackVel = _groundspeed_vector * (-B_air_unit); // Velocity along line
+		Nu = atan2f(xtrackVel,ltrackVel);
+		_nav_bearing = atan2f(-B_air_unit.y , -B_air_unit.x); // bearing (radians) from AC to L1 point
 	} else { //Calc Nu to fly along AB line
 			
 		//Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)

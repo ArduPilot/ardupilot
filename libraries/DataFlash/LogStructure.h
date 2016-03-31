@@ -626,6 +626,23 @@ struct PACKED log_RPM {
     float rpm2;
 };
 
+struct PACKED log_Rate {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float   control_roll;
+    float   roll;
+    float   roll_out;
+    float   control_pitch;
+    float   pitch;
+    float   pitch_out;
+    float   control_yaw;
+    float   yaw;
+    float   yaw_out;
+    float   control_accel;
+    float   accel;
+    float   accel_out;
+};
+
 // #if SBP_HW_LOGGING
 
 struct PACKED log_SbpLLH {
@@ -860,7 +877,9 @@ Format characters in the format string for binary log messages
     { LOG_GIMBAL2_MSG, sizeof(log_Gimbal2), \
       "GMB2", "IBfffffffff", "TimeMS,es,ex,ey,ez,rx,ry,rz,tx,ty,tz" }, \
     { LOG_GIMBAL3_MSG, sizeof(log_Gimbal3), \
-      "GMB3", "Ihhh", "TimeMS,rl_torque_cmd,el_torque_cmd,az_torque_cmd" }
+      "GMB3", "Ihhh", "TimeMS,rl_torque_cmd,el_torque_cmd,az_torque_cmd" }, \
+    { LOG_RATE_MSG, sizeof(log_Rate), \
+      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -973,9 +992,7 @@ enum LogMessages {
     LOG_GIMBAL1_MSG,
     LOG_GIMBAL2_MSG,
     LOG_GIMBAL3_MSG,
-
-// message types 211 to 220 reversed for autotune use
-
+    LOG_RATE_MSG,
 };
 
 enum LogOriginType {

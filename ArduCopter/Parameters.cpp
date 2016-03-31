@@ -251,6 +251,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
 
+    // @Param: LAND_SPEED_HIGH
+    // @DisplayName: Land speed high
+    // @Description: The descent speed for the first stage of landing in cm/s. If this is zero then WPNAV_SPEED_DN is used
+    // @Units: cm/s
+    // @Range: 0 500
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(land_speed_high,        "LAND_SPEED_HIGH",   0),
+    
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
@@ -886,7 +895,7 @@ const AP_Param::Info Copter::var_info[] = {
 #endif
 
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/Compass.cpp
+    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,        "COMPASS_", Compass),
 
     // @Group: INS_

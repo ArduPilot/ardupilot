@@ -104,7 +104,7 @@
 #define     TONE_BATTERY_WARNING_SLOW_TUNE      6
 #define     TONE_BATTERY_WARNING_FAST_TUNE      7
 #define     TONE_GPS_WARNING_TUNE               8
-#define     TONE_ARMING_FAILURE_TUNE            9    
+#define     TONE_ARMING_FAILURE_TUNE            9
 #define     TONE_PARACHUTE_RELEASE_TUNE         10
 
 #define TONE_NUMBER_OF_TUNES 11
@@ -113,14 +113,14 @@ class Linux::ToneAlarm{
 public:
 	ToneAlarm();
 	void set_tune(uint8_t tone);
-	bool init();
+	virtual bool init();
+	virtual void stop();
+	virtual bool play();
 	bool is_tune_comp();
-	void stop();
-	bool play();
 	bool set_note();
 	bool init_tune();
 
-private:
+protected:
 	bool tune_comp;
 	static const char *tune[TONE_NUMBER_OF_TUNES];
 	static bool tune_repeat[TONE_NUMBER_OF_TUNES];
@@ -133,9 +133,11 @@ private:
 	uint16_t duration;
 	int32_t prev_tune_num;
 	uint32_t prev_time;
+	int8_t tune_num;
+	uint8_t tune_pos;
+
+private:
 	int32_t period_fd;
 	int32_t duty_fd;
 	int32_t run_fd;
-	int8_t tune_num;
-	uint8_t tune_pos;
 };

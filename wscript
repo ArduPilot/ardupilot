@@ -246,18 +246,11 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-ardupilotwaf.build_command('copter',
-    targets='bin/arducopter',
-    doc='builds arducopter',
-)
-ardupilotwaf.build_command('plane',
-    targets='bin/arduplane',
-    doc='builds arduplane',
-)
-ardupilotwaf.build_command('rover',
-    targets='bin/ardurover',
-    doc='builds ardurover',
-)
+for name in ('antennatracker', 'copter', 'plane', 'rover'):
+    ardupilotwaf.build_command(name,
+        program_group_list=name,
+        doc='builds %s programs' % name,
+    )
 
 for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
     ardupilotwaf.build_command(program_group,

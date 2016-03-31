@@ -155,7 +155,8 @@ void Plane::update_loiter(uint16_t radius)
     }
 
     if (loiter.start_time_ms == 0) {
-        if (nav_controller->reached_loiter_target()) {
+        if (nav_controller->reached_loiter_target() ||
+            auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
             if (control_mode == GUIDED) {

@@ -27,10 +27,10 @@ This list is automatically generated from the latest ardupilot source code, and 
 .. DO NOT EDIT
 
 
-Complete Parameter List
------------------------
+.. _parameters:
 
---------------
+Complete Parameter List
+=======================
 
 {blurb}
 
@@ -101,11 +101,15 @@ Complete Parameter List
 
     def emit(self, g, f):
         tag = '%s Parameters' % self.escape(g.name)
+        reference = "parameters_" + g.name
         ret = '''
+
+.. _{reference}:
 
 {tag}
 {underline}
-'''.format(tag=tag,underline="=" * len(tag))
+'''.format(tag=tag,underline="-" * len(tag),
+           reference=reference)
 
         for param in g.params:
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
@@ -119,14 +123,18 @@ Complete Parameter List
             tag = tag.strip()
             reference = param.name
             # remove e.g. "ArduPlane:" from start of parameter name:
-            reference = reference.split(":")[-1]
+            if self.annotate_with_vehicle:
+                reference = g.name + "_" + reference.split(":")[-1]
+            else:
+                reference = reference.split(":")[-1]
+
             ret += '''
 
 .. _{reference}:
 
 {tag}
 {tag_underline}
-'''.format(tag=tag, tag_underline='='*len(tag), reference=reference)
+'''.format(tag=tag, tag_underline='~'*len(tag), reference=reference)
 
             if d.get('User',None) == 'Advanced':
                 ret += '\n| *Note: This parameter is for advanced users*'

@@ -265,8 +265,10 @@ void SITL_State::_fdm_input_local(void)
     sitl_model->update(input);
 
     // get FDM output from the model
-    sitl_model->fill_fdm(_sitl->state);
-    _sitl->update_rate_hz = sitl_model->get_rate_hz();
+    if (_sitl) {
+        sitl_model->fill_fdm(_sitl->state);
+        _sitl->update_rate_hz = sitl_model->get_rate_hz();
+    }
 
     if (gimbal != NULL) {
         gimbal->update();
@@ -275,10 +277,16 @@ void SITL_State::_fdm_input_local(void)
         adsb->update();
     }
 
-    _output_to_flightgear();
+    if (_sitl) {
+        _output_to_flightgear();
+    }
 
     // update simulation time
-    hal.scheduler->stop_clock(_sitl->state.timestamp_us);
+    if (_sitl) {
+        hal.scheduler->stop_clock(_sitl->state.timestamp_us);
+    } else {
+        hal.scheduler->stop_clock(AP_HAL::micros64()+100);
+    }
 
     _synthetic_clock_mode = true;
     _update_count++;
@@ -291,7 +299,7 @@ void SITL_State::_fdm_input_local(void)
  */
 void SITL_State::_apply_servo_filter(float deltat)
 {
-    if (_sitl->servo_rate < 1.0f) {
+    if (_sitl == nullptr || _sitl->servo_rate < 1.0f) {
         // no limit
         return;
     }
@@ -347,7 +355,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
 
     // pass wind into simulators, using a wind gradient below 60m
     float altitude = _barometer?_barometer->get_altitude():0;
-    float wind_speed = _sitl->wind_speed;
+    float wind_speed = _sitl?_sitl->wind_speed:0;
     if (altitude < 0) {
         altitude = 0;
     }
@@ -355,8 +363,8 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         wind_speed *= altitude / 60;
     }
     input.wind.speed = wind_speed;
-    input.wind.direction = _sitl->wind_direction;
-    input.wind.turbulence = _sitl->wind_turbulance;
+    input.wind.direction = _sitl?_sitl->wind_direction:0;
+    input.wind.turbulence = _sitl?_sitl->wind_turbulance:0;
 
     for (i=0; i<SITL_NUM_CHANNELS; i++) {
         if (pwm_output[i] == 0xFFFF) {
@@ -367,25 +375,28 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         last_pwm_output[i] = pwm_output[i];
     }
 
+    float engine_mul = _sitl?_sitl->engine_mul.get():1;
+    bool motors_on = false;
+    
     if (_vehicle == ArduPlane) {
         // add in engine multiplier
         if (input.servos[2] > 1000) {
-            input.servos[2] = ((input.servos[2]-1000) * _sitl->engine_mul) + 1000;
+            input.servos[2] = ((input.servos[2]-1000) * engine_mul) + 1000;
             if (input.servos[2] > 2000) input.servos[2] = 2000;
         }
-        _sitl->motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
+        motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
     } else if (_vehicle == APMrover2) {
         // add in engine multiplier
         if (input.servos[2] != 1500) {
-            input.servos[2] = ((input.servos[2]-1500) * _sitl->engine_mul) + 1500;
+            input.servos[2] = ((input.servos[2]-1500) * engine_mul) + 1500;
             if (input.servos[2] > 2000) input.servos[2] = 2000;
             if (input.servos[2] < 1000) input.servos[2] = 1000;
         }
-        _sitl->motors_on = ((input.servos[2]-1500)/500.0f) != 0;
+        motors_on = ((input.servos[2]-1500)/500.0f) != 0;
     } else {
-        _sitl->motors_on = false;
+        motors_on = false;
         // apply engine multiplier to first motor
-        input.servos[0] = ((input.servos[0]-1000) * _sitl->engine_mul) + 1000;
+        input.servos[0] = ((input.servos[0]-1000) * engine_mul) + 1000;
         // run checks on each motor
         for (i=0; i<4; i++) {
             // check motors do not exceed their limits
@@ -393,25 +404,31 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
             if (input.servos[i] < 1000) input.servos[i] = 1000;
             // update motor_on flag
             if ((input.servos[i]-1000)/1000.0f > 0) {
-                _sitl->motors_on = true;
+                motors_on = true;
             }
         }
     }
+    if (_sitl) {
+        _sitl->motors_on = motors_on;
+    }
 
-    float voltage;
+    float voltage = 0;
+    _current = 0;
     
-    if (_sitl->state.battery_voltage <= 0) {
-        // simulate simple battery setup
-        float throttle = _sitl->motors_on?(input.servos[2]-1000) / 1000.0f:0;
-        // lose 0.7V at full throttle
-        voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
-
-        // assume 50A at full throttle
-        _current = 50.0f * fabsf(throttle);
-    } else {
-        // FDM provides voltage and current
-        voltage = _sitl->state.battery_voltage;
-        _current = _sitl->state.battery_current;
+    if (_sitl != nullptr) {
+        if (_sitl->state.battery_voltage <= 0) {
+            // simulate simple battery setup
+            float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
+            // lose 0.7V at full throttle
+            voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
+            
+            // assume 50A at full throttle
+            _current = 50.0f * fabsf(throttle);
+        } else {
+            // FDM provides voltage and current
+            voltage = _sitl->state.battery_voltage;
+            _current = _sitl->state.battery_current;
+        }
     }
 
     // assume 3DR power brick

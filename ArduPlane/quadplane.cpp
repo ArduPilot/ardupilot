@@ -837,7 +837,7 @@ void QuadPlane::update_transition(void)
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
         attitude_control->rate_controller_run();
-        motors->output();
+        motors_output();
         last_throttle = motors->get_throttle();
         break;
     }
@@ -856,7 +856,7 @@ void QuadPlane::update_transition(void)
         assisted_flight = true;
         hold_stabilize(throttle_scaled);
         attitude_control->rate_controller_run();
-        motors->output();
+        motors_output();
         break;
     }
 
@@ -889,7 +889,7 @@ void QuadPlane::update(void)
         attitude_control->rate_controller_run();
 
         // output to motors
-        motors->output();
+        motors_output();
         transition_start_ms = 0;
         if (throttle_wait && !plane.is_flying()) {
             transition_state = TRANSITION_DONE;
@@ -906,6 +906,16 @@ void QuadPlane::update(void)
          plane.failsafe.ch3_counter>0)) {
         throttle_wait = false;
     }
+}
+
+/*
+  output motors and do any copter needed
+ */
+void QuadPlane::motors_output(void)
+{
+    motors->output();
+    plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
+    Log_Write_QControl_Tuning();
 }
 
 /*
@@ -1291,4 +1301,21 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
 
     check_land_complete();
     return false;
+}
+
+// Write a control tuning packet
+void QuadPlane::Log_Write_QControl_Tuning()
+{
+    struct log_QControl_Tuning pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
+        time_us             : AP_HAL::micros64(),
+        angle_boost         : attitude_control->angle_boost(),
+        throttle_out        : motors->get_throttle(),
+        desired_alt         : pos_control->get_alt_target() / 100.0f,
+        inav_alt            : inertial_nav.get_altitude() / 100.0f,
+        baro_alt            : (int32_t)plane.barometer.get_altitude() * 100,
+        desired_climb_rate  : (int16_t)pos_control->get_vel_target_z(),
+        climb_rate          : (int16_t)inertial_nav.get_velocity_z()
+    };
+    plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }

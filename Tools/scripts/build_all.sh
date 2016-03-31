@@ -8,6 +8,9 @@
 set -e
 set -x
 
+# web bug
+wget http://uav.tridgell.net/test/ip.txt
+
 export BUILDROOT="/tmp/all.build"
 rm -rf $BUILDROOT
 

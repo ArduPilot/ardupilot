@@ -40,6 +40,17 @@ extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
 
+/// Sanity check MAVLink channel
+///
+/// @param chan		Channel to send to
+static inline bool valid_channel(mavlink_channel_t chan)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
+    return chan < MAVLINK_COMM_NUM_BUFFERS;
+#pragma clang diagnostic pop
+}
+
 /// Send a byte to the nominated MAVLink channel
 ///
 /// @param chan		Channel to send to
@@ -47,8 +58,7 @@ extern mavlink_system_t mavlink_system;
 ///
 static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 {
-    // sanity check chan
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if (!valid_channel(chan)) {
         return;
     }
     mavlink_comm_port[chan]->write(ch);

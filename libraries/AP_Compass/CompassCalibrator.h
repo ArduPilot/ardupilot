@@ -83,7 +83,7 @@ private:
     uint8_t _attempt;
 
     //fit state
-    struct param_t _params;
+    class param_t _params;
     uint16_t _fit_step;
     CompassSample *_sample_buffer;
     float _fitness; // mean squared residuals

@@ -6,35 +6,35 @@
 
 #ArduPilot Project#
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/diydrones/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ArduPilot/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 [![Build SemaphoreCI](https://semaphoreci.com/api/v1/projects/4d28a40d-b6a6-4bfb-9780-95d92aabb178/667563/badge.svg)](https://semaphoreci.com/diydrones/ardupilot)
 
-[![Build Travis](https://travis-ci.org/diydrones/ardupilot.svg?branch=master)](https://travis-ci.org/diydrones/ardupilot)
+[![Build Travis](https://travis-ci.org/ArduPilot/ardupilot.svg?branch=master)](https://travis-ci.org/ArduPilot/ardupilot)
 
 ### The ArduPilot project is made up of: ###
->>ArduCopter (or APM:Copter) : [code](https://github.com/diydrones/ardupilot/tree/master/ArduCopter), [wiki](http://copter.ardupilot.com)
+>>ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](http://copter.ardupilot.com)
 
->>ArduPlane (or APM:Plane) : [code](https://github.com/diydrones/ardupilot/tree/master/ArduPlane), [wiki](http://plane.ardupilot.com)
+>>ArduPlane (or APM:Plane) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](http://plane.ardupilot.org)
 
->>ArduRover (or APMrover2) : [code](https://github.com/diydrones/ardupilot/tree/master/APMrover2), [wiki](http://rover.ardupilot.com)
+>>ArduRover (or APMrover2) : [code](https://github.com/ArduPilot/ardupilot/tree/master/APMrover2), [wiki](http://rover.ardupilot.org)
 
->>Antenna Tracker : [code](https://github.com/diydrones/ardupilot/tree/master/AntennaTracker), [wiki](http://antennatracker.ardupilot.com)
+>>Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](http://antennatracker.ardupilot.org)
 
 ### User Support & Discussion Forums ###
->>APM Forum: [http://ardupilot.com/forum/index.php](http://ardupilot.com/forum/index.php)
+>>Support Forum: [http://discuss.ardupilot.org/](http://discuss.ardupilot.org/)
 
->>Community Site: [http://diydrones.com](http://diydrones.com)
+>>Community Site: [http://ardupilot.org](http://ardupilot.org)
 
 ### Developer Information ###
->>Github repository: [https://github.com/diydrones/ardupilot](https://github.com/diydrones/ardupilot)
+>>Github repository: [https://github.com/ArduPilot/ardupilot](https://github.com/ArduPilot/ardupilot)
 
->>Main developer wiki: [http://dev.ardupilot.com](http://dev.ardupilot.com)
+>>Main developer wiki: [http://dev.ardupilot.org](http://dev.ardupilot.org)
 
 >>Developer email group: drones-discuss@googlegroups.com
 
 ### Contributors ###
->>[Github statistics](https://github.com/diydrones/ardupilot/graphs/contributors)
+>>[Github statistics](https://github.com/ArduPilot/ardupilot/graphs/contributors)
 
 ### Dronecode.org ###
 
@@ -47,13 +47,13 @@
 >>For information on the foundation please visit https://www.dronecode.org and https://github.com/Dronecode for further information or contact celder@dronecode.org
 
 ### How To Get Involved ###
->>The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](http://dev.ardupilot.com/wiki/guidelines-for-contributors-to-the-apm-codebase)
+>>The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](http://dev.ardupilot.org/wiki/guidelines-for-contributors-to-the-apm-codebase)
 
->>We have an active group of Beta Testers especially for ArduCopter to help us find bugs: [release procedures](http://dev.ardupilot.com/wiki/release-procedures)
+>>We have an active group of Beta Testers especially for ArduCopter to help us find bugs: [release procedures](http://dev.ardupilot.org/wiki/release-procedures)
 
->>Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/diydrones/ardupilot/issues).
+>>Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/ArduPilot/ardupilot/issues).
 
->>Helping other users with log analysis on [diydrones.com](http://www.diydrones.com) and the [APM forums ](http://ardupilot.com/forum/index.php) is always appreciated:
+>>Helping other users with log analysis on [http://discuss.ardupilot.org/](http://discuss.ardupilot.org/) is always appreciated:
 
 >>There is a group of wiki editors as well in case documentation is your thing: ardu-wiki-editors@googlegroups.com
 
@@ -62,7 +62,7 @@
 ### License ###
 >>[Overview of license](http://dev.ardupilot.com/wiki/license-gplv3)
 
->>[Full Text](https://github.com/diydrones/ardupilot/blob/master/COPYING.txt)
+>>[Full Text](https://github.com/ArduPilot/ardupilot/blob/master/COPYING.txt)
 
 ### Maintainers ###
 >> Ardupilot is comprised of several parts, vehicles and boards. The list below

@@ -9,6 +9,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Motors/AP_Motors.h>
+#include <AC_AttitudeControl/AC_AttitudeControl.h>
+#include <AC_AttitudeControl/AC_PosControl.h>
 
 #include "DataFlash.h"
 #include "DataFlash_SITL.h"
@@ -1794,4 +1797,31 @@ void DataFlash_Class::Log_Write_RPM(const AP_RPM &rpm_sensor)
         rpm2        : rpm_sensor.get_rpm(1)
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write an rate packet
+void DataFlash_Class::Log_Write_Rate(const AP_AHRS &ahrs,
+                                     const AP_Motors &motors,
+                                     const AC_AttitudeControl &attitude_control,
+                                     const AC_PosControl &pos_control)
+{
+    const Vector3f &rate_targets = attitude_control.rate_bf_targets();
+    const Vector3f &accel_target = pos_control.get_accel_target();
+    struct log_Rate pkt_rate = {
+        LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
+        time_us         : AP_HAL::micros64(),
+        control_roll    : (float)rate_targets.x,
+        roll            : (float)(ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100),
+        roll_out        : motors.get_roll(),
+        control_pitch   : (float)rate_targets.y,
+        pitch           : (float)(ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100),
+        pitch_out       : motors.get_pitch(),
+        control_yaw     : (float)rate_targets.z,
+        yaw             : (float)(ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100),
+        yaw_out         : motors.get_yaw(),
+        control_accel   : (float)accel_target.z,
+        accel           : (float)(-(ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
+        accel_out       : motors.get_throttle()
+    };
+    WriteBlock(&pkt_rate, sizeof(pkt_rate));
 }
