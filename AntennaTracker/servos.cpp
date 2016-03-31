@@ -332,7 +332,7 @@ void Tracker::update_yaw_onoff_servo(float yaw)
 void Tracker::update_yaw_cr_servo(float yaw)
 {
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
-    float yaw_cd = wrap_180_cd_float(yaw*100.0f);
+    float yaw_cd = wrap_180_cd(yaw*100.0f);
     float err_cd = wrap_180_cd(yaw_cd - (float)ahrs_yaw_cd);
 
     channel_yaw.servo_out = g.pidYaw2Srv.get_pid(err_cd);

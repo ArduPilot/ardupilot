@@ -372,7 +372,7 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     // coming into this equation at 4500 or less, and based on the original assumption of the
     // total _servo_x.servo_out range being -4500 to 4500.
 
-    float total_out = pythagorous2((float)pitch_out, (float)roll_out);
+    float total_out = norm((float)pitch_out, (float)roll_out);
 
     if (total_out > _cyclic_max) {
         float ratio = (float)_cyclic_max / total_out;
