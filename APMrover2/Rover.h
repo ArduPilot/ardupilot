@@ -21,7 +21,7 @@
 #define THISFIRMWARE "ArduRover v3.0.0"
 #define FIRMWARE_VERSION 3,0,0,FIRMWARE_VERSION_TYPE_OFFICIAL
 
-#include <math.h>
+#include <cmath>
 #include <stdarg.h>
 
 // Libraries
