@@ -134,6 +134,11 @@ void ToneAlarm_PX4::update()
         return;
     }
 
+    // exit if buzzer is not enabled
+    if (pNotify->buzzer_enabled() == false) {
+        return;
+    }
+
     check_cont_tone();
 
     if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
