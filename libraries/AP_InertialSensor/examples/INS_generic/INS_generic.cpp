@@ -9,7 +9,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Math/AP_Math.h>
 
-const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 AP_InertialSensor ins;
 
@@ -39,31 +39,31 @@ void loop(void)
 
     hal.console->println();
     hal.console->println(
-    "Menu:\r\n"
-    "    d) display offsets and scaling\r\n"
-    "    l) level (capture offsets from level)\r\n"
-    "    t) test\r\n"
+    "Menu:\n"
+    "    d) display offsets and scaling\n"
+    "    l) level (capture offsets from level)\n"
+    "    t) test\n"
     "    r) reboot");
 
     // wait for user input
-    while( !hal.console->available() ) {
+    while (!hal.console->available()) {
         hal.scheduler->delay(20);
     }
 
     // read in user input
-    while( hal.console->available() ) {
+    while (hal.console->available()) {
         user_input = hal.console->read();
 
-        if( user_input == 'd' || user_input == 'D' ) {
+        if (user_input == 'd' || user_input == 'D') {
             display_offsets_and_scaling();
         }
 
-        if( user_input == 't' || user_input == 'T' ) {
+        if (user_input == 't' || user_input == 'T') {
             run_test();
         }
 
-        if( user_input == 'r' || user_input == 'R' ) {
-			hal.scheduler->reboot(false);
+        if (user_input == 'r' || user_input == 'R') {
+            hal.scheduler->reboot(false);
         }
     }
 }
@@ -102,7 +102,7 @@ static void run_test()
     static uint8_t ins_count = MAX(accel_count, gyro_count);
 
     // flush any user input
-    while( hal.console->available() ) {
+    while (hal.console->available()) {
         hal.console->read();
     }
 
@@ -110,8 +110,7 @@ static void run_test()
     ins.update();
 
     // loop as long as user does not press a key
-    while( !hal.console->available() ) {
-
+    while (!hal.console->available()) {
         // wait until we have a sample
         ins.wait_for_sample();
 
@@ -162,7 +161,7 @@ static void run_test()
     }
 
     // clear user input
-    while( hal.console->available() ) {
+    while (hal.console->available()) {
         hal.console->read();
     }
 }
