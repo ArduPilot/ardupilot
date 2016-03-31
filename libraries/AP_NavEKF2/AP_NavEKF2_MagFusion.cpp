@@ -38,7 +38,7 @@ void NavEKF2_core::controlMagYawReset()
     // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
     // Perform a reset earlier if bad initial yaw from on-ground magnetic field distoration is detected.
     // Don't reset if rotating rapidly as timing errors will produce large errors in the yaw estimate.
-    if (!firstMagYawInit && !assume_zero_sideslip() && inFlight && deltaRot < 0.1745f) {
+    if (!firstMagYawInit && !assume_zero_sideslip() && !onGround && deltaRot < 0.1745f) {
         // check that we have reached a height where ground magnetic interference effects are insignificant
         bool hgtCheckPassed = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
 
@@ -684,7 +684,7 @@ void NavEKF2_core::fuseEulerYaw()
 
     // compass measurement error variance (rad^2)
     float R_YAW;
-    if (inFlight) {
+    if (!onGround) {
         R_YAW = sq(fmaxf(frontend->_yawNoise,0.01f));
     } else {
         R_YAW = sq(0.1745f);
