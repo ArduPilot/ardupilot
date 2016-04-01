@@ -488,7 +488,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     Vector3f mag_variance;
     Vector2f offset;
     ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
-    if (mag_variance.length() >= g.fs_ekf_thresh) {
+    if (mag_variance.x>1.0f || mag_variance.y>1.0f || mag_variance.z>1.0f) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav Checks");
         }
