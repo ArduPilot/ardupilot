@@ -228,6 +228,22 @@ bool AP_Terrain::find_nearest_grid_cache(const Location &loc)
             // record the closest point and it's height
 }
 
+void AP_Terrain::dump_grid_info()
+{
+    ::printf("----GRID INFO------------\n");
+     // cycle through all grid caches we have
+    for (uint16_t i=0; i<cache_size; i++) {
+        // skip over invalid and empty grid blocks
+        if (cache[i].state != GRID_CACHE_INVALID && cache[i].grid.bitmap != 0) {
+            ::printf("Grid:%d lat:%ld lon:%ld\n",
+                    (int)i,
+                    (long)cache[i].grid.lat,
+                    (long)cache[i].grid.lon);
+        }
+    }
+    ::printf("-------------------------\n");
+}
+
 /*
   find nearest grid structure given a grid_info
 */
