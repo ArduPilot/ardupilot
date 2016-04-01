@@ -234,6 +234,16 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPEND
 };
 
+static const struct {
+    const char *name;
+    float value;
+} defaults_table[] = {
+    { "Q_A_RAT_RLL_P", 0.25 },
+    { "Q_A_RAT_RLL_I", 0.25 },
+    { "Q_A_RAT_PIT_P", 0.25 },
+    { "Q_A_RAT_PIT_I", 0.25 },
+};
+
 QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
     ahrs(_ahrs)
 {
@@ -347,6 +357,8 @@ bool QuadPlane::setup(void)
     
     transition_state = TRANSITION_DONE;
 
+    setup_defaults();
+    
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane initialised");
     initialised = true;
     return true;
@@ -356,6 +368,20 @@ failed:
     enable.set(0);
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane setup failed");
     return false;
+}
+
+/*
+  setup default parameters from defaults_table
+ */
+void QuadPlane::setup_defaults(void)
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(defaults_table); i++) {
+        if (!AP_Param::set_default_by_name(defaults_table[i].name, defaults_table[i].value)) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane setup failure for %s",
+                                             defaults_table[i].name);
+            AP_HAL::panic("quadplane bad default %s", defaults_table[i].name);
+        }
+    }
 }
 
 // init quadplane stabilize mode 

@@ -23,6 +23,7 @@ public:
     void control_auto(const Location &loc);
     bool init_mode(void);
     bool setup(void);
+    void setup_defaults(void);
     
     // update transition handling
     void update(void);
