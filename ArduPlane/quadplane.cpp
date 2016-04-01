@@ -1136,7 +1136,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     }
     attitude_control->get_rate_roll_pid().reset_I();
     attitude_control->get_rate_pitch_pid().reset_I();
-    attitude_control->get_rate_pitch_pid().reset_I();
+    attitude_control->get_rate_yaw_pid().reset_I();
     pid_accel_z.reset_I();
     pi_vel_xy.reset_I();
     
