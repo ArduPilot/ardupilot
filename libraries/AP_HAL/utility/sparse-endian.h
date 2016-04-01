@@ -21,10 +21,11 @@
 #ifndef SPARSE_ENDIAN_H
 #define SPARSE_ENDIAN_H
 
+#if defined __unix__
+
 #if !defined(HAVE_BYTESWAP_H) || HAVE_BYTESWAP_H
 #include <byteswap.h>
 #endif
-
 #include <endian.h>
 #include <stdint.h>
 
@@ -87,5 +88,31 @@ static inline uint64_t le64toh(le64_t value) { return bswap_64_on_be((uint64_t _
 static inline uint16_t be16toh(be16_t value) { return bswap_16_on_le((uint16_t __force)value); }
 static inline uint32_t be32toh(be32_t value) { return bswap_32_on_le((uint32_t __force)value); }
 static inline uint64_t be64toh(be64_t value) { return bswap_64_on_le((uint64_t __force)value); }
+
+#else // not __unix__
+   #pragma message "Assuming byteswap.h endian.h not defined for this platform"
+   #if ! (defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__))
+      #error  byte order macros are not defined for this compiler.
+   #endif
+   // some sort of type safe structure
+   struct be16_t{
+      uint8_t ar[2];
+   };
+
+   inline int16_t be16toh(be16_t in)
+   {
+   #if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+      #pragma message "BEWARE! big endian be16toh function has not been tested."
+      return static_cast<int16_t>(static_cast<uint16_t>(in.ar[0]) * 256  +  static_cast<uint16_t>(in.ar[1])) ;
+   #else
+      #if  (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+         #pragma message "little endian platform."
+         return static_cast<int16_t>(static_cast<uint16_t>(in.ar[1]) | (static_cast<uint16_t>(in.ar[0]) << 8U) );
+      #else  
+         #error BYTE_ORDER macros dont work as expected.
+      #endif
+   #endif // __BYTE_ORDER__
+   }
+#endif // not __unix__
 
 #endif /* SPARSE_ENDIAN_H */
