@@ -51,7 +51,7 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF& ahrs) :
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     backend(new AP_OpticalFlow_Onboard(*this, ahrs)),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    backend(new AP_OpticalFlow_Linux(*this)),
+    backend(new AP_OpticalFlow_Linux(*this, hal.i2c_mgr->get_device(1, HAL_OPTFLOW_PX4FLOW_I2C_ADDRESS))),
 #else
     backend(NULL),
 #endif

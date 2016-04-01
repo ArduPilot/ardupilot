@@ -17,27 +17,31 @@
 /*
  *       AP_OpticalFlow_Linux.cpp - ardupilot library for the PX4Flow sensor.
  *          inspired by the PX4Firmware code.
- *      
+ *
  *       @author: Víctor Mayoral Vilches
  *
+ *       Address range 0x42 - 0x49
  */
 
+#include <utility>
+
 #include <AP_HAL/AP_HAL.h>
+
 #include "OpticalFlow.h"
 
 #define PX4FLOW_DEBUG 1
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#define PX4FLOW_I2C_ADDRESS     0x42    // 7-bit address. 8-bit address is 0x84, range 0x42 - 0x49
 #define PX4FLOW_REG             0x16    // Measure Register 22
 #define I2C_FRAME_SIZE          (sizeof(i2c_frame))
 #define I2C_INTEGRAL_FRAME_SIZE (sizeof(i2c_integral_frame))
 
 extern const AP_HAL::HAL& hal;
 
-AP_OpticalFlow_Linux::AP_OpticalFlow_Linux(OpticalFlow &_frontend) : 
-    OpticalFlow_backend(_frontend)
+AP_OpticalFlow_Linux::AP_OpticalFlow_Linux(OpticalFlow &_frontend, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+    : OpticalFlow_backend(_frontend)
+    , _dev(std::move(dev))
 {}
 
 void AP_OpticalFlow_Linux::init(void)
@@ -47,50 +51,35 @@ void AP_OpticalFlow_Linux::init(void)
         return;
     }
 
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
-    if (i2c_sem == NULL) {
-        return;
-    }
-
     // take i2c bus sempahore
-    if (!i2c_sem->take(200)) {
+    if (!_dev->get_semaphore()->take(200)) {
         return;
     }
 
     // read from flow sensor to ensure it is not a ll40ls Lidar (which can be on 0x42)
     // read I2C_FRAME_SIZE bytes, the ll40ls will error whereas the flow happily returns data
     uint8_t val[I2C_FRAME_SIZE];
-    if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_FRAME_SIZE, val) != 0) {
-        i2c_sem->give();
-        return;
+    if (!_dev->read_registers(0, val, I2C_FRAME_SIZE)) {
+        goto fail;
     }
 
     // success
     initialised = true;
-    i2c_sem->give();
+
+fail:
+    _dev->get_semaphore()->give();
 }
 
 bool AP_OpticalFlow_Linux::request_measurement()
 {
     // send measure request to sensor
-    uint8_t cmd = PX4FLOW_REG;
-    if (hal.i2c->writeRegisters(PX4FLOW_I2C_ADDRESS, cmd, 0, nullptr) != 0) {
-        return false;
-    }
-    return true;
+    return _dev->write_register(PX4FLOW_REG, 0);
 }
 
 bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
-    if (i2c_sem == NULL) {
-        return false;
-    }
-
     // take i2c bus sempahore (non blocking)
-    if (!i2c_sem->take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return false;
     }
 
@@ -102,20 +91,20 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
 
     // Perform the writing and reading in a single command
     if (PX4FLOW_REG == 0x00) {
-        if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE, val) != 0) {
+        if (!_dev->read_registers(0, val, I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE)) {
             goto fail_transfer;
         }
         memcpy(&f_integral, &(val[I2C_FRAME_SIZE]), I2C_INTEGRAL_FRAME_SIZE);
     }
 
     if (PX4FLOW_REG == 0x16) {
-        if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_INTEGRAL_FRAME_SIZE, val) != 0) {
+        if (!_dev->read_registers(0, val, I2C_INTEGRAL_FRAME_SIZE)) {
             goto fail_transfer;
         }
         memcpy(&f_integral, val, I2C_INTEGRAL_FRAME_SIZE);
     }
 
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
 
     // reduce error count
     if (num_errors > 0) {
@@ -139,7 +128,7 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
 
 fail_transfer:
     num_errors++;
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
     return false;
 }
 
