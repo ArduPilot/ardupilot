@@ -23,6 +23,7 @@ public:
     void control_auto(const Location &loc);
     bool init_mode(void);
     bool setup(void);
+    void setup_defaults(void);
     
     // update transition handling
     void update(void);
@@ -60,7 +61,7 @@ public:
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
-        int16_t  angle_boost;
+        float    angle_boost;
         float    throttle_out;
         float    desired_alt;
         float    inav_alt;
@@ -72,12 +73,6 @@ public:
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
-    AC_PID        pid_rate_roll {0.25, 0.25, 0.004,  2000, 10, 0.02};
-    AC_PID        pid_rate_pitch{0.25, 0.25, 0.004,  2000, 10, 0.02};
-    AC_PID        pid_rate_yaw  {0.15, 0.1,  0.004,  2000,  5, 0.02};
-    AC_P          p_stabilize_roll{4.5};
-    AC_P          p_stabilize_pitch{4.5};
-    AC_P          p_stabilize_yaw{4.5};
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
@@ -224,12 +219,14 @@ private:
         uint8_t seq = 0;              // motor sequence number of motor being tested
         uint8_t throttle_type = 0;    // motor throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through)
         uint16_t throttle_value = 0;  // throttle to be sent to motor, value depends upon it's type
+        uint8_t motor_count;          // number of motors to cycle
     } motor_test;
 
 public:
     void motor_test_output();
     uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
-                                     uint16_t throttle_value, float timeout_sec);
+                                     uint16_t throttle_value, float timeout_sec,
+                                     uint8_t motor_count);
 private:
     void motor_test_stop();
 };

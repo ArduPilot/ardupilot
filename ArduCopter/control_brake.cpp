@@ -36,13 +36,15 @@ bool Copter::brake_init(bool ignore_checks)
 void Copter::brake_run()
 {
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         wp_nav.init_brake_target(BRAKE_MODE_DECEL_RATE);
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+#else
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(0)-throttle_average);
@@ -58,6 +60,9 @@ void Copter::brake_run()
     if (ap.land_complete) {
         init_disarm_motors();
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run brake controller
     wp_nav.update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);

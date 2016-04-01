@@ -165,9 +165,9 @@ void Plane::Log_Write_Attitude(void)
 
     DataFlash.Log_Write_Attitude(ahrs, targets);
     if (quadplane.in_vtol_mode()) {
-        DataFlash.Log_Write_PID(LOG_PIDR_MSG, quadplane.pid_rate_roll.get_pid_info() );
-        DataFlash.Log_Write_PID(LOG_PIDP_MSG, quadplane.pid_rate_pitch.get_pid_info() );
-        DataFlash.Log_Write_PID(LOG_PIDY_MSG, quadplane.pid_rate_yaw.get_pid_info() );
+        DataFlash.Log_Write_PID(LOG_PIDR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
+        DataFlash.Log_Write_PID(LOG_PIDP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
+        DataFlash.Log_Write_PID(LOG_PIDY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
         DataFlash.Log_Write_PID(LOG_PIDA_MSG, quadplane.pid_accel_z.get_pid_info() );
     } else {
         DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
@@ -501,7 +501,7 @@ static const struct LogStructure log_structure[] = {
     { LOG_STATUS_MSG, sizeof(log_Status),
       "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit" },
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
-      "QTUN", "Qhfffehh", "TimeUS,AngBst,ThrOut,DAlt,Alt,BarAlt,DCRt,CRt" },
+      "QTUN", "Qffffehh", "TimeUS,AngBst,ThrOut,DAlt,Alt,BarAlt,DCRt,CRt" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },

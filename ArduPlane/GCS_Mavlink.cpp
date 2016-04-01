@@ -515,7 +515,7 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     const DataFlash_Class::PID_Info *pid_info;
     if (g.gcs_pid_mask & 1) {
         if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.pid_rate_roll.get_pid_info();
+            pid_info = &quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
         } else {
             pid_info = &rollController.get_pid_info();
         }
@@ -532,7 +532,7 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 2) {
         if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.pid_rate_pitch.get_pid_info();
+            pid_info = &quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
         } else {
             pid_info = &pitchController.get_pid_info();
         }
@@ -549,7 +549,7 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 4) {
         if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.pid_rate_yaw.get_pid_info();
+            pid_info = &quadplane.attitude_control->get_rate_yaw_pid().get_pid_info();
         } else {
             pid_info = &yawController.get_pid_info();
         }
@@ -1544,7 +1544,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
             // param3 : throttle (range depends upon param2)
             // param4 : timeout (in seconds)
-            result = plane.quadplane.mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4);
+            // param5 : motor count (number of motors to test in sequence)
+            result = plane.quadplane.mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4, (uint8_t)packet.param5);
             break;
             
         case MAV_CMD_DO_VTOL_TRANSITION:

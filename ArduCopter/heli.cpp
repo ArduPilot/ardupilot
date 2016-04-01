@@ -16,19 +16,6 @@ static int8_t heli_dynamic_flight_counter;
 // heli_init - perform any special initialisation required for the tradheli
 void Copter::heli_init()
 {
-    /*
-      automatically set H_RSC_MIN and H_RSC_MAX from RC8_MIN and
-      RC8_MAX so that when users upgrade from tradheli version 3.3 to
-      3.4 they get the same throttle range as in previous versions of
-      the code
-     */
-    if (!g.heli_servo_rsc.radio_min.configured()) {
-        g.heli_servo_rsc.radio_min.set_and_save(g.rc_8.radio_min.get());
-    }
-    if (!g.heli_servo_rsc.radio_max.configured()) {
-        g.heli_servo_rsc.radio_max.set_and_save(g.rc_8.radio_max.get());
-    }
-
     // pre-load stab col values as mode is initialized as Stabilize, but stabilize_init() function is not run on start-up.
     input_manager.set_use_stab_col(true);
     input_manager.set_stab_col_ramp(1.0);
@@ -54,7 +41,7 @@ void Copter::check_dynamic_flight(void)
         moving = (velocity >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
     }else{
         // with no GPS lock base it on throttle and forward lean angle
-        moving = (motors.get_throttle() > 800.0f || ahrs.pitch_sensor < -1500);
+        moving = (motors.get_throttle() > 0.8f || ahrs.pitch_sensor < -1500);
     }
 
     if (!moving && sonar_enabled && sonar.status() == RangeFinder::RangeFinder_Good) {
@@ -93,7 +80,7 @@ void Copter::update_heli_control_dynamics(void)
     // Use Leaky_I if we are not moving fast
     attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
 
-    if (ap.land_complete || (motors.get_desired_rotor_speed() == 0)){
+    if (ap.land_complete || (is_zero(motors.get_desired_rotor_speed()))){
         // if we are landed or there is no rotor power demanded, decrement slew scalar
         hover_roll_trim_scalar_slew--;        
     } else {
@@ -156,18 +143,17 @@ void Copter::heli_update_rotor_speed_targets()
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
 
-    rsc_control_deglitched = rotor_speed_deglitch_filter.apply(g.rc_8.control_in);
-
+    float rsc_control_deglitched = rotor_speed_deglitch_filter.apply((float)g.rc_8.control_in/1000.0f);
 
     switch (rsc_control_mode) {
         case ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH:
             // pass through pilot desired rotor speed if control input is higher than 10, creating a deadband at the bottom
-            if (rsc_control_deglitched > 10) {
+            if (rsc_control_deglitched > 0.01f) {
                 motors.set_interlock(true);
                 motors.set_desired_rotor_speed(rsc_control_deglitched);
             } else {
                 motors.set_interlock(false);
-                motors.set_desired_rotor_speed(0);
+                motors.set_desired_rotor_speed(0.0f);
             }
             break;
         case ROTOR_CONTROL_MODE_SPEED_SETPOINT:
@@ -175,12 +161,12 @@ void Copter::heli_update_rotor_speed_targets()
         case ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT:
             // pass setpoint through as desired rotor speed, this is almost pointless as the Setpoint serves no function in this mode
             // other than being used to create a crude estimate of rotor speed
-            if (rsc_control_deglitched > 0) {
+            if (rsc_control_deglitched > 0.0f) {
                 motors.set_interlock(true);
                 motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
             }else{
                 motors.set_interlock(false);
-                motors.set_desired_rotor_speed(0);
+                motors.set_desired_rotor_speed(0.0f);
             }
             break;
     }
@@ -192,12 +178,6 @@ void Copter::heli_update_rotor_speed_targets()
         Log_Write_Event(DATA_ROTOR_SPEED_BELOW_CRITICAL);
     }
     rotor_runup_complete_last = motors.rotor_runup_complete();
-}
-
-// heli_radio_passthrough send RC inputs direct into motors library for use during manual passthrough for helicopter setup
-void Copter::heli_radio_passthrough()
-{
-    motors.set_radio_passthrough(channel_roll->control_in, channel_pitch->control_in, channel_throttle->control_in, channel_yaw->control_in);
 }
 
 #endif  // FRAME_CONFIG == HELI_FRAME

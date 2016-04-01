@@ -28,36 +28,36 @@ void Copter::tuning() {
 
     // Roll, Pitch tuning
     case TUNING_STABILIZE_ROLL_PITCH_KP:
-        g.p_stabilize_roll.kP(tuning_value);
-        g.p_stabilize_pitch.kP(tuning_value);
+        attitude_control.get_angle_roll_p().kP(tuning_value);
+        attitude_control.get_angle_pitch_p().kP(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_PITCH_KP:
-        g.pid_rate_roll.kP(tuning_value);
-        g.pid_rate_pitch.kP(tuning_value);
+        attitude_control.get_rate_roll_pid().kP(tuning_value);
+        attitude_control.get_rate_pitch_pid().kP(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_PITCH_KI:
-        g.pid_rate_roll.kI(tuning_value);
-        g.pid_rate_pitch.kI(tuning_value);
+        attitude_control.get_rate_roll_pid().kI(tuning_value);
+        attitude_control.get_rate_pitch_pid().kI(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_PITCH_KD:
-        g.pid_rate_roll.kD(tuning_value);
-        g.pid_rate_pitch.kD(tuning_value);
+        attitude_control.get_rate_roll_pid().kD(tuning_value);
+        attitude_control.get_rate_pitch_pid().kD(tuning_value);
         break;
 
     // Yaw tuning
     case TUNING_STABILIZE_YAW_KP:
-        g.p_stabilize_yaw.kP(tuning_value);
+        attitude_control.get_angle_yaw_p().kP(tuning_value);
         break;
 
     case TUNING_YAW_RATE_KP:
-        g.pid_rate_yaw.kP(tuning_value);
+        attitude_control.get_rate_yaw_pid().kP(tuning_value);
         break;
 
     case TUNING_YAW_RATE_KD:
-        g.pid_rate_yaw.kD(tuning_value);
+        attitude_control.get_rate_yaw_pid().kD(tuning_value);
         break;
 
     // Altitude and throttle tuning
@@ -111,19 +111,19 @@ void Copter::tuning() {
 
 #if FRAME_CONFIG == HELI_FRAME
     case TUNING_HELI_EXTERNAL_GYRO:
-        motors.ext_gyro_gain(g.rc_6.control_in);
+        motors.ext_gyro_gain((float)g.rc_6.control_in / 1000.0f);
         break;
 
     case TUNING_RATE_PITCH_FF:
-        g.pid_rate_pitch.ff(tuning_value);
+        attitude_control.get_heli_rate_pitch_pid().ff(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_FF:
-        g.pid_rate_roll.ff(tuning_value);
+        attitude_control.get_heli_rate_roll_pid().ff(tuning_value);
         break;
 
     case TUNING_RATE_YAW_FF:
-        g.pid_rate_yaw.ff(tuning_value);
+        attitude_control.get_heli_rate_yaw_pid().ff(tuning_value);
         break;
 #endif
 
@@ -179,27 +179,27 @@ void Copter::tuning() {
         break;
 
     case TUNING_RATE_PITCH_KP:
-        g.pid_rate_pitch.kP(tuning_value);
+        attitude_control.get_rate_pitch_pid().kP(tuning_value);
         break;
 
     case TUNING_RATE_PITCH_KI:
-        g.pid_rate_pitch.kI(tuning_value);
+        attitude_control.get_rate_pitch_pid().kI(tuning_value);
         break;
 
     case TUNING_RATE_PITCH_KD:
-        g.pid_rate_pitch.kD(tuning_value);
+        attitude_control.get_rate_pitch_pid().kD(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_KP:
-        g.pid_rate_roll.kP(tuning_value);
+        attitude_control.get_rate_roll_pid().kP(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_KI:
-        g.pid_rate_roll.kI(tuning_value);
+        attitude_control.get_rate_roll_pid().kI(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_KD:
-        g.pid_rate_roll.kD(tuning_value);
+        attitude_control.get_rate_roll_pid().kD(tuning_value);
         break;
 
 #if FRAME_CONFIG != HELI_FRAME
@@ -209,7 +209,7 @@ void Copter::tuning() {
 #endif
 
      case TUNING_RATE_YAW_FILT:
-         g.pid_rate_yaw.filt_hz(tuning_value);
+         attitude_control.get_rate_yaw_pid().filt_hz(tuning_value);
          break;
     }
 }

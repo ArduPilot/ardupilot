@@ -93,24 +93,6 @@
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
-  # define RATE_ROLL_P                          0.02
-  # define RATE_ROLL_I                          0.5
-  # define RATE_ROLL_D                          0.001
-  # define RATE_ROLL_IMAX                       4500
-  # define RATE_ROLL_FF                         0.05
-  # define RATE_ROLL_FILT_HZ                    20.0f
-  # define RATE_PITCH_P                         0.02
-  # define RATE_PITCH_I                         0.5
-  # define RATE_PITCH_D                         0.001
-  # define RATE_PITCH_IMAX                      4500
-  # define RATE_PITCH_FF                        0.05
-  # define RATE_PITCH_FILT_HZ                   20.0f
-  # define RATE_YAW_P                           0.15
-  # define RATE_YAW_I                           0.100
-  # define RATE_YAW_D                           0.003
-  # define RATE_YAW_IMAX                        4500
-  # define RATE_YAW_FF                          0.02
-  # define RATE_YAW_FILT_HZ                     20.0f
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
 #endif
@@ -461,19 +443,6 @@
  #define ACRO_EXPO_DEFAULT          0.3f
 #endif
 
-// Stabilize (angle controller) gains
-#ifndef STABILIZE_ROLL_P
- # define STABILIZE_ROLL_P          4.5f
-#endif
-
-#ifndef STABILIZE_PITCH_P
- # define STABILIZE_PITCH_P         4.5f
-#endif
-
-#ifndef  STABILIZE_YAW_P
- # define STABILIZE_YAW_P           4.5f
-#endif
-
 // RTL Mode
 #ifndef RTL_ALT_FINAL
  # define RTL_ALT_FINAL             0       // the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
@@ -536,59 +505,6 @@
 #endif
 #ifndef ANGLE_RATE_MAX
  # define ANGLE_RATE_MAX            18000           // default maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Rate controller gains
-//
-
-#ifndef RATE_ROLL_P
- # define RATE_ROLL_P        		0.150f
-#endif
-#ifndef RATE_ROLL_I
- # define RATE_ROLL_I        		0.100f
-#endif
-#ifndef RATE_ROLL_D
- # define RATE_ROLL_D        		0.004f
-#endif
-#ifndef RATE_ROLL_IMAX
- # define RATE_ROLL_IMAX         	2000
-#endif
-#ifndef RATE_ROLL_FILT_HZ
- # define RATE_ROLL_FILT_HZ         20.0f
-#endif
-
-#ifndef RATE_PITCH_P
- # define RATE_PITCH_P       		0.150f
-#endif
-#ifndef RATE_PITCH_I
- # define RATE_PITCH_I       		0.100f
-#endif
-#ifndef RATE_PITCH_D
- # define RATE_PITCH_D       		0.004f
-#endif
-#ifndef RATE_PITCH_IMAX
- # define RATE_PITCH_IMAX        	2000
-#endif
-#ifndef RATE_PITCH_FILT_HZ
- # define RATE_PITCH_FILT_HZ        20.0f
-#endif
-
-
-#ifndef RATE_YAW_P
- # define RATE_YAW_P              	0.200f
-#endif
-#ifndef RATE_YAW_I
- # define RATE_YAW_I              	0.020f
-#endif
-#ifndef RATE_YAW_D
- # define RATE_YAW_D              	0.000f
-#endif
-#ifndef RATE_YAW_IMAX
- # define RATE_YAW_IMAX            	1000
-#endif
-#ifndef RATE_YAW_FILT_HZ
- # define RATE_YAW_FILT_HZ          5.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

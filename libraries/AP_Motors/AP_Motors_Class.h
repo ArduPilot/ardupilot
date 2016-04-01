@@ -59,19 +59,28 @@ public:
     bool                get_interlock() const { return _flags.interlock; };
 
     // set_roll, set_pitch, set_yaw, set_throttle
-    void                set_roll(int16_t roll_in) { _roll_control_input = roll_in; };                   // range -4500 ~ 4500
-    void                set_pitch(int16_t pitch_in) { _pitch_control_input = pitch_in; };               // range -4500 ~ 4500
-    void                set_yaw(int16_t yaw_in) { _yaw_control_input = yaw_in; };                       // range -4500 ~ 4500
-    void                set_throttle(float throttle_in) { _throttle_in = constrain_float(throttle_in,-100.0f,1100.0f); };   // range 0 ~ 1000
+    void                set_roll(float roll_in) { _roll_in = roll_in; };        // range -1 ~ +1
+    void                set_pitch(float pitch_in) { _pitch_in = pitch_in; };    // range -1 ~ +1
+    void                set_yaw(float yaw_in) { _yaw_in = yaw_in; };            // range -1 ~ +1
+    void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
+    void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
+
     void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
-    float               get_roll() const { return _roll_control_input; }
-    float               get_pitch() const { return _pitch_control_input; }
-    float               get_yaw() const { return _yaw_control_input; }
-    float               get_throttle() const { return _throttle_control_input; }
+    float               get_roll() const { return _roll_in; }
+    float               get_pitch() const { return _pitch_in; }
+    float               get_yaw() const { return _yaw_in; }
+    float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
 
-    void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
+    // spool up states
+    enum spool_up_down_desired {
+        DESIRED_SHUT_DOWN = 0,              // all motors stop
+        DESIRED_SPIN_WHEN_ARMED = 1,        // all motors at spin when armed
+        DESIRED_THROTTLE_UNLIMITED = 2,     // motors are no longer constrained by start up procedure
+    };
+
+    virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };
 
     //
     // voltage, current and air pressure compensation or limiting features - multicopters only
@@ -114,20 +123,16 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
 
-    // slow_start - set to true to slew motors from current speed to maximum
-    // Note: this must be set immediately before a step up in throttle
-    virtual void        slow_start(bool true_false) = 0;
-
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask() = 0;
 
+    // pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle
+    void                set_radio_passthrough(float roll_input, float pitch_input, float throttle_input, float yaw_input);
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
-    virtual void        output_armed_not_stabilizing()=0;
-    virtual void        output_armed_zero_throttle() { output_min(); }
-    virtual void        output_disarmed()=0;
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
     virtual void        rc_enable_ch(uint8_t chan);
@@ -135,6 +140,12 @@ protected:
     
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;
+
+    // convert input in -1 to +1 range to pwm output
+    int16_t calc_pwm_output_1to1(float input, const RC_Channel& servo);
+
+    // convert input in 0 to +1 range to pwm output
+    int16_t calc_pwm_output_0to1(float input, const RC_Channel& servo);
 
     // flag bitmask
     struct AP_Motors_flags {
@@ -145,18 +156,14 @@ protected:
     } _flags;
 
     // internal variables
-    float               _roll_control_input;        // desired roll control from attitude controllers, +/- 4500
-    float               _pitch_control_input;       // desired pitch control from attitude controller, +/- 4500
-    float               _throttle_control_input;    // desired throttle (thrust) control from attitude controller, 0-1000
-    float               _yaw_control_input;         // desired yaw control from attitude controller, +/- 4500
-    float               _throttle_pwm_scalar;       // scalar used to convert throttle channel pwm range into 0-1000 range, ~0.8 - 1.0
-    float               _rpy_pwm_scalar;            // scaler used to convert roll, pitch, yaw inputs to pwm range
     uint16_t            _loop_rate;                 // rate at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
-    int16_t             _throttle_radio_min;        // minimum radio channel pwm
-    int16_t             _throttle_radio_max;        // maximum radio channel pwm
+    float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
+    float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
+    float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
+    spool_up_down_desired _spool_desired;           // desired spool state
 
     // battery voltage, current and air pressure compensation variables
     float               _batt_voltage;          // latest battery voltage reading
@@ -166,4 +173,10 @@ protected:
     // mapping to output channels
     uint8_t             _motor_map[AP_MOTORS_MAX_NUM_MOTORS];
     uint16_t            _motor_map_mask;
+
+    // pass through variables
+    float _roll_radio_passthrough = 0.0f;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
+    float _pitch_radio_passthrough = 0.0f;    // pitch input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
+    float _throttle_radio_passthrough = 0.0f; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
+    float _yaw_radio_passthrough = 0.0f;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 };
