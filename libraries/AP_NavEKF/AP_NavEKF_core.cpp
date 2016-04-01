@@ -3521,11 +3521,11 @@ void NavEKF_core::getMagXYZ(Vector3f &magXYZ) const
 bool NavEKF_core::getMagOffsets(Vector3f &magOffsets) const
 {
     // compass offsets are valid if we have finalised magnetic field initialisation and magnetic field learning is not prohibited and primary compass is valid
-    if (secondMagYawInit && (frontend._magCal != 2) && _ahrs->get_compass()->healthy()) {
-        magOffsets = _ahrs->get_compass()->get_offsets() - state.body_magfield*1000.0f;
+    if (secondMagYawInit && (frontend._magCal != 2) && Compass::healthy()) {
+        magOffsets = Compass::get_offsets() - state.body_magfield*1000.0f;
         return true;
     } else {
-        magOffsets = _ahrs->get_compass()->get_offsets();
+        magOffsets = Compass::get_offsets();
         return false;
     }
 }
@@ -4080,15 +4080,15 @@ void NavEKF_core::readHgtData()
 // check for new magnetometer data and update store measurements if available
 void NavEKF_core::readMagData()
 {
-    if (use_compass() && _ahrs->get_compass()->last_update_usec() != lastMagUpdate) {
+    if (use_compass() && Compass::last_update_usec() != lastMagUpdate) {
         // store time of last measurement update
-        lastMagUpdate = _ahrs->get_compass()->last_update_usec();
+        lastMagUpdate = Compass::last_update_usec();
 
         // read compass data and scale to improve numerical conditioning
-        magData = _ahrs->get_compass()->get_field() * 0.001f;
+        magData = Compass::get_field() * 0.001f;
 
         // check for consistent data between magnetometers
-        consistentMagData = _ahrs->get_compass()->consistent();
+        consistentMagData = Compass::consistent();
 
         // get states stored at time closest to measurement time after allowance for measurement delay
         RecallStates(statesAtMagMeasTime, (imuSampleTime_ms - msecMagDelay));
@@ -4097,8 +4097,8 @@ void NavEKF_core::readMagData()
         newDataMag = true;
 
         // check if compass offsets have ben changed and adjust EKF bias states to maintain consistent innovations
-        if (_ahrs->get_compass()->healthy()) {
-            Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets();
+        if (Compass::healthy()) {
+            Vector3f nowMagOffsets = Compass::get_offsets();
             bool changeDetected = (!is_equal(nowMagOffsets.x,lastMagOffsets.x) || !is_equal(nowMagOffsets.y,lastMagOffsets.y) || !is_equal(nowMagOffsets.z,lastMagOffsets.z));
             // Ignore bias changes before final mag field and yaw initialisation, as there may have been a compass calibration
             if (changeDetected && secondMagYawInit) {
@@ -4213,7 +4213,7 @@ Quaternion NavEKF_core::calcQuatAndFieldStates(float roll, float pitch)
         float magHeading = atan2f(initMagNED.y, initMagNED.x);
 
         // get the magnetic declination
-        float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+        float magDecAng = use_compass() ? Compass::get_declination() : 0;
 
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
@@ -4548,7 +4548,7 @@ bool NavEKF_core::getVehicleArmStatus(void) const
 // return true if we should use the compass
 bool NavEKF_core::use_compass(void) const
 {
-    return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
+    return _ahrs->get_compass() && Compass::use_for_yaw();
 }
 
 /*
@@ -5203,7 +5203,7 @@ void NavEKF_core::getQuaternion(Quaternion& ret) const
 void NavEKF_core::alignMagStateDeclination()
 {
     // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+    float magDecAng = use_compass() ? Compass::get_declination() : 0;
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = state.earth_magfield;
