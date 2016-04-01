@@ -741,12 +741,15 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         }
     }
 
-    // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Safety Switch");
+        if (!BoardConfig.get_safety_enable()) {
+            hal.rcout->force_safety_off();
+        } else {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Safety Switch");
+            }
+            return false;
         }
-        return false;
     }
 
     // if we've gotten this far all is ok
