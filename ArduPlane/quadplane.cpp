@@ -17,10 +17,6 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // 3 ~ 8 were used by quadplane attitude control PIDs
 
-    // @Group: ATC_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
-    AP_SUBGROUPPTR(attitude_control,  "A_", 9, QuadPlane, AC_AttitudeControl_Multi),
-
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
