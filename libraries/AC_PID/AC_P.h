@@ -7,7 +7,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
 /// @class	AC_P
 /// @brief	Object managing one P controller
