@@ -333,7 +333,7 @@ bool QuadPlane::setup(void)
 
     motors->set_frame_orientation(frame_type);
     motors->Init();
-    motors->set_throttle_range(0, thr_min_pwm, thr_max_pwm);
+    motors->set_throttle_range(100, thr_min_pwm, thr_max_pwm);
     motors->set_hover_throttle(throttle_mid);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
@@ -501,7 +501,7 @@ bool QuadPlane::is_flying(void)
     if (!available()) {
         return false;
     }
-    if (motors->get_throttle() > 200 && !motors->limit.throttle_lower) {
+    if (motors->get_throttle() > 0.2 && !motors->limit.throttle_lower) {
         return true;
     }
     return false;
@@ -511,7 +511,7 @@ bool QuadPlane::is_flying(void)
 bool QuadPlane::should_relax(void)
 {
     bool motor_at_lower_limit = motors->limit.throttle_lower && motors->is_throttle_mix_min();
-    if (motors->get_throttle() < 10) {
+    if (motors->get_throttle() < 0.01) {
         motor_at_lower_limit = true;
     }
     if (!motor_at_lower_limit) {
