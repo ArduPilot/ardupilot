@@ -520,6 +520,12 @@ void Copter::one_hz_loop()
     terrain_logging();
 
     // debug
+    static uint8_t counter = 0;
+    counter++;
+    if (counter > 10) {
+        counter = 0;
+        terrain.dump_grid_info();
+    }
     if (control_mode == GUIDED) {
         Location_Class targ = wp_nav.get_wp_destination();
         float height;
