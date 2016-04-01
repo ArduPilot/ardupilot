@@ -18,6 +18,12 @@ public:
 
     void init(void);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    bool get_safety_enable() { return _safety_enable; }
+#else
+    bool get_safety_enable() { return false; }
+#endif
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
