@@ -1728,3 +1728,32 @@ uint16_t AP_Param::count_parameters(void)
     return _parameter_count;
 }
 
+/*
+  set a default value by name
+ */
+bool AP_Param::set_default_by_name(const char *name, float value)
+{
+    enum ap_var_type vtype;
+    AP_Param *vp = find(name, &vtype);
+    if (vp == nullptr) {
+        return false;
+    }
+    switch (vtype) {
+    case AP_PARAM_INT8:
+        ((AP_Int8 *)vp)->set_default(value);
+        return true;
+    case AP_PARAM_INT16:
+        ((AP_Int16 *)vp)->set_default(value);
+        return true;
+    case AP_PARAM_INT32:
+        ((AP_Int32 *)vp)->set_default(value);
+        return true;
+    case AP_PARAM_FLOAT:
+        ((AP_Float *)vp)->set_default(value);
+        return true;
+    default:
+        break;
+    }
+    // not a supported type
+    return false;
+}

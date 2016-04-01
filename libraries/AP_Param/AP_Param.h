@@ -202,6 +202,13 @@ public:
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
 
+    /// set a default value by name
+    ///
+    /// @param  name            The full name of the variable to be found.
+    /// @param  value           The default value
+    /// @return                 true if the variable is found
+    static bool set_default_by_name(const char *name, float value);
+    
     /// Find a variable by index.
     ///
     ///
