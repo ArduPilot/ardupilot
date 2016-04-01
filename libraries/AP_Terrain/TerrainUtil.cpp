@@ -160,67 +160,61 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
 bool AP_Terrain::find_nearest_grid_cache(const Location &loc)
 {
     bool closest_found = false;
-    float closest_dist;
-    uint16_t closest_cache = 0;
+    uint16_t cache_closest = 0;
+    float block_closest_dist_sq = 0.0f;
+    uint8_t block_closest_idx = 0, block_closest_idy = 0;
+    int16_t block_closest_height = 0.0f;
+    float grid_dist_x = TERRAIN_GRID_BLOCK_SIZE_X * grid_spacing;   // size (in meters) of a cache's grid
+    float grid_dist_y = TERRAIN_GRID_BLOCK_SIZE_Y * grid_spacing;   // size (in meters) of a cache's grid
 
-    // cycle through all grid caches we have
+    // cycle through all caches we have
     for (uint16_t i=0; i<cache_size; i++) {
-        Location sw_corner;
-        // skip over invalid and empty grid blocks
+        // skip cache if it's grid is invalid or empty
         if (cache[i].state != GRID_CACHE_INVALID && cache[i].grid.bitmap != 0) {
-            sw_corner.lat = cache[i].grid.lat;
-            sw_corner.lng = cache[i].grid.lon;
-            float this_cache_dist = get_distance(loc, sw_corner);
-            if (!closest_found || this_cache_dist < closest_dist) {
-                closest_found = true;
-                closest_cache = i;
-                closest_dist = this_cache_dist;
+            // find distance to grid's closest edge
+            Location grid_sw_corner;
+            grid_sw_corner.lat = cache[i].grid.lat;
+            grid_sw_corner.lng = cache[i].grid.lon;
+            Vector2f sw_corner_pos_diff = location_diff(loc, grid_sw_corner);
+            Vector2f edge_pos_diff = sw_corner_pos_diff;
+            if (edge_pos_diff.x > 0.0f) {
+                edge_pos_diff.x = MAX(0.0f, edge_pos_diff.x - grid_dist_x);
             }
-        }
-    }
-
-    // find closest item in this grid_cache
-    uint8_t closest_cache_idx = 0, closest_cache_idy = 0;
-    if (closest_found) {
-        Location sw_corner;
-        sw_corner.lat = cache[closest_cache].grid.lat;
-        sw_corner.lng = cache[closest_cache].grid.lon;
-        Vector2f pos_diff = location_diff(sw_corner, loc);
-        float pos_diff_len = pos_diff.length();
-        Vector2f pos_diff_min;
-        bool pos_diff_min_found = false;
-        for (uint8_t idx=0; idx<TERRAIN_GRID_BLOCK_SIZE_X; idx++) {
-            for (uint8_t idy=0; idy<TERRAIN_GRID_BLOCK_SIZE_Y; idy++) {
-                if (check_bitmap(cache[closest_cache].grid, idx, idy)) {
-                    Vector2f temp_pos_diff = pos_diff + Vector2f(idx*TERRAIN_GRID_BLOCK_SPACING_X*(float)grid_spacing, idy*TERRAIN_GRID_BLOCK_SPACING_Y*(float)grid_spacing);
-                    float temp_pos_diff_len = temp_pos_diff.length();
-                    if (!pos_diff_min_found || temp_pos_diff_len < pos_diff_len) {
-                        pos_diff_min_found = true;
-                        pos_diff_len = temp_pos_diff_len;
-                        closest_cache_idx = idx;
-                        closest_cache_idy = idy;
+            if (edge_pos_diff.y > 0.0f) {
+                edge_pos_diff.y = MAX(0.0f, edge_pos_diff.y - grid_dist_y);
+            }
+            float grid_min_dist_sq = fabsf(edge_pos_diff.x * edge_pos_diff.y);
+            if (!closest_found || grid_min_dist_sq < block_closest_dist_sq) {
+                // calc distance to each block within the grid
+                for (uint8_t idx=0; idx<TERRAIN_GRID_BLOCK_SIZE_X; idx++) {
+                    for (uint8_t idy=0; idy<TERRAIN_GRID_BLOCK_SIZE_Y; idy++) {
+                        // check block has height data
+                        if (check_bitmap(cache[i].grid, idx, idy)) {
+                            Vector2f block_pos_diff = sw_corner_pos_diff + Vector2f(idx*grid_spacing, idy*grid_spacing);
+                            float block_dist_sq = fabsf(block_pos_diff.x * block_pos_diff.y);
+                            if (!closest_found || block_dist_sq < block_closest_dist_sq) {
+                                closest_found = true;
+                                cache_closest = i;
+                                block_closest_dist_sq = block_dist_sq;
+                                block_closest_idx = idx;
+                                block_closest_idy = idy;
+                                block_closest_height = cache[i].grid.height[block_closest_idx][block_closest_idy];
+                            }
+                        }
                     }
                 }
             }
         }
-        //(int)closest_cache.height[idx_min][idy_min]
-
-        // does this grid has points closer than our closest point
-        //Vector2f offset = location_diff(sw_corner, loc);
-        //::printf("offset %ld %ld\n",(long)offset.x);
-        //lat_min = cache[i].grid.lat;
-        //lat_max = lat_min + 0;
-        //lon_min = cache[i].grid.lon;
-        //lon_max = lat_min + 0;
     }
 
-    ::printf("lat:%ld lon:%ld closest-found:%d cache:%d idx:%d idy:%d\n",
+    ::printf("lat:%ld lon:%ld closest-found:%d cache:%d idx:%d idy:%d height:%d\n",
             (long)loc.lat,
             (long)loc.lng,
             (int)closest_found,
-            (int)closest_cache,
-            (int)closest_cache_idx,
-            (int)closest_cache_idy);
+            (int)cache_closest,
+            (int)block_closest_idx,
+            (int)block_closest_idy,
+            (int)block_closest_height);
 
     // return closest cache
     if (closest_found) {
