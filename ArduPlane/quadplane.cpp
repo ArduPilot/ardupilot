@@ -741,6 +741,7 @@ void QuadPlane::update_transition(void)
     
     switch (transition_state) {
     case TRANSITION_AIRSPEED_WAIT: {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         // we hold in hover until the required airspeed is reached
         if (transition_start_ms == 0) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed wait");
@@ -761,6 +762,7 @@ void QuadPlane::update_transition(void)
     }
         
     case TRANSITION_TIMER: {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         // after airspeed is reached we degrade throttle over the
         // transition time, but continue to stabilize
         if (millis() - transition_start_ms > (unsigned)transition_time_ms) {
@@ -779,6 +781,7 @@ void QuadPlane::update_transition(void)
     }
 
     case TRANSITION_DONE:
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
         break;
     }
@@ -967,6 +970,9 @@ void QuadPlane::control_auto(const Location &loc)
     if (!setup()) {
         return;
     }
+
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
     Location origin = inertial_nav.get_origin();
     Vector2f diff2d;
     Vector3f target;
@@ -1105,6 +1111,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     if (!setup()) {
         return false;
     }
+
     plane.set_next_WP(cmd.content.location);
     plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
     throttle_wait = false;
