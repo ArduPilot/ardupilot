@@ -238,10 +238,12 @@ static const struct {
     const char *name;
     float value;
 } defaults_table[] = {
-    { "Q_A_RAT_RLL_P", 0.25 },
-    { "Q_A_RAT_RLL_I", 0.25 },
-    { "Q_A_RAT_PIT_P", 0.25 },
-    { "Q_A_RAT_PIT_I", 0.25 },
+    { "Q_A_RAT_RLL_P",    0.25 },
+    { "Q_A_RAT_RLL_I",    0.25 },
+    { "Q_A_RAT_RLL_FILT", 10.0 },
+    { "Q_A_RAT_PIT_P",    0.25 },
+    { "Q_A_RAT_PIT_I",    0.25 },
+    { "Q_A_RAT_PIT_FILT", 10.0 },
 };
 
 QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
