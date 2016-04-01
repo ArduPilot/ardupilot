@@ -38,7 +38,6 @@ LIBOBJS += $(QFLIGHT_BUILD)/qflight_stub.o
 
 # Add missing parts from libc and libstdc++
 MISSING_TOOLCHAIN_FLAGS += -DHAVE_STD_NULLPTR_T=0 -DHAVE_STD_MOVE=0 -DHAVE_STD_REMOVE_REFERENCE=0 -DHAVE_TYPE_TRAITS_H=0 -DHAVE_BYTESWAP_H=0
-MISSING_TOOLCHAIN_FLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
 
 # DSP build flags
 DSP_INC=$(MISSING_TOOLCHAIN_FLAGS) $(SHARED_INC) -I$(HEXAGON_FC_ADDON)/hexagon/inc -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/sys -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/sys/sys -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/sys/machine -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/include -I$(HEXAGON_SDK_ROOT)/lib/common/qurt/ADSPv5MP/include -I$(HEXAGON_SDK_ROOT)/lib/common/remote/ship/hexagon_ReleaseG -I$(QFLIGHT_BUILD) -I$(HEXAGON_SDK_ROOT)/inc/stddef -I$(SKETCHBOOK)/libraries
