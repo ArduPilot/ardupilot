@@ -1,10 +1,6 @@
 language: cpp
 sudo: required
 
-cache:
-  directories:
-    - $HOME/opt
-
 addons:
   coverity_scan:
     project:
