@@ -524,6 +524,18 @@ bool QuadPlane::should_relax(void)
     return relax_loiter;
 }
 
+/*
+  smooth out descent rate for landing to prevent a jerk as we get to
+  land_final_alt. 
+ */
+float QuadPlane::landing_descent_rate_cms(float height_above_ground)
+{
+    float ret = linear_interpolate(land_speed_cms, wp_nav->get_speed_down(),
+                                   height_above_ground,
+                                   land_final_alt, land_final_alt+3);
+    return ret;
+}
+
 
 // run quadplane loiter controller
 void QuadPlane::control_loiter()
@@ -574,16 +586,16 @@ void QuadPlane::control_loiter()
     plane.nav_pitch_cd = wp_nav->get_pitch();
 
     if (plane.control_mode == QLAND) {
-        if (land_state == QLAND_DESCEND) {
-            if (plane.g.rangefinder_landing && plane.rangefinder_state.in_range) {
-                if (plane.rangefinder_state.height_estimate < land_final_alt) {
-                    land_state = QLAND_FINAL;
-                }
-            } else if (plane.adjusted_relative_altitude_cm() < land_final_alt*100) {
-                land_state = QLAND_FINAL;                
-            }
+        float height_above_ground;
+        if (plane.g.rangefinder_landing && plane.rangefinder_state.in_range) {
+            height_above_ground = plane.rangefinder_state.height_estimate;
+        } else {
+            height_above_ground = plane.adjusted_relative_altitude_cm() * 0.01;
         }
-        float descent_rate = (land_state == QLAND_FINAL)?land_speed_cms:wp_nav->get_speed_down();
+        if (height_above_ground < land_final_alt && land_state < QLAND_FINAL) {
+            land_state = QLAND_FINAL;
+        }
+        float descent_rate = (land_state == QLAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
         pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
         check_land_complete();
     } else {
@@ -1133,7 +1145,9 @@ void QuadPlane::control_auto(const Location &loc)
         if (land_state <= QLAND_POSITION2) {
             pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false); 
         } else if (land_state > QLAND_POSITION2 && land_state < QLAND_FINAL) {
-            pos_control->set_alt_target_from_climb_rate(-wp_nav->get_speed_down(), plane.G_Dt, true);
+            float height_above_ground = (plane.current_loc.alt - plane.next_WP_loc.alt)*0.01;
+            pos_control->set_alt_target_from_climb_rate(-landing_descent_rate_cms(height_above_ground),
+                                                        plane.G_Dt, true);
         } else {
             pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
         }
