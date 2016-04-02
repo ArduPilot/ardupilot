@@ -271,7 +271,8 @@ bool QuadPlane::setup(void)
     if (!enable || hal.util->get_soft_armed()) {
         return false;
     }
-
+    float loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
+    
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav)) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
@@ -286,19 +287,19 @@ bool QuadPlane::setup(void)
     switch ((enum frame_class)frame_class.get()) {
     case FRAME_CLASS_QUAD:
         setup_default_channels(4);
-        motors = new AP_MotorsQuad(plane.ins.get_sample_rate());
+        motors = new AP_MotorsQuad(plane.scheduler.get_loop_rate_hz());
         break;
     case FRAME_CLASS_HEXA:
         setup_default_channels(6);
-        motors = new AP_MotorsHexa(plane.ins.get_sample_rate());
+        motors = new AP_MotorsHexa(plane.scheduler.get_loop_rate_hz());
         break;
     case FRAME_CLASS_OCTA:
         setup_default_channels(8);
-        motors = new AP_MotorsOcta(plane.ins.get_sample_rate());
+        motors = new AP_MotorsOcta(plane.scheduler.get_loop_rate_hz());
         break;
     case FRAME_CLASS_OCTAQUAD:
         setup_default_channels(8);
-         motors = new AP_MotorsOctaQuad(plane.ins.get_sample_rate());
+         motors = new AP_MotorsOctaQuad(plane.scheduler.get_loop_rate_hz());
         break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
@@ -310,7 +311,7 @@ bool QuadPlane::setup(void)
     }
     
     AP_Param::load_object_from_eeprom(motors, motors->var_info);
-    attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, plane.ins.get_loop_delta_t());
+    attitude_control = new AC_AttitudeControl_Multi(ahrs, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
         hal.console->printf("Unable to allocate attitude_control\n");
         goto failed;
@@ -337,8 +338,8 @@ bool QuadPlane::setup(void)
     motors->set_hover_throttle(throttle_mid);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
-    pid_accel_z.set_dt(plane.ins.get_loop_delta_t());
-    pos_control->set_dt(plane.ins.get_loop_delta_t());
+    pid_accel_z.set_dt(loop_delta_t);
+    pos_control->set_dt(loop_delta_t);
 
     // setup the trim of any motors used by AP_Motors so px4io
     // failsafe will disable motors
