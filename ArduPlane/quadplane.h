@@ -197,13 +197,15 @@ private:
     uint32_t last_loiter_ms;
 
     enum {
-        QLAND_POSITION,
+        QLAND_POSITION1,
+        QLAND_POSITION2,
         QLAND_DESCEND,
         QLAND_FINAL,
         QLAND_COMPLETE
     } land_state;
     int32_t land_yaw_cd;
     float land_wp_proportion;
+    float land_speed_scale;
 
     enum frame_class {
         FRAME_CLASS_QUAD=0,

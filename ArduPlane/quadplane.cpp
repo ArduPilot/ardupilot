@@ -1030,9 +1030,57 @@ void QuadPlane::control_auto(const Location &loc)
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
         plane.nav_pitch_cd = pos_control->get_pitch();
+    } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
+               land_state == QLAND_POSITION1) {
+        /*
+          for initial land repositioning and descent we run the
+          velocity controller. This allows us to smoothly control the
+          velocity change from fixed wing flight to VTOL flight
+         */
+        float ekfGndSpdLimit, ekfNavVelGainScaler;    
+        ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+
+        Vector2f diff_wp;
+        diff_wp = location_diff(plane.current_loc, loc);
+        float distance = diff_wp.length();
+
+        if (land_speed_scale <= 0) {
+            // initialise scaling so we start off targeting our
+            // current linear speed or wpnav speed, whichever is
+            // greater. land_speed_scale is then used to linearly
+            // change velocity as we approach the waypoint, aiming for
+            // zero speed at the waypoint
+            float groundspeed = MAX(ahrs.groundspeed(), wp_nav->get_speed_xy() * 0.01);
+            land_speed_scale = ahrs.groundspeed() / MAX(distance, 1);
+        }
+
+        // set target vertical velocity to zero. The aircraft may
+        // naturally try to climb or descend a bit depending on its
+        // approach speed and angle. We let it do that, just asking
+        // the quad motors to aim for zero climb rate
+        pos_control->set_desired_velocity_z(0);
+
+        // set the desired XY velocity to bring us to the waypoint
+        pos_control->set_desired_velocity_xy(diff_wp.x*land_speed_scale*100,
+                                             diff_wp.y*land_speed_scale*100);
+        pos_control->update_vel_controller_xyz(ekfNavVelGainScaler);
+        
+        // nav roll and pitch are controller by position controller
+        plane.nav_roll_cd = pos_control->get_roll();
+        plane.nav_pitch_cd = pos_control->get_pitch();
+
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+                                                                             plane.nav_pitch_cd,
+                                                                             get_pilot_input_yaw_rate_cds(),
+                                                                             smoothing_gain);
+        if (distance < 5) {
+            // move to loiter controller at 5m
+            land_state = QLAND_POSITION2;
+        }
     } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND) {
         /*
-          for land repositioning we run the loiter controller
+          for final land repositioning and descent we run the loiter controller
          */
         
         // also run fixed wing navigation
@@ -1050,15 +1098,6 @@ void QuadPlane::control_auto(const Location &loc)
         plane.nav_roll_cd = wp_nav->get_roll();
         plane.nav_pitch_cd = wp_nav->get_pitch();
 
-        if (land_state == QLAND_POSITION) {
-            // during positioning we may be flying faster than the position
-            // controller normally wants to fly. We let that happen by
-            // limiting the pitch controller
-            land_wp_proportion = constrain_float(MAX(land_wp_proportion, plane.auto_state.wp_proportion), 0, 1);
-            int32_t limit = land_wp_proportion * plane.aparm.pitch_limit_max_cd;
-            plane.nav_pitch_cd = constrain_int32(plane.nav_pitch_cd, plane.aparm.pitch_limit_min_cd, limit);
-            wp_nav->set_speed_xy(constrain_float((1-land_wp_proportion)*20*100.0, 500, 2000));
-        }
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
@@ -1084,9 +1123,9 @@ void QuadPlane::control_auto(const Location &loc)
 
     switch (plane.mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_VTOL_LAND:
-        if (land_state == QLAND_POSITION) {
+        if (land_state <= QLAND_POSITION2) {
             pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false); 
-        } else if (land_state > QLAND_POSITION && land_state < QLAND_FINAL) {
+        } else if (land_state > QLAND_POSITION2 && land_state < QLAND_FINAL) {
             pos_control->set_alt_target_from_climb_rate(-wp_nav->get_speed_down(), plane.G_Dt, true);
         } else {
             pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
@@ -1150,7 +1189,10 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
-    land_state = QLAND_POSITION;
+    land_state = QLAND_POSITION1;
+    land_speed_scale = 0;
+    pos_control->init_vel_controller_xyz();
+    
     throttle_wait = false;
     land_yaw_cd = get_bearing_cd(plane.prev_WP_loc, plane.next_WP_loc);
     land_wp_proportion = 0;
@@ -1205,7 +1247,7 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
     if (!available()) {
         return true;
     }
-    if (land_state == QLAND_POSITION &&
+    if (land_state == QLAND_POSITION2 &&
         plane.auto_state.wp_distance < 2) {
         land_state = QLAND_DESCEND;
         plane.gcs_send_text(MAV_SEVERITY_INFO,"Land descend started");
