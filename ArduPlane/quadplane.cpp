@@ -1051,7 +1051,7 @@ void QuadPlane::control_auto(const Location &loc)
             // change velocity as we approach the waypoint, aiming for
             // zero speed at the waypoint
             float groundspeed = MAX(ahrs.groundspeed(), wp_nav->get_speed_xy() * 0.01);
-            land_speed_scale = ahrs.groundspeed() / MAX(distance, 1);
+            land_speed_scale = groundspeed / MAX(distance, 1);
         }
 
         // set target vertical velocity to zero. The aircraft may
@@ -1069,6 +1069,13 @@ void QuadPlane::control_auto(const Location &loc)
         plane.nav_roll_cd = pos_control->get_roll();
         plane.nav_pitch_cd = pos_control->get_pitch();
 
+        // initially constrain pitch so we don't nose down too
+        // much. The velocity controller tends to want to nose down
+        // initially
+        land_wp_proportion = constrain_float(MAX(land_wp_proportion, plane.auto_state.wp_proportion), 0, 1);
+        int32_t limit = MIN(land_wp_proportion * plane.aparm.pitch_limit_min_cd, -500);
+        plane.nav_pitch_cd = constrain_int32(plane.nav_pitch_cd, limit, plane.aparm.pitch_limit_max_cd);
+        
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
