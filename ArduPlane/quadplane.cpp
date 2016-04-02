@@ -1182,6 +1182,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
         return false;
     }
     transition_state = TRANSITION_AIRSPEED_WAIT;
+    plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
     return true;
 }
 
