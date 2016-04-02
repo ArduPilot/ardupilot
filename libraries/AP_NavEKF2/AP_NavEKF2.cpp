@@ -740,12 +740,21 @@ uint8_t NavEKF2::getActiveMag(int8_t instance)
 
 // Return estimated magnetometer offsets
 // Return true if magnetometer offsets are valid
-bool NavEKF2::getMagOffsets(Vector3f &magOffsets) const
+bool NavEKF2::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
     if (!core) {
         return false;
     }
-    return core[primary].getMagOffsets(magOffsets);
+    // try the primary first, else loop through all of the cores and return when one has offsets for this mag instance
+    if (core[primary].getMagOffsets(mag_idx, magOffsets)) {
+        return true;
+    }
+    for (uint8_t i=0; i<num_cores; i++) {
+        if(core[i].getMagOffsets(mag_idx, magOffsets)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84

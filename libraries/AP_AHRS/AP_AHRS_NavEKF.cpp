@@ -918,16 +918,16 @@ void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVel
 
 // get compass offset estimates
 // true if offsets are valid
-bool AP_AHRS_NavEKF::getMagOffsets(Vector3f &magOffsets)
+bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets)
 {
     switch (ekf_type()) {
     case 0:
     case 1:
     default:
-        return EKF1.getMagOffsets(magOffsets);
+        return EKF1.getMagOffsets(mag_idx, magOffsets);
 
     case 2:
-        return EKF2.getMagOffsets(magOffsets);
+        return EKF2.getMagOffsets(mag_idx, magOffsets);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
