@@ -938,7 +938,9 @@ void NavEKF2::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, fl
 void NavEKF2::setTakeoffExpected(bool val)
 {
     if (core) {
-        core[primary].setTakeoffExpected(val);
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setTakeoffExpected(val);
+        }
     }
 }
 
@@ -947,7 +949,9 @@ void NavEKF2::setTakeoffExpected(bool val)
 void NavEKF2::setTouchdownExpected(bool val)
 {
     if (core) {
-        core[primary].setTouchdownExpected(val);
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setTouchdownExpected(val);
+        }
     }
 }
 
