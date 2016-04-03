@@ -284,7 +284,8 @@ private:
     AP_Float _easNoise;             // equivalent airspeed measurement noise : m/s
     AP_Float _windVelProcessNoise;  // wind velocity state process noise : m/s^2
     AP_Float _wndVarHgtRateScale;   // scale factor applied to wind process noise due to height rate
-    AP_Float _magProcessNoise;      // magnetic field process noise : gauss/sec
+    AP_Float _magBodyProcessNoise;  // body magnetic field process noise : gauss/sec
+    AP_Float _magEarthProcessNoise; // earth magnetic field process noise : gauss/sec
     AP_Float _gyrNoise;             // gyro process noise : rad/s
     AP_Float _accNoise;             // accelerometer process noise : m/s^2
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s

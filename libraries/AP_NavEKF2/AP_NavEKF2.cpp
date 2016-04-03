@@ -23,7 +23,8 @@
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
+#define MAG_BODY_PNOISE_DEFAULT 2.5E-02f
+#define MAG_EARTH_PNOISE_DEFAULT 2.5E-02f
 #define VEL_GATE_DEFAULT        200
 #define POS_GATE_DEFAULT        300
 #define HGT_GATE_DEFAULT        300
@@ -372,13 +373,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: m/s/s
     AP_GROUPINFO("ABIAS_PNOISE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
-    // @Param: MAG_PNOISE
-    // @DisplayName: Magnetic field process noise (gauss/s)
-    // @Description: This state process noise controls the growth of magnetic field state error estimates. Increasing it makes magnetic field bias estimation faster and noisier.
+    // @Param: MAGB_PNOISE
+    // @DisplayName: Body magnetic field process noise (gauss/s)
+    // @Description: This state process noise controls the growth of body magnetic field state error estimates. Increasing it makes body magnetic field bias estimation faster and noisier.
     // @Range: 0.0001 0.01
     // @User: Advanced
     // @Units: gauss/s
-    AP_GROUPINFO("MAG_PNOISE", 29, NavEKF2, _magProcessNoise, MAG_PNOISE_DEFAULT),
+    AP_GROUPINFO("MAGB_PNOISE", 29, NavEKF2, _magBodyProcessNoise, MAG_BODY_PNOISE_DEFAULT),
 
     // @Param: WIND_PNOISE
     // @DisplayName: Wind velocity process noise (m/s^2)
@@ -443,6 +444,14 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("YAW_GATE", 37, NavEKF2, _yawInnovGate, 300),
+
+    // @Param: MAGE_PNOISE
+    // @DisplayName: Earth magnetic field process noise (gauss/s)
+    // @Description: This state process noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field bias estimation faster and noisier.
+    // @Range: 0.0001 0.01
+    // @User: Advanced
+    // @Units: gauss/s
+    AP_GROUPINFO("MAGE_PNOISE", 38, NavEKF2, _magEarthProcessNoise, MAG_EARTH_PNOISE_DEFAULT),
 
     AP_GROUPEND
 };
