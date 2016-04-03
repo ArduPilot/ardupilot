@@ -17,11 +17,7 @@ bool Sub::throw_init(bool ignore_checks)
     }
 
     // this mode needs a position reference
-    if (position_ok()) {
-        return true;
-    } else {
-        return false;
-    }
+    return true;
 }
 
 // clean up when exiting throw mode
