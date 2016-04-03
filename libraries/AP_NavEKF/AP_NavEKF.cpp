@@ -528,12 +528,11 @@ void NavEKF::resetGyroBias(void)
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool NavEKF::resetHeightDatum(void)
+void NavEKF::resetHeightDatum(void)
 {
-    if (!core) {
-        return false;
+    if (core) {
+        core->resetHeightDatum();
     }
-    return core->resetHeightDatum();
 }
 
 // Commands the EKF to not use GPS.
