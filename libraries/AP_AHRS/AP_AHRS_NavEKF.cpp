@@ -1007,21 +1007,15 @@ uint32_t AP_AHRS_NavEKF::getLastVelNorthEastReset(Vector2f &vel) const
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool AP_AHRS_NavEKF::resetHeightDatum(void)
+void AP_AHRS_NavEKF::resetHeightDatum(void)
 {
     switch (ekf_type()) {
     case 1:
-        EKF2.resetHeightDatum();
-        return EKF1.resetHeightDatum();
     case 2:
         EKF1.resetHeightDatum();
-        return EKF2.resetHeightDatum();
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKF_TYPE_SITL:
-        return false;
-#endif
+        EKF2.resetHeightDatum();
+        break;
     }
-    return false;
 }
 
 // send a EKF_STATUS_REPORT for current EKF

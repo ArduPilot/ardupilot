@@ -415,9 +415,7 @@ public:
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    virtual bool resetHeightDatum(void) {
-        return false;
-    }
+    virtual void resetHeightDatum(void) {}
     
     // time that the AHRS has been up
     virtual uint32_t uptime_ms(void) const = 0;
