@@ -848,8 +848,10 @@ void QuadPlane::update(void)
 void QuadPlane::motors_output(void)
 {
     motors->output();
-    plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
-    Log_Write_QControl_Tuning();
+    if (motors->armed()) {
+        plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
+        Log_Write_QControl_Tuning();
+    }
 }
 
 /*
@@ -1059,12 +1061,19 @@ void QuadPlane::control_auto(const Location &loc)
 
         if (land_speed_scale <= 0) {
             // initialise scaling so we start off targeting our
-            // current linear speed or wpnav speed, whichever is
-            // greater. land_speed_scale is then used to linearly
-            // change velocity as we approach the waypoint, aiming for
-            // zero speed at the waypoint
-            float groundspeed = MAX(ahrs.groundspeed(), wp_nav->get_speed_xy() * 0.01);
-            land_speed_scale = groundspeed / MAX(distance, 1);
+            // current linear speed towards the target. If this is
+            // less than the wpnav speed then the wpnav speed is used
+            // land_speed_scale is then used to linearly change
+            // velocity as we approach the waypoint, aiming for zero
+            // speed at the waypoint
+            Vector2f groundspeed = ahrs.groundspeed_vector();
+            // newdiff is the delta to our target if we keep going for one second
+            Vector2f newdiff = diff_wp - groundspeed;
+            // speed towards target is the change in distance to target over one second
+            float speed_towards_target = diff_wp.length() - newdiff.length();
+            // setup land_speed_scale so at current distance we maintain speed towards target, and slow down as
+            // we approach
+            land_speed_scale = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01) / MAX(distance, 1);
         }
 
         // set target vertical velocity to zero. The aircraft may
@@ -1094,9 +1103,11 @@ void QuadPlane::control_auto(const Location &loc)
                                                                              plane.nav_pitch_cd,
                                                                              get_pilot_input_yaw_rate_cds(),
                                                                              smoothing_gain);
-        if (distance < 5) {
-            // move to loiter controller at 5m
+        if (distance < 5 || plane.auto_state.wp_proportion >= 1) {
+            // move to loiter controller at 5m or if we overshoot the waypoint
             land_state = QLAND_POSITION2;
+            plane.gcs_send_text_fmt(MAV_SEVERITY_INFO,"Land position2 started v=%.1f d=%.1f",
+                                    ahrs.groundspeed(), distance);
         }
     } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND) {
         /*
@@ -1295,6 +1306,7 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
 // Write a control tuning packet
 void QuadPlane::Log_Write_QControl_Tuning()
 {
+    const Vector3f &desired_velocity = pos_control->get_desired_velocity();
     struct log_QControl_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
@@ -1304,7 +1316,9 @@ void QuadPlane::Log_Write_QControl_Tuning()
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : (int32_t)plane.barometer.get_altitude() * 100,
         desired_climb_rate  : (int16_t)pos_control->get_vel_target_z(),
-        climb_rate          : (int16_t)inertial_nav.get_velocity_z()
+        climb_rate          : (int16_t)inertial_nav.get_velocity_z(),
+        dvx                 : desired_velocity.x*0.01f,
+        dvy                 : desired_velocity.y*0.01f,
     };
     plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }

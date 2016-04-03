@@ -68,6 +68,8 @@ public:
         int32_t  baro_alt;
         int16_t  desired_climb_rate;
         int16_t  climb_rate;
+        float    dvx;
+        float    dvy;
     };
         
 private:
