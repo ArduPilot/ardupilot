@@ -386,7 +386,7 @@ void Sub::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Log_Write_Rate();
+        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
         if (should_log(MASK_LOG_PID)) {
             DataFlash.Log_Write_PID(LOG_PIDR_MSG, g.pid_rate_roll.get_pid_info() );
             DataFlash.Log_Write_PID(LOG_PIDP_MSG, g.pid_rate_pitch.get_pid_info() );
@@ -429,7 +429,7 @@ void Sub::fifty_hz_logging_loop()
 #if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Log_Write_Rate();
+        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
         if (should_log(MASK_LOG_PID)) {
             DataFlash.Log_Write_PID(LOG_PIDR_MSG, g.pid_rate_roll.get_pid_info() );
             DataFlash.Log_Write_PID(LOG_PIDP_MSG, g.pid_rate_pitch.get_pid_info() );

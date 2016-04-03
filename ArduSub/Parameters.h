@@ -321,6 +321,7 @@ public:
         k_param_land_speed,
         k_param_auto_velocity_z_min, // remove
         k_param_auto_velocity_z_max, // remove - 219
+        k_param_land_speed_high,
 
         //
         // 220: PI/D Controllers
@@ -426,6 +427,7 @@ public:
     //
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
+    AP_Int16        land_speed_high;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
     AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 

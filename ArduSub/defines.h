@@ -268,7 +268,6 @@ enum ThrowModeState {
 #define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
-#define LOG_RATE_MSG                    0x1D
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
 #define LOG_HELI_MSG                    0x20
