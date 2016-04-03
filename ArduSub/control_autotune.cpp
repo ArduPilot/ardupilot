@@ -516,7 +516,7 @@ void Copter::autotune_attitude_control()
 
         // log this iterations lean angle and rotation rate
         Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
-        Log_Write_Rate();
+        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
         break;
 
     case AUTOTUNE_STEP_UPDATE_GAINS:

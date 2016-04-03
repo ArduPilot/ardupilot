@@ -8,6 +8,7 @@ def build(bld):
         vehicle=vehicle,
         libraries=bld.ap_common_vehicle_libraries() + [
             'AC_AttitudeControl',
+            'AC_InputManager',
             'AC_Fence',
             'AC_PID',
             'AC_PrecLand',
@@ -33,7 +34,15 @@ def build(bld):
         use='mavlink',
     )
 
-    bld.ap_program(
-        program_name='ardusub',
-        use=vehicle + '_libs',
+    frames = (
+        'bluerov','vectored','vectored6DOF',
     )
+
+    for frame in frames:
+        frame_config = frame.upper().replace('-','_') + '_FRAME'
+        bld.ap_program(
+            program_name='ardusub-%s' % frame,
+            program_groups=['bin', 'sub'],
+            use=vehicle + '_libs',
+            defines=['FRAME_CONFIG=%s' % frame_config],
+        )

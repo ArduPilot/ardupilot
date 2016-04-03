@@ -1847,10 +1847,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
 #if PRECISION_LANDING == ENABLED
-        case MAVLINK_MSG_ID_LANDING_TARGET:
-            // configure or release parachute
-            result = MAV_RESULT_ACCEPTED;
-            sub.precland.handle_msg(msg);
+    case MAVLINK_MSG_ID_LANDING_TARGET:
+        // configure or release parachute
+        result = MAV_RESULT_ACCEPTED;
+        copter.precland.handle_msg(msg);
+        break;
 #endif
 
 #if CAMERA == ENABLED
