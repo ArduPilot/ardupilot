@@ -98,7 +98,7 @@ public:
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    void resetHeightDatum(void);
 
     // Commands the EKF to not use GPS.
     // This command must be sent prior to arming as it will only be actioned when the filter is in static mode
@@ -146,12 +146,6 @@ public:
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
     bool getOriginLLH(struct Location &loc) const;
-
-    // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
-    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-    // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.

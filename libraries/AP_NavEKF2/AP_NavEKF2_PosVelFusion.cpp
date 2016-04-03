@@ -160,12 +160,8 @@ void NavEKF2_core::ResetHeight(void)
 // Adjust the EKf origin height so that the EKF height + origin height is the same as before
 // Return true if the height datum reset has been performed
 // If using a range finder for height do not reset and return false
-bool NavEKF2_core::resetHeightDatum(void)
+void NavEKF2_core::resetHeightDatum(void)
 {
-    // if we are using a range finder for height, return false
-    if (frontend->_altSource == 1) {
-        return false;
-    }
     // record the old height estimate
     float oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
@@ -176,7 +172,6 @@ bool NavEKF2_core::resetHeightDatum(void)
     if (validOrigin) {
         EKF_origin.alt += oldHgt*100;
     }
-    return true;
 }
 
 /********************************************************

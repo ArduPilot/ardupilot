@@ -223,17 +223,6 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
     return _ahrs->get_fly_forward() && _ahrs->get_vehicle_class() != AHRS_VEHICLE_GROUND;
 }
 
-// set the LLH location of the filters NED origin
-bool NavEKF2_core::setOriginLLH(struct Location &loc)
-{
-    if (isAiding) {
-        return false;
-    }
-    EKF_origin = loc;
-    validOrigin = true;
-    return true;
-}
-
 // Set the NED origin to be used until the next filter reset
 void NavEKF2_core::setOrigin()
 {
