@@ -623,7 +623,9 @@ void NavEKF2::getTiltError(int8_t instance, float &ang)
 void NavEKF2::resetGyroBias(void)
 {
     if (core) {
-        core[primary].resetGyroBias();
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].resetGyroBias();
+        }
     }
 }
 
@@ -632,12 +634,13 @@ void NavEKF2::resetGyroBias(void)
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool NavEKF2::resetHeightDatum(void)
+void NavEKF2::resetHeightDatum(void)
 {
-    if (!core) {
-        return false;
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].resetHeightDatum();
+        }
     }
-    return core[primary].resetHeightDatum();
 }
 
 // Commands the EKF to not use GPS.
@@ -750,18 +753,6 @@ bool NavEKF2::getOriginLLH(struct Location &loc) const
         return false;
     }
     return core[primary].getOriginLLH(loc);
-}
-
-// set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
-// The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-// Returns false if the filter has rejected the attempt to set the origin
-bool NavEKF2::setOriginLLH(struct Location &loc)
-{
-    if (!core) {
-        return false;
-    }
-    return core[primary].setOriginLLH(loc);
 }
 
 // return estimated height above ground level
