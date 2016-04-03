@@ -159,11 +159,12 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
 //bool AP_Terrain::find_nearest_grid_cache(const Location &loc, struct grid_cache &nearest_cache)
 bool AP_Terrain::find_nearest_grid_cache(const Location &loc)
 {
-    bool closest_found = false;
-    uint16_t cache_closest = 0;
-    float block_closest_dist_sq = 0.0f;
-    uint8_t block_closest_idx = 0, block_closest_idy = 0;
-    int16_t block_closest_height = 0.0f;
+    bool closest_found[2][2] = {{false, false}, {false, false}};
+    uint16_t cache_closest[2][2] = {{0,0},{0,0}};;
+    float block_closest_dist_sq[2][2] = {{0,0},{0,0}};
+    uint8_t block_closest_idx[2][2] = {{0,0},{0,0}};
+    uint8_t block_closest_idy[2][2] = {{0,0},{0,0}};
+    int16_t block_closest_height[2][2] = {{0,0},{0,0}};
     float grid_dist_x = TERRAIN_GRID_BLOCK_SIZE_X * grid_spacing;   // size (in meters) of a cache's grid
     float grid_dist_y = TERRAIN_GRID_BLOCK_SIZE_Y * grid_spacing;   // size (in meters) of a cache's grid
 
@@ -184,7 +185,17 @@ bool AP_Terrain::find_nearest_grid_cache(const Location &loc)
                 edge_pos_diff.y = MAX(0.0f, edge_pos_diff.y - grid_dist_y);
             }
             float grid_min_dist_sq = fabsf(edge_pos_diff.x * edge_pos_diff.y);
-            if (!closest_found || grid_min_dist_sq < block_closest_dist_sq) {
+            bool closest_maybe = false;
+            if (edge_pos_diff.x <= 0.0f && edge_pos_diff.y <= 0.0f && (!closest_found[0][0] || grid_min_dist_sq < block_closest_dist_sq[0][0])) {
+                closest_maybe = true;
+            } else if (edge_pos_diff.x <= 0.0f && edge_pos_diff.y >= 0.0f && (!closest_found[0][1] || grid_min_dist_sq < block_closest_dist_sq[0][1])) {
+                closest_maybe = true;
+            } else if (edge_pos_diff.x >= 0.0f && edge_pos_diff.y <= 0.0f && (!closest_found[1][0] || grid_min_dist_sq < block_closest_dist_sq[1][0])) {
+                closest_maybe = true;
+            } else if (edge_pos_diff.x >= 0.0f && edge_pos_diff.y >= 0.0f && (!closest_found[1][1] || grid_min_dist_sq < block_closest_dist_sq[1][1])) {
+                closest_maybe = true;
+            }
+            if (closest_maybe) {
                 // calc distance to each block within the grid
                 for (uint8_t idx=0; idx<TERRAIN_GRID_BLOCK_SIZE_X; idx++) {
                     for (uint8_t idy=0; idy<TERRAIN_GRID_BLOCK_SIZE_Y; idy++) {
@@ -192,13 +203,15 @@ bool AP_Terrain::find_nearest_grid_cache(const Location &loc)
                         if (check_bitmap(cache[i].grid, idx, idy)) {
                             Vector2f block_pos_diff = sw_corner_pos_diff + Vector2f(idx*grid_spacing, idy*grid_spacing);
                             float block_dist_sq = fabsf(block_pos_diff.x * block_pos_diff.y);
-                            if (!closest_found || block_dist_sq < block_closest_dist_sq) {
-                                closest_found = true;
-                                cache_closest = i;
-                                block_closest_dist_sq = block_dist_sq;
-                                block_closest_idx = idx;
-                                block_closest_idy = idy;
-                                block_closest_height = cache[i].grid.height[block_closest_idx][block_closest_idy];
+                            uint8_t ax = (block_pos_diff.x < 0) ? 0:1;
+                            uint8_t ay = (block_pos_diff.y < 0) ? 0:1;
+                            if (!closest_found[ax][ay] || block_dist_sq < block_closest_dist_sq[ax][ay]) {
+                                closest_found[ax][ay] = true;
+                                cache_closest[ax][ay] = i;
+                                block_closest_dist_sq[ax][ay] = block_dist_sq;
+                                block_closest_idx[ax][ay] = idx;
+                                block_closest_idy[ax][ay] = idy;
+                                block_closest_height[ax][ay] = cache[i].grid.height[idx][idy];
                             }
                         }
                     }
@@ -207,25 +220,30 @@ bool AP_Terrain::find_nearest_grid_cache(const Location &loc)
         }
     }
 
-    ::printf("lat:%ld lon:%ld closest-found:%d cache:%d idx:%d idy:%d height:%d\n",
-            (long)loc.lat,
-            (long)loc.lng,
-            (int)closest_found,
-            (int)cache_closest,
-            (int)block_closest_idx,
-            (int)block_closest_idy,
-            (int)block_closest_height);
+    for (uint8_t x=0; x<2; x++) {
+        for (uint8_t y=0; y<2; y++) {
+            ::printf("X:%d Y:%d lat:%ld lon:%ld closest-found:%d cache:%d idx:%d idy:%d height:%d\n",
+                    (int)x,
+                    (int)y,
+                    (long)loc.lat,
+                    (long)loc.lng,
+                    (int)closest_found[x][y],
+                    (int)cache_closest[x][y],
+                    (int)block_closest_idx[x][y],
+                    (int)block_closest_idy[x][y],
+                    (int)block_closest_height[x][y]);
+        }
+    }
+
 
     // return closest cache
-    if (closest_found) {
+    if (closest_found[0][0] || closest_found[0][1] || closest_found[1][0] || closest_found[1][1]) {
         //nearest_cache = cache[closest_cache];
         return true;
     }
 
     // failed because all caches are empty
     return false;
-            // cycle through all the bits of the grid, determine the closest populated bit and get it's height
-            // record the closest point and it's height
 }
 
 void AP_Terrain::dump_grid_info()
