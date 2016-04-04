@@ -42,7 +42,9 @@ EXTRAFLAGS += -DUAVCAN=1
 
 # Add missing parts from libc and libstdc++
 EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0
-EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
+
+# Hardcoded libraries/AP_Common/missing/cmath defines in "make" to retain the current behavior
+EXTRAFLAGS += -DHAVE_MATH_ISFINITE='1'
 
 # we have different config files for V1 and V2
 PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
