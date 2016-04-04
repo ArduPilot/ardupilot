@@ -362,8 +362,8 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
     print("Holding loiter at %u meters for %u seconds" % (start_altitude, holdtime))
 
     # cut motor 1 to 55% efficiency
-    print("Cutting motor 1 to 55% efficiency")
-    mavproxy.send('param set SIM_ENGINE_MUL 0.55\n')
+    print("Cutting motor 1 to 60% efficiency")
+    mavproxy.send('param set SIM_ENGINE_MUL 0.60\n')
 
     while get_sim_time(mav) < tstart + holdtime:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
