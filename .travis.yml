@@ -51,6 +51,14 @@ env:
 matrix:
   include:
     - compiler: clang
-      env: CI_BUILD_TARGET="sitl linux minlure"
+      env: CI_BUILD_TARGET="sitl"
     - compiler: clang
-      env: CI_BUILD_TARGET="navio raspilot bebop"
+      env: CI_BUILD_TARGET="linux"
+    - compiler: clang
+      env: CI_BUILD_TARGET="minlure"
+    - compiler: clang
+      env: CI_BUILD_TARGET="navio"
+    - compiler: clang
+      env: CI_BUILD_TARGET="raspilot"
+    - compiler: clang
+      env: CI_BUILD_TARGET="bebop"
