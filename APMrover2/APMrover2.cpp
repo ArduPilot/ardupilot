@@ -270,6 +270,10 @@ void Rover::update_logging2(void)
 
     if (should_log(MASK_LOG_RC))
         Log_Write_RC();
+
+    if (should_log(MASK_LOG_IMU)) {
+        DataFlash.Log_Write_Vibration(ins);
+    }
 }
 
 
