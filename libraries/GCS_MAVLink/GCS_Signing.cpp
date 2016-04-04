@@ -84,15 +84,12 @@ void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t *msg)
  */
 extern "C" {
 
-static const struct {
-    uint8_t dialect;
-    uint16_t msgId;
-} accept_list[] = {
-    { MAVLINK_MSG_ID_RADIO_STATUS_TUPLE }
+static const uint32_t accept_list[] = {
+    MAVLINK_MSG_ID_RADIO_STATUS,
+    MAVLINK_MSG_ID_RADIO
 };
     
-static bool accept_unsigned_callback(const mavlink_status_t *status,
-                                     uint8_t dialect, uint16_t msgId)
+static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t msgId)
 {
     if (status == mavlink_get_channel_status(MAVLINK_COMM_0)) {
         // always accept channel 0, assumed to be secure channel. This
@@ -100,8 +97,7 @@ static bool accept_unsigned_callback(const mavlink_status_t *status,
         return true;
     }
     for (uint8_t i=0; i<ARRAY_SIZE(accept_list); i++) {
-        if (accept_list[i].dialect == dialect &&
-            accept_list[i].msgId == msgId) {
+        if (accept_list[i] == msgId) {
             return true;
         }
     }
