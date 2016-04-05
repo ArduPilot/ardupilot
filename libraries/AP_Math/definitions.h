@@ -13,6 +13,8 @@
   #ifndef M_PI_2
     #define M_PI_2    (M_PI / 2)
   #endif
+
+  #define M_GOLDEN    1.618033988749894
 #else    // Standard single precision math
   #ifdef M_PI
     #undef M_PI
@@ -23,6 +25,8 @@
     #undef M_PI_2
   #endif
   #define M_PI_2    (M_PI / 2)
+
+  #define M_GOLDEN  1.6180339f
 #endif
 
 #define M_2PI         (M_PI * 2)
