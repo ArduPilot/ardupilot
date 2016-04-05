@@ -52,6 +52,8 @@ class Board:
             else:
                 cfg.env[k] = val
 
+        cfg.load('cxx_checks')
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
         # make easy to override them. Convert back to list before consumption.
