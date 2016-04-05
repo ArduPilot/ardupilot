@@ -353,10 +353,6 @@ if [ $DEBUG_BUILD == 1 ]; then
     BUILD_TARGET="$BUILD_TARGET-debug"
 fi
 
-if [ $MAVLINK_PROTOCOL_VERSION == "2" ]; then
-    BUILD_TARGET="$BUILD_TARGET-mavlink2"
-fi
-
 if [ -n "$OVERRIDE_BUILD_TARGET" ]; then
     BUILD_TARGET="$OVERRIDE_BUILD_TARGET"
 fi
