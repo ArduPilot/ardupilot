@@ -1147,8 +1147,7 @@ void Plane::set_servos(void)
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // get the servos to the GCS immediately for HIL
-        if (comm_get_txspace(MAVLINK_COMM_0) >= 
-            MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+        if (HAVE_PAYLOAD_SPACE(MAVLINK_COMM_0, RC_CHANNELS_SCALED)) {
             send_servo_out(MAVLINK_COMM_0);
         }
         if (!g.hil_servos) {
