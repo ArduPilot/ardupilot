@@ -32,7 +32,8 @@ public:
     AP_Parachute(AP_Relay& relay) :
         _relay(relay),
         _release_time(0),
-        _released(false)
+        _released(false),
+        _release_initiated(false)
     {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
@@ -49,6 +50,9 @@ public:
 
     /// released - true if the parachute has been released (or release is in progress)
     bool released() const { return _released; }
+    
+    /// release_initiated - true if the parachute release sequence has been initiated (may wait before actual release)
+    bool release_initiated() const { return _release_initiated; }
     
     /// update - shuts off the trigger should be called at about 10hz
     void update();
@@ -71,6 +75,7 @@ private:
     // internal variables
     AP_Relay   &_relay;         // pointer to relay object from the base class Relay.
     uint32_t    _release_time;  // system time that parachute is ordered to be released (actual release will happen 0.5 seconds later)
+    bool        _release_initiated:1;    // true if the parachute release initiated (may still be waiting for engine to be suppressed etc.)
     bool        _release_in_progress:1;  // true if the parachute release is in progress
-    bool        _released:1;    // true if the parachute has been released
+    bool        _released:1;             // true if the parachute has been released
 };
