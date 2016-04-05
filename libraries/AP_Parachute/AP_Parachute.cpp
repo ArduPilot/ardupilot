@@ -86,6 +86,8 @@ void AP_Parachute::release()
         _release_time = AP_HAL::millis();
     }
 
+    _release_initiated = true;
+
     // update AP_Notify
     AP_Notify::flags.parachute_release = 1;
 }
