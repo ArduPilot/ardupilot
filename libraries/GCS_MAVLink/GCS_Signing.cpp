@@ -39,6 +39,9 @@ struct SigningKey {
 // shared signing_streams structure
 mavlink_signing_streams_t GCS_MAVLINK::signing_streams;
 
+// last time we saved the timestamp
+uint32_t GCS_MAVLINK::last_signing_save_ms;
+
 bool GCS_MAVLINK::signing_key_save(const struct SigningKey &key)
 {
     if (_signing_storage.size() < sizeof(key)) {
@@ -122,7 +125,10 @@ void GCS_MAVLINK::load_signing_key(void)
     }
     memcpy(signing.secret_key, key.secret_key, 32);
     signing.link_id = (uint8_t)chan;
-    signing.timestamp = key.timestamp;
+    // use a timestamp 1 minute past the last recorded
+    // timestamp. Combined with saving the key once every 30s this
+    // prevents a window for replay attacks
+    signing.timestamp = key.timestamp + 60UL * 100UL * 1000UL;
     signing.flags = MAVLINK_SIGNING_FLAG_SIGN_OUTGOING;
     signing.accept_unsigned_callback = accept_unsigned_callback;
 
@@ -173,6 +179,43 @@ void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec)
         if (status && status->signing && status->signing->timestamp < signing_timestamp) {
             status->signing->timestamp = signing_timestamp;
         }
+    }
+
+    // save to stable storage
+    save_signing_timestamp(true);
+}
+
+
+/*
+  save the signing timestamp periodically
+ */
+void GCS_MAVLINK::save_signing_timestamp(bool force_save_now)
+{
+    uint32_t now = AP_HAL::millis();
+    // we save the timestamp every 30s, unless forced by a GPS update
+    if (!force_save_now &&  now - last_signing_save_ms < 30*1000UL) {
+        return;
+    }
+
+    last_signing_save_ms = now;
+
+    struct SigningKey key;
+    if (!signing_key_load(key)) {
+        return;
+    }
+    bool need_save = false;
+
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + i);
+        const mavlink_status_t *status = mavlink_get_channel_status(chan);
+        if (status && status->signing && status->signing->timestamp > key.timestamp) {
+            key.timestamp = status->signing->timestamp;
+            need_save = true;
+        }
+    }
+    if (need_save) {
+        // save updated key
+        signing_key_save(key);
     }
 }
 

@@ -360,16 +360,19 @@ private:
 #if MAVLINK_PROTOCOL_VERSION >= 2
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
+    static uint32_t last_signing_save_ms;
     
     static StorageAccess _signing_storage;
     void handle_setup_signing(const mavlink_message_t *msg);
-    bool signing_key_save(const struct SigningKey &key);
-    bool signing_key_load(struct SigningKey &key);
+    static bool signing_key_save(const struct SigningKey &key);
+    static bool signing_key_load(struct SigningKey &key);
     void load_signing_key(void);
     bool signing_enabled(void) const;
     uint8_t packet_overhead(void) const { return packet_overhead_chan(chan); }
+    static void save_signing_timestamp(bool force_save_now);
 #else 
     bool signing_enabled(void) const { return false; }
     uint8_t packet_overhead(void) const { return MAVLINK_NUM_NON_PAYLOAD_BYTES; }
+    static void save_signing_timestamp(bool force_save_now) {}
 #endif // MAVLINK_PROTOCOL_VERSION
 };
