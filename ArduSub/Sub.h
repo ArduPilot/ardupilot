@@ -400,6 +400,9 @@ private:
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
+    // filtered pilot's throttle input used to cancel landing if throttle held high
+    LowPassFilterFloat rc_throttle_control_in_filter;
+
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
     struct Location current_loc;
