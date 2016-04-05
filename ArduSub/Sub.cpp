@@ -30,7 +30,6 @@ Sub::Sub(void) :
             FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)),
     control_mode(STABILIZE),
     motors(MAIN_LOOP_RATE),
-#endif
     scaleLongDown(1),
     wp_bearing(0),
     home_bearing(0),
