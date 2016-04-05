@@ -126,9 +126,6 @@ void Sub::set_throttle_takeoff()
 {
     // tell position controller to reset alt target and reset I terms
     pos_control.init_takeoff();
-
-    // tell motors to do a slow start
-    motors.slow_start(true);
 }
 
 // get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
