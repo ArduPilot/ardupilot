@@ -18,8 +18,8 @@
 */
 #pragma once
 
-#define THISFIRMWARE "ArduRover v2.51-beta"
-#define FIRMWARE_VERSION 2,51,0,FIRMWARE_VERSION_TYPE_BETA
+#define THISFIRMWARE "ArduRover v3.0.0"
+#define FIRMWARE_VERSION 3,0,0,FIRMWARE_VERSION_TYPE_OFFICIAL
 
 #include <math.h>
 #include <stdarg.h>
