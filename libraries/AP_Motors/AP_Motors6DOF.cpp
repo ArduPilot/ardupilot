@@ -93,14 +93,14 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
     AP_GROUPEND
 };
 
-void AP_Motors6DOF::add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float strafe_fac, uint8_t testing_order) {
+void AP_Motors6DOF::add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float lat_fac, uint8_t testing_order) {
 	//Parent takes care of enabling output and setting up masks
 	add_motor_raw(motor_num, roll_fac, pitch_fac, yaw_fac, testing_order);
 
 	//These are additional parameters for an ROV
 	_throttle_factor[motor_num] = throttle_fac;
 	_forward_factor[motor_num] = forward_fac;
-	_strafe_factor[motor_num] = strafe_fac;
+	_lateral_factor[motor_num] = lat_fac;
 }
 
 // output_min - sends minimum values out to the motors
@@ -127,10 +127,54 @@ void AP_Motors6DOF::output_min()
     hal.rcout->push();
 }
 
-//ToDo: call in control_rov, to mix inputs with no stabilization control
-void AP_Motors6DOF::output_armed_not_stabilizing()
+int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
 {
-	output_min(); //cut the motors for now
+    return constrain_int16(1500 + apply_thrust_curve_and_volt_scaling(thrust_in) * 400, _throttle_radio_min + _min_throttle, _throttle_radio_max);
+}
+
+void AP_Motors6DOF::output_to_motors()
+{
+    int8_t i;
+    int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final pwm values sent to the motor
+
+    switch (_multicopter_flags.spool_mode) {
+        case SHUT_DOWN:
+            // sends minimum values out to the motors
+            // set motor output based on thrust requests
+            for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                if (motor_enabled[i]) {
+                    motor_out[i] = 1500;
+                }
+            }
+            break;
+        case SPIN_WHEN_ARMED:
+            // sends output to motors when armed but not flying
+            for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                if (motor_enabled[i]) {
+                    motor_out[i] = 1500;
+                }
+            }
+            break;
+        case SPOOL_UP:
+        case THROTTLE_UNLIMITED:
+        case SPOOL_DOWN:
+            // set motor output based on thrust requests
+            for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                if (motor_enabled[i]) {
+                    motor_out[i] = calc_thrust_to_pwm(_thrust_rpyt_out[i]);
+                }
+            }
+            break;
+    }
+
+    // send output to each motor
+    hal.rcout->cork();
+    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            rc_write(i, motor_out[i]);
+        }
+    }
+    hal.rcout->push();
 }
 
 // output_armed - sends commands to the motors
@@ -139,15 +183,28 @@ void AP_Motors6DOF::output_armed_not_stabilizing()
 // ToDo calculate headroom for rpy to be added for stabilization during full throttle/forward/strafe commands
 void AP_Motors6DOF::output_armed_stabilizing()
 {
-    int8_t i;
-    int16_t roll_pwm;                                               // roll pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
-    int16_t pitch_pwm;                                              // pitch pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
-    int16_t yaw_pwm;                                                // yaw pwm value, initially calculated by calc_yaw_pwm() but may be modified after, +/- 400
-    int16_t throttle_radio_output;                                  // throttle pwm value, +/- 400
-    int16_t forward_pwm;                                            // forward pwm value, +/- 400
-    int16_t strafe_pwm;                                             // forward pwm value, +/- 400
-    int16_t out_min_pwm = 1100;      // minimum pwm value we can send to the motors
-    int16_t out_max_pwm = 1900;                      // maximum pwm value we can send to the motors
+    uint8_t i;                          // general purpose counter
+    float   roll_thrust;                // roll thrust input value, +/- 1.0
+    float   pitch_thrust;               // pitch thrust input value, +/- 1.0
+    float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
+    float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+    float   forward_thrust;             // forward thrust input value, +/- 1.0
+    float   lateral_thrust;             // lateral thrust input value, +/- 1.0
+	float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
+	float   rpy_low = 0.0f;             // lowest motor value
+	float   rpy_high = 0.0f;            // highest motor value
+	float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
+	float   unused_range;               // amount of yaw we can fit in the current channel
+	float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+	float   throttle_thrust_hover = get_hover_throttle_as_high_end_pct();   // throttle hover thrust value, 0.0 - 1.0
+
+	// apply voltage and air pressure compensation
+	roll_thrust = _roll_in * get_compensation_gain();
+	pitch_thrust = _pitch_in * get_compensation_gain();
+	yaw_thrust = _yaw_in * get_compensation_gain();
+	throttle_thrust = get_throttle() * get_compensation_gain();
+	forward_thrust = _forward_in * get_compensation_gain();
+	lateral_thrust = _strafe_in * get_compensation_gain();
 
     int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
     int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
@@ -159,31 +216,22 @@ void AP_Motors6DOF::output_armed_stabilizing()
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    // Ensure throttle is within bounds of 0 to 1000
-    int16_t thr_in_min = rel_pwm_to_thr_range(_min_throttle);
-    if (_throttle_control_input <= thr_in_min) {
-        _throttle_control_input = thr_in_min;
+    // sanity check throttle is above zero and below current limited throttle
+    if (throttle_thrust <= 0.0f) {
+        throttle_thrust = 0.0f;
         limit.throttle_lower = true;
     }
-    if (_throttle_control_input >= _max_throttle) {
-        _throttle_control_input = _max_throttle;
+    if (throttle_thrust >= _throttle_thrust_max) {
+        throttle_thrust = _throttle_thrust_max;
         limit.throttle_upper = true;
     }
-
-    roll_pwm = calc_roll_pwm();
-    pitch_pwm = calc_pitch_pwm();
-    yaw_pwm = calc_yaw_pwm();
-    throttle_radio_output = (calc_throttle_radio_output()-_throttle_radio_min-(_throttle_radio_max-_throttle_radio_min)/2);
-    forward_pwm = get_forward()*0.4;
-    strafe_pwm = get_strafe()*0.4;
 
     // calculate roll, pitch and yaw for each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-
-        	rpy_out[i] = roll_pwm * _roll_factor[i] +
-        					pitch_pwm * _pitch_factor[i] +
-							yaw_pwm * _yaw_factor[i];
+        	rpy_out[i] = roll_thrust * _roll_factor[i] +
+                         pitch_thrust * _pitch_factor[i] +
+                         yaw_thrust * _yaw_factor[i];
 
         }
     }
@@ -192,43 +240,16 @@ void AP_Motors6DOF::output_armed_stabilizing()
     // linear factors should be 0.0 or 1.0 for now
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-
-        	linear_out[i] = throttle_radio_output * _throttle_factor[i] +
-        					forward_pwm * _forward_factor[i] +
-							strafe_pwm * _strafe_factor[i];
-
+        	linear_out[i] = throttle_thrust * _throttle_factor[i] +
+        					forward_thrust * _forward_factor[i] +
+							lateral_thrust * _lateral_factor[i];
         }
     }
 
-    // Calculate final pwm output for each motor
+    // Calculate final output for each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-
-        	motor_out[i] = 1500 + _motor_reverse[i]*(rpy_out[i] + linear_out[i]);
-
+        	_thrust_rpyt_out[i] = constrain_float(_motor_reverse[i]*(rpy_out[i] + linear_out[i]),-1.0f,1.0f);
         }
     }
-
-//    // apply thrust curve and voltage scaling
-//    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-//        if (motor_enabled[i]) {
-//            motor_out[i] = apply_thrust_curve_and_volt_scaling(motor_out[i], out_min_pwm, out_max_pwm);
-//        }
-//    }
-
-    // clip motor output if required (shouldn't be)
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i]) {
-            motor_out[i] = constrain_int16(motor_out[i], out_min_pwm, out_max_pwm);
-        }
-    }
-
-    // send output to each motor
-    hal.rcout->cork();
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            rc_write(i, motor_out[i]);
-        }
-    }
-    hal.rcout->push();
 }
