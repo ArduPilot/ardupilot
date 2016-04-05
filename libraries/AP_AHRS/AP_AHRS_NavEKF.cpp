@@ -1287,6 +1287,30 @@ bool AP_AHRS_NavEKF::getGpsGlitchStatus()
     return ekf_status.flags.gps_glitching;
 }
 
+void AP_AHRS_NavEKF::getPosVelInnovations(Vector3f& velInnov, Vector3f& posInnov)
+{
+    switch (ekf_type()) {
+        case EKF_TYPE1: {
+            Vector3f magInnov;
+            float tasInnov;
+            EKF1.getInnovations(velInnov, posInnov, magInnov, tasInnov);
+            break;
+        }
+        case EKF_TYPE2: {
+            Vector3f magInnov;
+            float tasInnov;
+            float yawInnov;
+            EKF2.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
+            break;
+        }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            posInnov.zero();
+            velInnov.zero();
+            break;
+#endif
+    }
+}
 
 // is the EKF backend doing its own sensor logging?
 bool AP_AHRS_NavEKF::have_ekf_logging(void) const

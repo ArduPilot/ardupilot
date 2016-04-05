@@ -225,6 +225,8 @@ public:
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
     
+    void getPosVelInnovations(Vector3f& velInnov, Vector3f& posInnov);
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
 #if AP_AHRS_WITH_EKF1
