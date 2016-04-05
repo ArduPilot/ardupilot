@@ -118,6 +118,7 @@ public:
             const struct GroupInfo *group_info;
             const float def_value;
         };
+        uint8_t flags;
     };
     struct ConversionInfo {
         uint16_t old_key; // k_param_*
@@ -202,6 +203,13 @@ public:
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
 
+    /// set a default value by name
+    ///
+    /// @param  name            The full name of the variable to be found.
+    /// @param  value           The default value
+    /// @return                 true if the variable is found
+    static bool set_default_by_name(const char *name, float value);
+    
     /// Find a variable by index.
     ///
     ///
@@ -216,8 +224,10 @@ public:
     ///
     ///
     /// @param  p               Pointer to variable
-    /// @return                 token for variable
-    static bool find_by_pointer(AP_Param *p, ParamToken &token);
+    /// @return                 key for variable
+    static bool find_key_by_pointer_group(const void *ptr, uint16_t vindex, const struct GroupInfo *group_info,
+                                          ptrdiff_t offset, uint16_t &key);
+    static bool find_key_by_pointer(const void *ptr, uint16_t &key);
     
     /// Find a object in the top level var_info table
     ///
@@ -381,6 +391,7 @@ private:
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
 
     static bool adjust_group_offset(uint16_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
+    static bool get_base(const struct Info &info, ptrdiff_t &base);
 
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,

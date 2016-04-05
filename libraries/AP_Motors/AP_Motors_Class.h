@@ -62,7 +62,7 @@ public:
     void                set_roll(float roll_in) { _roll_in = roll_in; };        // range -1 ~ +1
     void                set_pitch(float pitch_in) { _pitch_in = pitch_in; };    // range -1 ~ +1
     void                set_yaw(float yaw_in) { _yaw_in = yaw_in; };            // range -1 ~ +1
-    void                set_throttle(float throttle_in) { _throttle_in = constrain_float(throttle_in,0.0f,1.0f); };   // range 0 ~ 1
+    void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
     void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
 	void                set_strafe(float strafe_in) { _strafe_in = strafe_in; };     // range -1 ~ +1
@@ -81,8 +81,7 @@ public:
     enum spool_up_down_desired {
         DESIRED_SHUT_DOWN = 0,              // all motors stop
         DESIRED_SPIN_WHEN_ARMED = 1,        // all motors at spin when armed
-        DESIRED_SPIN_MIN_THROTTLE = 2,      // all motors at min throttle
-        DESIRED_THROTTLE_UNLIMITED = 3,     // motors are no longer constrained by start up procedure
+        DESIRED_THROTTLE_UNLIMITED = 2,     // motors are no longer constrained by start up procedure
     };
 
     virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };

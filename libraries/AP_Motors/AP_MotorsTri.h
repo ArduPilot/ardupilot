@@ -12,6 +12,9 @@
 // tail servo uses channel 7
 #define AP_MOTORS_CH_TRI_YAW    CH_7
 
+#define AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN   5   // minimum angle movement of tail servo in degrees
+#define AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX   80  // maximum angle movement of tail servo in degrees
+
 /// @class      AP_MotorsTri
 class AP_MotorsTri : public AP_MotorsMulticopter {
 public:

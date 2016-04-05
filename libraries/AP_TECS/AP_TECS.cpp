@@ -971,15 +971,19 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
     }
 
-    // apply temporary pitch limit and clear
-    _PITCHmaxf = constrain_float(_PITCHmaxf, -90, _pitch_max_limit);
-    _pitch_max_limit = 90;
-    
     if (_pitch_min >= 0) {
         _PITCHminf = aparm.pitch_limit_min_cd * 0.01f;
     } else {
         _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min_cd * 0.01f);
     }
+
+    // apply temporary pitch limit and clear
+    if (_pitch_max_limit < 90) {
+        _PITCHmaxf = constrain_float(_PITCHmaxf, -90, _pitch_max_limit);
+        _PITCHminf = constrain_float(_PITCHminf, -_pitch_max_limit, _PITCHmaxf);
+        _pitch_max_limit = 90;
+    }
+        
     if (flight_stage == FLIGHT_LAND_FINAL) {
         // in flare use min pitch from LAND_PITCH_CD
         _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);

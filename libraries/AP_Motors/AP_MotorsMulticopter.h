@@ -72,7 +72,7 @@ public:
         SHUT_DOWN = 0,                      // all motors stop
         SPIN_WHEN_ARMED = 1,                // all motors at spin when armed
         SPOOL_UP = 2,                       // increasing maximum throttle while stabilizing
-        THROTTLE_UNLIMITED = 3,                  // throttle is no longer constrained by start up procedure
+        THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
         SPOOL_DOWN = 4,                     // decreasing maximum throttle while stabilizing
     };
 
@@ -132,12 +132,9 @@ protected:
     // convert thrust (0~1) range back to pwm range
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
 
-    // spin when armed as a percentage of the 0~1 range from 0 to throttle_min
-    float               spin_when_armed_low_end_pct() { return (float)_spin_when_armed.get() / _min_throttle; }
-
     // flag bitmask
     struct {
-        spool_up_down_mode     spool_mode       : 4;    // motor's current spool mode
+        spool_up_down_mode     spool_mode       : 3;    // motor's current spool mode
     } _multicopter_flags;
 
     // parameters
