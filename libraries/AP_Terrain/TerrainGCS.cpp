@@ -55,7 +55,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
         return false;
     }
 
-    if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_TERRAIN_REQUEST_LEN) {
+    if (!HAVE_PAYLOAD_SPACE(chan, TERRAIN_REQUEST)) {
         // not enough buffer space
         return false;
     }
@@ -232,7 +232,7 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     }
     current_height += home_terrain_height - terrain_height;
 
-    if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_TERRAIN_REPORT_LEN) {
+    if (HAVE_PAYLOAD_SPACE(chan, TERRAIN_REPORT)) {
         mavlink_msg_terrain_report_send(chan, loc.lat, loc.lng, spacing, 
                                         terrain_height, current_height,
                                         pending, loaded);
