@@ -83,6 +83,7 @@ void Sub::loiter_run()
 
     case Loiter_Disarmed:
         wp_nav.init_loiter_target();
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -90,6 +91,7 @@ void Sub::loiter_run()
         break;
 
     case Loiter_MotorStop:
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         wp_nav.init_loiter_target();
         // multicopters do not stabilize roll/pitch/yaw when motors are stopped
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -109,6 +111,9 @@ void Sub::loiter_run()
         // get takeoff adjusted pilot and takeoff climb rates
         takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
         // run loiter controller
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
@@ -124,13 +129,20 @@ void Sub::loiter_run()
     case Loiter_Landed:
 
         wp_nav.init_loiter_target();
+        // if throttle zero reset attitude and exit immediately
+        if (ap.throttle_zero) {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        }else{
+            motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        }
         // multicopters do not stabilize roll/pitch/yaw when disarmed
-        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         break;
 
     case Loiter_Flying:
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // run loiter controller
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);

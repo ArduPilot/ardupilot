@@ -298,8 +298,8 @@ void Sub::Log_Write_Nav_Tuning()
 struct PACKED log_Control_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    int16_t  throttle_in;
-    int16_t  angle_boost;
+    float  throttle_in;
+    float  angle_boost;
     float    throttle_out;
     float    desired_alt;
     float    inav_alt;
@@ -316,7 +316,7 @@ void Sub::Log_Write_Control_Tuning()
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_us             : AP_HAL::micros64(),
-        throttle_in         : channel_throttle->control_in,
+        throttle_in         : attitude_control.get_throttle_in(),
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : motors.get_throttle(),
         desired_alt         : pos_control.get_alt_target() / 100.0f,
@@ -624,8 +624,8 @@ void Sub::Log_Sensor_Health()
 struct PACKED log_Heli {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    int16_t   desired_rotor_speed;
-    int16_t   main_rotor_speed;
+    float   desired_rotor_speed;
+    float   main_rotor_speed;
 };
 
 // precision landing logging
@@ -683,7 +683,7 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qhhfffecchh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
+      "CTUN", "Qfffffecchh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "QHHIhBH",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
@@ -705,7 +705,7 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
     { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qhh",         "TimeUS,DRRPM,ERRPM" },
+      "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
       "PL",    "QBffffff",    "TimeUS,Heal,bX,bY,eX,eY,pX,pY" },
 };
