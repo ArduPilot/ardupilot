@@ -44,6 +44,22 @@ void Copter::update_arming_checks(void)
     }
 }
 
+
+void Copter::update_ekf_innovation_check(void)
+{
+    const float dt = 1.0f/50.0f;
+    const float tc = 5.0f;
+    const float alpha = dt/(dt+tc);
+    Vector3f velInnov, posInnov;
+    ahrs.getPosVelInnovations(velInnov, posInnov);
+    velInnov.z = 0;
+    posInnov.z = 0;
+    ekf_innovation_peak = MAX(ekf_innovation_peak, posInnov.length()/0.55f);
+    ekf_innovation_peak = MAX(ekf_innovation_peak, velInnov.length()/0.7f);
+    ekf_innovation_peak = MIN(ekf_innovation_peak, 10.0f);
+    ekf_innovation_peak -= ekf_innovation_peak*alpha;
+}
+
 // performs pre-arm checks and arming checks
 bool Copter::all_arming_checks_passing(bool arming_from_gcs)
 {
@@ -452,6 +468,13 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav Checks");
+        }
+        return false;
+    }
+
+    if (position_ok() && ekf_innovation_peak > 1.0f) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav Checks");
         }

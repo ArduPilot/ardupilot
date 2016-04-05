@@ -575,6 +575,8 @@ private:
     } heli_flags;
 #endif
 
+    float ekf_innovation_peak;
+
 #if GNDEFFECT_COMPENSATION == ENABLED
     // ground effect detector
     struct {
@@ -925,6 +927,7 @@ private:
     void auto_disarm_check();
     bool init_arm_motors(bool arming_from_gcs);
     void update_arming_checks(void);
+    void update_ekf_innovation_check(void);
     uint32_t get_ready_to_arm_mode_mask(void);
     bool all_arming_checks_passing(bool arming_from_gcs);
     bool pre_arm_checks(bool display_failure);
