@@ -18,14 +18,14 @@
 #endif
 
 #ifndef DRIFT_THR_ASSIST_MAX
- # define DRIFT_THR_ASSIST_MAX  300.0f  // maximum assistance throttle assist will provide
+ # define DRIFT_THR_ASSIST_MAX  0.3f  // maximum assistance throttle assist will provide
 #endif
 
 #ifndef DRIFT_THR_MIN
- # define DRIFT_THR_MIN         213     // throttle assist will be active when pilot's throttle is above this value
+ # define DRIFT_THR_MIN         0.213f     // throttle assist will be active when pilot's throttle is above this value
 #endif
 #ifndef DRIFT_THR_MAX
- # define DRIFT_THR_MAX         787     // throttle assist will be active when pilot's throttle is below this value
+ # define DRIFT_THR_MAX         0.787f     // throttle assist will be active when pilot's throttle is below this value
 #endif
 
 // drift_init - initialise drift controller
@@ -46,10 +46,11 @@ void Sub::drift_run()
     static float roll_input = 0.0f;
     float target_roll, target_pitch;
     float target_yaw_rate;
-    int16_t pilot_throttle_scaled;
+    float pilot_throttle_scaled;
 
-    // if not armed or motor interlock not enabled or landed and throttle at zero, set throttle to zero and exit immediately
-    if(!motors.armed() || !motors.get_interlock() || (ap.land_complete && ap.throttle_zero)) {
+    // if landed and throttle at zero, set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || (ap.land_complete && ap.throttle_zero)) {
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }
@@ -100,25 +101,21 @@ void Sub::drift_run()
     attitude_control.set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);
 }
 
-// get_throttle_assist - return throttle output (range 0 ~ 1000) based on pilot input and z-axis velocity
-int16_t Sub::get_throttle_assist(float velz, int16_t pilot_throttle_scaled)
+// get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity
+float Sub::get_throttle_assist(float velz, float pilot_throttle_scaled)
 {
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 213 ~ 787
     //      Assistance is strongest when throttle is at mid, drops linearly to no assistance at 213 and 787
     float thr_assist = 0.0f;
-    if (pilot_throttle_scaled > g.throttle_min && pilot_throttle_scaled < THR_MAX &&
-        pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
+    if (pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
         // calculate throttle assist gain
-        thr_assist = 1.2f - ((float)abs(pilot_throttle_scaled - 500) / 240.0f);
+        thr_assist = 1.2f - ((float)fabsf(pilot_throttle_scaled - 0.5f) / 0.24f);
         thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * velz;
 
         // ensure throttle assist never adjusts the throttle by more than 300 pwm
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
-
-        // ensure throttle assist never pushes throttle below throttle_min or above throttle_max
-        thr_assist = constrain_float(thr_assist, g.throttle_min - pilot_throttle_scaled, THR_MAX - pilot_throttle_scaled);
     }
     
-    return pilot_throttle_scaled + thr_assist;
+    return constrain_float(pilot_throttle_scaled + thr_assist, 0.0f, 1.0f);
 }
