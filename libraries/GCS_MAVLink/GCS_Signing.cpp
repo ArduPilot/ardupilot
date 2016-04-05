@@ -176,6 +176,35 @@ void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec)
     }
 }
 
+/*
+  return true if signing is enabled on this channel
+ */
+bool GCS_MAVLINK::signing_enabled(void) const
+{
+    const mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
+        return true;
+    }
+    return false;
+}
+
+/*
+  return packet overhead in bytes for a channel
+ */
+uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
+{
+    const mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
+        return MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_SIGNATURE_BLOCK_LEN;
+    }
+    return MAVLINK_NUM_NON_PAYLOAD_BYTES;
+}
+
 #else
 void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec) {}
+
+uint8_t packet_overhead_chan(mavlink_channel_t chan)
+{
+    return MAVLINK_NUM_NON_PAYLOAD_BYTES;
+}
 #endif // MAVLINK_PROTOCOL_VERSION

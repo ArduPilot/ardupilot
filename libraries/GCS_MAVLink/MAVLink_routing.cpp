@@ -135,8 +135,8 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
                                   target_component == routes[i].compid ||
                                   !match_system))) {
             if (in_channel != routes[i].channel && !sent_to_chan[routes[i].channel]) {
-                if (comm_get_txspace(routes[i].channel) >= 
-                    ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+                if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) +
+                    GCS_MAVLINK::packet_overhead_chan(routes[i].channel)) {
 #if ROUTING_DEBUG
                     ::printf("fwd msg %u from chan %u on chan %u sysid=%d compid=%d\n",
                              msg->msgid,
@@ -172,7 +172,8 @@ void MAVLink_routing::send_to_components(const mavlink_message_t* msg)
     // check learned routes
     for (uint8_t i=0; i<num_routes; i++) {
         if ((routes[i].sysid == mavlink_system.sysid) && !sent_to_chan[routes[i].channel]) {
-            if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+            if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) +
+                GCS_MAVLINK::packet_overhead_chan(routes[i].channel)) {
 #if ROUTING_DEBUG
                 ::printf("send msg %u on chan %u sysid=%u compid=%u\n",
                          msg->msgid,
@@ -278,7 +279,8 @@ void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavli
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         if (mask & (1U<<i)) {
             mavlink_channel_t channel = (mavlink_channel_t)(MAVLINK_COMM_0 + i);
-            if (comm_get_txspace(channel) >= ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+            if (comm_get_txspace(channel) >= ((uint16_t)msg->len) +
+                GCS_MAVLINK::packet_overhead_chan(channel)) {
 #if ROUTING_DEBUG
                 ::printf("fwd HB from chan %u on chan %u from sysid=%u compid=%u\n",
                          (unsigned)in_channel,
