@@ -123,8 +123,8 @@ $(1)-$(2) : EXTRAFLAGS += "-DFRAME_CONFIG=$(shell echo $(2) | tr a-z A-Z | sed s
 $(1)-$(2) : $(1)
 $(1)-$(2)-hil : $(1)-$(2)
 $(1)-$(2)-debug : $(1)-$(2)
-$(1)-$(2)-mavlink2 : $(1)-$(2)
-$(1)-$(2)-debug-mavlink2 : $(1)-$(2)
+$(1)-$(2)-mavlink1 : $(1)-$(2)
+$(1)-$(2)-debug-mavlink1 : $(1)-$(2)
 $(1)-$(2)-hilsensors : $(1)-$(2)
 $(1)-$(2)-upload : $(1)-$(2)
 $(1)-$(2)-upload : $(1)-upload
@@ -133,8 +133,8 @@ endef
 define board_template
 $(1)-hil : $(1)
 $(1)-debug : $(1)
-$(1)-mavlink2 : $(1)
-$(1)-debug-mavlink2 : $(1)-debug
+$(1)-mavlink1 : $(1)
+$(1)-debug-mavlink1 : $(1)-debug
 $(1)-asan : $(1)
 $(1)-hilsensors : $(1)
 endef
