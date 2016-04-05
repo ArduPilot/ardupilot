@@ -100,7 +100,7 @@ void Copter::update_thr_average()
 {
     // ensure throttle_average has been initialised
     if( is_zero(throttle_average) ) {
-        throttle_average = g.throttle_mid;
+        throttle_average = 0.5f;
         // update position controller
         pos_control.set_throttle_hover(throttle_average);
     }
@@ -114,7 +114,7 @@ void Copter::update_thr_average()
     float throttle = motors.get_throttle();
 
     // calc average throttle if we are in a level hover
-    if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
+    if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         throttle_average = throttle_average * 0.99f + throttle * 0.01f;
         // update position controller
         pos_control.set_throttle_hover(throttle_average);
@@ -126,41 +126,39 @@ void Copter::set_throttle_takeoff()
 {
     // tell position controller to reset alt target and reset I terms
     pos_control.init_takeoff();
-
-    // tell motors to do a slow start
-    motors.slow_start(true);
 }
 
 // get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
 // used only for manual throttle modes
-// returns throttle output 0 to 1000
-int16_t Copter::get_pilot_desired_throttle(int16_t throttle_control)
+// returns throttle output 0 to 1
+float Copter::get_pilot_desired_throttle(int16_t throttle_control)
 {
-    int16_t throttle_out;
+    float throttle_out;
 
     int16_t mid_stick = channel_throttle->get_control_mid();
 
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
+    // ensure mid throttle is set within a reasonable range
     g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    float thr_mid = MAX(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < mid_stick) {
         // below the deadband
-        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(g.throttle_mid - g.throttle_min))/((float)(mid_stick-g.throttle_min));
+        throttle_out = ((float)throttle_control)*thr_mid/(float)mid_stick;
     }else if(throttle_control > mid_stick) {
         // above the deadband
-        throttle_out = g.throttle_mid + ((float)(throttle_control-mid_stick)) * (float)(1000-g.throttle_mid) / (float)(1000-mid_stick);
+        throttle_out = (thr_mid) + ((float)(throttle_control-mid_stick)) * (1.0f - thr_mid) / (float)(1000-mid_stick);
     }else{
         // must be in the deadband
-        throttle_out = g.throttle_mid;
+        throttle_out = thr_mid;
     }
 
     return throttle_out;
 }
 
-// get_pilot_desired_climb_rate - transform pilot's throttle input to
-// climb rate in cm/s.  we use radio_in instead of control_in to get the full range
+// get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
 float Copter::get_pilot_desired_climb_rate(float throttle_control)
 {
@@ -175,7 +173,7 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
     float deadband_bottom = mid_stick - g.throttle_deadzone;
 
     // ensure a reasonable throttle value
-    throttle_control = constrain_float(throttle_control,g.throttle_min,1000.0f);
+    throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
@@ -183,7 +181,7 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_bottom) / (deadband_bottom-g.throttle_min);
+        desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_bottom) / deadband_bottom;
     }else if (throttle_control > deadband_top) {
         // above the deadband
         desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_top) / (1000.0f-deadband_top);
@@ -201,7 +199,7 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
 float Copter::get_non_takeoff_throttle()
 {
-    return (g.throttle_mid / 2.0f);
+    return (((float)g.throttle_mid/1000.0f)/2.0f);
 }
 
 float Copter::get_takeoff_trigger_throttle()
@@ -209,9 +207,8 @@ float Copter::get_takeoff_trigger_throttle()
     return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
 }
 
-// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off
+// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output (in the range 0 to 1) before take-off
 // used only for althold, loiter, hybrid flight modes
-// returns throttle output 0 to 1000
 float Copter::get_throttle_pre_takeoff(float input_thr)
 {
     // exit immediately if input_thr is zero
@@ -219,19 +216,13 @@ float Copter::get_throttle_pre_takeoff(float input_thr)
         return 0.0f;
     }
 
-    // TODO: does this parameter sanity check really belong here?
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    // ensure reasonable throttle values
+    input_thr = constrain_float(input_thr,0.0f,1000.0f);
 
-    float in_min = g.throttle_min;
+    float in_min = 0.0f;
     float in_max = get_takeoff_trigger_throttle();
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters swash will move from bottom to 1/2 of mid throttle
-    float out_min = 0;
-#else
-    // multicopters will output between spin-when-armed and 1/2 of mid throttle
-    float out_min = motors.get_throttle_warn();
-#endif
+    float out_min = 0.0f;
     float out_max = get_non_takeoff_throttle();
 
     if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
@@ -285,10 +276,10 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 }
 
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
-void Copter::set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
+void Copter::set_accel_throttle_I_from_pilot_throttle(float pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_accel_z.set_integrator(pilot_throttle-throttle_average);
+    g.pid_accel_z.set_integrator((pilot_throttle-throttle_average) * 1000.0f);
 }
 
 // updates position controller's maximum altitude using fence and EKF limits

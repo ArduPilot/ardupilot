@@ -532,24 +532,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
-    
-#if FRAME_CONFIG ==     HELI_FRAME
-    // @Group: HS1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_1,    "HS1_", RC_Channel),
-    // @Group: HS2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_2,    "HS2_", RC_Channel),
-    // @Group: HS3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_3,    "HS3_", RC_Channel),
-    // @Group: HS4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_4,    "HS4_", RC_Channel),
-    // @Group: H_RSC_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(heli_servo_rsc,    "H_RSC_", RC_Channel),
-#endif
 
     // RC channel
     //-----------
@@ -654,111 +636,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
-    // PID controller
-    //---------------
-
-    // @Param: RATE_RLL_P
-    // @DisplayName: Roll axis rate controller P gain
-    // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
-    // @Range: 0.08 0.30
-    // @Increment: 0.005
-    // @User: Standard
-
-    // @Param: RATE_RLL_I
-    // @DisplayName: Roll axis rate controller I gain
-    // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
-    // @Range: 0.01 0.5
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: RATE_RLL_IMAX
-    // @DisplayName: Roll axis rate controller I gain maximum
-    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
-    // @User: Standard
-
-    // @Param: RATE_RLL_D
-    // @DisplayName: Roll axis rate controller D gain
-    // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
-    // @Range: 0.001 0.02
-    // @Increment: 0.001
-    // @User: Standard
-#if FRAME_CONFIG == HELI_FRAME
-    GGROUP(pid_rate_roll,     "RATE_RLL_", AC_HELI_PID),
-#else
-    GGROUP(pid_rate_roll,     "RATE_RLL_", AC_PID),
-#endif
-
-    // @Param: RATE_PIT_P
-    // @DisplayName: Pitch axis rate controller P gain
-    // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.08 0.30
-    // @Increment: 0.005
-    // @User: Standard
-
-    // @Param: RATE_PIT_I
-    // @DisplayName: Pitch axis rate controller I gain
-    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
-    // @Range: 0.01 0.5
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: RATE_PIT_IMAX
-    // @DisplayName: Pitch axis rate controller I gain maximum
-    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
-    // @User: Standard
-
-    // @Param: RATE_PIT_D
-    // @DisplayName: Pitch axis rate controller D gain
-    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.001 0.02
-    // @Increment: 0.001
-    // @User: Standard
-#if FRAME_CONFIG == HELI_FRAME
-    GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_HELI_PID),
-#else
-    GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
-#endif
-
-    // @Param: RATE_YAW_P
-    // @DisplayName: Yaw axis rate controller P gain
-    // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
-    // @Range: 0.150 0.50
-    // @Increment: 0.005
-    // @User: Standard
-
-    // @Param: RATE_YAW_I
-    // @DisplayName: Yaw axis rate controller I gain
-    // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
-    // @Range: 0.010 0.05
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: RATE_YAW_IMAX
-    // @DisplayName: Yaw axis rate controller I gain maximum
-    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: Percent*10
-    // @User: Standard
-
-    // @Param: RATE_YAW_D
-    // @DisplayName: Yaw axis rate controller D gain
-    // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
-    // @Range: 0.000 0.02
-    // @Increment: 0.001
-    // @User: Standard
-#if FRAME_CONFIG == HELI_FRAME
-    GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_HELI_PID),
-#else
-    GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
-#endif
-
     // @Param: VEL_XY_P
     // @DisplayName: Velocity (horizontal) P gain
     // @Description: Velocity (horizontal) P gain.  Converts the difference between desired velocity to a target acceleration
@@ -822,29 +699,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Units: Hz
     // @User: Standard
     GGROUP(pid_accel_z, "ACCEL_Z_", AC_PID),
-
-    // P controllers
-    //--------------
-    // @Param: STB_RLL_P
-    // @DisplayName: Roll axis stabilize controller P gain
-    // @Description: Roll axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
-    // @Range: 3.000 12.000
-    // @User: Standard
-    GGROUP(p_stabilize_roll,       "STB_RLL_", AC_P),
-
-    // @Param: STB_PIT_P
-    // @DisplayName: Pitch axis stabilize controller P gain
-    // @Description: Pitch axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
-    // @Range: 3.000 12.000
-    // @User: Standard
-    GGROUP(p_stabilize_pitch,      "STB_PIT_", AC_P),
-
-    // @Param: STB_YAW_P
-    // @DisplayName: Yaw axis stabilize controller P gain
-    // @Description: Yaw axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
-    // @Range: 3.000 6.000
-    // @User: Standard
-    GGROUP(p_stabilize_yaw,        "STB_YAW_", AC_P),
 
     // @Param: POS_Z_P
     // @DisplayName: Position (vertical) controller P gain
@@ -914,8 +768,8 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Heli),
 #else
     // @Group: ATC_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
-    GOBJECT(attitude_control, "ATC_", AC_AttitudeControl),
+    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
+    GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Multi),
 #endif
 
     // @Group: POSCON_
@@ -1001,29 +855,11 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
 
 #elif FRAME_CONFIG == SINGLE_FRAME
-    // @Group: SS1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_1,    "SS1_", RC_Channel),
-    // @Group: SS2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_2,    "SS2_", RC_Channel),
-    // @Group: SS3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_3,    "SS3_", RC_Channel),
-    // @Group: SS4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_4,    "SS4_", RC_Channel),
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_MotorsSingle.cpp
     GOBJECT(motors, "MOT_",           AP_MotorsSingle),
 
 #elif FRAME_CONFIG == COAX_FRAME
-    // @Group: SS1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_1,    "SS1_", RC_Channel),
-    // @Group: SS2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_2,    "SS2_", RC_Channel),
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_MotorsCoax.cpp
     GOBJECT(motors, "MOT_",           AP_MotorsCoax),
@@ -1181,4 +1017,61 @@ void Copter::load_parameters(void)
     AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
     cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
+
+    // upgrade parameters
+    convert_pid_parameters();
+}
+
+// handle conversion of PID gains from Copter-3.3 to Copter-3.4
+void Copter::convert_pid_parameters(void)
+{
+    // conversion info
+    AP_Param::ConversionInfo pid_conversion_info[] = {
+        { Parameters::k_param_pid_rate_roll, 0, AP_PARAM_FLOAT, "ATC_RAT_RLL_P" },
+        { Parameters::k_param_pid_rate_roll, 1, AP_PARAM_FLOAT, "ATC_RAT_RLL_I" },
+        { Parameters::k_param_pid_rate_roll, 2, AP_PARAM_FLOAT, "ATC_RAT_RLL_D" },
+        { Parameters::k_param_pid_rate_pitch, 0, AP_PARAM_FLOAT, "ATC_RAT_PIT_P" },
+        { Parameters::k_param_pid_rate_pitch, 1, AP_PARAM_FLOAT, "ATC_RAT_PIT_I" },
+        { Parameters::k_param_pid_rate_pitch, 2, AP_PARAM_FLOAT, "ATC_RAT_PIT_D" },
+        { Parameters::k_param_pid_rate_yaw, 0, AP_PARAM_FLOAT, "ATC_RAT_YAW_P" },
+        { Parameters::k_param_pid_rate_yaw, 1, AP_PARAM_FLOAT, "ATC_RAT_YAW_I" },
+        { Parameters::k_param_pid_rate_yaw, 2, AP_PARAM_FLOAT, "ATC_RAT_YAW_D" },
+    };
+    AP_Param::ConversionInfo imax_conversion_info[] = {
+        { Parameters::k_param_pid_rate_roll,  5, AP_PARAM_FLOAT, "ATC_RAT_RLL_IMAX" },
+        { Parameters::k_param_pid_rate_pitch, 5, AP_PARAM_FLOAT, "ATC_RAT_PIT_IMAX" },
+        { Parameters::k_param_pid_rate_yaw,   5, AP_PARAM_FLOAT, "ATC_RAT_YAW_IMAX" }
+    };
+    AP_Param::ConversionInfo filt_conversion_info[] = {
+        { Parameters::k_param_pid_rate_roll, 6, AP_PARAM_FLOAT, "ATC_RAT_RLL_FILT" },
+        { Parameters::k_param_pid_rate_pitch, 6, AP_PARAM_FLOAT, "ATC_RAT_PIT_FILT" },
+        { Parameters::k_param_pid_rate_yaw, 6, AP_PARAM_FLOAT, "ATC_RAT_YAW_FILT" }
+    };
+
+    // gains increase by 27% due to attitude controller's switch to use radians instead of centi-degrees
+    // and motor libraries switch to accept inputs in -1 to +1 range instead of -4500 ~ +4500
+    float pid_scaler = 1.27f;
+
+#if FRAME_CONFIG != HELI_FRAME
+    // Multicopter x-frame gains are 40% lower because -1 or +1 input to motors now results in maximum rotation
+    if (g.frame_orientation == AP_MOTORS_X_FRAME || g.frame_orientation == AP_MOTORS_V_FRAME || g.frame_orientation == AP_MOTORS_H_FRAME) {
+        pid_scaler = 0.9f;
+    }
+#endif
+
+    // scale PID gains
+    uint8_t table_size = ARRAY_SIZE(pid_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&pid_conversion_info[i], pid_scaler);
+    }
+    // reduce IMAX into -1 ~ +1 range
+    table_size = ARRAY_SIZE(imax_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&imax_conversion_info[i], 1.0f/4500.0f);
+    }
+    // convert filter without scaling
+    table_size = ARRAY_SIZE(filt_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&filt_conversion_info[i], 1.0f);
+    }
 }

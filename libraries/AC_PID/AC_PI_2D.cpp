@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AC_PI_2D::var_info[] = {
     // @Param: FILT_HZ
     // @DisplayName: PID Input filter frequency in Hz
     // @Description: Input filter frequency in Hz
-    // @Unit: Hz
+    // @Units: Hz
     AP_GROUPINFO("FILT_HZ", 3, AC_PI_2D, _filt_hz, AC_PI_2D_FILT_HZ_DEFAULT),
 
     AP_GROUPEND

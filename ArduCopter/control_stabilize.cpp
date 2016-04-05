@@ -10,7 +10,7 @@
 bool Copter::stabilize_init(bool ignore_checks)
 {
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (g.rc_3.control_in > get_non_takeoff_throttle())) {
+    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (get_pilot_desired_throttle(channel_throttle->control_in) > get_non_takeoff_throttle())) {
         return false;
     }
     // set target altitude to zero for reporting
@@ -25,17 +25,16 @@ void Copter::stabilize_run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;
-    int16_t pilot_throttle_scaled;
+    float pilot_throttle_scaled;
 
-    // if not armed or throttle at zero, set throttle to zero and exit immediately
-    if(!motors.armed() || ap.throttle_zero) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed() || ap.throttle_zero || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        // slow start if landed
-        if (ap.land_complete) {
-            motors.slow_start(true);
-        }
         return;
     }
+
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();

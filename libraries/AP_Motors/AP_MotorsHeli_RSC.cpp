@@ -28,28 +28,6 @@ void AP_MotorsHeli_RSC::init_servo()
     RC_Channel_aux::set_aux_channel_default(_aux_fn, _default_channel);
 }
 
-// recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
-void AP_MotorsHeli_RSC::recalc_scalers()
-{
-    // recalculate rotor ramp up increment
-    if (_ramp_time <= 0) {
-        _ramp_time = 1;
-    }
-
-    _ramp_increment = 1.0f / (_ramp_time * _loop_rate);
-
-    // recalculate rotor runup increment
-    if (_runup_time <= 0 ) {
-        _runup_time = 1;
-    }
-    
-    if (_runup_time < _ramp_time) {
-        _runup_time = _ramp_time;
-    }
-
-    _runup_increment = 1.0f / (_runup_time * _loop_rate);
-}
-
 // set_power_output_range
 void AP_MotorsHeli_RSC::set_power_output_range(uint16_t power_low, uint16_t power_high)
 {
@@ -67,7 +45,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             update_rotor_ramp(0.0f);
 
             // control output forced to zero
-            _control_output = 0;
+            _control_output = 0.0f;
             break;
 
         case ROTOR_CONTROL_IDLE:
@@ -102,6 +80,11 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
 void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input)
 {
+    // sanity check ramp time
+    if (_ramp_time <= 0) {
+        _ramp_time = 1;
+    }
+
     // ramp output upwards towards target
     if (_rotor_ramp_output < rotor_ramp_input) {
         // allow control output to jump to estimated speed
@@ -109,7 +92,7 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input)
             _rotor_ramp_output = _rotor_runup_output;
         }
         // ramp up slowly to target
-        _rotor_ramp_output += _ramp_increment;
+        _rotor_ramp_output += (1.0f / (_ramp_time * _loop_rate));
         if (_rotor_ramp_output > rotor_ramp_input) {
             _rotor_ramp_output = rotor_ramp_input;
         }
@@ -122,14 +105,23 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input)
 // update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
 void AP_MotorsHeli_RSC::update_rotor_runup()
 {
+    // sanity check runup time
+    if (_runup_time < _ramp_time) {
+        _runup_time = _ramp_time;
+    }
+    if (_runup_time <= 0 ) {
+        _runup_time = 1;
+    }
+
     // ramp speed estimate towards control out
+    float runup_increment = 1.0f / (_runup_time * _loop_rate);
     if (_rotor_runup_output < _rotor_ramp_output) {
-        _rotor_runup_output += _runup_increment;
+        _rotor_runup_output += runup_increment;
         if (_rotor_runup_output > _rotor_ramp_output) {
             _rotor_runup_output = _rotor_ramp_output;
         }
     }else{
-        _rotor_runup_output -= _runup_increment;
+        _rotor_runup_output -= runup_increment;
         if (_rotor_runup_output < _rotor_ramp_output) {
             _rotor_runup_output = _rotor_ramp_output;
         }
@@ -155,21 +147,21 @@ void AP_MotorsHeli_RSC::update_rotor_runup()
 }
 
 // get_rotor_speed - gets rotor speed either as an estimate, or (ToDO) a measured value
-int16_t AP_MotorsHeli_RSC::get_rotor_speed() const
+float AP_MotorsHeli_RSC::get_rotor_speed() const
 {
     // if no actual measured rotor speed is available, estimate speed based on rotor runup scalar.
-    return (_rotor_runup_output * _max_speed);
+    return _rotor_runup_output;
 }
 
 // write_rsc - outputs pwm onto output rsc channel
-// servo_out parameter is of the range 0 ~ 1000
-void AP_MotorsHeli_RSC::write_rsc(int16_t servo_out)
+// servo_out parameter is of the range 0 ~ 1
+void AP_MotorsHeli_RSC::write_rsc(float servo_out)
 {
     if (_control_mode == ROTOR_CONTROL_MODE_DISABLED){
         // do not do servo output to avoid conflicting with other output on the channel
         // ToDo: We should probably use RC_Channel_Aux to avoid this problem
         return;
     } else {
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_heli_rsc, servo_out);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_heli_rsc, servo_out * 1000.0f);
     }
 }
