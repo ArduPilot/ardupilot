@@ -18,8 +18,8 @@
 #include <AP_HAL/utility/RingBuffer.h>
 
 // check if a message will fit in the payload space available
-#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN)
-#define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
+#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
+#define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
 #if HAL_CPU_CLASS <= HAL_CPU_CLASS_150 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -206,7 +206,10 @@ public:
 
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);
-    
+
+    // return current packet overhead for a channel
+    static uint8_t packet_overhead_chan(mavlink_channel_t chan);
+
 private:
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
 
@@ -363,5 +366,10 @@ private:
     bool signing_key_save(const struct SigningKey &key);
     bool signing_key_load(struct SigningKey &key);
     void load_signing_key(void);
+    bool signing_enabled(void) const;
+    uint8_t packet_overhead(void) const { return packet_overhead_chan(chan); }
+#else 
+    bool signing_enabled(void) const { return false; }
+    uint8_t packet_overhead(void) const { return MAVLINK_NUM_NON_PAYLOAD_BYTES; }
 #endif // MAVLINK_PROTOCOL_VERSION
 };

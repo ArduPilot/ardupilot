@@ -106,8 +106,11 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
     load_signing_key();
 
     mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status && status->signing == NULL) {
-        // if signing is off start by sending MAVLink1
+    if ((status && status->signing == NULL) ||
+        chan == MAVLINK_COMM_0) {
+        // if signing is off start by sending MAVLink1.
+        // Always start with MAVLink1 on first port for now, to allow for recovery
+        // after experiments with MAVLink2
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     }    
 #endif
@@ -134,7 +137,7 @@ GCS_MAVLINK::queued_param_send()
     if (bytes_allowed > comm_get_txspace(chan)) {
         bytes_allowed = comm_get_txspace(chan);
     }
-    count = bytes_allowed / (MAVLINK_MSG_ID_PARAM_VALUE_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES);
+    count = bytes_allowed / (MAVLINK_MSG_ID_PARAM_VALUE_LEN + packet_overhead());
 
     // when we don't have flow control we really need to keep the
     // param download very slow, or it tends to stall
@@ -814,8 +817,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     } else {
         waypoint_timelast_request = AP_HAL::millis();
         // if we have enough space, then send the next WP immediately
-        if (comm_get_txspace(chan) >= 
-            MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_MISSION_ITEM_LEN) {
+        if (HAVE_PAYLOAD_SPACE(chan, MISSION_ITEM)) {
             queued_waypoint_send();
         } else {
             send_message(MSG_NEXT_WAYPOINT);
@@ -935,6 +937,9 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
 #if MAVLINK_PROTOCOL_VERSION >= 2
             if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
                 (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+                // if we receive any MAVLink2 packets on a connection
+                // currently sending MAVLink1 then switch to sending
+                // MAVLink2
                 mavlink_status_t *cstatus = mavlink_get_channel_status(chan);
                 if (cstatus != NULL) {
                     cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
@@ -978,15 +983,14 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
  */
 bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
 {
-    if (comm_get_txspace(chan) >= 
-        MAVLINK_MSG_ID_GPS_RAW_INT_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+    if (HAVE_PAYLOAD_SPACE(chan, GPS_RAW_INT)) {
         gps.send_mavlink_gps_raw(chan);
     } else {
         return false;
     }
 
     if (gps.highest_supported_status(0) > AP_GPS::GPS_OK_FIX_3D) {
-        if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS_RTK_LEN) {
+        if (HAVE_PAYLOAD_SPACE(chan, GPS_RTK)) {
             gps.send_mavlink_gps_rtk(chan);
         }
 
@@ -994,13 +998,12 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
 
     if (gps.num_sensors() > 1 && gps.status(1) > AP_GPS::NO_GPS) {
 
-        if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS2_RAW_LEN) {
+        if (HAVE_PAYLOAD_SPACE(chan, GPS2_RAW)) {
             gps.send_mavlink_gps2_raw(chan);
         }
 
         if (gps.highest_supported_status(1) > AP_GPS::GPS_OK_FIX_3D) {
-            if (comm_get_txspace(chan) >= 
-                MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS2_RTK_LEN) {
+            if (HAVE_PAYLOAD_SPACE(chan, GPS2_RTK)) {
                 gps.send_mavlink_gps2_rtk(chan);
             }
         }
@@ -1049,8 +1052,7 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
         values[7],
         receiver_rssi);
 
-    if (hal.rcin->num_channels() > 8 && 
-        comm_get_txspace(chan) >= MAVLINK_MSG_ID_RC_CHANNELS_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+    if (hal.rcin->num_channels() > 8 && HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS)) {
         mavlink_msg_rc_channels_send(
             chan,
             now,
@@ -1314,7 +1316,7 @@ void GCS_MAVLINK::service_statustext(void)
             if (statustext->bitmask & chan_bit) {
                 // something is queued on a port and that's the port index we're looped at
                 mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-                if (comm_get_txspace(chan_index) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
+                if (HAVE_PAYLOAD_SPACE(chan_index, STATUSTEXT)) {
                     // we have space so send then clear that channel bit on the mask
                     mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text);
                     statustext->bitmask &= ~chan_bit;
@@ -1339,7 +1341,7 @@ void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type p
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         if ((1U<<i) & mavlink_active) {
             mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_PARAM_VALUE_LEN) {
+            if (HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
                 mavlink_msg_param_value_send(
                     chan,
                     param_name,
@@ -1530,7 +1532,7 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
 
 void GCS_MAVLINK::send_home(const Location &home) const
 {
-    if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_HOME_POSITION_LEN) {
+    if (HAVE_PAYLOAD_SPACE(chan, HOME_POSITION)) {
         const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         mavlink_msg_home_position_send(
             chan,
@@ -1549,7 +1551,7 @@ void GCS_MAVLINK::send_home_all(const Location &home)
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         if ((1U<<i) & mavlink_active) {
             mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_HOME_POSITION_LEN) {
+            if (HAVE_PAYLOAD_SPACE(chan, HOME_POSITION)) {
                 mavlink_msg_home_position_send(
                     chan,
                     home.lat,
