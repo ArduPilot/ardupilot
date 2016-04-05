@@ -546,8 +546,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_LIMITS_STATUS:
     case MSG_FENCE_STATUS:
     case MSG_WIND:
-    case MSG_VIBRATION:
         // unused
+        break;
+
+    case MSG_VIBRATION:
+        CHECK_PAYLOAD_SIZE(VIBRATION);
+        send_vibration(rover.ins);
         break;
 
     case MSG_BATTERY2:
@@ -825,6 +829,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MAG_CAL_PROGRESS);
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_EKF_STATUS_REPORT);
+        send_message(MSG_VIBRATION);
     }
 }
 
