@@ -853,6 +853,10 @@ void GCS_MAVLINK::send_message(enum ap_message id)
 {
     uint8_t i, nextid;
 
+    if (id == MSG_HEARTBEAT) {
+        save_signing_timestamp(false);
+    }
+    
     // see if we can send the deferred messages, if any
     while (num_deferred_messages != 0) {
         if (!try_send_message(deferred_messages[next_deferred_message])) {
