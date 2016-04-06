@@ -246,7 +246,7 @@ uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
 #else
 void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec) {}
 
-uint8_t packet_overhead_chan(mavlink_channel_t chan)
+uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
 {
     return MAVLINK_NUM_NON_PAYLOAD_BYTES;
 }
