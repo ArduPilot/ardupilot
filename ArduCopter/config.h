@@ -80,8 +80,6 @@
  # define BATTERY_VOLT_PIN     7     // Battery voltage on A0 (PC1) D7
  # define BATTERY_CURR_PIN     200   // Battery current on A1 (PC2) D8
  # define CONFIG_SONAR_SOURCE_ANALOG_PIN 200
-#else
- #error board= CONFIG_HAL_BOARD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
