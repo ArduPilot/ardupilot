@@ -111,11 +111,9 @@ void AP_DEVO_Telem::send_frames(uint8_t control_mode)
 
     byte *b = (byte *)&devoPacket;
     for (byte i = sizeof(devoPacket)-1; i !=0; i--) { // excluding CRC
-	//DevoSerial.write(*b);
 	_port->write(b, 1);
 	devoPacket.crc8 += *b++; // Add Checksum
     }
-    //DevoSerial.write(devoPacket.crc8); // Write Checksum to serial
     _port->write(&devoPacket.crc8, 1);
 }
 
