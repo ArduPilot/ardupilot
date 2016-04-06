@@ -18,6 +18,7 @@ def configure(cfg):
                     return std::isfinite(1.0f);
                   }''',
                   define_name="HAVE_CMATH_ISFINITE",
+                  msg="Checking for HAVE_CMATH_ISFINITE",
                   mandatory=False)
 
     cfg.check_cxx(fragment='''
@@ -27,6 +28,7 @@ def configure(cfg):
                     return std::isinf(1.0f);
                   }''',
                   define_name="HAVE_CMATH_ISINF",
+                  msg="Checking for HAVE_CMATH_ISINF",
                   mandatory=False)
 
     cfg.check_cxx(fragment='''
@@ -36,6 +38,7 @@ def configure(cfg):
                     return std::isnan(1.0f);
                   }''',
                   define_name="HAVE_CMATH_ISNAN",
+                  msg="Checking for HAVE_CMATH_ISNAN",
                   mandatory=False)
 
     # NEED_CMATH_FUNCTION_STD_NAMESPACE checks are needed due to
@@ -57,6 +60,7 @@ def configure(cfg):
                     return isfinite((double)1);
                   }''',
                   define_name="NEED_CMATH_ISFINITE_STD_NAMESPACE",
+                  msg="Checking for NEED_CMATH_ISFINITE_STD_NAMESPACE",
                   mandatory=False)
 
     cfg.check_cxx(fragment='''
@@ -69,6 +73,7 @@ def configure(cfg):
                     return isinf((double)1);
                   }''',
                   define_name="NEED_CMATH_ISINF_STD_NAMESPACE",
+                  msg="Checking for NEED_CMATH_ISINF_STD_NAMESPACE",
                   mandatory=False)
 
     cfg.check_cxx(fragment='''
@@ -81,4 +86,5 @@ def configure(cfg):
                     return isnan((double)1);
                   }''',
                   define_name="NEED_CMATH_ISNAN_STD_NAMESPACE",
+                  msg="Checking for NEED_CMATH_ISNAN_STD_NAMESPACE",
                   mandatory=False)
