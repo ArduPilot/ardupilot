@@ -76,7 +76,7 @@ void AP_DEVO_Telem::send_frames(uint8_t control_mode)
 
     const AP_GPS &gps = _ahrs.get_gps();
 
-    if (gps.status() >= 3) {
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
         struct Location loc = gps.location();//get gps instance 0
 
         devoPacket.lat = gpsDdToDmsFormat(loc.lat);
