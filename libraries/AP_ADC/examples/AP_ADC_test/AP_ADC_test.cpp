@@ -4,7 +4,7 @@
  *  Code by Jordi Muñoz and Jose Julio. DIYDrones.com
  */
 
-#include <math.h>
+#include <cmath>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>

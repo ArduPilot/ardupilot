@@ -104,6 +104,7 @@ def ap_program(bld,
     if use_legacy_defines:
         kw['defines'].extend(_get_legacy_defines(bld.path.name))
 
+    kw['cxxflags'] = kw.get('cxxflags', []) + ['-include', 'ap_config.h']
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
 
     program_groups = Utils.to_list(program_groups)
@@ -167,6 +168,7 @@ def ap_stlib(bld, **kw):
         lib_sources = lib_node.ant_glob(SOURCE_EXTS + UTILITY_SOURCE_EXTS)
         sources.extend(lib_sources)
 
+    kw['cxxflags'] = kw.get('cxxflags', []) + ['-include', 'ap_config.h']
     kw['features'] = kw.get('features', []) + bld.env.AP_STLIB_FEATURES
     kw['source'] = sources
     kw['target'] = kw['name']

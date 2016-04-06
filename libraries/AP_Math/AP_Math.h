@@ -7,7 +7,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <math.h>
+#include <cmath>
 #include <stdint.h>
 
 #include "rotations.h"

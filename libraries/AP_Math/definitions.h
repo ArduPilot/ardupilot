@@ -1,6 +1,6 @@
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <AP_HAL/AP_HAL.h>
 
 

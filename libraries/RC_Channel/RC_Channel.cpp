@@ -21,7 +21,7 @@
  */
 
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
 #include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;

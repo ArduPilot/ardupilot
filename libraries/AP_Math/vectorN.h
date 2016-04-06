@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <string.h>
 #if MATH_CHECK_INDEXES
 #include <assert.h>
