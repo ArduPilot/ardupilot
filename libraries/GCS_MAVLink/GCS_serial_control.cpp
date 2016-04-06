@@ -154,6 +154,7 @@ more_data:
     _mav_finalize_message_chan_send(chan, 
                                     MAVLINK_MSG_ID_SERIAL_CONTROL,
                                     (const char *)&packet,
+                                    MAVLINK_MSG_ID_SERIAL_CONTROL_MIN_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_CRC);
     if ((flags & SERIAL_CONTROL_FLAG_MULTI) && packet.count != 0) {
