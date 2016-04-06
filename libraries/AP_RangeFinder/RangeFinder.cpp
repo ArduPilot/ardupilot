@@ -68,7 +68,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @Units: centimeters
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_MIN_CM",  5, RangeFinder, _min_distance_cm[0], 20),
@@ -76,7 +76,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @Units: centimeters
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_MAX_CM",  6, RangeFinder, _max_distance_cm[0], 700),
@@ -161,7 +161,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @Units: centimeters
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, _min_distance_cm[1], 20),
@@ -169,7 +169,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @Units: centimeters
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, _max_distance_cm[1], 700),
@@ -260,14 +260,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, _min_distance_cm[2], 20),
 
     // @Param: 3_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, _max_distance_cm[2], 700),
 
@@ -308,7 +308,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
-    
+
     // @Param: 4_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
@@ -344,14 +344,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("4_MIN_CM",  42, RangeFinder, _min_distance_cm[3], 20),
 
     // @Param: 4_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+    // @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("4_MAX_CM",  43, RangeFinder, _max_distance_cm[3], 700),
 
@@ -391,7 +391,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("4_ADDR", 48, RangeFinder, _address[3], 0),
 #endif
-    
+
     AP_GROUPEND
 };
 
@@ -473,15 +473,15 @@ void RangeFinder::add_backend(AP_RangeFinder_Backend *driver)
 
     drivers[num_instances++] = driver;
 }
-    
+
 /*
-  detect if an instance of a rangefinder is connected. 
+  detect if an instance of a rangefinder is connected.
  */
 void RangeFinder::detect_instance(uint8_t instance)
 {
     uint8_t type = _type[instance];
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    if (type == RangeFinder_TYPE_PLI2C || 
+    if (type == RangeFinder_TYPE_PLI2C ||
         type == RangeFinder_TYPE_MBI2C) {
         // I2C sensor types are handled by the PX4Firmware code
         type = RangeFinder_TYPE_PX4;
@@ -490,7 +490,7 @@ void RangeFinder::detect_instance(uint8_t instance)
     if (type == RangeFinder_TYPE_PLI2C) {
         add_backend(AP_RangeFinder_PulsedLightLRF::detect(*this, instance, state[instance],
             hal.i2c_mgr->get_device(0, AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR)));
-    } 
+    }
     if (type == RangeFinder_TYPE_MBI2C) {
         if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
             state[instance].instance = instance;
@@ -499,12 +499,9 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
     }
     if (type == RangeFinder_TYPE_LWI2C) {
-        if (AP_RangeFinder_LightWareI2C::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareI2C(*this, instance, state[instance]);
-            return;
-        }
-    } 
+        add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
+            hal.i2c_mgr->get_device(0, _address[instance])));
+    }
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (type == RangeFinder_TYPE_PX4) {
         if (AP_RangeFinder_PX4::detect(*this, instance)) {
@@ -536,7 +533,7 @@ void RangeFinder::detect_instance(uint8_t instance)
             drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
             return;
         }
-    } 
+    }
     if (type == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid
