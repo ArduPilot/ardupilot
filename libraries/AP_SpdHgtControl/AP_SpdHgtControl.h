@@ -1,4 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+#pragma once
 
 /// @file    AP_SpdHgtControl.h
 /// @brief   generic speed & height controller interface
@@ -9,9 +10,6 @@
   interface. All variables used by controllers should be in their
   own class.
  */
-
-#ifndef AP_SPDHGTCONTROL_H
-#define AP_SPDHGTCONTROL_H
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -85,6 +83,3 @@ public:
 	
 
 };
-
-
-#endif // AP_SPDHGTCONTROL_H

@@ -3,9 +3,7 @@
 /* 
    DataFlash logging - block oriented variant
  */
-
-#ifndef DataFlash_block_h
-#define DataFlash_block_h
+#pragma once
 
 #include "DataFlash_Backend.h"
 
@@ -125,6 +123,3 @@ protected:
 
 
 #include "DataFlash_SITL.h"
-
-#endif // DataFlash_block_h
-

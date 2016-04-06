@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AC_PRECLAND_COMPANION_H__
-#define __AC_PRECLAND_COMPANION_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -45,4 +44,3 @@ private:
     uint64_t            _timestamp_us;          // timestamp when the image was captured(synced via UAVCAN)
     bool                _new_estimate;          // true if new data from the camera has been received
 };
-#endif	// __AC_PRECLAND_COMPANION_H__

@@ -58,12 +58,12 @@ SPIDeviceDriver SPIDeviceManager::_device[] = {
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 SPIDeviceDriver SPIDeviceManager::_device[] = {
     /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
-    SPIDeviceDriver("mpu6000",    0, 0, AP_HAL::SPIDevice_MPU6000, SPI_MODE_3, 8, RPI_GPIO_25,  1*MHZ, 8*MHZ),
-    SPIDeviceDriver("ms5611",     0, 0, AP_HAL::SPIDevice_MS5611,  SPI_MODE_3, 8, RPI_GPIO_23,  1*MHZ, 8*MHZ),
-    SPIDeviceDriver("l3gd20",     0, 0, AP_HAL::SPIDevice_L3GD20,  SPI_MODE_3, 8, RPI_GPIO_12,  1*MHZ, 8*MHZ),
-    SPIDeviceDriver("lsm303d",    0, 0, AP_HAL::SPIDevice_LSM303D, SPI_MODE_3, 8, RPI_GPIO_22,  1*MHZ, 8*MHZ),
-    SPIDeviceDriver("dataflash",  0, 0, AP_HAL::SPIDevice_Dataflash, SPI_MODE_3, 8, RPI_GPIO_5,  1*MHZ, 8*MHZ),
-    SPIDeviceDriver("raspio",     0, 0, AP_HAL::SPIDevice_RASPIO,  SPI_MODE_3, 8, RPI_GPIO_7,  8*MHZ, 8*MHZ),
+    SPIDeviceDriver("mpu6000",    0, 0, AP_HAL::SPIDevice_MPU6000,     SPI_MODE_3, 8, RPI_GPIO_25,  1*MHZ, 20*MHZ),
+    SPIDeviceDriver("ms5611",     0, 0, AP_HAL::SPIDevice_MS5611,      SPI_MODE_3, 8, RPI_GPIO_23,  10*MHZ, 10*MHZ),
+    SPIDeviceDriver("lsm9ds0_am", 0, 0, AP_HAL::SPIDevice_LSM9DS0_AM,  SPI_MODE_3, 8, RPI_GPIO_22,  10*MHZ, 10*MHZ),
+    SPIDeviceDriver("lsm9ds0_g",  0, 0, AP_HAL::SPIDevice_LSM9DS0_G,   SPI_MODE_3, 8, RPI_GPIO_12,  10*MHZ, 10*MHZ),
+    SPIDeviceDriver("dataflash",  0, 0, AP_HAL::SPIDevice_Dataflash,   SPI_MODE_3, 8, RPI_GPIO_5,   6*MHZ, 6*MHZ),
+    SPIDeviceDriver("raspio",     0, 0, AP_HAL::SPIDevice_RASPIO,      SPI_MODE_3, 8, RPI_GPIO_7,   10*MHZ, 10*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 SPIDeviceDriver SPIDeviceManager::_device[] = {
@@ -72,10 +72,14 @@ SPIDeviceDriver SPIDeviceManager::_device[] = {
 };
 #else
 // empty device table
-SPIDeviceDriver SPIDeviceManager::_device[0];
+SPIDeviceDriver SPIDeviceManager::_device[] = { };
+#define LINUX_SPI_DEVICE_NUM_DEVICES 0
 #endif
 
+#ifndef LINUX_SPI_DEVICE_NUM_DEVICES
 #define LINUX_SPI_DEVICE_NUM_DEVICES ARRAY_SIZE(SPIDeviceManager::_device)
+#endif
+
 const uint8_t SPIDeviceManager::_n_device_desc = LINUX_SPI_DEVICE_NUM_DEVICES;
 
 SPIDeviceDriver::SPIDeviceDriver(const char *name, uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed):

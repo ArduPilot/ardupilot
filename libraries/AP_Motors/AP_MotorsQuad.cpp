@@ -101,4 +101,7 @@ void AP_MotorsQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
         add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
     }
+
+    // normalise factors to magnitude 0.5
+    normalise_rpy_factors();
 }

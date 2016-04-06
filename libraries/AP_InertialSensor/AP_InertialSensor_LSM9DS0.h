@@ -55,6 +55,9 @@ private:
     void _gyro_init();
     void _accel_init();
 
+    void _gyro_disable_i2c();
+    void _accel_disable_i2c();
+
     void _set_gyro_scale(gyro_scale scale);
     void _set_accel_scale(accel_scale scale);
 

@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsY6.h
 /// @brief	Motor control class for Y6 frames
-
-#ifndef __AP_MOTORS_Y6_H__
-#define __AP_MOTORS_Y6_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -28,5 +26,3 @@ public:
 protected:
 
 };
-
-#endif  // AP_MOTORSY6

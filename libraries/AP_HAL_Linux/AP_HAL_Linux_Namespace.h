@@ -46,6 +46,7 @@ namespace Linux {
     class Util;
     class UtilRPI;
     class ToneAlarm;
+    class ToneAlarm_Raspilot;
     class Thread;
     class Heat;
     class HeatPwm;

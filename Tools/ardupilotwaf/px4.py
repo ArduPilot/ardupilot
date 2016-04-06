@@ -106,6 +106,9 @@ class px4_copy(Task.Task):
     def keyword(self):
         return "PX4: Copying %s to" % self.inputs[0].name
 
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
 class px4_add_git_hashes(Task.Task):
     run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} --uavcan ${PX4_UAVCAN_ROOT} ${SRC} ${TGT}'
     color = 'CYAN'
@@ -168,7 +171,7 @@ def px4_firmware(self):
     _update_firmware_sig(fw_task, firmware)
 
     fw_dest = self.bld.bldnode.make_node(
-        os.path.join(self.program_group, '%s.px4' % self.program_name)
+        os.path.join(self.program_dir, '%s.px4' % self.program_name)
     )
     git_hashes = self.create_task('px4_add_git_hashes', firmware, fw_dest)
     git_hashes.set_run_after(fw_task)
@@ -194,6 +197,31 @@ def _px4_taskgen(bld, **kw):
     kw['color'] = 'CYAN'
 
     return bld(**kw)
+
+@feature('_px4_romfs')
+def _process_romfs(self):
+    bld = self.bld
+    file_list = (
+        'firmware/oreoled.bin',
+        'init.d/rc.APM',
+        'init.d/rc.error',
+        'init.d/rcS',
+        (bld.env.PX4_BOOTLOADER, 'bootloader/fmu_bl.bin'),
+    )
+
+    romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
+    romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
+
+    for item in file_list:
+        if isinstance(item, str):
+            src = romfs_src.make_node(item)
+            dst = romfs_bld.make_node(item)
+        else:
+            src = bld.srcnode.make_node(item[0])
+            dst = romfs_bld.make_node(item[1])
+
+        dst.parent.mkdir()
+        self.create_task('px4_copy', src, dst)
 
 def configure(cfg):
     cfg.load('cmake')
@@ -279,35 +307,8 @@ def build(bld):
         cmake_output_patterns='px4fmu-v%s/NuttX/nuttx-export/**/*.h' % version,
     )
 
-    # ROMFS static files
-    romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
-    bld.env.PX4_ROMFS_SRC_ABS = romfs_src.abspath()
-    romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
-    romfs_src_files = romfs_src.ant_glob('**')
-    romfs_bld_files = []
-    for node in romfs_src_files:
-        bld_node = romfs_bld.make_node(node.path_from(romfs_src))
-        romfs_bld_files.append(bld_node)
-
-    _px4_taskgen(
-        bld,
+    bld(
         name='px4_romfs_static_files',
-        cls_keyword='Copying ROMFS to build directory',
-        cls_str='%s -> %s' % (bld.env.PX4_ROMFS_SRC, bld.env.PX4_ROMFS_BLD),
-        source=romfs_src_files,
-        target=romfs_bld_files,
         group='dynamic_sources',
-        rule='${CP} -a -T ${PX4_ROMFS_SRC_ABS} ${PX4_ROMFS_BLD}',
-    )
-
-    romfs_bootloader = romfs_bld.make_node('bootloader/fmu_bl.bin')
-    romfs_bootloader.parent.mkdir()
-    _px4_taskgen(
-        bld,
-        name='px4_romfs_bootloader',
-        cls_keyword='Copying bootloader to ROMFS',
-        source=bld.env.PX4_BOOTLOADER,
-        target=romfs_bootloader,
-        group='dynamic_sources',
-        rule='${CP} ${SRC} ${TGT}',
+        features='_px4_romfs',
     )

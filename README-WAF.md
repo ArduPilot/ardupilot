@@ -62,7 +62,18 @@ waf list
 
 ## Program groups ##
 
-The programs in ardupilot are categorized into the following groups:
+Program groups are used to represent a class of programs. They can be used to
+build all programs of a certain class without having to specify each program. A
+program can belong to more than one group.
+
+There's a special group, called "all", that comprises all programs.
+
+### Main groups ###
+
+The main groups form a partition of all programs. Besides separating the
+programs logically, they also define where they are built.
+
+The main groups are:
 
  - bin: *the main binaries, that is, ardupilot's main products - the vehicles and
    Antenna Tracker*
@@ -73,14 +84,26 @@ The programs in ardupilot are categorized into the following groups:
  - tests: *basically unit tests to ensure changes don't break the system's
    logic*
 
-There's also a special group, called "all", that comprises all groups.
-
 All build files are placed under `build/<board>/`, where `<board>` represents
-the board/platform you selected during configuration. Each program group has a
-folder with its name directly under `build/<board>/`. Thus, a program will be
-stored in `build/<board>/<group/`, where `<group>` is the group the program
-belongs to. For example, for a linux build, arducopter will be located at
-`build/linux/bin/arducopter`.
+the board/platform you selected during configuration. Each main program group
+has a folder with its name directly under `build/<board>/`. Thus, a program
+will be stored in `build/<board>/<main_group>/`, where `<main_group>` is the
+main group the program belongs to. For example, for a linux build, arduplane,
+which belongs to the main group "bin", will be located at
+`build/linux/bin/arduplane`.
+
+### Main products groups ###
+
+Those are groups for ardupilot's main products. They contain programs for the
+product they represent. Currently only the "copter" group has more than one
+program - one for each frame type.
+
+The main products groups are:
+
+ - antennatracker
+ - copter
+ - plane
+ - rover
 
 ## Building a program group ##
 
@@ -119,28 +142,11 @@ In order to build a specific program, you just need to pass its path relative
 to `build/<board>/` to the option `--targets`. Example:
 
 ```bash
-# Build arducopter
-waf --targets bin/arducopter
+# Build arducopter for quad frame
+waf --targets bin/arducopter-quad
 
 # Build vectors unit test
 waf --targets tests/test_vectors
-```
-
-### Shortcuts for vehicles ###
-
-Vehicles can be built in the common single program building way (example: `waf
---targets bin/arducopter`). But that is too much typing :-), we provide
-shortcut commands for vehicles:
-
-```bash
-# Build arducopter
-waf copter
-
-# Build arduplane
-waf plane
-
-# Build ardurover
-waf rover
 ```
 
 ## Checking ##

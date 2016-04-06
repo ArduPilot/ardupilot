@@ -149,7 +149,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     float thrust = 0.0f; // newtons
 
     for (uint8_t i=0; i<num_motors; i++) {
-        float motor_speed = constrain_float((input.servos[motor_offset+motors[i].servo]-1000)/1000.0, 0, 1);
+        float motor_speed = constrain_float((input.servos[motor_offset+motors[i].servo]-1100)/900.0, 0, 1);
         rot_accel.x  += -radians(5000.0) * sinf(radians(motors[i].angle)) * motor_speed;
         rot_accel.y  +=  radians(5000.0) * cosf(radians(motors[i].angle)) * motor_speed;
         rot_accel.z += motors[i].yaw_factor * motor_speed * radians(400.0);

@@ -81,6 +81,11 @@ void ADSB::update(void)
 */
 void ADSB::send_report(void)
 {
+    if (AP_HAL::millis() < 10000) {
+        // simulated aircraft don't appear until 10s after startup. This avoids a windows
+        // threading issue with non-blocking sockets and the initial wait on uartA
+        return;
+    }
     if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
         ::printf("ADSB connected to %s:%u\n", target_address, (unsigned)target_port);
         mavlink.connected = true;
@@ -174,7 +179,7 @@ void ADSB::send_report(void)
             adsb_vehicle.lon = loc.lng;
             adsb_vehicle.altitude_type = ADSB_ALTITUDE_TYPE_PRESSURE_QNH;
             adsb_vehicle.altitude = -vehicle.position.z * 1000;
-            adsb_vehicle.heading = wrap_360_cd(100*degrees(atan2f(vehicle.velocity_ef.y, vehicle.velocity_ef.x))) / 100;
+            adsb_vehicle.heading = wrap_360_cd(100*degrees(atan2f(vehicle.velocity_ef.y, vehicle.velocity_ef.x)));
             adsb_vehicle.hor_velocity = pythagorous2(vehicle.velocity_ef.x, vehicle.velocity_ef.y) * 100;
             adsb_vehicle.ver_velocity = -vehicle.velocity_ef.z * 100;
             memcpy(adsb_vehicle.callsign, vehicle.callsign, sizeof(adsb_vehicle.callsign));

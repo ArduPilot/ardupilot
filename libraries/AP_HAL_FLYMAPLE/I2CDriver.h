@@ -15,9 +15,7 @@
 /*
   Flymaple port by Mike McCauley
  */
-
-#ifndef __AP_HAL_FLYMAPLE_I2CDRIVER_H__
-#define __AP_HAL_FLYMAPLE_I2CDRIVER_H__
+#pragma once
 
 #include "AP_HAL_FLYMAPLE.h"
 
@@ -60,5 +58,3 @@ private:
     AP_HAL::Semaphore* _semaphore;
     uint16_t           _timeout_ms;
 };
-
-#endif // __AP_HAL_FLYMAPLE_I2CDRIVER_H__

@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 
 #define PCA9685_RA_MODE1           0x00
 #define PCA9685_RA_MODE2           0x01
@@ -44,7 +44,7 @@
 
 /*
  * Drift for internal oscillator
- * see: https://github.com/diydrones/ardupilot/commit/50459bdca0b5a1adf95
+ * see: https://github.com/ArduPilot/ardupilot/commit/50459bdca0b5a1adf95
  * and https://github.com/adafruit/Adafruit-PWM-Servo-Driver-Library/issues/11
  */
 #define PCA9685_INTERNAL_CLOCK (1.04f * 25000000.f)

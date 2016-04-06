@@ -19,9 +19,7 @@
  *  Created on: Nov 10, 2014
  *      Author: MLandes
  */
-
-#ifndef __IRLOCK_H__
-#define __IRLOCK_H__
+#pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
 
@@ -75,6 +73,3 @@ protected:
 
     irlock_target_info _target_info[IRLOCK_MAX_TARGETS];
 };
-
-
-#endif /* __IRLOCK_H__ */

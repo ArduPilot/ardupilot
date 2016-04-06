@@ -22,7 +22,20 @@ void QuadPlane::motor_test_output()
     }
 
     // check for test timeout
-    if ((AP_HAL::millis() - motor_test.start_ms) >= motor_test.timeout_ms) {
+    uint32_t now = AP_HAL::millis();
+    if ((now - motor_test.start_ms) >= motor_test.timeout_ms) {
+        if (motor_test.motor_count > 1) {
+            if (now - motor_test.start_ms < motor_test.timeout_ms*1.5) {
+                // output zero for 0.5s
+                motors->output_min();
+            } else {
+                // move onto next motor
+                motor_test.seq++;
+                motor_test.motor_count--;
+                motor_test.start_ms = now;
+            }
+            return;
+        }
         // stop motor test
         motor_test_stop();
         return;
@@ -64,7 +77,7 @@ void QuadPlane::motor_test_output()
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 //  returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
 uint8_t QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
-                                            uint16_t throttle_value, float timeout_sec)
+                                            uint16_t throttle_value, float timeout_sec, uint8_t motor_count)
 {
     if (motors->armed()) {
         plane.gcs_send_text(MAV_SEVERITY_INFO, "Must be disarmed for motor test");
@@ -90,6 +103,7 @@ uint8_t QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
     motor_test.seq = motor_seq;
     motor_test.throttle_type = throttle_type;
     motor_test.throttle_value = throttle_value;
+    motor_test.motor_count = MIN(motor_count, 8);
 
     // return success
     return MAV_RESULT_ACCEPTED;

@@ -96,7 +96,7 @@ bool Copter::flip_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::flip_run()
 {
-    int16_t throttle_out;
+    float throttle_out;
     float recovery_angle;
 
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
@@ -219,8 +219,11 @@ void Copter::flip_run()
         break;
     }
 
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
     // output pilot's throttle without angle boost
-    if (throttle_out == 0) {
+    if (is_zero(throttle_out)) {
         attitude_control.set_throttle_out_unstabilized(0,false,g.throttle_filt);
     } else {
         attitude_control.set_throttle_out(throttle_out, false, g.throttle_filt);

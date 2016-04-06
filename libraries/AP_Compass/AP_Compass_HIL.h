@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
-#include "Compass.h"
+#include "AP_Compass.h"
 
 #define HIL_NUM_COMPASSES 2
 

@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef PARAMETERS_H
-#define PARAMETERS_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 
@@ -154,6 +152,7 @@ public:
         k_param_fence_retalt = 105,
         k_param_fence_autoenable,
         k_param_fence_ret_rally,
+        k_param_q_attitude_control,
 
         // 110: Telemetry control
         //
@@ -552,5 +551,3 @@ public:
 };
 
 extern const AP_Param::Info var_info[];
-
-#endif // PARAMETERS_H

@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_PX4_SCHEDULER_H__
-#define __AP_HAL_PX4_SCHEDULER_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -102,6 +100,3 @@ private:
     perf_counter_t  _perf_delay;
 };
 #endif
-#endif // __AP_HAL_PX4_SCHEDULER_H__
-
-

@@ -1,7 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef __AP_AHRS_H__
-#define __AP_AHRS_H__
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -513,5 +512,3 @@ protected:
 #else
 #define AP_AHRS_TYPE AP_AHRS
 #endif
-
-#endif // __AP_AHRS_H__

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AP_AHRS_NAVEKF_H__
-#define __AP_AHRS_NAVEKF_H__
+#pragma once
+
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +36,15 @@
 
 #define AP_AHRS_NAVEKF_AVAILABLE 1
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
+
+/*
+  we are too close to running out of flash on px4 with plane firmware, so disable it
+ */
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) && CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#define AP_AHRS_WITH_EKF1 0
+#else
+#define AP_AHRS_WITH_EKF1 1
+#endif
 
 class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
@@ -208,7 +217,9 @@ public:
 
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
+#if AP_AHRS_WITH_EKF1
                    EKF_TYPE1=1,
+#endif
                    EKF_TYPE2=2
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                    ,EKF_TYPE_SITL=10
@@ -245,5 +256,3 @@ private:
 #endif    
 };
 #endif
-
-#endif // __AP_AHRS_NAVEKF_H__

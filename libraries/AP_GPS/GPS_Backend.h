@@ -17,8 +17,7 @@
 /*
   GPS driver backend class
  */
-#ifndef __AP_GPS_BACKEND_H__
-#define __AP_GPS_BACKEND_H__
+#pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_GPS.h"
@@ -70,5 +69,3 @@ protected:
     */
     void make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
 };
-
-#endif // __AP_GPS_BACKEND_H__

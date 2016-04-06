@@ -1,13 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_YAW_CONTROLLER_H__
-#define __AP_YAW_CONTROLLER_H__
+#pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <DataFlash/DataFlash.h>
-#include <math.h>
+#include <cmath>
 
 class AP_YawController {
 public:                      
@@ -49,5 +47,3 @@ private:
 
 	AP_AHRS &_ahrs;
 };
-
-#endif // __AP_YAW_CONTROLLER_H__

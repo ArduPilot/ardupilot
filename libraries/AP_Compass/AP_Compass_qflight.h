@@ -2,12 +2,14 @@
 
 #pragma once
 
-#include "Compass.h"
-#include "AP_Compass_Backend.h"
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 
 #include <AP_HAL_Linux/qflight/qflight_buffer.h>
+
+#include "AP_Compass.h"
+#include "AP_Compass_Backend.h"
 
 class AP_Compass_QFLIGHT : public AP_Compass_Backend
 {

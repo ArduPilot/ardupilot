@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_BOARDCONFIG_H__
-#define __AP_BOARDCONFIG_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -37,7 +35,3 @@ private:
 
 #endif
 };
-
-#endif // __AP_BOARDCONFIG_H__
-
-

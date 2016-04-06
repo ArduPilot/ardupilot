@@ -6,8 +6,7 @@
 * Author:  Arthur Benemann, Paul Riseborough;               *
 *                                                           *
 ************************************************************/
-#ifndef __SOLOGIMBAL_H__
-#define __SOLOGIMBAL_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -158,5 +157,3 @@ private:
 };
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
-
-#endif // __AP_MOUNT_H__

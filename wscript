@@ -114,6 +114,8 @@ def configure(cfg):
     if cfg.options.submodule_update:
         cfg.env.SUBMODULE_UPDATE = True
 
+    cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'))
+
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
     globs = Utils.to_list(globs)
@@ -217,6 +219,11 @@ def _build_recursion(bld):
         bld.recurse(d)
 
 def build(bld):
+    config_header = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
+
+    bld.env.CCDEPS = config_header
+    bld.env.CXXDEPS = config_header
+
     bld.post_mode = Build.POST_LAZY
 
     bld.load('ardupilotwaf')
@@ -246,18 +253,11 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-ardupilotwaf.build_command('copter',
-    targets='bin/arducopter',
-    doc='builds arducopter',
-)
-ardupilotwaf.build_command('plane',
-    targets='bin/arduplane',
-    doc='builds arduplane',
-)
-ardupilotwaf.build_command('rover',
-    targets='bin/ardurover',
-    doc='builds ardurover',
-)
+for name in ('antennatracker', 'copter', 'plane', 'rover'):
+    ardupilotwaf.build_command(name,
+        program_group_list=name,
+        doc='builds %s programs' % name,
+    )
 
 for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
     ardupilotwaf.build_command(program_group,

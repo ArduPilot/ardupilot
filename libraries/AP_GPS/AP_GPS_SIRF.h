@@ -18,8 +18,7 @@
 //  SiRF Binary GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith.
 //
-#ifndef __AP_GPS_SIRF_H__
-#define __AP_GPS_SIRF_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -105,5 +104,3 @@ private:
 
     static const uint8_t _initialisation_blob[];
 };
-
-#endif // AP_GPS_SIRF_h

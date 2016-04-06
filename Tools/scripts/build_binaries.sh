@@ -4,7 +4,7 @@
 
 export PATH=$PATH:/bin:/usr/bin
 
-export TMPDIR=$PWD/build.tmp.$$
+export TMPDIR=$PWD/build.tmp.binaries
 echo $TMDIR
 rm -rf $TMPDIR
 echo "Building in $TMPDIR"
@@ -54,7 +54,7 @@ checkout() {
 
         git checkout -f "$vtag2" && {
             echo "Using frame specific tag $vtag2"
-            [ -f $BASEDIR/.gitmodules ] && git submodule update
+            [ -f $BASEDIR/.gitmodules ] && git submodule update --recursive -f
             git log -1
             return 0
         }
@@ -65,14 +65,14 @@ checkout() {
 
     git checkout -f "$vtag2" && {
         echo "Using board specific tag $vtag2"
-        [ -f $BASEDIR/.gitmodules ] && git submodule update
+        [ -f $BASEDIR/.gitmodules ] && git submodule update --recursive -f
         git log -1
         return 0
     }
 
     git checkout -f "$vtag" && {
         echo "Using generic tag $vtag"
-        [ -f $BASEDIR/.gitmodules ] && git submodule update
+        [ -f $BASEDIR/.gitmodules ] && git submodule update --recursive -f
         git log -1
         return 0
     }
@@ -115,6 +115,7 @@ addfwversion() {
 	version=$(grep 'define.THISFIRMWARE' *.pde *.h 2> /dev/null | cut -d'"' -f2)
 	echo >> "$destdir/git-version.txt"
 	echo "APMVERSION: $version" >> "$destdir/git-version.txt"
+	python $BASEDIR/Tools/PrintVersion.py >"$destdir/firmware-version.txt"
     }    
 }
 
@@ -184,7 +185,7 @@ build_arduplane() {
     }
     skip_build $tag $ddir || {
         make px4-clean
-	make px4 || {
+	make px4 -j2 || {
             echo "Failed build of ArduPlane PX4 $tag"
             error_count=$((error_count+1))
             checkout ArduPlane "latest" "" ""
@@ -244,7 +245,7 @@ build_arducopter() {
 	ddir="$binaries/Copter/$hdate/PX4-$f"
 	skip_build $tag $ddir && continue
         make px4-clean
-	make px4-$f || {
+	make px4-$f -j2 || {
             echo "Failed build of ArduCopter PX4 $tag"
             error_count=$((error_count+1))
             continue
@@ -286,7 +287,7 @@ build_rover() {
     }
     skip_build $tag $ddir || {
         make px4-clean
-	make px4 || {
+	make px4 -j2 || {
             echo "Failed build of APMrover2 PX4 $tag"
             error_count=$((error_count+1))
             checkout APMrover2 "latest" "" ""
@@ -330,7 +331,7 @@ build_antennatracker() {
     }
     skip_build $tag $ddir || {
         make px4-clean
-	make px4 || {
+	make px4 -j2 || {
             echo "Failed build of AntennaTracker PX4 $tag"
             error_count=$((error_count+1))
             checkout AntennaTracker "latest" "" ""
@@ -347,7 +348,7 @@ build_antennatracker() {
 
 [ -f .gitmodules ] && {
     git submodule init
-    git submodule update
+    git submodule update --recursive -f
 }
 
 export BUILDROOT="$TMPDIR/binaries.build"
@@ -368,5 +369,16 @@ for build in stable beta latest; do
 done
 
 rm -rf $TMPDIR
+
+if ./Tools/scripts/generate-manifest.py $binaries http://firmware.ardupilot.org >$binaries/manifest.json.new; then
+    echo "Manifest generation succeeded"
+    # provide a pre-compressed manifest.  For reference, a 7M manifest
+    # "gzip -9"s to 300k in 1 second, "xz -e"s to 80k in 26 seconds
+    gzip -9 <$binaries/manifest.json.new >$binaries/manifest.json.gz.new
+    mv $binaries/manifest.json.new $binaries/manifest.json
+    mv $binaries/manifest.json.gz.new $binaries/manifest.json.gz
+else
+    echo "Manifest generation failed"
+fi
 
 exit $error_count

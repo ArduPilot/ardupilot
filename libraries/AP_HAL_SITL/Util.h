@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_SITL_UTIL_H__
-#define __AP_HAL_SITL_UTIL_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
@@ -33,5 +31,3 @@ public:
 private:
     SITL_State *sitlState;
 };
-
-#endif // __AP_HAL_SITL_UTIL_H__

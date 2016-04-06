@@ -1,8 +1,7 @@
 /* ************************************************************ */
 /* DataFlash_SITL Log library                                 */
 /* ************************************************************ */
-#ifndef __DATAFLASH_SITL_H__
-#define __DATAFLASH_SITL_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -49,4 +48,3 @@ public:
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#endif // __DATAFLASH_SITL_H__

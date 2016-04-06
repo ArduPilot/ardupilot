@@ -1,36 +1,54 @@
 #!/bin/bash
 
 set -e
+# set -x
+
+WP_Auth_Dir="$HOME/WP_Auth"
+PARAMS_DIR="../buildlogs/Parameters"
 
 # work from either APM directory or above
 [ -d ArduPlane ] || cd APM
 
+# generate combined parameters files for all vehicles:
 ./Tools/autotest/param_metadata/param_parse.py > param.out || {
     echo "Parameter parsing failed"
     exit 1
 }
-/bin/mkdir -p ../buildlogs/Parameters
-/bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/
+# copy combined parameters files away:
+/bin/mkdir -p "$PARAMS_DIR"
+/bin/cp Parameters.wiki Parameters.html *.pdef.xml "$PARAMS_DIR"
 
-[ -d $HOME/WP_Auth ] && {
-    # now upload to WordPress
-    ./Tools/autotest/param_metadata/param_parse.py --vehicle ArduPlane
-    ./Tools/scripts/update_wiki.py --url http://plane.ardupilot.com $(cat $HOME/WP_Auth/plane.auth) --post-title='Plane Parameters' Parameters.html
-    mkdir -p ../buildlogs/Parameters/ArduPlane
-    /bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/ArduPlane
+generate_parameters() {
+    VEHICLE="$1"
+    URL="$2"
+    AUTHFILE="$3"
+    POST_TITLE="$4"
 
-    ./Tools/autotest/param_metadata/param_parse.py --vehicle ArduCopter
-    ./Tools/scripts/update_wiki.py --url http://copter.ardupilot.com $(cat $HOME/WP_Auth/copter.auth) --post-title='Copter Parameters' Parameters.html
-    mkdir -p ../buildlogs/Parameters/ArduCopter
-    /bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/ArduCopter
+    # generate Parameters.html, Parameters.rst etc etc:
+    ./Tools/autotest/param_metadata/param_parse.py --vehicle $VEHICLE
 
-    ./Tools/autotest/param_metadata/param_parse.py --vehicle APMrover2
-    ./Tools/scripts/update_wiki.py --url http://rover.ardupilot.com $(cat $HOME/WP_Auth/rover.auth) --post-title='Rover Parameters' Parameters.html
-    mkdir -p ../buildlogs/Parameters/APMrover2
-    /bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/APMrover2
+    # (Possibly) upload to the Wiki:
+    if [ -d "$WP_Auth_Dir" ]; then
+	if [ "$URL" != "NONE" ]; then
+	    AUTHFILEPATH="$WP_Auth_Dir/$AUTHFILE"
+	    ./Tools/scripts/update_wiki.py --url "$URL" $(cat $AUTHFILEPATH) --post-title="$POST_TITLE" Parameters.html
+	fi
+    fi
 
-    ./Tools/autotest/param_metadata/param_parse.py --vehicle AntennaTracker
-    #./Tools/scripts/update_wiki.py --url http://rover.ardupilot.com $(cat $HOME/WP_Auth/rover.auth) --post-title='APMrover2 Parameters' Parameters.html
-    mkdir -p ../buildlogs/Parameters/AntennaTracker
-    /bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/AntennaTracker
+    # stash some of the results away:
+    VEHICLE_PARAMS_DIR="$PARAMS_DIR/$VEHICLE"
+    mkdir -p "$VEHICLE_PARAMS_DIR"
+    /bin/cp Parameters.wiki Parameters.html *.pdef.xml "$VEHICLE_PARAMS_DIR/"
+    if [ -e "Parameters.rst" ]; then
+	/bin/cp Parameters.rst "$VEHICLE_PARAMS_DIR/"
+    fi
 }
+
+
+generate_parameters ArduPlane http://plane.ardupilot.com plane.auth 'Plane Parameters'
+
+generate_parameters ArduCopter http://copter.ardupilot.com copter.auth 'Copter Parameters'
+
+generate_parameters APMrover2 http://rover.ardupilot.com rover.auth 'Rover Parameters'
+
+generate_parameters AntennaTracker NONE NONE 'AntennaTracker Parameters'

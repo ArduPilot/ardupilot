@@ -12,8 +12,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef AP_VEHICLE_H
-#define AP_VEHICLE_H
+#pragma once
+
 /*
   this header holds a parameter structure for each vehicle type for
   parameters needed by multiple libraries
@@ -54,5 +54,3 @@ public:
 
 
 #include "AP_Vehicle_Type.h"
-
-#endif // AP_VEHICLE_H
