@@ -1,15 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
 /// @file	AC_PI_2D.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
-#ifndef __AC_PI_2D_H__
-#define __AC_PI_2D_H__
-
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
 #define AC_PI_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
 #define AC_PI_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
@@ -94,5 +92,3 @@ protected:
     Vector2f        _input;         // last input for derivative
     float           _filt_alpha;    // input filter alpha
 };
-
-#endif // __AC_PI_2D_H__

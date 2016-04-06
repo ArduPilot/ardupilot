@@ -30,13 +30,7 @@ Copter::Copter(void) :
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
     control_mode(STABILIZE),
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-    motors(g.rc_7, g.heli_servo_rsc, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE),
-#elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
-    motors(MAIN_LOOP_RATE),
-#elif FRAME_CONFIG == SINGLE_FRAME  // single constructor requires extra servos for flaps
-    motors(g.single_servo_1, g.single_servo_2, g.single_servo_3, g.single_servo_4, MAIN_LOOP_RATE),
-#elif FRAME_CONFIG == COAX_FRAME  // single constructor requires extra servos for flaps
-    motors(g.single_servo_1, g.single_servo_2, MAIN_LOOP_RATE),
+    motors(g.rc_7, MAIN_LOOP_RATE),
 #else
     motors(MAIN_LOOP_RATE),
 #endif
@@ -78,10 +72,9 @@ Copter::Copter(void) :
     yaw_look_ahead_bearing(0.0f),
     condition_value(0),
     condition_start(0),
-    G_Dt(0.0025f),
+    G_Dt(MAIN_LOOP_SECONDS),
     inertial_nav(ahrs),
-    attitude_control(ahrs, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
-                     g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw),
+    attitude_control(ahrs, aparm, motors, MAIN_LOOP_SECONDS),
     pos_control(ahrs, inertial_nav, motors, attitude_control,
                 g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                 g.p_pos_xy, g.pi_vel_xy),

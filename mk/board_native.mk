@@ -2,6 +2,9 @@ TOOLCHAIN = NATIVE
 
 include $(MK_DIR)/find_tools.mk
 
+# Hardcoded libraries/AP_Common/missing/cmath defines in "make" to retain the current behavior
+EXTRAFLAGS += -DHAVE_CMATH_ISFINITE -DNEED_CMATH_ISFINITE_STD_NAMESPACE
+
 #
 # Tool options
 #
@@ -10,7 +13,7 @@ DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DSKETCHNAME="\"$(SKETCH)\"" -DSKETCH
 DEFINES        +=   $(EXTRAFLAGS)
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD) -DCONFIG_HAL_BOARD_SUBTYPE=$(HAL_BOARD_SUBTYPE)
 WARNFLAGS       =   -Wall -Wextra -Wformat -Wshadow -Wpointer-arith -Wcast-align \
-                    -Wlogical-op -Wwrite-strings -Wformat=2 -Wno-unused-parameter
+                    -Wlogical-op -Wwrite-strings -Wformat=2 -Wno-unused-parameter -Wno-unknown-pragmas
 WARNFLAGSCXX    = \
         -Wno-missing-field-initializers \
         -Wno-reorder \
@@ -20,7 +23,8 @@ WARNFLAGSCXX    = \
         -Werror=uninitialized \
         -Werror=init-self \
         -Wfatal-errors \
-        -Wundef
+        -Wundef \
+        -Wno-unknown-warning-option
 
 DEPFLAGS        =   -MD -MP -MT $@
 

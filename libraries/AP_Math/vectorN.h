@@ -13,11 +13,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#ifndef VECTORN_H
-#define VECTORN_H
-
-#include <math.h>
+#include <cmath>
 #include <string.h>
 #if MATH_CHECK_INDEXES
 #include <assert.h>
@@ -140,5 +138,3 @@ public:
 private:
     T _v[N];
 };
-
-#endif // VECTORN_H

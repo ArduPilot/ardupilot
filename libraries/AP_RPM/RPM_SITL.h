@@ -13,9 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#ifndef AP_RPM_SITL_H
-#define AP_RPM_SITL_H
+#pragma once
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -37,4 +35,3 @@ private:
 };
 
 #endif // CONFIG_HAL_BOARD
-#endif // AP_RPM_SITL_H

@@ -1,5 +1,4 @@
-#ifndef PRU_DEFS_H
-#define PRU_DEFS_H
+#pragma once
 
 volatile register unsigned int __R31;
 volatile register unsigned int __R30;
@@ -643,7 +642,5 @@ static inline void pru_other_and_or_reg(u16 reg, u32 andmsk, u32 ormsk)
 	PDBG_OTHER(reg) = (PDBG_OTHER(reg) & andmsk) | ormsk;
 	pru_other_resume();
 }
-
-#endif
 
 #endif

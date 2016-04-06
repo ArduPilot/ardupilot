@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AP_AHRS_DCM_H__
-#define __AP_AHRS_DCM_H__
+#pragma once
+
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -206,5 +206,3 @@ private:
     // time when DCM was last reset
     uint32_t _last_startup_ms;
 };
-
-#endif // __AP_AHRS_DCM_H__

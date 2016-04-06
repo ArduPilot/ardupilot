@@ -4,7 +4,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_HAL_Linux_Namespace.h"
-#include "ToneAlarmDriver.h"
+#include "ToneAlarm.h"
 #include "Semaphores.h"
 
 enum hw_type {
@@ -74,7 +74,11 @@ public:
     int get_hw_arm32();
 
 private:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    static Linux::ToneAlarm_Raspilot _toneAlarm;
+#else
     static Linux::ToneAlarm _toneAlarm;
+#endif
     Linux::Heat *_heat;
     int saved_argc;
     char* const *saved_argv;

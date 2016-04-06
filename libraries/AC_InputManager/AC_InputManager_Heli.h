@@ -1,10 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
 /// @file   AC_InputManager_Heli.h
 /// @brief  Pilot manual control input library for Conventional Helicopter
-
-#ifndef AC_INPUTMANAGER_HELI_H
-#define AC_INPUTMANAGER_HELI_H
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
@@ -28,7 +26,7 @@ public:
     }
 
     // get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
-    int16_t get_pilot_desired_collective(int16_t control_in);
+    float get_pilot_desired_collective(int16_t control_in);
 
     // set_use_stab_col - setter function
     void set_use_stab_col(bool use) { _im_flags_heli.use_stab_col = use; }
@@ -54,5 +52,3 @@ private:
     AP_Float        _acro_col_expo;                 // used to soften collective pitch inputs near center point in Acro mode
 
 };
-
-#endif /* AC_INPUTMANAGER_HELI_H */

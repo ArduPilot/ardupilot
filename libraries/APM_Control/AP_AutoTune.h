@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_AUTOTUNE_H__
-#define __AP_AUTOTUNE_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -100,6 +98,3 @@ private:
     void save_float_if_changed(AP_Float &v, float value, const char *suffix);
     void save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix);
 };
-
-#endif // __AP_AUTOTUNE_H__
-

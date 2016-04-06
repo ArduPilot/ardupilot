@@ -12,9 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __AP_HAL_QURT_PRIVATE_H__
-#define __AP_HAL_QURT_PRIVATE_H__
+#pragma once
 
 /* Umbrella header for all private headers of the AP_HAL_QURT module.
  * Only import this header from inside AP_HAL_QURT
@@ -23,6 +21,3 @@
 #include "UARTDriver.h"
 #include "UDPDriver.h"
 #include "Util.h"
-
-#endif // __AP_HAL_QURT_PRIVATE_H__
-

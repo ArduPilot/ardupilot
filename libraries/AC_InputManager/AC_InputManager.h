@@ -1,10 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
 /// @file   AC_InputManager.h
 /// @brief  Pilot manual control input library
-
-#ifndef AC_INPUTMANAGER_H
-#define AC_INPUTMANAGER_H
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -29,5 +27,3 @@ protected:
     uint16_t            _loop_rate;             // rate at which output() function is called (normally 400hz)
 
 };
-
-#endif /* AC_INPUTMANAGER_H */

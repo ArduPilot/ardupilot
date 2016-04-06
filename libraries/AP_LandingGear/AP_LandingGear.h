@@ -2,9 +2,7 @@
 
 /// @file	AP_LandingGear.h
 /// @brief	Landing gear control library
-
-#ifndef AP_LANDINGGEAR_H
-#define AP_LANDINGGEAR_H
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
@@ -75,5 +73,3 @@ private:
     /// deploy - deploy the landing gear
     void deploy();
 };
-
-#endif /* AP_LANDINGGEAR_H */

@@ -32,7 +32,7 @@ void Copter::init_rc_in()
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_yaw->set_angle(4500);
-    channel_throttle->set_range(g.throttle_min, THR_MAX);
+    channel_throttle->set_range(0, THR_MAX);
 
     channel_roll->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_pitch->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
@@ -115,6 +115,9 @@ void Copter::read_radio()
         // update output on any aux channels, for manual passthru
         RC_Channel_aux::output_ch_all();
 
+        // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
+        radio_passthrough_to_motors();
+
         float dt = (tnow_ms - last_update_ms)*1.0e-3f;
         rc_throttle_control_in_filter.apply(g.rc_3.control_in, dt);
         last_update_ms = tnow_ms;
@@ -190,4 +193,10 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
         ap.throttle_zero = true;
     }
+}
+
+// pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
+void Copter::radio_passthrough_to_motors()
+{
+    motors.set_radio_passthrough(channel_roll->control_in/1000.0f, channel_pitch->control_in/1000.0f, channel_throttle->control_in/1000.0f, channel_yaw->control_in/1000.0f);
 }

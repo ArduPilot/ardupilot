@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_PX4_RCOUTPUT_H__
-#define __AP_HAL_PX4_RCOUTPUT_H__
+#pragma once
 
 #include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
@@ -63,5 +61,3 @@ private:
     void _arm_actuators(bool arm);
     void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz);
 };
-
-#endif // __AP_HAL_PX4_RCOUTPUT_H__

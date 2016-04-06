@@ -32,17 +32,17 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     // @Description: The maximum/minimum value that the I term can output
     AP_GROUPINFO("IMAX", 5, AC_HELI_PID, _imax, 0),
 
-    // @Param: FILT_HZ
+    // @Param: FILT
     // @DisplayName: PID Input filter frequency in Hz
-    // @Description:
-    AP_GROUPINFO("FILT_HZ", 6, AC_HELI_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
+    // @Description: PID Input filter frequency in Hz
+    AP_GROUPINFO("FILT", 6, AC_HELI_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
 
-    // @Param: I_L_MIN
+    // @Param: ILMI
     // @DisplayName: I-term Leak Minimum
     // @Description: Point below which I-term will not leak down
-    // @Range: 0 4500
+    // @Range: 0 1
     // @User: Advanced
-    AP_GROUPINFO("I_L_MIN", 7, AC_HELI_PID, _leak_min, AC_PID_LEAK_MIN),
+    AP_GROUPINFO("ILMI", 7, AC_HELI_PID, _leak_min, AC_PID_LEAK_MIN),
 
     // @Param: AFF
     // @DisplayName: Acceleration FF FeedForward Gain

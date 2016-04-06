@@ -56,9 +56,8 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: CHANNEL
     // @DisplayName: Receiver RSSI channel number
-    // @Description: The channel number where RSSI will be output by the radio receiver.
+    // @Description: The channel number where RSSI will be output by the radio receiver (5 and above).
     // @Units: 
-    // @Values: 5:Channel5,6:Channel6,7:Channel7,8:Channel8
     // @User: Standard
     AP_GROUPINFO("CHANNEL", 4, AP_RSSI, rssi_channel,  0),
 

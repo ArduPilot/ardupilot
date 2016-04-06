@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsTri.h
 /// @brief	Motor control class for Tricopters
-
-#ifndef __AP_MOTORS_TRI_H__
-#define __AP_MOTORS_TRI_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -13,6 +11,9 @@
 
 // tail servo uses channel 7
 #define AP_MOTORS_CH_TRI_YAW    CH_7
+
+#define AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN   5   // minimum angle movement of tail servo in degrees
+#define AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX   80  // maximum angle movement of tail servo in degrees
 
 /// @class      AP_MotorsTri
 class AP_MotorsTri : public AP_MotorsMulticopter {
@@ -39,8 +40,8 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm);
 
-    // output_min - sends minimum values out to the motors
-    virtual void        output_min();
+    // output_to_motors - sends minimum values out to the motors
+    virtual void        output_to_motors();
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -52,17 +53,18 @@ public:
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
-    void                output_armed_not_stabilizing();
-    void                output_disarmed();
 
     // calc_yaw_radio_output - calculate final radio output for yaw channel
-    int16_t             calc_yaw_radio_output();        // calculate radio output for yaw servo, typically in range of 1100-1900
+    int16_t             calc_yaw_radio_output(float yaw_input, float yaw_input_max);        // calculate radio output for yaw servo, typically in range of 1100-1900
 
     // parameters
-    AP_Int8         _yaw_servo_reverse;                 // Yaw servo signal reversing
+    AP_Int8         _yaw_reverse;                       // Reverse yaw output
     AP_Int16        _yaw_servo_trim;                    // Trim or center position of yaw servo
-    AP_Int16        _yaw_servo_min;                     // Minimum angle limit of yaw servo
-    AP_Int16        _yaw_servo_max;                     // Maximum angle limit of yaw servo
+    AP_Int16        _yaw_servo_min;                     // Minimum pwm of yaw servo
+    AP_Int16        _yaw_servo_max;                     // Maximum pwm of yaw servo
+    AP_Float        _yaw_servo_angle_max_deg;           // Maximum lean angle of yaw servo in degrees
+    float           _pivot_angle;                       // Angle of yaw pivot
+    float           _thrust_right;
+    float           _thrust_rear;
+    float           _thrust_left;
 };
-
-#endif  // AP_MOTORSTRI

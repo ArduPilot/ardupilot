@@ -13,22 +13,11 @@ newtags=$(cd APM && git fetch --tags | wc -l)
 oldhash=$(cd APM && git rev-parse origin/master)
 newhash=$(cd APM && git rev-parse HEAD)
 
-newtagspx4=$(cd PX4Firmware && git fetch --tags | wc -l)
-oldhashpx4=$(cd PX4Firmware && git rev-parse origin/master)
-newhashpx4=$(cd PX4Firmware && git rev-parse HEAD)
-
-newtagsnuttx=$(cd PX4NuttX && git fetch --tags | wc -l)
-oldhashnuttx=$(cd PX4NuttX && git rev-parse origin/master)
-newhashnuttx=$(cd PX4NuttX && git rev-parse HEAD)
-
-newtagsuavcan=$(cd uavcan && git fetch --tags | wc -l)
-oldhashuavcan=$(cd uavcan && git rev-parse origin/master)
-newhashuavcan=$(cd uavcan && git rev-parse HEAD)
-
-if [ "$oldhash" = "$newhash" -a "$newtags" = "0" -a "$oldhashpx4" = "$newhashpx4" -a "$newtagspx4" = "0" -a "$oldhashnuttx" = "$newhashnuttx" -a "$newtagsnuttx" = "0" -a "$oldhashuavcan" = "$newhashuavcan" -a "$newtagsuavcan" = "0" ]; then
-    echo "no change $oldhash $newhash `date`" >> build.log
+if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
+    echo "$(date) no change $oldhash $newhash" >> build.log
     exit 0
 fi
+echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
 }
 
 ############################
@@ -40,7 +29,7 @@ lock_file() {
 
         if test -f "$lck" && kill -0 $pid 2> /dev/null; then
 	    LOCKAGE=$(($(date +%s) - $(stat -c '%Y' "build.lck")))
-	    test $LOCKAGE -gt 30000 && {
+	    test $LOCKAGE -gt 60000 && {
                 echo "old lock file $lck is valid for $pid with age $LOCKAGE seconds"
 	    }
             return 1
@@ -71,7 +60,7 @@ report() {
     cat <<EOF | mail -s 'build failed' drones-discuss@googlegroups.com
 A build of $d failed at `date`
 
-You can view the build logs at http://autotest.diydrones.com/
+You can view the build logs at http://autotest.ardupilot.org/
 
 A log of the commits since the last attempted build is below
 
@@ -149,6 +138,6 @@ killall -9 JSBSim || /bin/true
 # raise core limit
 ulimit -c 10000000
 
-timelimit 22000 APM/Tools/autotest/autotest.py --timeout=20000 > buildlogs/autotest-output.txt 2>&1
+timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
 
 ) >> build.log 2>&1

@@ -17,11 +17,7 @@ bool Copter::throw_init(bool ignore_checks)
     }
 
     // this mode needs a position reference
-    if (position_ok()) {
-        return true;
-    } else {
-        return false;
-    }
+    return true;
 }
 
 // clean up when exiting throw mode
@@ -128,8 +124,6 @@ void Copter::throw_run()
 
         // demand zero throttle (motors will be stopped anyway) and continually reset the attitude controller
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        motors.slow_start(true);
-
         break;
 
     case Throw_Detecting:
