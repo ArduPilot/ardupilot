@@ -32,6 +32,9 @@ OPT		= -O3
 
 include $(MK_DIR)/find_tools.mk
 
+# Hardcoded libraries/AP_Common/missing/cmath defines in "make" to retain the current behavior
+EXTRAFLAGS += -DHAVE_CMATH_ISFINITE -DNEED_CMATH_ISFINITE_STD_NAMESPACE
+
 DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DSKETCHNAME="\"$(SKETCH)\"" -DSKETCHBOOK="\"$(SKETCHBOOK)\"" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 DEFINES        +=   $(EXTRAFLAGS)
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD) -DCONFIG_HAL_BOARD_SUBTYPE=$(HAL_BOARD_SUBTYPE) -DAP_MAIN=ArduPilot_main
@@ -50,7 +53,6 @@ DSP_LINK_FLAGS = -mv5 -G0 -fpic -shared -Wl,-Bsymbolic -Wl,--wrap=malloc -Wl,--w
 
 # Add missing parts from libc and libstdc++
 MISSING_TOOLCHAIN_FLAGS += -DHAVE_STD_NULLPTR_T=0 -DHAVE_STD_MOVE=0 -DHAVE_STD_REMOVE_REFERENCE=0 -DHAVE_TYPE_TRAITS_H=0 -DHAVE_BYTESWAP_H=0
-MISSING_TOOLCHAIN_FLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
 
 CXXFLAGS       +=   -std=gnu++11 $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(MISSING_TOOLCHAIN_FLAGS) $(CXXOPTS) $(DEFINES) $(DSP_FLAGS)
 CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS) $(DEFINES) $(DSP_FLAGS)

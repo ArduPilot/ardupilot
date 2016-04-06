@@ -24,7 +24,7 @@
 /// @brief  The AP variable store.
 #include "AP_Param.h"
 
-#include <math.h>
+#include <cmath>
 #include <string.h>
 
 #include <AP_Common/AP_Common.h>
