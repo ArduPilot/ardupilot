@@ -165,6 +165,7 @@ bool AP_Terrain::find_nearest_grid_cache(const Location &loc)
     uint8_t block_closest_idx[2][2] = {{0,0},{0,0}};
     uint8_t block_closest_idy[2][2] = {{0,0},{0,0}};
     int16_t block_closest_height[2][2] = {{0,0},{0,0}};
+    Vector2f block_closest_pos_diff[2][2];
     float grid_dist_x = TERRAIN_GRID_BLOCK_SIZE_X * grid_spacing;   // size (in meters) of a cache's grid
     float grid_dist_y = TERRAIN_GRID_BLOCK_SIZE_Y * grid_spacing;   // size (in meters) of a cache's grid
 
@@ -212,6 +213,7 @@ bool AP_Terrain::find_nearest_grid_cache(const Location &loc)
                                 block_closest_idx[ax][ay] = idx;
                                 block_closest_idy[ax][ay] = idy;
                                 block_closest_height[ax][ay] = cache[i].grid.height[idx][idy];
+                                block_closest_pos_diff[ax][ay] = block_pos_diff;
                             }
                         }
                     }
