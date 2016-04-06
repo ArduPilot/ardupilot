@@ -61,10 +61,19 @@ class Compass : public AP_Module
 {
 friend class AP_Compass_Backend;
 public:
-    /// Constructor
-    ///
-    Compass();
+    // static singleton access
+    static Compass &get_frontend(void) {
+        // we don't declare the singleton variable here as it results
+        // in less efficient code on stm32
+        return frontend;
+    }
 
+    // make sure a Compass object cannot be copied or moved
+    Compass(Compass const&) = delete;
+    Compass(Compass&&) = delete;
+    Compass& operator=(Compass const&) = delete;
+    Compass& operator=(Compass &&) = delete;
+    
     /// Initialize the compass device.
     ///
     /// @returns    True if the compass was initialized OK, false if it was not
@@ -118,10 +127,10 @@ public:
     static void save_offsets(void);
 
     // return the number of compass instances
-    static uint8_t get_count(void) { return _s_instance._compass_count; }
+    static uint8_t get_count(void) { return frontend._compass_count; }
 
     /// Return the current field as a Vector3f in milligauss
-    static const Vector3f &get_field(uint8_t i) { return _s_instance._state[i].field; }
+    static const Vector3f &get_field(uint8_t i) { return frontend._state[i].field; }
     static const Vector3f &get_field(void) { return get_field(get_primary()); }
 
     // compass calibrator interface
@@ -139,8 +148,8 @@ public:
     static bool accept_calibration_all();
     static bool accept_calibration_mask(uint8_t mask);
 
-    static bool compass_cal_requires_reboot() { return _s_instance._cal_complete_requires_reboot; }
-    static bool auto_reboot() { return _s_instance._compass_cal_autoreboot; }
+    static bool compass_cal_requires_reboot() { return frontend._cal_complete_requires_reboot; }
+    static bool auto_reboot() { return frontend._compass_cal_autoreboot; }
     static uint8_t get_cal_mask();
     static bool is_calibrating();
 
@@ -156,7 +165,7 @@ public:
     static bool consistent();
 
     /// Return the health of a compass
-    static bool healthy(uint8_t i) { return _s_instance._state[i].healthy; }
+    static bool healthy(uint8_t i) { return frontend._state[i].healthy; }
     static bool healthy(void) { return healthy(get_primary()); }
     static uint8_t get_healthy_mask();
 
@@ -164,7 +173,7 @@ public:
     ///
     /// @returns                    The current compass offsets in milligauss.
     ///
-    static const Vector3f &get_offsets(uint8_t i) { return _s_instance._state[i].offset; }
+    static const Vector3f &get_offsets(uint8_t i) { return frontend._state[i].offset; }
     static const Vector3f &get_offsets(void) { return get_offsets(get_primary()); }
 
     /// Sets the initial location used to get declination
@@ -186,7 +195,7 @@ public:
     }
 
     // learn offsets accessor
-    static bool learn_offsets_enabled() { return _s_instance._learn; }
+    static bool learn_offsets_enabled() { return frontend._learn; }
 
     /// Perform automatic offset updates
     ///
@@ -206,7 +215,7 @@ public:
 
     // set overall board orientation
     static void set_board_orientation(enum Rotation orientation) {
-        _s_instance._board_orientation = orientation;
+        frontend._board_orientation = orientation;
     }
 
     /// Set the motor compensation type
@@ -217,7 +226,7 @@ public:
 
     /// get the motor compensation value.
     static uint8_t get_motor_compensation_type() {
-        return _s_instance._motor_comp_type;
+        return frontend._motor_comp_type;
     }
 
     /// Set the motor compensation factor x/y/z values.
@@ -228,7 +237,7 @@ public:
     static void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    static const Vector3f& get_motor_compensation(uint8_t i) { return _s_instance._state[i].motor_compensation; }
+    static const Vector3f& get_motor_compensation(uint8_t i) { return frontend._state[i].motor_compensation; }
     static const Vector3f& get_motor_compensation(void) { return get_motor_compensation(get_primary()); }
 
     /// Saves the current motor compensation x/y/z values.
@@ -241,22 +250,22 @@ public:
     ///
     /// @returns                    The current compass offsets in milligauss.
     ///
-    static const Vector3f &get_motor_offsets(uint8_t i) { return _s_instance._state[i].motor_offset; }
+    static const Vector3f &get_motor_offsets(uint8_t i) { return frontend._state[i].motor_offset; }
     static const Vector3f &get_motor_offsets(void) { return get_motor_offsets(get_primary()); }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
     static void set_throttle(float thr_pct) {
-        if (_s_instance._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
-            _s_instance._thr_or_curr = thr_pct;
+        if (frontend._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+            frontend._thr_or_curr = thr_pct;
         }
     }
 
     /// Set the current used by system in amps
     /// @param amps                 current flowing to the motors expressed in amps
     static void set_current(float amps) {
-        if (_s_instance._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
-            _s_instance._thr_or_curr = amps;
+        if (frontend._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+            frontend._thr_or_curr = amps;
         }
     }
 
@@ -271,7 +280,7 @@ public:
     ///
     /// @returns                    the instance number of the primary compass
     ///
-    static uint8_t get_primary(void) { return _s_instance._primary; }
+    static uint8_t get_primary(void) { return frontend._primary; }
 
     // HIL methods
     static void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
@@ -280,11 +289,11 @@ public:
     static void        _setup_earth_field();
 
     // enable HIL mode
-    static void        set_hil_mode(void) { _s_instance._hil_mode = true; }
+    static void        set_hil_mode(void) { frontend._hil_mode = true; }
 
     // return last update time in microseconds
-    static uint32_t last_update_usec(void) { return _s_instance._state[get_primary()].last_update_usec; }
-    static uint32_t last_update_usec(uint8_t i) { return _s_instance._state[i].last_update_usec; }
+    static uint32_t last_update_usec(void) { return frontend._state[get_primary()].last_update_usec; }
+    static uint32_t last_update_usec(uint8_t i) { return frontend._state[i].last_update_usec; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -296,17 +305,15 @@ public:
         Vector3f field[COMPASS_MAX_INSTANCES];
     } _hil;
 
-    //singleton get instance function
-    static Compass& get_frontend(void);
- 
 private:
+    /// private constructor and frontend singleton instance.
+    static Compass frontend;
+    Compass();
+
     /// Register a new compas driver, allocating an instance number
     ///
     /// @return number of compass instances
     uint8_t register_compass(void);
-
-    //singleton instance
-    static Compass _s_instance;
 
     // load backend drivers
     void _add_backend(AP_Compass_Backend *backend);
