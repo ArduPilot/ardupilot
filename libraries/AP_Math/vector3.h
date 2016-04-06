@@ -46,11 +46,9 @@
 *           or if the matrix (A) * b = 0
 *
 ****************************************/
+#pragma once
 
-#ifndef VECTOR3_H
-#define VECTOR3_H
-
-#include <math.h>
+#include <cmath>
 #include <float.h>
 #include <string.h>
 
@@ -219,5 +217,3 @@ typedef Vector3<int32_t>                Vector3l;
 typedef Vector3<uint32_t>               Vector3ul;
 typedef Vector3<float>                  Vector3f;
 typedef Vector3<double>                 Vector3d;
-
-#endif // VECTOR3_H

@@ -1,5 +1,4 @@
-#ifndef DATAFLASH_BACKEND_H
-#define DATAFLASH_BACKEND_H
+#pragma once
 
 #include "DataFlash.h"
 
@@ -134,5 +133,3 @@ private:
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
 };
-
-#endif

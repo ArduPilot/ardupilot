@@ -36,9 +36,7 @@
 // Matrix3ul	3x3 matrix of unsigned longs
 // Matrix3f		3x3 matrix of signed floats
 //
-
-#ifndef MATRIX3_H
-#define MATRIX3_H
+#pragma once
 
 #include "vector3.h"
 
@@ -242,5 +240,3 @@ typedef Matrix3<int32_t>                Matrix3l;
 typedef Matrix3<uint32_t>               Matrix3ul;
 typedef Matrix3<float>                  Matrix3f;
 typedef Matrix3<double>                 Matrix3d;
-
-#endif // MATRIX3_H

@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_ARMING_H__
-#define __AP_ARMING_H__ 
+#pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -110,5 +108,3 @@ protected:
 
     bool manual_transmitter_checks(bool report);
 };
-
-#endif //__AP_ARMING_H__

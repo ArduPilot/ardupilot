@@ -13,6 +13,12 @@
 
 const AP_Param::Info Rover::var_info[] = {
 	GSCALAR(format_version,         "FORMAT_VERSION",   1),
+    
+    // @Param: SYSID_SW_TYPE
+    // @DisplayName: Software Type
+    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
+    // @User: Advanced
+    // @ReadOnly: True
 	GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
 
 	// misc
@@ -419,7 +425,7 @@ const AP_Param::Info Rover::var_info[] = {
 	// variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/Compass.cpp
+    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
 	GOBJECT(compass,                "COMPASS_",	Compass),
 
     // @Group: SCHED_

@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_RANGEFINDER_MAXSONARI2CXL_H__
-#define __AP_RANGEFINDER_MAXSONARI2CXL_H__
+#pragma once
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
@@ -32,4 +30,3 @@ private:
     static bool start_reading(void);
     static bool get_reading(uint16_t &reading_cm);
 };
-#endif  // __AP_RANGEFINDER_MAXSONARI2CXL_H__

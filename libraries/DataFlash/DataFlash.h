@@ -3,8 +3,7 @@
 /* ************************************************************ */
 /* Test for DataFlash Log library                               */
 /* ************************************************************ */
-#ifndef DataFlash_h
-#define DataFlash_h
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -21,6 +20,7 @@
 #include <AP_RPM/AP_RPM.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <DataFlash/LogStructure.h>
+#include <AP_Motors/AP_Motors.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -37,6 +37,10 @@ enum DataFlash_Backend_Type {
     DATAFLASH_BACKEND_MAVLINK = 2,
     DATAFLASH_BACKEND_BOTH = 3,
 };
+
+// fwd declarations to avoid include errors
+class AC_AttitudeControl;
+class AC_PosControl;
 
 class DataFlash_Class
 {
@@ -124,6 +128,10 @@ public:
                                const AP_Mission::Mission_Command &cmd);
     void Log_Write_Origin(uint8_t origin_type, const Location &loc);
     void Log_Write_RPM(const AP_RPM &rpm_sensor);
+    void Log_Write_Rate(const AP_AHRS &ahrs,
+                        const AP_Motors &motors,
+                        const AC_AttitudeControl &attitude_control,
+                        const AC_PosControl &pos_control);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
@@ -179,5 +187,3 @@ private:
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const char *_firmware_string;
 };
-
-#endif

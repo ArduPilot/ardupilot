@@ -15,9 +15,7 @@
 /*
   Flymaple port by Mike McCauley
  */
-
-#ifndef __AP_HAL_FLYMAPLE_SEMAPHORE_H__
-#define __AP_HAL_FLYMAPLE_SEMAPHORE_H__
+#pragma once
 
 #include "AP_HAL_FLYMAPLE.h"
 
@@ -33,5 +31,3 @@ private:
 
     bool _taken;
 };
-
-#endif // __AP_HAL_FLYMAPLE_SEMAPHORE_H__

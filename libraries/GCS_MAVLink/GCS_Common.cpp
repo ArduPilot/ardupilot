@@ -37,8 +37,7 @@ GCS_MAVLINK::GCS_MAVLINK()
 void
 GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
 {
-    // sanity check chan
-    if (mav_chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if (!valid_channel(mav_chan)) {
         return;
     }
 
@@ -402,8 +401,7 @@ void GCS_MAVLINK::handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) 
  */
 bool GCS_MAVLINK::have_flow_control(void)
 {
-    // sanity check chan
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if (!valid_channel(chan)) {
         return false;
     }
 

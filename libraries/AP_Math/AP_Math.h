@@ -7,7 +7,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <math.h>
+#include <cmath>
 #include <stdint.h>
 
 #include "rotations.h"
@@ -159,4 +159,11 @@ inline uint32_t usec_to_hz(uint32_t usec)
 {
     return USEC_PER_SEC / usec;
 }
+
+/*
+  linear interpolation based on a variable in a range
+ */
+float linear_interpolate(float low_output, float high_output,
+                         float var_value,
+                         float var_low, float var_high);
 

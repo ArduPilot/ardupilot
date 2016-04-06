@@ -266,9 +266,6 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
             input_manager.set_stab_col_ramp(0.0);
         }
     }
-
-    // reset RC Passthrough to motors
-    motors.reset_radio_passthrough();
 #endif //HELI_FRAME
 }
 

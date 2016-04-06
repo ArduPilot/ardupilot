@@ -9,9 +9,7 @@
 
 /// @file	AP_Relay.h
 /// @brief	APM relay control class
-
-#ifndef __AP_RELAY_H__
-#define __AP_RELAY_H__
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 
@@ -44,5 +42,3 @@ private:
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
     AP_Int8 _default;
 };
-
-#endif /* AP_RELAY_H_ */

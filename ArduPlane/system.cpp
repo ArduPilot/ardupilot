@@ -232,9 +232,9 @@ void Plane::init_ardupilot()
 
     init_capabilities();
 
-    startup_ground();
-
     quadplane.setup();
+
+    startup_ground();
 
     // don't initialise rc output until after quadplane is setup as
     // that can change initial values of channels

@@ -85,10 +85,12 @@ def ap_common_vehicle_libraries(bld):
 _grouped_programs = {}
 
 @conf
-def ap_program(bld, program_group='bin',
-            use_legacy_defines=True,
-            program_name=None,
-            **kw):
+def ap_program(bld,
+               program_groups='bin',
+               program_dir=None,
+               use_legacy_defines=True,
+               program_name=None,
+               **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
     if 'defines' not in kw:
@@ -102,9 +104,15 @@ def ap_program(bld, program_group='bin',
     if use_legacy_defines:
         kw['defines'].extend(_get_legacy_defines(bld.path.name))
 
+    kw['cxxflags'] = kw.get('cxxflags', []) + ['-include', 'ap_config.h']
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
 
-    name = os.path.join(program_group, program_name)
+    program_groups = Utils.to_list(program_groups)
+
+    if not program_dir:
+        program_dir = program_groups[0]
+
+    name = os.path.join(program_dir, program_name)
 
     tg_constructor = bld.program
     if bld.env.AP_PROGRAM_AS_STLIB:
@@ -118,14 +126,16 @@ def ap_program(bld, program_group='bin',
         target='#%s' % name,
         name=name,
         program_name=program_name,
-        program_group=program_group,
+        program_dir=program_dir,
         **kw
     )
-    _grouped_programs.setdefault(program_group, []).append(tg)
+
+    for group in program_groups:
+        _grouped_programs.setdefault(group, []).append(tg)
 
 @conf
 def ap_example(bld, **kw):
-    kw['program_group'] = 'examples'
+    kw['program_groups'] = 'examples'
     ap_program(bld, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
@@ -158,6 +168,7 @@ def ap_stlib(bld, **kw):
         lib_sources = lib_node.ant_glob(SOURCE_EXTS + UTILITY_SOURCE_EXTS)
         sources.extend(lib_sources)
 
+    kw['cxxflags'] = kw.get('cxxflags', []) + ['-include', 'ap_config.h']
     kw['features'] = kw.get('features', []) + bld.env.AP_STLIB_FEATURES
     kw['source'] = sources
     kw['target'] = kw['name']
@@ -188,7 +199,7 @@ def ap_find_tests(bld, use=[]):
             source=[f],
             use=use,
             program_name=f.change_ext('').name,
-            program_group='tests',
+            program_groups='tests',
             use_legacy_defines=False,
             cxxflags=['-Wno-undef'],
         )
@@ -208,7 +219,7 @@ def ap_find_benchmarks(bld, use=[]):
             source=[f],
             use=use,
             program_name=f.change_ext('').name,
-            program_group='benchmarks',
+            program_groups='benchmarks',
             use_legacy_defines=False,
         )
 

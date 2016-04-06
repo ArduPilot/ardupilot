@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef _DEFINES_H
-#define _DEFINES_H
+#pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
@@ -262,7 +260,6 @@ enum ThrowModeState {
 #define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
-#define LOG_RATE_MSG                    0x1D
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
 #define LOG_HELI_MSG                    0x20
@@ -436,5 +433,3 @@ enum ThrowModeState {
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
 #define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
-
-#endif // _DEFINES_H

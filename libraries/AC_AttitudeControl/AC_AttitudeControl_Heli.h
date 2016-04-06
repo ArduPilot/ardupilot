@@ -1,15 +1,27 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+#pragma once
 
 /// @file    AC_AttitudeControl_Heli.h
 /// @brief   ArduCopter attitude control library for traditional helicopters
-
-#ifndef AC_ATTITUDECONTROL_HELI_H
-#define AC_ATTITUDECONTROL_HELI_H
 
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsHeli.h>
 #include <AC_PID/AC_HELI_PID.h>
 #include <Filter/Filter.h>
+
+// default rate controller PID gains
+#define AC_ATC_HELI_RATE_RP_P                       0.024f
+#define AC_ATC_HELI_RATE_RP_I                       0.6f
+#define AC_ATC_HELI_RATE_RP_D                       0.001f
+#define AC_ATC_HELI_RATE_RP_IMAX                    1.0f
+#define AC_ATC_HELI_RATE_RP_FF                      0.060f
+#define AC_ATC_HELI_RATE_RP_FILT_HZ                 20.0f
+#define AC_ATC_HELI_RATE_YAW_P                      0.18f
+#define AC_ATC_HELI_RATE_YAW_I                      0.12f
+#define AC_ATC_HELI_RATE_YAW_D                      0.003f
+#define AC_ATC_HELI_RATE_YAW_IMAX                   1.0f
+#define AC_ATC_HELI_RATE_YAW_FF                     0.024f
+#define AC_ATC_HELI_RATE_YAW_FILT_HZ                20.0f
 
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
@@ -22,13 +34,12 @@ public:
     AC_AttitudeControl_Heli( AP_AHRS &ahrs,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_MotorsHeli& motors,
-                        AC_P& p_angle_roll, AC_P& p_angle_pitch, AC_P& p_angle_yaw,
-                        AC_HELI_PID& pid_rate_roll, AC_HELI_PID& pid_rate_pitch, AC_HELI_PID& pid_rate_yaw
-                        ) :
-        AC_AttitudeControl(ahrs, aparm, motors,
-                           p_angle_roll, p_angle_pitch, p_angle_yaw,
-                           pid_rate_roll, pid_rate_pitch, pid_rate_yaw),
+                        float dt) :
+        AC_AttitudeControl(ahrs, aparm, motors, dt),
         _passthrough_roll(0), _passthrough_pitch(0), _passthrough_yaw(0),
+        _pid_rate_roll(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_IMAX, AC_ATC_HELI_RATE_RP_FILT_HZ, dt, AC_ATC_HELI_RATE_RP_FF),
+        _pid_rate_pitch(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_IMAX, AC_ATC_HELI_RATE_RP_FILT_HZ, dt, AC_ATC_HELI_RATE_RP_FF),
+        _pid_rate_yaw(AC_ATC_HELI_RATE_YAW_P, AC_ATC_HELI_RATE_YAW_I, AC_ATC_HELI_RATE_YAW_D, AC_ATC_HELI_RATE_YAW_IMAX, AC_ATC_HELI_RATE_YAW_FILT_HZ, dt, AC_ATC_HELI_RATE_YAW_FF),
         pitch_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
         roll_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
         yaw_velocity_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER),
@@ -45,6 +56,16 @@ public:
             _flags_heli.tail_passthrough = false;
             _flags_heli.do_piro_comp = false;
         }
+
+    // pid accessors
+    AC_PID& get_rate_roll_pid() { return _pid_rate_roll; }
+    AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
+    AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
+
+    // same as above but allows accessing heli specific pid methods - used only by Copter's tuning.cpp
+    AC_HELI_PID& get_heli_rate_roll_pid() { return _pid_rate_roll; }
+    AC_HELI_PID& get_heli_rate_pitch_pid() { return _pid_rate_pitch; }
+    AC_HELI_PID& get_heli_rate_yaw_pid() { return _pid_rate_yaw; }
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds);
@@ -98,7 +119,7 @@ private:
 	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
     void rate_bf_to_motor_roll_pitch(float rate_roll_target_rads, float rate_pitch_target_rads);
-    virtual float rate_bf_to_motor_yaw(float rate_yaw_rads);
+    float rate_bf_to_motor_yaw(float rate_yaw_rads);
 
     //
     // throttle methods
@@ -123,6 +144,9 @@ private:
     // parameters
     AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _hover_roll_trim;               // Angle in centi-degrees used to counter tail rotor thrust in hover
+    AC_HELI_PID     _pid_rate_roll;
+    AC_HELI_PID     _pid_rate_pitch;
+    AC_HELI_PID     _pid_rate_yaw;
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
@@ -133,5 +157,3 @@ private:
     LowPassFilterFloat yaw_acceleration_feedforward_filter;
 
 };
-
-#endif //AC_ATTITUDECONTROL_HELI_H

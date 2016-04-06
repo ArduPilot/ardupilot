@@ -2,9 +2,7 @@
 
 /// @file	AP_MotorsSingle.h
 /// @brief	Motor and Servo control class for Singlecopters
-
-#ifndef __AP_MOTORS_SING_H__
-#define __AP_MOTORS_SING_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -14,6 +12,8 @@
 // feedback direction
 #define AP_MOTORS_SING_POSITIVE      1
 #define AP_MOTORS_SING_NEGATIVE     -1
+
+#define NUM_ACTUATORS 4
 
 #define AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS 250 // update rate for digital servos
 #define AP_MOTORS_SINGLE_SPEED_ANALOG_SERVOS 125  // update rate for analog servos
@@ -25,12 +25,9 @@ class AP_MotorsSingle : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsSingle(RC_Channel& servo1, RC_Channel& servo2, RC_Channel& servo3, RC_Channel& servo4, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+    AP_MotorsSingle(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMulticopter(loop_rate, speed_hz),
-        _servo1(servo1),
-        _servo2(servo2),
-        _servo3(servo3),
-        _servo4(servo4)
+        _servo1(CH_1), _servo2(CH_2), _servo3(CH_3), _servo4(CH_4)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -49,8 +46,8 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm);
 
-    // output_min - sends minimum values out to the motors
-    virtual void        output_min();
+    // output_to_motors - sends minimum values out to the motors
+    virtual void        output_to_motors();
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -62,17 +59,16 @@ public:
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
-    void                output_armed_not_stabilizing();
-    void                output_disarmed();
 
-    AP_Int8             _rev_roll;      // REV Roll feedback
-    AP_Int8             _rev_pitch;     // REV pitch feedback
-    AP_Int8             _rev_yaw;       // REV yaw feedback
-    AP_Int16            _servo_speed;   // servo speed
-    RC_Channel&         _servo1;
-    RC_Channel&         _servo2;
-    RC_Channel&         _servo3;
-    RC_Channel&         _servo4;
+    // servo speed
+    AP_Int16            _servo_speed;
+
+    RC_Channel          _servo1;
+    RC_Channel          _servo2;
+    RC_Channel          _servo3;
+    RC_Channel          _servo4;
+
+    int16_t             _throttle_radio_output;   // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
+    float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
+    float               _thrust_out;
 };
-
-#endif  // AP_MOTORSSINGLE

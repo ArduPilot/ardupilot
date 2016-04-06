@@ -1,0 +1,15 @@
+#pragma once
+
+#include_next <cmath>
+
+#if defined(HAVE_CMATH_ISFINITE) && defined(NEED_CMATH_ISFINITE_STD_NAMESPACE)
+using std::isfinite;
+#endif
+
+#if defined(HAVE_CMATH_ISINF) && defined(NEED_CMATH_ISINF_STD_NAMESPACE)
+using std::isinf;
+#endif
+
+#if defined(HAVE_CMATH_ISNAN) && defined(NEED_CMATH_ISNAN_STD_NAMESPACE)
+using std::isnan;
+#endif

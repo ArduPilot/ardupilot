@@ -28,11 +28,9 @@
 * © 2003, This code is provided "as is" and you can use it freely as long as
 * credit is given to Bill Perone in the application it is used in
 ****************************************/
+#pragma once
 
-#ifndef VECTOR2_H
-#define VECTOR2_H
-
-#include <math.h>
+#include <cmath>
 
 template <typename T>
 struct Vector2
@@ -161,5 +159,3 @@ typedef Vector2<uint16_t>       Vector2ui;
 typedef Vector2<int32_t>        Vector2l;
 typedef Vector2<uint32_t>       Vector2ul;
 typedef Vector2<float>          Vector2f;
-
-#endif // VECTOR2_H

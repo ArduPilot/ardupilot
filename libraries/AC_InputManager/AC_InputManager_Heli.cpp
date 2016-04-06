@@ -58,33 +58,33 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
 };
 
 // get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
-int16_t AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
+float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
 {
     float slope_low, slope_high, slope_range, slope_run, scalar;
-    int16_t stab_col_out, acro_col_out;
+    float stab_col_out, acro_col_out;
 
     // calculate stabilize collective value which scales pilot input to reduced collective range
     // code implements a 3-segment curve with knee points at 40% and 60% throttle input
     if (control_in < 400){
-        slope_low = _heli_stab_col_min;
-        slope_high = _heli_stab_col_low;
-        slope_range = 400;
-        slope_run = control_in;
+        slope_low = _heli_stab_col_min / 1000.0f;
+        slope_high = _heli_stab_col_low / 1000.0f;
+        slope_range = 0.4f;
+        slope_run = control_in / 1000.0f;
     } else if(control_in <600){
-        slope_low = _heli_stab_col_low;
-        slope_high = _heli_stab_col_high;
-        slope_range = 200;
-        slope_run = control_in - 400;
+        slope_low = _heli_stab_col_low / 1000.0f;
+        slope_high = _heli_stab_col_high / 1000.0f;
+        slope_range = 0.2f;
+        slope_run = (control_in - 400) / 1000.0f;
     } else {
-        slope_low = _heli_stab_col_high;
-        slope_high = _heli_stab_col_max;
-        slope_range = 400;
-        slope_run = control_in - 600;
+        slope_low = _heli_stab_col_high / 1000.0f;
+        slope_high = _heli_stab_col_max / 1000.0f;
+        slope_range = 0.4f;
+        slope_run = (control_in - 600) / 1000.0f;
     }    
 
     scalar = (slope_high - slope_low)/slope_range;
     stab_col_out = slope_low + slope_run * scalar;
-    stab_col_out = constrain_int16(stab_col_out, 0, 1000);
+    stab_col_out = constrain_float(stab_col_out, 0.0f, 1.0f);
 
     //
     // calculate expo-scaled acro collective
@@ -93,30 +93,30 @@ int16_t AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
         _acro_col_expo = 1.0f;
     }
 
-    if (_acro_col_expo <= 0) {
-        acro_col_out = control_in;
+    if (_acro_col_expo <= 0.0f) {
+        acro_col_out = control_in / 1000.0f;
     } else {
         // expo variables
         float col_in, col_in3, col_out;
         col_in = (float)(control_in-500)/500.0f;
         col_in3 = col_in*col_in*col_in;
-        col_out = (_acro_col_expo * col_in3) + ((1-_acro_col_expo)*col_in);
-        acro_col_out = 500 + col_out*500;
+        col_out = (_acro_col_expo * col_in3) + ((1.0f-_acro_col_expo)*col_in);
+        acro_col_out = 0.5f + col_out*0.5f;
     }
-    acro_col_out = constrain_int16(acro_col_out, 0, 1000);
+    acro_col_out = constrain_float(acro_col_out, 0.0f, 1.0f);
 
     // ramp to and from stab col over 1/2 second
-    if (_im_flags_heli.use_stab_col && (_stab_col_ramp < 1.0)){
+    if (_im_flags_heli.use_stab_col && (_stab_col_ramp < 1.0f)){
         _stab_col_ramp += 2.0f/(float)_loop_rate;
-    } else if(!_im_flags_heli.use_stab_col && (_stab_col_ramp > 0.0)){
+    } else if(!_im_flags_heli.use_stab_col && (_stab_col_ramp > 0.0f)){
         _stab_col_ramp -= 2.0f/(float)_loop_rate;
     }
-    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0, 1.0);
+    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0f, 1.0f);
 
     // scale collective output smoothly between acro and stab col
-    int16_t collective_out;
-    collective_out = (float)((1.0-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
-    collective_out = constrain_int16(collective_out, 0, 1000);
+    float collective_out;
+    collective_out = (float)((1.0f-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
+    collective_out = constrain_float(collective_out, 0.0f, 1.0f);
 
     return collective_out;
 }

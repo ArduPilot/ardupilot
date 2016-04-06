@@ -1,5 +1,4 @@
-#ifndef REPLAY_DATAFLASHREADER_H
-#define REPLAY_DATAFLASHREADER_H
+#pragma once
 
 #include <DataFlash/DataFlash.h>
 
@@ -20,5 +19,3 @@ protected:
 #define LOGREADER_MAX_FORMATS 255 // must be >= highest MESSAGE
     struct log_Format formats[LOGREADER_MAX_FORMATS] {};
 };
-
-#endif

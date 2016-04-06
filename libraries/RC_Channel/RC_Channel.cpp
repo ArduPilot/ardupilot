@@ -21,7 +21,7 @@
  */
 
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
 #include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;
@@ -42,7 +42,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("MIN",  0, RC_Channel, radio_min, 1100),
+    AP_GROUPINFO_FLAGS("MIN",  0, RC_Channel, radio_min, 1100, AP_PARAM_NO_SHIFT),
 
     // @Param: TRIM
     // @DisplayName: RC trim PWM

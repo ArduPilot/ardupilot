@@ -2,9 +2,7 @@
 
 /// @file	GCS_MAVLink.h
 /// @brief	One size fits all header for MAVLink integration.
-
-#ifndef GCS_MAVLink_h
-#define GCS_MAVLink_h
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -42,6 +40,17 @@ extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
 
+/// Sanity check MAVLink channel
+///
+/// @param chan		Channel to send to
+static inline bool valid_channel(mavlink_channel_t chan)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
+    return chan < MAVLINK_COMM_NUM_BUFFERS;
+#pragma clang diagnostic pop
+}
+
 /// Send a byte to the nominated MAVLink channel
 ///
 /// @param chan		Channel to send to
@@ -49,8 +58,7 @@ extern mavlink_system_t mavlink_system;
 ///
 static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 {
-    // sanity check chan
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if (!valid_channel(chan)) {
         return;
     }
     mavlink_comm_port[chan]->write(ch);
@@ -94,5 +102,3 @@ uint8_t mav_var_type(enum ap_var_type t);
 uint8_t mavlink_get_message_crc(uint8_t msgid);
 
 #pragma GCC diagnostic pop
-
-#endif // GCS_MAVLink_h

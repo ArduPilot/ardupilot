@@ -182,7 +182,7 @@ void AP_BoardConfig::init()
         } else {
             hal.console->printf("UAVCAN: started\n");            
             // give some time for CAN bus initialisation
-            hal.scheduler->delay(1500);
+            hal.scheduler->delay(2000);
         }
     }
     if (_can_enable >= 2) {

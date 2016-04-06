@@ -14,5 +14,6 @@ def build(bld):
 
     bld.ap_program(
         program_name='antennatracker',
+        program_groups=['bin', 'antennatracker'],
         use=vehicle + '_libs',
     )
