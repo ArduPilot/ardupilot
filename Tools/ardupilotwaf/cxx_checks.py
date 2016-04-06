@@ -1,5 +1,5 @@
 """
-WAF Tool that checks cxx parameters, creating the AP_Config
+WAF Tool that checks cxx parameters, creating the ap_config.h
 header file.
 
 This tool needs compiler_cxx to be loaded, make sure you

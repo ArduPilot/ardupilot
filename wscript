@@ -114,7 +114,7 @@ def configure(cfg):
     if cfg.options.submodule_update:
         cfg.env.SUBMODULE_UPDATE = True
 
-    cfg.write_config_header(os.path.join(cfg.variant, 'AP_Config.h'))
+    cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'))
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -219,7 +219,7 @@ def _build_recursion(bld):
         bld.recurse(d)
 
 def build(bld):
-    config_header = Utils.h_file(bld.bldnode.make_node('AP_Config.h').abspath())
+    config_header = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
 
     bld.env.CCDEPS = config_header
     bld.env.CXXDEPS = config_header
