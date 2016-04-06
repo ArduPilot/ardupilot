@@ -238,7 +238,9 @@ bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
     packet.id = _log_num_data;
     packet.count = ret;
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_LOG_DATA, (const char *)&packet, 
-                                    MAVLINK_MSG_ID_LOG_DATA_LEN, MAVLINK_MSG_ID_LOG_DATA_CRC);
+                                    MAVLINK_MSG_ID_LOG_DATA_MIN_LEN,
+                                    MAVLINK_MSG_ID_LOG_DATA_LEN,
+                                    MAVLINK_MSG_ID_LOG_DATA_CRC);
 
     _log_data_offset += len;
     _log_data_remaining -= len;
