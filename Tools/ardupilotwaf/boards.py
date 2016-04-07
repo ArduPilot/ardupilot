@@ -223,6 +223,10 @@ class linux(Board):
         ]
         env.LIB += cfg.env.LIB_RT
 
+        cfg.check_cfg(package='libsystemd', mandatory=False, global_define=True,
+                      args = ['--libs', '--cflags'])
+        env.LIB += cfg.env.LIB_LIBSYSTEMD
+
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [
             'AP_HAL_Linux',
