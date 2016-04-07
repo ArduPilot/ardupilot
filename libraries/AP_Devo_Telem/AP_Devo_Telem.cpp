@@ -84,15 +84,15 @@ void AP_DEVO_Telem::send_frames(uint8_t control_mode)
         devoPacket.speed = (int)(gps.ground_speed() * 0.0194384f * 100.0f);  // * 100 for cm
 
         if(_ahrs.get_position(loc)) {
-            float baro_alt = loc.alt * 0.01f; // convert to meters
+            float baro_alt = loc.alt ; // in cm
             if (!loc.flags.relative_alt) {
-                baro_alt -= _ahrs.get_home().alt * 0.01f; // subtract home if set
+                baro_alt -= _ahrs.get_home().alt; // subtract home if set
             }
         /*
           Note that this isn't actually barometric altitude, it is the
           inertial nav estimate of altitude above home.
         */
-            devoPacket.alt   = (int)(baro_alt * 100.0); // in cm!
+            devoPacket.alt   = (int)(baro_alt); // in cm!
         } else
             devoPacket.alt=0;
     } else {
