@@ -248,20 +248,18 @@ all: $(SKETCHELF) $(SKETCHEEP) $(BUILD_PATH)/$(BOARD).bin
 print-%:
 	echo "$*=$($*)"
 
-flymaple-upload: upload
-
 .PHONY: upload
-upload: $(SKETCHBIN)
+revomini-upload: $(SKETCHBIN)
 	$(LIBMAPLE_PATH)/support/scripts/reset.py && sleep 1 &&  $(UPLOADER) -a1 -d $(USBID) -D $(SKETCHBIN) -R
 
-debug:
+revomini-debug:
 	$(AVARICE) --mkII --capture --jtag usb :4242 & \
 	gnome-terminal -x $(GDB) $(SKETCHELF) & \
 	echo -e '\n\nat the gdb prompt type "target remote localhost:4242"'
 
 # this allows you to flash your image via JTAG for when you
 # have completely broken your USB
-jtag-program:
+revomini-jtag-program:
 	$(AVARICE) --mkII --jtag usb --erase --program --file $(SKETCHELF)
 
 ################################################################################
