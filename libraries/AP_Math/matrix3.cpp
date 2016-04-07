@@ -220,6 +220,14 @@ Matrix3<T> Matrix3<T>::transposed(void) const
 }
 
 template <typename T>
+T Matrix3<T>::det() const
+{
+    return a.x * (b.y * c.z - b.z * c.y) +
+           a.y * (b.z * c.x - b.x * c.z) +
+           a.z * (b.x * c.y - b.y * c.x);
+}
+
+template <typename T>
 void Matrix3<T>::zero(void)
 {
     a.x = a.y = a.z = 0;
@@ -242,6 +250,7 @@ template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) cons
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
 template Matrix3<float> Matrix3<float>::transposed(void) const;
+template float Matrix3<float>::det() const;
 template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
 
 template void Matrix3<double>::zero(void);
@@ -254,4 +263,5 @@ template Vector3<double> Matrix3<double>::operator *(const Vector3<double> &v) c
 template Vector3<double> Matrix3<double>::mul_transpose(const Vector3<double> &v) const;
 template Matrix3<double> Matrix3<double>::operator *(const Matrix3<double> &m) const;
 template Matrix3<double> Matrix3<double>::transposed(void) const;
+template double Matrix3<double>::det() const;
 template Vector2<double> Matrix3<double>::mulXY(const Vector3<double> &v) const;
