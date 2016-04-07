@@ -89,7 +89,7 @@ bool Copter::poshold_init(bool ignore_checks)
     // initialise position and desired velocity
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
-
+// 只是一个测试
     // initialise lean angles to current attitude
     poshold.pilot_roll = 0;
     poshold.pilot_pitch = 0;
