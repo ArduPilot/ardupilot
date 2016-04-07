@@ -33,7 +33,8 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = 0x20010000;    /* end of 64K RAM */
+ _estack = 0x20010000;    /* end of 64K RAM */ 
+/* _estack    = 0x10010000; */      /* end of CCM */
 
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0;      /* required amount of heap  */
@@ -46,6 +47,7 @@ MEMORY
 /*  FLASH (rx)      : ORIGIN = 0x08020000, LENGTH = 896K */
   FLASH (rx)      : ORIGIN = 0x08020000, LENGTH = 960K
   RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 128K
+  CCM (rw)        : ORIGIN = 0x10000000, LENGTH = 64K
   MEMORY_B1 (rx)  : ORIGIN = 0x60000000, LENGTH = 0K
 }
 
@@ -159,6 +161,14 @@ SECTIONS
     *(.mb1rodata)      /* read-only data (constants) */
     *(.mb1rodata*)
   } >MEMORY_B1
+
+    .ccm : {
+      . = ALIGN(4);
+      _sccm = .;
+      *(.ccm)
+      . = ALIGN(4);      
+      _eccm = .;
+    }>CCM
 
   /* Remove information from the standard libraries */
   /DISCARD/ :

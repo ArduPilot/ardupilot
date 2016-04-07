@@ -84,8 +84,28 @@ DISAS    := arm-none-eabi-objdump
 ## Compilation flags
 ##
 
-WARNFLAGS       =   -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-psabi
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2
+EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0  -DHAVE_BYTESWAP_H=0 #-DSKETCHNAME="\\\"$(SKETCH)\\\""
+EXTRAFLAGS += $(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE  -DSKETCH_MAIN=ArduPilot_main
+
+
+#-c
+
+# -Wformat=1 
+#-Werror=init-self -Wno-missing-field-initializers 
+
+#-Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions.
+#-Wno-error=missing-declarations -Wno-error=unused-function -fsingle-precision-constant
+
+#-Werror
+WARNFLAGS       =   -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-psabi -Wno-unused-parameter
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wshadow -Wfloat-equal -Wpointer-arith -Wlogical-op -Wmissing-declarations -Wpacked
+WARNFLAGS      +=   -Wextra -Wlogical-op  -Wno-unknown-pragmas -Wno-redundant-decls -Wno-packed -Wno-error=double-promotion
+WARNFLAGS      +=   -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=unused-parameter -Wno-missing-field-initializers
+WARNFLAGS      +=   -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function -Werror=format-security -Werror=array-bounds
+
+OPTFLAGS        = -Os -fsingle-precision-constant -g3 -fno-strict-aliasing -fno-strength-reduce -fomit-frame-pointer -funsafe-math-optimizations 
+OPTFLAGS       += -fno-builtin-printf
+
 WARNFLAGSCXX    =   -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
 
@@ -93,7 +113,7 @@ GLOBAL_FLAGS    := -D$(VECT_BASE_ADDR)
 GLOBAL_FLAGS    += -DBOARD_$(BOARD)
 GLOBAL_FLAGS    += -DMCU_$(MCU)
 GLOBAL_FLAGS    += -DCONFIG_HAL_BOARD=$(HAL_BOARD)
-GLOBAL_FLAGS    += -DSTM32F4XX
+GLOBAL_FLAGS    += -DSTM32F4XX -DMCU_STM32F407VG
 GLOBAL_FLAGS    += -DUSE_STDPERIPH_DRIVER
 GLOBAL_FLAGS    += -DHSE_VALUE=8000000
 GLOBAL_FLAGS    += -DARM_MATH_CM4
@@ -103,35 +123,32 @@ GLOBAL_FLAGS    += -DUSE_EMBEDDED_PHY
 GLOBAL_FLAGS    += -D__FPU_PRESENT
 GLOBAL_FLAGS    += -D__FPU_USED=1
 GLOBAL_FLAGS    += -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
-GLOBAL_FLAGS    += $(WARNFLAGS) $(DEPFLAGS) -nostdlib
+GLOBAL_FLAGS    += $(WARNFLAGS) $(DEPFLAGS)  $(EXTRAFLAGS)  -nostdlib
+GLOBAL_FLAGS    += -mthumb -mcpu=cortex-m4 -march=armv7e-m -mfpu=fpv4-sp-d16 -mfloat-abi=softfp#-mfloat-abi=hard causes link error
+GLOBAL_FLAGS    += -ffunction-sections
+GLOBAL_FLAGS    += -fdata-sections
 # GLOBAL_CFLAGS -----------------------------------------------------------------------------------
 GLOBAL_CFLAGS   := $(cpu_flags)
 GLOBAL_CFLAGS   += -mthumb             #Generate code for the Thumb instruction set
 GLOBAL_CFLAGS   += -ggdb               #Produce debugging information in the operating system’s native format
-#GLOBAL_CFLAGS   += -O0                 #Reduce compilation time and make debugging produce the expected results. This is the default
-GLOBAL_CFLAGS   += -Os                 #Reduce size
 #GLOBAL_CFLAGS   += -nostdlib           #Do not use the standard system startup files or libraries when linking
 GLOBAL_CFLAGS   += -Wall               #This enables all the warnings about constructions that some users consider questionable, and that are easy to avoid (or modify to prevent the warning), even in conjunction with macros
-GLOBAL_CFLAGS   += -ffunction-sections
-GLOBAL_CFLAGS   += -fdata-sections
-GLOBAL_CFLAGS   += -mfpu=fpv4-sp-d16
-GLOBAL_CFLAGS   += -mfloat-abi=softfp
-GLOBAL_CFLAGS   += $(GLOBAL_FLAGS)
+GLOBAL_CFLAGS   += $(GLOBAL_FLAGS) $(OPTFLAGS)
 # GLOBAL_CXXFLAGS ---------------------------------------------------------------------------------
-#GLOBAL_CXXFLAGS := -fno-rtti       #Disable generation of information about every class with virtual functions for use by the C++ runtime type identification features
-#GLOBAL_CXXFLAGS += -fno-exceptions
-GLOBAL_CXXFLAGS += -Wall  -std=gnu++11 
-GLOBAL_CXXFLAGS += -fpermissive    #Downgrade some diagnostics about nonconformant code from errors to warnings. Thus, using ‘-fpermissive’ will allow some nonconforming code to compile.
-GLOBAL_CXXFLAGS += -Wno-psabi
-GLOBAL_CXXFLAGS += $(GLOBAL_FLAGS)
+GLOBAL_CXXFLAGS := -fno-rtti       #Disable generation of information about every class with virtual functions for use by the C++ runtime type identification features
+GLOBAL_CXXFLAGS += -fno-exceptions
+GLOBAL_CXXFLAGS += -fno-threadsafe-statics 
+#GLOBAL_CXXFLAGS += -Wall  -std=gnu++11 
+GLOBAL_CXXFLAGS += -Wall  -std=gnu++0x
+  # Downgrade some diagnostics about nonconformant code from errors to warnings. Thus, using ‘-fpermissive’ will allow some nonconforming code to compile.
+GLOBAL_CXXFLAGS += -fpermissive   
+GLOBAL_CXXFLAGS += $(GLOBAL_FLAGS) $(OPTFLAGS) -c -include $(WIRISH_PATH)/defs.h
+GLOBAL_CxxFLAGS += -ggdb                 #Produce debugging information in the operating system’s native format
 # GLOBAL_ASFLAGS ----------------------------------------------------------------------------------
 GLOBAL_ASFLAGS  := $(cpu_flags)
 GLOBAL_ASFLAGS  += -mthumb
-GLOBAL_CFLAGS   += -ggdb                 #Produce debugging information in the operating system’s native format
-#GLOBAL_CFLAGS   += -O0                #Reduce compilation time and make debugging produce the expected results. This is the default
-GLOBAL_CFLAGS   += -Os
 GLOBAL_ASFLAGS  += -x assembler-with-cpp
-GLOBAL_ASFLAGS  += $(GLOBAL_FLAGS)
+GLOBAL_ASFLAGS  += $(GLOBAL_FLAGS) $(OPTFLAGS)
 # GLOBAL_LDFLAGS ----------------------------------------------------------------------------------
 LDFLAGS         := $(cpu_flags)
 LDFLAGS         += -mthumb
@@ -146,6 +163,9 @@ LDFLAGS         += -L$(LDDIR)
 #-flto -fwhole-program
 #--plugin=/usr/local/arm-none-eabi/lib/gcc/arm-none-eabi/5.2.1/liblto_plugin.so
 
+
+
+
 TGT_BIN := 
 
 ##
@@ -154,28 +174,20 @@ TGT_BIN :=
 
 include $(MK_DIR)/find_tools.mk
 
-#include $(SUPPORT_PATH)/make/build-rules.mk
-#include $(SUPPORT_PATH)/make/build-templates.mk
-
 include $(WIRISH_PATH)/rules.mk
 include $(HARDWARE_PATH)/hal/rules.mk
 include $(HARDWARE_PATH)/STM32_USB_Driver/rules.mk
 include $(HARDWARE_PATH)/STM32F4xx_DSP_StdPeriph_Lib_V1.1.0/rules.mk
 
-
-#COREOBJS = $(HARDWARE_PATH)/hal/*.o $(HARDWARE_PATH)/STM32_USB_Driver/*.o \
-#$(HARDWARE_PATH)/STM32F4xx_DSP_StdPeriph_Lib_V1.1.0/Libraries/STM32F4xx_StdPeriph_Driver/src/*.o \
-#$(WIRISH_PATH)/*.o $(WIRISH_PATH)/comm/*.o $(WIRISH_PATH)/boards/revomini_MP32V1F4/*.o
-
 COREINCLUDES = -I$(HARDWARE_PATH) -I$(HAL_PATH) -I$(STM32_PATH) -I$(STM32_PATH)/Libraries/STM32F4xx_StdPeriph_Driver/inc \
 -I$(STM32_PATH)/Libraries/CMSIS/Include  -I$(STM32_PATH)/Libraries/CMSIS/Device/ST/STM32F4xx/Include  \
--I$(STM32USB_PATH) -I$(WIRISH_PATH) -I$(WIRISH_PATH)/boards/revomini_MP32V1F4 -I$(UCLIBC_PATH)
+-I$(STM32USB_PATH) -I$(WIRISH_PATH) -I$(WIRISH_PATH)/boards/revomini_MP32V1F4 -I$(UCLIBC_PATH) -I$(WIRISH_PATH)/cxx 
 
 
 
 
 CFLAGS   = $(GLOBAL_CFLAGS) $(TGT_CFLAGS) $(COREINCLUDES) -I$(LIBRARIES_PATH)  
-CXXFLAGS = $(GLOBAL_CXXFLAGS) $(GLOBAL_CFLAGS)  $(TGT_CXXFLAGS) $(COREINCLUDES) -I$(LIBRARIES_PATH) 
+CXXFLAGS = $(GLOBAL_CXXFLAGS) $(TGT_CXXFLAGS) $(COREINCLUDES) -I$(LIBRARIES_PATH) 
 ASFLAGS  = $(GLOBAL_ASFLAGS) $(TGT_ASFLAGS) 
 #-flto
 
@@ -264,6 +276,8 @@ jtag-program:
 revomini-clean: clean
 	$(v) /bin/rm -rf $(WIRISH_PATH)/*.d $(HARDWARE_PATH)/*.d $(HAL_PATH)/*.d $(STM32_PATH)/*.d $(STM32USB_PATH)/*.d \
 	$(WIRISH_PATH)/boards/revomini_MP32V1F4/*.d $(STM32USB_PATH)/MDK-ARM-GCC/build/*.d $(STM32_PATH)/src/*.d $(WIRISH_PATH)/comm/*.d $(STM32_PATH)/Libraries/STM32F4xx_StdPeriph_Driver/src/*.d
+	$(v) /bin/rm -rf $(WIRISH_PATH)/*.o $(HARDWARE_PATH)/*.o $(HAL_PATH)/*.o $(STM32_PATH)/*.o $(STM32USB_PATH)/*.o \
+	$(WIRISH_PATH)/boards/revomini_MP32V1F4/*.o $(STM32USB_PATH)/MDK-ARM-GCC/build/*.o $(STM32_PATH)/src/*.o $(WIRISH_PATH)/comm/*.o $(STM32_PATH)/Libraries/STM32F4xx_StdPeriph_Driver/src/*.o
 
 # Link the final object
 $(SKETCHELF):	$(LIBOBJS) $(SKETCHOBJS) $(TGT_BIN) $(BUILD_PATH)/main.o
