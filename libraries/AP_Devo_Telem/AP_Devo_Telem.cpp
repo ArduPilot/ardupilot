@@ -107,13 +107,13 @@ void AP_DEVO_Telem::send_frames(uint8_t control_mode)
     devoPacket.volt = roundf(_battery.voltage() * 10.0f);
     devoPacket.temp = control_mode; // Send mode as temperature
 
-    devoPacket.crc8 = 0; // Init Checksum with zero Byte
+    devoPacket.cs8 = 0; // Init Checksum with zero Byte
 
     byte *b = (byte *)&devoPacket;
     for (byte i = sizeof(devoPacket)-1; i !=0; i--) { // excluding CRC
 	_port->write(b, 1);
-	devoPacket.crc8 += *b++; // Add Checksum
+	devoPacket.cs8 += *b++; // Add Checksum
     }
-    _port->write(&devoPacket.crc8, 1);
+    _port->write(&devoPacket.cs8, 1);
 }
 
