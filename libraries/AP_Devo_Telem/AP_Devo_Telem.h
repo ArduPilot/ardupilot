@@ -39,7 +39,7 @@ typedef struct {
         int16_t speed;
         int16_t temp;
         int16_t volt;
-        uint8_t crc8;   ///< CRC8
+        uint8_t cs8;   ///< checksum
 } DevoMPacket;
 #pragma pack(pop)
 
