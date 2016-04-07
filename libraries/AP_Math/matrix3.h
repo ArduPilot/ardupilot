@@ -183,6 +183,13 @@ public:
         *this = transposed();
     }
 
+    /**
+     * Calculate the determinant of this matrix.
+     *
+     * @return The value of the determinant.
+     */
+    T det() const;
+
     // zero the matrix
     void        zero(void);
 
