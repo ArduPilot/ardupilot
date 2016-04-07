@@ -14,6 +14,7 @@
 #define HAL_BOARD_LINUX    7
 #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_QURT     9
+#define HAL_BOARD_REVOMINI 10
 #define HAL_BOARD_EMPTY    99
 
 // default board subtype is -1
@@ -417,7 +418,7 @@
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH  
 #else
-#error "no Linux board subtype set"
+ #error "no Linux board subtype set"
 #endif
 
 #ifndef HAL_LINUX_UARTS_ON_TIMER_THREAD
@@ -488,8 +489,35 @@
 #define EXTERNAL_LED_MOTOR1  30    // Motor1 LED - AN8
 #define EXTERNAL_LED_MOTOR2  31    // Motor2 LED - AN12
 
+#elif CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
+
+#define AP_HAL_BOARD_DRIVER AP_HAL_REVOMINI
+#define HAL_BOARD_NAME "REVOMINI"
+
+#define HAL_CPU_CLASS HAL_CPU_CLASS_150
+#define HAL_OS_POSIX_IO 0
+#define HAL_STORAGE_SIZE            4096
+#define HAL_BARO_DEFAULT HAL_BARO_MS5611
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843
+#define HAL_COMPASS_HMC5843_I2C_BUS 1
+#define HAL_COMPASS_HMC5843_I2C_ADDR 0x3C
+#define HAL_SERIAL0_BAUD_DEFAULT 115200
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
+#define HAL_INS_DEFAULT HAL_INS_MPU60XX_SPI
+#define HAL_BARO_MS5611_I2C_BUS 0
+#define HAL_BARO_MS5611_I2C_ADDR 0xEE
+#define HAL_INS_MPU60x0_NAME "mpu6000"
+
+
+//# define HAL_GPIO_A_LED_PIN        36  // BLUE
+//# define HAL_GPIO_B_LED_PIN        37  // YELLOW OPTIONAL (not included)
+# define HAL_GPIO_B_LED_PIN        106  //  LED PA13
+//# define HAL_GPIO_C_LED_PIN        105 // RED
+//# define HAL_GPIO_LED_ON           LOW
+//# define HAL_GPIO_LED_OFF          HIGH
+
 #else
-#error "Unknown CONFIG_HAL_BOARD type"
+ #error "Unknown CONFIG_HAL_BOARD type"
 #endif
 
 #ifndef CONFIG_HAL_BOARD_SUBTYPE
