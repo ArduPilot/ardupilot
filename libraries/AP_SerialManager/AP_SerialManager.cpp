@@ -145,14 +145,14 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
                 case SerialProtocol_FRSky_DPort:
-                    // Note baudrate is hardcoded to 57600
+                    // Note baudrate is hardcoded to 9600
                     state[i].baud = AP_SERIALMANAGER_FRSKY_DPORT_BAUD/1000; // update baud param in case user looks at it
                     state[i].uart->begin(AP_SERIALMANAGER_FRSKY_DPORT_BAUD, 
                                          AP_SERIALMANAGER_FRSKY_BUFSIZE_RX, 
                                          AP_SERIALMANAGER_FRSKY_BUFSIZE_TX);
                     break;
                 case SerialProtocol_FRSky_SPort:
-                    // Note baudrate is hardcoded to 9600
+                    // Note baudrate is hardcoded to 57600
                     state[i].baud = AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000; // update baud param in case user looks at it
                     // begin is handled by AP_Frsky_telem library
                     break;
