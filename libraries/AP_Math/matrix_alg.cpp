@@ -211,7 +211,7 @@ bool mat_inverse(float* A, float* inv, uint8_t n)
     //check sanity of results
     for(uint8_t i = 0; i < n; i++) {
         for(uint8_t j = 0; j < n; j++) {
-            if(isnan(inv_pivoted[i*n+j]) || isinf(inv_pivoted[i*n+j])){
+            if(std::isnan(inv_pivoted[i*n+j]) || std::isinf(inv_pivoted[i*n+j])){
                 ret = false;
             }
         }

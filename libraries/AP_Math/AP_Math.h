@@ -77,7 +77,7 @@ static inline float constrain_float(float amt, float low, float high)
 	// floating point errors through any function that uses
 	// constrain_float(). The normal float semantics already handle -Inf
 	// and +Inf
-	if (isnan(amt)) {
+	if (std::isnan(amt)) {
 		return (low+high)*0.5f;
 	}
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));

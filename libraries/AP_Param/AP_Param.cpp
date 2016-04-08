@@ -1622,7 +1622,7 @@ void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_ta
  */
 void AP_Param::set_float(float value, enum ap_var_type var_type)
 {
-    if (isnan(value) || isinf(value)) {
+    if (std::isnan(value) || std::isinf(value)) {
         return;
     }
 

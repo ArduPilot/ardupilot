@@ -268,11 +268,11 @@ void AP_AHRS::update_trig(void)
         _cos_yaw = 1.0f;
     }
 
-    if (isinf(_cos_roll) || isnan(_cos_roll)) {
+    if (std::isinf(_cos_roll) || std::isnan(_cos_roll)) {
         _cos_roll = cosf(roll);
     }
 
-    if (isinf(_sin_roll) || isnan(_sin_roll)) {
+    if (std::isinf(_sin_roll) || std::isnan(_sin_roll)) {
         _sin_roll = sinf(roll);
     }
 }

@@ -63,7 +63,7 @@ float PID::get_pid(float error, float scaler)
     if ((fabsf(_kd) > 0) && (dt > 0)) {
         float derivative;
 
-		if (isnan(_last_derivative)) {
+		if (std::isnan(_last_derivative)) {
 			// we've just done a reset, suppress the first derivative
 			// term as we don't want a sudden change in input to cause
 			// a large D output change			

@@ -107,7 +107,7 @@ void AP_RangeFinder_analog::update(void)
             dist_m = 0;
         }
         dist_m = scaling / (v - offset);
-        if (isinf(dist_m) || dist_m > max_distance_cm * 0.01f) {
+        if (std::isinf(dist_m) || dist_m > max_distance_cm * 0.01f) {
             dist_m = max_distance_cm * 0.01f;
         }
         break;

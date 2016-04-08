@@ -143,7 +143,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     // if the caller wants us to try to recover to the current
     // attitude then calculate the dcm matrix from the current
     // roll/pitch/yaw values
-    if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
+    if (recover_eulers && !std::isnan(roll) && !std::isnan(pitch) && !std::isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
 

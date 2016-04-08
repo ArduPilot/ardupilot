@@ -370,7 +370,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
 
         fitness = calc_mean_squared_residuals(fit_param.s);
 
-        if (isnan(fitness) || isinf(fitness)) {
+        if (std::isnan(fitness) || std::isinf(fitness)) {
             return;
         }
 
