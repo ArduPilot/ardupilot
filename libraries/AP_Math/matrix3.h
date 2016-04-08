@@ -190,6 +190,26 @@ public:
      */
     T det() const;
 
+    /**
+     * Calculate the inverse of this matrix.
+     *
+     * @param success[in] This is set true if this matrix is invertible and
+     * false otherwise.
+     *
+     * @return If this matrix is invertible, then the inverse of this matrix is
+     * returned and \p success is set true. Otherwise the result undefined and
+     * \p success is set false.
+     */
+    Matrix3<T> inverse(bool& success) const;
+
+    /**
+     * Invert this matrix if it is invertible.
+     *
+     * @return Return true if this matrix could be successfully inverted and
+     * false otherwise.
+     */
+    bool invert();
+
     // zero the matrix
     void        zero(void);
 

@@ -17,6 +17,18 @@
 
 #include "math_test.h"
 
+#define AP_EXPECT_IDENTITY_MATRIX(m_) {\
+    EXPECT_NEAR(1.0f, m_.a.x, 1.0e-6); \
+    EXPECT_NEAR(0.0f, m_.a.y, 1.0e-6); \
+    EXPECT_NEAR(0.0f, m_.a.z, 1.0e-6); \
+    EXPECT_NEAR(0.0f, m_.b.x, 1.0e-6); \
+    EXPECT_NEAR(1.0f, m_.b.y, 1.0e-6); \
+    EXPECT_NEAR(0.0f, m_.b.z, 1.0e-6); \
+    EXPECT_NEAR(0.0f, m_.c.x, 1.0e-6); \
+    EXPECT_NEAR(0.0f, m_.c.y, 1.0e-6); \
+    EXPECT_NEAR(1.0f, m_.c.z, 1.0e-6); \
+}
+
 class TestParam {
 public:
     /**
@@ -67,6 +79,21 @@ TEST_P(Matrix3fTest, Determinants)
 {
     auto param = GetParam();
     EXPECT_FLOAT_EQ(param.det, param.m.det());
+}
+
+TEST_P(Matrix3fTest, Inverses)
+{
+    auto param = GetParam();
+    bool success;
+    auto inv = param.m.inverse(success);
+
+    if (param.det == 0.0f) {
+        EXPECT_FALSE(success);
+    } else {
+        ASSERT_TRUE(success);
+        auto identity = inv * param.m;
+        AP_EXPECT_IDENTITY_MATRIX(identity);
+    }
 }
 
 INSTANTIATE_TEST_CASE_P(InvertibleMatrices,

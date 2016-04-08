@@ -228,6 +228,42 @@ T Matrix3<T>::det() const
 }
 
 template <typename T>
+Matrix3<T> Matrix3<T>::inverse(bool& success) const
+{
+    Matrix3<T> r;
+    T d = det();
+
+    if (is_zero(d)) {
+        success = false;
+        return r;
+    }
+
+    r.a.x = (b.y * c.z - c.y * b.z) / d;
+    r.a.y = (a.z * c.y - a.y * c.z) / d;
+    r.a.z = (a.y * b.z - a.z * b.y) / d;
+    r.b.x = (b.z * c.x - b.x * c.z) / d;
+    r.b.y = (a.x * c.z - a.z * c.x) / d;
+    r.b.z = (b.x * a.z - a.x * b.z) / d;
+    r.c.x = (b.x * c.y - c.x * b.y) / d;
+    r.c.y = (c.x * a.y - a.x * c.y) / d;
+    r.c.z = (a.x * b.y - b.x * a.y) / d;
+
+    success = true;
+    return r;
+}
+
+template <typename T>
+bool Matrix3<T>::invert()
+{
+    bool success;
+    auto inv = inverse(success);
+    if (success) {
+        *this = inv;
+    }
+    return success;
+}
+
+template <typename T>
 void Matrix3<T>::zero(void)
 {
     a.x = a.y = a.z = 0;
@@ -251,6 +287,8 @@ template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) c
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
 template Matrix3<float> Matrix3<float>::transposed(void) const;
 template float Matrix3<float>::det() const;
+template Matrix3<float> Matrix3<float>::inverse(bool& success) const;
+template bool Matrix3<float>::invert();
 template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
 
 template void Matrix3<double>::zero(void);
@@ -264,4 +302,6 @@ template Vector3<double> Matrix3<double>::mul_transpose(const Vector3<double> &v
 template Matrix3<double> Matrix3<double>::operator *(const Matrix3<double> &m) const;
 template Matrix3<double> Matrix3<double>::transposed(void) const;
 template double Matrix3<double>::det() const;
+template Matrix3<double> Matrix3<double>::inverse(bool& success) const;
+template bool Matrix3<double>::invert();
 template Vector2<double> Matrix3<double>::mulXY(const Vector3<double> &v) const;
