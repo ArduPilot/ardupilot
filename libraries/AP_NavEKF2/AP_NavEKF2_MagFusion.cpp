@@ -59,7 +59,7 @@ void NavEKF2_core::controlMagYawReset()
 
     // In-Flight reset for vehicles that can use a zero sideslip assumption (Planes)
     // this is done to protect against unrecoverable heading alignment errors due to compass faults
-    if (assume_zero_sideslip() && inFlight && !firstMagYawInit) {
+    if (!firstMagYawInit && assume_zero_sideslip() && inFlight) {
         alignYawGPS();
         firstMagYawInit = true;
     }
@@ -93,10 +93,10 @@ void NavEKF2_core::alignYawGPS()
         // Check the yaw angles for consistency
         float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),MAX(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
 
-        // If the angles disagree by more than 45 degrees and GPS innovations are large, we declare the magnetic yaw as bad
-        badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f));
+        // If the angles disagree by more than 45 degrees and GPS innovations are large or no compass, we declare the magnetic yaw as bad
+        badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f)) || !use_compass();
 
-        // correct yaw angle using GPS ground course compass failed or if not previously aligned
+        // correct yaw angle using GPS ground course if compass yaw bad
         if (badMagYaw) {
 
             // calculate new filter quaternion states from Euler angles
@@ -118,7 +118,13 @@ void NavEKF2_core::alignYawGPS()
     // reset the magnetometer field states - we could have got bad external interference when initialising on-ground
     calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
 
-    // We shoud retry the primary magnetoemter if previously switched or failed
+    // if we are not using a magnetometer, then the yaw gyro bias value will be invalid at this point and the
+    // state variance should be reset
+    if (!use_compass()) {
+        P[11][11] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
+    }
+
+    // We shoud retry the primary magnetometer if previously switched or failed
     magSelectIndex = 0;
     allMagSensorsFailed = false;
 }
@@ -183,6 +189,20 @@ void NavEKF2_core::SelectMagFusion()
             }
             // zero the test ratio output from the inactive simple magnetometer yaw fusion
             yawTestRatio = 0.0f;
+        }
+    }
+
+    // If we have no magnetometer and are on the ground, fuse in a synthetic heading measurement to prevent the
+    // filter covariances from becoming badly conditioned
+    if (!use_compass()) {
+        if (onGround && (imuSampleTime_ms - lastSynthYawTime_ms > 1000)) {
+            fuseEulerYaw();
+            magTestRatio.zero();
+            yawTestRatio = 0.0f;
+            lastSynthYawTime_ms = imuSampleTime_ms;
+        } else {
+            // Control reset of yaw and magnetic field states
+            controlMagYawReset();
         }
     }
 
@@ -708,7 +728,13 @@ void NavEKF2_core::fuseEulerYaw()
     Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
 
     // Use the difference between the horizontal projection and declination to give the measured yaw
-    float measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+    // If we can't use compass data, set the  meaurement to the predicted
+    float measured_yaw;
+    if (use_compass()) {
+        measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+    } else {
+        measured_yaw = predicted_yaw;
+    }
 
     // Calculate the innovation
     float innovation = wrap_PI(predicted_yaw - measured_yaw);
