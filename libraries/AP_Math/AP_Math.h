@@ -49,11 +49,69 @@ static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf
 // is a float is zero
 static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
 
-// a varient of asin() that always gives a valid answer.
-float           safe_asin(float v);
+/*
+ * A varient of asin() that checks the input ranges and ensures a
+ * valid angle as output. If nan is given as input then zero is returned.
+ */
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+template <class T>
+auto safe_asin(const T &v) -> decltype(std::asin(v)) {
+    static_assert(std::is_floating_point<T>::value, "ERROR - safe_asin(): template parameter not of type float\n");
 
-// a varient of sqrt() that always gives a valid answer.
-float           safe_sqrt(float v);
+    if (std::isnan(v)) {
+        return 0.0f;
+    }
+    if (v >= 1.0f) {
+        return M_PI_2;
+    }
+    if (v <= -1.0f) {
+        return -M_PI_2;
+    }
+    return std::asin(v);
+}
+#else
+template <class T>
+float safe_asin(const T &v) {
+    static_assert(std::is_floating_point<T>::value, "ERROR - safe_asin(): template parameter not of type float\n");
+    if (isnan(static_cast<float>(v))) {
+        return 0.0f;
+    }
+    if (v >= 1.0f) {
+        return static_cast<float>(M_PI_2);
+    }
+    if (v <= -1.0f) {
+        return static_cast<float>(-M_PI_2);
+    }
+    return asinf(static_cast<float>(v));
+}
+#endif
+
+/* 
+ * A varient of sqrt() that checks the input ranges and ensures a 
+ * valid value as output. If a negative number is given then 0 is returned. 
+ * The reasoning is that a negative number for sqrt() in our 
+ * code is usually caused by small numerical rounding errors, so the 
+ * real input should have been zero
+ */
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+template <class T>
+auto safe_sqrt(const T &v) -> decltype(std::sqrt(v)) {
+    auto ret = std::sqrt(v);
+    if (std::isnan(ret)) {
+        return 0;
+    }
+    return ret;
+}
+#else
+template <class T>
+float safe_sqrt(const T &v) {
+    float ret = sqrt(static_cast<float>(v));
+    if (isnan(ret)) {
+        return 0;
+    }
+    return ret;
+}
+#endif
 
 // return determinant of square matrix
 float                   detnxn(const float C[], const uint8_t n);
