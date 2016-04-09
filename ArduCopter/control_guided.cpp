@@ -494,7 +494,7 @@ void Copter::guided_angle_control_run()
     // constrain desired lean angles
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
-    float total_in = pythagorous2(roll_in, pitch_in);
+    float total_in = norm(roll_in, pitch_in);
     float angle_max = MIN(attitude_control.get_althold_lean_angle_max(), aparm.angle_max);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;

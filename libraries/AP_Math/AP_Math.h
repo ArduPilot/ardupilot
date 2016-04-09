@@ -236,20 +236,33 @@ static inline float degrees(float rad) {
 	return rad * RAD_TO_DEG;
 }
 
-// square
-static inline float sq(float v) {
-	return v*v;
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+template<class T>
+auto sq(const T &val) -> decltype(std::pow(val, 2)) {
+    return std::pow(val, 2);
 }
-
-// 2D vector length
-static inline float pythagorous2(float a, float b) {
-	return sqrtf(sq(a)+sq(b));
+template<class T, class... Params>
+auto sq(const T &first, const Params&... parameters) -> decltype(std::pow(first, 2)) {
+    return sq(first) + sq(parameters...);
 }
-
-// 3D vector length
-static inline float pythagorous3(float a, float b, float c) {
-	return sqrtf(sq(a)+sq(b)+sq(c));
+template<class T, class... Params>
+auto norm(const T &first, const Params&... parameters) -> decltype(std::sqrt(sq(first, parameters...))) {
+    return std::sqrt(sq(first, parameters...));
 }
+#else
+template<class T>
+float sq(const T &val) {
+    return std::pow(static_cast<float>(val), 2);
+}
+template<class T, class... Params>
+float sq(const T &first, const Params&... parameters) {
+    return sq(first) + sq(parameters...);
+}
+template<class T, class... Params>
+float norm(const T &first, const Params&... parameters) {
+    return std::sqrt(static_cast<float>(sq(first, parameters...)));
+}
+#endif
 
 template<typename A, typename B>
 static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two) {

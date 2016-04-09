@@ -368,8 +368,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     // across the input range instead of stopping when the input hits the constrain value
     // these calculations are based on an assumption of the user specified cyclic_max
     // coming into this equation at 4500 or less
-
-    float total_out = pythagorous2(pitch_out, roll_out);
+    float total_out = norm((float)pitch_out, (float)roll_out);
 
     if (total_out > (_cyclic_max/4500.0f)) {
         float ratio = (float)(_cyclic_max/4500.0f) / total_out;
