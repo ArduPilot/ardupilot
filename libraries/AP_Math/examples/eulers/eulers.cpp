@@ -26,9 +26,9 @@ static void check_result(const char *msg,
                          float roll, float pitch, float yaw,
                          float roll2, float pitch2, float yaw2)
 {
-    if (isnan(roll2) ||
-        isnan(pitch2) ||
-        isnan(yaw2)) {
+    if (std::isnan(roll2) ||
+        std::isnan(pitch2) ||
+        std::isnan(yaw2)) {
         hal.console->printf("%s NAN eulers roll=%f pitch=%f yaw=%f\n",
                             msg, roll, pitch, yaw);
     }

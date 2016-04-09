@@ -102,7 +102,7 @@ float DerivativeFilter<T,FILTER_SIZE>::slope(void)
     }
 
     // cope with numerical errors
-    if (isnan(result) || isinf(result)) {
+    if (std::isnan(result) || std::isinf(result)) {
         result = 0;
     }
 

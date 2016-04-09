@@ -132,7 +132,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
 
     float zratio = _calibration.update(true_airspeed, vground);
 
-    if (isnan(zratio) || isinf(zratio)) {
+    if (std::isnan(zratio) || std::isinf(zratio)) {
         return;
     }
 
