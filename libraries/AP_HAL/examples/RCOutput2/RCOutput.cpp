@@ -1,35 +1,41 @@
 /*
-  simple test of RC output interface
- */
+  Simple test of RC output interface with Menu
+*/
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Menu/AP_Menu.h>
 
-#define MENU_FUNC(func) FUNCTOR_BIND(&commands, &MenuCommands::func, int8_t, uint8_t, const Menu::arg *)
+#define MENU_FUNC(func) FUNCTOR_BIND(&commands, &Menu_Commands::func, int8_t, uint8_t, const Menu::arg *)
 
-#define ESC_HZ    490
-#define SERVO_HZ   50
+#define ESC_HZ     490
+#define SERVO_HZ    50
 
-class MenuCommands {
-  public:
-
+class Menu_Commands {
+public:
+    /* Menu commands to drive a SERVO type with 
+     * repective PWM output freq defined by SERVO_HZ
+     */
     int8_t menu_servo(uint8_t argc, const Menu::arg *argv);
+    
+    /* Menu commands to drive a ESC type with
+     * repective PWM output freq defined by ESC_HZ
+     */
     int8_t menu_esc(uint8_t argc, const Menu::arg *argv);
-
 };
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-MenuCommands commands;
+Menu_Commands commands;
 
 static uint16_t pwm = 1500;
 static int8_t delta = 1;
 
-void drive(uint16_t hz_speed)
-{
+/* Function to drive a RC output TYPE especified
+*/
+void drive(uint16_t hz_speed) {
     hal.rcout->set_freq(0xFF, hz_speed);
-    while(1){
+    while (1) {
         uint8_t i;
         for (i=0; i<14; i++) {
             hal.rcout->write(i, pwm);
@@ -43,20 +49,18 @@ void drive(uint16_t hz_speed)
             }
         }
         hal.scheduler->delay(5);
-        if (hal.console->available()){
-           break;
+        if (hal.console->available()) {
+            break;
         }
     }
 }
 
-int8_t MenuCommands::menu_servo(uint8_t argc, const Menu::arg *argv)
-{
+int8_t Menu_Commands::menu_servo(uint8_t argc, const Menu::arg *argv) {
     drive(SERVO_HZ);
     return 0;
 }
 
-int8_t MenuCommands::menu_esc(uint8_t argc, const Menu::arg *argv)
-{
+int8_t Menu_Commands::menu_esc(uint8_t argc, const Menu::arg *argv) {
     drive(ESC_HZ);
     return 0;
 }
@@ -68,18 +72,15 @@ const struct Menu::command rcoutput_menu_commands[] = {
 
 MENU(menu, "Menu: ", rcoutput_menu_commands);
 
-void setup (void) 
-{
-
+void setup(void) {
     hal.console->println("Starting AP_HAL::RCOutput test");
     for (uint8_t i=0; i<14; i++) {
         hal.rcout->enable_ch(i);
     }
-    
 }
 
-void loop (void) 
-{
+void loop(void) {
+    /* We call and run the menu, you can type help into menu to show commands available */
     menu.run();
 }
 
