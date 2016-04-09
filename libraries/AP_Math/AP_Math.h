@@ -201,27 +201,30 @@ float wrap_2PI(const T &radian) {
 } 
 #endif
 
-// constrain a value
-static inline float constrain_float(float amt, float low, float high)
-{
-	// the check for NaN as a float prevents propogation of
-	// floating point errors through any function that uses
-	// constrain_float(). The normal float semantics already handle -Inf
-	// and +Inf
-	if (isnan(amt)) {
-		return (low+high)*0.5f;
-	}
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+/*
+ * @brief: Constrains a value to be within the range: low and high
+ */
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+template <class T>
+T constrain_value(const T &amt, const T &low, const T &high) {  
+    if (std::isnan(low) || std::isnan(high)) {
+        return amt;
+    }
+    return amt < low ? low : (amt > high ? high : amt);
 }
-// constrain a int16_t value
-static inline int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+#else
+template <class T>
+T constrain_value(const T &amt, const T &low, const T &high) {  
+    if (isnan(low) || isnan(high)) {
+        return amt;
+    }
+    return amt < low ? low : (amt > high ? high : amt);
 }
+#endif
 
-// constrain a int32_t value
-static inline int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
-}
+auto const constrain_float = &constrain_value<float>;
+auto const constrain_int16 = &constrain_value<int16_t>;
+auto const constrain_int32 = &constrain_value<int32_t>;
 
 //matrix algebra
 bool inverse(float x[], float y[], uint16_t dim);
