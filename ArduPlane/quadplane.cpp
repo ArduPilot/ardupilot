@@ -950,7 +950,7 @@ bool QuadPlane::handle_do_vtol_transition(const mavlink_command_long_t &packet)
  */
 bool QuadPlane::in_vtol_auto(void)
 {
-    if (plane.control_mode != AUTO) {
+    if (!enable || plane.control_mode != AUTO) {
         return false;
     }
     if (plane.auto_state.vtol_mode) {
@@ -970,6 +970,9 @@ bool QuadPlane::in_vtol_auto(void)
  */
 bool QuadPlane::in_vtol_mode(void)
 {
+    if (!enable) {
+        return false;
+    }
     return (plane.control_mode == QSTABILIZE ||
             plane.control_mode == QHOVER ||
             plane.control_mode == QLOITER ||
