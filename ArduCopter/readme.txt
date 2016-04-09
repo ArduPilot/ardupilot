@@ -1,4 +1,4 @@
 ArduCopter README
 
-User Manual: http://copter.ardupilot.com/
-Developer Manual: http://dev.ardupilot.com/
+User Manual: http://ardupilot.org/copter/index.html
+Developer Manual: http://ardupilot.org/dev/index.html
