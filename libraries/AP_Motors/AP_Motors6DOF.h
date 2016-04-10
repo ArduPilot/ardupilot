@@ -47,7 +47,7 @@ protected:
 
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
-    float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to strafe (left/right)
+    float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
 };
 
 #endif  // AP_MOTORS6DOF

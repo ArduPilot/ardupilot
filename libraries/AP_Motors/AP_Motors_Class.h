@@ -65,7 +65,7 @@ public:
     void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
     void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
-	void                set_strafe(float strafe_in) { _strafe_in = strafe_in; };     // range -1 ~ +1
+	void                set_lateral(float lateral_in) { _lateral_in = lateral_in; };     // range -1 ~ +1
 
 	void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
 
@@ -75,7 +75,7 @@ public:
     float               get_yaw() const { return _yaw_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
     float               get_forward() const { return _forward_in; }
-	float               get_strafe() const { return _strafe_in; }
+	float               get_lateral() const { return _lateral_in; }
 
     // spool up states
     enum spool_up_down_desired {
@@ -167,7 +167,7 @@ protected:
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
     float               _forward_in;                // last forward input from set_forward caller
-    float               _strafe_in;                 // last strafe input from set_strafe caller
+    float               _lateral_in;                // last lateral input from set_lateral caller
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
 

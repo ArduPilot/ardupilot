@@ -109,7 +109,7 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
 	yaw_thrust = _yaw_in;
 	throttle_thrust = get_throttle();
 	forward_thrust = _forward_in;
-	lateral_thrust = _strafe_in;
+	lateral_thrust = _lateral_in;
 
 	int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
 	int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor

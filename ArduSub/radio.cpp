@@ -22,7 +22,7 @@ void Sub::init_rc_in()
     channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
     channel_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
     channel_forward  = RC_Channel::rc_channel(rcmap.forward()-1);
-    channel_strafe   = RC_Channel::rc_channel(rcmap.strafe()-1);
+    channel_lateral  = RC_Channel::rc_channel(rcmap.lateral()-1);
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
@@ -30,13 +30,13 @@ void Sub::init_rc_in()
     channel_yaw->set_angle(4500);
     channel_throttle->set_range(0, THR_MAX);
     channel_forward->set_angle(4500);
-    channel_strafe->set_angle(4500);
+    channel_lateral->set_angle(4500);
 
     channel_roll->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_pitch->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_yaw->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_forward->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-    channel_strafe->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+    channel_lateral->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     //set auxiliary servo ranges
     g.rc_5.set_range(0,1000);
