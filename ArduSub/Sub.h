@@ -158,7 +158,7 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
     RC_Channel *channel_forward;
-    RC_Channel *channel_strafe;
+    RC_Channel *channel_lateral;
 
     // Dataflash
     DataFlash_Class DataFlash{FIRMWARE_STRING};
