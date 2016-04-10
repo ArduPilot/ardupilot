@@ -195,6 +195,10 @@ public:
     void set_jerk_xy(float jerk_cmsss) { _jerk_cmsss = jerk_cmsss; }
     void set_jerk_xy_to_default() { _jerk_cmsss = POSCONTROL_JERK_LIMIT_CMSSS; }
 
+    /// set_limit_accel_xy - mark that accel has been limited
+    ///     this prevents integrator buildup
+    void set_limit_accel_xy(void) { _limit.accel_xy = true; }
+    
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
     ///     should be called whenever the speed, acceleration or position kP is modified
     void calc_leash_length_xy();
