@@ -104,12 +104,12 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
 	float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
 	// apply voltage and air pressure compensation
-	roll_thrust = _roll_in * get_compensation_gain();
-	pitch_thrust = _pitch_in * get_compensation_gain();
-	yaw_thrust = _yaw_in * get_compensation_gain();
-	throttle_thrust = get_throttle() * get_compensation_gain();
-	forward_thrust = _forward_in * get_compensation_gain();
-	lateral_thrust = _strafe_in * get_compensation_gain();
+	roll_thrust = _roll_in;
+	pitch_thrust = _pitch_in;
+	yaw_thrust = _yaw_in;
+	throttle_thrust = get_throttle();
+	forward_thrust = _forward_in;
+	lateral_thrust = _strafe_in;
 
 	int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
 	int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
