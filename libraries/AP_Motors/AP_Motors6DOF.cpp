@@ -190,12 +190,6 @@ void AP_Motors6DOF::output_armed_stabilizing()
     float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
     float   forward_thrust;             // forward thrust input value, +/- 1.0
     float   lateral_thrust;             // lateral thrust input value, +/- 1.0
-	float   rpy_low = 0.0f;             // lowest motor value
-	float   rpy_high = 0.0f;            // highest motor value
-	float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
-	float   unused_range;               // amount of yaw we can fit in the current channel
-	float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
-	float   throttle_thrust_hover = get_hover_throttle_as_high_end_pct();   // throttle hover thrust value, 0.0 - 1.0
 
 	// apply voltage and air pressure compensation
 	roll_thrust = _roll_in * get_compensation_gain();
@@ -207,7 +201,6 @@ void AP_Motors6DOF::output_armed_stabilizing()
 
     int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
     int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
-    int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final outputs sent to the motors
 
     // initialize limits flags
     limit.roll_pitch = false;
