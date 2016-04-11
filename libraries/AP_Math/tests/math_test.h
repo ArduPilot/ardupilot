@@ -22,12 +22,20 @@
 #include <AP_Math/AP_Math.h>
 
 /*
- * Overload operator << to allow nice printing for failed tests.
+ * Overload operator << for AP_Math types to allow nice printing for failed
+ * tests.
  */
+
 template <typename T>
 ::std::ostream& operator<<(::std::ostream& os, const Matrix3<T>& m)
 {
     return os << "{{" << m.a.x << ", " << m.a.y << ", " << m.a.z << "}, " <<
                   "{" << m.b.x << ", " << m.b.y << ", " << m.b.z << "}, " <<
                   "{" << m.c.x << ", " << m.c.y << ", " << m.c.z << "}}";
+}
+
+template <typename T>
+::std::ostream& operator<<(::std::ostream& os, const Vector3<T>& v)
+{
+    return os << "{" << v.x << ", " << v.y << ", " << v.z << "}";
 }
