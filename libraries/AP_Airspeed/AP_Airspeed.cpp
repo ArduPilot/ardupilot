@@ -60,7 +60,7 @@ extern const AP_HAL::HAL &hal;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  #if defined(HAL_BOARD_SUBTYPE_LINUX_NAVIO2)
   #define ARSPD_DEFAULT_PIN 4
- #elif
+ #else
   #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
  #endif
 #else
