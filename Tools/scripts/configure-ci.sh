@@ -24,9 +24,9 @@ fi
 
 wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo add-apt-repository "deb http://llvm.org/apt/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-3.7 main" -y
-sudo apt-get -qq -y update
-sudo apt-get -qq -y remove clang llvm
-sudo apt-get -y install $PKGS
+sudo apt-get -qq -y --force-yes update
+sudo apt-get -qq -y --force-yes remove clang llvm
+sudo apt-get -y --force-yes install $PKGS
 sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-3.7 37 \
     --slave /usr/bin/clang++ clang++ /usr/bin/clang++-3.7
 sudo pip install mavproxy
