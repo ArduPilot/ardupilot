@@ -904,7 +904,7 @@ def setup_rc(mavproxy):
     # zero throttle
     mavproxy.send('rc 3 1000\n')
 
-def fly_ArduCopter(viewerip=None, map=False):
+def fly_ArduCopter(viewerip=None, map=False, valgrind=False):
     '''fly ArduCopter in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -928,7 +928,7 @@ def fly_ArduCopter(viewerip=None, map=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduCopter', model='+', home=home, speedup=speedup_default)
+    sil = util.start_SIL('ArduCopter', model='+', home=home, speedup=speedup_default, valgrind=valgrind)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
