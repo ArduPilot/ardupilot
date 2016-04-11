@@ -35,14 +35,14 @@ env:
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
   matrix:
-    - CI_BUILD_TARGET="px4-v2 px4-v4"
-    - CI_BUILD_TARGET="sitl linux minlure"
-    - CI_BUILD_TARGET="navio raspilot bebop"
+    - CI_BUILD_TARGET="px4-v2"
+    - CI_BUILD_TARGET="sitl minlure"
+    - CI_BUILD_TARGET="navio bebop"
     - CI_BUILD_TARGET="sitltest"
 
 matrix:
   include:
     - compiler: clang
-      env: CI_BUILD_TARGET="sitl linux minlure"
+      env: CI_BUILD_TARGET="sitl minlure"
     - compiler: clang
-      env: CI_BUILD_TARGET="navio raspilot bebop"
+      env: CI_BUILD_TARGET="navio bebop"
