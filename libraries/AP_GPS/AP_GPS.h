@@ -344,6 +344,7 @@ public:
 
     // Returns the index of the first unconfigured GPS (returns GPS_ALL_CONFIGURED if all instances report as being configured)
     uint8_t first_unconfigured_gps(void) const;
+    void broadcast_first_configuration_failure_reason(void) const;
 
 private:
     struct GPS_timing {

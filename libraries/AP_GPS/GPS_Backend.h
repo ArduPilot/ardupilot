@@ -49,6 +49,8 @@ public:
 
     virtual void send_mavlink_gps2_rtk(mavlink_channel_t chan) { return ; }
 
+    virtual void broadcast_configuration_failure_reason(void) const { return ; }
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
