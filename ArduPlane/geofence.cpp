@@ -4,6 +4,7 @@
  *  Andrew Tridgell, December 2011
  */
 
+#include "geofence.h"
 #include "Plane.h"
 
 #if GEOFENCE_ENABLED == ENABLED
@@ -12,42 +13,12 @@
                               // + 1 for return point and +1 for last
                               // pt (same as first)
 
-/*
- *  The state of geo-fencing. This structure is dynamically allocated
- *  the first time it is used. This means we only pay for the pointer
- *  and not the structure on systems where geo-fencing is not being
- *  used.
- *
- *  We store a copy of the boundary in memory as we need to access it
- *  very quickly at runtime
- */
-static struct GeofenceState {
-    uint8_t num_points;
-    bool boundary_uptodate;
-    bool fence_triggered;
-    bool is_pwm_enabled;          //true if above FENCE_ENABLE_PWM threshold
-    bool previous_is_pwm_enabled; //true if above FENCE_ENALBE_PWM threshold
-                                  // last time we checked
-    bool is_enabled;
-    GeofenceEnableReason enable_reason;
-    bool floor_enabled;          //typically used for landing
-    uint16_t breach_count;
-    uint8_t breach_type;
-    uint32_t breach_time;
-    uint8_t old_switch_position;
-    int32_t guided_lat;
-    int32_t guided_lng;
-    /* point 0 is the return point */
-    Vector2l *boundary;
-} *geofence_state;
-
-
 static const StorageAccess fence_storage(StorageManager::StorageFence);
 
 /*
   maximum number of fencepoints
  */
-uint8_t Plane::max_fencepoints(void)
+uint8_t AP_PolyFence_Plane::max_fencepoints()
 {
     return MIN(255U, fence_storage.size() / sizeof(Vector2l));
 }
@@ -55,7 +26,7 @@ uint8_t Plane::max_fencepoints(void)
 /*
  *  fence boundaries fetch/store
  */
-Vector2l Plane::get_fence_point_with_index(unsigned i)
+Vector2l AP_PolyFence_Plane::get_fence_point_with_index(unsigned i)
 {
     Vector2l ret;
 
@@ -71,7 +42,7 @@ Vector2l Plane::get_fence_point_with_index(unsigned i)
 }
 
 // save a fence point
-void Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
+void AP_PolyFence_Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
 {
     if (i >= (unsigned)g.fence_total.get() || i >= max_fencepoints()) {
         // not allowed
@@ -89,7 +60,7 @@ void Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
 /*
  *  allocate and fill the geofence state structure
  */
-void Plane::geofence_load(void)
+void AP_PolyFence_Plane::load()
 {
     uint8_t i;
 
@@ -150,7 +121,7 @@ failed:
  * return true if a geo-fence has been uploaded and
  * FENCE_ACTION is 1 (not necessarily enabled)
  */
-bool Plane::geofence_present(void)
+bool AP_PolyFence_Plane::present()
 {
     //require at least a return point and a triangle
     //to define a geofence area:
@@ -163,7 +134,7 @@ bool Plane::geofence_present(void)
 /*
   check FENCE_CHANNEL and update the is_pwm_enabled state
  */
-void Plane::geofence_update_pwm_enabled_state() 
+void AP_PolyFence_Plane::update_pwm_enabled_state()
 {
     bool is_pwm_enabled;
     if (g.fence_channel == 0) {
@@ -191,7 +162,7 @@ void Plane::geofence_update_pwm_enabled_state()
 }
 
 //return true on success, false on failure
-bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r) 
+bool AP_PolyFence_Plane::set_enabled(bool enable, GeofenceEnableReason r)
 {
     if (geofence_state == NULL && enable) {
         geofence_load();
@@ -213,7 +184,7 @@ bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r)
 /*
  *  return true if geo-fencing is enabled
  */
-bool Plane::geofence_enabled(void)
+bool AP_PolyFence_Plane::enabled()
 {
     geofence_update_pwm_enabled_state();
 
@@ -237,7 +208,7 @@ bool Plane::geofence_enabled(void)
  * Set floor state IF the fence is present.
  * Return false on failure to set floor state.
  */
-bool Plane::geofence_set_floor_enabled(bool floor_enable) {
+bool AP_PolyFence_Plane::set_floor_enabled(bool floor_enable) {
     if (geofence_state == NULL) {
         return false;
     }
@@ -249,7 +220,7 @@ bool Plane::geofence_set_floor_enabled(bool floor_enable) {
 /*
  *  return true if we have breached the geo-fence minimum altiude
  */
-bool Plane::geofence_check_minalt(void)
+bool AP_PolyFence_Plane::check_minalt()
 {
     if (g.fence_maxalt <= g.fence_minalt) {
         return false;
@@ -257,13 +228,13 @@ bool Plane::geofence_check_minalt(void)
     if (g.fence_minalt == 0) {
         return false;
     }
-    return (adjusted_altitude_cm() < (g.fence_minalt*100.0f) + home.alt);
+    return (_plane.adjusted_altitude_cm() < (g.fence_minalt*100.0f) + _plane.home.alt);
 }
 
 /*
  *  return true if we have breached the geo-fence maximum altiude
  */
-bool Plane::geofence_check_maxalt(void)
+bool AP_PolyFence_Plane::check_maxalt()
 {
     if (g.fence_maxalt <= g.fence_minalt) {
         return false;
@@ -271,28 +242,28 @@ bool Plane::geofence_check_maxalt(void)
     if (g.fence_maxalt == 0) {
         return false;
     }
-    return (adjusted_altitude_cm() > (g.fence_maxalt*100.0f) + home.alt);
+    return (_plane.adjusted_altitude_cm() > (g.fence_maxalt*100.0f) + _plane.home.alt);
 }
 
 
 /*
  *  check if we have breached the geo-fence
  */
-void Plane::geofence_check(bool altitude_check_only)
+void AP_PolyFence_Plane::check(bool altitude_check_only)
 {
     if (!geofence_enabled()) {
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
         if (geofence_state != NULL &&
             (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL) &&
-            control_mode == GUIDED &&
+            _plane.control_mode == GUIDED &&
             geofence_present() &&
             geofence_state->boundary_uptodate &&
-            geofence_state->old_switch_position == oldSwitchPosition &&
-            guided_WP_loc.lat == geofence_state->guided_lat &&
-            guided_WP_loc.lng == geofence_state->guided_lng) {
+            geofence_state->old_switch_position == _plane.oldSwitchPosition &&
+            _plane.guided_WP_loc.lat == geofence_state->guided_lat &&
+            _plane.guided_WP_loc.lng == geofence_state->guided_lng) {
             geofence_state->old_switch_position = 254;
-            set_mode(get_previous_mode());
+            _plane.set_mode(_plane.get_previous_mode());
         }
         return;
     }
@@ -311,7 +282,7 @@ void Plane::geofence_check(bool altitude_check_only)
     struct Location loc;
 
     // Never trigger a fence breach in the final stage of landing
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (_plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
         return;
     }
 
@@ -321,7 +292,7 @@ void Plane::geofence_check(bool altitude_check_only)
     } else if (geofence_check_maxalt()) {
         outside = true;
         breach_type = FENCE_BREACH_MAXALT;
-    } else if (!altitude_check_only && ahrs.get_position(loc)) {
+    } else if (!altitude_check_only && _plane.ahrs.get_position(loc)) {
         Vector2l location;
         location.x = loc.lat;
         location.y = loc.lng;
@@ -348,7 +319,7 @@ void Plane::geofence_check(bool altitude_check_only)
 
     // we are outside the fence
     if (geofence_state->fence_triggered &&
-        (control_mode == GUIDED || control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
+        (_plane.control_mode == GUIDED || _plane.control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
@@ -380,42 +351,42 @@ void Plane::geofence_check(bool altitude_check_only)
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
         if (g.fence_action == FENCE_ACTION_RTL) {
-            set_mode(RTL);
+            _plane.set_mode(RTL);
         } else {
-            set_mode(GUIDED);
+            _plane.set_mode(GUIDED);
         }
         g.auto_trim.set(saved_auto_trim);
 
         if (g.fence_ret_rally != 0 || g.fence_action == FENCE_ACTION_RTL) { //return to a rally point
-            guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+            _plane.guided_WP_loc = _plane.rally.calc_best_rally_or_home_location(_plane.current_loc, _plane.get_RTL_altitude());
 
         } else { //return to fence return point, not a rally point
             if (g.fence_retalt > 0) {
                 //fly to the return point using fence_retalt
-                guided_WP_loc.alt = home.alt + 100.0f*g.fence_retalt;
+                _plane.guided_WP_loc.alt = _plane.home.alt + 100.0f*g.fence_retalt;
             } else if (g.fence_minalt >= g.fence_maxalt) {
                 // invalid min/max, use RTL_altitude
-                guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
+                _plane.guided_WP_loc.alt = _plane.home.alt + g.RTL_altitude_cm;
             } else {
                 // fly to the return point, with an altitude half way between
                 // min and max
-                guided_WP_loc.alt = home.alt + 100.0f*(g.fence_minalt + g.fence_maxalt)/2;
+                _plane.guided_WP_loc.alt = _plane.home.alt + 100.0f*(g.fence_minalt + g.fence_maxalt)/2;
             }
-            guided_WP_loc.options = 0;
-            guided_WP_loc.lat = geofence_state->boundary[0].x;
-            guided_WP_loc.lng = geofence_state->boundary[0].y;
+            _plane.guided_WP_loc.options = 0;
+            _plane.guided_WP_loc.lat = geofence_state->boundary[0].x;
+            _plane.guided_WP_loc.lng = geofence_state->boundary[0].y;
         }
-        geofence_state->guided_lat = guided_WP_loc.lat;
-        geofence_state->guided_lng = guided_WP_loc.lng;
-        geofence_state->old_switch_position = oldSwitchPosition;
+        geofence_state->guided_lat = _plane.guided_WP_loc.lat;
+        geofence_state->guided_lng = _plane.guided_WP_loc.lng;
+        geofence_state->old_switch_position = _plane.oldSwitchPosition;
 
         if (g.fence_action != FENCE_ACTION_RTL) { //not needed for RTL mode
-            setup_terrain_target_alt(guided_WP_loc);
-            set_guided_WP();
+            _plane.setup_terrain_target_alt(_plane.guided_WP_loc);
+            _plane.set_guided_WP();
         }
 
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
-            guided_throttle_passthru = true;
+            _plane.guided_throttle_passthru = true;
         }
         break;
     }
@@ -428,11 +399,11 @@ void Plane::geofence_check(bool altitude_check_only)
  *  disabled. Otherwise the aircraft may not be able to recover from
  *  a breach of the geo-fence
  */
-bool Plane::geofence_stickmixing(void) {
+bool AP_PolyFence_Plane::stickmixing() {
     if (geofence_enabled() &&
         geofence_state != NULL &&
         geofence_state->fence_triggered &&
-        control_mode == GUIDED) {
+        _plane.control_mode == GUIDED) {
         // don't mix in user input
         return false;
     }
@@ -443,7 +414,7 @@ bool Plane::geofence_stickmixing(void) {
 /*
  *
  */
-void Plane::geofence_send_status(mavlink_channel_t chan)
+void AP_PolyFence_Plane::send_status(mavlink_channel_t chan)
 {
     if (geofence_enabled() && geofence_state != NULL) {
         mavlink_msg_fence_status_send(chan,
@@ -457,10 +428,95 @@ void Plane::geofence_send_status(mavlink_channel_t chan)
 /*
   return true if geofence has been breached
  */
-bool Plane::geofence_breached(void)
+bool AP_PolyFence_Plane::breached()
 {
     return geofence_state ? geofence_state->fence_triggered : false;
 }
+
+/* start function wrappers to avoid code churn */
+bool Plane::geofence_enabled(void) { return geofence.geofence_enabled(); }
+bool Plane::geofence_breached(void) { return geofence.geofence_breached(); }
+bool Plane::geofence_present(void) { return geofence.geofence_present(); }
+bool Plane::geofence_set_floor_enabled(bool floor_enabled)
+{
+    return geofence.geofence_set_floor_enabled(floor_enabled);
+}
+void Plane::geofence_check(bool altitude_check_only)
+{
+    return geofence.geofence_check(altitude_check_only);
+}
+bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r)
+{
+    return geofence.geofence_set_enabled(enable, r);
+}
+bool Plane::geofence_stickmixing(void)
+{
+    return geofence.geofence_stickmixing();
+}
+void Plane::geofence_send_status(mavlink_channel_t chan)
+{
+    return geofence.geofence_send_status(chan);
+}
+Vector2l Plane::get_fence_point_with_index(unsigned i)
+{
+    return geofence.get_fence_point_with_index(i);
+}
+void Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
+{
+    return geofence.set_fence_point_with_index(point,i);
+}
+
+bool AP_PolyFence_Plane::geofence_enabled(void) { return enabled(); }
+bool AP_PolyFence_Plane::geofence_present(void) { return present(); }
+void AP_PolyFence_Plane::geofence_load(void) { load(); }
+bool AP_PolyFence_Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r)
+{
+    return set_enabled(enable, r);
+}
+bool AP_PolyFence_Plane::geofence_set_floor_enabled(bool floor_enable)
+{
+    return set_floor_enabled(floor_enable);
+}
+bool AP_PolyFence_Plane::geofence_check_minalt()
+{
+    return check_minalt();
+}
+bool AP_PolyFence_Plane::geofence_check_maxalt()
+{
+    return check_maxalt();
+}
+void AP_PolyFence_Plane::geofence_check(bool altitude_check_only)
+{
+    check(altitude_check_only);
+}
+bool AP_PolyFence_Plane::geofence_stickmixing()
+{
+    return stickmixing();
+}
+void AP_PolyFence_Plane::geofence_send_status(mavlink_channel_t chan)
+{
+    return send_status(chan);
+}
+bool AP_PolyFence_Plane::geofence_breached()
+{
+    return breached();
+}
+
+void AP_PolyFence_Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
+{
+    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+}
+void AP_PolyFence_Plane::gcs_send_message(enum ap_message id)
+{
+    _plane.gcs_send_message(id);
+}
+void AP_PolyFence_Plane::geofence_update_pwm_enabled_state()
+{
+    update_pwm_enabled_state();
+}
+
+
+/* end function wrappers to avoid code churn */
 
 
 #else // GEOFENCE_ENABLED
@@ -486,7 +542,7 @@ bool Plane::geofence_set_floor_enabled(bool floor_enable) {
     return false;
 }
 
-bool geofence_breached(void) {
+bool Plane::geofence_breached(void) {
     return false;
 }
 
