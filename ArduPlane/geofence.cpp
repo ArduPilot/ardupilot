@@ -19,33 +19,12 @@ const AP_Param::GroupInfo AP_PolyFence_Plane::var_info_plane[] = {
 };
 
 /*
- *  return true if we have breached the geo-fence minimum altiude
+ * returns vehicle distance above origin
  */
-bool AP_PolyFence_Plane::check_minalt()
+int32_t AP_PolyFence_Plane::vehicle_relative_alt_cm() const
 {
-    if (g.fence_maxalt <= g.fence_minalt) {
-        return false;
-    }
-    if (g.fence_minalt == 0) {
-        return false;
-    }
-    return (_plane.adjusted_altitude_cm() < (g.fence_minalt*100.0f) + _plane.home.alt);
+    return _plane.adjusted_altitude_cm() - _plane.home.alt;
 }
-
-/*
- *  return true if we have breached the geo-fence maximum altiude
- */
-bool AP_PolyFence_Plane::check_maxalt()
-{
-    if (g.fence_maxalt <= g.fence_minalt) {
-        return false;
-    }
-    if (g.fence_maxalt == 0) {
-        return false;
-    }
-    return (_plane.adjusted_altitude_cm() > (g.fence_maxalt*100.0f) + _plane.home.alt);
-}
-
 
 /*
  * return true if the Vehicle's current guided destination is the same
@@ -77,99 +56,39 @@ uint8_t AP_PolyFence_Plane::oldSwitchPosition() const
 }
 
 /*
- *  check if we have breached the geo-fence
+ * returns true if acting on a fence breach would be a bad idea
  */
-void AP_PolyFence_Plane::check(bool altitude_check_only)
+bool AP_PolyFence_Plane::breaches_inhibited() const
 {
-    if (!geofence_enabled()) {
-        // switch back to the chosen control mode if still in
-        // GUIDED to the return point
-        if (should_revert_flight_mode()) {
-            geofence_state->old_switch_position = 254;
-            _plane.set_mode(_plane.get_previous_mode());
-        }
-        return;
-    }
-
-    /* allocate the geo-fence state if need be */
-    if (geofence_state == NULL || !geofence_state->boundary_uptodate) {
-        geofence_load();
-        if (!geofence_enabled()) {
-            // may have been disabled by load
-            return;
-        }
-    }
-
-    bool outside = false;
-    uint8_t breach_type = FENCE_BREACH_NONE;
-    struct Location loc;
-
-    // Never trigger a fence breach in the final stage of landing
+    // Never trigger a fence breach in the final stage of landing:
     if (_plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-        return;
+        return true;
     }
+    return AP_PolyFence::breaches_inhibited();
+}
 
-    if (geofence_state->floor_enabled && geofence_check_minalt()) {
-        outside = true;
-        breach_type = FENCE_BREACH_MINALT;
-    } else if (geofence_check_maxalt()) {
-        outside = true;
-        breach_type = FENCE_BREACH_MAXALT;
-    } else if (!altitude_check_only && _plane.ahrs.get_position(loc)) {
-        Vector2l location;
-        location.x = loc.lat;
-        location.y = loc.lng;
-        outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
-        if (outside) {
-            breach_type = FENCE_BREACH_BOUNDARY;
-        }
-    }
+/*
+ * returns plane to mode it was in prior to this one (presumably GUIDED)
+ */
+void AP_PolyFence_Plane::revert_mode()
+{
+    _plane.set_mode(_plane.get_previous_mode());
+}
 
-    if (!outside) {
-        if (geofence_state->fence_triggered && !altitude_check_only) {
-            // we have moved back inside the fence
-            geofence_state->fence_triggered = false;
-            gcs_send_text(MAV_SEVERITY_INFO,"Geofence OK");
- #if FENCE_TRIGGERED_PIN > 0
-            hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
-            hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
- #endif
-            gcs_send_message(MSG_FENCE_STATUS);
-        }
-        // we're inside, all is good with the world
-        return;
-    }
+/*
+ * returns the current vehicle position; the altitude entry in this
+ * Location should not be used as it differs based on Vehicle
+ */
+bool AP_PolyFence_Plane::vehicle_position(Location &loc) const
+{
+    return _plane.ahrs.get_position(loc);
+}
 
-    // we are outside the fence
-    if (geofence_state->fence_triggered &&
-        (_plane.control_mode == GUIDED || _plane.control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
-        // we have already triggered, don't trigger again until the
-        // user disables/re-enables using the fence channel switch
-        return;
-    }
-
-    // we are outside, and have not previously triggered.
-    geofence_state->fence_triggered = true;
-    geofence_state->breach_count++;
-    geofence_state->breach_time = millis();
-    geofence_state->breach_type = breach_type;
-
- #if FENCE_TRIGGERED_PIN > 0
-    hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
-    hal.gpio->write(FENCE_TRIGGERED_PIN, 1);
- #endif
-
-    gcs_send_text(MAV_SEVERITY_NOTICE,"Geofence triggered");
-    gcs_send_message(MSG_FENCE_STATUS);
-
-    // see what action the user wants
-    switch (g.fence_action) {
-    case FENCE_ACTION_REPORT:
-        break;
-
-    case FENCE_ACTION_GUIDED:
-    case FENCE_ACTION_GUIDED_THR_PASS:
-    case FENCE_ACTION_RTL:
+/*
+ * handle a breach action where we are to enter guided mode and go somewhere
+ */
+void AP_PolyFence_Plane::do_breach_action_guided()
+{
         // make sure we don't auto trim the surfaces on this mode change
         int8_t saved_auto_trim = _plane.g.auto_trim;
         _plane.g.auto_trim.set(0);
@@ -211,9 +130,6 @@ void AP_PolyFence_Plane::check(bool altitude_check_only)
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
             _plane.guided_throttle_passthru = true;
         }
-        break;
-    }
-
 }
 
 /*
@@ -267,14 +183,6 @@ void Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
     return geofence.set_fence_point_with_index(point,i);
 }
 
-bool AP_PolyFence_Plane::geofence_check_minalt()
-{
-    return check_minalt();
-}
-bool AP_PolyFence_Plane::geofence_check_maxalt()
-{
-    return check_maxalt();
-}
 bool AP_PolyFence_Plane::geofence_stickmixing()
 {
     return stickmixing();

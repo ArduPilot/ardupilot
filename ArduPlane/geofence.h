@@ -14,20 +14,11 @@ public:
             AP_Param::setup_object_defaults(this, var_info_plane);
         }
 
-    void check(bool altitude_check_only);
     bool stickmixing();
 
     bool geofence_stickmixing();
 
 private:
-
-    /* Old names to avoid code churn */
-    bool geofence_check_minalt();
-    bool geofence_check_maxalt();
-
-    // new names
-    bool check_minalt();
-    bool check_maxalt();
 
     /* Start temporary functions to avoid code churn: */
     void gcs_send_text(MAV_SEVERITY severity, const char *str);
@@ -42,4 +33,10 @@ private:
     bool guided_destinations_match() const override;
     bool vehicle_in_mode_guided() const override;
     bool vehicle_in_mode_rtl() const override;
+    bool breaches_inhibited() const override;
+    void revert_mode() override;
+    int32_t vehicle_relative_alt_cm() const override;
+    bool vehicle_position(Location &loc) const override;
+    void do_breach_action_guided() override;
+
 };
