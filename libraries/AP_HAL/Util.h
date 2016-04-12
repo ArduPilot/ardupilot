@@ -46,6 +46,18 @@ public:
     virtual void set_system_clock(uint64_t time_utc_usec) {}
 
     /*
+      get system clock in UTC milliseconds
+     */
+    uint64_t get_system_clock_ms() const;
+
+    /*
+      get system time in UTC hours, minutes, seconds and milliseconds
+     */
+    void get_system_clock_utc(uint16_t &hour, uint16_t &min, uint16_t &sec, uint16_t &ms) const;
+
+    uint32_t get_ms_until_time_utc(int16_t hour, int16_t min, int16_t sec, int16_t ms) const;
+
+    /*
       get system identifier (eg. serial number)
       return false if a system identifier is not available
 
