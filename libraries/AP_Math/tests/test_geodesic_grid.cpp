@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <cassert>
 #include <vector>
 
 #include "math_test.h"
@@ -30,6 +31,13 @@ public:
      * inclusive set as false.
      */
     int section;
+    /**
+     * Array terminated with -1. This doesn't have to be touched if #section
+     * isn't negative. If #section is -1, then calling
+     * AP_GeodesicGrid::section() with inclusive set as true expects a return
+     * value as one of the values in #inclusive_sections.
+     */
+    int inclusive_sections[7];
 };
 
 class GeodesicGridTest : public ::testing::TestWithParam<TestParam> {
@@ -45,21 +53,35 @@ TEST_P(GeodesicGridTest, Sections)
 {
     auto p = GetParam();
     EXPECT_EQ(p.section, grid.section(p.v));
+
+    if (p.section < 0) {
+        int s = grid.section(p.v, true);
+        int i;
+        for (i = 0; p.inclusive_sections[i] > 0; i++) {
+            assert(i < 7);
+            if (s == p.inclusive_sections[i]) {
+                break;
+            }
+        }
+        if (p.inclusive_sections[i] < 0) {
+            ADD_FAILURE() << "section " << s << " with inclusive=true not found in inclusive_sections";
+        }
+    }
 }
 
 static TestParam icosahedron_vertices[] = {
-    {{ M_GOLDEN,  1.0f, 0.0f}, -1},
-    {{ M_GOLDEN, -1.0f, 0.0f}, -1},
-    {{-M_GOLDEN,  1.0f, 0.0f}, -1},
-    {{-M_GOLDEN, -1.0f, 0.0f}, -1},
-    {{ 1.0f, 0.0f,  M_GOLDEN}, -1},
-    {{-1.0f, 0.0f,  M_GOLDEN}, -1},
-    {{ 1.0f, 0.0f, -M_GOLDEN}, -1},
-    {{-1.0f, 0.0f, -M_GOLDEN}, -1},
-    {{0.0f,  M_GOLDEN,  1.0f}, -1},
-    {{0.0f,  M_GOLDEN, -1.0f}, -1},
-    {{0.0f, -M_GOLDEN,  1.0f}, -1},
-    {{0.0f, -M_GOLDEN, -1.0f}, -1},
+    {{ M_GOLDEN,  1.0f, 0.0f}, -1, {27, 30, 59, 62, 65, -1}},
+    {{ M_GOLDEN, -1.0f, 0.0f}, -1, {19, 23, 25, 55, 57, -1}},
+    {{-M_GOLDEN,  1.0f, 0.0f}, -1, { 1, 38, 41, 75, 78, -1}},
+    {{-M_GOLDEN, -1.0f, 0.0f}, -1, { 3,  6,  9, 43, 46, -1}},
+    {{ 1.0f, 0.0f,  M_GOLDEN}, -1, {51, 54, 58, 61, 69, -1}},
+    {{-1.0f, 0.0f,  M_GOLDEN}, -1, {42, 45, 49, 71, 79, -1}},
+    {{ 1.0f, 0.0f, -M_GOLDEN}, -1, {15, 22, 26, 29, 33, -1}},
+    {{-1.0f, 0.0f, -M_GOLDEN}, -1, { 2,  5, 13, 35, 39, -1}},
+    {{0.0f,  M_GOLDEN,  1.0f}, -1, {63, 66, 70, 73, 77, -1}},
+    {{0.0f,  M_GOLDEN, -1.0f}, -1, {31, 34, 37, 67, 74, -1}},
+    {{0.0f, -M_GOLDEN,  1.0f}, -1, {11, 18, 47, 50, 53, -1}},
+    {{0.0f, -M_GOLDEN, -1.0f}, -1, { 7, 10, 14, 17, 21, -1}},
 };
 INSTANTIATE_TEST_CASE_P(IcosahedronVertices,
                         GeodesicGridTest,
@@ -94,7 +116,7 @@ static TestParam hardcoded_vectors[] = {
     /* a + 2 * m_a + .5 * m_c for T_4 */
     {{.25f * M_GOLDEN, -.25f * (13.0f * M_GOLDEN + 1.0f), - 1.25f}, 17},
     /* 3 * m_a + 2 * m_b 0 * m_c for T_4 */
-    {{M_GOLDEN, -4.0f * M_GOLDEN -1.0f, 1.0f}, -1},
+    {{M_GOLDEN, -4.0f * M_GOLDEN -1.0f, 1.0f}, -1, {16, 18, -1}},
     /* 2 * m_c + (1 / 3) * m_b + .1 * c for T_17 */
     {{-.2667f, .1667f * M_GOLDEN, 2.2667f * M_GOLDEN + .1667f}, 71},
     /* .25 * m_a + 5 * b + 2 * m_b for T_8 */
