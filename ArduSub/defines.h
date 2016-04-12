@@ -88,6 +88,7 @@ enum aux_sw_func {
 #define BLUEROV_FRAME 10
 #define VECTORED_FRAME 11
 #define VECTORED6DOF_FRAME 12
+#define SIMPLEROV_FRAME 13
 
 // HIL enumerations
 #define HIL_MODE_DISABLED               0

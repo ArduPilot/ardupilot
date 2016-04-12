@@ -16,3 +16,4 @@
 #include "AP_MotorsBlueROV6DOF.h"
 #include "AP_MotorsVectoredROV.h"
 #include "AP_MotorsVectored6DOF.h"
+#include "AP_MotorsSimpleROV.h"
