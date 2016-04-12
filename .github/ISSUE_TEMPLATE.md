@@ -2,7 +2,7 @@
 _Please describe the problem, or desired feature_
 
 #### Version
-_What version was the issue enountered with_
+_What version was the issue encountered with_
 
 #### Platform
 - [ ] All
