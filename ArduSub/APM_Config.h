@@ -10,6 +10,7 @@
  *  BLUEROV_FRAME
  *  VECTORED_FRAME
  *  VECTORED6DOF_FRAME
+ *  SIMPLEROV_FRAME
  */
 
 // uncomment the lines below to disable features (flash sizes listed are for APM2 boards and will underestimate savings on Pixhawk and other boards)
