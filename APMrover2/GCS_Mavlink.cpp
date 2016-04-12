@@ -546,8 +546,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_LIMITS_STATUS:
     case MSG_FENCE_STATUS:
     case MSG_WIND:
-    case MSG_VIBRATION:
         // unused
+        break;
+
+    case MSG_VIBRATION:
+        CHECK_PAYLOAD_SIZE(VIBRATION);
+        send_vibration(rover.ins);
         break;
 
     case MSG_BATTERY2:
@@ -825,6 +829,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MAG_CAL_PROGRESS);
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_EKF_STATUS_REPORT);
+        send_message(MSG_VIBRATION);
     }
 }
 
@@ -1096,6 +1101,41 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (is_equal(packet.param1,1.0f)) {
                 rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
                 result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+        }
+
+        case MAV_CMD_DO_SET_HOME:
+        {
+            // param1 : use current (1=use current location, 0=use specified location)
+            // param5 : latitude
+            // param6 : longitude
+            // param7 : altitude
+            result = MAV_RESULT_FAILED; // assume failure
+            if (is_equal(packet.param1,1.0f)) {
+                rover.init_home();
+            } else {
+                if (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7)) {
+                    // don't allow the 0,0 position
+                    break;
+                }
+                // sanity check location
+                if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+                    break;
+                }
+                Location new_home_loc {};
+                new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+                new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+                new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+                rover.ahrs.set_home(new_home_loc);
+                rover.home_is_set = HOME_SET_NOT_LOCKED;
+                rover.Log_Write_Home_And_Origin();
+                GCS_MAVLINK::send_home_all(new_home_loc);
+                result = MAV_RESULT_ACCEPTED;
+                rover.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
+                                        (double)(new_home_loc.lat*1.0e-7f),
+                                        (double)(new_home_loc.lng*1.0e-7f),
+                                        (uint32_t)(new_home_loc.alt*0.01f));
             }
             break;
         }

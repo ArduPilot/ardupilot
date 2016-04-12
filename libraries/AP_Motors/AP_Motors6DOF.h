@@ -26,15 +26,19 @@ public:
 
     void output_min() override;
 
+    int16_t calc_thrust_to_pwm(float thrust_in) const;
+
+    // output_to_motors - sends minimum values out to the motors
+    void output_to_motors() override;
+
     // var_info for holding Parameter information
 	static const struct AP_Param::GroupInfo        var_info[];
 protected:
 
 
     //Override MotorsMatrix method
-    void add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float strafe_fac, uint8_t testing_order);
+    void add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float lat_fac, uint8_t testing_order);
 
-    void output_armed_not_stabilizing() override;
     void output_armed_stabilizing() override;
 
     // Parameters
@@ -43,7 +47,7 @@ protected:
 
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
-    float               _strafe_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to strafe (left/right)
+    float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
 };
 
 #endif  // AP_MOTORS6DOF

@@ -1,3 +1,236 @@
+Release 3.0.0, 5 April 2015
+===========================
+The ArduPilot development team is proud to announce the release of
+version 3.0.0 of APM:Rover. This is a major release with a lot of
+changes so please read the notes carefully!
+
+A huge thanks to ALL the ArduPilot developers.  The Rover code
+benefits tremendously from all the hard work that goes into the Copter
+and Plane vehicle code.  Most of the code changes in this
+release were not specifically for Rover however because of the
+fantastic architecture of the ArduPilot code Rover automatically get's
+those enhancements anyway.
+
+Note that the documentation hasn't yet caught up with all the changes
+in this release. We are still working on that, but meanwhile if you
+see a feature that interests you and it isn't documented yet then
+please ask.
+
+The 3.x.x releases and above DON'T support APM1/APM2
+----------------------------------------------------
+This release DOES NOT SUPPORT the old APM1/APM2 AVR based boards. The
+issue is the amount of effort required to keep the new code ported to
+the old platforms.  We are very sorry this has to occur and if there
+is someone who is willing and technically capable of doing this work
+then please let us know.
+There will be a discussion created on ArduPilot forums where people
+can request features in the new code be backported to the APM code to
+run on the AVR boards and if it is reasonably easy and they are
+willing to do the beta testing we will do our best to make it happen.
+
+EKF2 - New Kalman Filter
+------------------------
+Paul Riseborough has been working hard recently on the new
+EKF2 variant which fixes many issues seen with the old estimator. The
+key improvements are:
+
+  - support for separate filters on each IMU for multi-IMU boards
+    (such as the Pixhawk), giving a high degree of redundency
+  - much better handling of gyro drift estimation, especially on
+    startup
+  - much faster recovery from attitude estimation errors
+
+After extensive testing of the new EKF code we decided to make it the
+default for this release. You can still use the old EKF if you want to
+by setting AHRS_EKF_TYPE to 1, although it is recommended that the new
+EKF be used for all vehicles.
+
+In order to use the EKF we need to be a bit more careful about the
+setup of the vehicle. That is why we enabled arming and pre-arm checks
+by default. Please don't disable the arming checks, they are there for
+very good reasons.
+
+UAVCAN new protocol
+-------------------
+The uavcan change to the new protocol has been a long time coming, and
+we'd like to thank Holger for both his great work on this and his
+patience given how long it has taken to be in a release. This adds
+support for automatic canbus node assignment which makes setup much
+easier, and also supports the latest versions of the Zubax canbus GPS.
+
+Support for 4 new Boards
+------------------------
+The porting of ArduPilot to more boards continues, with support
+for 3 new boards in this release. They are:
+
+ - the BHAT board
+ - the PXFmini
+ - the QualComm Flight
+ - the Pixracer
+
+More information about the list of supported boards is available here:
+http://dev.ardupilot.com/wiki/supported-autopilot-controller-boards/
+
+Startup on a moving platform
+----------------------------
+One of the benefits of the new EKF2 estimator is that it allows for
+rapid estimation of gyro offset without doing a gyro calibration on
+startup. This makes it possible to startup and arm on a moving
+platform by setting the INS_GYR_CAL parameter to zero (to disable gyro
+calibration on boot). This should be a big help for boats.
+
+Improved Camera Trigger Logging
+-------------------------------
+This release adds new CAM_FEEDBACK_PIN and CAM_FEEDBACK_POL
+parameters. These add support for separate CAM and TRIG log messages,
+where TRIG is logged when the camera is triggered and the CAM message
+is logged when an external pin indicates the camera has actually
+fired. This pin is typically based on the flash hotshoe of a camera
+and provides a way to log the exact time of camera triggering more
+accurately. Many thanks to Dario Andres and Jaime Machuca for their
+work on this feature.
+
+PID Tuning
+----------
+You can now see the individual contributions of the P, I and D
+components for the Steering PID in the logs (PIDY), allowing you to
+get a much better picture of the performance.
+
+Vibration Logging
+-----------------
+This release includes a lot more options for diagnosing vibration
+issues. You will notice new VIBRATION messages in MAVLink and VIBE
+messages in the dataflash logs. Those give you a good idea of your
+(unfiltered) vibration levels. For really detailed analysis you can
+setup your LOG_BITMASK to include raw logging, which gives you every
+accel and gyro sample on your Pixhawk. You can then do a FFT on the
+result and plot the distribution of vibration level with
+frequency. That is great for finding the cause of vibration
+issues. Note that you need a very fast microSD card for that to work!
+
+Steering Disarm
+---------------
+This is the first release that allows you to disarm using steering
+if you want to. It isn't enabled by default. You can enable it
+with the ARMING_RUDDER parameter by setting it to 2. It will only
+allow you to disarm if the autopilot thinks you are not moving at the
+time.
+
+More Sensors
+------------
+This release includes support for a bunch more sensors. It now supports
+3 different interfaces for the LightWare range of Lidars (serial, I2C
+and analog), and also supports the very nice Septentrio RTK
+dual-frequency GPS (the first dual-frequency GPS we have support
+for). It also supports the new "blue label" Lidar from Pulsed Light
+(both on I2C and PWM).
+
+For the uBlox GPS, we now have a lot more configurability of the
+driver, with the ability to set the GNSS mode for different
+constellations. Also in the uBlox driver we support logging of the raw
+carrier phase and pseudo range data, which allows for post RTK
+analysis with raw-capable receivers for really accurate photo
+missions.
+
+Better Linux support
+--------------------
+This release includes a lot of improvements to the Linux based
+autopilot boards, including the NavIO+, the PXF and ERLE boards and
+the BBBMini and the new RasPilot board.
+
+On-board compass calibrator
+---------------------------
+We also have a new on-board compass calibrator, which also adds calibration
+for soft iron effects, allowing for much more accurate compass
+calibration.
+
+Lots of other changes!
+----------------------
+The above list is just a taste of the changes that have gone into this
+release. Thousands of small changes have gone into this release with
+dozens of people contributing. Many thanks to everyone who helped!
+
+Other key changes
+-----------------
+- fixed the MAV_CMD_DO_SET_HOME (thanks salonijain12)
+- fixed bug when reverse throttle would increase speed in AUTO
+- fixed a bug going into guided and rover still moving
+- loitering at a waypoint if Param1 is non-zero
+- update uavcan to new protocol
+- fixed reporting of armed state with safety switch
+- added optional arming check for minimum voltage
+- improved text message queueing to ground stations
+- re-organisation of HAL_Linux bus API
+- improved NMEA parsing in GPS driver
+- improved autoconfig of uBlox GPS driver
+- support a wider range of Lightware serial Lidars
+- improved non-GPS performance of EKF2
+- improved compass fusion in EKF2
+- improved support for Pixracer board
+- improved NavIO2 support
+- added BATT_WATT_MAX parameter
+- enable messages for MAVLink gimbal support
+- use 64 bit timestamps in dataflash logs
+- added realtime PID tuning messages and PID logging
+- fixed a failure case for the px4 failsafe mixer
+- added DSM binding support on Pixhawk
+- added vibration level logging
+- ignore low voltage failsafe while disarmed
+- added delta velocity and delta angle logging
+- allow steering disarm based on ARMING_RUDDER parameter
+- prevent mode switch changes changing WP tracking
+- fixed parameter documentation spelling errors
+- send MISSION_ITEM_REACHED messages on waypoint completion
+- enable EKF by default on rover
+- Improve gyro bias learning rate for plane and rover
+- Allow switching primary GPS instance with 1 sat difference
+- added NSH over MAVLink support
+- added support for mpu9250 on pixhawk and pixhawk2
+- Add support for logging ublox RXM-RAWX messages
+- lots of updates to improve support for Linux based boards
+- added ORGN message in dataflash
+- added support for new "blue label" Lidar
+- switched to real hdop in uBlox driver
+- improved auto-config of uBlox
+- raise accel discrepancy arming threshold to 0.75
+- improved support for tcp and udp connections on Linux
+- switched to delta-velocity and delta-angles in DCM
+- improved detection of which accel to use in EKF
+- improved auto-detections of flow control on pixhawk UARTs
+- added HDOP to uavcan GPS driver
+- improved sending of autopilot version
+- log zero rangefinder distance when unhealthy
+- added PRU firmware files for BeagleBoneBlack port
+- fix for recent STORM32 gimbal support
+- changed sending of STATUSTEXT severity to use correct values
+- added new RSSI library with PWM input support
+- fixed MAVLink heading report for UAVCAN GPS
+- support LightWare I2C rangefinder on Linux
+- improved staging of parameters and formats on startup to dataflash
+- added new on-board compass calibrator
+- improved RCOutput code for NavIO port
+- added support for Septentrio GPS receiver
+- support DO_MOUNT_CONTROl via command-long interface
+- added CAM_RELAY_ON parameter
+- moved SKIP_GYRO_CAL functionality to INS_GYR_CAL
+- new waf build system
+- new async accel calibrator
+- better rangefinder power control
+- dataflash over mavlink support
+- settable main loop rate
+- hideable parameters
+- improved logging for dual-GPS setups
+- improvements to multiple RTK GPS drivers
+- numerous HAL_Linux improvements
+- improved logging of CAM messages
+- added support for IMU heaters in HAL_Linux
+- support for RCInput over UDP in HAL_Linux
+- improved EKF startup checks for GPS accuracy
+- added raw IMU logging for all platforms
+- configurable RGB LED brightness
+- improvements to the lsm303d driver for Linux
+
+
 Release 2.50, 19 June 2015
 ==========================
 

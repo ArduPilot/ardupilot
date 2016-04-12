@@ -36,8 +36,9 @@ bool Sub::brake_init(bool ignore_checks)
 void Sub::brake_run()
 {
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         wp_nav.init_brake_target(BRAKE_MODE_DECEL_RATE);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -54,6 +55,9 @@ void Sub::brake_run()
     if (ap.land_complete) {
         init_disarm_motors();
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run brake controller
     wp_nav.update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);

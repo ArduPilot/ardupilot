@@ -17,7 +17,7 @@
 #pragma once
 
 #include <AP_Math/AP_Math.h>
-#include <math.h>
+#include <cmath>
 #include <inttypes.h>
 
 

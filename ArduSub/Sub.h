@@ -27,7 +27,7 @@
 // Header includes
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <math.h>
+#include <cmath>
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -158,7 +158,7 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
     RC_Channel *channel_forward;
-    RC_Channel *channel_strafe;
+    RC_Channel *channel_lateral;
 
     // Dataflash
     DataFlash_Class DataFlash{FIRMWARE_STRING};
@@ -400,6 +400,9 @@ private:
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
+    // filtered pilot's throttle input used to cancel landing if throttle held high
+    LowPassFilterFloat rc_throttle_control_in_filter;
+
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
     struct Location current_loc;
@@ -582,13 +585,13 @@ private:
     float get_look_ahead_yaw();
     void update_thr_average();
     void set_throttle_takeoff();
-    int16_t get_pilot_desired_throttle(int16_t throttle_control);
+    float get_pilot_desired_throttle(int16_t throttle_control);
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle();
     float get_takeoff_trigger_throttle();
     float get_throttle_pre_takeoff(float input_thr);
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
-    void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle);
+    void set_accel_throttle_I_from_pilot_throttle(float pilot_throttle);
     void update_poscon_alt_max();
     void rotate_body_frame_to_NE(float &x, float &y);
     void gcs_send_heartbeat(void);
@@ -642,6 +645,7 @@ private:
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
     void load_parameters(void);
+    void convert_pid_parameters(void);
     void userhook_init();
     void userhook_FastLoop();
     void userhook_50Hz();
@@ -728,7 +732,7 @@ private:
     void circle_run();
     bool drift_init(bool ignore_checks);
     void drift_run();
-    int16_t get_throttle_assist(float velz, int16_t pilot_throttle_scaled);
+    float get_throttle_assist(float velz, float pilot_throttle_scaled);
     bool flip_init(bool ignore_checks);
     void flip_run();
     bool guided_init(bool ignore_checks);
@@ -888,6 +892,7 @@ private:
     JSButton* get_button(uint8_t index);
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
+    void radio_passthrough_to_motors();
     void init_barometer(bool full_calibration);
     void read_barometer(void);
     void init_sonar(void);

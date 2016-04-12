@@ -141,7 +141,8 @@ void Copter::poshold_run()
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         wp_nav.init_loiter_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
@@ -183,9 +184,15 @@ void Copter::poshold_run()
 
     // if landed initialise loiter targets, set throttle to zero and exit
     if (ap.land_complete) {
+        // if throttle zero reset attitude and exit immediately
+        if (ap.throttle_zero) {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        }else{
+            motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        }
         wp_nav.init_loiter_target();
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         return;
     }else{
@@ -388,6 +395,9 @@ void Copter::poshold_run()
                 poshold.pitch = poshold_mix_controls(controller_to_pilot_pitch_mix, poshold.controller_final_pitch, poshold.pilot_pitch + poshold.wind_comp_pitch);
                 break;
         }
+
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         //
         // Shared roll & pitch states (POSHOLD_BRAKE_TO_LOITER and POSHOLD_LOITER)

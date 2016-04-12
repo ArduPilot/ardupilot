@@ -152,6 +152,7 @@ public:
         k_param_fence_retalt = 105,
         k_param_fence_autoenable,
         k_param_fence_ret_rally,
+        k_param_q_attitude_control,
 
         // 110: Telemetry control
         //

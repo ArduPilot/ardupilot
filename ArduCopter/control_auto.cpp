@@ -112,7 +112,7 @@ void Copter::auto_takeoff_start(float final_alt_above_home)
 void Copter::auto_takeoff_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         // initialise wpnav targets
         wp_nav.shift_wp_origin_to_current_pos();
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -120,6 +120,7 @@ void Copter::auto_takeoff_run()
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
@@ -134,6 +135,9 @@ void Copter::auto_takeoff_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
     wp_nav.update_wpnav();
@@ -165,7 +169,7 @@ void Copter::auto_wp_start(const Vector3f& destination)
 void Copter::auto_wp_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -173,6 +177,7 @@ void Copter::auto_wp_run()
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
         // clear i term when we're taking off
@@ -189,6 +194,9 @@ void Copter::auto_wp_run()
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
     wp_nav.update_wpnav();
@@ -229,7 +237,7 @@ void Copter::auto_spline_start(const Vector3f& destination, bool stopped_at_star
 void Copter::auto_spline_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -238,6 +246,7 @@ void Copter::auto_spline_run()
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
 #endif
         // clear i term when we're taking off
         set_throttle_takeoff();
@@ -253,6 +262,9 @@ void Copter::auto_spline_run()
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
     wp_nav.update_spline();
@@ -304,12 +316,14 @@ void Copter::auto_land_run()
     float target_yaw_rate = 0;
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || ap.land_complete) {
+    if (!motors.armed() || !ap.auto_armed || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+#else
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
         // set target to current position
@@ -344,6 +358,9 @@ void Copter::auto_land_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // process roll, pitch inputs
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
@@ -484,12 +501,14 @@ bool Copter::auto_loiter_start()
 void Copter::auto_loiter_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+#else
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
         return;
@@ -500,6 +519,9 @@ void Copter::auto_loiter_run()
     if(!failsafe.radio) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint and z-axis postion controller
     wp_nav.update_wpnav();

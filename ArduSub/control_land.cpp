@@ -56,7 +56,8 @@ void Sub::land_gps_run()
     float target_yaw_rate = 0;
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -83,6 +84,14 @@ void Sub::land_gps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (!set_mode(LOITER)) {
+                set_mode(ALT_HOLD);
+            }
+        }
+        
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
@@ -100,6 +109,9 @@ void Sub::land_gps_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // process roll, pitch inputs
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
@@ -157,7 +169,8 @@ void Sub::land_nogps_run()
     }
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || ap.at_surface || !motors.get_interlock()) {
+    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -174,6 +187,9 @@ void Sub::land_nogps_run()
 #endif
         return;
     }
+
+    // set motors to full range
+    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());

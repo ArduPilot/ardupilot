@@ -389,7 +389,7 @@ void NOINLINE Sub::send_vfr_hud(mavlink_channel_t chan)
         gps.ground_speed(),
         gps.ground_speed(),
         (ahrs.yaw_sensor / 100) % 360,
-        (int16_t)(motors.get_throttle())/10,
+        (int16_t)(motors.get_throttle() * 100),
         current_loc.alt / 100.0f,
         climb_rate / 100.0f);
 }
@@ -434,7 +434,7 @@ void Sub::send_pid_tuning(mavlink_channel_t chan)
 {
     const Vector3f &gyro = ahrs.get_gyro();
     if (g.gcs_pid_mask & 1) {
-        const DataFlash_Class::PID_Info &pid_info = g.pid_rate_roll.get_pid_info();
+        const DataFlash_Class::PID_Info &pid_info = attitude_control.get_rate_roll_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL, 
                                     pid_info.desired*0.01f,
                                     degrees(gyro.x),
@@ -447,7 +447,7 @@ void Sub::send_pid_tuning(mavlink_channel_t chan)
         }
     }
     if (g.gcs_pid_mask & 2) {
-        const DataFlash_Class::PID_Info &pid_info = g.pid_rate_pitch.get_pid_info();
+        const DataFlash_Class::PID_Info &pid_info = attitude_control.get_rate_pitch_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH, 
                                     pid_info.desired*0.01f,
                                     degrees(gyro.y),
@@ -460,7 +460,7 @@ void Sub::send_pid_tuning(mavlink_channel_t chan)
         }
     }
     if (g.gcs_pid_mask & 4) {
-        const DataFlash_Class::PID_Info &pid_info = g.pid_rate_yaw.get_pid_info();
+        const DataFlash_Class::PID_Info &pid_info = attitude_control.get_rate_yaw_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW, 
                                     pid_info.desired*0.01f,
                                     degrees(gyro.z),

@@ -2,6 +2,9 @@ TOOLCHAIN = NATIVE
 
 include $(MK_DIR)/find_tools.mk
 
+# Hardcoded libraries/AP_Common/missing/cmath defines in "make" to retain the current behavior
+EXTRAFLAGS += -DHAVE_CMATH_ISFINITE -DNEED_CMATH_ISFINITE_STD_NAMESPACE
+
 #
 # Tool options
 #

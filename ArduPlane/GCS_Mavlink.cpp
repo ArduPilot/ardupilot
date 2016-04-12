@@ -515,7 +515,7 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     const DataFlash_Class::PID_Info *pid_info;
     if (g.gcs_pid_mask & 1) {
         if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.pid_rate_roll.get_pid_info();
+            pid_info = &quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
         } else {
             pid_info = &rollController.get_pid_info();
         }
@@ -532,7 +532,7 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 2) {
         if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.pid_rate_pitch.get_pid_info();
+            pid_info = &quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
         } else {
             pid_info = &pitchController.get_pid_info();
         }
@@ -549,7 +549,7 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 4) {
         if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.pid_rate_yaw.get_pid_info();
+            pid_info = &quadplane.attitude_control->get_rate_yaw_pid().get_pid_info();
         } else {
             pid_info = &yawController.get_pid_info();
         }

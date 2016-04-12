@@ -302,7 +302,7 @@ bool Sub::pre_arm_checks(bool display_failure)
         }
 
         // acro balance parameter check
-        if ((g.acro_balance_roll > g.p_stabilize_roll.kP()) || (g.acro_balance_pitch > g.p_stabilize_pitch.kP())) {
+        if ((g.acro_balance_roll > attitude_control.get_angle_roll_p().kP()) || (g.acro_balance_pitch > attitude_control.get_angle_pitch_p().kP())) {             
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: ACRO_BAL_ROLL/PITCH");
             }
