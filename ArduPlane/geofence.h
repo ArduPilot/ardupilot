@@ -10,13 +10,12 @@
 #include "defines.h"
 #include "Parameters.h"
 
-class AP_PolyFence_Plane
+class AP_PolyFence
 {
 
 public:
 
-    AP_PolyFence_Plane(class Plane &plane, Parameters &_g) :
-        _plane(plane),
+    AP_PolyFence(Parameters &_g) :
         g(_g)
         { }
 
@@ -31,10 +30,7 @@ public:
     bool geofence_set_enabled(bool enable, GeofenceEnableReason r);
     bool geofence_enabled();
     bool geofence_set_floor_enabled(bool floor_enable);
-    bool geofence_check_minalt();
-    bool geofence_check_maxalt();
     void geofence_check(bool altitude_check_only);
-    bool geofence_stickmixing();
     bool geofence_breached();
     void geofence_send_status(mavlink_channel_t chan);
 
@@ -45,10 +41,7 @@ public:
     bool set_enabled(bool enable, GeofenceEnableReason r);
     bool enabled();
     bool set_floor_enabled(bool floor_enable);
-    bool check_minalt();
-    bool check_maxalt();
-    void check(bool altitude_check_only);
-    bool stickmixing();
+    virtual void check(bool altitude_check_only) = 0;
     bool breached();
     void send_status(mavlink_channel_t chan);
 
@@ -84,11 +77,43 @@ protected:
     } *geofence_state;
 
     /* Start temporary functions to avoid code churn: */
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
-    void gcs_send_message(enum ap_message id);
+    virtual void gcs_send_text(MAV_SEVERITY severity, const char *str) = 0;
+    virtual void gcs_send_message(enum ap_message id) = 0;
     /* end temporary functions to avoid code churn: */
 
 private:
+
+};
+
+class AP_PolyFence_Plane : public AP_PolyFence
+{
+
+public:
+
+    AP_PolyFence_Plane(class Plane &plane, Parameters &_g) :
+        AP_PolyFence(_g),
+        _plane(plane)
+        { }
+
+    void check(bool altitude_check_only);
+    bool stickmixing();
+
+    bool geofence_stickmixing();
+
+private:
+
+    /* Old names to avoid code churn */
+    bool geofence_check_minalt();
+    bool geofence_check_maxalt();
+
+    // new names
+    bool check_minalt();
+    bool check_maxalt();
+
+    /* Start temporary functions to avoid code churn: */
+    void gcs_send_text(MAV_SEVERITY severity, const char *str);
+    void gcs_send_message(enum ap_message id);
+    /* end temporary functions to avoid code churn: */
 
     class Plane &_plane;
     class Parameters &g;

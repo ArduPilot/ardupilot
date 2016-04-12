@@ -18,7 +18,7 @@ static const StorageAccess fence_storage(StorageManager::StorageFence);
 /*
   maximum number of fencepoints
  */
-uint8_t AP_PolyFence_Plane::max_fencepoints()
+uint8_t AP_PolyFence::max_fencepoints()
 {
     return MIN(255U, fence_storage.size() / sizeof(Vector2l));
 }
@@ -26,7 +26,7 @@ uint8_t AP_PolyFence_Plane::max_fencepoints()
 /*
  *  fence boundaries fetch/store
  */
-Vector2l AP_PolyFence_Plane::get_fence_point_with_index(unsigned i)
+Vector2l AP_PolyFence::get_fence_point_with_index(unsigned i)
 {
     Vector2l ret;
 
@@ -42,7 +42,7 @@ Vector2l AP_PolyFence_Plane::get_fence_point_with_index(unsigned i)
 }
 
 // save a fence point
-void AP_PolyFence_Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
+void AP_PolyFence::set_fence_point_with_index(Vector2l &point, unsigned i)
 {
     if (i >= (unsigned)g.fence_total.get() || i >= max_fencepoints()) {
         // not allowed
@@ -60,7 +60,7 @@ void AP_PolyFence_Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
 /*
  *  allocate and fill the geofence state structure
  */
-void AP_PolyFence_Plane::load()
+void AP_PolyFence::load()
 {
     uint8_t i;
 
@@ -121,7 +121,7 @@ failed:
  * return true if a geo-fence has been uploaded and
  * FENCE_ACTION is 1 (not necessarily enabled)
  */
-bool AP_PolyFence_Plane::present()
+bool AP_PolyFence::present()
 {
     //require at least a return point and a triangle
     //to define a geofence area:
@@ -134,7 +134,7 @@ bool AP_PolyFence_Plane::present()
 /*
   check FENCE_CHANNEL and update the is_pwm_enabled state
  */
-void AP_PolyFence_Plane::update_pwm_enabled_state()
+void AP_PolyFence::update_pwm_enabled_state()
 {
     bool is_pwm_enabled;
     if (g.fence_channel == 0) {
@@ -162,7 +162,7 @@ void AP_PolyFence_Plane::update_pwm_enabled_state()
 }
 
 //return true on success, false on failure
-bool AP_PolyFence_Plane::set_enabled(bool enable, GeofenceEnableReason r)
+bool AP_PolyFence::set_enabled(bool enable, GeofenceEnableReason r)
 {
     if (geofence_state == NULL && enable) {
         geofence_load();
@@ -184,7 +184,7 @@ bool AP_PolyFence_Plane::set_enabled(bool enable, GeofenceEnableReason r)
 /*
  *  return true if geo-fencing is enabled
  */
-bool AP_PolyFence_Plane::enabled()
+bool AP_PolyFence::enabled()
 {
     geofence_update_pwm_enabled_state();
 
@@ -208,7 +208,7 @@ bool AP_PolyFence_Plane::enabled()
  * Set floor state IF the fence is present.
  * Return false on failure to set floor state.
  */
-bool AP_PolyFence_Plane::set_floor_enabled(bool floor_enable) {
+bool AP_PolyFence::set_floor_enabled(bool floor_enable) {
     if (geofence_state == NULL) {
         return false;
     }
@@ -414,7 +414,7 @@ bool AP_PolyFence_Plane::stickmixing() {
 /*
  *
  */
-void AP_PolyFence_Plane::send_status(mavlink_channel_t chan)
+void AP_PolyFence::send_status(mavlink_channel_t chan)
 {
     if (geofence_enabled() && geofence_state != NULL) {
         mavlink_msg_fence_status_send(chan,
@@ -428,7 +428,7 @@ void AP_PolyFence_Plane::send_status(mavlink_channel_t chan)
 /*
   return true if geofence has been breached
  */
-bool AP_PolyFence_Plane::breached()
+bool AP_PolyFence::breached()
 {
     return geofence_state ? geofence_state->fence_triggered : false;
 }
@@ -466,14 +466,14 @@ void Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
     return geofence.set_fence_point_with_index(point,i);
 }
 
-bool AP_PolyFence_Plane::geofence_enabled(void) { return enabled(); }
-bool AP_PolyFence_Plane::geofence_present(void) { return present(); }
-void AP_PolyFence_Plane::geofence_load(void) { load(); }
-bool AP_PolyFence_Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r)
+bool AP_PolyFence::geofence_enabled(void) { return enabled(); }
+bool AP_PolyFence::geofence_present(void) { return present(); }
+void AP_PolyFence::geofence_load(void) { load(); }
+bool AP_PolyFence::geofence_set_enabled(bool enable, GeofenceEnableReason r)
 {
     return set_enabled(enable, r);
 }
-bool AP_PolyFence_Plane::geofence_set_floor_enabled(bool floor_enable)
+bool AP_PolyFence::geofence_set_floor_enabled(bool floor_enable)
 {
     return set_floor_enabled(floor_enable);
 }
@@ -485,7 +485,7 @@ bool AP_PolyFence_Plane::geofence_check_maxalt()
 {
     return check_maxalt();
 }
-void AP_PolyFence_Plane::geofence_check(bool altitude_check_only)
+void AP_PolyFence::geofence_check(bool altitude_check_only)
 {
     check(altitude_check_only);
 }
@@ -493,11 +493,11 @@ bool AP_PolyFence_Plane::geofence_stickmixing()
 {
     return stickmixing();
 }
-void AP_PolyFence_Plane::geofence_send_status(mavlink_channel_t chan)
+void AP_PolyFence::geofence_send_status(mavlink_channel_t chan)
 {
     return send_status(chan);
 }
-bool AP_PolyFence_Plane::geofence_breached()
+bool AP_PolyFence::geofence_breached()
 {
     return breached();
 }
@@ -510,7 +510,7 @@ void AP_PolyFence_Plane::gcs_send_message(enum ap_message id)
 {
     _plane.gcs_send_message(id);
 }
-void AP_PolyFence_Plane::geofence_update_pwm_enabled_state()
+void AP_PolyFence::geofence_update_pwm_enabled_state()
 {
     update_pwm_enabled_state();
 }
