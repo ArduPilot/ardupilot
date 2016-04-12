@@ -13,6 +13,10 @@ namespace {
 	int16_t lights2 = 1100;
 	int16_t rollTrim = 0;
 	int16_t pitchTrim = 0;
+	float gain = 1.0;
+	float maxGain = 1.0;
+	float minGain = 0.5;
+	int8_t numGainSettings = 3;
 }
 
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
@@ -20,8 +24,8 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
 	uint32_t tnow_ms = millis();
 
-	float rpyScale = 0.5;
-	float throttleScale = 0.8;
+	float rpyScale = 0.5*gain; // Scale -1000-1000 to -500-500 with gain
+	float throttleScale = 0.8*gain; // Scale 0-1000 to 0-800 with gain
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1500-500*throttleScale;
 	bool shift = false;
@@ -54,7 +58,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	channels[6] = y*rpyScale+rpyCenter;           // lateral for ROV
 	channels[7] = camTilt;                        // camera tilt
 	channels[8] = lights1;
-	channels[9] = 0;
+	channels[9] = lights2;
 
 	// record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
 	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
@@ -142,10 +146,24 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			lights2 = constrain_float(lights2-100,1100,1900);
 			break;
 		case JSButton::button_function_t::k_gain_toggle:
+			{
+				static bool lowGain = false;
+				lowGain = !lowGain;
+				if ( lowGain ) {
+					gain = 0.5f;
+				} else {
+					gain = 1.0f;
+				}
+				gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",gain*100);
+			}
 			break;
 		case JSButton::button_function_t::k_gain_inc:
+			gain = constrain_float(gain + (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
+			gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",gain*100);
 			break;
 		case JSButton::button_function_t::k_gain_dec:
+			gain = constrain_float(gain - (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
+			gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",gain*100);
 			break;
 		case JSButton::button_function_t::k_trim_roll_inc:
 			rollTrim = constrain_float(rollTrim+10,-200,200);
