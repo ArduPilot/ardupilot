@@ -108,6 +108,7 @@ public:
         }
     }
 
+    void broadcast_configuration_failure_reason(void) const;
 private:
     // u-blox UBX protocol essentials
     struct PACKED ubx_header {
