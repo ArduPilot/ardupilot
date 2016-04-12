@@ -374,6 +374,10 @@ private:
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
+    // Delay the next navigation command
+    int32_t delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
+    uint32_t delay_time_start;
+
     // Flip
     Vector3f flip_orig_attitude;         // original copter attitude before flip
 
@@ -1002,6 +1006,7 @@ private:
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 #endif
+    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     void do_change_alt(const AP_Mission::Mission_Command& cmd);
@@ -1026,6 +1031,7 @@ private:
 #if NAV_GUIDED == ENABLED
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
+    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
     void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
 
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
