@@ -406,68 +406,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_radius,             "RTL_RADIUS",  0),
-    
-#if GEOFENCE_ENABLED == ENABLED
-    // @Param: FENCE_ACTION
-    // @DisplayName: Action on geofence breach
-    // @Description: What to do on fence breach. If this is set to 0 then no action is taken, and geofencing is disabled. If this is set to 1 then the plane will enter GUIDED mode, with the target waypoint as the fence return point. If this is set to 2 then the fence breach is reported to the ground station, but no other action is taken. If set to 3 then the plane enters guided mode but the pilot retains manual throttle control. If set to 4 the plane enters RTL mode, with the target waypoint as the closest rally point (or home point if there are no rally points).
-    // @Values: 0:None,1:GuidedMode,2:ReportOnly,3:GuidedModeThrPass,4:RTL_Mode
-    // @User: Standard
-    GSCALAR(fence_action,           "FENCE_ACTION",   0),
-
-    // @Param: FENCE_TOTAL
-    // @DisplayName: Fence Total
-    // @Description: Number of geofence points currently loaded
-    // @User: Advanced
-    GSCALAR(fence_total,            "FENCE_TOTAL",    0),
-
-    // @Param: FENCE_CHANNEL
-    // @DisplayName: Fence Channel
-    // @Description: RC Channel to use to enable geofence. PWM input above 1750 enables the geofence
-    // @User: Standard
-    GSCALAR(fence_channel,          "FENCE_CHANNEL",  0),
-
-    // @Param: FENCE_MINALT
-    // @DisplayName: Fence Minimum Altitude
-    // @Description: Minimum altitude allowed before geofence triggers
-    // @Units: meters
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_minalt,           "FENCE_MINALT",   0),
-
-    // @Param: FENCE_MAXALT
-    // @DisplayName: Fence Maximum Altitude
-    // @Description: Maximum altitude allowed before geofence triggers
-    // @Units: meters
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
-
-    // @Param: FENCE_RETALT
-    // @DisplayName: Fence Return Altitude
-    // @Description: Altitude the aircraft will transit to when a fence breach occurs.  If FENCE_RETALT is <= 0 then the midpoint between FENCE_MAXALT and FENCE_MINALT is used, unless FENCE_MAXALT < FENCE_MINALT.  If FENCE_MAXALT < FENCE_MINALT AND FENCE_RETALT is <= 0 then ALT_HOLD_RTL is the altitude used on a fence breach.
-    // @Units: meters
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_retalt,           "FENCE_RETALT",   0),
-
-    // @Param: FENCE_AUTOENABLE
-    // @DisplayName: Fence automatic enable
-    // @Description: When set to 1, geofence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled.  When set to 2, the fence autoenables after an auto takeoff, but only disables the fence floor during landing. It is highly recommended to not use this option for line of sight flying and use a fence enable channel instead.
-    // @Values: 0:NoAutoEnable,1:AutoEnable,2:AutoEnableDisableFloorOnly
-    // @User: Standard
-    GSCALAR(fence_autoenable,       "FENCE_AUTOENABLE", 0),
-
-    // @Param: FENCE_RET_RALLY
-    // @DisplayName: Fence Return to Rally
-    // @Description: When set to 1: on fence breach the plane will return to the nearest rally point rather than the fence return point.  If no rally points have been defined the plane will return to the home point.  
-    // @Values: 0:FenceReturnPoint,1:NearestRallyPoint
-    // @User: Standard
-    GSCALAR(fence_ret_rally,        "FENCE_RET_RALLY",  0),     
-#endif
 
     // @Param: STALL_PREVENTION
     // @DisplayName: Enable stall prevention
@@ -1300,6 +1238,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: LOG
     // @Path: ../libraries/DataFlash/DataFlash.cpp
     GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
+
+#if GEOFENCE_ENABLED == ENABLED
+    // @Group: FENCE_
+    // @Path: ../libraries/AP_Fence/AP_PolyFence.cpp
+    GOBJECT(geofence,           "FENCE",  AP_PolyFence_Plane),
+#endif
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp

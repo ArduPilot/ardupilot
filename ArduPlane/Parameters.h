@@ -150,9 +150,9 @@ public:
         k_param_land_throttle_slewrate, // 104
 
         // 105: Extra parameters
-        k_param_fence_retalt = 105,
-        k_param_fence_autoenable,
-        k_param_fence_ret_rally,
+        k_param_fence_retalt = 105, // unused; see k_param_geofence
+        k_param_fence_autoenable, // unused; see k_param_geofence
+        k_param_fence_ret_rally, // unused; see k_param_geofence
         k_param_q_attitude_control,
         k_param_takeoff_pitch_limit_reduction_sec,
 
@@ -312,11 +312,11 @@ public:
         k_param_command_index,  // unused
         k_param_waypoint_radius,
         k_param_loiter_radius,
-        k_param_fence_action,
-        k_param_fence_total,
-        k_param_fence_channel,
-        k_param_fence_minalt,
-        k_param_fence_maxalt,
+        k_param_fence_action, // unused; see k_param_geofence
+        k_param_fence_total, // unused; see k_param_geofence
+        k_param_fence_channel, // unused; see k_param_geofence
+        k_param_fence_minalt, // unused; see k_param_geofence
+        k_param_fence_maxalt, // unused; see k_param_geofence
 
         // other objects
         k_param_sitl = 230,
@@ -344,6 +344,7 @@ public:
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
 
+        k_param_geofence = 252, // geofence Group
         k_param_DataFlash = 253, // Logging Group
 
         // 254,255: reserved
@@ -401,17 +402,6 @@ public:
     AP_Int16 waypoint_max_radius;
     AP_Int16 loiter_radius;
     AP_Int16 rtl_radius;
-
-#if GEOFENCE_ENABLED == ENABLED
-    AP_Int8 fence_action;
-    AP_Int8 fence_total;
-    AP_Int8 fence_channel;
-    AP_Int16 fence_minalt;    // meters
-    AP_Int16 fence_maxalt;    // meters
-    AP_Int16 fence_retalt;    // meters
-    AP_Int8 fence_autoenable;
-    AP_Int8 fence_ret_rally;
-#endif
 
     // Fly-by-wire
     //

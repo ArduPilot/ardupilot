@@ -6,18 +6,20 @@
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
 
+#include <AP_Param/AP_Param.h>
+
 #include "config.h"
 #include "defines.h"
-#include "Parameters.h"
 
 class AP_PolyFence
 {
 
 public:
 
-    AP_PolyFence(Parameters &_g) :
-        g(_g)
-        { }
+    AP_PolyFence()
+        {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
 
     uint8_t max_fencepoints();
     Vector2l get_fence_point_with_index(unsigned i);
@@ -44,6 +46,18 @@ public:
     virtual void check(bool altitude_check_only) = 0;
     bool breached();
     void send_status(mavlink_channel_t chan);
+
+    static const struct AP_Param::GroupInfo        var_info[];
+    struct fence_params {
+        AP_Int8 fence_action;
+        AP_Int8 fence_total;
+        AP_Int8 fence_channel;
+        AP_Int16 fence_minalt;    // meters
+        AP_Int16 fence_maxalt;    // meters
+        AP_Int16 fence_retalt;    // meters
+        AP_Int8 fence_autoenable;
+        AP_Int8 fence_ret_rally;
+    } g;
 
 protected:
 
@@ -76,6 +90,7 @@ protected:
         Vector2l *boundary;
     } *geofence_state;
 
+
     /* Start temporary functions to avoid code churn: */
     virtual void gcs_send_text(MAV_SEVERITY severity, const char *str) = 0;
     virtual void gcs_send_message(enum ap_message id) = 0;
@@ -90,10 +105,12 @@ class AP_PolyFence_Plane : public AP_PolyFence
 
 public:
 
-    AP_PolyFence_Plane(class Plane &plane, Parameters &_g) :
-        AP_PolyFence(_g),
+    AP_PolyFence_Plane(class Plane &plane) :
+        AP_PolyFence(),
         _plane(plane)
-        { }
+        {
+            AP_Param::setup_object_defaults(this, var_info_plane);
+        }
 
     void check(bool altitude_check_only);
     bool stickmixing();
@@ -116,6 +133,6 @@ private:
     /* end temporary functions to avoid code churn: */
 
     class Plane &_plane;
-    class Parameters &g;
 
+    static const struct AP_Param::GroupInfo        var_info_plane[];
 };

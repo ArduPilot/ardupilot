@@ -177,7 +177,7 @@ private:
 
     // the geofence implementation:
 #if GEOFENCE_ENABLED == ENABLED
-    class AP_PolyFence_Plane geofence{*this,g};
+    class AP_PolyFence_Plane geofence{*this};
 #endif
 
     // scaled roll limit based on pitch

@@ -13,6 +13,79 @@
                               // + 1 for return point and +1 for last
                               // pt (same as first)
 
+const AP_Param::GroupInfo AP_PolyFence::var_info[] = {
+    // @Param: _ACTION
+    // @DisplayName: Action on geofence breach
+    // @Description: What to do on fence breach. If this is set to 0 then no action is taken, and geofencing is disabled. If this is set to 1 then the plane will enter GUIDED mode, with the target waypoint as the fence return point. If this is set to 2 then the fence breach is reported to the ground station, but no other action is taken. If set to 3 then the plane enters guided mode but the pilot retains manual throttle control. If set to 4 the plane enters RTL mode, with the target waypoint as the closest rally point (or home point if there are no rally points).
+    // @Values: 0:None,1:GuidedMode,2:ReportOnly,3:GuidedModeThrPass,4:RTL_Mode
+    // @User: Standard
+    AP_GROUPINFO("_ACTION",  0, AP_PolyFence, g.fence_action, 0 ),
+
+    // @Param: _TOTAL
+    // @DisplayName: Fence Total
+    // @Description: Number of geofence points currently loaded
+    // @User: Advanced
+    AP_GROUPINFO("_TOTAL", 1, AP_PolyFence, g.fence_total, 0),
+
+    // @Param: _CHANNEL
+    // @DisplayName: Fence Channel
+    // @Description: RC Channel to use to enable geofence. PWM input above 1750 enables the geofence
+    // @User: Standard
+    AP_GROUPINFO("_CHANNEL", 2, AP_PolyFence, g.fence_channel, 0),
+
+    // @Param: _MINALT
+    // @DisplayName: Fence Minimum Altitude
+    // @Description: Minimum altitude allowed before geofence triggers
+    // @Units: meters
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_MINALT", 3, AP_PolyFence, g.fence_minalt, 0),
+
+    // @Param: _MAXALT
+    // @DisplayName: Fence Maximum Altitude
+    // @Description: Maximum altitude allowed before geofence triggers
+    // @Units: meters
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_MAXALT", 4, AP_PolyFence, g.fence_maxalt, 0),
+
+    // @Param: _RETALT
+    // @DisplayName: Fence Return Altitude
+    // @Description: Altitude the aircraft will transit to when a fence breach occurs.  If FENCE_RETALT is <= 0 then the midpoint between FENCE_MAXALT and FENCE_MINALT is used, unless FENCE_MAXALT < FENCE_MINALT.  If FENCE_MAXALT < FENCE_MINALT AND FENCE_RETALT is <= 0 then ALT_HOLD_RTL is the altitude used on a fence breach.
+    // @Units: meters
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_RETALT", 5, AP_PolyFence, g.fence_retalt, 0),
+
+    // @Param: _AUTOENABLE
+    // @DisplayName: Fence automatic enable
+    // @Description: When set to 1, geofence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled.  When set to 2, the fence autoenables after an auto takeoff, but only disables the fence floor during landing. It is highly recommended to not use this option for line of sight flying and use a fence enable channel instead.
+    // @Values: 0:NoAutoEnable,1:AutoEnable,2:AutoEnableDisableFloorOnly
+    // @User: Standard
+    AP_GROUPINFO("_AUTOENABLE", 6, AP_PolyFence, g.fence_autoenable, 0),
+
+    // @Param: _RET_RALLY
+    // @DisplayName: Fence Return to Rally
+    // @Description: When set to 1: on fence breach the plane will return to the nearest rally point rather than the fence return point.  If no rally points have been defined the plane will return to the home point.  
+    // @Values: 0:FenceReturnPoint,1:NearestRallyPoint
+    // @User: Standard
+    AP_GROUPINFO("_RET_RALLY", 7, AP_PolyFence, g.fence_ret_rally, 0),
+
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo AP_PolyFence_Plane::var_info_plane[] = {
+    // variables from parent fence
+    AP_NESTEDGROUPINFO(AP_PolyFence, 0),
+
+    // insert plane-specific fence variables here
+
+    AP_GROUPEND
+};
+
 static const StorageAccess fence_storage(StorageManager::StorageFence);
 
 /*
@@ -348,14 +421,14 @@ void AP_PolyFence_Plane::check(bool altitude_check_only)
     case FENCE_ACTION_GUIDED_THR_PASS:
     case FENCE_ACTION_RTL:
         // make sure we don't auto trim the surfaces on this mode change
-        int8_t saved_auto_trim = g.auto_trim;
-        g.auto_trim.set(0);
+        int8_t saved_auto_trim = _plane.g.auto_trim;
+        _plane.g.auto_trim.set(0);
         if (g.fence_action == FENCE_ACTION_RTL) {
             _plane.set_mode(RTL);
         } else {
             _plane.set_mode(GUIDED);
         }
-        g.auto_trim.set(saved_auto_trim);
+        _plane.g.auto_trim.set(saved_auto_trim);
 
         if (g.fence_ret_rally != 0 || g.fence_action == FENCE_ACTION_RTL) { //return to a rally point
             _plane.guided_WP_loc = _plane.rally.calc_best_rally_or_home_location(_plane.current_loc, _plane.get_RTL_altitude());
@@ -366,7 +439,7 @@ void AP_PolyFence_Plane::check(bool altitude_check_only)
                 _plane.guided_WP_loc.alt = _plane.home.alt + 100.0f*g.fence_retalt;
             } else if (g.fence_minalt >= g.fence_maxalt) {
                 // invalid min/max, use RTL_altitude
-                _plane.guided_WP_loc.alt = _plane.home.alt + g.RTL_altitude_cm;
+                _plane.guided_WP_loc.alt = _plane.home.alt + _plane.g.RTL_altitude_cm;
             } else {
                 // fly to the return point, with an altitude half way between
                 // min and max
@@ -517,7 +590,6 @@ void AP_PolyFence::geofence_update_pwm_enabled_state()
 
 
 /* end function wrappers to avoid code churn */
-
 
 #else // GEOFENCE_ENABLED
 
