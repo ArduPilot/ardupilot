@@ -379,6 +379,10 @@ private:
     uint32_t brake_timeout_start;
     uint32_t brake_timeout_ms;
 
+    // Delay the next navigation command
+    int32_t delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
+    uint32_t delay_time_start;
+
     // Flip
     Vector3f flip_orig_attitude;         // original copter attitude before flip
 
@@ -1014,6 +1018,7 @@ private:
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 #endif
+    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     void do_yaw(const AP_Mission::Mission_Command& cmd);
@@ -1037,8 +1042,9 @@ private:
 #if NAV_GUIDED == ENABLED
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
-    void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
+    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
+    void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void log_init(void);
     void run_cli(AP_HAL::UARTDriver *port);
