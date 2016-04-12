@@ -42,7 +42,7 @@ public:
 
     /* Old names to avoid code churn */
     void geofence_load();
-    bool geofence_present();
+    bool geofence_present() const;
     void geofence_update_pwm_enabled_state();
     bool geofence_set_enabled(bool enable, GeofenceEnableReason r);
     bool geofence_enabled();
@@ -53,7 +53,7 @@ public:
 
     // new names
     void load();
-    bool present();
+    bool present() const;
     void update_pwm_enabled_state();
     bool set_enabled(bool enable, GeofenceEnableReason r);
     bool enabled();
@@ -61,6 +61,11 @@ public:
     virtual void check(bool altitude_check_only) = 0;
     bool breached();
     void send_status(mavlink_channel_t chan);
+
+    bool should_revert_flight_mode() const;
+    virtual bool guided_destinations_match() const = 0;
+    virtual uint8_t oldSwitchPosition() const = 0;
+    virtual bool vehicle_in_mode_guided() const = 0;
 
     static const struct AP_Param::GroupInfo        var_info[];
     struct fence_params {

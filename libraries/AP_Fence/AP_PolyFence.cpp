@@ -179,7 +179,7 @@ failed:
  * return true if a geo-fence has been uploaded and
  * FENCE_ACTION is 1 (not necessarily enabled)
  */
-bool AP_PolyFence::present()
+bool AP_PolyFence::present() const
 {
     //require at least a return point and a triangle
     //to define a geofence area:
@@ -300,7 +300,7 @@ bool AP_PolyFence::breached()
 
 
 bool AP_PolyFence::geofence_enabled(void) { return enabled(); }
-bool AP_PolyFence::geofence_present(void) { return present(); }
+bool AP_PolyFence::geofence_present(void) const { return present(); }
 void AP_PolyFence::geofence_load(void) { load(); }
 bool AP_PolyFence::geofence_set_enabled(bool enable, GeofenceEnableReason r)
 {
@@ -326,3 +326,41 @@ void AP_PolyFence::geofence_update_pwm_enabled_state()
 {
     update_pwm_enabled_state();
 }
+
+bool AP_PolyFence::should_revert_flight_mode() const
+{
+    // if there is no fence then we didn't change the flight mode:
+    if (geofence_state == NULL) {
+        return false;
+    }
+    // only revert if it looks like we might have flipped the mode to guided:
+    if (g.fence_action != FENCE_ACTION_GUIDED &&
+        g.fence_action != FENCE_ACTION_GUIDED_THR_PASS &&
+        g.fence_action != FENCE_ACTION_RTL) {
+        return false;
+    }
+    // only change from guided mode:
+    if (!vehicle_in_mode_guided()) {
+        return false;
+    }
+    // if the geofence is not present we probably didn't set the flight mode:
+    if (!geofence_present()) {
+        return false;
+    }
+    // if the boundary is not up-to-date we probably didn't set the flight mode:
+    if (!geofence_state->boundary_uptodate) {
+        return false;
+    }
+    // if the mode switch position has been fiddled we shouldn't reset the flight mode:
+    if (geofence_state->old_switch_position != oldSwitchPosition()) {
+        return false;
+    }
+
+    // if a new guided position has been set we shouldn't change modes:
+    if (!guided_destinations_match()) {
+        return false;
+    }
+
+    return true;
+}
+
