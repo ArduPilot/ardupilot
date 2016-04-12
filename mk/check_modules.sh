@@ -6,6 +6,8 @@ MODULE_LIST="gbenchmark gtest mavlink PX4Firmware PX4Firmware/src/lib/matrix PX4
 
 NEED_INIT=0
 
+export GIT_PAGER=cat
+
 cd $(dirname "$0")/.. || exit 1
 
 for m in $MODULE_LIST; do
