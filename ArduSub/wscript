@@ -35,7 +35,7 @@ def build(bld):
     )
 
     frames = (
-        'bluerov','vectored','vectored6DOF',
+        'bluerov','vectored','vectored6DOF','simplerov'
     )
 
     for frame in frames:
