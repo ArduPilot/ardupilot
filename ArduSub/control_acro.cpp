@@ -49,8 +49,8 @@ void Sub::acro_run()
 
     //control_in is range 0-1000
     //radio_in is raw pwm value
-    motors.set_forward(channel_forward->radio_in);
-    motors.set_lateral(channel_lateral->radio_in);
+    motors.set_forward(channel_forward->norm_input());
+    motors.set_lateral(channel_lateral->norm_input());
 }
 
 

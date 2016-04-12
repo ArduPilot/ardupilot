@@ -74,6 +74,7 @@ public:
     float               get_pitch() const { return _pitch_in; }
     float               get_yaw() const { return _yaw_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
+    float               get_throttle_bidirectional() const { return constrain_float(2*(_throttle_filter.get()-0.5f),-1.0f,1.0f); }
     float               get_forward() const { return _forward_in; }
 	float               get_lateral() const { return _lateral_in; }
 

@@ -92,27 +92,26 @@ void AP_MotorsVectoredROV::setup_motors()
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 // TODO pull code that is common to output_armed_not_stabilizing into helper functions
-// ToDo calculate headroom for rpy to be added for stabilization during full throttle/forward/strafe commands
+// ToDo calculate headroom for rpy to be added for stabilization during full throttle/forward/lateral commands
 void AP_MotorsVectoredROV::output_armed_stabilizing()
 {
 	uint8_t i;                          // general purpose counter
 	float   roll_thrust;                // roll thrust input value, +/- 1.0
 	float   pitch_thrust;               // pitch thrust input value, +/- 1.0
 	float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
-	float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+	float   throttle_thrust;            // throttle thrust input value, +/- 1.0
 	float   forward_thrust;             // forward thrust input value, +/- 1.0
 	float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
-	// apply voltage and air pressure compensation
 	roll_thrust = _roll_in;
 	pitch_thrust = _pitch_in;
 	yaw_thrust = _yaw_in;
-	throttle_thrust = get_throttle();
+	throttle_thrust = get_throttle_bidirectional();
 	forward_thrust = _forward_in;
 	lateral_thrust = _lateral_in;
 
-	int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
-	int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
+	float rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
+	float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
     // initialize limits flags
     limit.roll_pitch = false;

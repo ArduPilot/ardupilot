@@ -129,7 +129,7 @@ void AP_Motors6DOF::output_min()
 
 int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
 {
-    return constrain_int16(1500 + apply_thrust_curve_and_volt_scaling(thrust_in) * 400, _throttle_radio_min + _min_throttle, _throttle_radio_max);
+    return constrain_int16(1500 + thrust_in * 400, _throttle_radio_min, _throttle_radio_max);
 }
 
 void AP_Motors6DOF::output_to_motors()
@@ -187,20 +187,19 @@ void AP_Motors6DOF::output_armed_stabilizing()
     float   roll_thrust;                // roll thrust input value, +/- 1.0
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
     float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
-    float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+    float   throttle_thrust;            // throttle thrust input value, +/- 1.0
     float   forward_thrust;             // forward thrust input value, +/- 1.0
     float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
-	// apply voltage and air pressure compensation
 	roll_thrust = _roll_in;
 	pitch_thrust = _pitch_in;
 	yaw_thrust = _yaw_in;
-	throttle_thrust = get_throttle();
+	throttle_thrust = get_throttle_bidirectional();
 	forward_thrust = _forward_in;
 	lateral_thrust = _lateral_in;
 
-    int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
-    int16_t linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
+    float rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
+    float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
     // initialize limits flags
     limit.roll_pitch = false;

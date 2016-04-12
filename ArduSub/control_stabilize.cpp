@@ -28,7 +28,7 @@ void Sub::stabilize_run()
     float pilot_throttle_scaled;
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors.armed() || ap.throttle_zero || !motors.get_interlock()) {
+    if (!motors.armed() || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
@@ -59,6 +59,6 @@ void Sub::stabilize_run()
 
     //control_in is range -1000-1000
     //radio_in is raw pwm value
-    motors.set_forward(channel_forward->radio_in);
-    motors.set_lateral(channel_lateral->radio_in);
+    motors.set_forward(channel_forward->norm_input());
+    motors.set_lateral(channel_lateral->norm_input());
 }
