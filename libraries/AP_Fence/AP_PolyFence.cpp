@@ -364,3 +364,141 @@ bool AP_PolyFence::should_revert_flight_mode() const
     return true;
 }
 
+
+/*
+ *  return true if we have breached the geo-fence minimum altiude
+ */
+bool AP_PolyFence::check_minalt()
+{
+    if (g.fence_maxalt <= g.fence_minalt) {
+        return false;
+    }
+    if (g.fence_minalt == 0) {
+        return false;
+    }
+    return (vehicle_relative_alt_cm() < (g.fence_minalt*100.0f));
+}
+
+/*
+ *  return true if we have breached the geo-fence maximum altiude
+ */
+bool AP_PolyFence::check_maxalt()
+{
+    if (g.fence_maxalt <= g.fence_minalt) {
+        return false;
+    }
+    if (g.fence_maxalt == 0) {
+        return false;
+    }
+    return (vehicle_relative_alt_cm() > g.fence_maxalt*100.0f);
+}
+
+bool AP_PolyFence::geofence_check_minalt()
+{
+    return check_minalt();
+}
+bool AP_PolyFence::geofence_check_maxalt()
+{
+    return check_maxalt();
+}
+
+
+/*
+ *  check if we have breached the geo-fence
+ */
+void AP_PolyFence::check(bool altitude_check_only)
+{
+    if (!geofence_enabled()) {
+        // switch back to the chosen control mode if still in
+        // GUIDED to the return point
+        if (should_revert_flight_mode()) {
+            geofence_state->old_switch_position = 254;
+            revert_mode();
+        }
+        return;
+    }
+
+    /* allocate the geo-fence state if need be */
+    if (geofence_state == NULL || !geofence_state->boundary_uptodate) {
+        geofence_load();
+        if (!geofence_enabled()) {
+            // may have been disabled by load
+            return;
+        }
+    }
+
+    bool outside = false;
+    uint8_t breach_type = FENCE_BREACH_NONE;
+    struct Location loc;
+
+    if (breaches_inhibited()) {
+        return;
+    }
+
+    if (geofence_state->floor_enabled && geofence_check_minalt()) {
+        outside = true;
+        breach_type = FENCE_BREACH_MINALT;
+    } else if (geofence_check_maxalt()) {
+        outside = true;
+        breach_type = FENCE_BREACH_MAXALT;
+    } else if (!altitude_check_only && vehicle_position(loc)) {
+        Vector2l location;
+        location.x = loc.lat;
+        location.y = loc.lng;
+        outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
+        if (outside) {
+            breach_type = FENCE_BREACH_BOUNDARY;
+        }
+    }
+
+    if (!outside) {
+        if (geofence_state->fence_triggered && !altitude_check_only) {
+            // we have moved back inside the fence
+            geofence_state->fence_triggered = false;
+            gcs_send_text(MAV_SEVERITY_INFO,"Geofence OK");
+ #if FENCE_TRIGGERED_PIN > 0
+            hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
+            hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
+ #endif
+            gcs_send_message(MSG_FENCE_STATUS);
+        }
+        // we're inside, all is good with the world
+        return;
+    }
+
+    // we are outside the fence
+    if (geofence_state->fence_triggered &&
+        vehicle_in_mode_guided() ||
+        vehicle_in_mode_rtl() ||
+        g.fence_action == FENCE_ACTION_REPORT) {
+        // we have already triggered, don't trigger again until the
+        // user disables/re-enables using the fence channel switch
+        return;
+    }
+
+    // we are outside, and have not previously triggered.
+    geofence_state->fence_triggered = true;
+    geofence_state->breach_count++;
+    geofence_state->breach_time = AP_HAL::millis();
+    geofence_state->breach_type = breach_type;
+
+ #if FENCE_TRIGGERED_PIN > 0
+    hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->write(FENCE_TRIGGERED_PIN, 1);
+ #endif
+
+    gcs_send_text(MAV_SEVERITY_NOTICE,"Geofence triggered");
+    gcs_send_message(MSG_FENCE_STATUS);
+
+    // see what action the user wants
+    switch (g.fence_action) {
+    case FENCE_ACTION_REPORT:
+        break;
+
+    case FENCE_ACTION_GUIDED:
+    case FENCE_ACTION_GUIDED_THR_PASS:
+        do_breach_action_guided();
+        break;
+    }
+
+}

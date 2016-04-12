@@ -58,7 +58,7 @@ public:
     bool set_enabled(bool enable, GeofenceEnableReason r);
     bool enabled();
     bool set_floor_enabled(bool floor_enable);
-    virtual void check(bool altitude_check_only) = 0;
+    void check(bool altitude_check_only);
     bool breached();
     void send_status(mavlink_channel_t chan);
 
@@ -66,6 +66,20 @@ public:
     virtual bool guided_destinations_match() const = 0;
     virtual uint8_t oldSwitchPosition() const = 0;
     virtual bool vehicle_in_mode_guided() const = 0;
+    virtual bool vehicle_in_mode_rtl() const = 0;
+    virtual bool breaches_inhibited() const { return false; };
+    virtual void revert_mode() = 0;
+    virtual int32_t vehicle_relative_alt_cm() const = 0;
+    virtual bool vehicle_position(Location &loc) const = 0;
+    virtual void do_breach_action_guided() = 0;
+
+    /* Old names to avoid code churn */
+    bool geofence_check_minalt();
+    bool geofence_check_maxalt();
+
+    // new names
+    bool check_minalt();
+    bool check_maxalt();
 
     static const struct AP_Param::GroupInfo        var_info[];
     struct fence_params {
