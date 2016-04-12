@@ -48,6 +48,35 @@ bool AP_PolyFence_Plane::check_maxalt()
 
 
 /*
+ * return true if the Vehicle's current guided destination is the same
+ * as the guided-mode destination we scribbled down when handling a
+ * fence breach
+ */
+bool AP_PolyFence_Plane::guided_destinations_match() const
+{
+    return (_plane.guided_WP_loc.lat == geofence_state->guided_lat &&
+            _plane.guided_WP_loc.lng == geofence_state->guided_lng);
+}
+
+bool AP_PolyFence_Plane::vehicle_in_mode_guided() const
+{
+    return (_plane.control_mode == GUIDED);
+}
+
+bool AP_PolyFence_Plane::vehicle_in_mode_rtl() const
+{
+    return (_plane.control_mode == RTL);
+}
+
+/*
+ * returns the position the mode switch was in before the current one
+ */
+uint8_t AP_PolyFence_Plane::oldSwitchPosition() const
+{
+    return _plane.oldSwitchPosition;
+}
+
+/*
  *  check if we have breached the geo-fence
  */
 void AP_PolyFence_Plane::check(bool altitude_check_only)
@@ -55,14 +84,7 @@ void AP_PolyFence_Plane::check(bool altitude_check_only)
     if (!geofence_enabled()) {
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
-        if (geofence_state != NULL &&
-            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL) &&
-            _plane.control_mode == GUIDED &&
-            geofence_present() &&
-            geofence_state->boundary_uptodate &&
-            geofence_state->old_switch_position == _plane.oldSwitchPosition &&
-            _plane.guided_WP_loc.lat == geofence_state->guided_lat &&
-            _plane.guided_WP_loc.lng == geofence_state->guided_lng) {
+        if (should_revert_flight_mode()) {
             geofence_state->old_switch_position = 254;
             _plane.set_mode(_plane.get_previous_mode());
         }

@@ -37,4 +37,9 @@ private:
     class Plane &_plane;
 
     static const struct AP_Param::GroupInfo        var_info_plane[];
+
+    uint8_t oldSwitchPosition() const override;
+    bool guided_destinations_match() const override;
+    bool vehicle_in_mode_guided() const override;
+    bool vehicle_in_mode_rtl() const override;
 };
