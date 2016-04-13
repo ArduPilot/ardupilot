@@ -21,6 +21,7 @@
 #pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 class AP_GPS_GSOF : public AP_GPS_Backend
 {

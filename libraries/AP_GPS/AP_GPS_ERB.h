@@ -21,7 +21,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 class AP_GPS_ERB : public AP_GPS_Backend
 {

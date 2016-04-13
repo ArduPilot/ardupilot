@@ -21,7 +21,10 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <modules/uORB/topics/vehicle_gps_position.h>
 
