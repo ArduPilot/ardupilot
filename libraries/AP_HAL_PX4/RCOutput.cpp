@@ -254,7 +254,7 @@ void PX4RCOutput::force_safety_off(void)
 
 void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
 {
-    if (ch >= _servo_count + _alt_servo_count) {
+    if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
         return;
     }
     if (!(_enabled_channels & (1U<<ch))) {
@@ -418,7 +418,9 @@ void PX4RCOutput::_send_outputs(void)
                 if (n > _alt_servo_count) {
                     n = _alt_servo_count;
                 }
-                ::write(_alt_fd, &_period[_servo_count], n*sizeof(_period[0]));
+                if (n > 0) {
+                    ::write(_alt_fd, &_period[_servo_count], n*sizeof(_period[0]));
+                }
             }
         }
 
