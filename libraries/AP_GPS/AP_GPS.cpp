@@ -610,6 +610,16 @@ AP_GPS::first_unconfigured_gps(void) const
 }
 
 void
+AP_GPS::broadcast_first_configuration_failure_reason(void) const {
+    uint8_t unconfigured = first_unconfigured_gps();
+    if (drivers[unconfigured] == NULL) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
+    } else {
+        drivers[unconfigured]->broadcast_configuration_failure_reason();
+    }
+}
+
+void
 AP_GPS::_broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index)
 {
     char buffer[64];
