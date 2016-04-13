@@ -115,18 +115,9 @@ AP_GeodesicGrid::AP_GeodesicGrid()
           {{ 1, 0,-M_GOLDEN}, { M_GOLDEN, 1, 0}, { 0, M_GOLDEN,-1}},
           {{ 1, 0,-M_GOLDEN}, { 0, M_GOLDEN,-1}, {-1, 0,-M_GOLDEN}},
           {{ 0, M_GOLDEN,-1}, {-M_GOLDEN, 1, 0}, {-1, 0,-M_GOLDEN}},
-          {{-M_GOLDEN, 1, 0}, {-1, 0, M_GOLDEN}, {-M_GOLDEN,-1, 0}},
-          {{-1, 0, M_GOLDEN}, {-M_GOLDEN,-1, 0}, { 0,-M_GOLDEN, 1}},
-          {{-1, 0, M_GOLDEN}, { 0,-M_GOLDEN, 1}, { 1, 0, M_GOLDEN}},
-          {{ 0,-M_GOLDEN, 1}, { 1, 0, M_GOLDEN}, { M_GOLDEN,-1, 0}},
-          {{ M_GOLDEN,-1, 0}, { 1, 0, M_GOLDEN}, { M_GOLDEN, 1, 0}},
-          {{ 1, 0, M_GOLDEN}, { M_GOLDEN, 1, 0}, { 0, M_GOLDEN, 1}},
-          {{ M_GOLDEN, 1, 0}, { 0, M_GOLDEN, 1}, { 0, M_GOLDEN,-1}},
-          {{ 1, 0, M_GOLDEN}, { 0, M_GOLDEN, 1}, {-1, 0, M_GOLDEN}},
-          {{ 0, M_GOLDEN, 1}, { 0, M_GOLDEN,-1}, {-M_GOLDEN, 1, 0}},
-          {{ 0, M_GOLDEN, 1}, {-M_GOLDEN, 1, 0}, {-1, 0, M_GOLDEN}}
       }
 {
+    _init_opposite_triangles();
     _init_mid_triangles();
     _init_all_inverses();
 }
@@ -185,6 +176,15 @@ bool AP_GeodesicGrid::section_triangle(unsigned int section_index,
     }
 
     return true;
+}
+
+void AP_GeodesicGrid::_init_opposite_triangles()
+{
+    for (int i = 0, j = 10; i < 10; i++, j++) {
+        _triangles[j][0] = -_triangles[i][0];
+        _triangles[j][1] = -_triangles[i][1];
+        _triangles[j][2] = -_triangles[i][2];
+    }
 }
 
 void AP_GeodesicGrid::_init_mid_triangles()
