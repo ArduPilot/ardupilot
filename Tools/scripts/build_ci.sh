@@ -61,6 +61,11 @@ waf=modules/waf/waf-light
 # get list of boards supported by the waf build
 for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
 
+echo "Temporarily disabling px4 waf builds (broken in px4 merge)"
+waf_supported_boards[px4-v1]=""
+waf_supported_boards[px4-v2]=""
+waf_supported_boards[px4-v4]=""
+
 echo "Targets: $CI_BUILD_TARGET"
 for t in $CI_BUILD_TARGET; do
     # skip make-based build for clang
