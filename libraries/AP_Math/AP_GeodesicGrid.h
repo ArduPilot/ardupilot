@@ -54,17 +54,21 @@
  *         (( 1, 0,-g), ( g, 1, 0), ( 0, g,-1)),
  *         (( 1, 0,-g), ( 0, g,-1), (-1, 0,-g)),
  *         (( 0, g,-1), (-g, 1, 0), (-1, 0,-g)),
- *         ((-g, 1, 0), (-1, 0, g), (-g,-1, 0)),
- *         ((-1, 0, g), (-g,-1, 0), ( 0,-g, 1)),
- *         ((-1, 0, g), ( 0,-g, 1), ( 1, 0, g)),
- *         (( 0,-g, 1), ( 1, 0, g), ( g,-1, 0)),
- *         (( g,-1, 0), ( 1, 0, g), ( g, 1, 0)),
- *         (( 1, 0, g), ( g, 1, 0), ( 0, g, 1)),
- *         (( g, 1, 0), ( 0, g, 1), ( 0, g,-1)),
- *         (( 1, 0, g), ( 0, g, 1), (-1, 0, g)),
- *         (( 0, g, 1), ( 0, g,-1), (-g, 1, 0)),
- *         (( 0, g, 1), (-g, 1, 0), (-1, 0, g))
+ *         -T_0,
+ *         -T_1,
+ *         -T_2,
+ *         -T_3,
+ *         -T_4,
+ *         -T_5,
+ *         -T_6,
+ *         -T_7,
+ *         -T_8,
+ *         -T_9,
  *     )
+ *
+ * Where for a given T_i = (a, b, c), -T_i = (-a, -b, -c). We call -T_i the
+ * opposite triangle of T_i in this specification. For any i in [0,20), T_j is
+ * the opposite of T_i iff j = (i + 10) % 20.
  *
  * Let an icosahedron triangle T be defined as T = (a, b, c). The "middle
  * triangle" M is defined as the triangle formed by the points that bisect the
@@ -143,7 +147,7 @@ private:
     /**
      * The icosahedron's triangles. The item `_triangles[i]` represents T_i.
      */
-    const Vector3f _triangles[20][3];
+    Vector3f _triangles[20][3];
 
     /**
      * The inverses of the change-of-basis matrices for the icosahedron
@@ -167,6 +171,11 @@ private:
      * natural basis to the basis formed by T_i's middle triangle's vectors.
      */
     Matrix3f _mid_inverses[20];
+
+    /**
+     * Initialize the opposite of the first 10 icosahedron triangles.
+     */
+    void _init_opposite_triangles();
 
     /**
      * Initialize the vertices of the middle triangles as specified by
