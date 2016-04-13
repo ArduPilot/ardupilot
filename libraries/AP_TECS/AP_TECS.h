@@ -87,6 +87,11 @@ public:
         return _land_sink;
     }
 
+    // return landing airspeed
+    float get_land_airspeed(void) const {
+        return _landAirspeed;
+    }
+
     // return height rate demand, in m/s
     float get_height_rate_demand(void) const {
         return _hgt_rate_dem;
