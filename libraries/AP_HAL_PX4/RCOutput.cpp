@@ -462,8 +462,7 @@ void PX4RCOutput::push()
         _send_outputs();
         if (_fast_channel_mask != 0) {
             // this is a crude way of triggering immediate output
-            set_freq(_fast_channel_mask, 400);
-            set_freq(_fast_channel_mask, 0);
+            _trigger_fast_output();
         }
     }
 }
@@ -472,6 +471,30 @@ void PX4RCOutput::_timer_tick(void)
 {
     if (_output_mode != MODE_PWM_ONESHOT) {
         _send_outputs();
+    }
+}
+
+/*
+  trigger immediate output on fast channels. This only works on FMU,
+  not IO. It takes advantage of the way the rate update works on FMU
+  to trigger a oneshot output
+ */
+void PX4RCOutput::_trigger_fast_output(void)
+{
+    uint32_t primary_mask = _fast_channel_mask & ((1UL<<_servo_count)-1);
+    uint32_t alt_mask = _fast_channel_mask >> _servo_count;    
+    if (_alt_fd == -1) {
+        // we're on a FMU only board
+        if (primary_mask) {
+            set_freq_fd(_pwm_fd, primary_mask, 400);
+            set_freq_fd(_pwm_fd, primary_mask, 0);
+        }
+    } else {
+        // we're on a board with px4io
+        if (alt_mask) {
+            set_freq_fd(_alt_fd, alt_mask, 400);
+            set_freq_fd(_alt_fd, alt_mask, 0);
+        }
     }
 }
 
