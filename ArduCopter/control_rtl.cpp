@@ -85,7 +85,7 @@ void Copter::rtl_climb_start()
     wp_nav.wp_and_spline_init();
 
     // RTL_SPEED == 0 means use WPNAV_SPEED
-    if (!is_zero(g.rtl_speed_cms)) {
+    if (g.rtl_speed_cms != 0) {
         wp_nav.set_speed_xy(g.rtl_speed_cms);
     }
 
@@ -441,7 +441,7 @@ void Copter::rtl_build_path()
 
     Vector3f return_vector = rtl_path.return_target-rtl_path.origin_point;
 
-    float rtl_return_dist = pythagorous2(return_vector.x, return_vector.y);
+    float rtl_return_dist = norm(return_vector.x, return_vector.y);
 
     // compute return altitude
     rtl_path.return_target.z = rtl_compute_return_alt_above_origin(rtl_return_dist);

@@ -53,7 +53,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     // No state prediction required because states are assumed to be time
     // invariant plus process noise
     // Ignore vertical wind component
-    float TAS_pred = state.z * pythagorous3(vg.x - state.x, vg.y - state.y, vg.z);
+    float TAS_pred = state.z * norm(vg.x - state.x, vg.y - state.y, vg.z);
     float TAS_mea  = airspeed;
 
     // Calculate the observation Jacobian H_TAS
