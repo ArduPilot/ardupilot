@@ -22,7 +22,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
