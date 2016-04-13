@@ -388,7 +388,7 @@ void AP_MotorsMulticopter::output_logic()
         }
         case SPOOL_UP:
             // Maximum throttle should move from minimum to maximum.
-            // Servoes should exhibit normal flight behavior.
+            // Servos should exhibit normal flight behavior.
 
             // initialize limits flags
             limit.roll_pitch = false;
@@ -419,7 +419,7 @@ void AP_MotorsMulticopter::output_logic()
 
         case THROTTLE_UNLIMITED:
             // Throttle should exhibit normal flight behavior.
-            // Servoes should exhibit normal flight behavior.
+            // Servos should exhibit normal flight behavior.
 
             // initialize limits flags
             limit.roll_pitch = false;
@@ -441,7 +441,7 @@ void AP_MotorsMulticopter::output_logic()
 
         case SPOOL_DOWN:
             // Maximum throttle should move from maximum to minimum.
-            // Servoes should exhibit normal flight behavior.
+            // Servos should exhibit normal flight behavior.
 
             // initialize limits flags
             limit.roll_pitch = false;
