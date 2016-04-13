@@ -30,11 +30,15 @@ done
         git submodule status --recursive
         exit 1
     }
-    (cd modules/uavcan && git submodule init) || {
-        echo "init of uavcan failed"
-        git submodule status --recursive
-        exit 1
-    }
+    for m in $MODULE_LIST; do
+        [ -f modules/$m/.gitmodules ] && {
+            (cd modules/$m && git submodule init) || {
+                echo "init of $m failed"
+                git submodule status --recursive
+                exit 1
+            }
+        }
+    done
     git submodule update --recursive || {
         echo "git submodule update failed"        
         git submodule status --recursive
