@@ -86,6 +86,8 @@
  *    W_3 = (m_c, m_b, c)
  */
 class AP_GeodesicGrid {
+    friend class GeodesicGridTest;
+
 public:
     /*
      * The following concepts are used by the description of this class'

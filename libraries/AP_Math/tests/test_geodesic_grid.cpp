@@ -43,6 +43,29 @@ public:
 class GeodesicGridTest : public ::testing::TestWithParam<TestParam> {
 protected:
     static AP_GeodesicGrid grid;
+
+    /**
+     * Test the functions for triangles indexes.
+     *
+     * @param p[in] The test parameter.
+     */
+    void test_triangles_indexes(const TestParam& p) {
+        if (p.section >= 0) {
+            int expected_triangle = p.section / grid.NUM_SUBTRIANGLES;
+            int triangle = grid._triangle_index(p.v, false);
+            ASSERT_EQ(expected_triangle, triangle);
+
+            int expected_subtriangle = p.section % grid.NUM_SUBTRIANGLES;
+            int subtriangle = grid._subtriangle_index(triangle, p.v, false);
+            ASSERT_EQ(expected_subtriangle, subtriangle);
+        } else {
+            int triangle = grid._triangle_index(p.v, false);
+            if (triangle >= 0) {
+                int subtriangle = grid._subtriangle_index(triangle, p.v, false);
+                ASSERT_EQ(-1, subtriangle) << "triangle is " << triangle;
+            }
+        }
+    }
 };
 
 AP_GeodesicGrid GeodesicGridTest::grid;
@@ -52,6 +75,8 @@ AP_GTEST_PRINTATBLE_PARAM_MEMBER(TestParam, v);
 TEST_P(GeodesicGridTest, Sections)
 {
     auto p = GetParam();
+
+    test_triangles_indexes(p);
     EXPECT_EQ(p.section, grid.section(p.v));
 
     if (p.section < 0) {
