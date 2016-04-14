@@ -101,6 +101,8 @@
  *  by the non-zero coefficient.
  */
 
+#include <assert.h>
+
 #include "AP_GeodesicGrid.h"
 
 AP_GeodesicGrid::AP_GeodesicGrid()
@@ -115,6 +117,14 @@ AP_GeodesicGrid::AP_GeodesicGrid()
           {{ 1, 0,-M_GOLDEN}, { M_GOLDEN, 1, 0}, { 0, M_GOLDEN,-1}},
           {{ 1, 0,-M_GOLDEN}, { 0, M_GOLDEN,-1}, {-1, 0,-M_GOLDEN}},
           {{ 0, M_GOLDEN,-1}, {-M_GOLDEN, 1, 0}, {-1, 0,-M_GOLDEN}},
+      }
+    , _neighbor_umbrellas{
+          {{ 9,  8,  7, 12, 14}},
+          {{ 1,  2,  4,  5,  3}},
+          {{16, 15, 13, 18, 17}},
+          {{19, 18, 17,  2,  4}},
+          {{11, 12, 14, 15, 13}},
+          {{ 6,  5,  3,  8,  7}},
       }
 {
     _init_opposite_triangles();
@@ -213,13 +223,14 @@ void AP_GeodesicGrid::_init_all_inverses()
     }
 }
 
-int AP_GeodesicGrid::_triangle_index(const Vector3f& v,
-                                     const bool inclusive) const
+int AP_GeodesicGrid::_from_neighbor_umbrella(int idx,
+                                             const Vector3f& v,
+                                             const Vector3f& u,
+                                             bool inclusive) const
 {
-    for (int i = 0; i < 20; i++) {
-        /* w holds the coordinates of v with respect to the basis comprised by
-         * the vectors of _triangles[i] */
-        auto w = _inverses[i] * v;
+    const struct neighbor_umbrella& umbrella = _neighbor_umbrellas[idx];
+    for (int i = 0; i < 5; i++) {
+        auto w = _inverses[umbrella.components[i]] * v;
 
         if (!is_zero(w.x) && w.x < 0) {
             continue;
@@ -235,10 +246,145 @@ int AP_GeodesicGrid::_triangle_index(const Vector3f& v,
             return -1;
         }
 
-        return i;
+        return umbrella.components[i];
     }
 
     return -1;
+}
+
+int AP_GeodesicGrid::_triangle_index(const Vector3f& v,
+                                     const bool inclusive) const
+{
+    /* w holds the coordinates of v with respect to the basis comprised by the
+     * vectors of _triangles[0] */
+    auto w = _inverses[0] * v;
+    int zero_count = 0;
+    int balance = 0;
+    int umbrella = -1;
+
+    if (is_zero(w.x)) {
+        zero_count++;
+    } else if (w.x > 0) {
+        balance++;
+    } else {
+        balance--;
+    }
+
+    if (is_zero(w.y)) {
+        zero_count++;
+    } else if (w.y > 0) {
+        balance++;
+    } else {
+        balance--;
+    }
+
+    if (is_zero(w.z)) {
+        zero_count++;
+    } else if (w.z > 0) {
+        balance++;
+    } else {
+        balance--;
+    }
+
+    switch (balance) {
+    case 3:
+        /* All coefficients are positive, thus return the first triangle. */
+        return 0;
+    case -3:
+        /* All coefficients are negative, which means that the coefficients for
+         * -w are positive, thus return the first triangle's opposite. */
+        return 10;
+    case 2:
+        /* Two coefficients are positive and one is zero, thus v crosses one of
+         * the edges of the first triangle. */
+        return inclusive ? 0 : -1;
+    case -2:
+        /* Analogous to the previous case, but for the opposite of the first
+         * triangle. */
+        return inclusive ? 10 : -1;
+    case 1:
+        /* There are two possible cases when balance is 1:
+         *
+         * 1) Two coefficients are zero, which means v crosses one of the
+         * vertices of the first triangle.
+         *
+         * 2) Two coefficients are positive and one is negative. Let a and b be
+         * vertices with positive coefficients and c the one with the negative
+         * coefficient. That means that v crosses the triangle formed by a, b
+         * and -c. The vector -c happens to be the 3-th vertex, with respect to
+         * (a, b), of the first triangle's neighbor umbrella with respect to a
+         * and b. Thus, v crosses one of the components of that umbrella. */
+        if (zero_count == 2) {
+            return inclusive ? 0 : -1;
+        }
+
+        if (!is_zero(w.x) && w.x < 0) {
+            umbrella = 1;
+        } else if (!is_zero(w.y) && w.y < 0) {
+            umbrella = 2;
+        } else {
+            umbrella = 0;
+        }
+
+        break;
+    case -1:
+        /* Analogous to the previous case, but for the opposite of the first
+         * triangle. */
+        if (zero_count == 2) {
+            return inclusive ? 10 : -1;
+        }
+
+        if (!is_zero(w.x) && w.x > 0) {
+            umbrella = 4;
+        } else if (!is_zero(w.y) && w.y > 0) {
+            umbrella = 5;
+        } else {
+            umbrella = 3;
+        }
+        w = -w;
+
+        break;
+    case 0:
+        /* There are two possible cases when balance is 1:
+         *
+         * 1) The vector v is the null vector. Arbitrarily return first
+         * triangle.
+         *
+         * 2) One coefficient is zero, another is positive and yet another is
+         * negative. Let a, b and c be the respective vertices for those
+         * coefficients, then the statements in case (2) for when balance is 1
+         * are also valid here.
+         */
+        if (zero_count == 3) {
+            return inclusive ? 0 : -1;
+        }
+
+        if (!is_zero(w.x) && w.x < 0) {
+            umbrella = 1;
+        } else if (!is_zero(w.y) && w.y < 0) {
+            umbrella = 2;
+        } else {
+            umbrella = 0;
+        }
+
+        break;
+    }
+
+    assert(umbrella >= 0);
+
+    switch (umbrella % 3) {
+    case 0:
+        w.z = -w.z;
+        break;
+    case 1:
+        w(w.y, w.z, -w.x);
+        break;
+    case 2:
+        w(w.z, w.x, -w.y);
+        break;
+    }
+
+    return _from_neighbor_umbrella(umbrella, v, w, inclusive);
 }
 
 int AP_GeodesicGrid::_subtriangle_index(const unsigned int triangle_index,
