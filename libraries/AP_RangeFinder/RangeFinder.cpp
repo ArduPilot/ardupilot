@@ -24,7 +24,7 @@
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] = {
@@ -494,11 +494,8 @@ void RangeFinder::detect_instance(uint8_t instance)
             hal.i2c_mgr->get_device(0, AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR)));
     } 
     if (type == RangeFinder_TYPE_MBI2C) {
-        if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarI2CXL(*this, instance, state[instance]);
-            return;
-        }
+        add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance],
+            hal.i2c_mgr->get_device(0, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)));
     }
     if (type == RangeFinder_TYPE_LWI2C) {
         if (_address[instance]) {
