@@ -137,9 +137,8 @@ px4-v2-solo: EXTRAFLAGS += -DAP_MOTORS_SLEW_LIMIT=1
 px4-v2-solo: px4-v2
 
 px4-v2-solo-upload: px4-v2-solo
-	scp $(SKETCH)-v2.px4 root@10.1.1.10:/tmp/
-	ssh root@10.1.1.10 PYTHONUNBUFFERED=1 loadPixhawk.py /tmp/ArduCopter-v2.px4
-	ssh root@10.1.1.10 rm /tmp/ArduCopter-v2.px4;
+	scp $(SKETCH)-v2.px4 root@10.1.1.10:/firmware
+	ssh root@10.1.1.10 shutdown -r now
 
 px4-v1-upload: px4-v1
 	$(RULEHDR)
