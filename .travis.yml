@@ -10,6 +10,27 @@ addons:
     build_command_prepend: "make clean"
     build_command:   "make"
     branch_pattern: coverity_scan
+    
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - george-edison55-precise-backports
+      - llvm-toolchain-precise-3.7
+    packages:
+      - build-essential
+      - gawk
+      - ccache
+      - genromfs
+      - libc6-i386
+      - python-pip
+      - python-dev
+      - zlib1g-dev
+      - gcc-4.9
+      - g++-4.9
+      - cmake
+      - cmake-data
+      - clang-3.7
+      - llvm-3.7
 
 before_install:
   - export PATH=$(echo ${PATH} | awk -v RS=':' -v ORS=':' '/clang/ {next} {print}' | sed 's/:*$//')
