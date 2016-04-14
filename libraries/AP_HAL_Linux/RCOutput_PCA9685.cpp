@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <cmath>
 #include <utility>
+#include <endian.h>
 
 #define PCA9685_RA_MODE1           0x00
 #define PCA9685_RA_MODE2           0x01
@@ -203,8 +204,8 @@ void RCOutput_PCA9685::push()
      */
     struct pwm_values {
         uint8_t reg;
-        uint8_t data[PWM_CHAN_COUNT * 4];
-    } pwm_values;
+        uint16_t data[PWM_CHAN_COUNT * 2];
+    } pwm_values = { };
 
     for (unsigned ch = min_ch; ch < max_ch; ch++) {
         uint16_t period_us = _pulses_buffer[ch];
@@ -214,11 +215,8 @@ void RCOutput_PCA9685::push()
             length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
         }
 
-        uint8_t *d = &pwm_values.data[(ch - min_ch) * 4];
-        *d++ = 0;
-        *d++ = 0;
-        *d++ = length & 0xFF;
-        *d++ = length >> 8;
+        uint16_t *d = &pwm_values.data[(ch - min_ch) * 2];
+        *(++d) = htobe16(length);
     }
 
     if (!_dev->get_semaphore()->take_nonblocking()) {
