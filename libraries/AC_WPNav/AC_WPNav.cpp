@@ -676,7 +676,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 
     // recalculate the desired position
     Vector3f final_target = _origin + _pos_delta_unit * _track_desired;
-    // convert final_target.z to appropriate altitude type
+    // convert final_target.z to altitude above the ekf origin
     final_target.z += curr_terr_offset;
     _pos_control.set_pos_target(final_target);
 
