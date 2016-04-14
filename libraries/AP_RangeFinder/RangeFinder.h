@@ -193,4 +193,5 @@ private:
     void update_instance(uint8_t instance);  
 
     void update_pre_arm_check(uint8_t instance);
+    void _add_backend(AP_RangeFinder_Backend *driver);
 };
