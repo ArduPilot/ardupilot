@@ -23,6 +23,7 @@
 #pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 #include "AP_GPS_MTK_Common.h"
 
 #define MTK_GPS_REVISION_V16  16
