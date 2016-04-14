@@ -351,5 +351,4 @@ protected:
     // terrain following variables
     bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _ekf_origin_terrain_alt_set = false;
-    float       _ekf_origin_terrain_alt = 0.0f;
 };

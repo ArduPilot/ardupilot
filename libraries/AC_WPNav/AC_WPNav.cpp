@@ -1148,13 +1148,12 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
 // get terrain altitude difference (in cm) between a position and the ekf origin (+ve means current terrain higher than at origin)
 bool AC_WPNav::get_terrain_offset(const Vector3f &pos, float& offset_cm)
 {
-    // initialise ekf origin terrain alt
+    // check we have terrain alt for ekf origin at least
     if (!_ekf_origin_terrain_alt_set) {
         Location_Class ekforigin = _inav.get_origin();
         int32_t talt_cm;
         if (ekforigin.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, talt_cm)) {
             _ekf_origin_terrain_alt_set = true;
-            _ekf_origin_terrain_alt = talt_cm;
         } else {
             return false;
         }
@@ -1165,7 +1164,7 @@ bool AC_WPNav::get_terrain_offset(const Vector3f &pos, float& offset_cm)
     curr_loc.set_alt(0,Location_Class::ALT_FRAME_ABOVE_ORIGIN);
     int32_t pos_terr_alt_cm;
     if (curr_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, pos_terr_alt_cm)) {
-        offset_cm = -pos_terr_alt_cm - _ekf_origin_terrain_alt;
+        offset_cm = -pos_terr_alt_cm;
         return true;
     }
 
