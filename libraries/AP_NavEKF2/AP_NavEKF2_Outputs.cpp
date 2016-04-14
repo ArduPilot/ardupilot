@@ -479,7 +479,7 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     status.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
     status.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     status.flags.using_gps = (imuSampleTime_ms - lastPosPassTime_ms) < 4000;
-    status.flags.gps_glitching = !gpsAccuracyGood; // The GPS is glitching
+    status.flags.gps_glitching = status.flags.using_gps && !gpsAccuracyGood; // The GPS is glitching
 }
 
 /*
