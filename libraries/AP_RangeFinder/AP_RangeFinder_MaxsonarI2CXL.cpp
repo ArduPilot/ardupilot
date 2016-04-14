@@ -25,6 +25,7 @@
 
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 #include <AP_HAL/AP_HAL.h>
+#include <utility>
 
 extern const AP_HAL::HAL& hal;
 
@@ -34,7 +35,8 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state)
+    AP_RangeFinder_Backend(_ranger, instance, _state),
+    _dev(hal.i2c_mgr->get_device(0, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR))
 {
 }
 
@@ -43,40 +45,44 @@ AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder &_ranger,
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-bool AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder &_ranger, uint8_t instance)
+AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder &_ranger, uint8_t instance,
+                                                             RangeFinder::RangeFinder_State &_state)
 {
-    if (!start_reading()) {
-        return false;
+    AP_RangeFinder_MaxsonarI2CXL *sensor
+        = new AP_RangeFinder_MaxsonarI2CXL(_ranger, instance, _state);
+
+    if (!sensor->start_reading()) {
+        delete sensor;
+        return nullptr;
     }
     // give time for the sensor to process the request
     hal.scheduler->delay(50);
     uint16_t reading_cm;
-    return get_reading(reading_cm);
+    if (!sensor->get_reading(reading_cm)) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
 }
 
 // start_reading() - ask sensor to make a range reading
 bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
-
-    // exit immediately if we can't take the semaphore
-    if (i2c_sem == NULL || !i2c_sem->take(1)) {
+    if (!_dev->get_semaphore()->take(1)) {
         return false;
     }
 
-    uint8_t tosend[1] = 
-        { AP_RANGE_FINDER_MAXSONARI2CXL_COMMAND_TAKE_RANGE_READING };
+    uint8_t tosend[] = {AP_RANGE_FINDER_MAXSONARI2CXL_COMMAND_TAKE_RANGE_READING};
 
     // send command to take reading
-    if (hal.i2c->write(AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR,
-                       1, tosend) != 0) {
-        i2c_sem->give();
+    if (!_dev->transfer(tosend, sizeof(tosend), nullptr, 0)) {
+        _dev->get_semaphore()->give();
         return false;
     }
 
     // return semaphore
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
 
     return true;
 }
@@ -84,22 +90,18 @@ bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
 // read - return last value measured by sensor
 bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
 {
-    uint8_t buff[2];
-
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
-
     // exit immediately if we can't take the semaphore
-    if (i2c_sem == NULL || !i2c_sem->take(1)) {
+    if (!_dev->get_semaphore()->take(1)) {
         return false;
     }
 
+    uint8_t buff[2];
     // take range reading and read back results
-    if (hal.i2c->read(AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR, 2, buff) != 0) {
-        i2c_sem->give();
+    if (!_dev->transfer(nullptr, 0, buff, sizeof(buff))) {
+        _dev->get_semaphore()->give();
         return false;
     }
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
 
     // combine results into distance
     reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
