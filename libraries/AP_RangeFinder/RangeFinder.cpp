@@ -463,6 +463,18 @@ void RangeFinder::update(void)
         }
     }
 }
+
+void RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
+{
+    if (!backend) {
+        return;
+    }
+    if (num_instances == RANGEFINDER_MAX_INSTANCES) {
+        AP_HAL::panic("Too many RANGERS backends");
+    }
+
+    drivers[num_instances++] = backend;
+}
     
 /*
   detect if an instance of a rangefinder is connected. 
