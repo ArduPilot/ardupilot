@@ -108,8 +108,12 @@ bool PX4Util::get_system_id(char buf[40])
     get_board_serial(serialid);
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     const char *board_type = "PX4v1";
-#else
+#elif CONFIG_ARCH_BOARD_PX4FMU_V2
     const char *board_type = "PX4v2";
+#elif CONFIG_ARCH_BOARD_PX4FMU_V4
+    const char *board_type = "PX4v4";
+#else
+    const char *board_type = "PX4v?";
 #endif
     // this format is chosen to match the human_readable_serial()
     // function in auth.c
