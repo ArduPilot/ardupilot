@@ -74,6 +74,7 @@ enum ap_message {
     MSG_VIBRATION,
     MSG_RPM,
     MSG_MISSION_ITEM_REACHED,
+    MSG_POSITION_TARGET_GLOBAL_INT,
     MSG_RETRY_DEFERRED // this must be last
 };
 
