@@ -26,25 +26,18 @@ extern const AP_HAL::HAL& hal;
 
 bool NavioLED_I2C::hw_init()
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    _dev = hal.i2c_mgr->get_device(1, PCA9685_ADDRESS);
 
     // take i2c bus sempahore
-    if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
-
-    // disable recording of i2c lockup errors
-    hal.i2c->ignore_errors(true);
 
     // enable the led
     bool ret = true;
 
-    // re-enable recording of i2c lockup errors
-    hal.i2c->ignore_errors(false);
-
     // give back i2c semaphore
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
 
     return ret;
 }
@@ -52,11 +45,8 @@ bool NavioLED_I2C::hw_init()
 // set_rgb - set color as a combination of red, green and blue values
 bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
-
     // exit immediately if we can't take the semaphore
-    if (i2c_sem == NULL || !i2c_sem->take(5)) {
+    if (!_dev || !_dev->get_semaphore()->take(5)) {
         return false;
     }
 
@@ -74,15 +64,13 @@ bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     uint8_t red_channel_msb = red_adjusted >> 8;
 
 
-    uint8_t transaction[] = {0x00, 0x00, blue_channel_lsb, blue_channel_msb,
-                   0x00, 0x00, green_channel_lsb, green_channel_msb,
-                   0x00, 0x00, red_channel_lsb, red_channel_msb
-    };
+    uint8_t transaction[] = {PCA9685_PWM, 0x00, 0x00, blue_channel_lsb, blue_channel_msb,
+			     0x00, 0x00, green_channel_lsb, green_channel_msb,
+			     0x00, 0x00, red_channel_lsb, red_channel_msb};
 
-
-    bool success = (hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_PWM, sizeof(transaction), transaction) == 0);
+    bool success = _dev->transfer(transaction, sizeof(transaction), nullptr, 0);
 
     // give back i2c semaphore
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
     return success;
 }
