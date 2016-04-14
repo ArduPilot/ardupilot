@@ -170,7 +170,7 @@ void Copter::failsafe_gps_glitch_check() {
                 set_mode(ALT_HOLD, MODE_REASON_GPS_GLITCH);
             }
         }
-    } else if (!glitch && failsafe.gps_glitch) {
+    } else if (!glitch && position_ok() && failsafe.gps_glitch) {
         failsafe.gps_glitch = false;
 
         if (failsafe.radio) {
