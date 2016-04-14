@@ -79,7 +79,7 @@ void SITL_State::_sitl_setup(const char *home_str)
     _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     _barometer = (AP_Baro *)AP_Param::find_object("GND_");
     _ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
-    _compass = (Compass *)AP_Param::find_object("COMPASS_");
+    _compass = &Compass::get_frontend();
     _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
     _optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
 

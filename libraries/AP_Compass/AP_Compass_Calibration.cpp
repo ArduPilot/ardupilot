@@ -14,17 +14,17 @@ Compass::compass_cal_update()
 
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         bool failure;
-        _calibrator[i].update(failure);
+        frontend._calibrator[i].update(failure);
         if (failure) {
             AP_Notify::events.compass_cal_failed = 1;
         }
 
-        if (_calibrator[i].check_for_timeout()) {
+        if (frontend._calibrator[i].check_for_timeout()) {
             AP_Notify::events.compass_cal_failed = 1;
             cancel_calibration_all();
         }
 
-        if (_calibrator[i].running()) {
+        if (frontend._calibrator[i].running()) {
             running = true;
         }
     }
@@ -32,9 +32,9 @@ Compass::compass_cal_update()
     AP_Notify::flags.compass_cal_running = running;
 
     if (is_calibrating()) {
-        _cal_has_run = true;
+        frontend._cal_has_run = true;
         return;
-    } else if (_cal_has_run && auto_reboot()) {
+    } else if (frontend._cal_has_run && auto_reboot()) {
         hal.scheduler->delay(1000);
         hal.scheduler->reboot(false);
     }
@@ -46,20 +46,20 @@ Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay, bo
     if (!healthy(i)) {
         return false;
     }
-    memset(_reports_sent,0,sizeof(_reports_sent));
+    memset(frontend._reports_sent,0,sizeof(frontend._reports_sent));
     if (!is_calibrating() && delay > 0.5f) {
         AP_Notify::events.initiated_compass_cal = 1;
     }
     if (i == get_primary()) {
-        _calibrator[i].set_tolerance(_calibration_threshold);
+        frontend._calibrator[i].set_tolerance(frontend._calibration_threshold);
     } else {
-        _calibrator[i].set_tolerance(_calibration_threshold*2);
+        frontend._calibrator[i].set_tolerance(frontend._calibration_threshold*2);
     }
-    _calibrator[i].start(retry, autosave, delay);
-    _compass_cal_autoreboot = autoreboot;
+    frontend._calibrator[i].start(retry, autosave, delay);
+    frontend._compass_cal_autoreboot = autoreboot;
 
     // disable compass learning both for calibration and after completion
-    _learn.set_and_save(0);
+    frontend._learn.set_and_save(0);
 
     return true;
 }
@@ -97,10 +97,10 @@ Compass::cancel_calibration(uint8_t i)
 {
     AP_Notify::events.initiated_compass_cal = 0;
 
-    if (_calibrator[i].running() || _calibrator[i].get_status() == COMPASS_CAL_WAITING_TO_START) {
+    if (frontend._calibrator[i].running() || frontend._calibrator[i].get_status() == COMPASS_CAL_WAITING_TO_START) {
         AP_Notify::events.compass_cal_canceled = 1;
     }
-    _calibrator[i].clear();
+    frontend._calibrator[i].clear();
 }
 
 void
@@ -122,11 +122,11 @@ Compass::cancel_calibration_all()
 bool
 Compass::accept_calibration(uint8_t i)
 {
-    CompassCalibrator& cal = _calibrator[i];
+    CompassCalibrator& cal = frontend._calibrator[i];
     uint8_t cal_status = cal.get_status();
 
     if (cal_status == COMPASS_CAL_SUCCESS) {
-        _cal_complete_requires_reboot = true;
+        frontend._cal_complete_requires_reboot = true;
         Vector3f ofs, diag, offdiag;
         cal.get_calibration(ofs, diag, offdiag);
         cal.clear();
@@ -149,7 +149,7 @@ Compass::accept_calibration_mask(uint8_t mask)
 {
     for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         if ((1<<i) & mask) {
-            CompassCalibrator& cal = _calibrator[i];
+            CompassCalibrator& cal = frontend._calibrator[i];
             uint8_t cal_status = cal.get_status();
             if (cal_status != COMPASS_CAL_SUCCESS && cal_status != COMPASS_CAL_NOT_STARTED) {
                 // a compass failed or is still in progress
@@ -182,15 +182,15 @@ Compass::send_mag_cal_progress(mavlink_channel_t chan)
     uint8_t cal_mask = get_cal_mask();
 
     for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
-        uint8_t cal_status = _calibrator[compass_id].get_status();
+        uint8_t cal_status = frontend._calibrator[compass_id].get_status();
 
         if (cal_status == COMPASS_CAL_WAITING_TO_START  ||
             cal_status == COMPASS_CAL_RUNNING_STEP_ONE ||
             cal_status == COMPASS_CAL_RUNNING_STEP_TWO) {
-            uint8_t completion_pct = _calibrator[compass_id].get_completion_percent();
+            uint8_t completion_pct = frontend._calibrator[compass_id].get_completion_percent();
             uint8_t completion_mask[10];
             Vector3f direction(0.0f,0.0f,0.0f);
-            uint8_t attempt = _calibrator[compass_id].get_attempt();
+            uint8_t attempt = frontend._calibrator[compass_id].get_attempt();
 
             memset(completion_mask, 0, sizeof(completion_mask));
 
@@ -215,14 +215,14 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
 
     for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
 
-        uint8_t cal_status = _calibrator[compass_id].get_status();
+        uint8_t cal_status = frontend._calibrator[compass_id].get_status();
 
         if ((cal_status == COMPASS_CAL_SUCCESS ||
-            cal_status == COMPASS_CAL_FAILED) && ((_reports_sent[compass_id] < MAX_CAL_REPORTS) || CONTINUOUS_REPORTS)) {
-            float fitness = _calibrator[compass_id].get_fitness();
+            cal_status == COMPASS_CAL_FAILED) && ((frontend._reports_sent[compass_id] < MAX_CAL_REPORTS) || CONTINUOUS_REPORTS)) {
+            float fitness = frontend._calibrator[compass_id].get_fitness();
             Vector3f ofs, diag, offdiag;
-            _calibrator[compass_id].get_calibration(ofs, diag, offdiag);
-            uint8_t autosaved = _calibrator[compass_id].get_autosave();
+            frontend._calibrator[compass_id].get_calibration(ofs, diag, offdiag);
+            uint8_t autosaved = frontend._calibrator[compass_id].get_autosave();
 
             // ensure we don't try to send with no space available
             if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_REPORT)) {
@@ -238,27 +238,27 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
                 diag.x, diag.y, diag.z,
                 offdiag.x, offdiag.y, offdiag.z
             );
-            _reports_sent[compass_id]++;
+            frontend._reports_sent[compass_id]++;
         }
 
-        if (cal_status == COMPASS_CAL_SUCCESS && _calibrator[compass_id].get_autosave()) {
+        if (cal_status == COMPASS_CAL_SUCCESS && frontend._calibrator[compass_id].get_autosave()) {
             accept_calibration(compass_id);
         }
     }
 }
 
 bool
-Compass::is_calibrating() const
+Compass::is_calibrating()
 {
     return get_cal_mask();
 }
 
 uint8_t
-Compass::get_cal_mask() const
+Compass::get_cal_mask()
 {
     uint8_t cal_mask = 0;
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        if (_calibrator[i].get_status() != COMPASS_CAL_NOT_STARTED) {
+        if (frontend._calibrator[i].get_status() != COMPASS_CAL_NOT_STARTED) {
             cal_mask |= 1 << i;
         }
     }

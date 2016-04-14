@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Module/AP_Module.h>
 
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
@@ -13,6 +14,8 @@
 #include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
+
+Compass Compass::frontend;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define COMPASS_LEARN_DEFAULT 0
@@ -372,7 +375,8 @@ Compass::Compass(void) :
     _board_orientation(ROTATION_NONE),
     _null_init_done(false),
     _thr_or_curr(0.0f),
-    _hil_mode(false)
+    _hil_mode(false),
+    _event_bitmask(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
@@ -392,11 +396,11 @@ Compass::Compass(void) :
 bool
 Compass::init()
 {
-    if (_compass_count == 0) {
+    if (frontend._compass_count == 0) {
         // detect available backends. Only called once
-        _detect_backends();
+        frontend._detect_backends();
     }
-    if (_compass_count != 0) {
+    if (frontend._compass_count != 0) {
         // get initial health status
         hal.scheduler->delay(100);
         read();
@@ -479,27 +483,37 @@ void Compass::_detect_backends(void)
 void
 Compass::accumulate(void)
 {
-    for (uint8_t i=0; i< _backend_count; i++) {
+    for (uint8_t i=0; i< frontend._backend_count; i++) {
         // call accumulate on each of the backend
-        _backends[i]->accumulate();
+        frontend._backends[i]->accumulate();
     }
 }
 
 bool
 Compass::read(void)
 {
-    for (uint8_t i=0; i< _backend_count; i++) {
+    for (uint8_t i=0; i< frontend._backend_count; i++) {
         // call read on each of the backend. This call updates field[i]
-        _backends[i]->read();
+        frontend._backends[i]->read();
     }
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
-        _state[i].healthy = (AP_HAL::millis() - _state[i].last_update_ms < 500);
+        frontend._state[i].healthy = (AP_HAL::millis() - frontend._state[i].last_update_ms < 500);
     }
+    if(frontend._state[0].healthy) {
+        frontend._event_bitmask |= EVENT_BITMASK(EVENT_NEW_SAMPLE,0);
+    }
+    if(frontend._state[1].healthy) {
+        frontend._event_bitmask |= EVENT_BITMASK(EVENT_NEW_SAMPLE,1);
+    }
+    if(frontend._state[2].healthy) {
+        frontend._event_bitmask |= EVENT_BITMASK(EVENT_NEW_SAMPLE,2);
+    }
+    frontend.invoke_callbacks(frontend._event_bitmask);
     return healthy();
 }
 
 uint8_t
-Compass::get_healthy_mask() const
+Compass::get_healthy_mask()
 {
     uint8_t healthy_mask = 0;
     for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
@@ -515,7 +529,7 @@ Compass::set_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[i].offset.set(offsets);
+        frontend._state[i].offset.set(offsets);
     }
 }
 
@@ -524,7 +538,7 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[i].offset.set(offsets);
+        frontend._state[i].offset.set(offsets);
         save_offsets(i);
     }
 }
@@ -534,7 +548,7 @@ Compass::set_and_save_diagonals(uint8_t i, const Vector3f &diagonals)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[i].diagonals.set_and_save(diagonals);
+        frontend._state[i].diagonals.set_and_save(diagonals);
     }
 }
 
@@ -543,15 +557,15 @@ Compass::set_and_save_offdiagonals(uint8_t i, const Vector3f &offdiagonals)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[i].offdiagonals.set_and_save(offdiagonals);
+        frontend._state[i].offdiagonals.set_and_save(offdiagonals);
     }
 }
 
 void
 Compass::save_offsets(uint8_t i)
 {
-    _state[i].offset.save();  // save offsets
-    _state[i].dev_id.save();  // save device id corresponding to these offsets
+    frontend._state[i].offset.save();  // save offsets
+    frontend._state[i].dev_id.save();  // save device id corresponding to these offsets
 }
 
 void
@@ -565,15 +579,15 @@ Compass::save_offsets(void)
 void
 Compass::set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor)
 {
-    _state[i].motor_compensation.set(motor_comp_factor);
+    frontend._state[i].motor_compensation.set(motor_comp_factor);
 }
 
 void
 Compass::save_motor_compensation()
 {
-    _motor_comp_type.save();
+    frontend._motor_comp_type.save();
     for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-        _state[k].motor_compensation.save();
+        frontend._state[k].motor_compensation.save();
     }
 }
 
@@ -582,9 +596,9 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
 {
     // if automatic declination is configured, then compute
     // the declination based on the initial GPS fix
-    if (_auto_declination) {
+    if (frontend._auto_declination) {
         // Set the declination based on the lat/lng from GPS
-        _declination.set(radians(
+        frontend._declination.set(radians(
                 AP_Declination::get_declination(
                     (float)latitude / 10000000,
                     (float)longitude / 10000000)));
@@ -593,7 +607,7 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
 
 /// return true if the compass should be used for yaw calculations
 bool
-Compass::use_for_yaw(void) const
+Compass::use_for_yaw(void)
 {
     uint8_t prim = get_primary();
     return healthy(prim) && use_for_yaw(prim);
@@ -601,32 +615,32 @@ Compass::use_for_yaw(void) const
 
 /// return true if the specified compass can be used for yaw calculations
 bool
-Compass::use_for_yaw(uint8_t i) const
+Compass::use_for_yaw(uint8_t i)
 {
-    return _state[i].use_for_yaw;
+    return frontend._state[i].use_for_yaw;
 }
 
 void
 Compass::set_declination(float radians, bool save_to_eeprom)
 {
     if (save_to_eeprom) {
-        _declination.set_and_save(radians);
+        frontend._declination.set_and_save(radians);
     }else{
-        _declination.set(radians);
+        frontend._declination.set(radians);
     }
 }
 
 float
-Compass::get_declination() const
+Compass::get_declination()
 {
-    return _declination.get();
+    return frontend._declination.get();
 }
 
 /*
   calculate a compass heading given the attitude from DCM and the mag vector
  */
 float
-Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
+Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i)
 {
     float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
@@ -643,9 +657,9 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
     float heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
 
     // Declination correction (if supplied)
-    if( fabsf(_declination) > 0.0f )
+    if( fabsf(frontend._declination) > 0.0f )
     {
-        heading = heading + _declination;
+        heading = heading + frontend._declination;
         if (heading > M_PI)    // Angle normalization (-180 deg, 180 deg)
             heading -= (2.0f * M_PI);
         else if (heading < -M_PI)
@@ -677,15 +691,15 @@ bool Compass::configured(uint8_t i)
     }
 
     // backup detected dev_id
-    int32_t dev_id_orig = _state[i].dev_id;
+    int32_t dev_id_orig = frontend._state[i].dev_id;
 
     // load dev_id from eeprom
-    _state[i].dev_id.load();
+    frontend._state[i].dev_id.load();
 
     // if different then the device has not been configured
-    if (_state[i].dev_id != dev_id_orig) {
+    if (frontend._state[i].dev_id != dev_id_orig) {
         // restore device id
-        _state[i].dev_id = dev_id_orig;
+        frontend._state[i].dev_id = dev_id_orig;
         // return failure
         return false;
     }
@@ -712,54 +726,54 @@ void Compass::setHIL(uint8_t instance, float roll, float pitch, float yaw)
     // create a rotation matrix for the given attitude
     R.from_euler(roll, pitch, yaw);
 
-    if (!is_equal(_hil.last_declination,get_declination())) {
+    if (!is_equal(frontend._hil.last_declination,get_declination())) {
         _setup_earth_field();
-        _hil.last_declination = get_declination();
+        frontend._hil.last_declination = get_declination();
     }
 
     // convert the earth frame magnetic vector to body frame, and
     // apply the offsets
-    _hil.field[instance] = R.mul_transpose(_hil.Bearth);
+    frontend._hil.field[instance] = R.mul_transpose(frontend._hil.Bearth);
 
     // apply default board orientation for this compass type. This is
     // a noop on most boards
-    _hil.field[instance].rotate(MAG_BOARD_ORIENTATION);
+    frontend._hil.field[instance].rotate(MAG_BOARD_ORIENTATION);
 
     // add user selectable orientation
-    _hil.field[instance].rotate((enum Rotation)_state[0].orientation.get());
+    frontend._hil.field[instance].rotate((enum Rotation)frontend._state[0].orientation.get());
 
-    if (!_state[0].external) {
+    if (!frontend._state[0].external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
-        _hil.field[instance].rotate(_board_orientation);
+        frontend._hil.field[instance].rotate(frontend._board_orientation);
     }
-    _hil.healthy[instance] = true;
+    frontend._hil.healthy[instance] = true;
 }
 
 // Update raw magnetometer values from HIL mag vector
 //
 void Compass::setHIL(uint8_t instance, const Vector3f &mag)
 {
-    _hil.field[instance] = mag;
-    _hil.healthy[instance] = true;
-    _state[instance].last_update_usec = AP_HAL::micros();
+    frontend._hil.field[instance] = mag;
+    frontend._hil.healthy[instance] = true;
+    frontend._state[instance].last_update_usec = AP_HAL::micros();
 }
 
-const Vector3f& Compass::getHIL(uint8_t instance) const
+const Vector3f& Compass::getHIL(uint8_t instance)
 {
-    return _hil.field[instance];
+    return frontend._hil.field[instance];
 }
 
 // setup _Bearth
 void Compass::_setup_earth_field(void)
 {
     // assume a earth field strength of 400
-    _hil.Bearth(400, 0, 0);
+    frontend._hil.Bearth(400, 0, 0);
 
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
     Matrix3f R;
     R.from_euler(0, ToRad(66), get_declination());
-    _hil.Bearth = R * _hil.Bearth;
+    frontend._hil.Bearth = R * frontend._hil.Bearth;
 }
 
 /*
@@ -767,16 +781,16 @@ void Compass::_setup_earth_field(void)
  */
 void Compass::motor_compensation_type(const uint8_t comp_type)
 {
-    if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
-        _motor_comp_type = (int8_t)comp_type;
-        _thr_or_curr = 0;                               // set current current or throttle to zero
+    if (frontend._motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && frontend._motor_comp_type != (int8_t)comp_type) {
+        frontend._motor_comp_type = (int8_t)comp_type;
+        frontend._thr_or_curr = 0;                               // set current current or throttle to zero
         for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             set_motor_compensation(i, Vector3f(0,0,0)); // clear out invalid compensation vectors
         }
     }
 }
 
-bool Compass::consistent() const
+bool Compass::consistent()
 {
     Vector3f primary_mag_field = get_field();
     Vector3f primary_mag_field_norm;

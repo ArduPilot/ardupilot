@@ -9,6 +9,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Module/AP_Module.h>
 
 #include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
@@ -55,28 +56,38 @@
 #define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
 #define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
 
-class Compass
+class Compass;
+class Compass : public AP_Module
 {
 friend class AP_Compass_Backend;
 public:
-    /// Constructor
-    ///
-    Compass();
+    // static singleton access
+    static Compass &get_frontend(void) {
+        // we don't declare the singleton variable here as it results
+        // in less efficient code on stm32
+        return frontend;
+    }
 
+    // make sure a Compass object cannot be copied or moved
+    Compass(Compass const&) = delete;
+    Compass(Compass&&) = delete;
+    Compass& operator=(Compass const&) = delete;
+    Compass& operator=(Compass &&) = delete;
+    
     /// Initialize the compass device.
     ///
     /// @returns    True if the compass was initialized OK, false if it was not
     ///             found or is not functioning.
     ///
-    bool init();
+    static bool init();
 
     /// Read the compass and update the mag_ variables.
     ///
-    bool read();
+    static bool read();
 
     /// use spare CPU cycles to accumulate values from the compass if
     /// possible (this method should also be implemented in the backends)
-    void accumulate();
+    static void accumulate();
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
@@ -84,26 +95,26 @@ public:
     ///
     /// @returns heading in radians
     ///
-    float calculate_heading(const Matrix3f &dcm_matrix) const {
+    static float calculate_heading(const Matrix3f &dcm_matrix) {
         return calculate_heading(dcm_matrix, get_primary());
     }
-    float calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const;
+    static float calculate_heading(const Matrix3f &dcm_matrix, uint8_t i);
 
     /// Sets offset x/y/z values.
     ///
     /// @param  i                   compass instance
     /// @param  offsets             Offsets to the raw mag_ values in milligauss.
     ///
-    void set_offsets(uint8_t i, const Vector3f &offsets);
+    static void set_offsets(uint8_t i, const Vector3f &offsets);
 
     /// Sets and saves the compass offset x/y/z values.
     ///
     /// @param  i                   compass instance
     /// @param  offsets             Offsets to the raw mag_ values in milligauss.
     ///
-    void set_and_save_offsets(uint8_t i, const Vector3f &offsets);
-    void set_and_save_diagonals(uint8_t i, const Vector3f &diagonals);
-    void set_and_save_offdiagonals(uint8_t i, const Vector3f &diagonals);
+    static void set_and_save_offsets(uint8_t i, const Vector3f &offsets);
+    static void set_and_save_diagonals(uint8_t i, const Vector3f &diagonals);
+    static void set_and_save_offdiagonals(uint8_t i, const Vector3f &diagonals);
 
     /// Saves the current offset x/y/z values for one or all compasses
     ///
@@ -112,65 +123,65 @@ public:
     /// This should be invoked periodically to save the offset values maintained by
     /// ::learn_offsets.
     ///
-    void save_offsets(uint8_t i);
-    void save_offsets(void);
+    static void save_offsets(uint8_t i);
+    static void save_offsets(void);
 
     // return the number of compass instances
-    uint8_t get_count(void) const { return _compass_count; }
+    static uint8_t get_count(void) { return frontend._compass_count; }
 
     /// Return the current field as a Vector3f in milligauss
-    const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
-    const Vector3f &get_field(void) const { return get_field(get_primary()); }
+    static const Vector3f &get_field(uint8_t i) { return frontend._state[i].field; }
+    static const Vector3f &get_field(void) { return get_field(get_primary()); }
 
     // compass calibrator interface
-    void compass_cal_update();
+    static void compass_cal_update();
 
-    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
-    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
-    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+    static bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+    static bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+    static bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
 
-    void cancel_calibration(uint8_t i);
-    void cancel_calibration_all();
-    void cancel_calibration_mask(uint8_t mask);
+    static void cancel_calibration(uint8_t i);
+    static void cancel_calibration_all();
+    static void cancel_calibration_mask(uint8_t mask);
 
-    bool accept_calibration(uint8_t i);
-    bool accept_calibration_all();
-    bool accept_calibration_mask(uint8_t mask);
+    static bool accept_calibration(uint8_t i);
+    static bool accept_calibration_all();
+    static bool accept_calibration_mask(uint8_t mask);
 
-    bool compass_cal_requires_reboot() { return _cal_complete_requires_reboot; }
-    bool auto_reboot() { return _compass_cal_autoreboot; }
-    uint8_t get_cal_mask() const;
-    bool is_calibrating() const;
+    static bool compass_cal_requires_reboot() { return frontend._cal_complete_requires_reboot; }
+    static bool auto_reboot() { return frontend._compass_cal_autoreboot; }
+    static uint8_t get_cal_mask();
+    static bool is_calibrating();
 
     /*
       handle an incoming MAG_CAL command
     */
-    uint8_t handle_mag_cal_command(const mavlink_command_long_t &packet);
+    static uint8_t handle_mag_cal_command(const mavlink_command_long_t &packet);
 
-    void send_mag_cal_progress(mavlink_channel_t chan);
-    void send_mag_cal_report(mavlink_channel_t chan);
+    static void send_mag_cal_progress(mavlink_channel_t chan);
+    static void send_mag_cal_report(mavlink_channel_t chan);
 
     // check if the compasses are pointing in the same direction
-    bool consistent() const;
+    static bool consistent();
 
     /// Return the health of a compass
-    bool healthy(uint8_t i) const { return _state[i].healthy; }
-    bool healthy(void) const { return healthy(get_primary()); }
-    uint8_t get_healthy_mask() const;
+    static bool healthy(uint8_t i) { return frontend._state[i].healthy; }
+    static bool healthy(void) { return healthy(get_primary()); }
+    static uint8_t get_healthy_mask();
 
     /// Returns the current offset values
     ///
     /// @returns                    The current compass offsets in milligauss.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
-    const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
+    static const Vector3f &get_offsets(uint8_t i) { return frontend._state[i].offset; }
+    static const Vector3f &get_offsets(void) { return get_offsets(get_primary()); }
 
     /// Sets the initial location used to get declination
     ///
     /// @param  latitude             GPS Latitude.
     /// @param  longitude            GPS Longitude.
     ///
-    void set_initial_location(int32_t latitude, int32_t longitude);
+    static void set_initial_location(int32_t latitude, int32_t longitude);
 
     /// Program new offset values.
     ///
@@ -179,43 +190,43 @@ public:
     /// @param  y                   Offset to the raw mag_y value in milligauss.
     /// @param  z                   Offset to the raw mag_z value in milligauss.
     ///
-    void set_and_save_offsets(uint8_t i, int x, int y, int z) {
+    static void set_and_save_offsets(uint8_t i, int x, int y, int z) {
         set_and_save_offsets(i, Vector3f(x, y, z));
     }
 
     // learn offsets accessor
-    bool learn_offsets_enabled() const { return _learn; }
+    static bool learn_offsets_enabled() { return frontend._learn; }
 
     /// Perform automatic offset updates
     ///
-    void learn_offsets(void);
+    static void learn_offsets(void);
 
     /// return true if the compass should be used for yaw calculations
-    bool use_for_yaw(uint8_t i) const;
-    bool use_for_yaw(void) const;
+    static bool use_for_yaw(uint8_t i);
+    static bool use_for_yaw(void);
 
     /// Sets the local magnetic field declination.
     ///
     /// @param  radians             Local field declination.
     /// @param save_to_eeprom       true to save to eeprom (false saves only to memory)
     ///
-    void set_declination(float radians, bool save_to_eeprom = true);
-    float get_declination() const;
+    static void set_declination(float radians, bool save_to_eeprom = true);
+    static float get_declination();
 
     // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
-        _board_orientation = orientation;
+    static void set_board_orientation(enum Rotation orientation) {
+        frontend._board_orientation = orientation;
     }
 
     /// Set the motor compensation type
     ///
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current
     ///
-    void motor_compensation_type(const uint8_t comp_type);
+    static void motor_compensation_type(const uint8_t comp_type);
 
     /// get the motor compensation value.
-    uint8_t get_motor_compensation_type() const {
-        return _motor_comp_type;
+    static uint8_t get_motor_compensation_type() {
+        return frontend._motor_comp_type;
     }
 
     /// Set the motor compensation factor x/y/z values.
@@ -223,38 +234,38 @@ public:
     /// @param  i                   instance of compass
     /// @param  offsets             Offsets multiplied by the throttle value and added to the raw mag_ values.
     ///
-    void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
+    static void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    const Vector3f& get_motor_compensation(uint8_t i) const { return _state[i].motor_compensation; }
-    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(get_primary()); }
+    static const Vector3f& get_motor_compensation(uint8_t i) { return frontend._state[i].motor_compensation; }
+    static const Vector3f& get_motor_compensation(void) { return get_motor_compensation(get_primary()); }
 
     /// Saves the current motor compensation x/y/z values.
     ///
     /// This should be invoked periodically to save the offset values calculated by the motor compensation auto learning
     ///
-    void save_motor_compensation();
+    static void save_motor_compensation();
 
     /// Returns the current motor compensation offset values
     ///
     /// @returns                    The current compass offsets in milligauss.
     ///
-    const Vector3f &get_motor_offsets(uint8_t i) const { return _state[i].motor_offset; }
-    const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(get_primary()); }
+    static const Vector3f &get_motor_offsets(uint8_t i) { return frontend._state[i].motor_offset; }
+    static const Vector3f &get_motor_offsets(void) { return get_motor_offsets(get_primary()); }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
-    void set_throttle(float thr_pct) {
-        if (_motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
-            _thr_or_curr = thr_pct;
+    static void set_throttle(float thr_pct) {
+        if (frontend._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+            frontend._thr_or_curr = thr_pct;
         }
     }
 
     /// Set the current used by system in amps
     /// @param amps                 current flowing to the motors expressed in amps
-    void set_current(float amps) {
-        if (_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
-            _thr_or_curr = amps;
+    static void set_current(float amps) {
+        if (frontend._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+            frontend._thr_or_curr = amps;
         }
     }
 
@@ -262,27 +273,27 @@ public:
     ///
     /// @returns                    True if compass has been configured
     ///
-    bool configured(uint8_t i);
-    bool configured(void);
+    static bool configured(uint8_t i);
+    static bool configured(void);
 
     /// Returns the instance of the primary compass
     ///
     /// @returns                    the instance number of the primary compass
     ///
-    uint8_t get_primary(void) const { return _primary; }
+    static uint8_t get_primary(void) { return frontend._primary; }
 
     // HIL methods
-    void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
-    void        setHIL(uint8_t instance, const Vector3f &mag);
-    const Vector3f&   getHIL(uint8_t instance) const;
-    void        _setup_earth_field();
+    static void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
+    static void        setHIL(uint8_t instance, const Vector3f &mag);
+    static const Vector3f&   getHIL(uint8_t instance);
+    static void        _setup_earth_field();
 
     // enable HIL mode
-    void        set_hil_mode(void) { _hil_mode = true; }
+    static void        set_hil_mode(void) { frontend._hil_mode = true; }
 
     // return last update time in microseconds
-    uint32_t last_update_usec(void) const { return _state[get_primary()].last_update_usec; }
-    uint32_t last_update_usec(uint8_t i) const { return _state[i].last_update_usec; }
+    static uint32_t last_update_usec(void) { return frontend._state[get_primary()].last_update_usec; }
+    static uint32_t last_update_usec(uint8_t i) { return frontend._state[i].last_update_usec; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -295,6 +306,10 @@ public:
     } _hil;
 
 private:
+    /// private constructor and frontend singleton instance.
+    static Compass frontend;
+    Compass();
+
     /// Register a new compas driver, allocating an instance number
     ///
     /// @return number of compass instances
@@ -383,6 +398,9 @@ private:
 
     // if we want HIL only
     bool _hil_mode:1;
+
+    //callback event bitmask
+    uint64_t _event_bitmask;
 
     AP_Float _calibration_threshold;
 };
