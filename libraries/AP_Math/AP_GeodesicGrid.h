@@ -146,6 +146,41 @@ public:
                           Vector3f& c) const;
 
 private:
+    /*
+     * The following are concepts used in the description of the private
+     * members.
+     *
+     * Neighbor triangle with respect to an edge
+     * -----------------------------------------
+     * Let T be a triangle. The triangle W is a neighbor of T with respect to
+     * edge e if T and W share that edge. If e is formed by vectors a and b,
+     * then W can be said to be a neighbor of T with respect to a and b.
+     *
+     * Umbrella of a vector
+     * --------------------
+     * Let v be one vertex of the icosahedron. The umbrella of v is the set of
+     * icosahedron triangles that share that vertex. The vector v is called the
+     * umbrella's pivot.
+     *
+     * Let T have vertices v, a and b. Then, with respect to (a, b):
+     *  - The vector a is the umbrella's 0-th vertex.
+     *  - The vector b is the 1-th vertex.
+     *  - The triangle formed by the v, the i-th and ((i + 1) % 5)-th vertex is
+     *  the umbrella's i-th component.
+     *  - For i in [2,5), the i-th vertex is the vertex that, with the
+     *  (i - 1)-th and v, forms the neighbor of the (i - 2)-th component with
+     *  respect to v and the (i - 1)-th vertex.
+     *
+     * Still with respect to (a, b), the umbrella's i-th component is the
+     * triangle formed by the i-th and ((i + 1) % 5)-th vertices and the pivot.
+     *
+     * Neighbor umbrella with respect to an icosahedron triangle's edge
+     * ----------------------------------------------------------------
+     * Let T be an icosahedron triangle. Let W be the T's neighbor triangle wrt
+     * the edge e. Let w be the W's vertex that is opposite to e. Then the
+     * neighbor umbrella of T with respect to e is the umbrella of w.
+     */
+
     /**
      * The icosahedron's triangles. The item `_triangles[i]` represents T_i.
      */
@@ -175,6 +210,34 @@ private:
     Matrix3f _mid_inverses[20];
 
     /**
+     * The representation of the neighbor umbrellas of T_0 and its opposite
+     * (i.e. T_10).
+     *
+     * The array of #_neighbor_umbrellas[i] contains the icosahedron triangles
+     * indexes of the i-th umbrella.
+     *
+     * Let T_0 = (a, b, c). Then:
+     *  - _neighbor_umbrellas[0] is neighbor of T_0 with respect to (a, b).
+     *  - _neighbor_umbrellas[1] is neighbor of T_0 with respect to (b, c).
+     *  - _neighbor_umbrellas[2] is neighbor of T_0 with respect to (c, a).
+     *  - _neighbor_umbrellas[3] is neighbor of T_10 with respect to (-a, -b).
+     *  - _neighbor_umbrellas[4] is neighbor of T_10 with respect to (-b, -c).
+     *  - _neighbor_umbrellas[5] is neighbor of T_10 with respect to (-c, -a).
+     *
+     * The edges are represented with pairs because the order of the vertices
+     * matters to the order the triangles' indexes are defined - the order of
+     * the umbrellas' vertices and components is convertioned to be with
+     * respect to those pairs.
+     */
+    struct neighbor_umbrella {
+        /**
+         * The umbrella's components. The value of #components[i] is the
+         * icosahedron triangle index of the i-th component.
+         */
+        int components[5];
+    } _neighbor_umbrellas[6];
+
+    /**
      * Initialize the opposite of the first 10 icosahedron triangles.
      */
     void _init_opposite_triangles();
@@ -189,6 +252,30 @@ private:
      * Initialize the matrices in #_inverses and #_mid_inverses.
      */
     void _init_all_inverses();
+
+    /**
+     * Find the icosahedron triangle index of the component of
+     * #_neighbor_umbrellas[umbrella_index] that is crossed by \p v.
+     *
+     * @param umbrella_index[in] The umbrella index. Must be in [0,6).
+     *
+     * @param v[in] The vector to be tested.
+     *
+     * @param u[in] The vector \p u must be \p v  expressed with respect to the
+     * base formed by the umbrella's 0-th, 1-th and 3-th vertices, in that
+     * order.
+     *
+     * @param inclusive[in] This parameter follows the same rules defined in
+     * #section() const.
+     *
+     * @return The index of the icosahedron triangle. The value -1 is returned
+     * if the triangle isn't found, which might happen when \p inclusive is
+     * false.
+     */
+    int _from_neighbor_umbrella(int umbrella_index,
+                                const Vector3f& v,
+                                const Vector3f& u,
+                                bool inclusive) const;
 
     /**
      * Find which icosahedron's triangle is crossed by \p v.
