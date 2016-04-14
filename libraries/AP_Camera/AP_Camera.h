@@ -12,6 +12,9 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <drivers/drv_hrt.h>
+#endif
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
@@ -83,6 +86,11 @@ private:
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
     void            feedback_pin_timer();
+    void            setup_feedback_callback(void);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    static void     capture_callback(void *context, uint32_t chan_index,
+                                     hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow);
+#endif
     
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
@@ -96,7 +104,7 @@ private:
     AP_Int8         _feedback_polarity;
 
     // this is set to 1 when camera trigger pin has fired
-    volatile bool   _camera_triggered;
+    static volatile bool   _camera_triggered;
     bool            _timer_installed:1;
     uint8_t         _last_pin_state;
 };
