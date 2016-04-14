@@ -26,6 +26,8 @@
 #include "AP_RangeFinder_Bebop.h"
 #include "AP_RangeFinder_MAVLink.h"
 
+extern const AP_HAL::HAL& hal;
+
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
@@ -490,11 +492,7 @@ void RangeFinder::detect_instance(uint8_t instance)
     }
 #endif
     if (type == RangeFinder_TYPE_PLI2C) {
-        if (AP_RangeFinder_PulsedLightLRF::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PulsedLightLRF(*this, instance, state[instance]);
-            return;
-        }
+        add_backend(AP_RangeFinder_PulsedLightLRF::detect(*this, instance, state[instance]));
     } 
     if (type == RangeFinder_TYPE_MBI2C) {
         if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
