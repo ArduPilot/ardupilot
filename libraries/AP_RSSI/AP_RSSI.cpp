@@ -19,6 +19,16 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
+#define BOARD_RSSI_DEFAULT 1
+#define BOARD_RSSI_ANA_PIN 11
+#define BOARD_RSSI_ANA_PIN_HIGH 3.3f
+#else
+#define BOARD_RSSI_DEFAULT 0
+#define BOARD_RSSI_ANA_PIN 0
+#define BOARD_RSSI_ANA_PIN_HIGH 5.0f
+#endif
+
 
 const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
@@ -27,14 +37,14 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Description: Radio Receiver RSSI type. If your radio receiver supports RSSI of some kind, set it here, then set its associated RSSI_XXXXX parameters, if any.
     // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue
     // @User: Standard
-    AP_GROUPINFO("TYPE", 0, AP_RSSI, rssi_type,  0),
+    AP_GROUPINFO("TYPE", 0, AP_RSSI, rssi_type,  BOARD_RSSI_DEFAULT),
 
     // @Param: ANA_PIN
     // @DisplayName: Receiver RSSI analog sensing pin
     // @Description: This selects an analog pin where the receiver RSSI voltage will be read.
-    // @Values: 0:APM2 A0, 1:APM2 A1, 13:APM2 A13, 103:Pixhawk SBUS
+    // @Values: 0:APM2 A0,1:APM2 A1,13:APM2 A13,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15: Pixhawk ADC6,103:Pixhawk SBUS
     // @User: Standard
-    AP_GROUPINFO("ANA_PIN", 1, AP_RSSI, rssi_analog_pin,  0),
+    AP_GROUPINFO("ANA_PIN", 1, AP_RSSI, rssi_analog_pin,  BOARD_RSSI_ANA_PIN),
 
     // @Param: PIN_LOW
     // @DisplayName: Receiver RSSI voltage low
@@ -52,7 +62,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Increment: 0.01
     // @Range: 0 5.0
     // @User: Standard
-    AP_GROUPINFO("PIN_HIGH", 3, AP_RSSI, rssi_analog_pin_range_high, 5.0f),
+    AP_GROUPINFO("PIN_HIGH", 3, AP_RSSI, rssi_analog_pin_range_high, BOARD_RSSI_ANA_PIN_HIGH),
 
     // @Param: CHANNEL
     // @DisplayName: Receiver RSSI channel number
