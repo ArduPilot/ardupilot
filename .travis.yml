@@ -53,22 +53,25 @@ notifications:
     on_failure: always  # options: [always|never|change] default: always
     on_start: false     # default: false
 
-compiler: gcc
-
 env:
   global:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
-  matrix:
-    - CI_BUILD_TARGET="px4-v2"
-    - CI_BUILD_TARGET="sitl minlure"
-    - CI_BUILD_TARGET="navio bebop"
-    - CI_BUILD_TARGET="sitltest"
+
+# Note: while https://github.com/travis-ci/travis-ci/issues/4393 isn't solved we need to hack compiler name to have cache work properly
 
 matrix:
   include:
-    - compiler: clang
+    - compiler: "gcc PX4"
+      env: CI_BUILD_TARGET="px4-v2"
+    - compiler: "gcc Native"
       env: CI_BUILD_TARGET="sitl minlure"
-    - compiler: clang
+    - compiler: "gcc Linux"
+      env: CI_BUILD_TARGET="navio bebop"
+    - compiler: "gcc SITL Test"
+      env: CI_BUILD_TARGET="sitltest"
+    - compiler: "clang Native"
+      env: CI_BUILD_TARGET="sitl minlure"
+    - compiler: "clang Linux"
       env: CI_BUILD_TARGET="navio bebop"
