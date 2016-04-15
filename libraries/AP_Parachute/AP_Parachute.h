@@ -22,6 +22,7 @@
 #define AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT     1100    // default PWM value to move servo to when shutter is deactivated
 
 #define AP_PARACHUTE_ALT_MIN_DEFAULT            10     // default min altitude the vehicle should have before parachute is released
+#define AP_PARACHUTE_ALT_MAX_DEFAULT            50     // default max altitude above which the parachute should not be released
 
 #define AP_PARACHUTE_AUTO_ON_DEFAULT            0      // automatic emergency parachute release is off by default
 #define AP_PARACHUTE_AUTO_ALT_DEFAULT           60     // altitude threshold above home at which to deploy parachute automatically

@@ -103,7 +103,7 @@ void Plane::parachute_emergency_check()
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Crash: Critical altitude error %d m", altitude_error_cm * 0.01f);
 
         // check if altitude is suitable for parachute deployment
-        if (relative_altitude() > parachute.alt_min() && (parachute.alt_max() < 0 || relative.altitude() < parachute.alt_max())) {
+        if (relative_altitude() > parachute.alt_min() && (parachute.alt_max() < 0 || relative_altitude() < parachute.alt_max())) {
             parachute_release();
         }
         parachute.control_loss_ms(0);
