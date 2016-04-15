@@ -161,38 +161,26 @@ void AP_BoardConfig::init()
     }
 
     if (_sbus_out_rate.get() >= 1) {
-        int fd = open("/dev/px4io", 0);
-        if (fd == -1) {
-            hal.console->printf("SBUS: Unable to open px4io for sbus\n");
-        } else {
-            static const struct {
-                uint8_t value;
-                uint16_t rate;
-            } rates[] = {
-                { 1, 50 },
-                { 2, 75 },
-                { 3, 100 },
-                { 4, 150 },
-                { 5, 200 },
-                { 6, 250 },
-                { 7, 300 }
-            };
-            uint16_t rate = 300;
-            for (i=0; i<ARRAY_SIZE(rates); i++) {
-                if (rates[i].value == _sbus_out_rate) {
-                    rate = rates[i].rate;
-                }
+        static const struct {
+            uint8_t value;
+            uint16_t rate;
+        } rates[] = {
+            { 1, 50 },
+            { 2, 75 },
+            { 3, 100 },
+            { 4, 150 },
+            { 5, 200 },
+            { 6, 250 },
+            { 7, 300 }
+        };
+        uint16_t rate = 300;
+        for (i=0; i<ARRAY_SIZE(rates); i++) {
+            if (rates[i].value == _sbus_out_rate) {
+                rate = rates[i].rate;
             }
-            for (uint8_t tries=0; tries<10; tries++) {
-                if (ioctl(fd, SBUS_SET_PROTO_VERSION, 1) != 0) {
-                    continue;
-                }
-                if (ioctl(fd, PWM_SERVO_SET_SBUS_RATE, rate) != 0) {
-                    continue;
-                }
-                break;
-            }
-            close(fd);
+        }
+        if (!hal.rcout->enable_sbus_out(rate)) {
+            hal.console->printf("Failed to enable SBUS out\n");
         }
     }
 
