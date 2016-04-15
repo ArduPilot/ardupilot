@@ -58,8 +58,12 @@ bool Plane::verify_land()
 #else
     bool rangefinder_in_range = false;
 #endif
+
+    // Below we check for wp_proportion being greater then 50%.  In otherwords ensure that the vehicle
+    // has covered 50% of the distance to the landing point before it can flare
     if (height <= g.land_flare_alt ||
-        (aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec) ||
+        ((aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec) &&
+         (auto_state.wp_proportion > 0.5)) ||
         (!rangefinder_in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||
         (fabsf(auto_state.sink_rate) < 0.2f && !is_flying())) {
 
