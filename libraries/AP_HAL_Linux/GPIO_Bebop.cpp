@@ -6,6 +6,7 @@
 
 const unsigned Linux::GPIO_Sysfs::pin_table[] = {
     [BEBOP_GPIO_CAMV_NRST] = 129,
+    [LINUX_GPIO_ULTRASOUND_VOLTAGE] = 200,
 };
 
 const uint8_t Linux::GPIO_Sysfs::n_pins = _BEBOP_GPIO_MAX;
