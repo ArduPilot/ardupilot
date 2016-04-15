@@ -119,12 +119,12 @@ AP_GeodesicGrid::AP_GeodesicGrid()
           {{ 0, M_GOLDEN,-1}, {-M_GOLDEN, 1, 0}, {-1, 0,-M_GOLDEN}},
       }
     , _neighbor_umbrellas{
-          {{ 9,  8,  7, 12, 14}},
-          {{ 1,  2,  4,  5,  3}},
-          {{16, 15, 13, 18, 17}},
-          {{19, 18, 17,  2,  4}},
-          {{11, 12, 14, 15, 13}},
-          {{ 6,  5,  3,  8,  7}},
+          {{ 9,  8,  7, 12, 14}, 1, 2, 0, 0, 2},
+          {{ 1,  2,  4,  5,  3}, 0, 0, 2, 2, 0},
+          {{16, 15, 13, 18, 17}, 2, 2, 0, 2, 1},
+          {{19, 18, 17,  2,  4}, 1, 2, 0, 0, 2},
+          {{11, 12, 14, 15, 13}, 0, 0, 2, 2, 0},
+          {{ 6,  5,  3,  8,  7}, 2, 2, 0, 2, 1},
       }
 {
     _init_opposite_triangles();
@@ -229,27 +229,85 @@ int AP_GeodesicGrid::_from_neighbor_umbrella(int idx,
                                              bool inclusive) const
 {
     const struct neighbor_umbrella& umbrella = _neighbor_umbrellas[idx];
-    for (int i = 0; i < 5; i++) {
-        auto w = _inverses[umbrella.components[i]] * v;
 
-        if (!is_zero(w.x) && w.x < 0) {
-            continue;
-        }
-        if (!is_zero(w.y) && w.y < 0) {
-            continue;
-        }
-        if (!is_zero(w.z) && w.z < 0) {
-            continue;
+    /* The following comparisons between the umbrella's first and second
+     * vertices' coefficients work for this algorithm because all vertices'
+     * vectors are of the same length. */
+
+    if (is_equal(u.x, u.y)) {
+        /* If the coefficients of the first and second vertices are equal, then
+         * v crosses the first component or the edge formed by the umbrella's
+         * pivot and forth vertex. */
+        auto w = _inverses[umbrella.components[0]] * v;
+        float x0 = w[umbrella.v0_c0];
+        if (is_zero(x0)) {
+            if (!inclusive) {
+                return -1;
+            }
+            return umbrella.components[0];
+        } else if (x0 < 0) {
+            if (!inclusive) {
+                return -1;
+            }
+            return umbrella.components[u.x < u.y ? 3 : 2];
         }
 
-        if ((is_zero(w.x) || is_zero(w.y) || is_zero(w.z)) && !inclusive) {
-            return -1;
-        }
-
-        return umbrella.components[i];
+        return umbrella.components[0];
     }
 
-    return -1;
+    if (u.y > u.x) {
+        /* If the coefficient of the second vertex is greater than the first
+         * one's, then v crosses the first, second or third component. */
+        auto w = _inverses[umbrella.components[1]] * v;
+        float x1 = w[umbrella.v1_c1];
+        float x2 = w[umbrella.v2_c1];
+
+        if (is_zero(x1)) {
+            if (!inclusive) {
+                return -1;
+            }
+            return umbrella.components[x1 < 0 ? 2 : 1];
+        } else if (x1 < 0) {
+            return umbrella.components[2];
+        }
+
+        if (is_zero(x2)) {
+            if (!inclusive) {
+                return -1;
+            }
+            return umbrella.components[x2 > 0 ? 1 : 0];
+        } else if (x2 < 0) {
+            return umbrella.components[0];
+        }
+
+        return umbrella.components[1];
+    } else {
+        /* If the coefficient of the second vertex is lesser than the first
+         * one's, then v crosses the first, fourth or fifth component. */
+        auto w = _inverses[umbrella.components[4]] * v;
+        float x4 = w[umbrella.v4_c4];
+        float x0 = w[umbrella.v0_c4];
+
+        if (is_zero(x4)) {
+            if (!inclusive) {
+                return -1;
+            }
+            return umbrella.components[x4 < 0 ? 0 : 4];
+        } else if (x4 < 0) {
+            return umbrella.components[0];
+        }
+
+        if (is_zero(x0)) {
+            if (!inclusive) {
+                return -1;
+            }
+            return umbrella.components[x0 > 0 ? 4 : 3];
+        } else if (x0 < 0) {
+            return umbrella.components[3];
+        }
+
+        return umbrella.components[4];
+    }
 }
 
 int AP_GeodesicGrid::_triangle_index(const Vector3f& v,

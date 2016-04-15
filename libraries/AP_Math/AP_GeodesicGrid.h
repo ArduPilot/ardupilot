@@ -233,6 +233,17 @@ private:
          * icosahedron triangle index of the i-th component.
          */
         int components[5];
+        /**
+         * The fields with name in the format vi_cj are interpreted as the
+         * following: vi_cj is the index of the vector, in the icosahedron
+         * triangle pointed by #components[j], that matches the umbrella's i-th
+         * vertex.
+         */
+        int v0_c0;
+        int v1_c1;
+        int v2_c1;
+        int v4_c4;
+        int v0_c4;
     } _neighbor_umbrellas[6];
 
     /**
