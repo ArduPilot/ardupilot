@@ -27,8 +27,8 @@
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 
-class AP_RangeFinder_Backend; 
- 
+class AP_RangeFinder_Backend;
+
 class RangeFinder
 {
 public:
@@ -92,7 +92,7 @@ public:
     AP_Int16 _powersave_range;
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     // Return the number of range finder instances
     uint8_t num_sensors(void) const {
         return num_instances;
@@ -104,7 +104,7 @@ public:
     // update state of all rangefinders. Should be called at around
     // 10Hz from main loop
     void update(void);
-    
+
 #define _RangeFinder_STATE(instance) state[instance]
 
     uint16_t distance_cm(uint8_t instance) const {
@@ -185,7 +185,8 @@ private:
     AP_SerialManager &serial_manager;
 
     void detect_instance(uint8_t instance);
-    void update_instance(uint8_t instance);  
+    void update_instance(uint8_t instance);
 
     void update_pre_arm_check(uint8_t instance);
+    void add_backend(AP_RangeFinder_Backend *backend);
 };
