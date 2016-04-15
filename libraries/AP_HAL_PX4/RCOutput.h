@@ -31,11 +31,10 @@ public:
     void cork();
     void push();
 
-    void    set_output_mode(enum output_mode mode) override {
-        _output_mode = mode;
-    }
+    void set_output_mode(enum output_mode mode) override;
     
     void _timer_tick(void);
+    bool enable_sbus_out(uint16_t rate_hz) override;
 
 private:
     int _pwm_fd;
@@ -44,6 +43,7 @@ private:
     uint16_t _period[PX4_NUM_OUTPUT_CHANNELS];
     volatile uint8_t _max_channel;
     volatile bool _need_update;
+    bool _sbus_enabled:1;
     perf_counter_t  _perf_rcout;
     uint32_t _last_output;
     uint32_t _last_config_us;

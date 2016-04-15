@@ -13,6 +13,8 @@
 #include <drivers/drv_pwm_output.h>
 #include <uORB/topics/actuator_direct.h>
 #include <drivers/drv_hrt.h>
+#include <drivers/drv_pwm_output.h>
+#include <drivers/drv_sbus.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,6 +39,7 @@ void PX4RCOutput::init()
     if (ioctl(_pwm_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
     }
+
     _rate_mask = 0;
     _alt_fd = -1;    
     _servo_count = 0;
@@ -61,7 +64,7 @@ void PX4RCOutput::init()
 
     // ensure not to write zeros to disabled channels
     _enabled_channels = 0;
-    for (int i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
+    for (uint8_t i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
     }
 
@@ -264,7 +267,8 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
     if (ch >= _max_channel) {
         _max_channel = ch + 1;
     }
-    if (period_us != _period[ch]) {
+    if (period_us != _period[ch] ||
+        _output_mode == MODE_PWM_ONESHOT) {
         _period[ch] = period_us;
         _need_update = true;
     }
@@ -409,8 +413,20 @@ void PX4RCOutput::_send_outputs(void)
     if (_need_update && _pwm_fd != -1) {
         _need_update = false;
         perf_begin(_perf_rcout);
-        // always send all outputs to first PWM device. This ensures that SBUS is properly updated in px4io
-        ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
+        uint8_t to_send = _max_channel<_servo_count?_max_channel:_servo_count;
+        if (_sbus_enabled) {
+            to_send = _max_channel;
+        }
+        if (to_send > 0) {
+            for (int i=to_send-1; i >= 0; i--) {
+                if (_period[i] == 0 || _period[0] == PWM_IGNORE_THIS_CHANNEL) {
+                    to_send = i;
+                }
+            }
+        }
+        if (to_send > 0) {
+            ::write(_pwm_fd, _period, to_send*sizeof(_period[0]));
+        }
         if (_max_channel > _servo_count) {
             // maybe send updates to alt_fd
             if (_alt_fd != -1 && _alt_servo_count > 0) {
@@ -489,15 +505,53 @@ void PX4RCOutput::_trigger_fast_output(void)
         // we're on a FMU only board
         if (primary_mask) {
             set_freq_fd(_pwm_fd, primary_mask, 400);
-            set_freq_fd(_pwm_fd, primary_mask, 0);
+            set_freq_fd(_pwm_fd, primary_mask, 51);
         }
     } else {
         // we're on a board with px4io
         if (alt_mask) {
             set_freq_fd(_alt_fd, alt_mask, 400);
-            set_freq_fd(_alt_fd, alt_mask, 0);
+            set_freq_fd(_alt_fd, alt_mask, 51);
         }
     }
 }
+
+/*
+  enable sbus output
+ */
+bool PX4RCOutput::enable_sbus_out(uint16_t rate_hz)
+{
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        return false;
+    }
+    for (uint8_t tries=0; tries<10; tries++) {
+        if (ioctl(fd, SBUS_SET_PROTO_VERSION, 1) != 0) {
+            continue;
+        }
+        if (ioctl(fd, PWM_SERVO_SET_SBUS_RATE, rate_hz) != 0) {
+            continue;
+        }
+        close(fd);
+        _sbus_enabled = true;
+        return true;
+    }
+    close(fd);
+    return false;
+}
+
+/*
+  setup output mode
+ */
+void PX4RCOutput::set_output_mode(enum output_mode mode)
+{
+    _output_mode = mode;
+    if (_output_mode == MODE_PWM_ONESHOT) {
+        ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 1);
+    } else {
+        ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 0);
+    }
+}
+
 
 #endif // CONFIG_HAL_BOARD
