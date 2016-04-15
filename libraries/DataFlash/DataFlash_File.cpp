@@ -803,7 +803,7 @@ uint16_t DataFlash_File::start_new_log(void)
 {
     stop_logging();
 
-    _startup_messagewriter->reset();
+    start_new_log_reset_variables();
 
     if (_open_error) {
         // we have previously failed to open a file - don't try again
