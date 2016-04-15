@@ -61,7 +61,6 @@ private:
     orb_advert_t _actuator_armed_pub = NULL;
     uint16_t _esc_pwm_min = 0;
     uint16_t _esc_pwm_max = 0;
-    uint16_t _fast_channel_mask;
 
     void _init_alt_channels(void);
     void _publish_actuators(void);
@@ -70,6 +69,4 @@ private:
     bool _corking;
     enum output_mode _output_mode = MODE_PWM_NORMAL;
     void _send_outputs(void);
-
-    void _trigger_fast_output();
 };
