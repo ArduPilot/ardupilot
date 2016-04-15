@@ -83,7 +83,10 @@ void Plane::parachute_emergency_check()
     }
 
     // do not release if taking off or landing
-    if (auto_state.takeoff_complete == false || mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
+    if (auto_state.takeoff_complete == false ||
+        auto_state.land_complete == true ||
+        mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
+
         parachute.control_loss_ms(0);
         return;
     }
