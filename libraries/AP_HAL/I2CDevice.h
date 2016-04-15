@@ -63,6 +63,11 @@ public:
 
     /* See Device::get_fd() */
     virtual int get_fd() override = 0;
+
+    void ignore_errors(bool b) { _ignore_errors = b; }
+
+protected:
+    bool _ignore_errors;
 };
 
 class I2CDeviceManager {
