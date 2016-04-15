@@ -76,14 +76,9 @@ void Plane::parachute_emergency_check()
         return;
     }
 
-    // only automatically release in AUTO mode
-    if (control_mode != AUTO) {
-        parachute.control_loss_ms(0);
-        return;
-    }
-
-    // do not release if taking off or landing
-    if (auto_state.takeoff_complete == false ||
+    // only release in AUTO mode, do not release if taking off or landing
+    if (control_mode != AUTO ||
+        auto_state.takeoff_complete == false ||
         auto_state.land_complete == true ||
         mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
