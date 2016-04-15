@@ -24,7 +24,7 @@
 #define AP_PARACHUTE_ALT_MIN_DEFAULT            10     // default min altitude the vehicle should have before parachute is released
 
 #define AP_PARACHUTE_AUTO_ON_DEFAULT            0      // automatic emergency parachute release is off by default
-#define AP_PARACHUTE_AUTO_ERROR_DEFAULT         20     // altitude error at which to deploy parachute automatically
+#define AP_PARACHUTE_AUTO_ALT_DEFAULT           60     // altitude threshold above home at which to deploy parachute automatically
 
 /// @class	AP_Parachute
 /// @brief	Class managing the release of a parachute
@@ -66,7 +66,7 @@ public:
     void control_loss_ms(uint32_t time);
     uint32_t control_loss_ms() const { return _control_loss_ms; }
 
-    int16_t auto_error_cm() const { return _auto_error * 100.0f; }
+    int16_t auto_alt() const { return _auto_alt; }
 
     /// auto_enabled - returns true if parachute automatic emergency release is enabled
     bool auto_enabled() const { return enabled() && _auto_enabled; }
@@ -84,7 +84,7 @@ private:
     AP_Int16    _delay_ms;      // delay before chute release for motors to stop
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     AP_Int8     _auto_enabled;  // 1 if automatic emergency parachute release is enabled
-    AP_Int16    _auto_error;    // altitude error in metres at which to deploy parachute automatically (if enabled)
+    AP_Int16    _auto_alt;      // altitude threshold above home at which to deploy parachute automatically (if enabled)
 #endif
 
     // internal variables

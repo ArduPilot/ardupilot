@@ -93,8 +93,8 @@ void Plane::parachute_emergency_check()
         return;
     }
 
-    // do not release if we are flying within given error
-    if (altitude_error_cm < parachute.auto_error_cm()) {
+    // do not release if emergency altitude is not reached
+    if (relative_altitude() > parachute.auto_alt()) {
         parachute.control_loss_ms(0);
         return;
     }

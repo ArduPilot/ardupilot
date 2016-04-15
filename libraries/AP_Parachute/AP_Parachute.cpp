@@ -69,14 +69,14 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("AUTO_ON", 6, AP_Parachute, _auto_enabled, AP_PARACHUTE_AUTO_ON_DEFAULT),
 
-    // @Param: AUTO_ERROR
-    // @DisplayName: Altitude deviation for parachute release
-    // @Description: Altitude deviation at which to release parachute if in AUTO and CHUTE_AUTO_ON.
-    // @Units: Meters
-    // @Range: 10 32767
+    // @Param: AUTO_ALT
+    // @DisplayName: Altitude threshold for automatic parachute release
+    // @Description: Altitude above home at which to release parachute if in AUTO and CHUTE_AUTO_ON.
+    // @Units: m
+    // @Range: 0 32000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("AUTO_ERROR", 7, AP_Parachute, _auto_error, AP_PARACHUTE_AUTO_ERROR_DEFAULT),
+    AP_GROUPINFO("AUTO_ALT", 7, AP_Parachute, _auto_alt, AP_PARACHUTE_AUTO_ALT_DEFAULT),
 #endif
 
     AP_GROUPEND
