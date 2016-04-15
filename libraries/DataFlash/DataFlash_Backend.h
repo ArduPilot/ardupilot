@@ -132,6 +132,9 @@ protected:
     uint32_t _internal_errors;
     uint32_t _dropped;
 
+    // must be called when a new log is being started:
+    virtual void start_new_log_reset_variables();
+
 private:
 
     uint32_t _last_periodic_1Hz;

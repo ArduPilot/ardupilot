@@ -50,6 +50,10 @@ void DataFlash_Backend::periodic_tasks()
     periodic_fullrate(now);
 }
 
+void DataFlash_Backend::start_new_log_reset_variables()
+{
+    _startup_messagewriter->reset();
+}
 
 void DataFlash_Backend::internal_error() {
     _internal_errors++;

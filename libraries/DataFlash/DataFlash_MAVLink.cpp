@@ -231,7 +231,7 @@ void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan,
             _target_component_id = msg->compid;
             _chan = chan;
             _next_seq_num = 0;
-            _startup_messagewriter->reset();
+            start_new_log_reset_variables();
             _last_response_time = AP_HAL::millis();
             Debug("Target: (%u/%u)", _target_system_id, _target_component_id);
         }
