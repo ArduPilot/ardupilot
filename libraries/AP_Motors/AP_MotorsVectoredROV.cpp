@@ -119,8 +119,8 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
     limit.throttle_upper = false;
 
     // sanity check throttle is above zero and below current limited throttle
-	if (throttle_thrust <= 0.0f) {
-		throttle_thrust = 0.0f;
+	if (throttle_thrust <= -_throttle_thrust_max) {
+		throttle_thrust = -_throttle_thrust_max;
 		limit.throttle_lower = true;
 	}
 	if (throttle_thrust >= _throttle_thrust_max) {
@@ -138,11 +138,11 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
         }
     }
 
-    int16_t forward_coupling_limit = 1-_forwardVerticalCouplingFactor*float(fabs(throttle_thrust));
+    float forward_coupling_limit = 1-_forwardVerticalCouplingFactor*float(fabs(throttle_thrust));
     if ( forward_coupling_limit < 0 ) {
     	forward_coupling_limit = 0;
     }
-    int8_t forward_coupling_direction[] = {-1,0,1,1,0,-1,0,0};
+    int8_t forward_coupling_direction[] = {1,1,0,0,-1,-1,0,0};
 
     // calculate linear command for each motor
     // linear factors should be 0.0 or 1.0 for now
