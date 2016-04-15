@@ -33,8 +33,8 @@ ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
 $(warning *** You have an old uavcan tree - see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
-NUTTX_GIT_VERSION := $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
-PX4_GIT_VERSION   := $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
+NUTTX_GIT_VERSION ?= $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
+PX4_GIT_VERSION   ?= $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
 
 EXTRAFLAGS += -DNUTTX_GIT_VERSION="\"$(NUTTX_GIT_VERSION)\""
 EXTRAFLAGS += -DPX4_GIT_VERSION="\"$(PX4_GIT_VERSION)\""
