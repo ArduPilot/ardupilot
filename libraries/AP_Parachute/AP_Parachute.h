@@ -62,6 +62,9 @@ public:
     ///   0 = altitude check disabled
     int16_t alt_min() const { return _alt_min; }
 
+    /// alt_max - returns the max altitude above home, above which the parachute should not be released
+    int16_t alt_max() const { return _alt_max; }
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     /// the time when control of aircraft was continuously lost
     void control_loss_ms(uint32_t time);
@@ -83,6 +86,7 @@ private:
     AP_Int16    _servo_on_pwm;  // PWM value to move servo to when shutter is activated
     AP_Int16    _servo_off_pwm; // PWM value to move servo to when shutter is deactivated
     AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
+    AP_Int16    _alt_max;       // max altitude above which the parachute should not be released
     AP_Int16    _delay_ms;      // delay before chute release for motors to stop
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     AP_Int8     _auto_enabled;  // 1 if automatic emergency parachute release is enabled

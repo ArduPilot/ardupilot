@@ -89,10 +89,6 @@ void Plane::parachute_emergency_check()
     // do not release if critical values for both altitude and sink rate are not reached
     if ((parachute.auto_sink() < 0 || auto_state.sink_rate < parachute.auto_sink()) &&
         relative_altitude() > parachute.auto_alt()) {
-    if (relative_altitude() < parachute.alt_min()) {
-        parachute.control_loss_ms(0);
-        return;
-    }
 
         parachute.control_loss_ms(0);
         return;
@@ -105,7 +101,11 @@ void Plane::parachute_emergency_check()
     } else if (now - parachute.control_loss_ms() > PARACHUTE_CHECK_TRIGGER_MS) {
         // we have lost control for too long
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Crash: Critical altitude error %d m", altitude_error_cm * 0.01f);
-        parachute_release();
+
+        // check if altitude is suitable for parachute deployment
+        if (relative_altitude() > parachute.alt_min() && (parachute.alt_max() < 0 || relative.altitude() < parachute.alt_max())) {
+            parachute_release();
+        }
         parachute.control_loss_ms(0);
     }
 }

@@ -52,6 +52,15 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ALT_MIN", 4, AP_Parachute, _alt_min, AP_PARACHUTE_ALT_MIN_DEFAULT),
 
+    // @Param: ALT_MAX
+    // @DisplayName: Parachute max altitude in meters above home
+    // @Description: Parachute max altitude above home.  Parachute will not be released above this altitude.  -1 to disable alt check.
+    // @Range: -1 32000
+    // @Units: Meters
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ALT_MAX", 5, AP_Parachute, _alt_max, AP_PARACHUTE_ALT_MAX_DEFAULT),
+
     // @Param: DELAY_MS
     // @DisplayName: Parachute release delay
     // @Description: Delay in millseconds between motor stop and chute release
@@ -59,7 +68,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Units: Milliseconds
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
+    AP_GROUPINFO("DELAY_MS", 6, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     // @Param: AUTO_ON
@@ -67,7 +76,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Description: Parachute automatic emergency release enabled or disabled.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("AUTO_ON", 6, AP_Parachute, _auto_enabled, AP_PARACHUTE_AUTO_ON_DEFAULT),
+    AP_GROUPINFO("AUTO_ON", 7, AP_Parachute, _auto_enabled, AP_PARACHUTE_AUTO_ON_DEFAULT),
 
     // @Param: AUTO_ALT
     // @DisplayName: Altitude threshold for automatic parachute release
@@ -76,7 +85,8 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Range: 0 32000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("AUTO_ALT", 7, AP_Parachute, _auto_alt, AP_PARACHUTE_AUTO_ALT_DEFAULT),
+    AP_GROUPINFO("AUTO_ALT", 8, AP_Parachute, _auto_alt, AP_PARACHUTE_AUTO_ALT_DEFAULT),
+
     // @Param: AUTO_SINK
     // @DisplayName: Sink rate for automatic parachute release
     // @Description: Sink rate at which to release parachute if in AUTO and CHUTE_AUTO_ON.  -1 to disable sink rate check.
