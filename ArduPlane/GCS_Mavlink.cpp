@@ -1938,7 +1938,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         Location new_home_loc {};
         new_home_loc.lat = packet.latitude;
         new_home_loc.lng = packet.longitude;
-        new_home_loc.alt = packet.altitude * 100;
+        new_home_loc.alt = packet.altitude / 10;
         plane.ahrs.set_home(new_home_loc);
         plane.home_is_set = HOME_SET_NOT_LOCKED;
         plane.Log_Write_Home_And_Origin();
