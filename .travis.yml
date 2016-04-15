@@ -32,6 +32,12 @@ addons:
       - clang-3.7
       - llvm-3.7
 
+cache:
+  ccache: true
+  directories:
+    - $HOME/.cache/pip
+    - $HOME/opt
+
 before_install:
   - Tools/scripts/configure-ci.sh
 
