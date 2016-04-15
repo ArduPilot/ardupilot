@@ -33,8 +33,7 @@ addons:
       - llvm-3.7
 
 before_install:
-  - export PATH=$(echo ${PATH} | awk -v RS=':' -v ORS=':' '/clang/ {next} {print}' | sed 's/:*$//')
-  - APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/configure-ci.sh && . ~/.profile && popd
+  - Tools/scripts/configure-ci.sh
 
 script:
   - python Tools/autotest/param_metadata/param_parse.py
