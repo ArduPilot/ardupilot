@@ -86,13 +86,14 @@ void Plane::parachute_emergency_check()
         return;
     }
 
+    // do not release if critical values for both altitude and sink rate are not reached
+    if ((parachute.auto_sink() < 0 || auto_state.sink_rate < parachute.auto_sink()) &&
+        relative_altitude() > parachute.auto_alt()) {
     if (relative_altitude() < parachute.alt_min()) {
         parachute.control_loss_ms(0);
         return;
     }
 
-    // do not release if emergency altitude is not reached
-    if (relative_altitude() > parachute.auto_alt()) {
         parachute.control_loss_ms(0);
         return;
     }

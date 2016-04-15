@@ -25,6 +25,7 @@
 
 #define AP_PARACHUTE_AUTO_ON_DEFAULT            0      // automatic emergency parachute release is off by default
 #define AP_PARACHUTE_AUTO_ALT_DEFAULT           60     // altitude threshold above home at which to deploy parachute automatically
+#define AP_PARACHUTE_AUTO_SINK_DEFAULT          8      // sink rate in m/s at which to deploy parachute automatically
 
 /// @class	AP_Parachute
 /// @brief	Class managing the release of a parachute
@@ -67,6 +68,7 @@ public:
     uint32_t control_loss_ms() const { return _control_loss_ms; }
 
     int16_t auto_alt() const { return _auto_alt; }
+    float auto_sink() const { return _auto_sink; }
 
     /// auto_enabled - returns true if parachute automatic emergency release is enabled
     bool auto_enabled() const { return enabled() && _auto_enabled; }
@@ -85,6 +87,7 @@ private:
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     AP_Int8     _auto_enabled;  // 1 if automatic emergency parachute release is enabled
     AP_Int16    _auto_alt;      // altitude threshold above home at which to deploy parachute automatically (if enabled)
+    AP_Float    _auto_sink;     // sink rate in m/s at which to deploy parachute automatically (if enabled)
 #endif
 
     // internal variables

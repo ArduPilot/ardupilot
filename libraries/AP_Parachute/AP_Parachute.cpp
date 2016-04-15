@@ -77,6 +77,15 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("AUTO_ALT", 7, AP_Parachute, _auto_alt, AP_PARACHUTE_AUTO_ALT_DEFAULT),
+    // @Param: AUTO_SINK
+    // @DisplayName: Sink rate for automatic parachute release
+    // @Description: Sink rate at which to release parachute if in AUTO and CHUTE_AUTO_ON.  -1 to disable sink rate check.
+    // @Units: m/s
+    // @Range: -1.0 20.0
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("AUTO_SINK", 9, AP_Parachute, _auto_sink, AP_PARACHUTE_AUTO_SINK_DEFAULT),
+
 #endif
 
     AP_GROUPEND
