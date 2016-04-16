@@ -19,6 +19,10 @@ export NUTTX_GIT_VERSION="ci_test"
 export PX4_GIT_VERSION="ci_test"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
 
+if [[ "$cxx_compiler" == "clang++" ]]; then
+  export CCACHE_CPP2="true"
+fi
+
 # If CI_BUILD_TARGET is not set, default to all of them
 if [ -z "$CI_BUILD_TARGET" ]; then
     CI_BUILD_TARGET="sitl linux navio raspilot minlure bebop px4-v2 px4-v4"

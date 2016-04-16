@@ -61,6 +61,8 @@ ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-none-eabi-g++
 ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-none-eabi-gcc
 ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-gnueabihf-g++
 ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-gnueabihf-gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang
 
 exportline="export PATH=$HOME/ccache"
 exportline="${exportline}:$HOME/bin"
