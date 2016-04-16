@@ -60,7 +60,7 @@ float get_distance(const struct Location &loc1, const struct Location &loc2)
 {
     float dlat              = (float)(loc2.lat - loc1.lat);
     float dlong             = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
-    return pythagorous2(dlat, dlong) * LOCATION_SCALING_FACTOR;
+    return norm(dlat, dlong) * LOCATION_SCALING_FACTOR;
 }
 
 // return distance in centimeters to between two locations

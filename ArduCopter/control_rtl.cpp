@@ -441,7 +441,7 @@ void Copter::rtl_build_path()
 
     Vector3f return_vector = rtl_path.return_target-rtl_path.origin_point;
 
-    float rtl_return_dist = pythagorous2(return_vector.x, return_vector.y);
+    float rtl_return_dist = norm(return_vector.x, return_vector.y);
 
     // compute return altitude
     rtl_path.return_target.z = rtl_compute_return_alt_above_origin(rtl_return_dist);
