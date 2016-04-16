@@ -137,7 +137,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!disable_integrator && gains.I > 0) {
         float k_I = gains.I;
-        if (is_zero(gains.FF)) {
+        if (is_zero<float>(gains.FF)) {
             /*
               if the user hasn't set a direct FF then assume they are
               not doing sophisticated tuning. Set a minimum I value of

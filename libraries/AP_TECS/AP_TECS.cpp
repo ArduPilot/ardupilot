@@ -631,7 +631,7 @@ void AP_TECS::_update_throttle(void)
 
         // Calculate PD + FF throttle
         float throttle_damp = _thrDamp;
-        if (_flags.is_doing_auto_land && !is_zero(_land_throttle_damp)) {
+        if (_flags.is_doing_auto_land && !is_zero<float>(_land_throttle_damp)) {
             throttle_damp = _land_throttle_damp;
         }
         _throttle_dem = (_STE_error + STEdot_error * throttle_damp) * K_STE2Thr + ff_throttle;
@@ -688,11 +688,11 @@ float AP_TECS::_get_i_gain(void)
 {
     float i_gain = _integGain;
     if (_flight_stage == FLIGHT_TAKEOFF) {
-        if (!is_zero(_integGain_takeoff)) {
+        if (!is_zero<float>(_integGain_takeoff)) {
             i_gain = _integGain_takeoff;
         }
     } else if (_flags.is_doing_auto_land) {
-        if (!is_zero(_integGain_land)) {
+        if (!is_zero<float>(_integGain_land)) {
             i_gain = _integGain_land;
         }
     }
@@ -829,7 +829,7 @@ void AP_TECS::_update_pitch(void)
     float pitch_damp = _ptchDamp;
     if (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
         pitch_damp = _landDamp;
-    } else if (!is_zero(_land_pitch_damp) && is_on_land_approach(false)) {
+    } else if (!is_zero<float>(_land_pitch_damp) && is_on_land_approach(false)) {
         pitch_damp = _land_pitch_damp;
     }
     temp += SEBdot_error * pitch_damp;

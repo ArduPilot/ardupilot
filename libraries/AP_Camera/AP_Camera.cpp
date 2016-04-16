@@ -280,7 +280,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
 */
 bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
 {
-    if (is_zero(_trigg_dist)) {
+    if (is_zero<float>(_trigg_dist)) {
         return false;
     }
     if (_last_location.lat == 0 && _last_location.lng == 0) {

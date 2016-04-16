@@ -62,9 +62,22 @@ inline bool is_equal(const FloatOne fVal1, const FloatTwo fVal2) {
 }
 #endif
 
-// is a float is zero
-static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
-
+/* 
+ * @brief: Checks whether a float is zero
+ */
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+template <class T>
+inline bool is_zero(const T fVal) { 
+    static_assert(std::is_arithmetic<T>::value, "ERROR - is_zero(): template parameter not of type float or int\n");
+    return std::abs(fVal) < std::numeric_limits<T>::epsilon() ? true : false; 
+}
+#else 
+template <class T>
+inline bool is_zero(const T fVal) {
+    static_assert(std::is_arithmetic<T>::value, "ERROR - is_zero(): template parameter not of type float or int\n");
+    return fabsf(fVal) < std::numeric_limits<T>::epsilon() ? true : false; 
+}
+#endif 
 /*
  * A varient of asin() that checks the input ranges and ensures a
  * valid angle as output. If nan is given as input then zero is returned.
