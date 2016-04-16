@@ -82,6 +82,16 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
     if (_pwm_type == PWM_TYPE_ONESHOT125) {
         // OneShot125 uses a PWM range from 125 to 250 usec
         pwm /= 8;
+        /*
+          OneShot125 ESCs can be confused by pulses below 125 or above
+          250, making them fail the pulse type auto-detection. This
+          happens at least with BLHeli
+        */
+        if (pwm < 125) {
+            pwm = 125;
+        } else if (pwm > 250) {
+            pwm = 250;
+        }
     }
     hal.rcout->write(chan, pwm);
 }
