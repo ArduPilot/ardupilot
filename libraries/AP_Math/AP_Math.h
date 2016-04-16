@@ -30,8 +30,13 @@ static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf
 // is a float is zero
 static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
 
-// a varient of asin() that always gives a valid answer.
-float           safe_asin(float v);
+
+/*
+ * A variant of asin() that checks the input ranges and ensures a valid angle
+ * as output. If nan is given as input then zero is returned.
+ */
+template <class T>
+float safe_asin(const T v);
 
 // a varient of sqrt() that always gives a valid answer.
 float           safe_sqrt(float v);
