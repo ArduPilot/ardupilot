@@ -1,6 +1,19 @@
 #include "AP_Math.h"
 #include <float.h>
 
+template <class FloatOne, class FloatTwo>
+bool is_equal(const FloatOne v_1, const FloatTwo v_2)
+{
+    static_assert(std::is_arithmetic<FloatOne>::value, "template parameter not of type float or int");
+    static_assert(std::is_arithmetic<FloatTwo>::value, "template parameter not of type float or int");
+    return fabsf(v_1 - v_2) < std::numeric_limits<decltype(v_1 - v_2)>::epsilon();
+}
+
+template bool is_equal<int>(const int v_1, const int v_2);
+template bool is_equal<short>(const short v_1, const short v_2);
+template bool is_equal<float>(const float v_1, const float v_2);
+template bool is_equal<double>(const double v_1, const double v_2);
+
 template <class T>
 float safe_asin(const T v)
 {
