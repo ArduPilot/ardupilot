@@ -9,21 +9,36 @@ ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 RPI_ROOT="master"
 RPI_TARBALL="$RPI_ROOT.tar.gz"
 
+CCACHE_ROOT="ccache-3.2.4"
+CCACHE_TARBALL="$CCACHE_ROOT.tar.bz2"
+
 mkdir -p $HOME/opt
-pushd $HOME/opt
+pushd $HOME
 
 # PX4 toolchain
-compiler=$ARM_ROOT
-if [ ! -d "$HOME/opt/$compiler" ]; then
+dir=$ARM_ROOT
+if [ ! -d "$HOME/opt/$dir" ]; then
   wget http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL
-  tar -xf $ARM_TARBALL
+  tar -xf $ARM_TARBALL -C opt
 fi
 
 # RPi/BBB toolchain
-compiler="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
-if [ ! -d "$HOME/opt/$compiler" ]; then
+dir="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
+if [ ! -d "$HOME/opt/$dir" ]; then
   wget http://firmware.ardupilot.org/Tools/Travis/NavIO/$RPI_TARBALL
-  tar -xf $RPI_TARBALL $compiler
+  tar -xf $RPI_TARBALL -C opt $dir
+fi
+
+# CCache
+dir=$CCACHE_ROOT
+if [ ! -d "$HOME/opt/$dir" ]; then
+  wget https://www.samba.org/ftp/ccache/$CCACHE_TARBALL
+  tar -xf $CCACHE_TARBALL
+  pushd $CCACHE_ROOT
+  ./configure --prefix="/tmp" --bindir="$HOME/opt/$dir"
+  make
+  make install
+  popd
 fi
 
 popd
@@ -40,12 +55,12 @@ ln -s /usr/bin/llvm-ar-3.7 ~/bin/llvm-ar
 mkdir -p $HOME/ccache
 
 # configure ccache
-ln -s /usr/bin/ccache ~/ccache/g++
-ln -s /usr/bin/ccache ~/ccache/gcc
-ln -s /usr/bin/ccache ~/ccache/arm-none-eabi-g++
-ln -s /usr/bin/ccache ~/ccache/arm-none-eabi-gcc
-ln -s /usr/bin/ccache ~/ccache/arm-linux-gnueabihf-g++
-ln -s /usr/bin/ccache ~/ccache/arm-linux-gnueabihf-gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/g++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-none-eabi-g++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-none-eabi-gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-gnueabihf-g++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-gnueabihf-gcc
 
 exportline="export PATH=$HOME/ccache"
 exportline="${exportline}:$HOME/bin"
