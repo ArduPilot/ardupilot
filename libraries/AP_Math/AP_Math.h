@@ -127,19 +127,30 @@ static inline float degrees(float rad) {
 	return rad * RAD_TO_DEG;
 }
 
-// square
-static inline float sq(float v) {
-	return v*v;
+template<class T>
+float sq(const T val)
+{
+    return powf(static_cast<float>(val), 2);
 }
 
-// 2D vector length
-static inline float pythagorous2(float a, float b) {
-	return sqrtf(sq(a)+sq(b));
+/*
+ * Variadic template for calculating the square norm of a vector of any
+ * dimension.
+ */
+template<class T, class... Params>
+float sq(const T first, const Params... parameters)
+{
+    return sq(first) + sq(parameters...);
 }
 
-// 3D vector length
-static inline float pythagorous3(float a, float b, float c) {
-	return sqrtf(sq(a)+sq(b)+sq(c));
+/*
+ * Variadic template for calculating the norm (pythagoras) of a vector of any
+ * dimension.
+ */
+template<class T, class... Params>
+float norm(const T first, const Params... parameters)
+{
+    return sqrt(static_cast<float>(sq(first, parameters...)));
 }
 
 template<typename A, typename B>

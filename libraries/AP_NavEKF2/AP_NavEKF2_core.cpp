@@ -506,7 +506,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
-    accNavMagHoriz = pythagorous2(velDotNEDfilt.x , velDotNEDfilt.y);
+    accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
 
     // save velocity for use in trapezoidal intergration for position calcuation
     Vector3f lastVelocity = stateStruct.velocity;

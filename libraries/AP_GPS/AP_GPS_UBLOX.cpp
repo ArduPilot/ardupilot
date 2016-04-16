@@ -929,7 +929,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.velocity.y = _buffer.velned.ned_east * 0.01f;
         state.velocity.z = _buffer.velned.ned_down * 0.01f;
         state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-        state.ground_speed = pythagorous2(state.velocity.y, state.velocity.x);
+        state.ground_speed = norm(state.velocity.y, state.velocity.x);
         state.have_speed_accuracy = true;
         state.speed_accuracy = _buffer.velned.speed_accuracy*0.01f;
 #if UBLOX_FAKE_3DLOCK
