@@ -1,22 +1,25 @@
 #include "AP_Math.h"
 #include <float.h>
 
-// a varient of asin() that checks the input ranges and ensures a
-// valid angle as output. If nan is given as input then zero is
-// returned.
-float safe_asin(float v)
+template <class T>
+float safe_asin(const T v)
 {
-    if (isnan(v)) {
+    if (isnan(static_cast<float>(v))) {
         return 0.0f;
     }
     if (v >= 1.0f) {
-        return M_PI/2;
+        return static_cast<float>(M_PI_2);
     }
     if (v <= -1.0f) {
-        return -M_PI/2;
+        return static_cast<float>(-M_PI_2);
     }
-    return asinf(v);
+    return asinf(static_cast<float>(v));
 }
+
+template float safe_asin<int>(const int v);
+template float safe_asin<short>(const short v);
+template float safe_asin<float>(const float v);
+template float safe_asin<double>(const double v);
 
 // a varient of sqrt() that checks the input ranges and ensures a
 // valid value as output. If a negative number is given then 0 is
