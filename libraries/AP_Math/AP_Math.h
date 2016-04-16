@@ -316,15 +316,6 @@ auto const constrain_int32 = &constrain_value<int32_t>;
 //matrix algebra
 bool inverse(float x[], float y[], uint16_t dim);
 
-// degrees -> radians
-static inline float radians(float deg) {
-	return deg * DEG_TO_RAD;
-}
-
-// radians -> degrees
-static inline float degrees(float rad) {
-	return rad * RAD_TO_DEG;
-}
 
 #if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 template<class T>
@@ -364,34 +355,79 @@ static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one :
     return one > two ? one : two;
 }
 
-inline uint32_t hz_to_nsec(uint32_t freq)
-{
-    return NSEC_PER_SEC / freq;
+/* 
+ * @brief: Converts an euler angle with units 'degree' to an angle with the unit 'radian'
+ */
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+template <class T>
+auto radians(const T &deg) -> decltype(deg * DEG_TO_RAD) {
+    return deg * DEG_TO_RAD;
+}
+#else
+template <class T>
+float radians(const T &deg) {
+    return static_cast<float>(deg) * DEG_TO_RAD;
+}
+#endif
+
+/* 
+ * WE COULD MAKE AP_MATH BETTER! PLZ take care about the types in ArduPilot,
+ * and we can make these functions auto. 
+ * These functions are currently often used with int types which causes a double promotion and no one cares ..
+ * 
+ * @brief: Converts an euler angle with units 'radian' to an angle with the unit 'degree'
+ */
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+template <class T>
+auto degrees(const T &rad) -> decltype(rad * RAD_TO_DEG) {
+    return rad * RAD_TO_DEG;
+}
+#else
+template <class T>
+float degrees(const T &rad) {
+    return static_cast<float>(rad) * RAD_TO_DEG;
+}
+#endif
+
+/*
+ * Converter functions
+ *  - Avoid zero divisions
+ *  - Inheritss a float cast (because of PX4)
+ */
+template<class T>
+T hz_to_nsec(const T &freq) {
+    T val = NSEC_PER_SEC / freq;
+    return val;
 }
 
-inline uint32_t nsec_to_hz(uint32_t nsec)
-{
-    return NSEC_PER_SEC / nsec;
+template<class T>
+T nsec_to_hz(const T &nsec) {
+    T val = NSEC_PER_SEC / nsec;
+    return val;
 }
 
-inline uint32_t usec_to_nsec(uint32_t usec)
-{
-    return usec * NSEC_PER_USEC;
+template<class T>
+T usec_to_nsec(const T &usec) {
+    T val = usec * NSEC_PER_USEC;
+    return val;
 }
 
-inline uint32_t nsec_to_usec(uint32_t nsec)
-{
-    return nsec / NSEC_PER_USEC;
+template<class T>
+T nsec_to_usec(const T &nsec) {
+    T val = nsec / NSEC_PER_USEC;
+    return val;
 }
 
-inline uint32_t hz_to_usec(uint32_t freq)
-{
-    return USEC_PER_SEC / freq;
+template<class T>
+T hz_to_usec(const T &freq) {
+    T val = USEC_PER_SEC / freq;
+    return val;
 }
 
-inline uint32_t usec_to_hz(uint32_t usec)
-{
-    return USEC_PER_SEC / usec;
+template<class T>
+T usec_to_hz(const T &usec) {
+    T val = USEC_PER_SEC / usec;
+    return val;
 }
 
 /*
