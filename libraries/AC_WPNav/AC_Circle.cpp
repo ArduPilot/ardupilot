@@ -98,7 +98,7 @@ void AC_Circle::init()
 /// set_circle_rate - set circle rate in degrees per second
 void AC_Circle::set_rate(float deg_per_sec)
 {
-    if (!is_equal(deg_per_sec,_rate)) {
+    if (!is_equal(deg_per_sec,(float)_rate)) {
         _rate = deg_per_sec;
         calc_velocities(false);
     }

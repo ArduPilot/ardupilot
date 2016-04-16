@@ -227,7 +227,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
         // compute integral error component to converge to a crosstrack of zero when traveling
 		// straight but reset it when disabled or if it changes. That allows for much easier
 		// tuning by having it re-converge each time it changes.
-		if (_L1_xtrack_i_gain <= 0 || !is_equal(_L1_xtrack_i_gain, _L1_xtrack_i_gain_prev)) {
+		if (_L1_xtrack_i_gain <= 0 || !is_equal<float>(_L1_xtrack_i_gain, _L1_xtrack_i_gain_prev)) {
 		    _L1_xtrack_i = 0;
 		    _L1_xtrack_i_gain_prev = _L1_xtrack_i_gain;
 		} else if (fabsf(Nu1) < radians(5)) {
