@@ -135,7 +135,7 @@ void AC_Circle::update()
         _angle_total += angle_change;
 
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if (!is_zero(_radius)) {
+        if (!is_zero<float>(_radius)) {
             // calculate target position
             Vector3f target;
             target.x = _center.x + _radius * cosf(-_angle);
@@ -189,7 +189,7 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     float dist = norm(vec.x, vec.y);
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
-    if (is_zero(dist)) {
+    if (is_zero<float>(dist)) {
         result.x = _center.x - _radius * _ahrs.cos_yaw();
         result.y = _center.y - _radius * _ahrs.sin_yaw();
         result.z = _center.z;

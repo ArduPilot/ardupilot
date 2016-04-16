@@ -95,7 +95,7 @@ Vector2f AC_PI_2D::get_p() const
 
 Vector2f AC_PI_2D::get_i()
 {
-    if(!is_zero(_ki) && !is_zero(_dt)) {
+    if(!is_zero<float>(_ki) && !is_zero<float>(_dt)) {
         _integrator += (_input * _ki) * _dt;
         float integrator_length = _integrator.length();
         if ((integrator_length > _imax) && (integrator_length > 0)) {
@@ -109,7 +109,7 @@ Vector2f AC_PI_2D::get_i()
 // get_i_shrink - get_i but do not allow integrator to grow in length (it may shrink)
 Vector2f AC_PI_2D::get_i_shrink()
 {
-    if (!is_zero(_ki) && !is_zero(_dt)) {
+    if (!is_zero<float>(_ki) && !is_zero<float>(_dt)) {
         float integrator_length_orig = MIN(_integrator.length(),_imax);
         _integrator += (_input * _ki) * _dt;
         float integrator_length_new = _integrator.length();
@@ -167,7 +167,7 @@ void AC_PI_2D::operator() (float p, float i, float imaxval, float input_filt_hz,
 // calc_filt_alpha - recalculate the input filter alpha
 void AC_PI_2D::calc_filt_alpha()
 {
-    if (is_zero(_filt_hz)) {
+    if (is_zero<float>(_filt_hz)) {
         _filt_alpha = 1.0f;
         return;
     }
