@@ -38,8 +38,14 @@ static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILO
 template <class T>
 float safe_asin(const T v);
 
-// a varient of sqrt() that always gives a valid answer.
-float           safe_sqrt(float v);
+/*
+ * A variant of sqrt() that checks the input ranges and ensures a valid value
+ * as output. If a negative number is given then 0 is returned.  The reasoning
+ * is that a negative number for sqrt() in our code is usually caused by small
+ * numerical rounding errors, so the real input should have been zero
+ */
+template <class T>
+float safe_sqrt(const T v);
 
 // return determinant of square matrix
 float                   detnxn(const float C[], const uint8_t n);
