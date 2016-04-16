@@ -215,6 +215,8 @@ void Plane::read_radio()
     } else {
         rudder_input = channel_rudder->control_in;
     }
+
+    tuning.check_input();
 }
 
 void Plane::control_failsafe(uint16_t pwm)

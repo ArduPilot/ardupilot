@@ -1106,6 +1106,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: quadplane.cpp
     GOBJECT(quadplane,           "Q_", QuadPlane),
 
+    // @Group: TUNE_
+    // @Path: tuning.cpp
+    GOBJECT(tuning,           "TUNE_", Tuning),
+    
     // @Group: Q_A_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
     { AP_PARAM_GROUP, "Q_A_", Parameters::k_param_q_attitude_control,

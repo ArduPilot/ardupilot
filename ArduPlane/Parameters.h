@@ -272,6 +272,7 @@ public:
         k_param_long_fs_timeout,
         k_param_rc_13,
         k_param_rc_14,
+        k_param_tuning,
 
         //
         // 200: Feed-forward gains

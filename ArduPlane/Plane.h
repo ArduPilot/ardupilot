@@ -95,6 +95,7 @@
 #include <AP_ADSB/AP_ADSB.h>
 
 #include "quadplane.h"
+#include "tuning.h"
 
 // Configuration
 #include "config.h"
@@ -136,6 +137,7 @@ public:
     friend class Parameters;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
+    friend class Tuning;
 
     Plane(void);
 
@@ -729,6 +731,11 @@ private:
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
 
+    // support for transmitter tuning
+    Tuning tuning;
+
+    static const struct LogStructure log_structure[];
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // the crc of the last created PX4Mixer
     int32_t last_mixer_crc = -1;
