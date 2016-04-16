@@ -14,6 +14,7 @@ const AP_Param::GroupInfo Tuning::var_info[] = {
     // @Param: PARM
     // @DisplayName: Transmitter tuning parameter
     // @Description: This sets which parameter or combination of parameters will be tuned
+    // @Values: 0:None,1:QuadRateRollPitch_PI,2:QuadRateRollPitch_P,3:QuadRateRollPitch_I,4:QuadRateRollPitch_D,5:QuadRATE_ROLL_PI,6:QuadRateRoll_P,7:QuadRateRoll_I,8:QuadRateRoll_D,9:QuadRatePitch_PI,10:QuadRatePitch_P,11:QuadRatePitch_I,12:QuadRatePitch_D,13:QuadRateYaw_PI,14:QuadRateYaw_P,15:QuadRateYaw_I,16:QuadRateYaw_D,17:QuadAngleRoll_P,18:QuadAnglePitch_P,19:QuadAngleYaw_P,20:QuadPXY_P,21:QuadPZ_P,22:QuadVXY_P,23:QuadVXY_I,24:QuadVZ_P,25:QuadAZ_P,26:QuadAZ_I,27:QuadAZ_D,28:Roll_P,29:Roll_I,30:Roll_D,31:Roll_FF,32:Pitch_P,33:Pitch_I,34:Pitch_D,35:Pitch_FF
     // @User: Standard
     AP_GROUPINFO("PARM", 2, Tuning, parm, 0),
 
@@ -74,11 +75,51 @@ void Tuning::check_input(void)
 
     float tuning_value = minimum + (maximum-minimum)*(input*0.01f);
 
+    Log_Write_Parameter_Tuning((uint8_t)parm.get(), tuning_value, minimum, maximum);
+
+    switch((enum tuning_func)parm.get()) {
+
+    case TUNING_RLL_P:
+        plane.rollController.kP(tuning_value);
+        break;
+
+    case TUNING_RLL_I:
+        plane.rollController.kI(tuning_value);
+        break;
+
+    case TUNING_RLL_D:
+        plane.rollController.kD(tuning_value);
+        break;
+
+    case TUNING_RLL_FF:
+        plane.rollController.kFF(tuning_value);
+        break;
+
+    case TUNING_PIT_P:
+        plane.pitchController.kP(tuning_value);
+        break;
+
+    case TUNING_PIT_I:
+        plane.pitchController.kI(tuning_value);
+        break;
+
+    case TUNING_PIT_D:
+        plane.pitchController.kD(tuning_value);
+        break;
+
+    case TUNING_PIT_FF:
+        plane.pitchController.kFF(tuning_value);
+        break;
+        
+    default:
+        break;
+    }
+        
     if (!plane.quadplane.available()) {
         // quadplane tuning options not available
         return;
     }
-
+    
     switch((enum tuning_func)parm.get()) {
 
     case TUNING_Q_RATE_ROLL_PITCH_KPI:
@@ -201,8 +242,6 @@ void Tuning::check_input(void)
     default:
         return;
     }
-
-    Log_Write_Parameter_Tuning((uint8_t)parm.get(), tuning_value, minimum, maximum);
 }
 
 /*

@@ -36,7 +36,9 @@ private:
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_low, float tune_high);
     
     enum tuning_func {
-        TUNING_NONE =                         0,
+        TUNING_NONE =                          0,
+
+        // quadplane tuning
         TUNING_Q_RATE_ROLL_PITCH_KPI =         1,
         TUNING_Q_RATE_ROLL_PITCH_KP =          2,
         TUNING_Q_RATE_ROLL_PITCH_KI =          3,
@@ -71,5 +73,16 @@ private:
         TUNING_Q_AZ_P =                       25,
         TUNING_Q_AZ_I =                       26,
         TUNING_Q_AZ_D  =                      27,
+
+        // fixed wing tuning
+        TUNING_RLL_P =                        28,
+        TUNING_RLL_I =                        29,
+        TUNING_RLL_D =                        30,
+        TUNING_RLL_FF =                       31,
+
+        TUNING_PIT_P =                        32,
+        TUNING_PIT_I =                        33,
+        TUNING_PIT_D =                        34,
+        TUNING_PIT_FF =                       35,
     };
 };
