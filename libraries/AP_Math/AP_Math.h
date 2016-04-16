@@ -43,8 +43,24 @@ namespace std {
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
-// are two floats equal
-static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+/* 
+ * @brief: Checks whether two floats are equal
+ */
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+template <class FloatOne, class FloatTwo>
+inline bool is_equal(const FloatOne fVal1, const FloatTwo fVal2) {
+    static_assert(std::is_arithmetic<FloatOne>::value, "ERROR - is_equal(): template parameter not of type float or int\n");
+    static_assert(std::is_arithmetic<FloatTwo>::value, "ERROR - is_equal(): template parameter not of type float or int\n");
+    return std::abs(fVal1 - fVal2) < std::numeric_limits<decltype(fVal1 - fVal2)>::epsilon() ? true : false; 
+}
+#else
+template <class FloatOne, class FloatTwo>
+inline bool is_equal(const FloatOne fVal1, const FloatTwo fVal2) {
+    static_assert(std::is_arithmetic<FloatOne>::value, "ERROR - is_equal(): template parameter not of type float or int\n");
+    static_assert(std::is_arithmetic<FloatTwo>::value, "ERROR - is_equal(): template parameter not of type float or int\n");
+    return fabsf(fVal1 - fVal2) < std::numeric_limits<decltype(fVal1 - fVal2)>::epsilon() ? true : false; 
+}
+#endif
 
 // is a float is zero
 static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
