@@ -21,19 +21,20 @@ template float safe_asin<short>(const short v);
 template float safe_asin<float>(const float v);
 template float safe_asin<double>(const double v);
 
-// a varient of sqrt() that checks the input ranges and ensures a
-// valid value as output. If a negative number is given then 0 is
-// returned. The reasoning is that a negative number for sqrt() in our
-// code is usually caused by small numerical rounding errors, so the
-// real input should have been zero
-float safe_sqrt(float v)
+template <class T>
+float safe_sqrt(const T v)
 {
-    float ret = sqrtf(v);
+    float ret = sqrtf(static_cast<float>(v));
     if (isnan(ret)) {
         return 0;
     }
     return ret;
 }
+
+template float safe_sqrt<int>(const int v);
+template float safe_sqrt<short>(const short v);
+template float safe_sqrt<float>(const float v);
+template float safe_sqrt<double>(const double v);
 
 /*
   linear interpolation based on a variable in a range
