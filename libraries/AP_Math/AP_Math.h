@@ -431,9 +431,26 @@ T usec_to_hz(const T &usec) {
 }
 
 /*
-  linear interpolation based on a variable in a range
+ * @brief: linear interpolation based on a variable in a range
  */
-float linear_interpolate(float low_output, float high_output,
-                         float var_value,
-                         float var_low, float var_high);
+template <class T>
+T linear_interpolate(const T &low_output, const T &high_output,
+                     const T &var_value,
+                     const T &var_low, const T &var_high)
+{
+    if (var_value <= var_low) {
+        return low_output;
+    }
+    if (var_value >= var_high) {
+        return high_output;
+    }
+    // avoid zero divisions or zero like divisions
+    auto var_diff = var_high - var_low;
+    if(is_zero((float)var_diff)) {
+        return low_output;
+    }
+    
+    T p = (var_value - var_low) / var_diff;
+    return low_output + p * (high_output - low_output);
+}
 
