@@ -51,7 +51,7 @@
 #include <cmath>
 #include <float.h>
 #include <string.h>
-
+#include "rotations.h"
 
 #if MATH_CHECK_INDEXES
 #include <assert.h>
