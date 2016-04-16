@@ -879,7 +879,7 @@ void NavEKF_core::UpdateStrapdownEquationsNED()
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
-    accNavMagHoriz = pythagorous2(velDotNEDfilt.x , velDotNEDfilt.y);
+    accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
 
     // save velocity for use in trapezoidal intergration for position calcuation
     Vector3f lastVelocity = state.velocity;
@@ -2897,7 +2897,7 @@ void NavEKF_core::FuseAirspeed()
     vwe = statesAtVtasMeasTime.wind_vel.y;
 
     // calculate the predicted airspeed
-    VtasPred = pythagorous3((ve - vwe) , (vn - vwn) , vd);
+    VtasPred = norm((ve - vwe) , (vn - vwn) , vd);
     // perform fusion of True Airspeed measurement
     if (VtasPred > 1.0f)
     {
@@ -4321,7 +4321,7 @@ void NavEKF_core::alignYawGPS()
 // representative of typical launch wind
 void NavEKF_core::setWindVelStates()
 {
-    float gndSpd = pythagorous2(state.velocity.x, state.velocity.y);
+    float gndSpd = norm(state.velocity.x, state.velocity.y);
     if (gndSpd > 4.0f) {
         // set the wind states to be the reciprocal of the velocity and scale
         float scaleFactor = STARTUP_WIND_SPEED / gndSpd;
@@ -5058,7 +5058,7 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     // Check that the horizontal GPS vertical velocity is reasonable after noise filtering
     bool gpsHorizVelFail;
     if (!vehicleArmed) {
-        gpsHorizVelFilt = 0.1f * pythagorous2(velNED.x,velNED.y) + 0.9f * gpsHorizVelFilt;
+        gpsHorizVelFilt = 0.1f * norm(velNED.x,velNED.y) + 0.9f * gpsHorizVelFilt;
         gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
         gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f) && (frontend._gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {
@@ -5207,7 +5207,7 @@ void NavEKF_core::alignMagStateDeclination()
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = state.earth_magfield;
-    float magLengthNE = pythagorous2(initMagNED.x,initMagNED.y);
+    float magLengthNE = norm(initMagNED.x,initMagNED.y);
     state.earth_magfield.x = magLengthNE * cosf(magDecAng);
     state.earth_magfield.y = magLengthNE * sinf(magDecAng);
 }

@@ -488,7 +488,7 @@ void Copter::auto_circle_movetoedge_start(const Location_Class &circle_center, f
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
         const Vector3f &curr_pos = inertial_nav.get_position();
-        float dist_to_center = pythagorous2(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+        float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
         if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {

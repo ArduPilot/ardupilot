@@ -949,7 +949,7 @@ void NavEKF2_core::alignMagStateDeclination()
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = stateStruct.earth_magfield;
-    float magLengthNE = pythagorous2(initMagNED.x,initMagNED.y);
+    float magLengthNE = norm(initMagNED.x,initMagNED.y);
     stateStruct.earth_magfield.x = magLengthNE * cosf(magDecAng);
     stateStruct.earth_magfield.y = magLengthNE * sinf(magDecAng);
 }
