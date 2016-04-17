@@ -11,7 +11,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: PIRO_COMP
     // @DisplayName: Piro Comp Enable
     // @Description: Pirouette compensation enabled
-    // @Range: 0:Disabled 1:Enabled
+    // @Values: 0:Disabled 1:Enabled
     // @User: Advanced
     AP_GROUPINFO("PIRO_COMP",    0, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
 
