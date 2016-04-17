@@ -3,16 +3,24 @@ set -e
 
 CWD=$(pwd)
 OPT="/opt"
-
 BASE_PKGS="gawk make git arduino-core curl"
-SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
 PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs python-empy"
 BEBOP_PKGS="g++-arm-linux-gnueabihf"
+SITL_PKGS="g++ python-pip python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
 UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc++6:i386"
 ASSUME_YES=false
+
+if grep -q 'VERSION="16' /etc/os-release
+then
+	# Packages for Ubuntu 16.x
+	SITL_PKGS+=$ " python-wxgtk3.0"
+else
+	# packages for Ubuntu <=15.x
+	SITL_PKGS+=$ " python-wxgtk2.8"
+fi
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
