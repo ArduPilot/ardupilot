@@ -141,12 +141,12 @@ void Sub::failsafe_ekf_event()
     switch (g.fs_ekf_action) {
         case FS_EKF_ACTION_ALTHOLD:
             // AltHold
-            if (failsafe.radio || !set_mode(ALT_HOLD)) {
-                set_mode_land_with_pause();
+            if (failsafe.radio || !set_mode(ALT_HOLD, MODE_REASON_EKF_FAILSAFE)) {
+                set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             }
             break;
         default:
-            set_mode_land_with_pause();
+            set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             break;
     }
 

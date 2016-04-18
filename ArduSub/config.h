@@ -161,11 +161,6 @@
  # define GNDEFFECT_COMPENSATION          DISABLED
 #endif
 
-// possible values for FS_GCS parameter
-#define FS_GCS_DISABLED                     0
-#define FS_GCS_ENABLED_ALWAYS_RTL           1
-#define FS_GCS_ENABLED_CONTINUE_MISSION     2
-
 // Radio failsafe while using RC_override
 #ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
  # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  1000    // RC Radio failsafe triggers after 1 second while using RC_override from ground station

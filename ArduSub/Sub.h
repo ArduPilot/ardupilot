@@ -249,7 +249,11 @@ private:
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
-    int8_t control_mode;
+    control_mode_t control_mode;
+    mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
+
+    control_mode_t prev_control_mode;
+    mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
 
     // Structure used to detect changes in the flight mode control switch
     struct {
@@ -761,7 +765,7 @@ private:
     void land_nogps_run();
     float get_land_descent_speed();
     void land_do_not_use_GPS();
-    void set_mode_land_with_pause();
+    void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
     bool loiter_init(bool ignore_checks);
     void loiter_run();
@@ -812,24 +816,26 @@ private:
     void esc_calibration_startup_check();
     void esc_calibration_passthrough();
     void esc_calibration_auto();
+    bool should_disarm_on_failsafe();
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
     void failsafe_battery_event(void);
     void failsafe_gcs_check();
     void failsafe_gcs_off_event(void);
-    void set_mode_RTL_or_land_with_pause();
+    void set_mode_RTL_or_land_with_pause(mode_reason_t reason);
     void update_events();
     void failsafe_enable();
     void failsafe_disable();
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
-    bool set_mode(uint8_t mode);
+    bool set_mode(control_mode_t mode, mode_reason_t reason);
+    bool gcs_set_mode(uint8_t mode) { return set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND); }
     void update_flight_mode();
-    void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode);
-    bool mode_requires_GPS(uint8_t mode);
-    bool mode_has_manual_throttle(uint8_t mode);
-    bool mode_allows_arming(uint8_t mode, bool arming_from_gcs);
-    void notify_flight_mode(uint8_t mode);
+    void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
+    bool mode_requires_GPS(control_mode_t mode);
+    bool mode_has_manual_throttle(control_mode_t mode);
+    bool mode_allows_arming(control_mode_t mode, bool arming_from_gcs);
+    void notify_flight_mode(control_mode_t mode);
     void check_dynamic_flight(void);
     void read_inertia();
     void read_inertial_altitude();

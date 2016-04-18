@@ -41,6 +41,8 @@ bool Sub::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
                 set_auto_armed(true);
                 takeoff_timer_start(takeoff_alt_cm);
                 return true;
+            default:
+            	return false;
         }
     }
     return false;
