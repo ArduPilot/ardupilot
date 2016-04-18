@@ -487,7 +487,7 @@ float SITL_State::height_agl(void)
         location.lat = _sitl->state.latitude*1.0e7;
         location.lng = _sitl->state.longitude*1.0e7;
 
-        if (_terrain->height_amsl(location, terrain_height_amsl)) {
+        if (_terrain->height_amsl(location, terrain_height_amsl, false)) {
             return _sitl->state.altitude - terrain_height_amsl;
         }
     }
