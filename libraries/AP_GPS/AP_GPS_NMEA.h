@@ -64,9 +64,9 @@ public:
 private:
     /// Coding for the GPS sentences that the parser handles
     enum _sentence_types {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
-        _GPS_SENTENCE_GPRMC = 32,
-        _GPS_SENTENCE_GPGGA = 64,
-        _GPS_SENTENCE_GPVTG = 96,
+        _GPS_SENTENCE_RMC = 32,
+        _GPS_SENTENCE_GGA = 64,
+        _GPS_SENTENCE_VTG = 96,
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -137,9 +137,9 @@ private:
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
 
-    uint32_t _last_GPRMC_ms = 0;
-    uint32_t _last_GPGGA_ms = 0;
-    uint32_t _last_GPVTG_ms = 0;
+    uint32_t _last_RMC_ms = 0;
+    uint32_t _last_GGA_ms = 0;
+    uint32_t _last_VTG_ms = 0;
 
     /// @name	Init strings
     ///			In ::init, an attempt is made to configure the GPS
@@ -149,13 +149,6 @@ private:
     static const char _SiRF_init_string[];         ///< init string for SiRF units
     static const char _MTK_init_string[];                  ///< init string for MediaTek units
     static const char _ublox_init_string[];        ///< init string for ublox units
-    //@}
-
-    /// @name	GPS message identifier strings
-    //@{
-    static const char _gprmc_string[];
-    static const char _gpgga_string[];
-    static const char _gpvtg_string[];
     //@}
 
     static const char _initialisation_blob[];

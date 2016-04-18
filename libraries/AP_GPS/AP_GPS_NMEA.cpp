@@ -91,12 +91,6 @@ extern const AP_HAL::HAL& hal;
 
 const char AP_GPS_NMEA::_initialisation_blob[] = SIRF_INIT_MSG MTK_INIT_MSG UBLOX_INIT_MSG;
 
-// NMEA message identifiers ////////////////////////////////////////////////////
-//
-const char AP_GPS_NMEA::_gprmc_string[] = "GPRMC";
-const char AP_GPS_NMEA::_gpgga_string[] = "GPGGA";
-const char AP_GPS_NMEA::_gpvtg_string[] = "GPVTG";
-
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
@@ -257,25 +251,25 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
  */
 bool AP_GPS_NMEA::_have_new_message()
 {
-    if (_last_GPRMC_ms == 0 ||
-        _last_GPGGA_ms == 0) {
+    if (_last_RMC_ms == 0 ||
+        _last_GGA_ms == 0) {
         return false;
     }
     uint32_t now = AP_HAL::millis();
-    if (now - _last_GPRMC_ms > 150 ||
-        now - _last_GPGGA_ms > 150) {
+    if (now - _last_RMC_ms > 150 ||
+        now - _last_GGA_ms > 150) {
         return false;
     }
-    if (_last_GPVTG_ms != 0 && 
-        now - _last_GPVTG_ms > 150) {
+    if (_last_VTG_ms != 0 && 
+        now - _last_VTG_ms > 150) {
         return false;
     }
     // prevent these messages being used again
-    if (_last_GPVTG_ms != 0) {
-        _last_GPVTG_ms = 1;
+    if (_last_VTG_ms != 0) {
+        _last_VTG_ms = 1;
     }
-    _last_GPGGA_ms = 1;
-    _last_GPRMC_ms = 1;
+    _last_GGA_ms = 1;
+    _last_RMC_ms = 1;
     return true;
 }
 
@@ -290,8 +284,8 @@ bool AP_GPS_NMEA::_term_complete()
             if (_gps_data_good) {
                 uint32_t now = AP_HAL::millis();
                 switch (_sentence_type) {
-                case _GPS_SENTENCE_GPRMC:
-                    _last_GPRMC_ms = now;
+                case _GPS_SENTENCE_RMC:
+                    _last_RMC_ms = now;
                     //time                        = _new_time;
                     //date                        = _new_date;
                     state.location.lat     = _new_latitude;
@@ -304,8 +298,8 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status           = AP_GPS::GPS_OK_FIX_3D;
                     fill_3d_velocity();
                     break;
-                case _GPS_SENTENCE_GPGGA:
-                    _last_GPGGA_ms = now;
+                case _GPS_SENTENCE_GGA:
+                    _last_GGA_ms = now;
                     state.location.alt  = _new_altitude;
                     state.location.lat  = _new_latitude;
                     state.location.lng  = _new_longitude;
@@ -314,8 +308,8 @@ bool AP_GPS_NMEA::_term_complete()
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
                     break;
-                case _GPS_SENTENCE_GPVTG:
-                    _last_GPVTG_ms = now;
+                case _GPS_SENTENCE_VTG:
+                    _last_VTG_ms = now;
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course_cd = wrap_360_cd(_new_course);
                     fill_3d_velocity();
@@ -324,8 +318,8 @@ bool AP_GPS_NMEA::_term_complete()
                 }
             } else {
                 switch (_sentence_type) {
-                case _GPS_SENTENCE_GPRMC:
-                case _GPS_SENTENCE_GPGGA:
+                case _GPS_SENTENCE_RMC:
+                case _GPS_SENTENCE_GGA:
                     // Only these sentences give us information about
                     // fix status.
                     state.status = AP_GPS::NO_FIX;
@@ -340,12 +334,23 @@ bool AP_GPS_NMEA::_term_complete()
 
     // the first term determines the sentence type
     if (_term_number == 0) {
-        if (!strcmp(_term, _gprmc_string)) {
-            _sentence_type = _GPS_SENTENCE_GPRMC;
-        } else if (!strcmp(_term, _gpgga_string)) {
-            _sentence_type = _GPS_SENTENCE_GPGGA;
-        } else if (!strcmp(_term, _gpvtg_string)) {
-            _sentence_type = _GPS_SENTENCE_GPVTG;
+        /*
+          The first two letters of the NMEA term are the talker
+          ID. The most common is 'GP' but there are a bunch of others
+          that are valid. We accept any two characters here.
+         */
+        if (_term[0] < 'A' || _term[0] > 'Z' ||
+            _term[1] < 'A' || _term[1] > 'Z') {
+            _sentence_type = _GPS_SENTENCE_OTHER;
+            return false;
+        }
+        const char *term_type = &_term[2];
+        if (strcmp(term_type, "RMC") == 0) {
+            _sentence_type = _GPS_SENTENCE_RMC;
+        } else if (strcmp(term_type, "GGA") == 0) {
+            _sentence_type = _GPS_SENTENCE_GGA;
+        } else if (strcmp(term_type, "VTG") == 0) {
+            _sentence_type = _GPS_SENTENCE_VTG;
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
             _gps_data_good = true;
@@ -360,64 +365,64 @@ bool AP_GPS_NMEA::_term_complete()
         switch (_sentence_type + _term_number) {
         // operational status
         //
-        case _GPS_SENTENCE_GPRMC + 2: // validity (RMC)
+        case _GPS_SENTENCE_RMC + 2: // validity (RMC)
             _gps_data_good = _term[0] == 'A';
             break;
-        case _GPS_SENTENCE_GPGGA + 6: // Fix data (GGA)
+        case _GPS_SENTENCE_GGA + 6: // Fix data (GGA)
             _gps_data_good = _term[0] > '0';
             break;
-        case _GPS_SENTENCE_GPVTG + 9: // validity (VTG) (we may not see this field)
+        case _GPS_SENTENCE_VTG + 9: // validity (VTG) (we may not see this field)
             _gps_data_good = _term[0] != 'N';
             break;
-        case _GPS_SENTENCE_GPGGA + 7: // satellite count (GGA)
+        case _GPS_SENTENCE_GGA + 7: // satellite count (GGA)
             _new_satellite_count = atol(_term);
             break;
-        case _GPS_SENTENCE_GPGGA + 8: // HDOP (GGA)
+        case _GPS_SENTENCE_GGA + 8: // HDOP (GGA)
             _new_hdop = _parse_decimal_100();
             break;
 
         // time and date
         //
-        case _GPS_SENTENCE_GPRMC + 1: // Time (RMC)
-        case _GPS_SENTENCE_GPGGA + 1: // Time (GGA)
+        case _GPS_SENTENCE_RMC + 1: // Time (RMC)
+        case _GPS_SENTENCE_GGA + 1: // Time (GGA)
             _new_time = _parse_decimal_100();
             break;
-        case _GPS_SENTENCE_GPRMC + 9: // Date (GPRMC)
+        case _GPS_SENTENCE_RMC + 9: // Date (GPRMC)
             _new_date = atol(_term);
             break;
 
         // location
         //
-        case _GPS_SENTENCE_GPRMC + 3: // Latitude
-        case _GPS_SENTENCE_GPGGA + 2:
+        case _GPS_SENTENCE_RMC + 3: // Latitude
+        case _GPS_SENTENCE_GGA + 2:
             _new_latitude = _parse_degrees();
             break;
-        case _GPS_SENTENCE_GPRMC + 4: // N/S
-        case _GPS_SENTENCE_GPGGA + 3:
+        case _GPS_SENTENCE_RMC + 4: // N/S
+        case _GPS_SENTENCE_GGA + 3:
             if (_term[0] == 'S')
                 _new_latitude = -_new_latitude;
             break;
-        case _GPS_SENTENCE_GPRMC + 5: // Longitude
-        case _GPS_SENTENCE_GPGGA + 4:
+        case _GPS_SENTENCE_RMC + 5: // Longitude
+        case _GPS_SENTENCE_GGA + 4:
             _new_longitude = _parse_degrees();
             break;
-        case _GPS_SENTENCE_GPRMC + 6: // E/W
-        case _GPS_SENTENCE_GPGGA + 5:
+        case _GPS_SENTENCE_RMC + 6: // E/W
+        case _GPS_SENTENCE_GGA + 5:
             if (_term[0] == 'W')
                 _new_longitude = -_new_longitude;
             break;
-        case _GPS_SENTENCE_GPGGA + 9: // Altitude (GPGGA)
+        case _GPS_SENTENCE_GGA + 9: // Altitude (GPGGA)
             _new_altitude = _parse_decimal_100();
             break;
 
         // course and speed
         //
-        case _GPS_SENTENCE_GPRMC + 7: // Speed (GPRMC)
-        case _GPS_SENTENCE_GPVTG + 5: // Speed (VTG)
+        case _GPS_SENTENCE_RMC + 7: // Speed (GPRMC)
+        case _GPS_SENTENCE_VTG + 5: // Speed (VTG)
             _new_speed = (_parse_decimal_100() * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
             break;
-        case _GPS_SENTENCE_GPRMC + 8: // Course (GPRMC)
-        case _GPS_SENTENCE_GPVTG + 1: // Course (VTG)
+        case _GPS_SENTENCE_RMC + 8: // Course (GPRMC)
+        case _GPS_SENTENCE_VTG + 1: // Course (VTG)
             _new_course = _parse_decimal_100();
             break;
         }
