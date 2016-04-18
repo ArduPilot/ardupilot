@@ -169,9 +169,6 @@ public:
      */
     void get_statistics(uint16_t &pending, uint16_t &loaded);
 
-    // debug
-    void dump_grid_info();
-
 private:
     // allocate the terrain subsystem data
     bool allocate(void);

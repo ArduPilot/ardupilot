@@ -168,22 +168,6 @@ uint16_t AP_Terrain::find_grid_cache_num(const struct grid_info &info)
     return 99;
 }
 
-void AP_Terrain::dump_grid_info()
-{
-    ::printf("----GRID INFO------------\n");
-     // cycle through all grid caches we have
-    for (uint16_t i=0; i<cache_size; i++) {
-        // skip over invalid and empty grid blocks
-        if (cache[i].state != GRID_CACHE_INVALID && cache[i].grid.bitmap != 0) {
-            ::printf("Grid:%d lat:%ld lon:%ld\n",
-                    (int)i,
-                    (long)cache[i].grid.lat,
-                    (long)cache[i].grid.lon);
-        }
-    }
-    ::printf("-------------------------\n");
-}
-
 /*
   find cache index of disk_block
  */

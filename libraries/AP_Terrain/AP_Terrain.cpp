@@ -150,15 +150,6 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolat
         home_loc = loc;
     }
 
-    // debug
-    if (debug) {
-        ::printf("h00 cache:%d idx:%d idy:%d height:%d frac_x/y:%4.3f/%4.3f\n", (int)grid_cache_num, (int)info.idx_x+0, (int)info.idx_y+0, (int)h00, (double)info.frac_x, (double)info.frac_y);
-        ::printf("h01 cache:%d idx:%d idy:%d height:%d frac_x/y:%4.3f/%4.3f\n", (int)grid_cache_num, (int)info.idx_x+0, (int)info.idx_y+1, (int)h01, (double)info.frac_x, (double)info.frac_y);
-        ::printf("h10 cache:%d idx:%d idy:%d height:%d frac_x/y:%4.3f/%4.3f\n", (int)grid_cache_num, (int)info.idx_x+1, (int)info.idx_y+0, (int)h10, (double)info.frac_x, (double)info.frac_y);
-        ::printf("h11 cache:%d idx:%d idy:%d height:%d frac_x/y:%4.3f/%4.3f\n", (int)grid_cache_num, (int)info.idx_x+1, (int)info.idx_y+1, (int)h11, (double)info.frac_x, (double)info.frac_y);
-        ::printf("avg1:%4.2f avg2:%4.2f avg:%4.2f\n", (double)avg1, (double)avg2, (double)avg);
-    }
-
     return true;
 }
 
@@ -209,19 +200,6 @@ bool AP_Terrain::height_amsl_extrapolate(const Location &loc, float &height)
             lat_rounded = lat_rounded*10*1000*1000L;
             lon_rounded = lon_rounded*10*1000*1000L;
 
-            ::printf("Cache:%d SW-lat:%ld lng:%ld  rounded lat:%ld lon:%ld\n",
-                    (int)i,
-                    (long)grid_sw_corner.lat,
-                    (long)grid_sw_corner.lng,
-                    (long)lat_rounded,
-                    (long)lon_rounded
-                    );
-            ::printf("Cache:%d SW-diff-X:%4.2f Y:%4.2f  EPD-X:%4.2f Y:%4.2f  GD-X:%4.2f Y:%4.2f M:%d Spcng:%d\n",
-                    (int)i, (double)sw_corner_pos_diff.x, (double)sw_corner_pos_diff.y,
-                    (double)edge_pos_diff.x, (double)edge_pos_diff.y,
-                    (double)grid_dist_x,(double)grid_dist_y, (int)closest_maybe,
-                    (int)grid_spacing
-                    );
             if (closest_maybe) {
                 // calc distance to each block within the grid
                 for (uint8_t idx=0; idx<TERRAIN_GRID_BLOCK_SIZE_X; idx++) {
@@ -354,31 +332,6 @@ bool AP_Terrain::height_amsl_extrapolate(const Location &loc, float &height)
 
         // calc final height
         height = (1.0f-vert_perc)*top_point_height + vert_perc*bottom_point_height;
-
-        ::printf("TH:%4.2f BH:%4.2f VertPerc:%4.3f H:%4.2f  TPY:%4.2f BPY:%4.2f\n",
-                (double)top_point_height, (double)bottom_point_height,
-                (double)vert_perc, (double)height,
-                (double)top_point.y, (double)bottom_point.y);
-        /*
-        float avg1 = (1.0f-info.frac_x) * h00  + info.frac_x * h10;
-        float avg2 = (1.0f-info.frac_x) * h01  + info.frac_x * h11;
-        float avg  = (1.0f-info.frac_y) * avg1 + info.frac_y * avg2;
-        */
-    }
-
-    for (uint8_t x=0; x<2; x++) {
-        for (uint8_t y=0; y<2; y++) {
-            ::printf("X:%d Y:%d closest-found:%d cache:%d idx:%d idy:%d dx:%4.2f dy:%4.2f height:%d\n",
-                    (int)x,
-                    (int)y,
-                    (int)closest_found[x][y],
-                    (int)cache_closest[x][y],
-                    (int)block_closest_idx[x][y],
-                    (int)block_closest_idy[x][y],
-                    (double)block_closest_pos_diff[x][y].x,
-                    (double)block_closest_pos_diff[x][y].y,
-                    (int)block_closest_height[x][y]);
-        }
     }
 
     return true;
