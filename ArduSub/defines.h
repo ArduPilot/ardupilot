@@ -94,7 +94,7 @@ enum aux_sw_func {
 #define HIL_MODE_SENSORS                1
 
 // Auto Pilot Modes enumeration
-enum autopilot_modes {
+enum control_mode_t {
     STABILIZE =     0,  // manual airframe angle with manual throttle
     ACRO =          1,  // manual body-frame angular rate with manual throttle
     ALT_HOLD =      2,  // manual airframe angle with automatic throttle
@@ -112,6 +112,20 @@ enum autopilot_modes {
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
 	THROW =        18   // throw to launch mode using inertial/GPS system, no pilot input
+};
+
+enum mode_reason_t {
+    MODE_REASON_UNKNOWN=0,
+    MODE_REASON_TX_COMMAND,
+    MODE_REASON_GCS_COMMAND,
+    MODE_REASON_RADIO_FAILSAFE,
+    MODE_REASON_BATTERY_FAILSAFE,
+    MODE_REASON_GCS_FAILSAFE,
+    MODE_REASON_EKF_FAILSAFE,
+    MODE_REASON_GPS_GLITCH,
+    MODE_REASON_MISSION_END,
+    MODE_REASON_THROTTLE_LAND_ESCAPE,
+    MODE_REASON_FENCE_BREACH
 };
 
 // Tuning enumeration
@@ -427,6 +441,11 @@ enum ThrowModeState {
 #define FS_BATT_DISABLED                    0       // battery failsafe disabled
 #define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
 #define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
+
+// GCS failsafe definitions (FS_GCS_ENABLE parameter)
+#define FS_GCS_DISABLED                     0
+#define FS_GCS_ENABLED_ALWAYS_RTL           1
+#define FS_GCS_ENABLED_CONTINUE_MISSION     2
 
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
