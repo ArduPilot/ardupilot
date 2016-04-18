@@ -1981,7 +1981,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             Location new_home_loc;
             new_home_loc.lat = packet.latitude;
             new_home_loc.lng = packet.longitude;
-            new_home_loc.alt = packet.altitude * 100;
+            new_home_loc.alt = packet.altitude / 10;
             if (sub.far_from_EKF_origin(new_home_loc)) {
                 break;
             }
