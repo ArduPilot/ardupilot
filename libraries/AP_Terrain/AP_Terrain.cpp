@@ -102,6 +102,8 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolat
 
     // find the grid
     const struct grid_block &grid = find_grid_cache(info).grid;
+    // debug
+    uint16_t grid_cache_num = find_grid_cache_num(info);
 
     // if grid_block is empty, find the nearest non-empty grid
 
@@ -146,6 +148,15 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolat
         // remember home altitude as a special case
         home_height = height;
         home_loc = loc;
+    }
+
+    // debug
+    if (debug) {
+        ::printf("h00 cache:%d idx:%d idy:%d height:%d frac_x/y:%4.3f/%4.3f\n", (int)grid_cache_num, (int)info.idx_x+0, (int)info.idx_y+0, (int)h00, (double)info.frac_x, (double)info.frac_y);
+        ::printf("h01 cache:%d idx:%d idy:%d height:%d frac_x/y:%4.3f/%4.3f\n", (int)grid_cache_num, (int)info.idx_x+0, (int)info.idx_y+1, (int)h01, (double)info.frac_x, (double)info.frac_y);
+        ::printf("h10 cache:%d idx:%d idy:%d height:%d frac_x/y:%4.3f/%4.3f\n", (int)grid_cache_num, (int)info.idx_x+1, (int)info.idx_y+0, (int)h10, (double)info.frac_x, (double)info.frac_y);
+        ::printf("h11 cache:%d idx:%d idy:%d height:%d frac_x/y:%4.3f/%4.3f\n", (int)grid_cache_num, (int)info.idx_x+1, (int)info.idx_y+1, (int)h11, (double)info.frac_x, (double)info.frac_y);
+        ::printf("avg1:%4.2f avg2:%4.2f avg:%4.2f\n", (double)avg1, (double)avg2, (double)avg);
     }
 
     return true;
