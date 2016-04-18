@@ -121,7 +121,7 @@ public:
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
     void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
-    void Log_Write_Mode(uint8_t mode);
+    void Log_Write_Mode(uint8_t mode, uint8_t reason = 0);
 
     void Log_Write_EntireMission(const AP_Mission &mission);
     void Log_Write_Mission_Cmd(const AP_Mission &mission,

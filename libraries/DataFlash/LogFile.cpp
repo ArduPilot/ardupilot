@@ -1687,13 +1687,14 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
 }
 
 // Write a mode packet.
-bool DataFlash_Backend::Log_Write_Mode(uint8_t mode)
+bool DataFlash_Backend::Log_Write_Mode(uint8_t mode, uint8_t reason)
 {
     struct log_Mode pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
         time_us  : AP_HAL::micros64(),
         mode     : mode,
-        mode_num : mode
+        mode_num : mode,
+        mode_reason : reason
     };
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }

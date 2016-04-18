@@ -22,9 +22,9 @@ void Copter::failsafe_radio_on_event()
             // continue landing
         } else {
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause();
+                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             } else {
-                set_mode_RTL_or_land_with_pause();
+                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             }
         }
     }
@@ -57,9 +57,9 @@ void Copter::failsafe_battery_event(void)
             init_disarm_motors();
         } else {
             if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
-                set_mode_RTL_or_land_with_pause();
+                set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             } else {
-                set_mode_land_with_pause();
+                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             }
         }
     }
@@ -112,52 +112,14 @@ void Copter::failsafe_gcs_check()
     hal.rcin->clear_overrides();
     failsafe.rc_override_active = false;
 
-    // This is how to handle a failsafe.
-    // use the throttle failsafe setting to decide what to do
-    switch(control_mode) {
-        case STABILIZE:
-        case ACRO:
-        case SPORT:
-            // if throttle is zero disarm motors
-            if (ap.throttle_zero || ap.land_complete) {
-                init_disarm_motors();
-            }else if(home_distance > FS_CLOSE_TO_HOME_CM) {
-                // switch to RTL or if that fails, LAND
-                set_mode_RTL_or_land_with_pause();
-            }else{
-                // We have no GPS or are very close to home so we will land
-                set_mode_land_with_pause();
-            }
-            break;
-        case AUTO:
-            // if mission has not started AND vehicle is landed, disarm motors
-            if (!ap.auto_armed && ap.land_complete) {
-                init_disarm_motors();
-            // if g.failsafe_gcs is 1 do RTL, 2 means continue with the mission
-            } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
-                if (home_distance > FS_CLOSE_TO_HOME_CM) {
-                    // switch to RTL or if that fails, LAND
-                    set_mode_RTL_or_land_with_pause();
-                }else{
-                    // We are very close to home so we will land
-                    set_mode_land_with_pause();
-                }
-            }
-            // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
-            break;
-        default:
-            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
-            // if landed disarm
-            if (ap.land_complete) {
-                init_disarm_motors();
-            } else if (home_distance > FS_CLOSE_TO_HOME_CM) {
-                // switch to RTL or if that fails, LAND
-                set_mode_RTL_or_land_with_pause();
-            }else{
-                // We have no GPS or are very close to home so we will land
-                set_mode_land_with_pause();
-            }
-            break;
+    if (should_disarm_on_failsafe()) {
+        init_disarm_motors();
+    } else {
+        if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
+            // continue mission
+        } else if (g.failsafe_gcs != FS_GCS_DISABLED) {
+            set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+        }
     }
 }
 
@@ -170,12 +132,12 @@ void Copter::failsafe_gcs_off_event(void)
 
 // set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
-void Copter::set_mode_RTL_or_land_with_pause()
+void Copter::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
 {
     // attempt to switch to RTL, if this fails then switch to Land
-    if (!set_mode(RTL)) {
+    if (!set_mode(RTL, reason)) {
         // set mode to land will trigger mode change notification to pilot
-        set_mode_land_with_pause();
+        set_mode_land_with_pause(reason);
     } else {
         // alert pilot to mode change
         AP_Notify::events.failsafe_mode_change = 1;
