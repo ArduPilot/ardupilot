@@ -528,9 +528,16 @@ void Copter::one_hz_loop()
     }
     if (control_mode == GUIDED) {
         Location_Class targ = wp_nav.get_wp_destination();
-        float height;
-        terrain.height_amsl_new(targ, height);
+        float height_old, height_new;
+        terrain.height_amsl(targ, height_old, false);
+        terrain.height_amsl_extrapolate(targ, height_new);
+        printf("H_old:%4.2f H_new:%4.2f\n",(double)height_old, (double)height_new);
     }
+    /*float terr_offset_cm = 0.0f;
+    float curr_terr_offset_cm = 0.0f;
+    if (wp_nav.get_terrain_offset(inertial_nav.get_position(), terr_offset_cm) && wp_nav.get_curr_terrain_offset(curr_terr_offset_cm)) {
+        ::printf("terr-off:%4.2f curr-terr-off:%4.2f ekf-alt:%4.2f\n",(double)terr_offset_cm, (double)curr_terr_offset_cm, (double)inertial_nav.get_altitude());
+    }*/
 }
 
 // called at 50hz
