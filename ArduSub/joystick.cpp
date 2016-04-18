@@ -13,10 +13,10 @@ namespace {
 	int16_t lights2 = 1100;
 	int16_t rollTrim = 0;
 	int16_t pitchTrim = 0;
-	float gain = 1.0;
+	float gain = 0.5;
 	float maxGain = 1.0;
-	float minGain = 0.5;
-	int8_t numGainSettings = 3;
+	float minGain = 0.25;
+	int8_t numGainSettings = 4;
 }
 
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
