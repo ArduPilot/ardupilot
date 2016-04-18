@@ -102,10 +102,6 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolat
 
     // find the grid
     const struct grid_block &grid = find_grid_cache(info).grid;
-    // debug
-    uint16_t grid_cache_num = find_grid_cache_num(info);
-
-    // if grid_block is empty, find the nearest non-empty grid
 
     /*
       note that we rely on the one square overlap to ensure these
