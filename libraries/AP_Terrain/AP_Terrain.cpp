@@ -153,10 +153,7 @@ bool AP_Terrain::height_amsl_extrapolate(const Location &loc, float &height)
 {
     // variables to record the closest block found in each of 4 directions
     bool closest_found[2][2] = {{false, false}, {false, false}};
-    uint16_t cache_closest[2][2] = {{0,0},{0,0}};;
     float block_closest_dist_sq[2][2] = {{0,0},{0,0}};
-    uint8_t block_closest_idx[2][2] = {{0,0},{0,0}};
-    uint8_t block_closest_idy[2][2] = {{0,0},{0,0}};
     int16_t block_closest_height[2][2] = {{0,0},{0,0}};
     Vector2f block_closest_pos_diff[2][2];
     float grid_dist_x = TERRAIN_GRID_BLOCK_SIZE_X * grid_spacing;   // size (in meters) of a cache's grid
@@ -190,11 +187,6 @@ bool AP_Terrain::height_amsl_extrapolate(const Location &loc, float &height)
             } else if (edge_pos_diff.x >= 0.0f && edge_pos_diff.y >= 0.0f && (!closest_found[1][1] || grid_min_dist_sq < block_closest_dist_sq[1][1])) {
                 closest_maybe = true;
             }
-            uint32_t lat_rounded, lon_rounded;
-            lat_rounded = (grid_sw_corner.lat<0?(grid_sw_corner.lat-9999999L):grid_sw_corner.lat) / (10*1000*1000L);
-            lon_rounded = (grid_sw_corner.lng<0?(grid_sw_corner.lng-9999999L):grid_sw_corner.lng) / (10*1000*1000L);
-            lat_rounded = lat_rounded*10*1000*1000L;
-            lon_rounded = lon_rounded*10*1000*1000L;
 
             if (closest_maybe) {
                 // calc distance to each block within the grid
@@ -208,10 +200,7 @@ bool AP_Terrain::height_amsl_extrapolate(const Location &loc, float &height)
                             uint8_t ay = (block_pos_diff.y < 0) ? 0:1;
                             if (!closest_found[ax][ay] || block_dist_sq < block_closest_dist_sq[ax][ay]) {
                                 closest_found[ax][ay] = true;
-                                cache_closest[ax][ay] = i;
                                 block_closest_dist_sq[ax][ay] = block_dist_sq;
-                                block_closest_idx[ax][ay] = idx;
-                                block_closest_idy[ax][ay] = idy;
                                 block_closest_height[ax][ay] = cache[i].grid.height[idx][idy];
                                 block_closest_pos_diff[ax][ay] = block_pos_diff;
                             }
