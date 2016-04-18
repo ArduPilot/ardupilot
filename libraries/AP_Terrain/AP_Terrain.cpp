@@ -147,10 +147,226 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolat
     return true;
 }
 
-bool AP_Terrain::height_amsl_new(const Location &loc, float &height)
+bool AP_Terrain::height_amsl_extrapolate(const Location &loc, float &height)
 {
-    height = 0;
-    return find_nearest_grid_cache(loc);
+    // variables to record the closest block found in each of 4 directions
+    bool closest_found[2][2] = {{false, false}, {false, false}};
+    uint16_t cache_closest[2][2] = {{0,0},{0,0}};;
+    float block_closest_dist_sq[2][2] = {{0,0},{0,0}};
+    uint8_t block_closest_idx[2][2] = {{0,0},{0,0}};
+    uint8_t block_closest_idy[2][2] = {{0,0},{0,0}};
+    int16_t block_closest_height[2][2] = {{0,0},{0,0}};
+    Vector2f block_closest_pos_diff[2][2];
+    float grid_dist_x = TERRAIN_GRID_BLOCK_SIZE_X * grid_spacing;   // size (in meters) of a cache's grid
+    float grid_dist_y = TERRAIN_GRID_BLOCK_SIZE_Y * grid_spacing;   // size (in meters) of a cache's grid
+
+    // cycle through all caches we have
+    for (uint16_t i=0; i<cache_size; i++) {
+        // skip cache if it's grid is invalid or empty
+        if (cache[i].state != GRID_CACHE_INVALID && cache[i].grid.bitmap != 0) {
+            // find distance to grid's closest edge
+            Location grid_sw_corner;
+            grid_sw_corner.lat = cache[i].grid.lat;
+            grid_sw_corner.lng = cache[i].grid.lon;
+            Vector2f sw_corner_pos_diff = location_diff(loc, grid_sw_corner);
+            Vector2f edge_pos_diff = sw_corner_pos_diff;
+            if (edge_pos_diff.x < 0.0f) {
+                edge_pos_diff.x = MIN(0.0f, edge_pos_diff.x + grid_dist_x);
+            }
+            if (edge_pos_diff.y < 0.0f) {
+                edge_pos_diff.y = MIN(0.0f, edge_pos_diff.y + grid_dist_y);
+            }
+            // determine if closest edge is closer than any block found found so far
+            float grid_min_dist_sq = fabsf(sq(edge_pos_diff.x) + sq(edge_pos_diff.y));
+            bool closest_maybe = false;
+            if (edge_pos_diff.x <= 0.0f && edge_pos_diff.y <= 0.0f && (!closest_found[0][0] || grid_min_dist_sq < block_closest_dist_sq[0][0])) {
+                closest_maybe = true;
+            } else if (edge_pos_diff.x <= 0.0f && edge_pos_diff.y >= 0.0f && (!closest_found[0][1] || grid_min_dist_sq < block_closest_dist_sq[0][1])) {
+                closest_maybe = true;
+            } else if (edge_pos_diff.x >= 0.0f && edge_pos_diff.y <= 0.0f && (!closest_found[1][0] || grid_min_dist_sq < block_closest_dist_sq[1][0])) {
+                closest_maybe = true;
+            } else if (edge_pos_diff.x >= 0.0f && edge_pos_diff.y >= 0.0f && (!closest_found[1][1] || grid_min_dist_sq < block_closest_dist_sq[1][1])) {
+                closest_maybe = true;
+            }
+            uint32_t lat_rounded, lon_rounded;
+            lat_rounded = (grid_sw_corner.lat<0?(grid_sw_corner.lat-9999999L):grid_sw_corner.lat) / (10*1000*1000L);
+            lon_rounded = (grid_sw_corner.lng<0?(grid_sw_corner.lng-9999999L):grid_sw_corner.lng) / (10*1000*1000L);
+            lat_rounded = lat_rounded*10*1000*1000L;
+            lon_rounded = lon_rounded*10*1000*1000L;
+
+            ::printf("Cache:%d SW-lat:%ld lng:%ld  rounded lat:%ld lon:%ld\n",
+                    (int)i,
+                    (long)grid_sw_corner.lat,
+                    (long)grid_sw_corner.lng,
+                    (long)lat_rounded,
+                    (long)lon_rounded
+                    );
+            ::printf("Cache:%d SW-diff-X:%4.2f Y:%4.2f  EPD-X:%4.2f Y:%4.2f  GD-X:%4.2f Y:%4.2f M:%d Spcng:%d\n",
+                    (int)i, (double)sw_corner_pos_diff.x, (double)sw_corner_pos_diff.y,
+                    (double)edge_pos_diff.x, (double)edge_pos_diff.y,
+                    (double)grid_dist_x,(double)grid_dist_y, (int)closest_maybe,
+                    (int)grid_spacing
+                    );
+            if (closest_maybe) {
+                // calc distance to each block within the grid
+                for (uint8_t idx=0; idx<TERRAIN_GRID_BLOCK_SIZE_X; idx++) {
+                    for (uint8_t idy=0; idy<TERRAIN_GRID_BLOCK_SIZE_Y; idy++) {
+                        // check block has height data
+                        if (check_bitmap(cache[i].grid, idx, idy)) {
+                            Vector2f block_pos_diff = sw_corner_pos_diff + Vector2f(idx*grid_spacing, idy*grid_spacing);
+                            float block_dist_sq = fabsf(sq(block_pos_diff.x) + sq(block_pos_diff.y));
+                            uint8_t ax = (block_pos_diff.x < 0) ? 0:1;
+                            uint8_t ay = (block_pos_diff.y < 0) ? 0:1;
+                            if (!closest_found[ax][ay] || block_dist_sq < block_closest_dist_sq[ax][ay]) {
+                                closest_found[ax][ay] = true;
+                                cache_closest[ax][ay] = i;
+                                block_closest_dist_sq[ax][ay] = block_dist_sq;
+                                block_closest_idx[ax][ay] = idx;
+                                block_closest_idy[ax][ay] = idy;
+                                block_closest_height[ax][ay] = cache[i].grid.height[idx][idy];
+                                block_closest_pos_diff[ax][ay] = block_pos_diff;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // interpolate depending upon number of blocks found
+    uint8_t num_blocks_found = closest_found[0][0] + closest_found[0][1] + closest_found[1][0] + closest_found[1][1];
+
+    // none found
+    if (num_blocks_found <= 0) {
+        return false;
+    }
+
+    // for single block simply use this altitude
+    if (num_blocks_found == 1) {
+        for (uint8_t ax=0; ax<=1; ax++) {
+            for (uint8_t ay=0; ay<=1; ay++) {
+                if (closest_found[ax][ay]) {
+                    height = block_closest_height[ax][ay];
+                    return true;
+                }
+            }
+        }
+    }
+
+    // for two blocks use closest point on segment between the two blocks
+    if (num_blocks_found == 2) {
+        uint8_t seg_start_ax, seg_start_ay;
+        bool found_seg_start = false;
+        float closest_point_ratio = 0.0f;
+        for (uint8_t ax=0; ax<=1; ax++) {
+            for (uint8_t ay=0; ay<=1; ay++) {
+                if (closest_found[ax][ay]) {
+                    if (!found_seg_start) {
+                        // record segment start point
+                        seg_start_ax = ax;
+                        seg_start_ay = ay;
+                        found_seg_start = true;
+                    } else {
+                        // find closest point
+                        closest_point_ratio = closest_point_on_segment_as_ratio(block_closest_pos_diff[seg_start_ax][seg_start_ay],
+                                                                                block_closest_pos_diff[ax][ay], Vector2f(0.0f,0.0f));
+                        height = closest_point_ratio * block_closest_height[seg_start_ax][seg_start_ay] + (1.0f-closest_point_ratio) * block_closest_height[ax][ay];
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    // for three blocks use barycentric interpolation of three block's heights
+    if (num_blocks_found == 3) {
+        uint8_t vec_ax[2],vec_ay[2];
+        uint8_t vec_count = 0;
+        for (uint8_t ax=0; ax<=1; ax++) {
+            for (uint8_t ay=0; ay<=1; ay++) {
+                if (closest_found[ax][ay]) {
+                    if (vec_count < 2) {
+                        vec_ax[vec_count] = ax;
+                        vec_ay[vec_count] = ay;
+                        vec_count++;
+                    } else {
+                        float w1, w2, w3;
+                        barycentric_interpolate(block_closest_pos_diff[vec_ax[0]][vec_ay[0]],
+                                                block_closest_pos_diff[vec_ax[1]][vec_ay[1]],
+                                                block_closest_pos_diff[ax][ay],
+                                                Vector2f(0.0f,0.0f),
+                                                w1, w2, w3);
+                        height = w1 * block_closest_height[vec_ax[0]][vec_ay[0]] +
+                                 w2 * block_closest_height[vec_ax[1]][vec_ay[1]] +
+                                 w3 * block_closest_height[ax][ay];
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    // for four blocks use bilinear interpolation
+    if (num_blocks_found == 4) {
+        // find point on upper segment
+        Vector2f top_point;
+        float top_x_len = block_closest_pos_diff[1][1].x - block_closest_pos_diff[0][1].x;
+        float top_x_perc = 0.0f;
+        if (!is_zero(top_x_len)) {
+            top_x_perc = constrain_float(fabsf(block_closest_pos_diff[0][1].x) / top_x_len, 0.0f, 1.0f);
+        }
+        //top_point.x = block_closest_pos_diff[1][0].x + top_horiz_perc * top_horiz_len;  // set to zero
+        top_point.y = block_closest_pos_diff[0][1].y + top_x_perc*(block_closest_pos_diff[1][1].y - block_closest_pos_diff[0][1].y);
+        float top_point_height = (1.0f-top_x_perc)*block_closest_height[0][1] + top_x_perc*block_closest_height[1][1];
+
+        // find point on lower segment
+        Vector2f bottom_point;
+        float bottom_x_len = block_closest_pos_diff[1][0].x - block_closest_pos_diff[0][0].x;
+        float bottom_x_perc = 0.0f;
+        if (!is_zero(bottom_x_len)) {
+            bottom_x_perc = constrain_float(fabsf(block_closest_pos_diff[0][0].x) / bottom_x_len, 0.0f, 1.0f);
+        }
+        //bottom_point.x = block_closest_pos_diff[0][0].x + bottom_horiz_perc * bottom_horiz_len; // set to zero
+        bottom_point.y = block_closest_pos_diff[0][0].y + bottom_x_perc*(block_closest_pos_diff[1][0].y - block_closest_pos_diff[0][0].y);
+        float bottom_point_height = (1.0f-bottom_x_perc)*block_closest_height[0][0] + bottom_x_perc*block_closest_height[1][0];
+
+        // interpolate between upper and lower point
+        float vert_len = top_point.y - bottom_point.y;
+        float vert_perc = 0.0f;
+        if (!is_zero(vert_len)) {
+            vert_perc = constrain_float(top_point.y / vert_len, 0.0f, 1.0f);
+        }
+
+        // calc final height
+        height = (1.0f-vert_perc)*top_point_height + vert_perc*bottom_point_height;
+
+        ::printf("TH:%4.2f BH:%4.2f VertPerc:%4.3f H:%4.2f  TPY:%4.2f BPY:%4.2f\n",
+                (double)top_point_height, (double)bottom_point_height,
+                (double)vert_perc, (double)height,
+                (double)top_point.y, (double)bottom_point.y);
+        /*
+        float avg1 = (1.0f-info.frac_x) * h00  + info.frac_x * h10;
+        float avg2 = (1.0f-info.frac_x) * h01  + info.frac_x * h11;
+        float avg  = (1.0f-info.frac_y) * avg1 + info.frac_y * avg2;
+        */
+    }
+
+    for (uint8_t x=0; x<2; x++) {
+        for (uint8_t y=0; y<2; y++) {
+            ::printf("X:%d Y:%d closest-found:%d cache:%d idx:%d idy:%d dx:%4.2f dy:%4.2f height:%d\n",
+                    (int)x,
+                    (int)y,
+                    (int)closest_found[x][y],
+                    (int)cache_closest[x][y],
+                    (int)block_closest_idx[x][y],
+                    (int)block_closest_idy[x][y],
+                    (double)block_closest_pos_diff[x][y].x,
+                    (double)block_closest_pos_diff[x][y].y,
+                    (int)block_closest_height[x][y]);
+        }
+    }
+
+    return true;
 }
 
 /* 

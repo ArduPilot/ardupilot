@@ -106,8 +106,7 @@ public:
     // return terrain height in meters above sea level for a location
     // return false if not available
     bool height_amsl(const Location &loc, float &height, bool extrapolate = false);
-
-    bool height_amsl_new(const Location &loc, float &height);
+    bool height_amsl_extrapolate(const Location &loc, float &height);
 
     /* 
        find difference between home terrain height and the terrain
