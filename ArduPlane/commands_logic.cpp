@@ -32,6 +32,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // once landed, post some landing statistics to the GCS
         auto_state.post_landing_stats = false;
 
+        nav_controller->set_data_is_stale();
+
         // reset loiter start time. New command is a new loiter
         loiter.start_time_ms = 0;
 
