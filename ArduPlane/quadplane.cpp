@@ -950,7 +950,7 @@ bool QuadPlane::handle_do_vtol_transition(const mavlink_command_long_t &packet)
  */
 bool QuadPlane::in_vtol_auto(void)
 {
-    if (plane.control_mode != AUTO) {
+    if (!enable || plane.control_mode != AUTO) {
         return false;
     }
     if (plane.auto_state.vtol_mode) {
@@ -970,6 +970,9 @@ bool QuadPlane::in_vtol_auto(void)
  */
 bool QuadPlane::in_vtol_mode(void)
 {
+    if (!enable) {
+        return false;
+    }
     return (plane.control_mode == QSTABILIZE ||
             plane.control_mode == QHOVER ||
             plane.control_mode == QLOITER ||
@@ -1047,19 +1050,9 @@ void QuadPlane::control_auto(const Location &loc)
         plane.nav_pitch_cd = pos_control->get_pitch();
     } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND &&
                land_state == QLAND_POSITION1) {
-        /*
-          for initial land repositioning and descent we run the
-          velocity controller. This allows us to smoothly control the
-          velocity change from fixed wing flight to VTOL flight
-         */
-        float ekfGndSpdLimit, ekfNavVelGainScaler;    
-        ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+        Vector2f diff_wp = location_diff(plane.current_loc, loc);
 
-        Vector2f diff_wp;
-        diff_wp = location_diff(plane.current_loc, loc);
-        float distance = diff_wp.length();
-
-        if (land_speed_scale <= 0) {
+        if (land.speed_scale <= 0) {
             // initialise scaling so we start off targeting our
             // current linear speed towards the target. If this is
             // less than the wpnav speed then the wpnav speed is used
@@ -1073,41 +1066,67 @@ void QuadPlane::control_auto(const Location &loc)
             float speed_towards_target = diff_wp.length() - newdiff.length();
             // setup land_speed_scale so at current distance we maintain speed towards target, and slow down as
             // we approach
-            land_speed_scale = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01) / MAX(distance, 1);
+            float distance = diff_wp.length();
+            land.speed_scale = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01) / MAX(distance, 1);
         }
 
-        // set target vertical velocity to zero. The aircraft may
-        // naturally try to climb or descend a bit depending on its
-        // approach speed and angle. We let it do that, just asking
-        // the quad motors to aim for zero climb rate
-        pos_control->set_desired_velocity_z(0);
+        // run fixed wing navigation
+        plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
 
-        // set the desired XY velocity to bring us to the waypoint
-        pos_control->set_desired_velocity_xy(diff_wp.x*land_speed_scale*100,
-                                             diff_wp.y*land_speed_scale*100);
+        /*
+          calculate target velocity, not dropping it below 2m/s
+         */
+        const float final_speed = 2.0f;
+        Vector2f target_speed = diff_wp * land.speed_scale;
+        if (target_speed.length() < final_speed) {
+            target_speed = target_speed.normalized() * final_speed;
+        }
+        pos_control->set_desired_velocity_xy(target_speed.x*100,
+                                             target_speed.y*100);
+        
+        float ekfGndSpdLimit, ekfNavVelGainScaler;    
+        ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+
         pos_control->update_vel_controller_xyz(ekfNavVelGainScaler);
+
+        const Vector3f& curr_pos = inertial_nav.get_position();
+        pos_control->set_xy_target(curr_pos.x, curr_pos.y);
+
+        pos_control->freeze_ff_xy();
         
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
         plane.nav_pitch_cd = pos_control->get_pitch();
 
-        // initially constrain pitch so we don't nose down too
-        // much. The velocity controller tends to want to nose down
-        // initially
-        land_wp_proportion = constrain_float(MAX(land_wp_proportion, plane.auto_state.wp_proportion), 0, 1);
-        int32_t limit = MIN(land_wp_proportion * plane.aparm.pitch_limit_min_cd, -500);
-        plane.nav_pitch_cd = constrain_int32(plane.nav_pitch_cd, limit, plane.aparm.pitch_limit_max_cd);
+        /*
+          limit the pitch down with an expanding envelope. This
+          prevents the velocity controller demanding nose down during
+          the initial slowdown if the target velocity curve is higher
+          than the actual velocity curve (for a high drag
+          aircraft). Nose down will cause a lot of downforce on the
+          wings which will draw a lot of current and also cause the
+          aircraft to lose altitude rapidly.
+         */
+        float pitch_limit_cd = linear_interpolate(-300, plane.aparm.pitch_limit_min_cd,
+                                                  plane.auto_state.wp_proportion, 0, 1);
+        if (plane.nav_pitch_cd < pitch_limit_cd) {
+            plane.nav_pitch_cd = pitch_limit_cd;
+            // tell the pos controller we have limited the pitch to
+            // stop integrator buildup
+            pos_control->set_limit_accel_xy();
+        }
         
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
-                                                                             get_pilot_input_yaw_rate_cds(),
+                                                                             desired_auto_yaw_rate_cds(),
                                                                              smoothing_gain);
-        if (distance < 5 || plane.auto_state.wp_proportion >= 1) {
-            // move to loiter controller at 5m or if we overshoot the waypoint
+        if (plane.auto_state.wp_proportion >= 1 ||
+            plane.auto_state.wp_distance < 5) {
             land_state = QLAND_POSITION2;
+            wp_nav->init_loiter_target();
             plane.gcs_send_text_fmt(MAV_SEVERITY_INFO,"Land position2 started v=%.1f d=%.1f",
-                                    ahrs.groundspeed(), distance);
+                                    ahrs.groundspeed(), plane.auto_state.wp_distance);
         }
     } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND) {
         /*
@@ -1223,12 +1242,11 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
     land_state = QLAND_POSITION1;
-    land_speed_scale = 0;
-    pos_control->init_vel_controller_xyz();
-    
+    land.speed_scale = 0;
+    wp_nav->init_loiter_target();
+
     throttle_wait = false;
-    land_yaw_cd = get_bearing_cd(plane.prev_WP_loc, plane.next_WP_loc);
-    land_wp_proportion = 0;
+    land.yaw_cd = get_bearing_cd(plane.prev_WP_loc, plane.next_WP_loc);
     motors_lower_limit_start_ms = 0;
     Location origin = inertial_nav.get_origin();
     Vector2f diff2d;
@@ -1237,7 +1255,6 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     target.x = diff2d.x * 100;
     target.y = diff2d.y * 100;
     target.z = plane.next_WP_loc.alt - origin.alt;
-    wp_nav->set_wp_origin_and_destination(inertial_nav.get_position(), target);
     pos_control->set_alt_target(inertial_nav.get_altitude());
     
     // also update nav_controller for status output
@@ -1307,6 +1324,7 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
 void QuadPlane::Log_Write_QControl_Tuning()
 {
     const Vector3f &desired_velocity = pos_control->get_desired_velocity();
+    const Vector3f &accel_target = pos_control->get_accel_target();
     struct log_QControl_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
@@ -1319,6 +1337,8 @@ void QuadPlane::Log_Write_QControl_Tuning()
         climb_rate          : (int16_t)inertial_nav.get_velocity_z(),
         dvx                 : desired_velocity.x*0.01f,
         dvy                 : desired_velocity.y*0.01f,
+        dax                 : accel_target.x*0.01f,
+        day                 : accel_target.y*0.01f,
     };
     plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
