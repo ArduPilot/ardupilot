@@ -23,6 +23,7 @@
 //   Note that this driver supports both the 1.6 and 1.9 protocol varients
 //
 
+#include "AP_GPS_MTK.h"
 #include "AP_GPS_MTK19.h"
 
 extern const AP_HAL::HAL& hal;

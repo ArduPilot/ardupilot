@@ -15,6 +15,7 @@
  */
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 extern const AP_HAL::HAL& hal;
 

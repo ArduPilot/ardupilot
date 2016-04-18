@@ -21,6 +21,7 @@
 #pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 #define SBF_SETUP_MSG "\nsso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic, msec100\n"
 

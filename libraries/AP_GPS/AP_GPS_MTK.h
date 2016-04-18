@@ -25,6 +25,7 @@
 #pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 #include "AP_GPS_MTK_Common.h"
 
 class AP_GPS_MTK : public AP_GPS_Backend {

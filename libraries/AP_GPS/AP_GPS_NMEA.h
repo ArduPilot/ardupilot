@@ -45,6 +45,7 @@
 #pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 /// NMEA parser
 ///

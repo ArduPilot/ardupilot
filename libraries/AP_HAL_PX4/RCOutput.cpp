@@ -13,6 +13,8 @@
 #include <drivers/drv_pwm_output.h>
 #include <uORB/topics/actuator_direct.h>
 #include <drivers/drv_hrt.h>
+#include <drivers/drv_pwm_output.h>
+#include <drivers/drv_sbus.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,6 +39,7 @@ void PX4RCOutput::init()
     if (ioctl(_pwm_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
     }
+
     _rate_mask = 0;
     _alt_fd = -1;    
     _servo_count = 0;
@@ -61,7 +64,7 @@ void PX4RCOutput::init()
 
     // ensure not to write zeros to disabled channels
     _enabled_channels = 0;
-    for (int i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
+    for (uint8_t i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
     }
 
@@ -99,6 +102,14 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
     // we can't set this per channel
     if (freq_hz > 50) {
         // we're being asked to set the alt rate
+        if (_output_mode == MODE_PWM_ONESHOT) {
+            /*
+              set a 1Hz update for oneshot. This periodic output will
+              never actually trigger, instead we will directly trigger
+              the pulse after each push()
+             */
+            freq_hz = 1;
+        }
         if (ioctl(fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) != 0) {
             hal.console->printf("RCOutput: Unable to set alt rate to %uHz\n", (unsigned)freq_hz);
             return;
@@ -156,10 +167,6 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     // the down pulse
     if (freq_hz > 400) {
         freq_hz = 400;
-    }
-    if (freq_hz == 400) {
-        // remember mask for fast channels
-        _fast_channel_mask = chmask;
     }
     uint32_t primary_mask = chmask & ((1UL<<_servo_count)-1);
     uint32_t alt_mask = chmask >> _servo_count;
@@ -264,7 +271,13 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
     if (ch >= _max_channel) {
         _max_channel = ch + 1;
     }
-    if (period_us != _period[ch]) {
+    /*
+      only mark an update is needed if there has been a change, or we
+      are in oneshot mode. In oneshot mode we always need to send the
+      output
+     */
+    if (period_us != _period[ch] ||
+        _output_mode == MODE_PWM_ONESHOT) {
         _period[ch] = period_us;
         _need_update = true;
     }
@@ -409,8 +422,20 @@ void PX4RCOutput::_send_outputs(void)
     if (_need_update && _pwm_fd != -1) {
         _need_update = false;
         perf_begin(_perf_rcout);
-        // always send all outputs to first PWM device. This ensures that SBUS is properly updated in px4io
-        ::write(_pwm_fd, _period, _max_channel*sizeof(_period[0]));
+        uint8_t to_send = _max_channel<_servo_count?_max_channel:_servo_count;
+        if (_sbus_enabled) {
+            to_send = _max_channel;
+        }
+        if (to_send > 0) {
+            for (int i=to_send-1; i >= 0; i--) {
+                if (_period[i] == 0 || _period[i] == PWM_IGNORE_THIS_CHANNEL) {
+                    to_send = i;
+                }
+            }
+        }
+        if (to_send > 0) {
+            ::write(_pwm_fd, _period, to_send*sizeof(_period[0]));
+        }
         if (_max_channel > _servo_count) {
             // maybe send updates to alt_fd
             if (_alt_fd != -1 && _alt_servo_count > 0) {
@@ -462,42 +487,61 @@ void PX4RCOutput::push()
     if (_output_mode == MODE_PWM_ONESHOT) {
         // run timer immediately in oneshot mode
         _send_outputs();
-        if (_fast_channel_mask != 0) {
-            // this is a crude way of triggering immediate output
-            _trigger_fast_output();
-        }
     }
 }
 
 void PX4RCOutput::_timer_tick(void)
 {
     if (_output_mode != MODE_PWM_ONESHOT) {
+        /* in oneshot mode the timer does nothing as the outputs are
+         * sent from push() */
         _send_outputs();
     }
 }
 
 /*
-  trigger immediate output on fast channels. This only works on FMU,
-  not IO. It takes advantage of the way the rate update works on FMU
-  to trigger a oneshot output
+  enable sbus output
  */
-void PX4RCOutput::_trigger_fast_output(void)
+bool PX4RCOutput::enable_sbus_out(uint16_t rate_hz)
 {
-    uint32_t primary_mask = _fast_channel_mask & ((1UL<<_servo_count)-1);
-    uint32_t alt_mask = _fast_channel_mask >> _servo_count;    
-    if (_alt_fd == -1) {
-        // we're on a FMU only board
-        if (primary_mask) {
-            set_freq_fd(_pwm_fd, primary_mask, 400);
-            set_freq_fd(_pwm_fd, primary_mask, 0);
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        return false;
+    }
+    for (uint8_t tries=0; tries<10; tries++) {
+        if (ioctl(fd, SBUS_SET_PROTO_VERSION, 1) != 0) {
+            continue;
         }
+        if (ioctl(fd, PWM_SERVO_SET_SBUS_RATE, rate_hz) != 0) {
+            continue;
+        }
+        close(fd);
+        _sbus_enabled = true;
+        return true;
+    }
+    close(fd);
+    return false;
+}
+
+/*
+  setup output mode
+ */
+void PX4RCOutput::set_output_mode(enum output_mode mode)
+{
+    _output_mode = mode;
+    if (_output_mode == MODE_PWM_ONESHOT) {
+        ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 1);
+        if (_alt_fd != -1) {
+            ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 1);
+        }
+        set_freq(0xFFFF, 51);
     } else {
-        // we're on a board with px4io
-        if (alt_mask) {
-            set_freq_fd(_alt_fd, alt_mask, 400);
-            set_freq_fd(_alt_fd, alt_mask, 0);
+        ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 0);
+        if (_alt_fd != -1) {
+            ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 0);
         }
     }
 }
+
 
 #endif // CONFIG_HAL_BOARD

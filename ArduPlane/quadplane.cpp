@@ -1126,7 +1126,7 @@ void QuadPlane::control_auto(const Location &loc)
             land_state = QLAND_POSITION2;
             wp_nav->init_loiter_target();
             plane.gcs_send_text_fmt(MAV_SEVERITY_INFO,"Land position2 started v=%.1f d=%.1f",
-                                    ahrs.groundspeed(), plane.auto_state.wp_distance);
+                                    (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
         }
     } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND) {
         /*
