@@ -1145,7 +1145,7 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
                _hermite_spline_solution[3] * 3.0f * spline_time_sqrd;
 }
 
-// get terrain altitude difference (in cm) between a position and the ekf origin (+ve means current terrain higher than at origin)
+// get height of terrain (in cm) above the ekf origin (+ve means current terrain higher than EKF origin's altitude)
 bool AC_WPNav::get_terrain_offset(const Vector3f &pos, float& offset_cm)
 {
     // check we have terrain alt for ekf origin at least
