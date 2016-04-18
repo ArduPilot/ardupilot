@@ -143,6 +143,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,   5,     75),
 #endif
+    SCHED_TASK(terrain_update,        10,    100),
 #if EPM_ENABLED == ENABLED
     SCHED_TASK(epm_update,            10,     75),
 #endif
@@ -509,24 +510,14 @@ void Copter::one_hz_loop()
 
     check_usb_mux();
 
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    terrain.update();
-
-    // tell the rangefinder our height, so it can go into power saving
-    // mode if available
-#if CONFIG_SONAR == ENABLED
-    float height;
-    if (terrain.height_above_terrain(height, true)) {
-        sonar.set_estimated_terrain_height(height);
-    }
-#endif
-#endif
-
     // update position controller alt limits
     update_poscon_alt_max();
 
     // enable/disable raw gyro/accel logging
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
+
+    // log terrain data
+    terrain_logging();
 }
 
 // called at 50hz

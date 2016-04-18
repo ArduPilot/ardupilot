@@ -105,7 +105,8 @@ public:
 
     // return terrain height in meters above sea level for a location
     // return false if not available
-    bool height_amsl(const Location &loc, float &height);
+    bool height_amsl(const Location &loc, float &height, bool extrapolate = false);
+    bool height_amsl_extrapolate(const Location &loc, float &height);
 
     /* 
        find difference between home terrain height and the terrain
@@ -162,6 +163,11 @@ public:
       log terrain status to DataFlash
      */
     void log_terrain_data(DataFlash_Class &dataflash);
+
+    /*
+      get some statistics for TERRAIN_REPORT
+     */
+    void get_statistics(uint16_t &pending, uint16_t &loaded);
 
 private:
     // allocate the terrain subsystem data
@@ -265,6 +271,12 @@ private:
       find a grid structure given a grid_info
     */
     struct grid_cache &find_grid_cache(const struct grid_info &info);
+    uint16_t find_grid_cache_num(const struct grid_info &info);
+
+    /*
+      find nearest grid_info structure given a grid_info
+    */
+    //bool find_nearest_id_and_height(const Location &loc, const struct &grid_cache, grid_info &info);
 
     /*
       calculate bit number in grid_block bitmap. This corresponds to a
@@ -293,7 +305,6 @@ private:
       get some statistics for TERRAIN_REPORT
      */
     uint8_t bitcount64(uint64_t b);
-    void get_statistics(uint16_t &pending, uint16_t &loaded);
 
     /*
       disk IO functions

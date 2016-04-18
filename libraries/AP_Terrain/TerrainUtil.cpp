@@ -153,6 +153,21 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
     return grid;
 }
 
+uint16_t AP_Terrain::find_grid_cache_num(const struct grid_info &info)
+{
+    // see if we have that grid
+    for (uint16_t i=0; i<cache_size; i++) {
+        if (cache[i].grid.lat == info.grid_lat &&
+            cache[i].grid.lon == info.grid_lon &&
+            cache[i].grid.spacing == grid_spacing) {
+            cache[i].last_access_ms = AP_HAL::millis();
+            return i;
+        }
+    }
+
+    return 99;
+}
+
 /*
   find cache index of disk_block
  */

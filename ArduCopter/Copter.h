@@ -34,6 +34,7 @@
 
 // Common dependencies
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Menu/AP_Menu.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
@@ -343,11 +344,11 @@ private:
     bool rtl_state_complete; // set to true if the current state is completed
 
     struct {
-        // NEU w/ origin-relative altitude
-        Vector3f origin_point;
-        Vector3f climb_target;
-        Vector3f return_target;
-        Vector3f descent_target;
+        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
+        Location_Class origin_point;
+        Location_Class climb_target;
+        Location_Class return_target;
+        Location_Class descent_target;
         bool land;
     } rtl_path;
 
@@ -407,7 +408,7 @@ private:
 
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
-    struct Location current_loc;
+    Location_Class current_loc;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode
@@ -713,9 +714,10 @@ private:
     void althold_run();
     bool auto_init(bool ignore_checks);
     void auto_run();
-    void auto_takeoff_start(float final_alt_above_home);
+    void auto_takeoff_start(const Location& dest_loc);
     void auto_takeoff_run();
     void auto_wp_start(const Vector3f& destination);
+    void auto_wp_start(const Location_Class& dest_loc);
     void auto_wp_run();
     void auto_spline_run();
     void auto_land_start();
@@ -723,7 +725,7 @@ private:
     void auto_land_run();
     void auto_rtl_start();
     void auto_rtl_run();
-    void auto_circle_movetoedge_start();
+    void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
     void auto_circle_start();
     void auto_circle_run();
     void auto_nav_guided_start();
@@ -769,12 +771,13 @@ private:
     bool flip_init(bool ignore_checks);
     void flip_run();
     bool guided_init(bool ignore_checks);
-    void guided_takeoff_start(float final_alt_above_home);
+    bool guided_takeoff_start(float final_alt_above_home);
     void guided_pos_control_start();
     void guided_vel_control_start();
     void guided_posvel_control_start();
     void guided_angle_control_start();
     void guided_set_destination(const Vector3f& destination);
+    bool guided_set_destination(const Location_Class& dest_loc);
     void guided_set_velocity(const Vector3f& velocity);
     void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms);
@@ -828,7 +831,7 @@ private:
     void rtl_land_start();
     void rtl_land_run();
     void rtl_build_path();
-    float rtl_compute_return_alt_above_origin(float rtl_return_dist);
+    void rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target);
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
@@ -897,6 +900,7 @@ private:
     void pre_arm_rc_checks();
     bool pre_arm_gps_checks(bool display_failure);
     bool pre_arm_ekf_attitude_check();
+    bool pre_arm_terrain_check();
     bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
@@ -941,6 +945,9 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void epm_update();
+    void terrain_update();
+    void terrain_logging();
+    bool terrain_use();
     void report_batt_monitor();
     void report_frame();
     void report_radio();
@@ -1025,7 +1032,7 @@ private:
 #if NAV_GUIDED == ENABLED
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
-    void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
+    void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
 
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void log_init(void);
