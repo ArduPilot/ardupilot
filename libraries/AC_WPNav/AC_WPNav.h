@@ -8,6 +8,7 @@
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude control library
+#include <AP_Terrain/AP_Terrain.h>
 
 // loiter maximum velocities and accelerations
 #define WPNAV_ACCELERATION              100.0f      // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
@@ -39,6 +40,8 @@
 
 #define WPNAV_YAW_DIST_MIN                 200      // minimum track length which will lead to target yaw being updated to point at next waypoint.  Under this distance the yaw target will be frozen at the current heading
 
+class AP_Terrain;
+
 class AC_WPNav
 {
 public:
@@ -52,6 +55,9 @@ public:
 
     /// Constructor
     AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+
+    /// accept pointer to terrain library
+    void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
     ///
     /// loiter controller
@@ -293,8 +299,11 @@ protected:
     /// 	relies on update_spline_solution being called since the previous
     void calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity);
 
+public:
     // get terrain altitude difference (in cm) between at current position and ekf origin (+ve means current terrain higher than at origin)
     bool get_terrain_offset(const Vector3f &pos, float& offset_cm);
+    bool get_curr_terrain_offset(float &terrain_altitude_cm);
+protected:
 
     // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
@@ -349,6 +358,7 @@ protected:
     float       _yaw;                   // heading according to yaw
 
     // terrain following variables
+    AP_Terrain  *_terrain = NULL;
     bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _ekf_origin_terrain_alt_set = false;
 };

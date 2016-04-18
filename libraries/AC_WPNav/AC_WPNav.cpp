@@ -1171,6 +1171,19 @@ bool AC_WPNav::get_terrain_offset(const Vector3f &pos, float& offset_cm)
     return false;
 }
 
+bool AC_WPNav::get_curr_terrain_offset(float &terrain_altitude_cm)
+{
+    if (_terrain == NULL) {
+        return false;
+    }
+    if (!_terrain->height_above_terrain(terrain_altitude_cm, true)) {
+        return false;
+    }
+    //terrain_altitude_cm =  _inav.get_altitude() - (terrain_altitude_cm * 100.0f);
+    terrain_altitude_cm =  terrain_altitude_cm * 100.0f;
+    return true;
+}
+
 // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
 //      returns false if conversion failed (likely because terrain data was not available)
 bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt)
