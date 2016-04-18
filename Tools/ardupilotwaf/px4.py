@@ -275,6 +275,7 @@ def configure(cfg):
             # PX4Firmware build systems (cmake and legacy make-based) can live
             # together
             '-DCMAKE_BUILD',
+            '-DARDUPILOT_BUILD',
             '-I%s' % bldpath('libraries/GCS_MAVLink'),
             '-Wl,--gc-sections',
         )),

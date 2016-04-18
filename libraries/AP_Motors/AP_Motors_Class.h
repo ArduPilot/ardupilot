@@ -186,4 +186,7 @@ protected:
     float _pitch_radio_passthrough = 0.0f;    // pitch input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
     float _throttle_radio_passthrough = 0.0f; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
     float _yaw_radio_passthrough = 0.0f;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
+
+    enum pwm_mode { PWM_MODE_NORMAL=0, PWM_MODE_ONESHOT=1, PWM_MODE_ONESHOT125=2 };
+    AP_Int8             _pwm_mode;            // PWM output mode
 };

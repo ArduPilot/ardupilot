@@ -340,8 +340,9 @@ bool AP_Arming::gps_checks(bool report)
         if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
-                                                 "PreArm: GPS %d has not been fully configured",
-                                                  first_unconfigured);
+                                                 "PreArm: GPS %d failing configuration checks",
+                                                  first_unconfigured + 1);
+                gps.broadcast_first_configuration_failure_reason();
             }
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
             return false;

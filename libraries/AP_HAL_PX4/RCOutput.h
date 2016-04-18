@@ -28,7 +28,13 @@ public:
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;
     }
+    void cork();
+    void push();
 
+    void    set_output_mode(enum output_mode mode) override {
+        _output_mode = mode;
+    }
+    
     void _timer_tick(void);
 
 private:
@@ -55,9 +61,13 @@ private:
     orb_advert_t _actuator_armed_pub = NULL;
     uint16_t _esc_pwm_min = 0;
     uint16_t _esc_pwm_max = 0;
+    uint16_t _fast_channel_mask;
 
     void _init_alt_channels(void);
     void _publish_actuators(void);
     void _arm_actuators(bool arm);
     void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz);
+    bool _corking;
+    enum output_mode _output_mode = MODE_PWM_NORMAL;
+    void _send_outputs(void);
 };

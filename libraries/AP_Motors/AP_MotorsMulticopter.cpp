@@ -98,6 +98,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAX", 14, AP_MotorsMulticopter, _thr_mix_max, AP_MOTORS_THR_MIX_MAX_DEFAULT),
 
+    // @Param: PWM_MODE
+    // @DisplayName: Output PWM mode
+    // @Description: This selects the output PWM mode, allowing for normal PWM continuous output or OneShot125
+    // @Values: 0:Normal,1:OneShot,2:OneShot125
+    // @User: Advanced
+    AP_GROUPINFO("PWM_MODE", 15, AP_MotorsMulticopter, _pwm_mode, PWM_MODE_NORMAL),
+    
     AP_GROUPEND
 };
 
@@ -388,7 +395,7 @@ void AP_MotorsMulticopter::output_logic()
         }
         case SPOOL_UP:
             // Maximum throttle should move from minimum to maximum.
-            // Servoes should exhibit normal flight behavior.
+            // Servos should exhibit normal flight behavior.
 
             // initialize limits flags
             limit.roll_pitch = false;
@@ -419,7 +426,7 @@ void AP_MotorsMulticopter::output_logic()
 
         case THROTTLE_UNLIMITED:
             // Throttle should exhibit normal flight behavior.
-            // Servoes should exhibit normal flight behavior.
+            // Servos should exhibit normal flight behavior.
 
             // initialize limits flags
             limit.roll_pitch = false;
@@ -441,7 +448,7 @@ void AP_MotorsMulticopter::output_logic()
 
         case SPOOL_DOWN:
             // Maximum throttle should move from maximum to minimum.
-            // Servoes should exhibit normal flight behavior.
+            // Servos should exhibit normal flight behavior.
 
             // initialize limits flags
             limit.roll_pitch = false;

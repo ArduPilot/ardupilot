@@ -2,9 +2,11 @@
 
 echo "Checking modules"
 
-MODULE_LIST="PX4Firmware PX4NuttX mavlink uavcan uavcan/dsdl uavcan/libuavcan/dsdl_compiler/pyuavcan"
+MODULE_LIST="gbenchmark gtest mavlink PX4Firmware PX4Firmware/src/lib/matrix PX4Firmware/Tools/gencpp PX4Firmware/Tools/genmsg PX4NuttX uavcan uavcan/dsdl uavcan/libuavcan/dsdl_compiler/pyuavcan waf"
 
 NEED_INIT=0
+
+export GIT_PAGER=cat
 
 cd $(dirname "$0")/.. || exit 1
 
@@ -28,11 +30,15 @@ done
         git submodule status --recursive
         exit 1
     }
-    (cd modules/uavcan && git submodule init) || {
-        echo "init of uavcan failed"
-        git submodule status --recursive
-        exit 1
-    }
+    for m in $MODULE_LIST; do
+        [ -f modules/$m/.gitmodules ] && {
+            (cd modules/$m && git submodule init) || {
+                echo "init of $m failed"
+                git submodule status --recursive
+                exit 1
+            }
+        }
+    done
     git submodule update --recursive || {
         echo "git submodule update failed"        
         git submodule status --recursive

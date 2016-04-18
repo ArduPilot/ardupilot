@@ -337,7 +337,7 @@ then
                sh /etc/init.d/rc.error
         fi
         # external LSM303D is rotated YAW_270 from standard
-        if lsm303d -X -R 6 start
+        if lsm303d -a 16 -X -R 6 start
         then
                echo "lsm303d external started OK"
         else
@@ -381,7 +381,7 @@ then
         else
                sh /etc/init.d/rc.error
         fi
-        if lsm303d start
+        if lsm303d -a 16 start
         then
                echo "lsm303d started OK"
         else

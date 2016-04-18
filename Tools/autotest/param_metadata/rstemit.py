@@ -51,33 +51,95 @@ Complete Parameter List
     def start_libraries(self):
         pass
 
-    def tablify_row(self, row, widths):
+    def tablify_row(self, rowheading, row, widths, height):
         ret = ""
-        i=0
-        for item in row:
-            ret += "| " + item + " "*(widths[i]-len(item)-1)
-            i += 1
-        ret += "|"
-        return ret
+        joiner = "|"
 
-    def tablify(self, rows, headings=None):
-        if headings is None:
-            print("headings must be supplied ATM")
-            sys.exit(1)
+        row_lines = [ x.split("\n") for x in row ]
+        for row_line in row_lines:
+            row_line.extend([""] * (height-len(row_line)))
+        if rowheading is not None:
+            rowheading_lines = rowheading.split("\n")
+            rowheading_lines.extend([""] * (height-len(rowheading_lines)))
 
-        # determine column widths
-        widths = [0] * len(headings)
-        i=0
-        for heading in headings:
-            widths[i] = len(str(heading)) + 2 # +2 for leading/trailing ws
-            i += 1
-        for row in rows:
-            i=0
-            for value in row:
-                width = len(str(value)) + 2 # +2 for leading/trailing ws
-                if width > widths[i]:
-                    widths[i] = width
-                i += 1
+        out_lines = []
+        for i in range(0,height):
+            out_line = ""
+            if rowheading is not None:
+                rowheading_line = rowheading_lines[i]
+                out_line += joiner + " " + rowheading_line + " "*(widths[0]-len(rowheading_line)-1)
+                joiner = "#"
+            j=0
+            for item in row_lines:
+                widthnum = j
+                if rowheading is not None:
+                    widthnum += 1
+                line = item[i]
+                out_line += joiner + " " + line + " "*(widths[widthnum]-len(line)-1)
+                joiner = "|"
+                j += 1
+            out_line += "|"
+            out_lines.append(out_line)
+        return "\n".join(out_lines)
+
+    def tablify_longest_row_length(self, rows, rowheadings,headings):
+        check_width_rows = rows[:]
+        if headings is not None:
+            check_width_rows.append(headings)
+        longest_row_length = 0
+        for row in check_width_rows:
+            if len(row) > longest_row_length:
+                longest_row_length = len(row)
+        if rowheadings is not None:
+            longest_row_length += 1
+        return longest_row_length
+
+    def longest_line_in_string(self, string):
+        longest = 0
+        for line in string.split("\n"):
+            if len(line) > longest:
+                longest = len(line)
+        return longest
+
+    def tablify_calc_row_widths_heights(self, rows, rowheadings, headings):
+        rows_to_check = []
+        if headings is not None:
+            rows_to_check.append(headings)
+        rows_to_check.extend(rows[:])
+
+        heights = [0] * len(rows_to_check)
+
+        longest_row_length = self.tablify_longest_row_length(rows,rowheadings,headings)
+        widths = [0] * longest_row_length
+
+        all_rowheadings = []
+        if rowheadings is not None:
+            if headings is not None:
+                all_rowheadings.append("")
+            all_rowheadings.extend(rowheadings)
+
+        for rownum in range(0,len(rows_to_check)):
+            row = rows_to_check[rownum]
+            values_to_check = []
+            if rowheadings is not None:
+                values_to_check.append(all_rowheadings[rownum])
+            values_to_check.extend(row[:])
+            colnum = 0
+            for value in values_to_check:
+                height = len(value.split("\n"))
+                if height > heights[rownum]:
+                    heights[rownum] = height
+                longest_line = self.longest_line_in_string(value)
+                width = longest_line + 2 # +2 for leading/trailing ws
+                if width > widths[colnum]:
+                    widths[colnum] = width
+                colnum += 1
+        return (widths,heights)
+
+    def tablify(self, rows, headings=None, rowheadings=None):
+
+        (widths,heights) = self.tablify_calc_row_widths_heights(rows, rowheadings, headings)
+
         # create dividing lines
         bar = ""
         heading_bar = ""
@@ -91,17 +153,47 @@ Complete Parameter List
 
         # create table
         ret = bar + "\n"
-        ret += self.tablify_row(headings, widths) + "\n"
-        ret += heading_bar + "\n"
-        for row in rows:
-            ret += self.tablify_row(row, widths) + "\n"
+        if headings is not None:
+            rowheading = None
+            if rowheadings is not None:
+                rowheading = ""
+            ret += self.tablify_row(rowheading, headings, widths, heights[0]) + "\n"
+            ret += heading_bar + "\n"
+        for i in range(0,len(rows)):
+            rowheading = None
+            height = i
+            if rowheadings is not None:
+                rowheading = rowheadings[i]
+            if headings is not None:
+                height += 1
+            ret += self.tablify_row(rowheading, rows[i], widths, heights[height]) + "\n"
             ret += bar + "\n"
 
         return ret
 
+
+
+    def render_prog_values_field(self, render_info, param, field):
+        values = (param.__dict__[field]).split(',')
+        rows = []
+        for value in values:
+            v = [ x.strip() for x in value.split(':') ]
+            rows.append(v)
+        return self.tablify(rows, headings=render_info["headings"])
+
     def emit(self, g, f):
         tag = '%s Parameters' % self.escape(g.name)
         reference = "parameters_" + g.name
+
+        field_table_info = {
+            "Values": {
+                "headings": ['Value','Meaning']
+            },
+            "Bitmask": {
+                "headings": ['Bit', 'Meaning']
+            }
+        }
+
         ret = '''
 
 .. _{reference}:
@@ -141,17 +233,37 @@ Complete Parameter List
             ret += "\n\n%s\n" % self.escape(param.Description)
 
             headings = []
-            rows = []
+            row = []
             for field in param.__dict__.keys():
                 if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
-                    if field == 'Values' and Emit.prog_values_field.match(param.__dict__[field]):
-                        values = (param.__dict__[field]).split(',')
-                        rows = []
-                        for value in values:
-                            v = [ x.strip() for x in value.split(':') ]
-                            rows.append(v)
-                        ret += "\n" + self.tablify(rows, headings=['Value','Meaning']) + "\n\n"
+                    headings.append(field)
+                    if field in field_table_info and Emit.prog_values_field.match(param.__dict__[field]):
+                        row.append(self.render_prog_values_field(field_table_info[field], param, field))
+                    elif field == "Range":
+                        (min,max) = (param.__dict__[field]).split(' ')
+                        row.append("%s - %s" % (min,max,))
                     else:
-                        ret += "%s: %s\n" % (field, cgi.escape(param.__dict__[field]))
+                        row.append(cgi.escape(param.__dict__[field]))
+            if len(row):
+                ret += "\n\n" + self.tablify([row], headings=headings) + "\n\n"
+        self.t += ret + "\n"
 
-        self.t += ret
+def table_test():
+    e = RSTEmit()
+    print("Test 1")
+    print e.tablify([["A","B"],["C","D"]])
+
+    print("Test 2")
+    print e.tablify([["A","B"],["CD\nE","FG"]])
+
+    print("Test 3")
+    print e.tablify([["A","B"],["CD\nEF","GH"]], rowheadings=["r1","row2"])
+
+    print("Test 4")
+    print e.tablify([["A","B"],["CD\nEF","GH"]], headings=["c1","col2"])
+
+    print("Test 5")
+    print e.tablify([["A","B"],["CD\nEF","GH"]], headings=["c1","col2"], rowheadings=["r1","row2"])
+
+if __name__ == '__main__':
+    table_test()

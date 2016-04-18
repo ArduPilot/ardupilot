@@ -79,6 +79,10 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
         // we have a mapped motor number for this channel
         chan = _motor_map[chan];
     }
+    if (_pwm_mode == PWM_MODE_ONESHOT125) {
+        // OneShot125 uses a PWM range from 125 to 250 usec
+        pwm /= 8;
+    }
     hal.rcout->write(chan, pwm);
 }
 
@@ -88,6 +92,11 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
 {
     hal.rcout->set_freq(rc_map_mask(mask), freq_hz);
+    if (_pwm_mode == PWM_MODE_ONESHOT ||
+        _pwm_mode == PWM_MODE_ONESHOT125) {
+        // tell HAL to do immediate output
+        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+    }
 }
 
 void AP_Motors::rc_enable_ch(uint8_t chan)
