@@ -1159,7 +1159,7 @@ bool AC_WPNav::get_terrain_offset(const Vector3f &pos, float& offset_cm)
         }
     }
 
-    // calculate current position's terrain altitude offset above EKF origin's terrain altitude
+    // calculate current position's terrain altitude above EKF origin's altitude
     Location_Class curr_loc(pos);
     curr_loc.set_alt(0,Location_Class::ALT_FRAME_ABOVE_ORIGIN);
     int32_t pos_terr_alt_cm;
