@@ -102,6 +102,17 @@ public:
 	// the update_loiter() method is used
 	virtual bool reached_loiter_target(void) = 0;
 
+	// notify Navigation controller that a new waypoint has just been
+	// processed. This means that until we handle an update_XXX() function
+	// the data is stale with old navigation information.
+    virtual void set_data_is_stale(void) = 0;
+
+    // return true if a new waypoint has been processed by mission
+    // controller but the navigation controller still has old stale data
+    // from previous waypoint navigation handling. This gets cleared on
+    // every update_XXXXXX() call.
+    virtual bool data_is_stale(void) const = 0;
+
 	// add new navigation controllers to this enum. Users can then
 	// select which navigation controller to use by setting the
 	// NAV_CONTROLLER parameter

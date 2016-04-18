@@ -55,6 +55,13 @@ public:
         _L1_period.set_default(period);
     }
 
+    void set_data_is_stale(void)  {
+        _data_is_stale = true;
+    }
+    bool data_is_stale(void) const {
+        return _data_is_stale;
+    }
+
 	// this supports the NAVl1_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -104,4 +111,5 @@ private:
     AP_Float _L1_xtrack_i_gain;
     float _L1_xtrack_i_gain_prev = 0;
     uint32_t _last_update_waypoint_us;
+    bool _data_is_stale = true;
 };
