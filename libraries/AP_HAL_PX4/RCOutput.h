@@ -70,4 +70,6 @@ private:
     bool _corking;
     enum output_mode _output_mode = MODE_PWM_NORMAL;
     void _send_outputs(void);
+
+    void _trigger_fast_output();
 };
