@@ -52,11 +52,7 @@ Location_Class::Location_Class(const Vector3f &ekf_offset_neu)
             lat = ekf_origin.lat;
             lng = ekf_origin.lng;
             offset(ekf_offset_neu.x / 100.0f, ekf_offset_neu.y / 100.0f);
-        } else {
-            hal.console->printf("Location_Class::failed to get origin\n");
         }
-    } else {
-        hal.console->printf("Location_Class::ahrs not set\n");
     }
 }
 
