@@ -204,6 +204,7 @@ void Copter::init_ardupilot()
     Location_Class::set_ahrs(&ahrs);
 #if AP_TERRAIN_AVAILABLE
     Location_Class::set_terrain(&terrain);
+    wp_nav.set_terrain(&terrain);
 #endif
 
     pos_control.set_dt(MAIN_LOOP_SECONDS);
