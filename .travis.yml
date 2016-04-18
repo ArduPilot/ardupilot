@@ -37,9 +37,7 @@ env:
   matrix:
     - CI_BUILD_TARGET="px4-v2"
     - CI_BUILD_TARGET="sitl"
-    - CI_BUILD_TARGET="linux"
     - CI_BUILD_TARGET="navio"
-    - CI_BUILD_TARGET="raspilot"
     - CI_BUILD_TARGET="minlure"
     - CI_BUILD_TARGET="bebop"
     - CI_BUILD_TARGET="sitltest"
@@ -49,12 +47,8 @@ matrix:
     - compiler: clang
       env: CI_BUILD_TARGET="sitl"
     - compiler: clang
-      env: CI_BUILD_TARGET="linux"
-    - compiler: clang
       env: CI_BUILD_TARGET="minlure"
     - compiler: clang
       env: CI_BUILD_TARGET="navio"
-    - compiler: clang
-      env: CI_BUILD_TARGET="raspilot"
     - compiler: clang
       env: CI_BUILD_TARGET="bebop"
