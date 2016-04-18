@@ -278,6 +278,9 @@ bool Copter::pre_arm_checks(bool display_failure)
                     }
                     return false;
                 }
+                // EKF is less sensitive to Z-axis error and Z-axis is more
+                // likely to be temperature-sensitive on our hardware
+                vec_diff.z *= 0.5f;
                 if (vec_diff.length() > threshold) {
                     if (display_failure) {
                         gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent Accelerometers");
