@@ -3,68 +3,69 @@
 
 set -ex
 
-PKGS="build-essential gawk ccache genromfs libc6-i386 \
-      python-argparse python-empy python-serial python-pexpect python-dev python-pip zlib1g-dev gcc-4.9 g++-4.9 cmake cmake-data clang-3.7"
-
 ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 
 RPI_ROOT="master"
 RPI_TARBALL="$RPI_ROOT.tar.gz"
 
-read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
-
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-
-if [ "$UBUNTU_CODENAME" = "precise" ]; then
-    sudo add-apt-repository ppa:george-edison55/precise-backports -y
-elif [ "$UBUNTU_CODENAME" = "trusty" ]; then
-    sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
-fi
-
-wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-sudo add-apt-repository "deb http://llvm.org/apt/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-3.7 main" -y
-sudo apt-get -qq -y --force-yes update
-sudo apt-get -qq -y --force-yes remove clang llvm
-sudo apt-get -y --force-yes install $PKGS
-sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-3.7 37 \
-    --slave /usr/bin/clang++ clang++ /usr/bin/clang++-3.7
-sudo pip install mavproxy
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 90 \
-    --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
-
-pushd $HOME
+CCACHE_ROOT="ccache-3.2.4"
+CCACHE_TARBALL="$CCACHE_ROOT.tar.bz2"
 
 mkdir -p $HOME/opt
-pushd $HOME/opt
+pushd $HOME
 
 # PX4 toolchain
-compiler=$ARM_ROOT
-if [ ! -d "$HOME/opt/$compiler" ]; then
+dir=$ARM_ROOT
+if [ ! -d "$HOME/opt/$dir" ]; then
   wget http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL
-  tar -xf $ARM_TARBALL
+  tar -xf $ARM_TARBALL -C opt
 fi
 
 # RPi/BBB toolchain
-compiler="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
-if [ ! -d "$HOME/opt/$compiler" ]; then
+dir="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
+if [ ! -d "$HOME/opt/$dir" ]; then
   wget http://firmware.ardupilot.org/Tools/Travis/NavIO/$RPI_TARBALL
-  tar -xf $RPI_TARBALL
+  tar -xf $RPI_TARBALL -C opt $dir
+fi
+
+# CCache
+dir=$CCACHE_ROOT
+if [ ! -d "$HOME/opt/$dir" ]; then
+  wget https://www.samba.org/ftp/ccache/$CCACHE_TARBALL
+  tar -xf $CCACHE_TARBALL
+  pushd $CCACHE_ROOT
+  ./configure --prefix="/tmp" --bindir="$HOME/opt/$dir"
+  make
+  make install
+  popd
 fi
 
 popd
 
 mkdir -p $HOME/bin
 
-# configure ccache
-ln -s /usr/bin/ccache ~/bin/g++
-ln -s /usr/bin/ccache ~/bin/gcc
-ln -s /usr/bin/ccache ~/bin/arm-none-eabi-g++
-ln -s /usr/bin/ccache ~/bin/arm-none-eabi-gcc
-ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-g++
-ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-gcc
+# symlink to compiler versions
+ln -s /usr/bin/gcc-4.9 ~/bin/gcc
+ln -s /usr/bin/g++-4.9 ~/bin/g++
+ln -s /usr/bin/clang-3.7 ~/bin/clang
+ln -s /usr/bin/clang++-3.7 ~/bin/clang++
+ln -s /usr/bin/llvm-ar-3.7 ~/bin/llvm-ar
 
-exportline="export PATH=$HOME/bin"
+mkdir -p $HOME/ccache
+
+# configure ccache
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/g++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-none-eabi-g++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-none-eabi-gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-gnueabihf-g++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-gnueabihf-gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang++
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang
+
+exportline="export PATH=$HOME/ccache"
+exportline="${exportline}:$HOME/bin"
 exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin"
 exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
 exportline="${exportline}:\$PATH"
@@ -77,5 +78,4 @@ fi
 
 . ~/.profile
 
-popd
-
+pip install --user argparse empy pyserial pexpect mavproxy

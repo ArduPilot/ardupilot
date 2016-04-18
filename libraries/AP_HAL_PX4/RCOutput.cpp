@@ -163,6 +163,11 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
  */
 void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
 {
+    if (_output_mode == MODE_PWM_ONESHOT) {
+        // changing the output frequency makes no sense in oneshot
+        // mode, and can disturb the timers causing spurious glitches
+        return;
+    }
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
     if (freq_hz > 400) {
@@ -528,6 +533,10 @@ bool PX4RCOutput::enable_sbus_out(uint16_t rate_hz)
  */
 void PX4RCOutput::set_output_mode(enum output_mode mode)
 {
+    if (_output_mode == mode) {
+        // no change
+        return;
+    }
     _output_mode = mode;
     if (_output_mode == MODE_PWM_ONESHOT) {
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 1);

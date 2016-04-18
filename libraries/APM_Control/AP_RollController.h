@@ -30,6 +30,13 @@ public:
 
 	static const struct AP_Param::GroupInfo var_info[];
 
+
+    // tuning accessors
+    void kP(float v) { gains.P.set(v); }
+    void kI(float v) { gains.I.set(v); }
+    void kD(float v) { gains.D.set(v); }
+    void kFF(float v) { gains.FF.set(v); }
+    
 private:
 	const AP_Vehicle::FixedWing &aparm;
     AP_AutoTune::ATGains gains;

@@ -12,8 +12,16 @@ c_compiler=${CC:-gcc}
 cxx_compiler=${CXX:-g++}
 unset CXX CC
 
-export BUILDROOT=/tmp/travis.build.$$
+export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
+export GIT_VERSION="ci_test"
+export NUTTX_GIT_VERSION="ci_test"
+export PX4_GIT_VERSION="ci_test"
+export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+
+if [[ "$cxx_compiler" == "clang++" ]]; then
+  export CCACHE_CPP2="true"
+fi
 
 # If CI_BUILD_TARGET is not set, default to all of them
 if [ -z "$CI_BUILD_TARGET" ]; then

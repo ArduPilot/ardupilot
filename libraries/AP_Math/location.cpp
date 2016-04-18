@@ -259,6 +259,14 @@ bool location_sanitize(const struct Location &defaultLoc, struct Location &loc)
         loc.alt = defaultLoc.alt;
         has_changed = true;
     }
+
+    // limit lat/lng to appropriate ranges
+    if (abs(loc.lat) > 90 * 1e7 || abs(loc.lng) > 180 * 1e7) {
+        loc.lat = defaultLoc.lat;
+        loc.lng = defaultLoc.lng;
+        has_changed = true;
+    }
+
     return has_changed;
 }
 

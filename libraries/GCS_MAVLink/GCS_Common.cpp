@@ -1419,7 +1419,7 @@ void GCS_MAVLINK::send_home(const Location &home) const
             chan,
             home.lat,
             home.lng,
-            home.alt / 100,
+            home.alt * 10,
             0.0f, 0.0f, 0.0f,
             q,
             0.0f, 0.0f, 0.0f);
@@ -1437,7 +1437,7 @@ void GCS_MAVLINK::send_home_all(const Location &home)
                     chan,
                     home.lat,
                     home.lng,
-                    home.alt / 100,
+                    home.alt * 10,
                     0.0f, 0.0f, 0.0f,
                     q,
                     0.0f, 0.0f, 0.0f);
