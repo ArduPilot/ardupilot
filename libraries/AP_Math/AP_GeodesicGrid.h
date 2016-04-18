@@ -121,8 +121,9 @@ public:
      * are checked is unspecified.  The default value for \p inclusive is
      * false.
      *
-     * @return The index of the section. The value -1 is returned if the
-     * section isn't found, which might happen when \p inclusive is false.
+     * @return The index of the section. The value -1 is returned if \p v is
+     * the null vector or the section isn't found, which might happen when \p
+     * inclusive is false.
      */
     int section(const Vector3f& v, const bool inclusive = false) const;
 
@@ -266,8 +267,8 @@ private:
      * #section() const.
      *
      * @return The index of the icosahedron triangle. The value -1 is returned
-     * if the triangle isn't found, which might happen when \p inclusive is
-     * false.
+     * if \p v is the null vector or the triangle isn't found, which might
+     * happen when \p inclusive is false.
      */
     int _from_neighbor_umbrella(int umbrella_index,
                                 const Vector3f& v,
