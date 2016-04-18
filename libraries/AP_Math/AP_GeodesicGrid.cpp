@@ -347,8 +347,7 @@ int AP_GeodesicGrid::_triangle_index(const Vector3f& v,
     case 0:
         /* There are two possible cases when balance is 1:
          *
-         * 1) The vector v is the null vector. Arbitrarily return first
-         * triangle.
+         * 1) The vector v is the null vector, which doesn't cross any section.
          *
          * 2) One coefficient is zero, another is positive and yet another is
          * negative. Let a, b and c be the respective vertices for those
@@ -356,7 +355,7 @@ int AP_GeodesicGrid::_triangle_index(const Vector3f& v,
          * are also valid here.
          */
         if (zero_count == 3) {
-            return inclusive ? 0 : -1;
+            return -1;
         }
 
         if (!is_zero(w.x) && w.x < 0) {
