@@ -274,12 +274,7 @@ private:
       find a grid structure given a grid_info
     */
     struct grid_cache &find_grid_cache(const struct grid_info &info);
-
-    /*
-      find nearest grid structure given a location
-    */
-    //bool find_nearest_grid_cache(const Location &loc, struct grid_cache &nearest_cache);
-    bool find_nearest_grid_cache(const Location &loc);
+    uint16_t find_grid_cache_num(const struct grid_info &info);
 
     /*
       find nearest grid_info structure given a grid_info
