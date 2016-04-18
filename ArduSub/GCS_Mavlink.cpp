@@ -59,6 +59,8 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
         break;
+    default:
+    	break;
     }
 
     // all modes except INITIALISING have some form of manual
@@ -173,6 +175,8 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case SPORT:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
+    default:
+    	break;
     }
 
     // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
@@ -1001,7 +1005,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_MODE:       // MAV ID: 11
     {
-        handle_set_mode(msg, FUNCTOR_BIND(&sub, &Sub::set_mode, bool, uint8_t));
+#ifdef DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
+        if (!sub.failsafe.radio) {
+            handle_set_mode(msg, FUNCTOR_BIND(&sub, &Sub::gcs_set_mode, bool, uint8_t));
+        } else {
+            // don't allow mode changes while in radio failsafe
+            mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, MAV_RESULT_FAILED);
+        }
+#else
+        handle_set_mode(msg, FUNCTOR_BIND(&sub, &Sub::gcs_set_mode, bool, uint8_t));
+#endif
         break;
     }
 
@@ -1214,19 +1227,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 
         case MAV_CMD_NAV_LOITER_UNLIM:
-            if (sub.set_mode(LOITER)) {
+            if (sub.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
 
         case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-            if (sub.set_mode(RTL)) {
+            if (sub.set_mode(RTL, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
 
         case MAV_CMD_NAV_LAND:
-            if (sub.set_mode(LAND)) {
+            if (sub.set_mode(LAND, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1344,7 +1357,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_MISSION_START:
-            if (sub.motors.armed() && sub.set_mode(AUTO)) {
+            if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
                 sub.set_auto_armed(true);
                 if (sub.mission.state() != AP_Mission::MISSION_RUNNING) {
                     sub.mission.start_or_resume();

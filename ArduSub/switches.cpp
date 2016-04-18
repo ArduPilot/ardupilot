@@ -43,7 +43,7 @@ void Sub::read_control_switch()
 
     if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged) {
         // set flight mode and simple mode setting
-        if (set_mode(flight_modes[switch_position])) {
+    	if (set_mode((control_mode_t)flight_modes[switch_position].get(), MODE_REASON_TX_COMMAND)) {
             // play a tone
             if (control_switch_state.debounced_switch_position != -1) {
                 // alert user to mode change failure (except if autopilot is just starting up)
@@ -258,7 +258,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_FLIP:
             // flip if switch is on, positive throttle and we're actually flying
             if(ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(FLIP);
+                set_mode(FLIP, MODE_REASON_TX_COMMAND);
             }
             break;
 
@@ -275,7 +275,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_RTL:
             if (ch_flag == AUX_SWITCH_HIGH) {
                 // engage RTL (if not possible we remain in current flight mode)
-                set_mode(RTL);
+                set_mode(RTL, MODE_REASON_TX_COMMAND);
             }else{
                 // return to flight mode switch's flight mode if we are currently in RTL
                 if (control_mode == RTL) {
@@ -424,7 +424,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
         case AUXSW_AUTO:
             if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(AUTO);
+                set_mode(AUTO, MODE_REASON_TX_COMMAND);
             }else{
                 // return to flight mode switch's flight mode if we are currently in AUTO
                 if (control_mode == AUTO) {
@@ -454,7 +454,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
         case AUXSW_LAND:
             if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(LAND);
+                set_mode(LAND, MODE_REASON_TX_COMMAND);
             }else{
                 // return to flight mode switch's flight mode if we are currently in LAND
                 if (control_mode == LAND) {
@@ -576,7 +576,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_BRAKE:
             // brake flight mode
             if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(BRAKE);
+                set_mode(BRAKE, MODE_REASON_TX_COMMAND);
             }else{
                 // return to flight mode switch's flight mode if we are currently in BRAKE
                 if (control_mode == BRAKE) {
@@ -588,7 +588,7 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_THROW:
             // throw flight mode
             if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(THROW);
+                set_mode(THROW, MODE_REASON_TX_COMMAND);
             } else {
                 // return to flight mode switch's flight mode if we are currently in throw mode
                 if (control_mode == THROW) {
