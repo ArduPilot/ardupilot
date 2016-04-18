@@ -103,9 +103,19 @@ public:
     void handle_terrain_check(mavlink_channel_t chan, mavlink_message_t *msg);
     void handle_terrain_data(mavlink_message_t *msg);
 
-    // return terrain height in meters above sea level for a location
-    // return false if not available
-    bool height_amsl(const Location &loc, float &height, bool extrapolate = false);
+    /*
+      find the terrain height in meters above sea level for a location
+
+      return false if not available
+
+      if extrapolate is true then allow return of an extrapolated
+      terrain altitude based using the nearest available data
+
+      if corrected is true then terrain alt is adjusted so that
+      the terrain altitude matches the home altitude at the home location
+      (i.e. we assume home is at the terrain altitude)
+     */
+    bool height_amsl(const Location &loc, float &height, bool extrapolate, bool corrected);
     bool height_amsl_extrapolate(const Location &loc, float &height);
 
     /* 

@@ -83,7 +83,7 @@ AP_Terrain::AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rall
 
   This function costs about 20 microseconds on Pixhawk
  */
-bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolate)
+bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolate, bool corrected)
 {
     if (!enable || !allocate()) {
         return false;
@@ -93,6 +93,10 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolat
     if (loc.lat == home_loc.lat &&
         loc.lng == home_loc.lng) {
         height = home_height;
+        // apply correction which assumes home altitude is at terrain altitude
+        if (corrected) {
+            height += (ahrs.get_home().alt * 0.01f) - home_height;
+        }
         return true;
     }
 
@@ -147,6 +151,11 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolat
         // remember home altitude as a special case
         home_height = height;
         home_loc = loc;
+    }
+
+    // apply correction which assumes home altitude is at terrain altitude
+    if (corrected) {
+        height += (ahrs.get_home().alt * 0.01f) - home_height;
     }
 
     return true;
