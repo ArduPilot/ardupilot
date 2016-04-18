@@ -15,9 +15,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "ToshibaLED_I2C.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include "ToshibaLED_I2C.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,31 +27,27 @@ extern const AP_HAL::HAL& hal;
 #define TOSHIBA_LED_PWM2    0x03    // pwm2 register
 #define TOSHIBA_LED_ENABLE  0x04    // enable register
 
+ToshibaLED_I2C::ToshibaLED_I2C():
+    _dev(hal.i2c_mgr->get_device(0, TOSHIBA_LED_ADDRESS))
+{
+}
+
 bool ToshibaLED_I2C::hw_init()
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
-
     // take i2c bus sempahore
-    if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
-    // disable recording of i2c lockup errors
-    hal.i2c->ignore_errors(true);
-
     // enable the led
-    bool ret = (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_ENABLE, 0x03) == 0);
+    bool ret = (_dev->write_register(TOSHIBA_LED_ENABLE, 0x03));
 
     // update the red, green and blue values to zero
-    uint8_t val[3] = { _led_off, _led_off, _led_off };
-    ret &= (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
-
-    // re-enable recording of i2c lockup errors
-    hal.i2c->ignore_errors(false);
+    uint8_t val[4] = { TOSHIBA_LED_PWM0, _led_off, _led_off, _led_off };
+    ret &= _dev->transfer(val, sizeof(val), nullptr, 0);
 
     // give back i2c semaphore
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
 
     return ret;
 }
@@ -59,19 +55,11 @@ bool ToshibaLED_I2C::hw_init()
 // set_rgb - set color as a combination of red, green and blue values
 bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
-
-    // exit immediately if we can't take the semaphore
-    if (i2c_sem == NULL || !i2c_sem->take(5)) {
-        return false;
-    }
-
     // update the red value
-    uint8_t val[3] = { (uint8_t)(blue>>4), (uint8_t)(green>>4), (uint8_t)(red>>4) };
-    bool success = (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
+    uint8_t val[4] = { TOSHIBA_LED_PWM0, (uint8_t)(blue>>4), (uint8_t)(green>>4), (uint8_t)(red>>4) };
+    bool success = _dev->transfer(val, sizeof(val), nullptr, 0);
 
     // give back i2c semaphore
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
     return success;
 }
