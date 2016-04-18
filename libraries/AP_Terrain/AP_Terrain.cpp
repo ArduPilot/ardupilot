@@ -117,7 +117,11 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool extrapolat
         !check_bitmap(grid, info.idx_x,   info.idx_y+1) ||
         !check_bitmap(grid, info.idx_x+1, info.idx_y) ||
         !check_bitmap(grid, info.idx_x+1, info.idx_y+1)) {
-        return false;
+        if (extrapolate) {
+            return height_amsl_extrapolate(loc, height);
+        } else {
+            return false;
+        }
     }
 
     // hXY are the heights of the 4 surrounding grid points
