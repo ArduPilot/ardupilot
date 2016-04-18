@@ -731,7 +731,7 @@ void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
     DataFlash.Log_Write_Message("Frame: " FRAME_CONFIG_STRING);
-    DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 }
 
 

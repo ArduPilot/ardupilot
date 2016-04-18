@@ -359,7 +359,7 @@ void Sub::report_flight_modes()
     print_divider();
 
     for(int16_t i = 0; i < 6; i++ ) {
-        print_switch(i, flight_modes[i], BIT_IS_SET(g.simple_modes, i));
+    	print_switch(i, (control_mode_t)flight_modes[i].get(), BIT_IS_SET(g.simple_modes, i));
     }
     print_blanks(2);
 }
