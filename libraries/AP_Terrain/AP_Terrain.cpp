@@ -345,7 +345,7 @@ bool AP_Terrain::height_amsl_extrapolate(const Location &loc, float &height)
 bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool extrapolate)
 {
     float height_home, height_loc;
-    if (!height_amsl(ahrs.get_home(), height_home)) {
+    if (!height_amsl(ahrs.get_home(), height_home, false, false)) {
         // we don't know the height of home
         return false;
     }
@@ -356,7 +356,7 @@ bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool 
         return false;
     }
 
-    if (!height_amsl(loc, height_loc)) {
+    if (!height_amsl(loc, height_loc, false, false)) {
         if (!extrapolate || !have_current_loc_height) {
             // we don't know the height of the given location
             return false;
@@ -447,7 +447,7 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
         return 0;
     }
     float base_height;
-    if (!height_amsl(loc, base_height)) {
+    if (!height_amsl(loc, base_height, false, false)) {
         // we don't know our current terrain height
         return 0;
     }
@@ -461,7 +461,7 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
         climb += climb_ratio * grid_spacing;
         distance -= grid_spacing;
         float height;
-        if (height_amsl(loc, height)) {
+        if (height_amsl(loc, height, false, false)) {
             float rise = (height - base_height) - climb;
             if (rise > lookahead_estimate) {
                 lookahead_estimate = rise;
@@ -485,12 +485,12 @@ void AP_Terrain::update(void)
 
     // try to ensure the home location is populated
     float height;
-    height_amsl(ahrs.get_home(), height);
+    height_amsl(ahrs.get_home(), height, false, false);
 
     // update the cached current location height
     Location loc;
     bool pos_valid = ahrs.get_position(loc);
-    bool terrain_valid = height_amsl(loc, height);
+    bool terrain_valid = height_amsl(loc, height, false, false);
     if (pos_valid && terrain_valid) {
         last_current_loc_height = height;
         have_current_loc_height = true;
@@ -538,7 +538,7 @@ void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
     float current_height = 0;
     uint16_t pending, loaded;
 
-    height_amsl(loc, terrain_height);
+    height_amsl(loc, terrain_height, false, false);
     height_above_terrain(current_height, true);
     get_statistics(pending, loaded);
 
