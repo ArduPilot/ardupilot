@@ -329,22 +329,21 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
     Vector3f ned_pos;
+    Location origin;
     switch (active_EKF_type()) {
 #if AP_AHRS_WITH_EKF1
     case EKF_TYPE1:
-        if (EKF1.getLLH(loc) && EKF1.getPosNED(ned_pos)) {
-            // fixup altitude using relative position from AHRS home, not
-            // EKF origin
-            loc.alt = get_home().alt - ned_pos.z*100;
+        if (EKF1.getLLH(loc) && EKF1.getPosNED(ned_pos) && EKF1.getOriginLLH(origin)) {
+            // fixup altitude using relative position from EKF origin
+            loc.alt = origin.alt - ned_pos.z*100;
             return true;
         }
         break;
 #endif
     case EKF_TYPE2:
-        if (EKF2.getLLH(loc) && EKF2.getPosNED(-1,ned_pos)) {
-            // fixup altitude using relative position from AHRS home, not
-            // EKF origin
-            loc.alt = get_home().alt - ned_pos.z*100;
+        if (EKF2.getLLH(loc) && EKF2.getPosNED(-1,ned_pos) && EKF2.getOriginLLH(origin)) {
+            // fixup altitude using relative position from EKF origin
+            loc.alt = origin.alt - ned_pos.z*100;
             return true;
         }
         break;
