@@ -77,24 +77,24 @@ if [ ! -d $OPT/$ARM_ROOT ]; then
 fi
 
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
-if ! grep -Fxq "$exportline" ~/.profile ; then
+grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [Y/n]?" ; then
         echo $exportline >> ~/.profile
         $exportline
     else
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
     fi
-fi
+}
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
-if ! grep -Fxq "$exportline2" ~/.profile ; then
+grep -Fxq "$exportline2" ~/.profile 2>/dev/null || {
     if maybe_prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [Y/n]?" ; then
         echo $exportline2 >> ~/.profile
         $exportline2
     else
         echo "Skipping adding $CWD/$ARDUPILOT_TOOLS to PATH."
     fi
-fi
+}
 
 apt-cache search arm-none-eabi
 
