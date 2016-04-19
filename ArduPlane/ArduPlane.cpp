@@ -80,6 +80,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,    5,    100),
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    SCHED_TASK(devo_telemetry_send,     1,    100),
+#endif
     SCHED_TASK(terrain_update,         10,    500),
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
     SCHED_TASK(dataflash_periodic,     50,    300),

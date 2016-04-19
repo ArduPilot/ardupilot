@@ -47,6 +47,9 @@ Rover::Rover(void) :
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry(ahrs, battery),
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry(ahrs, battery),
+#endif
     home(ahrs.get_home()),
     G_Dt(0.02)
 {

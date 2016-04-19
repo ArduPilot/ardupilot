@@ -78,6 +78,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,    5,    100),
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    SCHED_TASK(devo_telemetry_send,    1,     100),
+#endif
     SCHED_TASK(dataflash_periodic,     50,    300),
 };
 

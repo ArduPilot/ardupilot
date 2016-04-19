@@ -65,6 +65,10 @@
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_TX     128
 
 
+#define AP_SERIALMANAGER_DEVO_TELEM_BAUD        38400
+#define AP_SERIALMANAGER_DEVO_BUFSIZE_RX        0
+#define AP_SERIALMANAGER_DEVO_BUFSIZE_TX        32
+
 class AP_SerialManager {
 
 public:
@@ -80,6 +84,7 @@ public:
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
         SerialProtocol_Lidar = 9,
+        SerialProtocol_Devo_Telem = 10,
     };
 
     // Constructor

@@ -85,6 +85,10 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+
+#if DEVO_TELEM_ENABLED == ENABLED
+ #include <AP_Devo_Telem/AP_Devo_Telem.h>
+#endif
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 #include <AP_Rally/AP_Rally.h>
@@ -386,6 +390,10 @@ private:
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry {ahrs, battery};
+#endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    // DEVO-M telemetry support
+    AP_Devo_Telem devo_telemetry {ahrs, battery};
 #endif
 
     // Airspeed Sensors
@@ -930,6 +938,7 @@ private:
     void servo_write(uint8_t ch, uint16_t pwm);
     bool should_log(uint32_t mask);
     void frsky_telemetry_send(void);
+    void devo_telemetry_send(void);
     int8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);

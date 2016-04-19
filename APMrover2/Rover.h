@@ -68,7 +68,9 @@
 #include <AP_L1_Control/AP_L1_Control.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
-
+#if DEVO_TELEM_ENABLED == ENABLED
+ #include <AP_Devo_Telem/AP_Devo_Telem.h>
+#endif
 #include <AP_Arming/AP_Arming.h>
 #include "compat.h"
 
@@ -293,6 +295,10 @@ private:
     AP_Frsky_Telem frsky_telemetry;
 #endif
 
+#if DEVO_TELEM_ENABLED == ENABLED
+    AP_Devo_Telem devo_telemetry;
+#endif
+
     // Navigation control variables
     // The instantaneous desired lateral acceleration in m/s/s
     float lateral_acceleration;
@@ -499,6 +505,7 @@ private:
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
     void frsky_telemetry_send(void);
+    void devo_telemetry_send(void);
     void print_hit_enter();    
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
