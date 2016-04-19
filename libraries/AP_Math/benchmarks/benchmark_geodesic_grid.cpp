@@ -20,12 +20,75 @@
 
 static AP_GeodesicGrid grid;
 
+static const Vector3f triangles[20][3] = {
+    {{-M_GOLDEN, 1, 0}, {-1, 0,-M_GOLDEN}, {-M_GOLDEN,-1, 0}},
+    {{-1, 0,-M_GOLDEN}, {-M_GOLDEN,-1, 0}, { 0,-M_GOLDEN,-1}},
+    {{-M_GOLDEN,-1, 0}, { 0,-M_GOLDEN,-1}, { 0,-M_GOLDEN, 1}},
+    {{-1, 0,-M_GOLDEN}, { 0,-M_GOLDEN,-1}, { 1, 0,-M_GOLDEN}},
+    {{ 0,-M_GOLDEN,-1}, { 0,-M_GOLDEN, 1}, { M_GOLDEN,-1, 0}},
+    {{ 0,-M_GOLDEN,-1}, { 1, 0,-M_GOLDEN}, { M_GOLDEN,-1, 0}},
+    {{ M_GOLDEN,-1, 0}, { 1, 0,-M_GOLDEN}, { M_GOLDEN, 1, 0}},
+    {{ 1, 0,-M_GOLDEN}, { M_GOLDEN, 1, 0}, { 0, M_GOLDEN,-1}},
+    {{ 1, 0,-M_GOLDEN}, { 0, M_GOLDEN,-1}, {-1, 0,-M_GOLDEN}},
+    {{ 0, M_GOLDEN,-1}, {-M_GOLDEN, 1, 0}, {-1, 0,-M_GOLDEN}},
+
+    {{ M_GOLDEN,-1, 0}, { 1, 0, M_GOLDEN}, { M_GOLDEN, 1, 0}},
+    {{ 1, 0, M_GOLDEN}, { M_GOLDEN, 1, 0}, { 0, M_GOLDEN, 1}},
+    {{ M_GOLDEN, 1, 0}, { 0, M_GOLDEN, 1}, { 0, M_GOLDEN,-1}},
+    {{ 1, 0, M_GOLDEN}, { 0, M_GOLDEN, 1}, {-1, 0, M_GOLDEN}},
+    {{ 0, M_GOLDEN, 1}, { 0, M_GOLDEN,-1}, {-M_GOLDEN, 1, 0}},
+    {{ 0, M_GOLDEN, 1}, {-1, 0, M_GOLDEN}, {-M_GOLDEN, 1, 0}},
+    {{-M_GOLDEN, 1, 0}, {-1, 0, M_GOLDEN}, {-M_GOLDEN,-1, 0}},
+    {{-1, 0, M_GOLDEN}, {-M_GOLDEN,-1, 0}, { 0,-M_GOLDEN, 1}},
+    {{-1, 0, M_GOLDEN}, { 0,-M_GOLDEN, 1}, { 1, 0, M_GOLDEN}},
+    {{ 0,-M_GOLDEN, 1}, { M_GOLDEN,-1, 0}, { 1, 0, M_GOLDEN}},
+};
+
+static bool section_triangle(unsigned int section_index,
+                             Vector3f& a,
+                             Vector3f& b,
+                             Vector3f& c) {
+    if (section_index >= 80) {
+        return false;
+    }
+
+    unsigned int i = section_index / 4;
+    unsigned int j = section_index % 4;
+    auto& t = triangles[i];
+    Vector3f mt[3]{(t[0] + t[1]) / 2, (t[1] + t[2]) / 2, (t[2] + t[0]) / 2};
+
+    switch (j) {
+        case 0:
+            a = mt[0];
+            b = mt[1];
+            c = mt[2];
+            break;
+        case 1:
+            a = t[0];
+            b = mt[0];
+            c = mt[2];
+            break;
+        case 2:
+            a = mt[0];
+            b = t[1];
+            c = mt[1];
+            break;
+        case 3:
+            a = mt[2];
+            b = mt[1];
+            c = t[2];
+            break;
+    }
+
+    return true;
+}
+
 static void BM_GeodesicGridSections(benchmark::State& state)
 {
     Vector3f v, a, b, c;
     int section = state.range_x();
 
-    grid.section_triangle(section, a, b, c);
+    section_triangle(section, a, b, c);
     v = (a + b + c) / 3.0f;
 
     while (state.KeepRunning()) {
