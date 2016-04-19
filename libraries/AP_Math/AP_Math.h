@@ -2,168 +2,147 @@
 
 #include "definitions.h"
 
-#include <limits>
-#include <type_traits>
-
 #include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <cmath>
-#include <stdint.h>
 
-#include "rotations.h"
+// Enable double only if the board type and the builder explicitely enable it
+#if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    #include "AP_Math_Double.h"
+// Single precision is the absolute default and always active if not forced otherwise
+#else
+    #include "AP_Math_Float.h"
+#endif
+
+#include "edc.h"
+#include "location.h"
+#include "matrix3.h"
+#include "polygon.h"
+#include "quaternion.h"
 #include "vector2.h"
 #include "vector3.h"
-#include "matrix3.h"
-#include "quaternion.h"
-#include "polygon.h"
-#include "edc.h"
-#include <AP_Param/AP_Param.h>
-#include "location.h"
-
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
-// are two floats equal
-static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
 
-// is a float is zero
-static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
-
-// a varient of asin() that always gives a valid answer.
-float           safe_asin(float v);
-
-// a varient of sqrt() that always gives a valid answer.
-float           safe_sqrt(float v);
-
-// return determinant of square matrix
-float                   detnxn(const float C[], const uint8_t n);
-
-// Output inverted nxn matrix when returns true, otherwise matrix is Singular
-bool                    inversenxn(const float x[], float y[], const uint8_t n);
-
-// invOut is an inverted 4x4 matrix when returns true, otherwise matrix is Singular
-bool                    inverse3x3(float m[], float invOut[]);
-
-// invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
-bool                    inverse4x4(float m[],float invOut[]);
-
-// matrix multiplication of two NxN matrices
-float* mat_mul(float *A, float *B, uint8_t n);
+auto const constrain_float = &constrain_value<float>;
+auto const constrain_int16 = &constrain_value<int16_t>;
+auto const constrain_int32 = &constrain_value<int32_t>;
 
 /*
-  wrap an angle in centi-degrees
+ * Wrap an angle in centi-degrees
  */
-int32_t wrap_360_cd(int32_t error);
-int32_t wrap_180_cd(int32_t error);
-float wrap_360_cd_float(float angle);
-float wrap_180_cd_float(float angle);
+template <class T>
+auto wrap_360_cd(const T &angle) -> decltype(wrap_360(angle, 100.f));
 
 /*
-  wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
+ * Wrap an angle in centi-degrees
  */
-float wrap_PI(float angle_in_radians);
+template <class T>
+auto wrap_180_cd(const T &angle) -> decltype(wrap_180(angle, 100.f));
 
-/*
-  wrap an angle defined in radians to the interval [0,2*PI)
+/* 
+ * @brief: Gets two values and returns the smaller one.
  */
-float wrap_2PI(float angle);
-
-// constrain a value
-// constrain a value
-static inline float constrain_float(float amt, float low, float high)
-{
-	// the check for NaN as a float prevents propogation of
-	// floating point errors through any function that uses
-	// constrain_float(). The normal float semantics already handle -Inf
-	// and +Inf
-	if (isnan(amt)) {
-		return (low+high)*0.5f;
-	}
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
-}
-// constrain a int16_t value
-static inline int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
-}
-
-// constrain a int32_t value
-static inline int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
-}
-
-//matrix algebra
-bool inverse(float x[], float y[], uint16_t dim);
-
-// degrees -> radians
-static inline float radians(float deg) {
-	return deg * DEG_TO_RAD;
-}
-
-// radians -> degrees
-static inline float degrees(float rad) {
-	return rad * RAD_TO_DEG;
-}
-
-// square
-static inline float sq(float v) {
-	return v*v;
-}
-
-// 2D vector length
-static inline float pythagorous2(float a, float b) {
-	return sqrtf(sq(a)+sq(b));
-}
-
-// 3D vector length
-static inline float pythagorous3(float a, float b, float c) {
-	return sqrtf(sq(a)+sq(b)+sq(c));
-}
-
 template<typename A, typename B>
-static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two) {
+auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two) { 
     return one < two ? one : two;
 }
 
+/* 
+ * @brief: Gets two values and returns the bigger one.
+ */
 template<typename A, typename B>
-static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one : two) {
+auto MAX(const A &one, const B &two) -> decltype(one > two ? one : two) {  
     return one > two ? one : two;
 }
 
-inline uint32_t hz_to_nsec(uint32_t freq)
+/*
+ * @brief: linear interpolation based on a variable in a range
+ */
+template <class T>
+T linear_interpolate(const T &low_output, const T &high_output,
+                     const T &var_value,
+                     const T &var_low, const T &var_high)
 {
-    return NSEC_PER_SEC / freq;
-}
-
-inline uint32_t nsec_to_hz(uint32_t nsec)
-{
-    return NSEC_PER_SEC / nsec;
-}
-
-inline uint32_t usec_to_nsec(uint32_t usec)
-{
-    return usec * NSEC_PER_USEC;
-}
-
-inline uint32_t nsec_to_usec(uint32_t nsec)
-{
-    return nsec / NSEC_PER_USEC;
-}
-
-inline uint32_t hz_to_usec(uint32_t freq)
-{
-    return USEC_PER_SEC / freq;
-}
-
-inline uint32_t usec_to_hz(uint32_t usec)
-{
-    return USEC_PER_SEC / usec;
+    if (var_value <= var_low) {
+        return low_output;
+    }
+    if (var_value >= var_high) {
+        return high_output;
+    }
+    // avoid zero divisions or zero like divisions
+    auto var_diff = var_high - var_low;
+    if(is_zero(var_diff)) {
+        return low_output;
+    }
+    
+    T p = (var_value - var_low) / var_diff;
+    return low_output + p * (high_output - low_output);
 }
 
 /*
-  linear interpolation based on a variable in a range
+ * Converter functions
+ *  - Avoid zero divisions
+ *  - Inheritss a float cast (because of PX4)
  */
-float linear_interpolate(float low_output, float high_output,
-                         float var_value,
-                         float var_low, float var_high);
+template<class T>
+T hz_to_nsec(const T &freq) {
+    T val = NSEC_PER_SEC / freq;
+    return val;
+}
 
+template<class T>
+T nsec_to_hz(const T &nsec) {
+    T val = NSEC_PER_SEC / nsec;
+    return val;
+}
+
+template<class T>
+T usec_to_nsec(const T &usec) {
+    T val = usec * NSEC_PER_USEC;
+    return val;
+}
+
+template<class T>
+T nsec_to_usec(const T &nsec) {
+    T val = nsec / NSEC_PER_USEC;
+    return val;
+}
+
+template<class T>
+T hz_to_usec(const T &freq) {
+    T val = USEC_PER_SEC / freq;
+    return val;
+}
+
+template<class T>
+T usec_to_hz(const T &usec) {
+    T val = USEC_PER_SEC / usec;
+    return val;
+}
+
+/*
+ * MATRIX
+ */
+//matrix algebra
+bool    inverse(float x[], float y[], uint16_t dim);
+// invOut is an inverted 4x4 matrix when returns true, otherwise matrix is Singular
+bool    inverse3x3(float m[], float invOut[]);
+// invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
+bool    inverse4x4(float m[],float invOut[]);
+// matrix multiplication of two NxN matrices
+float   *mat_mul(float *A, float *B, uint8_t n);
+//matrix algebra
+bool    inverse(float x[], float y[], uint16_t dim);
+//
+void    mat_LU_decompose(float*, float*, float*, float*, uint8_t);
+//
+bool    mat_inverse(float*, float*, uint8_t);
+//
+void    mat_back_sub(float*, float*, uint8_t);
+//
+void    mat_forward_sub(float *L, float *out, uint8_t n);
+//
+void    mat_pivot(float* A, float* pivot, uint8_t n);

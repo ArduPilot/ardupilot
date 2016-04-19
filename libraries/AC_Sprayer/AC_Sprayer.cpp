@@ -113,7 +113,7 @@ AC_Sprayer::update()
 
     // get horizontal velocity
     const Vector3f &velocity = _inav->get_velocity();
-    ground_speed = pythagorous2(velocity.x,velocity.y);
+    ground_speed = norm(velocity.x,velocity.y);
 
     // get the current time
     now = AP_HAL::millis();

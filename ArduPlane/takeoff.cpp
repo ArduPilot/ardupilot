@@ -39,7 +39,7 @@ bool Plane::auto_takeoff_check(void)
 
     // Check for launch acceleration or timer started. NOTE: relies on TECS 50Hz processing
     if (!launchTimerStarted &&
-        !is_zero(g.takeoff_throttle_min_accel) &&
+        !is_zero<float>(g.takeoff_throttle_min_accel) &&
         SpdHgt_Controller->get_VXdot() < g.takeoff_throttle_min_accel) {
         goto no_launch;
     }
@@ -67,7 +67,7 @@ bool Plane::auto_takeoff_check(void)
     }
 
     // Check ground speed and time delay
-    if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
+    if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero<float>(g.takeoff_throttle_min_speed))) &&
         ((now - last_tkoff_arm_time) >= wait_time_ms)) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         launchTimerStarted = false;

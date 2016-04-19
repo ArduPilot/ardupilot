@@ -98,7 +98,7 @@ void AC_Circle::init()
 /// set_circle_rate - set circle rate in degrees per second
 void AC_Circle::set_rate(float deg_per_sec)
 {
-    if (!is_equal(deg_per_sec,_rate)) {
+    if (!is_equal(deg_per_sec,(float)_rate)) {
         _rate = deg_per_sec;
         calc_velocities(false);
     }
@@ -135,7 +135,7 @@ void AC_Circle::update()
         _angle_total += angle_change;
 
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if (!is_zero(_radius)) {
+        if (!is_zero<float>(_radius)) {
             // calculate target position
             Vector3f target;
             target.x = _center.x + _radius * cosf(-_angle);
@@ -186,10 +186,10 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     Vector2f vec;   // vector from circle center to current location
     vec.x = (curr_pos.x - _center.x);
     vec.y = (curr_pos.y - _center.y);
-    float dist = pythagorous2(vec.x, vec.y);
+    float dist = norm(vec.x, vec.y);
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
-    if (is_zero(dist)) {
+    if (is_zero<float>(dist)) {
         result.x = _center.x - _radius * _ahrs.cos_yaw();
         result.y = _center.y - _radius * _ahrs.sin_yaw();
         result.z = _center.z;
