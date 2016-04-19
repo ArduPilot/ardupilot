@@ -877,7 +877,6 @@ private:
     bool heli_stabilize_init(bool ignore_checks);
     void heli_stabilize_run();
     void read_inertia();
-    void read_inertial_altitude();
     bool land_complete_maybe();
     void update_land_and_crash_detectors();
     void update_land_detector();
@@ -906,7 +905,6 @@ private:
     void motors_output();
     void lost_vehicle_check();
     void run_nav_updates(void);
-    void calc_position();
     void calc_distance_and_bearing();
     void calc_wp_distance();
     void calc_wp_bearing();
