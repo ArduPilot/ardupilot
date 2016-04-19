@@ -127,25 +127,6 @@ public:
      */
     int section(const Vector3f& v, const bool inclusive = false) const;
 
-    /**
-     * Get the triangle that defines the section at index \p section_index.
-     *
-     * @param section_index[in] The section index.
-     *
-     * @param a[out] The triangle's first vertex.
-     * @param b[out] The triangle's second vertex.
-     * @param c[out] The triangle's third vertex.
-     *
-     * @return If \p section_index is valid, true is returned and the triangle
-     * vertices are assigned to \p a, \p b and \p c, in that order. Otherwise,
-     * false is returned and the values of the vertices parameters are left
-     * unmodified.
-     */
-    bool section_triangle(unsigned int section_index,
-                          Vector3f& a,
-                          Vector3f& b,
-                          Vector3f& c) const;
-
 private:
     /*
      * The following are concepts used in the description of the private

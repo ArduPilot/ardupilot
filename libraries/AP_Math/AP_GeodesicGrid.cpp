@@ -148,46 +148,6 @@ int AP_GeodesicGrid::section(const Vector3f& v,
     return 4 * i + j;
 }
 
-bool AP_GeodesicGrid::section_triangle(unsigned int section_index,
-                                       Vector3f& a,
-                                       Vector3f& b,
-                                       Vector3f& c) const
-{
-    if (section_index >= 20 * NUM_SUBTRIANGLES) {
-        return false;
-    }
-
-    unsigned int i = section_index / NUM_SUBTRIANGLES;
-    unsigned int j = section_index % NUM_SUBTRIANGLES;
-    auto& t = _triangles[i];
-    auto& mt = _mid_triangles[i];
-
-    switch (j) {
-        case 0:
-            a = mt[0];
-            b = mt[1];
-            c = mt[2];
-            break;
-        case 1:
-            a = t[0];
-            b = mt[0];
-            c = mt[2];
-            break;
-        case 2:
-            a = mt[0];
-            b = t[1];
-            c = mt[1];
-            break;
-        case 3:
-            a = mt[2];
-            b = mt[1];
-            c = t[2];
-            break;
-    }
-
-    return true;
-}
-
 void AP_GeodesicGrid::_init_opposite_triangles()
 {
     for (int i = 0, j = 10; i < 10; i++, j++) {
