@@ -65,9 +65,6 @@ void AC_Circle::init(const Vector3f& center)
 
     // initialise angular velocity
     _angular_vel = 0;
-
-    // set starting angle to current heading - 180 degrees
-    _angle = wrap_PI(_ahrs.yaw-PI);
 }
 
 /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
@@ -97,9 +94,6 @@ void AC_Circle::init()
 
     // initialise angular velocity
     _angular_vel = 0;
-
-    // set starting angle to current heading - 180 degrees
-    _angle = wrap_PI(_ahrs.yaw-PI);
 }
 
 /// update - update circle controller
@@ -245,7 +239,7 @@ void AC_Circle::init_start_angle(bool use_heading)
             _angle = wrap_PI(_ahrs.yaw-PI);
         } else {
             // get bearing from circle center to vehicle in radians
-            float bearing_rad = fast_atan2(curr_pos.y-_center.y,curr_pos.x-_center.x);
+            float bearing_rad = atan2f(curr_pos.y-_center.y,curr_pos.x-_center.x);
             _angle = wrap_PI(bearing_rad);
         }
     }

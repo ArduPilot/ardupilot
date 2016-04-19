@@ -31,6 +31,7 @@ public:
 
     /// set_circle_center in cm from home
     void set_center(const Vector3f& center) { _center = center; }
+    void get_center(Vector3f& center) { center = _center; }
 
     /// get_circle_center in cm from home
     const Vector3f& get_center() const { return _center; }
