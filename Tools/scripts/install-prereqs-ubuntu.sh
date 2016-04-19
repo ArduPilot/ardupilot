@@ -13,13 +13,12 @@ SITL_PKGS="g++ python-pip python-matplotlib python-serial python-scipy python-op
 UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc++6:i386"
 ASSUME_YES=false
 
-if grep -q 'VERSION="16' /etc/os-release
-then
-	# Packages for Ubuntu 16.x
-	SITL_PKGS+=$ " python-wxgtk3.0"
+read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
+
+if [ "$UBUNTU_CODENAME" = "xenial" ]; then
+    SITL_PKGS+=" python-wxgtk3.0"
 else
-	# packages for Ubuntu <=15.x
-	SITL_PKGS+=$ " python-wxgtk2.8"
+    SITL_PKGS+=" python-wxgtk2.8"
 fi
 
 # GNU Tools for ARM Embedded Processors
