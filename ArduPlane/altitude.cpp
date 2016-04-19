@@ -66,6 +66,7 @@ void Plane::setup_glide_slope(void)
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
     SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
+    update_flight_stage();
 
     /*
       work out if we will gradually change altitude, or try to get to
