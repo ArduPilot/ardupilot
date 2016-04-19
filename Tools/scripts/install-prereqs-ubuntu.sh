@@ -10,7 +10,6 @@ PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           zip genromfs python-empy"
 BEBOP_PKGS="g++-arm-linux-gnueabihf"
 SITL_PKGS="g++ python-pip python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
-UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc++6:i386"
 ASSUME_YES=false
 
 read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
@@ -65,7 +64,7 @@ sudo usermod -a -G dialout $USER
 
 $APT_GET remove modemmanager
 $APT_GET update
-$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $BEBOP_PKGS $UBUNTU64_PKGS
+$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $BEBOP_PKGS
 sudo pip2 -q install $PYTHON_PKGS
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
