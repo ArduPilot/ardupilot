@@ -49,7 +49,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	}
 
 	// Set channels to override
-	channels[0] = 1500;                           // pitch
+	channels[0] = 1500 + pitchTrim;               // pitch
 	channels[1] = 1500 + rollTrim;                // roll
 	channels[2] = z*throttleScale+throttleBase;   // throttle
 	channels[3] = r*rpyScale+rpyCenter;           // yaw
