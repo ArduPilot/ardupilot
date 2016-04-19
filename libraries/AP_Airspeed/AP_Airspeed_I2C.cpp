@@ -31,18 +31,17 @@ extern const AP_HAL::HAL &hal;
 // probe and initialise the sensor
 bool AP_Airspeed_I2C::init()
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    _dev = hal.i2c_mgr->get_device(1, I2C_ADDRESS_MS4525DO);
 
     // take i2c bus sempahore
-    if (!i2c_sem->take(200)) {
+    if (!_dev->get_semaphore()->take(200)) {
         return false;
     }
 
     _measure();
     hal.scheduler->delay(10);
     _collect();
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
     if (_last_sample_time_ms != 0) {
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, void));
         return true;
@@ -54,7 +53,7 @@ bool AP_Airspeed_I2C::init()
 void AP_Airspeed_I2C::_measure()
 {
     _measurement_started_ms = 0;
-    if (hal.i2c->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
+    if (_dev->transfer(0, 1, nullptr, 0)) {
         _measurement_started_ms = AP_HAL::millis();
     }
 }
@@ -66,7 +65,7 @@ void AP_Airspeed_I2C::_collect()
 
     _measurement_started_ms = 0;
 
-    if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
+    if (_dev->transfer(nullptr, 0, data, sizeof(data))) {
         return;
     }
 
@@ -103,15 +102,13 @@ void AP_Airspeed_I2C::_collect()
 // 1kHz timer
 void AP_Airspeed_I2C::_timer()
 {
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
-
-    if (!i2c_sem->take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
     if (_measurement_started_ms == 0) {
         _measure();
-        i2c_sem->give();
+        _dev->get_semaphore()->give();
         return;
     }
     if ((AP_HAL::millis() - _measurement_started_ms) > 10) {
@@ -119,7 +116,7 @@ void AP_Airspeed_I2C::_timer()
         // start a new measurement
         _measure();
     }
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
 }
 
 // return the current differential_pressure in Pascal
