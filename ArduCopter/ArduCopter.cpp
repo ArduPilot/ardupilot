@@ -300,9 +300,6 @@ void Copter::rc_loop()
 // ---------------------------
 void Copter::throttle_loop()
 {
-    // get altitude and climb rate from inertial lib
-    read_inertial_altitude();
-
     // update throttle_low_comp value (controls priority of throttle vs attitude control)
     update_throttle_thr_mix();
 
