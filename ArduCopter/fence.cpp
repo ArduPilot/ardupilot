@@ -35,9 +35,11 @@ void Copter::fence_check()
             if (ap.land_complete || (mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0))){
                 init_disarm_motors();
             }else{
-                // if we are within 100m of the fence, RTL
+                // if we are within 100m of the fence, ALT_HOLD in GUIDED and RTL in other modes
                 if (fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
-                    if (!set_mode(RTL, MODE_REASON_FENCE_BREACH)) {
+                    if (control_mode == GUIDED) {
+                        set_mode(ALT_HOLD, MODE_REASON_FENCE_BREACH);
+                    } else if (!set_mode(RTL, MODE_REASON_FENCE_BREACH)) {
                         set_mode(LAND, MODE_REASON_FENCE_BREACH);
                     }
                 }else{
