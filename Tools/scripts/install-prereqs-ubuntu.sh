@@ -16,10 +16,10 @@ ASSUME_YES=false
 if grep -q 'VERSION="16' /etc/os-release
 then
 	# Packages for Ubuntu 16.x
-	SITL_PKGS+=$ " python-wxgtk3.0"
+	SITL_PKGS+=$" python-wxgtk3.0"
 else
 	# packages for Ubuntu <=15.x
-	SITL_PKGS+=$ " python-wxgtk2.8"
+	SITL_PKGS+=$" python-wxgtk2.8"
 fi
 
 # GNU Tools for ARM Embedded Processors
