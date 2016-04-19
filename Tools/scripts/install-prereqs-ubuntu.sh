@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-CWD=$(pwd)
 OPT="/opt"
 BASE_PKGS="gawk make git arduino-core curl"
 PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
@@ -27,7 +26,7 @@ ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
 
 # Ardupilot Tools
-ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
+ARDUPILOT_TOOLS="Tools/autotest"
 
 function maybe_prompt_user() {
     if $ASSUME_YES; then
@@ -76,6 +75,9 @@ if [ ! -d $OPT/$ARM_ROOT ]; then
     )
 fi
 
+SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
+ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
+
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [Y/n]?" ; then
@@ -86,20 +88,20 @@ grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
     fi
 }
 
-exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
+exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
 grep -Fxq "$exportline2" ~/.profile 2>/dev/null || {
-    if maybe_prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [Y/n]?" ; then
+    if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [Y/n]?" ; then
         echo $exportline2 >> ~/.profile
         $exportline2
     else
-        echo "Skipping adding $CWD/$ARDUPILOT_TOOLS to PATH."
+        echo "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
     fi
 }
 
 apt-cache search arm-none-eabi
 
 (
- cd ardupilot
+ cd $ARDUPILOT_ROOT
  git submodule init
  git submodule update
 )
