@@ -46,7 +46,8 @@ public:
         RangeFinder_TYPE_PX4_PWM= 5,
         RangeFinder_TYPE_BBB_PRU= 6,
         RangeFinder_TYPE_LWI2C  = 7,
-        RangeFinder_TYPE_LWSER  = 8
+        RangeFinder_TYPE_LWSER  = 8,
+        RangeFinder_TYPE_MBSER  = 9
     };
 
     enum RangeFinder_Function {
