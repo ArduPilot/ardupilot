@@ -57,8 +57,8 @@ static Empty::I2CDeviceManager i2c_mgr_instance;
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTE_DEFAULT_DEVICE "/dev/ttyS0"
-#define UARTF_DEFAULT_DEVICE "/dev/ttyS6" // frsky telem
+#define UARTE_DEFAULT_DEVICE "/dev/ttyS0" // frsky telem
+#define UARTF_DEFAULT_DEVICE "/dev/ttyS6" // wifi
 #else
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
