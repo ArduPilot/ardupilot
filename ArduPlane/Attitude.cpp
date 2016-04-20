@@ -998,8 +998,8 @@ void Plane::set_servos(void)
             // manual pass through of throttle while in GUIDED
             channel_throttle->radio_out = channel_throttle->radio_in;
         } else if (quadplane.in_vtol_mode()) {
-            // no forward throttle for now
-            channel_throttle->servo_out = 0;
+            // ask quadplane code for forward throttle
+            channel_throttle->servo_out = quadplane.forward_throttle_pct();
             channel_throttle->calc_pwm();
         } else {
             // normal throttle calculation based on servo_out
@@ -1072,7 +1072,8 @@ void Plane::set_servos(void)
     RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, manual_flap_percent);
 
     if (control_mode >= FLY_BY_WIRE_B ||
-        quadplane.in_assisted_flight()) {
+        quadplane.in_assisted_flight() ||
+        quadplane.in_vtol_mode()) {
         /* only do throttle slew limiting in modes where throttle
          *  control is automatic */
         throttle_slew_limit(last_throttle);

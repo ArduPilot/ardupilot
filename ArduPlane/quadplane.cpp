@@ -230,7 +230,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B
     // @User: Standard
     AP_GROUPINFO("FRAME_TYPE", 31, QuadPlane, frame_type, 1),
-    
+
+    // @Param: VFWD_GAIN
+    // @DisplayName: Forward velocity hold gain
+    // @Description: Controls use of forward motor in vtol modes. If this is zero then the forward motor will not be used for position control in VTOL modes. A value of 0.1 is a good place to start if you want to use the forward motor for position control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use QLOITER for position hold with the forward motor.
+    // @Range: 0 0.5
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("VFWD_GAIN", 32, QuadPlane, vel_forward.gain, 0),
+
     AP_GROUPEND
 };
 
@@ -1341,4 +1349,76 @@ void QuadPlane::Log_Write_QControl_Tuning()
         day                 : accel_target.y*0.01f,
     };
     plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+
+/*
+  calculate the forward throttle percentage. The forward throttle can
+  be used to assist with position hold and with landing approach. It
+  reduces the need for down pitch which reduces load on the vertical
+  lift motors.
+ */
+int8_t QuadPlane::forward_throttle_pct(void)
+{
+    /*
+      in non-VTOL modes or modes without a velocity controller. We
+      don't use it in QHOVER or QSTABILIZE as they are the primary
+      recovery modes for a quadplane and need to be as simple as
+      possible. They will drift with the wind
+    */
+    if (!in_vtol_mode() ||
+        !motors->armed() ||
+        vel_forward.gain <= 0 ||
+        plane.control_mode == QSTABILIZE ||
+        plane.control_mode == QHOVER) {
+        return 0;
+    }
+
+    float deltat = (AP_HAL::millis() - vel_forward.lastt_ms) * 0.001f;
+    if (deltat > 1 || deltat < 0) {
+        vel_forward.integrator = 0;
+        deltat = 0.1;
+    }
+    if (deltat < 0.1) {
+        // run at 10Hz
+        return vel_forward.last_pct;
+    }
+    vel_forward.lastt_ms = AP_HAL::millis();
+    
+    // work out the desired speed in forward direction
+    const Vector3f &desired_velocity_cms = pos_control->get_desired_velocity();
+    Vector3f vel_ned;
+    if (!plane.ahrs.get_velocity_NED(vel_ned)) {
+        // we don't know our velocity? EKF must be pretty sick
+        vel_forward.last_pct = 0;
+        return 0;
+    }
+    Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
+
+    // find component of velocity error in fwd body frame direction
+    float fwd_vel_error = vel_error_body * Vector3f(1,0,0);
+
+    // scale forward velocity error by maximum airspeed
+    fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);
+
+    // add in a component from our current pitch demand. This tends to
+    // move us to zero pitch. Assume that LIM_PITCH would give us the
+    // WP nav speed.
+    fwd_vel_error -= (wp_nav->get_speed_xy() * 0.01f) * plane.nav_pitch_cd / (float)plane.aparm.pitch_limit_max_cd;
+
+    if (should_relax() && vel_ned.length() < 1) {
+        // we may be landed
+        fwd_vel_error = 0;
+        vel_forward.integrator *= 0.95f;
+    }
+    
+    // integrator as throttle percentage (-100 to 100)
+    vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
+
+    // constrain to throttle range. This allows for reverse throttle if configured
+    vel_forward.integrator = constrain_float(vel_forward.integrator, plane.aparm.throttle_min, plane.aparm.throttle_max);
+    
+    vel_forward.last_pct = vel_forward.integrator;
+
+    return vel_forward.last_pct;
 }
