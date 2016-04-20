@@ -109,11 +109,6 @@ bool AP_L1_Control::reached_loiter_target(void)
 	return _WPcircle;
 }
 
-float AP_L1_Control::crosstrack_error(void) const
-{
-	return _crosstrack_error;
-}
-
 /**
    prevent indecision in our turning by using our previous turn
    decision if we are in a narrow angle band pointing away from the

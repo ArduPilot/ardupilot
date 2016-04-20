@@ -38,7 +38,8 @@ public:
 	// return the heading error angle (centi-degrees) +ve to left of track
 	int32_t bearing_error_cd(void) const;
 
-	float crosstrack_error(void) const;
+    float crosstrack_error(void) const { return _crosstrack_error; }
+    float crosstrack_error_integrator(void) const { return _L1_xtrack_i; }
 
 	int32_t target_bearing_cd(void) const;
 	float turn_distance(float wp_radius) const;
