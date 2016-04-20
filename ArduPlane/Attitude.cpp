@@ -514,8 +514,8 @@ void Plane::calc_nav_pitch()
 void Plane::calc_nav_roll()
 {
     nav_roll_cd = nav_controller->nav_roll_cd();
-    update_load_factor();
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+    update_load_factor();
 }
 
 
@@ -1267,20 +1267,27 @@ void Plane::adjust_nav_pitch_throttle(void)
     }
 }
 
+/*
+  calculate an aerodynamic_load_factor
+*/
+void Plane::calculate_load_factor(void)
+{
+	float demanded_roll = fabsf(nav_roll_cd*0.01f);
+	if (demanded_roll > 85) {
+		// limit to 85 degrees to prevent numerical errors
+		demanded_roll = 85;
+	}
+	aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
+}
 
 /*
   calculate a new aerodynamic_load_factor and limit nav_roll_cd to
   ensure that the load factor does not take us below the sustainable
-  airspeed
+  airspeed or above the critical airspeed
  */
 void Plane::update_load_factor(void)
 {
-    float demanded_roll = fabsf(nav_roll_cd*0.01f);
-    if (demanded_roll > 85) {
-        // limit to 85 degrees to prevent numerical errors
-        demanded_roll = 85;
-    }
-    aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
+	calculate_load_factor();
 
     if (!aparm.stall_prevention) {
         // stall prevention is disabled
@@ -1303,12 +1310,33 @@ void Plane::update_load_factor(void)
         // the load within what the airframe can handle. We always
         // allow at least 25 degrees of roll however, to ensure the
         // aircraft can be maneuvered with a bad airspeed estimate. At
-        // 25 degrees the load factor is 1.1 (10%)
+        // 25 degrees the load factor is 1.05 (5%)
         int32_t roll_limit = degrees(acosf(sq(1.0f / max_load_factor)))*100;
         if (roll_limit < 2500) {
             roll_limit = 2500;
         }
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
         roll_limit_cd = constrain_int32(roll_limit_cd, -roll_limit, roll_limit);
-    }    
+    }
+
+    float max_airspeed_ratio = smoothed_airspeed / aparm.airspeed_max;
+    if (max_airspeed_ratio >= 1) {
+    	// our airspeed is at or above maximum airspeed. Limit roll to
+        // 25 degrees
+    	nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
+    	roll_limit_cd = constrain_int32(roll_limit_cd, -2500, 2500);
+    } else {
+		// make sure the load factor of the demanded nav_roll wont take us
+		// past our airspeed limits in the TECS. We always allow at least
+		// 25 degrees of roll however, to ensure the aircraft can be maneuvered
+		// with a bad airspeed estimate. At 25 degrees the load factor is 1.05 (5%)
+		int32_t roll_limit = degrees(acosf(sq(max_airspeed_ratio)))*100;
+		if (roll_limit < 2500) {
+			roll_limit = 2500;
+		}
+		nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
+		roll_limit_cd = constrain_int32(roll_limit_cd, -roll_limit, roll_limit);
+    }
+    // re-calculate the load factor based on the new roll limits
+    calculate_load_factor();
 }
