@@ -18,7 +18,8 @@ class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                     bool force_external = false);
 
     static AP_Compass_Backend *probe_mpu6000(Compass &compass);
 
@@ -29,7 +30,8 @@ public:
     void accumulate() override;
 
 private:
-    AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus);
+    AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
+                       bool force_external);
 
     bool _detect_version();
     bool _calibrate();
@@ -61,6 +63,7 @@ private:
     uint8_t _product_id;
 
     bool _initialised;
+    bool _force_external;
 };
 
 class AP_HMC5843_BusDriver

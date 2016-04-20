@@ -258,8 +258,7 @@
 #define HAL_BARO_MS5611_I2C_BUS 10
 #define HAL_BARO_MS5611_I2C_ADDR 0x77
 #define HAL_BARO_MS5611_USE_TIMER true
-#define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843_MPU6000
-/* Internal compass */
+/* Internal and external compasses */
 #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
 #define HAL_OPTFLOW_ONBOARD_VDEV_PATH "/dev/video0"
 #define HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH 320
@@ -418,6 +417,10 @@
 #define HAL_GPIO_LED_OFF          HIGH  
 #else
 #error "no Linux board subtype set"
+#endif
+
+#ifndef HAL_COMPASS_DEFAULT
+#define HAL_COMPASS_DEFAULT -1
 #endif
 
 #ifndef HAL_LINUX_UARTS_ON_TIMER_THREAD

@@ -1,5 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <AP_HAL_Linux/I2CDevice.h>
+#endif
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #include "AP_Compass_AK8963.h"
@@ -440,7 +443,7 @@ void Compass::_detect_backends(void)
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
     _add_backend(AP_Compass_QURT::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_RASPILOT
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
+    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true));
     _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device("lsm9ds0_am")));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BH
     // detect_mpu9250() failed will cause panic if no actual mpu9250 backend,
@@ -453,6 +456,16 @@ void Compass::_detect_backends(void)
     }
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QFLIGHT
     _add_backend(AP_Compass_QFLIGHT::detect(*this));
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+    _add_backend(AP_Compass_HMC5843::probe_mpu6000(*this));
+    _add_backend(AP_Compass_HMC5843::probe(*this,
+        Linux::I2CDeviceManager::from(hal.i2c_mgr)->get_device(
+            { /* UEFI with lpss set to ACPI */
+              "platform/80860F41:05",
+              /* UEFI with lpss set to PCI */
+              "pci0000:00/0000:00:18.6" },
+            HAL_COMPASS_HMC5843_I2C_ADDR),
+        true));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
     _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843

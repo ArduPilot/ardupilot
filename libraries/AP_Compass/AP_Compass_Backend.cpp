@@ -109,3 +109,8 @@ void AP_Compass_Backend::set_external(uint8_t instance, bool external)
 {
     _compass._state[instance].external.set(external);
 }
+
+bool AP_Compass_Backend::is_external(uint8_t instance)
+{
+    return _compass._state[instance].external;
+}
