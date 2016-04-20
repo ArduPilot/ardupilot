@@ -181,16 +181,21 @@ private:
     Matrix3f _mid_inverses[10];
 
     /**
-     * The representation of the neighbor umbrellas of T_0 and its opposite
-     * (i.e. T_10).
+     * The representation of the neighbor umbrellas of T_0.
      *
-     * Let T_0 = (a, b, c). Then:
-     *  - _neighbor_umbrellas[0] is neighbor of T_0 with respect to (a, b).
-     *  - _neighbor_umbrellas[1] is neighbor of T_0 with respect to (b, c).
-     *  - _neighbor_umbrellas[2] is neighbor of T_0 with respect to (c, a).
-     *  - _neighbor_umbrellas[3] is neighbor of T_10 with respect to (-a, -b).
-     *  - _neighbor_umbrellas[4] is neighbor of T_10 with respect to (-b, -c).
-     *  - _neighbor_umbrellas[5] is neighbor of T_10 with respect to (-c, -a).
+     * The values for the neighbors of T_10 can be derived from the values for
+     * T_0. How to find the correct values is explained on each member.
+     *
+     * Let T_0 = (a, b, c). Thus, 6 indexes can be used for this data
+     * structure, so that:
+     *  - index 0 represents the neighbor of T_0 with respect to (a, b).
+     *  - index 1 represents the neighbor of T_0 with respect to (b, c).
+     *  - index 2 represents the neighbor of T_0 with respect to (c, a).
+     *  - index 3 represents the neighbor of T_10 with respect to (-a, -b).
+     *  - index 4 represents the neighbor of T_10 with respect to (-b, -c).
+     *  - index 5 represents the neighbor of T_10 with respect to (-c, -a).
+     *
+     * Those indexes are mapped to this array with index % 3.
      *
      * The edges are represented with pairs because the order of the vertices
      * matters to the order the triangles' indexes are defined - the order of
@@ -201,6 +206,10 @@ private:
         /**
          * The umbrella's components. The value of #components[i] is the
          * icosahedron triangle index of the i-th component.
+         *
+         * In order to find the components for T_10, the following just finding
+         * the index of the opposite triangle is enough. In other words,
+         * (#components[i] + 10) % 20.
          */
         uint8_t components[5];
         /**
@@ -208,14 +217,28 @@ private:
          * following: vi_cj is the index of the vector, in the icosahedron
          * triangle pointed by #components[j], that matches the umbrella's i-th
          * vertex.
+         *
+         * The values don't change for T_10.
          */
         uint8_t v0_c0;
         uint8_t v1_c1;
         uint8_t v2_c1;
         uint8_t v4_c4;
         uint8_t v0_c4;
-    } _neighbor_umbrellas[6];
+    } _neighbor_umbrellas[3];
 
+    /**
+     * Get the component_index-th component of the umbrella_index-th neighbor
+     * umbrella.
+     *
+     * @param umbrella_index[in] The neighbor umbrella's index.
+     *
+     * @param component_index[in] The component's index.
+     *
+     * @return The icosahedron triangle's index of the component.
+     */
+    int _neighbor_umbrella_component(int umbrella_index,
+                                     int component_index) const;
     /**
      * Find the icosahedron triangle index of the component of
      * #_neighbor_umbrellas[umbrella_index] that is crossed by \p v.
