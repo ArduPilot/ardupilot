@@ -97,7 +97,18 @@ public:
     uint32_t num_dropped(void) const {
         return _dropped;
     }
-    
+
+    /*
+     * Log_Write support
+     */
+    // write a FMT message out (if it hasn't been done already).
+    // Returns true if the FMT message has ever been written.
+    bool Log_Write_Emit_FMT(uint8_t msg_type);
+
+    // write a log message out to the log of msg_type type, with
+    // values contained in arg_list:
+    bool Log_Write(uint8_t msg_type, va_list arg_list, bool is_critical=false);
+
 protected:
     uint32_t dropped;
     uint8_t internal_errors; // uint8_t - wishful thinking?
@@ -139,4 +150,10 @@ private:
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
+
+    // Log_Write support
+    uint8_t _written_log_write_fmt_count;
+
+    // array containing msg_types of formats already emitted
+    uint8_t log_write_fmts_sent[MAX_LOG_WRITE_FMT_COUNT];
 };

@@ -6,6 +6,7 @@
  */
 #define LOG_PACKET_HEADER	       uint8_t head1, head2, msgid;
 #define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
+#define LOG_PACKET_HEADER_LEN 3 // bytes required for LOG_PACKET_HEADER
 
 // once the logging code is all converted we will remove these from
 // this header
