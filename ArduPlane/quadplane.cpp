@@ -1080,14 +1080,14 @@ void QuadPlane::control_auto(const Location &loc)
             // velocity as we approach the waypoint, aiming for zero
             // speed at the waypoint
             Vector2f groundspeed = ahrs.groundspeed_vector();
-            // newdiff is the delta to our target if we keep going for one second
-            Vector2f newdiff = diff_wp - groundspeed;
-            // speed towards target is the change in distance to target over one second
-            float speed_towards_target = diff_wp.length() - newdiff.length();
+            float speed_towards_target = diff_wp.normalized() * groundspeed;
             // setup land_speed_scale so at current distance we maintain speed towards target, and slow down as
             // we approach
             float distance = diff_wp.length();
-            land.speed_scale = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01) / MAX(distance, 1);
+
+            // max_speed will control how fast we will fly. It will always decrease
+            land.max_speed = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
+            land.speed_scale = land.max_speed / MAX(distance, 1);
         }
 
         // run fixed wing navigation
@@ -1097,12 +1097,20 @@ void QuadPlane::control_auto(const Location &loc)
           calculate target velocity, not dropping it below 2m/s
          */
         const float final_speed = 2.0f;
-        Vector2f target_speed = diff_wp * land.speed_scale;
-        if (target_speed.length() < final_speed) {
-            target_speed = target_speed.normalized() * final_speed;
+        Vector2f target_speed_xy = diff_wp * land.speed_scale;
+        float target_speed = target_speed_xy.length();
+        if (target_speed < final_speed) {
+            // until we enter the loiter we always aim for at least 2m/s
+            target_speed_xy = target_speed_xy.normalized() * final_speed;
+            land.max_speed = final_speed;
+        } else if (target_speed > land.max_speed) {
+            // we never speed up during landing approaches
+            target_speed_xy = target_speed_xy.normalized() * land.max_speed;
+        } else {
+            land.max_speed = target_speed;
         }
-        pos_control->set_desired_velocity_xy(target_speed.x*100,
-                                             target_speed.y*100);
+        pos_control->set_desired_velocity_xy(target_speed_xy.x*100,
+                                             target_speed_xy.y*100);
         
         float ekfGndSpdLimit, ekfNavVelGainScaler;    
         ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);

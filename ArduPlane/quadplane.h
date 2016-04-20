@@ -230,6 +230,7 @@ private:
         int32_t yaw_cd;
         float speed_scale;
         Vector2f target_velocity;
+        float max_speed;
     } land;
 
     enum frame_class {
