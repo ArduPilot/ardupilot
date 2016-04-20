@@ -58,6 +58,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 
     // 7 & 8 were used for VOLT2_PIN and VOLT2_MULT
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     // @Param: _WATT_MAX
     // @DisplayName: Maximum allowed power (Watts)
     // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
@@ -65,6 +66,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_WATT_MAX", 9, AP_BattMonitor, _watt_max[0], AP_BATT_MAX_WATT_DEFAULT),
+#endif
 
     // 10 is left for future expansion
 
@@ -322,6 +324,7 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
     return false;
 }
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // return true if any battery is pushing too much power
 bool AP_BattMonitor::overpower_detected() const
 {
@@ -340,3 +343,5 @@ bool AP_BattMonitor::overpower_detected(uint8_t instance) const
     }
     return false;
 }
+#endif
+
