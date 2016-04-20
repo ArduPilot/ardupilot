@@ -164,11 +164,6 @@ private:
      */
 
     /**
-     * The icosahedron's triangles. The item `_triangles[i]` represents T_i.
-     */
-    Vector3f _triangles[20][3];
-
-    /**
      * The inverses of the change-of-basis matrices for the icosahedron
      * triangles.
      *
@@ -176,12 +171,6 @@ private:
      * natural basis to the basis formed by T_i's vectors.
      */
     Matrix3f _inverses[20];
-
-    /**
-     * The middle triangles. The item `_mid_triangles[i]` represents the middle
-     * triangle of T_i.
-     */
-    Vector3f _mid_triangles[20][3];
 
     /**
      * The inverses of the change-of-basis matrices for the middle triangles.
@@ -226,22 +215,6 @@ private:
         int v4_c4;
         int v0_c4;
     } _neighbor_umbrellas[6];
-
-    /**
-     * Initialize the opposite of the first 10 icosahedron triangles.
-     */
-    void _init_opposite_triangles();
-
-    /**
-     * Initialize the vertices of the middle triangles as specified by
-     * #_mid_triangles.
-     */
-    void _init_mid_triangles();
-
-    /**
-     * Initialize the matrices in #_inverses and #_mid_inverses.
-     */
-    void _init_all_inverses();
 
     /**
      * Find the icosahedron triangle index of the component of
