@@ -239,6 +239,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VFWD_GAIN", 32, QuadPlane, vel_forward.gain, 0),
 
+    // @Param: WVANE_GAIN
+    // @DisplayName: Weathervaning gain
+    // @Description: This controls the tendency to yaw to face into the wind. A value of 0.4 is good for reasonably quick wind direction correction.
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("WVANE_GAIN", 33, QuadPlane, weathervane.gain, 0),
+    
     AP_GROUPEND
 };
 
@@ -644,6 +652,10 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
     }
     // add in pilot input
     yaw_cds += get_pilot_input_yaw_rate_cds();
+
+    // add in weathervaning
+    yaw_cds += get_weathervane_yaw_rate_cds();
+    
     return yaw_cds;
 }
 
@@ -1421,4 +1433,43 @@ int8_t QuadPlane::forward_throttle_pct(void)
     vel_forward.last_pct = vel_forward.integrator;
 
     return vel_forward.last_pct;
+}
+
+/*
+  get weathervaning yaw rate in cd/s
+ */
+float QuadPlane::get_weathervane_yaw_rate_cds(void)
+{
+    /*
+      we only do weathervaning in modes where we are doing VTOL
+      position control. We also don't do it if the pilot has given any
+      yaw input in the last 3 seconds.
+    */
+    if (!in_vtol_mode() ||
+        !motors->armed() ||
+        weathervane.gain <= 0 ||
+        plane.control_mode == QSTABILIZE ||
+        plane.control_mode == QHOVER) {
+        weathervane.last_output = 0;
+        return 0;
+    }
+    if (plane.channel_rudder->control_in != 0) {
+        weathervane.last_pilot_input_ms = AP_HAL::millis();
+        weathervane.last_output = 0;
+        return 0;
+    }
+    if (AP_HAL::millis() - weathervane.last_pilot_input_ms < 3000) {
+        weathervane.last_output = 0;
+        return 0;
+    }
+
+    float output = constrain_float((wp_nav->get_roll() / 4500.0f) * weathervane.gain, -1, 1);
+    if (should_relax()) {
+        output = 0;
+    }
+    weathervane.last_output = 0.98f * weathervane.last_output + 0.02f * output;
+
+    // scale over half of yaw_rate_max. This gives the pilot twice the
+    // authority of the weathervane controller
+    return weathervane.last_output * (yaw_rate_max/2) * 100;
 }

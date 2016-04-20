@@ -61,6 +61,7 @@ public:
 
     // return desired forward throttle percentage
     int8_t forward_throttle_pct(void);        
+    float get_weathervane_yaw_rate_cds(void);
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -180,6 +181,12 @@ private:
         uint32_t lastt_ms;
         int8_t last_pct;
     } vel_forward;
+
+    struct {
+        AP_Float gain;
+        uint32_t last_pilot_input_ms;
+        float last_output;
+    } weathervane;
     
     bool initialised;
     
