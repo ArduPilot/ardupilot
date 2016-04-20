@@ -145,36 +145,6 @@ AP_GeodesicGrid::AP_GeodesicGrid()
         {{ 0.309017f,  0.500000f, -0.190983f},
          {-0.500000f,  0.190983f,  0.309017f},
          {-0.190983f, -0.309017f, -0.500000f}},
-        {{ 0.309017f, -0.500000f, -0.190983f},
-         { 0.000000f,  0.000000f,  0.618034f},
-         { 0.309017f,  0.500000f, -0.190983f}},
-        {{ 0.190983f, -0.309017f,  0.500000f},
-         { 0.500000f,  0.190983f, -0.309017f},
-         {-0.309017f,  0.500000f,  0.190983f}},
-        {{ 0.618034f,  0.000000f,  0.000000f},
-         {-0.190983f,  0.309017f,  0.500000f},
-         {-0.190983f,  0.309017f, -0.500000f}},
-        {{ 0.500000f, -0.190983f,  0.309017f},
-         { 0.000000f,  0.618034f,  0.000000f},
-         {-0.500000f, -0.190983f,  0.309017f}},
-        {{ 0.190983f,  0.309017f,  0.500000f},
-         { 0.190983f,  0.309017f, -0.500000f},
-         {-0.618034f,  0.000000f,  0.000000f}},
-        {{ 0.309017f,  0.500000f,  0.190983f},
-         {-0.190983f, -0.309017f,  0.500000f},
-         {-0.500000f,  0.190983f, -0.309017f}},
-        {{-0.309017f,  0.500000f, -0.190983f},
-         { 0.000000f,  0.000000f,  0.618034f},
-         {-0.309017f, -0.500000f, -0.190983f}},
-        {{-0.190983f,  0.309017f,  0.500000f},
-         {-0.500000f, -0.190983f, -0.309017f},
-         { 0.309017f, -0.500000f,  0.190983f}},
-        {{-0.500000f,  0.190983f,  0.309017f},
-         { 0.000000f, -0.618034f,  0.000000f},
-         { 0.500000f,  0.190983f,  0.309017f}},
-        {{-0.309017f, -0.500000f,  0.190983f},
-         { 0.500000f, -0.190983f, -0.309017f},
-         { 0.190983f,  0.309017f,  0.500000f}},
     }
     , _mid_inverses{
         {{-0.000000f,  1.000000f, -0.618034f},
@@ -207,36 +177,6 @@ AP_GeodesicGrid::AP_GeodesicGrid()
         {{-0.000000f,  1.000000f,  0.618034f},
          {-1.000000f, -0.618034f, -0.000000f},
          { 0.618034f,  0.000000f, -1.000000f}},
-        {{ 0.000000f, -1.000000f,  0.618034f},
-         { 0.000000f,  1.000000f,  0.618034f},
-         { 0.618034f, -0.000000f, -1.000000f}},
-        {{ 1.000000f, -0.618034f,  0.000000f},
-         { 0.000000f,  1.000000f, -0.618034f},
-         {-0.618034f,  0.000000f,  1.000000f}},
-        {{ 0.618034f,  0.000000f,  1.000000f},
-         {-1.000000f,  0.618034f,  0.000000f},
-         { 0.618034f,  0.000000f, -1.000000f}},
-        {{ 1.000000f,  0.618034f,  0.000000f},
-         {-1.000000f,  0.618034f,  0.000000f},
-         { 0.000000f, -1.000000f,  0.618034f}},
-        {{ 1.000000f,  0.618034f,  0.000000f},
-         {-0.618034f,  0.000000f, -1.000000f},
-         {-0.618034f,  0.000000f,  1.000000f}},
-        {{ 0.618034f,  0.000000f,  1.000000f},
-         {-1.000000f, -0.618034f,  0.000000f},
-         {-0.000000f,  1.000000f, -0.618034f}},
-        {{-0.000000f,  1.000000f,  0.618034f},
-         { 0.000000f, -1.000000f,  0.618034f},
-         {-0.618034f,  0.000000f, -1.000000f}},
-        {{-1.000000f,  0.618034f,  0.000000f},
-         {-0.000000f, -1.000000f, -0.618034f},
-         { 0.618034f, -0.000000f,  1.000000f}},
-        {{-1.000000f, -0.618034f,  0.000000f},
-         { 1.000000f, -0.618034f,  0.000000f},
-         {-0.000000f,  1.000000f,  0.618034f}},
-        {{ 0.000000f, -1.000000f, -0.618034f},
-         { 1.000000f,  0.618034f,  0.000000f},
-         {-0.618034f, -0.000000f,  1.000000f}},
     }
 {
 }
@@ -272,7 +212,10 @@ int AP_GeodesicGrid::_from_neighbor_umbrella(int idx,
         /* If the coefficients of the first and second vertices are equal, then
          * v crosses the first component or the edge formed by the umbrella's
          * pivot and forth vertex. */
-        auto w = _inverses[umbrella.components[0]] * v;
+        auto w = _inverses[umbrella.components[0] % 10] * v;
+        if (umbrella.components[0] > 9) {
+            w = -w;
+        }
         float x0 = w[umbrella.v0_c0];
         if (is_zero(x0)) {
             if (!inclusive) {
@@ -292,7 +235,10 @@ int AP_GeodesicGrid::_from_neighbor_umbrella(int idx,
     if (u.y > u.x) {
         /* If the coefficient of the second vertex is greater than the first
          * one's, then v crosses the first, second or third component. */
-        auto w = _inverses[umbrella.components[1]] * v;
+        auto w = _inverses[umbrella.components[1] % 10] * v;
+        if (umbrella.components[1] > 9) {
+            w = -w;
+        }
         float x1 = w[umbrella.v1_c1];
         float x2 = w[umbrella.v2_c1];
 
@@ -318,7 +264,10 @@ int AP_GeodesicGrid::_from_neighbor_umbrella(int idx,
     } else {
         /* If the coefficient of the second vertex is lesser than the first
          * one's, then v crosses the first, fourth or fifth component. */
-        auto w = _inverses[umbrella.components[4]] * v;
+        auto w = _inverses[umbrella.components[4] % 10] * v;
+        if (umbrella.components[4] > 9) {
+            w = -w;
+        }
         float x4 = w[umbrella.v4_c4];
         float x0 = w[umbrella.v0_c4];
 
@@ -484,7 +433,10 @@ int AP_GeodesicGrid::_subtriangle_index(const unsigned int triangle_index,
 {
     /* w holds the coordinates of v with respect to the basis comprised by the
      * vectors of the middle triangle of T_i where i is triangle_index */
-    auto w = _mid_inverses[triangle_index] * v;
+    auto w = _mid_inverses[triangle_index % 10] * v;
+    if (triangle_index > 9) {
+        w = -w;
+    }
 
     if ((is_zero(w.x) || is_zero(w.y) || is_zero(w.z)) && !inclusive) {
         return -1;
