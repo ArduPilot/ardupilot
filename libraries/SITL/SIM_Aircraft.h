@@ -89,6 +89,10 @@ public:
         return velocity_ef;
     }
 
+    const Vector3f &get_velocity_air_ef(void) const {
+        return velocity_air_ef;
+    }
+    
     const Matrix3f &get_dcm(void) const {
         return dcm;
     }
@@ -103,10 +107,14 @@ protected:
     Matrix3f dcm;  // rotation matrix, APM conventions, from body to earth
     Vector3f gyro; // rad/s
     Vector3f velocity_ef; // m/s, earth frame
+    Vector3f wind_ef; // m/s, earth frame
+    Vector3f velocity_air_ef; // velocity relative to airmass, earth frame
+    Vector3f velocity_air_bf; // velocity relative to airmass, body frame
     Vector3f position; // meters, NED from origin
     float mass; // kg
     Vector3f accel_body; // m/s/s NED, body frame
     float airspeed; // m/s, apparent airspeed
+    float airspeed_pitot; // m/s, apparent airspeed, as seen by fwd pitot tube
     float battery_voltage = -1;
     float battery_current = 0;
     float rpm1 = 0;
@@ -157,6 +165,9 @@ protected:
     // update attitude and relative position
     void update_dynamics(const Vector3f &rot_accel);
 
+    // update wind vector
+    void update_wind(const struct sitl_input &input);
+    
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;

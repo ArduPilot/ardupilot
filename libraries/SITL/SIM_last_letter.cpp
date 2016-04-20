@@ -123,6 +123,7 @@ void last_letter::recv_fdm(const struct sitl_input &input)
     dcm.from_euler(pkt.roll, pkt.pitch, pkt.yaw);
 
     airspeed = pkt.airspeed;
+    airspeed_pitot = pkt.airspeed;
 
     // auto-adjust to last_letter frame rate
     uint64_t deltat_us = pkt.timestamp_us - last_timestamp_us;

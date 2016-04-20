@@ -168,7 +168,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 
     if (terminal_velocity > 0) {
         // air resistance
-        Vector3f air_resistance = -aircraft.get_velocity_ef() * (GRAVITY_MSS/terminal_velocity);
+        Vector3f air_resistance = -aircraft.get_velocity_air_ef() * (GRAVITY_MSS/terminal_velocity);
         body_accel += aircraft.get_dcm().transposed() * air_resistance;
     }
 
@@ -195,6 +195,9 @@ void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot
  */
 void MultiCopter::update(const struct sitl_input &input)
 {
+    // get wind vector setup
+    update_wind(input);
+
     // how much time has passed?
     Vector3f rot_accel;
 

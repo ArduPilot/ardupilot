@@ -65,6 +65,9 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
  */
 void QuadPlane::update(const struct sitl_input &input)
 {
+    // get wind vector setup
+    update_wind(input);
+
     // first plane forces
     Vector3f rot_accel;
     calculate_forces(input, rot_accel, accel_body);
