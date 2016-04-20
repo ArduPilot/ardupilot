@@ -651,8 +651,8 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.digicam_configure.shutter_speed = packet.param2;
         cmd.content.digicam_configure.aperture = packet.param3;
         cmd.content.digicam_configure.ISO = packet.param4;
-        cmd.content.digicam_configure.exposure_type = packet.x / 1.0e7f;
-        cmd.content.digicam_configure.cmd_id = packet.y / 1.0e7f;
+        cmd.content.digicam_configure.exposure_type = packet.x;
+        cmd.content.digicam_configure.cmd_id = packet.y;
         cmd.content.digicam_configure.engine_cutoff_time = packet.z;
         break;
 
@@ -661,8 +661,8 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.digicam_control.zoom_pos = packet.param2;
         cmd.content.digicam_control.zoom_step = packet.param3;
         cmd.content.digicam_control.focus_lock = packet.param4;
-        cmd.content.digicam_control.shooting_cmd = packet.x / 1.0e7f;
-        cmd.content.digicam_control.cmd_id = packet.y / 1.0e7f;
+        cmd.content.digicam_control.shooting_cmd = packet.x;
+        cmd.content.digicam_control.cmd_id = packet.y;
         break;
 
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
@@ -731,10 +731,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
         // sanity check location
         if (copy_location) {
-            if (fabsf(packet.x) > 900000000) {
+            if (abs(packet.x) > 900000000) {
                 return MAV_MISSION_INVALID_PARAM5_X;
             }
-            if (fabsf(packet.y) > 1800000000) {
+            if (abs(packet.y) > 1800000000) {
                 return MAV_MISSION_INVALID_PARAM6_Y;
             }
         }
@@ -762,30 +762,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
             cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
             cmd.content.location.flags.relative_alt = 1;
             break;
-
-#ifdef MAV_FRAME_LOCAL_NED
-        case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
-            if (copy_location) {
-                cmd.content.location.lat = ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + _ahrs.get_home().lat;
-                cmd.content.location.lng = ToDeg(packet.y/RADIUS_OF_EARTH) + _ahrs.get_home().lng;
-            }
-            cmd.content.location.alt = -packet.z*1.0e2f;
-            cmd.content.location.flags.relative_alt = 1;
-            break;
-#endif
-
-#ifdef MAV_FRAME_LOCAL
-        case MAV_FRAME_LOCAL:                         // local (relative to home position)
-            if (copy_location) {
-                cmd.content.location.lat = ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + _ahrs.get_home().lat;
-                cmd.content.location.lng = ToDeg(packet.y/RADIUS_OF_EARTH) + _ahrs.get_home().lng;
-            }
-            cmd.content.location.alt = packet.z*1.0e2f;
-            cmd.content.location.flags.relative_alt = 1;
-            break;
-#endif
 
 #if AP_TERRAIN_AVAILABLE
         case MAV_FRAME_GLOBAL_TERRAIN_ALT:
@@ -849,6 +825,8 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
     packet.param2 = mav_cmd.param2;
     packet.param3 = mav_cmd.param3;
     packet.param4 = mav_cmd.param4;
+    packet.x = mav_cmd.x;
+    packet.y = mav_cmd.y;
     packet.z = mav_cmd.z;
     packet.seq = mav_cmd.seq;
     packet.command = mav_cmd.command;
@@ -859,8 +837,11 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
     packet.autocontinue = mav_cmd.autocontinue;
     
     // convert to float
-    packet.x = mav_cmd.x / 1.0e7f;
-    packet.y = mav_cmd.y / 1.0e7f;
+    if (!((packet.command == MAV_CMD_DO_DIGICAM_CONTROL) ||
+          (packet.command == MAV_CMD_DO_DIGICAM_CONFIGURE))) {
+        packet.x *= 1.0e-7f;
+        packet.y *= 1.0e-7f;
+    }
     
     return ans;
 }
@@ -1040,8 +1021,8 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.digicam_configure.shutter_speed;
         packet.param3 = cmd.content.digicam_configure.aperture;
         packet.param4 = cmd.content.digicam_configure.ISO;
-        packet.x = cmd.content.digicam_configure.exposure_type * 1.0e7f;
-        packet.y = cmd.content.digicam_configure.cmd_id * 1.0e7f;
+        packet.x = cmd.content.digicam_configure.exposure_type;
+        packet.y = cmd.content.digicam_configure.cmd_id;
         packet.z = cmd.content.digicam_configure.engine_cutoff_time;
         break;
 
@@ -1050,8 +1031,8 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.digicam_control.zoom_pos;
         packet.param3 = cmd.content.digicam_control.zoom_step;
         packet.param4 = cmd.content.digicam_control.focus_lock;
-        packet.x = cmd.content.digicam_control.shooting_cmd * 1.0e7f;
-        packet.y = cmd.content.digicam_control.cmd_id * 1.0e7f;
+        packet.x = cmd.content.digicam_control.shooting_cmd;
+        packet.y = cmd.content.digicam_control.cmd_id;
         break;
 
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
