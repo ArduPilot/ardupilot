@@ -175,8 +175,8 @@ INSTANTIATE_TEST_CASE_P(IcosahedronVertices,
                         GeodesicGridTest,
                         ::testing::ValuesIn(icosahedron_vertices));
 
-/* Generate vectors that pass through the centroid of each section's triangle. */
-static std::vector<TestParam> centroid_vectors = []()
+/* Generate vectors for each triangle */
+static std::vector<TestParam> general_vectors = []()
 {
     std::vector<TestParam> params;
     for (int i = 0; i < 20 * AP_GeodesicGrid::NUM_SUBTRIANGLES; i++) {
@@ -184,14 +184,32 @@ static std::vector<TestParam> centroid_vectors = []()
         TestParam p;
         section_triangle(i, a, b, c);
         p.section = i;
-        p.v = (a + b + c) / 3;
+
+        /* Vector that crosses the centroid */
+        p.v = a + b + c;
+        params.push_back(p);
+
+        /* Vectors that cross the triangle close to the edges */
+        p.v = a + b + c * 0.001f;
+        params.push_back(p);
+        p.v = a + b * 0.001f + c;
+        params.push_back(p);
+        p.v = a * 0.001f + b + c;
+        params.push_back(p);
+
+        /* Vectors that cross the triangle close to the vertices */
+        p.v = a + b * 0.001 + c * 0.001f;
+        params.push_back(p);
+        p.v = a * 0.001f + b + c * 0.001f;
+        params.push_back(p);
+        p.v = a * 0.001f + b * 0.001f + c;
         params.push_back(p);
     }
     return params;
 }();
-INSTANTIATE_TEST_CASE_P(MidVectors,
+INSTANTIATE_TEST_CASE_P(GeneralVectors,
                         GeodesicGridTest,
-                        ::testing::ValuesIn(centroid_vectors));
+                        ::testing::ValuesIn(general_vectors));
 
 /* Other hardcoded vectors, so we don't rely just on the centroid vectors
  * (which are dependent on how the triangles are *defined by the
