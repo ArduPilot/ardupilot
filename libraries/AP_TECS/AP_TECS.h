@@ -355,9 +355,6 @@ private:
 
     // current time constant
     float timeConstant(void) const;
-
-    // return true if on landing approach
-    bool is_on_land_approach(bool include_segment_between_NORMAL_and_APPROACH);
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
