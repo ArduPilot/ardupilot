@@ -66,7 +66,7 @@ public:
         "GPS1",
         "tcp:2",
         "tcp:3",
-        "GPS2"
+        "GPS2",
         "tcp:4",
     };
     
