@@ -177,6 +177,11 @@ class sitl(Board):
             'SITL',
         ]
 
+        if sys.platform == 'cygwin':
+            env.LIB += [
+                'winmm',
+            ]
+
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)

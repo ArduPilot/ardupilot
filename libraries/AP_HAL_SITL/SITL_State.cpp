@@ -360,7 +360,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         altitude = 0;
     }
     if (altitude < 60) {
-        wind_speed *= altitude / 60;
+        wind_speed *= sqrtf(MAX(altitude / 60, 0));
     }
     input.wind.speed = wind_speed;
     input.wind.direction = _sitl?_sitl->wind_direction:0;

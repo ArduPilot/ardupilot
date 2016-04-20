@@ -205,15 +205,12 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float thrust     = throttle;
 
     // calculate angle of attack
-    angle_of_attack = atan2f(velocity_bf.z, velocity_bf.x);
-    beta = atan2f(velocity_bf.y,velocity_bf.x);
+    angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
+    beta = atan2f(velocity_air_bf.y,velocity_air_bf.x);
     
     Vector3f force = getForce(aileron, elevator, rudder);
     rot_accel = getTorque(aileron, elevator, rudder, force);
 
-    // velocity in body frame
-    velocity_bf = dcm.transposed() * velocity_ef;
-    
     // scale thrust to newtons
     thrust *= thrust_scale;
 
@@ -231,6 +228,8 @@ void Plane::update(const struct sitl_input &input)
 {
     Vector3f rot_accel;
 
+    update_wind(input);
+    
     calculate_forces(input, rot_accel, accel_body);
     
     update_dynamics(rot_accel);

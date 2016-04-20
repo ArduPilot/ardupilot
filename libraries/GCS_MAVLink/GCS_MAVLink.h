@@ -18,8 +18,8 @@
 // into progmem
 #define MAVLINK_MESSAGE_CRC(msgid) mavlink_get_message_crc(msgid)
 
-// allow four telemetry ports
-#define MAVLINK_COMM_NUM_BUFFERS 4
+// allow five telemetry ports
+#define MAVLINK_COMM_NUM_BUFFERS 5
 
 /*
   The MAVLink protocol code generator does its own alignment, so

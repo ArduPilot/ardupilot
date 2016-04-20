@@ -114,6 +114,9 @@ def configure(cfg):
     if cfg.options.submodule_update:
         cfg.env.SUBMODULE_UPDATE = True
 
+    # Always use system extensions
+    cfg.define('_GNU_SOURCE', 1)
+
     cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'))
 
 def collect_dirs_to_recurse(bld, globs, **kw):
