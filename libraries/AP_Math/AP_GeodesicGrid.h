@@ -170,7 +170,7 @@ private:
      * The i-th matrix is the inverse of the change-of-basis matrix from
      * natural basis to the basis formed by T_i's vectors.
      */
-    Matrix3f _inverses[20];
+    Matrix3f _inverses[10];
 
     /**
      * The inverses of the change-of-basis matrices for the middle triangles.
@@ -178,7 +178,7 @@ private:
      * The i-th matrix is the inverse of the change-of-basis matrix from
      * natural basis to the basis formed by T_i's middle triangle's vectors.
      */
-    Matrix3f _mid_inverses[20];
+    Matrix3f _mid_inverses[10];
 
     /**
      * The representation of the neighbor umbrellas of T_0 and its opposite
