@@ -61,12 +61,13 @@ public:
     const char *get_client_address(void) const { return _client_address; }
 
     // paths for UART devices
-    const char *_uart_path[5] {
+    const char *_uart_path[6] {
         "tcp:0:wait",
         "GPS1",
         "tcp:2",
         "tcp:3",
-        "GPS2"
+        "GPS2",
+        "tcp:4",
     };
     
 private:

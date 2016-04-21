@@ -546,7 +546,7 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=20):
     return success
 
 # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
-def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
+def fly_gps_glitch_auto_test(mavproxy, mav, timeout=120):
 
     # set-up gps glitch array
     glitch_lat = [0.0002996,0.0006958,0.0009431,0.0009991,0.0009444,0.0007716,0.0006221]
@@ -584,7 +584,6 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
     # record time and position
     tstart = get_sim_time(mav)
     tnow = tstart
-    start_pos = sim_location(mav)
 
     # initialise current glitch
     glitch_current = 0;
@@ -595,7 +594,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
     # record position for 30 seconds
     while glitch_current < glitch_num:
         tnow = get_sim_time(mav)
-        desired_glitch_num = int((tnow - tstart) * 2)
+        desired_glitch_num = int((tnow - tstart) * 2.2)
         if desired_glitch_num > glitch_current and glitch_current != -1:
             glitch_current = desired_glitch_num
             # apply next glitch

@@ -221,7 +221,7 @@ void Plane::update_fbwb_speed_height(void)
         elevator_input = -elevator_input;
     }
     
-    change_target_altitude(g.flybywire_climb_rate * elevator_input * delta_us_fast_loop * 0.0001f);
+    change_target_altitude(g.flybywire_climb_rate * elevator_input * perf.delta_us_fast_loop * 0.0001f);
     
     if (is_zero(elevator_input) && !is_zero(last_elevator_input)) {
         // the user has just released the elevator, lock in

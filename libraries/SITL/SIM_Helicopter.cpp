@@ -54,6 +54,9 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
  */
 void Helicopter::update(const struct sitl_input &input)
 {
+    // get wind vector setup
+    update_wind(input);
+
     float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
     // ignition only for gas helis
     bool ignition_enabled = gas_heli?(input.servos[5] > 1500):true;
@@ -145,7 +148,7 @@ void Helicopter::update(const struct sitl_input &input)
     rot_accel.z += torque_effect_accel;
 
     // air resistance
-    Vector3f air_resistance = -velocity_ef * (GRAVITY_MSS/terminal_velocity);
+    Vector3f air_resistance = -velocity_air_ef * (GRAVITY_MSS/terminal_velocity);
 
     // scale thrust to newtons
     thrust *= thrust_scale;

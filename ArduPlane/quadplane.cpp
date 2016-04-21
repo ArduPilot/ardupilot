@@ -230,6 +230,30 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B
     // @User: Standard
     AP_GROUPINFO("FRAME_TYPE", 31, QuadPlane, frame_type, 1),
+
+    // @Param: VFWD_GAIN
+    // @DisplayName: Forward velocity hold gain
+    // @Description: Controls use of forward motor in vtol modes. If this is zero then the forward motor will not be used for position control in VTOL modes. A value of 0.1 is a good place to start if you want to use the forward motor for position control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use QLOITER for position hold with the forward motor.
+    // @Range: 0 0.5
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("VFWD_GAIN", 32, QuadPlane, vel_forward.gain, 0),
+
+    // @Param: WVANE_GAIN
+    // @DisplayName: Weathervaning gain
+    // @Description: This controls the tendency to yaw to face into the wind. A value of 0.4 is good for reasonably quick wind direction correction. The weathervaning works by turning into the direction of roll.
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("WVANE_GAIN", 33, QuadPlane, weathervane.gain, 0),
+
+    // @Param: WVANE_MINROLL
+    // @DisplayName: Weathervaning min roll
+    // @Description: This set the minimum roll in degrees before active weathervaning will start. This may need to be larger if your aircraft has bad roll trim.
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("WVANE_MINROLL", 34, QuadPlane, weathervane.min_roll, 1),
     
     AP_GROUPEND
 };
@@ -636,6 +660,10 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
     }
     // add in pilot input
     yaw_cds += get_pilot_input_yaw_rate_cds();
+
+    // add in weathervaning
+    yaw_cds += get_weathervane_yaw_rate_cds();
+    
     return yaw_cds;
 }
 
@@ -1060,14 +1088,14 @@ void QuadPlane::control_auto(const Location &loc)
             // velocity as we approach the waypoint, aiming for zero
             // speed at the waypoint
             Vector2f groundspeed = ahrs.groundspeed_vector();
-            // newdiff is the delta to our target if we keep going for one second
-            Vector2f newdiff = diff_wp - groundspeed;
-            // speed towards target is the change in distance to target over one second
-            float speed_towards_target = diff_wp.length() - newdiff.length();
+            float speed_towards_target = diff_wp.normalized() * groundspeed;
             // setup land_speed_scale so at current distance we maintain speed towards target, and slow down as
             // we approach
             float distance = diff_wp.length();
-            land.speed_scale = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01) / MAX(distance, 1);
+
+            // max_speed will control how fast we will fly. It will always decrease
+            land.max_speed = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
+            land.speed_scale = land.max_speed / MAX(distance, 1);
         }
 
         // run fixed wing navigation
@@ -1077,12 +1105,20 @@ void QuadPlane::control_auto(const Location &loc)
           calculate target velocity, not dropping it below 2m/s
          */
         const float final_speed = 2.0f;
-        Vector2f target_speed = diff_wp * land.speed_scale;
-        if (target_speed.length() < final_speed) {
-            target_speed = target_speed.normalized() * final_speed;
+        Vector2f target_speed_xy = diff_wp * land.speed_scale;
+        float target_speed = target_speed_xy.length();
+        if (target_speed < final_speed) {
+            // until we enter the loiter we always aim for at least 2m/s
+            target_speed_xy = target_speed_xy.normalized() * final_speed;
+            land.max_speed = final_speed;
+        } else if (target_speed > land.max_speed) {
+            // we never speed up during landing approaches
+            target_speed_xy = target_speed_xy.normalized() * land.max_speed;
+        } else {
+            land.max_speed = target_speed;
         }
-        pos_control->set_desired_velocity_xy(target_speed.x*100,
-                                             target_speed.y*100);
+        pos_control->set_desired_velocity_xy(target_speed_xy.x*100,
+                                             target_speed_xy.y*100);
         
         float ekfGndSpdLimit, ekfNavVelGainScaler;    
         ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
@@ -1119,7 +1155,7 @@ void QuadPlane::control_auto(const Location &loc)
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
-                                                                             desired_auto_yaw_rate_cds(),
+                                                                             desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
         if (plane.auto_state.wp_proportion >= 1 ||
             plane.auto_state.wp_distance < 5) {
@@ -1341,4 +1377,126 @@ void QuadPlane::Log_Write_QControl_Tuning()
         day                 : accel_target.y*0.01f,
     };
     plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+
+/*
+  calculate the forward throttle percentage. The forward throttle can
+  be used to assist with position hold and with landing approach. It
+  reduces the need for down pitch which reduces load on the vertical
+  lift motors.
+ */
+int8_t QuadPlane::forward_throttle_pct(void)
+{
+    /*
+      in non-VTOL modes or modes without a velocity controller. We
+      don't use it in QHOVER or QSTABILIZE as they are the primary
+      recovery modes for a quadplane and need to be as simple as
+      possible. They will drift with the wind
+    */
+    if (!in_vtol_mode() ||
+        !motors->armed() ||
+        vel_forward.gain <= 0 ||
+        plane.control_mode == QSTABILIZE ||
+        plane.control_mode == QHOVER) {
+        return 0;
+    }
+
+    float deltat = (AP_HAL::millis() - vel_forward.lastt_ms) * 0.001f;
+    if (deltat > 1 || deltat < 0) {
+        vel_forward.integrator = 0;
+        deltat = 0.1;
+    }
+    if (deltat < 0.1) {
+        // run at 10Hz
+        return vel_forward.last_pct;
+    }
+    vel_forward.lastt_ms = AP_HAL::millis();
+    
+    // work out the desired speed in forward direction
+    const Vector3f &desired_velocity_cms = pos_control->get_desired_velocity();
+    Vector3f vel_ned;
+    if (!plane.ahrs.get_velocity_NED(vel_ned)) {
+        // we don't know our velocity? EKF must be pretty sick
+        vel_forward.last_pct = 0;
+        return 0;
+    }
+    Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
+
+    // find component of velocity error in fwd body frame direction
+    float fwd_vel_error = vel_error_body * Vector3f(1,0,0);
+
+    // scale forward velocity error by maximum airspeed
+    fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);
+
+    // add in a component from our current pitch demand. This tends to
+    // move us to zero pitch. Assume that LIM_PITCH would give us the
+    // WP nav speed.
+    fwd_vel_error -= (wp_nav->get_speed_xy() * 0.01f) * plane.nav_pitch_cd / (float)plane.aparm.pitch_limit_max_cd;
+
+    if (should_relax() && vel_ned.length() < 1) {
+        // we may be landed
+        fwd_vel_error = 0;
+        vel_forward.integrator *= 0.95f;
+    }
+    
+    // integrator as throttle percentage (-100 to 100)
+    vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
+
+    // constrain to throttle range. This allows for reverse throttle if configured
+    vel_forward.integrator = constrain_float(vel_forward.integrator, plane.aparm.throttle_min, plane.aparm.throttle_max);
+    
+    vel_forward.last_pct = vel_forward.integrator;
+
+    return vel_forward.last_pct;
+}
+
+/*
+  get weathervaning yaw rate in cd/s
+ */
+float QuadPlane::get_weathervane_yaw_rate_cds(void)
+{
+    /*
+      we only do weathervaning in modes where we are doing VTOL
+      position control. We also don't do it if the pilot has given any
+      yaw input in the last 3 seconds.
+    */
+    if (!in_vtol_mode() ||
+        !motors->armed() ||
+        weathervane.gain <= 0 ||
+        plane.control_mode == QSTABILIZE ||
+        plane.control_mode == QHOVER) {
+        weathervane.last_output = 0;
+        return 0;
+    }
+    if (plane.channel_rudder->control_in != 0) {
+        weathervane.last_pilot_input_ms = AP_HAL::millis();
+        weathervane.last_output = 0;
+        return 0;
+    }
+    if (AP_HAL::millis() - weathervane.last_pilot_input_ms < 3000) {
+        weathervane.last_output = 0;
+        return 0;
+    }
+
+    float roll = wp_nav->get_roll() / 100.0f;
+    if (fabsf(roll) < weathervane.min_roll) {
+        weathervane.last_output = 0;
+        return 0;        
+    }
+    if (roll > 0) {
+        roll -= weathervane.min_roll;
+    } else {
+        roll += weathervane.min_roll;
+    }
+    
+    float output = constrain_float((roll/45.0f) * weathervane.gain, -1, 1);
+    if (should_relax()) {
+        output = 0;
+    }
+    weathervane.last_output = 0.98f * weathervane.last_output + 0.02f * output;
+
+    // scale over half of yaw_rate_max. This gives the pilot twice the
+    // authority of the weathervane controller
+    return weathervane.last_output * (yaw_rate_max/2) * 100;
 }

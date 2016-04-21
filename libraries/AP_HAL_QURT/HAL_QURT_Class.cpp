@@ -57,6 +57,7 @@ HAL_QURT::HAL_QURT() :
         &uartCDriver,
         &uartDDriver,
         &uartEDriver,
+        NULL, // uartF
         &i2c_mgr_instance,
         &i2cDriver,
         NULL, /* only one i2c */

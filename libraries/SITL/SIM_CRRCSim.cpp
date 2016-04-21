@@ -130,6 +130,7 @@ void CRRCSim::recv_fdm(const struct sitl_input &input)
     position.z = -pkt.altitude;
 
     airspeed = pkt.airspeed;
+    airspeed_pitot = pkt.airspeed;
 
     dcm.from_euler(pkt.roll, pkt.pitch, pkt.yaw);
 

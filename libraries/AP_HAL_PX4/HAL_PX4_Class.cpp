@@ -51,18 +51,21 @@ static Empty::I2CDeviceManager i2c_mgr_instance;
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS6"
+#define UARTF_DEFAULT_DEVICE "/dev/null"
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTE_DEFAULT_DEVICE "/dev/ttyS0"
+#define UARTE_DEFAULT_DEVICE "/dev/ttyS6" // frsky telem
+#define UARTF_DEFAULT_DEVICE "/dev/ttyS0" // wifi
 #else
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTD_DEFAULT_DEVICE "/dev/null"
 #define UARTE_DEFAULT_DEVICE "/dev/null"
+#define UARTF_DEFAULT_DEVICE "/dev/null"
 #endif
 
 // 3 UART drivers, for GPS plus two mavlink-enabled devices
@@ -71,6 +74,7 @@ static PX4UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "APM_uartB");
 static PX4UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "APM_uartC");
 static PX4UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "APM_uartD");
 static PX4UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "APM_uartE");
+static PX4UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "APM_uartF");
 
 HAL_PX4::HAL_PX4() :
     AP_HAL::HAL(
@@ -79,6 +83,7 @@ HAL_PX4::HAL_PX4() :
         &uartCDriver,  /* uartC */
         &uartDDriver,  /* uartD */
         &uartEDriver,  /* uartE */
+        &uartFDriver,  /* uartF */
         &i2c_mgr_instance,
         &i2cDriver, /* i2c */
         NULL,   /* only one i2c */

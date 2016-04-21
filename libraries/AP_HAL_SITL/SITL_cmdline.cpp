@@ -71,6 +71,8 @@ static const struct {
     { "x",                  MultiCopter::create },
     { "hexa",               MultiCopter::create },
     { "octa",               MultiCopter::create },
+    { "tri",                MultiCopter::create },
+    { "y6",                 MultiCopter::create },
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
@@ -122,6 +124,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTC,
         CMDLINE_UARTD,
         CMDLINE_UARTE,
+        CMDLINE_UARTF,
         CMDLINE_ADSB,
         CMDLINE_DEFAULTS
     };
@@ -211,6 +214,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_UARTC:
         case CMDLINE_UARTD:
         case CMDLINE_UARTE:
+        case CMDLINE_UARTF:
             _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
             break;
             

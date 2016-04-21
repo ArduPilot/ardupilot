@@ -25,6 +25,7 @@
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm_Linux.h"
 #include "ToneAlarm_PX4.h"
+#include "ToneAlarm_PX4_Solo.h"
 #include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
 #include "ToshibaLED_PX4.h"
@@ -64,13 +65,20 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_BoardLED boardled;
     ToshibaLED_PX4 toshibaled;
+
+#if AP_NOTIFY_SOLO_TONES == 1
+    ToneAlarm_PX4_Solo tonealarm;
+#else
     ToneAlarm_PX4 tonealarm;
-#if OREOLED_ENABLED
+#endif
+
+#if AP_NOTIFY_OREOLED == 1
     OreoLED_PX4 oreoled;
     NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled};
 #else
     NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm};
 #endif
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     Buzzer buzzer;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45

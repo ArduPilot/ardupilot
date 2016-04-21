@@ -287,6 +287,7 @@ void FlightAxis::update(const struct sitl_input &input)
     accel_body.z = constrain_float(accel_body.z, -16, 16);
 
     airspeed = state.m_airspeed_MPS;
+    airspeed_pitot = state.m_airspeed_MPS;
 
     battery_voltage = state.m_batteryVoltage_VOLTS;
     battery_current = state.m_batteryCurrentDraw_AMPS;

@@ -1,18 +1,23 @@
 #!/bin/bash
 set -e
 
-CWD=$(pwd)
 OPT="/opt"
-
 BASE_PKGS="gawk make git arduino-core curl"
-SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
 PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs python-empy"
 BEBOP_PKGS="g++-arm-linux-gnueabihf"
-UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc++6:i386"
+SITL_PKGS="g++ python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
 ASSUME_YES=false
+
+read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
+
+if [ "$UBUNTU_CODENAME" = "xenial" ]; then
+    SITL_PKGS+=" python-wxgtk3.0"
+else
+    SITL_PKGS+=" python-wxgtk2.8"
+fi
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
@@ -21,7 +26,7 @@ ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
 
 # Ardupilot Tools
-ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
+ARDUPILOT_TOOLS="Tools/autotest"
 
 function maybe_prompt_user() {
     if $ASSUME_YES; then
@@ -58,7 +63,7 @@ sudo usermod -a -G dialout $USER
 
 $APT_GET remove modemmanager
 $APT_GET update
-$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $BEBOP_PKGS $UBUNTU64_PKGS
+$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $BEBOP_PKGS
 sudo pip2 -q install $PYTHON_PKGS
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
@@ -70,30 +75,33 @@ if [ ! -d $OPT/$ARM_ROOT ]; then
     )
 fi
 
+SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
+ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
+
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
-if ! grep -Fxq "$exportline" ~/.profile ; then
+grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [Y/n]?" ; then
         echo $exportline >> ~/.profile
-        $exportline
+        eval $exportline
     else
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
     fi
-fi
+}
 
-exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
-if ! grep -Fxq "$exportline2" ~/.profile ; then
-    if maybe_prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [Y/n]?" ; then
+exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
+grep -Fxq "$exportline2" ~/.profile 2>/dev/null || {
+    if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [Y/n]?" ; then
         echo $exportline2 >> ~/.profile
-        $exportline2
+        eval $exportline2
     else
-        echo "Skipping adding $CWD/$ARDUPILOT_TOOLS to PATH."
+        echo "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
     fi
-fi
+}
 
 apt-cache search arm-none-eabi
 
 (
- cd ardupilot
+ cd $ARDUPILOT_ROOT
  git submodule init
  git submodule update
 )

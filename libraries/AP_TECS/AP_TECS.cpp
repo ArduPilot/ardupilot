@@ -252,7 +252,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
  *
  */
 
-void AP_TECS::update_50hz(float hgt_afe)
+void AP_TECS::update_50hz(void)
 {
     // Implement third order complementary filter for height and height rate
     // estimted height rate = _climb_rate

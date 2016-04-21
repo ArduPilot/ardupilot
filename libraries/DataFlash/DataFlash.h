@@ -159,6 +159,9 @@ public:
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
+    // number of blocks that have been dropped
+    uint32_t num_dropped(void) const;
+    
     vehicle_startup_message_Log_Writer _vehicle_messages;
 
     // parameter support

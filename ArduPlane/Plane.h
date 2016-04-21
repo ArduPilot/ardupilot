@@ -685,23 +685,31 @@ private:
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt = 0.02f;
 
-    // Performance monitoring
-    // Timer used to accrue data and trigger recording of the performanc monitoring log message
-    uint32_t perf_mon_timer = 0;
+    struct {
+        // Performance monitoring
+        // Timer used to accrue data and trigger recording of the performanc monitoring log message
+        uint32_t start_ms;
 
-    // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
-    uint32_t G_Dt_max = 0;
-    uint32_t G_Dt_min = 0;
+        // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
+        uint32_t G_Dt_max;
+        uint32_t G_Dt_min;
 
-    // System Timers
-    // Time in microseconds of start of main control loop
-    uint32_t fast_loopTimer_us = 0;
+        // System Timers
+        // Time in microseconds of start of main control loop
+        uint32_t fast_loopTimer_us;
 
-    // Number of milliseconds used in last main loop cycle
-    uint32_t delta_us_fast_loop = 0;
+        // Number of milliseconds used in last main loop cycle
+        uint32_t delta_us_fast_loop;
 
-    // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count = 0;
+        // Counter of main loop executions.  Used for performance monitoring and failsafe processing
+        uint16_t mainLoop_count;
+
+        // number of long loops
+        uint16_t num_long;
+
+        // accumulated lost log messages
+        uint32_t last_log_dropped;
+    } perf;
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
