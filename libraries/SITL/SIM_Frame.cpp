@@ -84,6 +84,13 @@ static const Motor octa_quad_motors[] =
     Motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6)
 };
 
+static const Motor tri_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
+    Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, AP_MOTORS_MOT_7, -45, 45, -1, 0, 0),
+};
+
 /*
   table of supported frame types
  */
@@ -96,7 +103,8 @@ static Frame supported_frames[] =
     Frame("hexa",      6, hexa_motors),
     Frame("hexax",     6, hexax_motors),
     Frame("octa",      8, octa_motors),
-    Frame("octa-quad", 8, octa_quad_motors)
+    Frame("octa-quad", 8, octa_quad_motors),
+    Frame("tri",       3, tri_motors)
 };
 
 void Frame::init(float _mass, float hover_throttle, float _terminal_velocity, float _terminal_rotation_rate)

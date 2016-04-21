@@ -34,5 +34,21 @@ void Motor::calculate_forces(const Aircraft::sitl_input &input,
     rot_accel.y =  radians(5000.0) * cosf(radians(angle)) * motor_speed;
     rot_accel.z = yaw_factor * motor_speed * radians(400.0);
     thrust(0, 0, motor_speed * thrust_scale); // newtons
+    if (roll_servo >= 0) {
+        float roll = constrain_float(roll_min + (input.servos[roll_servo]-1000)*0.001*(roll_max-roll_min), roll_min, roll_max);
+        Matrix3f rotation;
+        rotation.identity();
+        rotation.rotate(Vector3f(radians(roll), 0, 0));
+        rot_accel = rotation * rot_accel;
+        thrust = rotation * thrust;
+    }
+    if (pitch_servo >= 0) {
+        float pitch = constrain_float(pitch_min + (input.servos[pitch_servo]-1000)*0.001*(pitch_max-pitch_min), pitch_min, pitch_max);
+        Matrix3f rotation;
+        rotation.identity();
+        rotation.rotate(Vector3f(0, radians(pitch), 0));
+        rot_accel = rotation * rot_accel;
+        thrust = rotation * thrust;
+    }
 }
 
