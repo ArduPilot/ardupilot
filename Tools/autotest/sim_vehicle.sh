@@ -258,6 +258,11 @@ case $FRAME in
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
+    tri*)
+	BUILD_TARGET="sitl-tri"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/tri_params.parm"
+	;;
     heli*)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
