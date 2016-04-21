@@ -59,8 +59,12 @@ bool Plane::verify_land()
     bool rangefinder_in_range = false;
 #endif
 
-    // Below we check for wp_proportion being greater then 50%.  In otherwords ensure that the vehicle
-    // has covered 50% of the distance to the landing point before it can flare
+    // flare check:
+    // 1) below flare alt/sec requires approach stage check because if sec/alt are set too
+    //    large, and we're on a hard turn to line up for approach, we'll prematurely flare by
+    //    skipping approach phase and the extreme roll limits will make it hard to line up with runway
+    // 2) passed land point and don't have an accurate AGL
+    // 3) probably crashed (ensures motor gets turned off)
 
     bool on_approach_stage = (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
