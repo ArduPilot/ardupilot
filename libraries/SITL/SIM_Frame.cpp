@@ -91,6 +91,29 @@ static const Motor tri_motors[] =
     Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, AP_MOTORS_MOT_7, -45, 45, -1, 0, 0),
 };
 
+static const Motor y6_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_2, -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
+    Motor(AP_MOTORS_MOT_3, -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
+    Motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_5,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
+    Motor(AP_MOTORS_MOT_6, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3)
+};
+
+/*
+  FireflyY6 is a Y6 with front motors tiltable
+ */
+static const Motor firefly_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, -1, 0, 0, AP_MOTORS_MOT_7, 0, 90),
+    Motor(AP_MOTORS_MOT_2, -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5, -1, 0, 0, AP_MOTORS_MOT_7, 0, 90),
+    Motor(AP_MOTORS_MOT_3, -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6, -1, 0, 0, AP_MOTORS_MOT_7, 0, 90),
+    Motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_5,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1, -1, 0, 0, AP_MOTORS_MOT_7, 0, 90),
+    Motor(AP_MOTORS_MOT_6, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3)
+};
+
 /*
   table of supported frame types
  */
@@ -104,7 +127,9 @@ static Frame supported_frames[] =
     Frame("hexax",     6, hexax_motors),
     Frame("octa",      8, octa_motors),
     Frame("octa-quad", 8, octa_quad_motors),
-    Frame("tri",       3, tri_motors)
+    Frame("tri",       3, tri_motors),
+    Frame("y6",        6, y6_motors),
+    Frame("firefly",   6, firefly_motors)
 };
 
 void Frame::init(float _mass, float hover_throttle, float _terminal_velocity, float _terminal_rotation_rate)

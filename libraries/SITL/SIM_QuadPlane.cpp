@@ -45,6 +45,12 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         frame_type = "hexa";
     } else if (strstr(frame_str, "-plus")) {
         frame_type = "+";
+    } else if (strstr(frame_str, "-plus")) {
+        frame_type = "+";
+    } else if (strstr(frame_str, "-y6")) {
+        frame_type = "y6";
+    } else if (strstr(frame_str, "-firefly")) {
+        frame_type = "firefly";
     }
     frame = Frame::find_frame(frame_type);
     if (frame == nullptr) {
