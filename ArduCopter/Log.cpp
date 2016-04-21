@@ -440,7 +440,7 @@ void Copter::Log_Write_Data(uint8_t id, int16_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -462,7 +462,7 @@ void Copter::Log_Write_Data(uint8_t id, uint16_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -483,7 +483,7 @@ void Copter::Log_Write_Data(uint8_t id, int32_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -504,7 +504,7 @@ void Copter::Log_Write_Data(uint8_t id, uint32_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -526,7 +526,7 @@ void Copter::Log_Write_Data(uint8_t id, float value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -546,7 +546,7 @@ void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
         sub_system    : sub_system,
         error_code    : error_code,
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 void Copter::Log_Write_Baro(void)
