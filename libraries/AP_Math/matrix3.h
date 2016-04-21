@@ -230,6 +230,11 @@ public:
     // only use X, Y elements from rotation vector
     void        rotateXYinv(const Vector3<T> &g);
 
+    // create rotation matrix for rotation about the vector v by angle theta
+    // See: https://en.wikipedia.org/wiki/Rotation_matrix#General_rotations
+    // "Rotation matrix from axis and angle"
+    void        from_axis_angle(const Vector3<T> &v, float theta);
+    
     // normalize a rotation matrix
     void        normalize(void);
 };

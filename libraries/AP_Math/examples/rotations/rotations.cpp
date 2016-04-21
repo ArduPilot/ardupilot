@@ -25,6 +25,68 @@ static void test_rotation_accuracy(void)
 
     hal.console->println("\nRotation method accuracy:");
 
+    // test roll
+    for( i=0; i<90; i++ ) {
+
+        // reset initial attitude
+        attitude.from_euler(0,0,0);
+
+        // calculate small rotation vector
+        rot_angle = ToRad(i);
+        small_rotation = Vector3f(rot_angle,0,0);
+
+        // apply small rotation
+        attitude.rotate(small_rotation);
+
+        // get resulting attitude's euler angles
+        attitude.to_euler(&roll, &pitch, &yaw);
+
+        // now try via from_axis_angle
+        Matrix3f r2;
+        r2.from_axis_angle(Vector3f(1,0,0), rot_angle);
+        attitude.from_euler(0,0,0);
+        attitude = r2 * attitude;
+
+        float roll2, pitch2, yaw2;
+        attitude.to_euler(&roll2, &pitch2, &yaw2);
+        
+        // display results
+        hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
+                            (int)i,ToDeg(roll), ToDeg(roll2));
+    }
+
+    // test pitch
+    for( i=0; i<90; i++ ) {
+
+        // reset initial attitude
+        attitude.from_euler(0,0,0);
+
+        // calculate small rotation vector
+        rot_angle = ToRad(i);
+        small_rotation = Vector3f(0,rot_angle,0);
+
+        // apply small rotation
+        attitude.rotate(small_rotation);
+
+        // get resulting attitude's euler angles
+        attitude.to_euler(&roll, &pitch, &yaw);
+
+        // now try via from_axis_angle
+        Matrix3f r2;
+        r2.from_axis_angle(Vector3f(0,1,0), rot_angle);
+        attitude.from_euler(0,0,0);
+        attitude = r2 * attitude;
+
+        float roll2, pitch2, yaw2;
+        attitude.to_euler(&roll2, &pitch2, &yaw2);
+        
+        // display results
+        hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
+                            (int)i,ToDeg(pitch), ToDeg(pitch2));
+    }
+    
+
+    // test yaw
     for( i=0; i<90; i++ ) {
 
         // reset initial attitude
@@ -40,10 +102,18 @@ static void test_rotation_accuracy(void)
         // get resulting attitude's euler angles
         attitude.to_euler(&roll, &pitch, &yaw);
 
+        // now try via from_axis_angle
+        Matrix3f r2;
+        r2.from_axis_angle(Vector3f(0,0,1), rot_angle);
+        attitude.from_euler(0,0,0);
+        attitude = r2 * attitude;
+
+        float roll2, pitch2, yaw2;
+        attitude.to_euler(&roll2, &pitch2, &yaw2);
+        
         // display results
-        hal.console->printf(
-                "actual angle: %d\tcalculated angle:%4.2f\n",
-                (int)i,ToDeg(yaw));
+        hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
+                            (int)i,ToDeg(yaw), ToDeg(yaw2));
     }
 }
 

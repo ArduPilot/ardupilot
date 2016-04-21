@@ -227,6 +227,30 @@ void Matrix3<T>::zero(void)
     c.x = c.y = c.z = 0;
 }
 
+// create rotation matrix for rotation about the vector v by angle theta
+// See: http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/
+template <typename T>
+void Matrix3<T>::from_axis_angle(const Vector3<T> &v, float theta)
+{
+    float C = cosf(theta);
+    float S = sinf(theta);
+    float t = 1.0f - C;
+    Vector3f normv = v.normalized();
+    float x = normv.x;
+    float y = normv.y;
+    float z = normv.z;
+    
+    a.x = t*x*x + C;
+    a.y = t*x*y - z*S;
+    a.z = t*x*z + y*S;
+    b.x = t*x*y + z*S;
+    b.y = t*y*y + C;
+    b.z = t*y*z - x*S;
+    c.x = t*x*z - y*S;
+    c.y = t*y*z + x*S;
+    c.z = t*z*z + C;
+}
+
 
 // only define for float
 template void Matrix3<float>::zero(void);
@@ -237,6 +261,7 @@ template void Matrix3<float>::normalize(void);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw) const;
 template void Matrix3<float>::from_euler312(float roll, float pitch, float yaw);
+template void Matrix3<float>::from_axis_angle(const Vector3<float> &v, float theta);
 template Vector3<float> Matrix3<float>::to_euler312(void) const;
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
