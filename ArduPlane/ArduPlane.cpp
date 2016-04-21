@@ -411,6 +411,9 @@ void Plane::airspeed_ratio_update(void)
  */
 void Plane::update_GPS_50Hz(void)
 {
+    // get position from AHRS
+    have_position = ahrs.get_position(current_loc);
+
     static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
     gps.update();
 
@@ -429,9 +432,6 @@ void Plane::update_GPS_50Hz(void)
  */
 void Plane::update_GPS_10Hz(void)
 {
-    // get position from AHRS
-    have_position = ahrs.get_position(current_loc);
-
     static uint32_t last_gps_msg_ms;
     if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         last_gps_msg_ms = gps.last_message_time_ms();
