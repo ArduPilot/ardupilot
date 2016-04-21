@@ -21,28 +21,40 @@
 
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
-#include "SIM_Frame.h"
 
 using namespace SITL;
 
 /*
-  a multicopter simulator
+  class to describe a multicopter frame type
  */
-class MultiCopter : public Aircraft {
+class Frame {
 public:
-    MultiCopter(const char *home_str, const char *frame_str);
+    const char *name;
+    uint8_t num_motors;
+    const Motor *motors;
 
-    /* update model by one time step */
-    void update(const struct sitl_input &input);
+    Frame(const char *_name,
+          uint8_t _num_motors,
+          const Motor *_motors) :
+        name(_name),
+        num_motors(_num_motors),
+        motors(_motors) {}
 
-    /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new MultiCopter(home_str, frame_str);
-    }
 
-protected:
+    // find a frame by name
+    static Frame *find_frame(const char *name);
+    
+    // initialise frame
+    void init(float mass, float hover_throttle, float terminal_velocity, float terminal_rotation_rate);
+
     // calculate rotational and linear accelerations
-    void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
-    Frame *frame;
+    void calculate_forces(const Aircraft &aircraft,
+                          const Aircraft::sitl_input &input,
+                          Vector3f &rot_accel, Vector3f &body_accel);
+    
+    float terminal_velocity;
+    float terminal_rotation_rate;
+    float thrust_scale;
+    float mass;
+    uint8_t motor_offset;
 };
-

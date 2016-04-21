@@ -14,35 +14,25 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  multicopter simulator class
+  simple electric motor simulator class
 */
 
-#pragma once
-
-#include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
-#include "SIM_Frame.h"
+#include <AP_Motors/AP_Motors.h>
 
 using namespace SITL;
 
-/*
-  a multicopter simulator
- */
-class MultiCopter : public Aircraft {
-public:
-    MultiCopter(const char *home_str, const char *frame_str);
-
-    /* update model by one time step */
-    void update(const struct sitl_input &input);
-
-    /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new MultiCopter(home_str, frame_str);
-    }
-
-protected:
-    // calculate rotational and linear accelerations
-    void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
-    Frame *frame;
-};
+// calculate rotational accel and thrust for a motor
+void Motor::calculate_forces(const Aircraft::sitl_input &input,
+                             const float thrust_scale,
+                             uint8_t motor_offset,
+                             Vector3f &rot_accel,
+                             Vector3f &thrust) const
+{
+    float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
+    rot_accel.x = -radians(5000.0) * sinf(radians(angle)) * motor_speed;
+    rot_accel.y =  radians(5000.0) * cosf(radians(angle)) * motor_speed;
+    rot_accel.z = yaw_factor * motor_speed * radians(400.0);
+    thrust(0, 0, motor_speed * thrust_scale); // newtons
+}
 
