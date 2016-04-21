@@ -339,6 +339,7 @@ struct PACKED log_Performance {
     int16_t  pm_test;
     uint8_t i2c_lockup_count;
     uint16_t ins_error_count;
+    uint32_t log_dropped;
 };
 
 // Write a performance monitoring packet
@@ -352,9 +353,10 @@ void Sub::Log_Write_Performance()
         max_time         : perf_info_get_max_time(),
         pm_test          : pmTest1,
         i2c_lockup_count : hal.i2c->lockup_count(),
-        ins_error_count  : ins.error_count()
+        ins_error_count  : ins.error_count(),
+		log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 // Write an attitude packet
@@ -399,21 +401,6 @@ void Sub::Log_Write_MotBatt()
     DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
 }
 
-struct PACKED log_Startup {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-};
-
-// Write Startup packet
-void Sub::Log_Write_Startup()
-{
-    struct log_Startup pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
-        time_us         : AP_HAL::micros64()
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_Event {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -451,7 +438,7 @@ void Sub::Log_Write_Data(uint8_t id, int16_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -473,7 +460,7 @@ void Sub::Log_Write_Data(uint8_t id, uint16_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -494,7 +481,7 @@ void Sub::Log_Write_Data(uint8_t id, int32_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -515,7 +502,7 @@ void Sub::Log_Write_Data(uint8_t id, uint32_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -537,7 +524,7 @@ void Sub::Log_Write_Data(uint8_t id, float value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -557,7 +544,7 @@ void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
         sub_system    : sub_system,
         error_code    : error_code,
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 void Sub::Log_Write_Baro(void)
@@ -685,11 +672,9 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qfffffecchh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIhBH",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
+      "PM",  "QHHIhBHI",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit" },
-    { LOG_STARTUP_MSG, sizeof(log_Startup),         
-      "STRT", "Q",            "TimeUS" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
       "EV",   "QB",           "TimeUS,Id" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
