@@ -263,6 +263,11 @@ case $FRAME in
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/tri_params.parm"
 	;;
+    y6*)
+	BUILD_TARGET="sitl-y6"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/y6_params.parm"
+	;;
     heli*)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
