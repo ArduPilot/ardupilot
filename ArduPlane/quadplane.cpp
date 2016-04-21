@@ -241,11 +241,19 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: WVANE_GAIN
     // @DisplayName: Weathervaning gain
-    // @Description: This controls the tendency to yaw to face into the wind. A value of 0.4 is good for reasonably quick wind direction correction.
+    // @Description: This controls the tendency to yaw to face into the wind. A value of 0.4 is good for reasonably quick wind direction correction. The weathervaning works by turning into the direction of roll.
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("WVANE_GAIN", 33, QuadPlane, weathervane.gain, 0),
+
+    // @Param: WVANE_MINROLL
+    // @DisplayName: Weathervaning min roll
+    // @Description: This set the minimum roll in degrees before active weathervaning will start. This may need to be larger if your aircraft has bad roll trim.
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("WVANE_MINROLL", 34, QuadPlane, weathervane.min_roll, 1),
     
     AP_GROUPEND
 };
@@ -1471,7 +1479,18 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         return 0;
     }
 
-    float output = constrain_float((wp_nav->get_roll() / 4500.0f) * weathervane.gain, -1, 1);
+    float roll = wp_nav->get_roll() / 100.0f;
+    if (fabsf(roll) < weathervane.min_roll) {
+        weathervane.last_output = 0;
+        return 0;        
+    }
+    if (roll > 0) {
+        roll -= weathervane.min_roll;
+    } else {
+        roll += weathervane.min_roll;
+    }
+    
+    float output = constrain_float((roll/45.0f) * weathervane.gain, -1, 1);
     if (should_relax()) {
         output = 0;
     }

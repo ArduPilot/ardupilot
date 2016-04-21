@@ -184,6 +184,7 @@ private:
 
     struct {
         AP_Float gain;
+        AP_Float min_roll;
         uint32_t last_pilot_input_ms;
         float last_output;
     } weathervane;
