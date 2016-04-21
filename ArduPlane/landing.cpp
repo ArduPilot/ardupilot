@@ -61,12 +61,15 @@ bool Plane::verify_land()
 
     // Below we check for wp_proportion being greater then 50%.  In otherwords ensure that the vehicle
     // has covered 50% of the distance to the landing point before it can flare
+
+    bool on_approach_stage = (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+                              flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
     bool below_flare_alt = (height <= g.land_flare_alt);
     bool below_flare_sec = (aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec);
     bool probably_crashed = (fabsf(auto_state.sink_rate) < 0.2f && !is_flying());
 
-    if (below_flare_alt ||
-        (below_flare_sec && (auto_state.wp_proportion > 0.5)) ||
+    if ((on_approach_stage && below_flare_alt) ||
+        (on_approach_stage && below_flare_sec && (auto_state.wp_proportion > 0.5)) ||
         (!rangefinder_in_range && auto_state.wp_proportion >= 1) ||
         probably_crashed) {
 
