@@ -235,10 +235,14 @@ void Sub::init_disarm_motors()
 #endif
 
     // save compass offsets learned by the EKF
-    Vector3f magOffsets;
-    if (ahrs.use_compass() && ahrs.getMagOffsets(magOffsets)) {
-        compass.set_and_save_offsets(compass.get_primary(), magOffsets);
-    }
+    if (ahrs.use_compass()) {
+        for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+            Vector3f magOffsets;
+            if (ahrs.getMagOffsets(i, magOffsets)) {
+                compass.set_and_save_offsets(i, magOffsets);
+            }
+        }
+	 }
 
 #if AUTOTUNE_ENABLED == ENABLED
     // save auto tuned parameters
