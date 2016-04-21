@@ -601,7 +601,10 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Plane::verify_loiter_unlim()
 {
-    if (mission.get_current_nav_cmd().p1 <= 1 && abs(g.rtl_radius) > 1) {
+    if (control_mode == AUTO && mission.state() != AP_Mission::MISSION_RUNNING) {
+        // end of mission RTL
+        update_loiter(g.rtl_radius? g.rtl_radius : g.loiter_radius);
+    } else if (mission.get_current_nav_cmd().p1 <= 1 && abs(g.rtl_radius) > 1) {
         // if mission radius is 0,1, and rtl_radius is valid, use rtl_radius.
         loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         update_loiter(abs(g.rtl_radius));
