@@ -23,9 +23,9 @@ void Plane::failsafe_check(void)
     static bool in_failsafe;
     uint32_t tnow = micros();
 
-    if (mainLoop_count != last_mainLoop_count) {
+    if (perf.mainLoop_count != last_mainLoop_count) {
         // the main loop is running, all is OK
-        last_mainLoop_count = mainLoop_count;
+        last_mainLoop_count = perf.mainLoop_count;
         last_timestamp = tnow;
         in_failsafe = false;
         return;

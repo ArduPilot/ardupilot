@@ -112,19 +112,19 @@ void Plane::loop()
 
     uint32_t timer = micros();
 
-    delta_us_fast_loop  = timer - fast_loopTimer_us;
-    G_Dt                = delta_us_fast_loop * 1.0e-6f;
+    perf.delta_us_fast_loop  = timer - perf.fast_loopTimer_us;
+    G_Dt = perf.delta_us_fast_loop * 1.0e-6f;
 
-    if (delta_us_fast_loop > G_Dt_max && fast_loopTimer_us != 0) {
-        G_Dt_max = delta_us_fast_loop;
+    if (perf.delta_us_fast_loop > perf.G_Dt_max && perf.fast_loopTimer_us != 0) {
+        perf.G_Dt_max = perf.delta_us_fast_loop;
     }
 
-    if (delta_us_fast_loop < G_Dt_min || G_Dt_min == 0) {
-        G_Dt_min = delta_us_fast_loop;
+    if (perf.delta_us_fast_loop < perf.G_Dt_min || perf.G_Dt_min == 0) {
+        perf.G_Dt_min = perf.delta_us_fast_loop;
     }
-    fast_loopTimer_us   = timer;
+    perf.fast_loopTimer_us = timer;
 
-    mainLoop_count++;
+    perf.mainLoop_count++;
 
     // tell the scheduler one tick has passed
     scheduler.tick();
@@ -339,16 +339,16 @@ void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "G_Dt_max=%lu G_Dt_min=%lu\n",
-                          (unsigned long)G_Dt_max, 
-                          (unsigned long)G_Dt_min);
+                          (unsigned long)perf.G_Dt_max, 
+                          (unsigned long)perf.G_Dt_min);
     }
 
     if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
     }
 
-    G_Dt_max = 0;
-    G_Dt_min = 0;
+    perf.G_Dt_max = 0;
+    perf.G_Dt_min = 0;
     resetPerfData();
 }
 

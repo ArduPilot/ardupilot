@@ -210,9 +210,9 @@ void Plane::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us         : AP_HAL::micros64(),
-        loop_time       : millis() - perf_mon_timer,
-        main_loop_count : mainLoop_count,
-        g_dt_max        : G_Dt_max,
+        loop_time       : millis() - perf.start_ms,
+        main_loop_count : perf.mainLoop_count,
+        g_dt_max        : perf.G_Dt_max,
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),

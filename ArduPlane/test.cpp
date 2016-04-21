@@ -360,8 +360,8 @@ int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         hal.scheduler->delay(20);
-        if (micros() - fast_loopTimer_us > 19000UL) {
-            fast_loopTimer_us       = micros();
+        if (micros() - perf.fast_loopTimer_us > 19000UL) {
+            perf.fast_loopTimer_us = micros();
 
             // INS
             // ---
@@ -421,8 +421,8 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         hal.scheduler->delay(20);
-        if (micros() - fast_loopTimer_us > 19000UL) {
-            fast_loopTimer_us       = micros();
+        if (micros() - perf.fast_loopTimer_us > 19000UL) {
+            perf.fast_loopTimer_us = micros();
 
             // INS
             // ---
