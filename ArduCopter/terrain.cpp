@@ -33,7 +33,7 @@ void Copter::terrain_logging()
 bool Copter::terrain_use()
 {
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    return (g.terrain_use > 0);
+    return (g.terrain_follow > 0);
 #else
     return false;
 #endif
