@@ -39,7 +39,7 @@ public:
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state
     // Should be called at 50Hz or greater
-    void update_50hz(float hgt_afe);
+    void update_50hz(void);
 
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
