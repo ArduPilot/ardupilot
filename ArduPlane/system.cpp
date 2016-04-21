@@ -637,6 +637,7 @@ void Plane::resetPerfData(void)
     perf.G_Dt_min       = 0;
     perf.num_long       = 0;
     perf.start_ms       = millis();
+    perf.last_log_dropped = DataFlash.num_dropped();
 }
 
 

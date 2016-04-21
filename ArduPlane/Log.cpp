@@ -198,6 +198,7 @@ struct PACKED log_Performance {
     uint16_t main_loop_count;
     uint32_t g_dt_max;
     uint32_t g_dt_min;
+    uint32_t log_dropped;
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -209,9 +210,10 @@ void Plane::Log_Write_Performance()
         num_long        : perf.num_long,
         main_loop_count : perf.mainLoop_count,
         g_dt_max        : perf.G_Dt_max,
-        g_dt_min        : perf.G_Dt_min
+        g_dt_min        : perf.G_Dt_min,
+        log_dropped     : DataFlash.num_dropped() - perf.last_log_dropped
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Startup {
@@ -229,7 +231,7 @@ void Plane::Log_Write_Startup(uint8_t type)
         startup_type    : type,
         command_total   : mission.num_commands()
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Control_Tuning {
@@ -424,7 +426,7 @@ void Plane::Log_Arm_Disarm() {
         arm_state               : arming.is_armed(),
         arm_checks              : arming.get_enabled_checks()      
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 void Plane::Log_Write_GPS(uint8_t instance)
@@ -477,7 +479,7 @@ void Plane::Log_Write_Home_And_Origin()
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHII",    "TimeUS,NLon,NLoop,MaxT,MinT" },
+      "PM",  "QHHIII",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "QBH",         "TimeUS,SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     

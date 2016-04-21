@@ -706,6 +706,9 @@ private:
 
         // number of long loops
         uint16_t num_long;
+
+        // accumulated lost log messages
+        uint32_t last_log_dropped;
     } perf;
 
     // Camera/Antenna mount tracking and stabilisation stuff

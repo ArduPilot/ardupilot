@@ -340,11 +340,12 @@ void Plane::one_second_loop()
 void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "PERF: %u/%u %lu %lu\n",
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u\n",
                           (unsigned)perf.num_long,
                           (unsigned)perf.mainLoop_count,
-                          (unsigned long)perf.G_Dt_max,
-                          (unsigned long)perf.G_Dt_min);
+                          (unsigned)perf.G_Dt_max,
+                          (unsigned)perf.G_Dt_min,
+                          (unsigned)(DataFlash.num_dropped() - perf.last_log_dropped));
     }
 
     if (should_log(MASK_LOG_PM)) {
