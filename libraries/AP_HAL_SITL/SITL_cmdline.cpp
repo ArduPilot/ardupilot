@@ -71,6 +71,7 @@ static const struct {
     { "x",                  MultiCopter::create },
     { "hexa",               MultiCopter::create },
     { "octa",               MultiCopter::create },
+    { "tri",                MultiCopter::create },
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
