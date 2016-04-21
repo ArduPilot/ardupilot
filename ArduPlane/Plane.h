@@ -703,6 +703,9 @@ private:
 
         // Counter of main loop executions.  Used for performance monitoring and failsafe processing
         uint16_t mainLoop_count;
+
+        // number of long loops
+        uint16_t num_long;
     } perf;
 
     // Camera/Antenna mount tracking and stabilisation stuff

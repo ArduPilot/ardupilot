@@ -635,7 +635,8 @@ void Plane::resetPerfData(void)
     perf.mainLoop_count = 0;
     perf.G_Dt_max       = 0;
     perf.G_Dt_min       = 0;
-    perf.start_ms        = millis();
+    perf.num_long       = 0;
+    perf.start_ms       = millis();
 }
 
 

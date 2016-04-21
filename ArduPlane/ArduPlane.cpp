@@ -34,56 +34,56 @@
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us
-    SCHED_TASK(read_radio,             50,    700),
-    SCHED_TASK(check_short_failsafe,   50,   1000),
-    SCHED_TASK(ahrs_update,           400,   6400),
-    SCHED_TASK(update_speed_height,    50,   1600),
-    SCHED_TASK(update_flight_mode,    400,   1400),
-    SCHED_TASK(stabilize,             400,   3500),
-    SCHED_TASK(set_servos,            400,   1600),
-    SCHED_TASK(read_control_switch,     7,   1000),
-    SCHED_TASK(gcs_retry_deferred,     50,   1000),
-    SCHED_TASK(update_GPS_50Hz,        50,   2500),
-    SCHED_TASK(update_GPS_10Hz,        10,   2500),
-    SCHED_TASK(navigate,               10,   3000),
-    SCHED_TASK(update_compass,         10,   1200),
-    SCHED_TASK(read_airspeed,          10,   1200),
-    SCHED_TASK(update_alt,             10,   3400),
-    SCHED_TASK(adjust_altitude_target, 10,   1000),
-    SCHED_TASK(obc_fs_check,           10,   1000),
-    SCHED_TASK(gcs_update,             50,   1700),
-    SCHED_TASK(gcs_data_stream_send,   50,   3000),
-    SCHED_TASK(update_events,          50,   1500),
-    SCHED_TASK(check_usb_mux,          10,    300),
-    SCHED_TASK(read_battery,           10,   1000),
-    SCHED_TASK(compass_accumulate,     50,   1500),
-    SCHED_TASK(barometer_accumulate,   50,    900),
+    SCHED_TASK(ahrs_update,           400,    400),
+    SCHED_TASK(read_radio,             50,    100),
+    SCHED_TASK(check_short_failsafe,   50,    100),
+    SCHED_TASK(update_speed_height,    50,    200),
+    SCHED_TASK(update_flight_mode,    400,    100),
+    SCHED_TASK(stabilize,             400,    100),
+    SCHED_TASK(set_servos,            400,    100),
+    SCHED_TASK(read_control_switch,     7,    100),
+    SCHED_TASK(gcs_retry_deferred,     50,    500),
+    SCHED_TASK(update_GPS_50Hz,        50,    300),
+    SCHED_TASK(update_GPS_10Hz,        10,    400),
+    SCHED_TASK(navigate,               10,    150),
+    SCHED_TASK(update_compass,         10,    200),
+    SCHED_TASK(read_airspeed,          10,    100),
+    SCHED_TASK(update_alt,             10,    200),
+    SCHED_TASK(adjust_altitude_target, 10,    200),
+    SCHED_TASK(obc_fs_check,           10,    100),
+    SCHED_TASK(gcs_update,             50,    500),
+    SCHED_TASK(gcs_data_stream_send,   50,    500),
+    SCHED_TASK(update_events,          50,    150),
+    SCHED_TASK(check_usb_mux,          10,    100),
+    SCHED_TASK(read_battery,           10,    300),
+    SCHED_TASK(compass_accumulate,     50,    200),
+    SCHED_TASK(barometer_accumulate,   50,    150),
     SCHED_TASK(update_notify,          50,    300),
-    SCHED_TASK(read_rangefinder,       50,    500),
-    SCHED_TASK(compass_cal_update,     50,    100),
-    SCHED_TASK(accel_cal_update,       10,    100),
+    SCHED_TASK(read_rangefinder,       50,    100),
+    SCHED_TASK(compass_cal_update,     50,    50),
+    SCHED_TASK(accel_cal_update,       10,    50),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,    50,    500),
+    SCHED_TASK(update_optical_flow,    50,    50),
 #endif
-    SCHED_TASK(one_second_loop,         1,   1000),
-    SCHED_TASK(check_long_failsafe,     3,   1000),
-    SCHED_TASK(read_receiver_rssi,     10,   1000),
-    SCHED_TASK(rpm_update,             10,    200),
-    SCHED_TASK(airspeed_ratio_update,   1,   1000),
-    SCHED_TASK(update_mount,           50,   1500),
-    SCHED_TASK(update_trigger,         50,   1500),
-    SCHED_TASK(log_perf_info,         0.1,   1000),
-    SCHED_TASK(compass_save,        0.016,   2500),
-    SCHED_TASK(update_logging1,        10,   1700),
-    SCHED_TASK(update_logging2,        10,   1700),
-    SCHED_TASK(parachute_check,        10,    500),
+    SCHED_TASK(one_second_loop,         1,    400),
+    SCHED_TASK(check_long_failsafe,     3,    400),
+    SCHED_TASK(read_receiver_rssi,     10,    100),
+    SCHED_TASK(rpm_update,             10,    100),
+    SCHED_TASK(airspeed_ratio_update,   1,    100),
+    SCHED_TASK(update_mount,           50,    100),
+    SCHED_TASK(update_trigger,         50,    100),
+    SCHED_TASK(log_perf_info,         0.2,    100),
+    SCHED_TASK(compass_save,        0.016,    200),
+    SCHED_TASK(update_logging1,        10,    300),
+    SCHED_TASK(update_logging2,        10,    300),
+    SCHED_TASK(parachute_check,        10,    200),
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,    5,    100),
 #endif
-    SCHED_TASK(terrain_update,         10,    500),
+    SCHED_TASK(terrain_update,         10,    200),
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
-    SCHED_TASK(dataflash_periodic,     50,    300),
-    SCHED_TASK(adsb_update,             1,    500),
+    SCHED_TASK(dataflash_periodic,     50,    400),
+    SCHED_TASK(adsb_update,             1,    400),
 };
 
 void Plane::setup() 
@@ -107,6 +107,8 @@ void Plane::setup()
 
 void Plane::loop()
 {
+    uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
+
     // wait for an INS sample
     ins.wait_for_sample();
 
@@ -114,6 +116,10 @@ void Plane::loop()
 
     perf.delta_us_fast_loop  = timer - perf.fast_loopTimer_us;
     G_Dt = perf.delta_us_fast_loop * 1.0e-6f;
+
+    if (perf.delta_us_fast_loop > loop_us + 500) {
+        perf.num_long++;
+    }
 
     if (perf.delta_us_fast_loop > perf.G_Dt_max && perf.fast_loopTimer_us != 0) {
         perf.G_Dt_max = perf.delta_us_fast_loop;
@@ -134,11 +140,7 @@ void Plane::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    uint32_t remaining = (timer + 20000) - micros();
-    if (remaining > 19500) {
-        remaining = 19500;
-    }
-    scheduler.run(remaining);
+    scheduler.run(loop_us);
 }
 
 // update AHRS system
@@ -338,8 +340,10 @@ void Plane::one_second_loop()
 void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "G_Dt_max=%lu G_Dt_min=%lu\n",
-                          (unsigned long)perf.G_Dt_max, 
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "PERF: %u/%u %lu %lu\n",
+                          (unsigned)perf.num_long,
+                          (unsigned)perf.mainLoop_count,
+                          (unsigned long)perf.G_Dt_max,
                           (unsigned long)perf.G_Dt_min);
     }
 
@@ -347,8 +351,6 @@ void Plane::log_perf_info()
         Log_Write_Performance();
     }
 
-    perf.G_Dt_max = 0;
-    perf.G_Dt_min = 0;
     resetPerfData();
 }
 
