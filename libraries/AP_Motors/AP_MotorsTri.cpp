@@ -90,8 +90,8 @@ void AP_MotorsTri::Init()
     motor_enabled[AP_MOTORS_MOT_2] = true;
     motor_enabled[AP_MOTORS_MOT_4] = true;
 
-    // disable CH7 from being used as an aux output (i.e. for camera gimbal, etc)
-    RC_Channel_aux::disable_aux_channel(AP_MOTORS_CH_TRI_YAW);
+    // allow mapping of motor7
+    add_motor_num(AP_MOTORS_CH_TRI_YAW);
 }
 
 // set update rate to motors - a value in hertz
@@ -158,10 +158,10 @@ void AP_MotorsTri::output_to_motors()
 uint16_t AP_MotorsTri::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
-    return rc_map_mask(1U << AP_MOTORS_MOT_1) |
-        (1U << AP_MOTORS_MOT_2) |
-        (1U << AP_MOTORS_MOT_4) |
-        (1U << AP_MOTORS_CH_TRI_YAW);
+    return rc_map_mask((1U << AP_MOTORS_MOT_1) |
+                       (1U << AP_MOTORS_MOT_2) |
+                       (1U << AP_MOTORS_MOT_4) |
+                       (1U << AP_MOTORS_CH_TRI_YAW));
 }
 
 // output_armed - sends commands to the motors

@@ -325,15 +325,8 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         // set order that motor appears in test
         _test_order[motor_num] = testing_order;
 
-        uint8_t chan;
-        if (RC_Channel_aux::find_channel((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+motor_num),
-                                         chan)) {
-            _motor_map[motor_num] = chan;
-            _motor_map_mask |= 1U<<motor_num;
-        } else {
-            // disable this channel from being used by RC_Channel_aux
-            RC_Channel_aux::disable_aux_channel(motor_num);
-        }
+        // call parent class method
+        add_motor_num(motor_num);
     }
 }
 

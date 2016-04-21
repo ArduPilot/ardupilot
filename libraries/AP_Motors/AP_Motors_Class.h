@@ -137,6 +137,9 @@ protected:
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
     virtual void        rc_enable_ch(uint8_t chan);
     virtual uint32_t    rc_map_mask(uint32_t mask) const;
+
+    // add a motor to the motor map
+    void add_motor_num(int8_t motor_num);
     
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;

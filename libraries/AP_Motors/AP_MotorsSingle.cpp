@@ -80,8 +80,8 @@ void AP_MotorsSingle::Init()
     _servo3.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
     _servo4.set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
 
-    // disable CH7 from being used as an aux output (i.e. for camera gimbal, etc)
-    RC_Channel_aux::disable_aux_channel(CH_7);
+    // allow mapping of motor7
+    add_motor_num(CH_7);
 }
 
 // set update rate to motors - a value in hertz
