@@ -94,6 +94,10 @@ public:
                              const AP_Param::ParamToken &token,
                              enum ap_var_type type);
 
+    uint32_t num_dropped(void) const {
+        return _dropped;
+    }
+    
 protected:
     uint32_t dropped;
     uint8_t internal_errors; // uint8_t - wishful thinking?

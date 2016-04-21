@@ -203,6 +203,14 @@ void DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
     FOR_EACH_BACKEND(Log_Write_Mission_Cmd(mission, cmd));
 }
 
+uint32_t DataFlash_Class::num_dropped() const
+{
+    if (_next_backend == 0) {
+        return 0;
+    }
+    return backends[0]->num_dropped();
+}
+
 
 // end functions pass straight through to backend
 
