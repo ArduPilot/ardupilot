@@ -239,6 +239,7 @@ private:
         FRAME_CLASS_HEXA=1,
         FRAME_CLASS_OCTA=2,
         FRAME_CLASS_OCTAQUAD=3,
+        FRAME_CLASS_Y6=4,
     };
 
     struct {
