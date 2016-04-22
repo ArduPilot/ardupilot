@@ -102,15 +102,15 @@ static const Motor y6_motors[] =
 };
 
 /*
-  FireflyY6 is a Y6 with front motors tiltable
+  FireflyY6 is a Y6 with front motors tiltable using servo on channel 7
  */
 static const Motor firefly_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, -1, 0, 0, AP_MOTORS_MOT_7, 0, 90),
-    Motor(AP_MOTORS_MOT_2, -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5, -1, 0, 0, AP_MOTORS_MOT_7, 0, 90),
-    Motor(AP_MOTORS_MOT_3, -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6, -1, 0, 0, AP_MOTORS_MOT_7, 0, 90),
+    Motor(AP_MOTORS_MOT_1,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, -1, 0, 0, AP_MOTORS_MOT_7, 0, -90),
+    Motor(AP_MOTORS_MOT_2, -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5, -1, 0, 0, AP_MOTORS_MOT_7, 0, -90),
+    Motor(AP_MOTORS_MOT_3, -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6, -1, 0, 0, AP_MOTORS_MOT_7, 0, -90),
     Motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_5,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1, -1, 0, 0, AP_MOTORS_MOT_7, 0, 90),
+    Motor(AP_MOTORS_MOT_5,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1, -1, 0, 0, AP_MOTORS_MOT_7, 0, -90),
     Motor(AP_MOTORS_MOT_6, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3)
 };
 
