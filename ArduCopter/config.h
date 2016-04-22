@@ -205,6 +205,11 @@
  #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
 #endif
 
+// missing terrain data failsafe
+#ifndef FS_TERRAIN_TIMEOUT_MS
+ #define FS_TERRAIN_TIMEOUT_MS          5000     // 5 seconds of missing terrain data will trigger failsafe (RTL)
+#endif
+
 #ifndef PREARM_DISPLAY_PERIOD
 # define PREARM_DISPLAY_PERIOD 30
 #endif

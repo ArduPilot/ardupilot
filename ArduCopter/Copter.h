@@ -282,10 +282,13 @@ private:
         uint8_t battery             : 1; // 2   // A status flag for the battery failsafe
         uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
         uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
+        uint8_t terrain             : 1; // 6   // true if the missing terrain data failsafe has occurred
 
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
+        uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
+        uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
     } failsafe;
 
     // sensor health for logging
@@ -853,6 +856,9 @@ private:
     void failsafe_battery_event(void);
     void failsafe_gcs_check();
     void failsafe_gcs_off_event(void);
+    void failsafe_terrain_check();
+    void failsafe_terrain_set_status(bool data_ok);
+    void failsafe_terrain_on_event();
     void set_mode_RTL_or_land_with_pause(mode_reason_t reason);
     void update_events();
     void failsafe_enable();
