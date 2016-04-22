@@ -122,9 +122,8 @@ void Copter::auto_takeoff_start(const Location& dest_loc)
 
     // set waypoint controller target
     if (!wp_nav.set_wp_destination(dest)) {
-        // this should never fail because the target altitude is specified as an alt-above-home
-        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-        // To-Do: handle failure
+        // failure to set destination can only be because of missing terrain data
+        failsafe_terrain_on_event();
         return;
     }
 
@@ -168,9 +167,7 @@ void Copter::auto_takeoff_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    if (wp_nav.update_wpnav()) {
-        // To-Do: handle failure to update probably caused by missing terrain data
-    }
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -184,8 +181,8 @@ void Copter::auto_wp_start(const Vector3f& destination)
 {
     auto_mode = Auto_WP;
 
-    // initialise wpnav
-    wp_nav.set_wp_destination(destination);
+    // initialise wpnav (no need to check return status because terrain data is not used)
+    wp_nav.set_wp_destination(destination, false);
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
@@ -201,9 +198,8 @@ void Copter::auto_wp_start(const Location_Class& dest_loc)
 
     // send target to waypoint controller
     if (!wp_nav.set_wp_destination(dest_loc)) {
-        // failure to set destination (likely because of missing terrain data)
-        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-        // To-Do: handle failure
+        // failure to set destination can only be because of missing terrain data
+        failsafe_terrain_on_event();
     }
 
     // initialise yaw
@@ -248,11 +244,7 @@ void Copter::auto_wp_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    if (!wp_nav.update_wpnav()) {
-        // failures to update probably caused by missing terrain data
-        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_UPDATE_TARGET);
-        // To-Do: handle failure by triggering RTL after 5 seconds with no update?
-    }
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -490,9 +482,8 @@ void Copter::auto_circle_movetoedge_start(const Location_Class &circle_center, f
 
         // initialise wpnav to move to edge of circle
         if (!wp_nav.set_wp_destination(circle_edge)) {
-            // failure to set destination (likely because of missing terrain data)
-            Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-            // To-Do: handle failure
+            // failure to set destination can only be because of missing terrain data
+            failsafe_terrain_on_event();
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
@@ -609,11 +600,8 @@ void Copter::auto_loiter_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint and z-axis position controller
-    if (!wp_nav.update_wpnav()) {
-        // failures to update probably caused by missing terrain data
-        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_UPDATE_TARGET);
-        // To-Do: handle failure by triggering RTL after 5 seconds with no update?
-    }
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
+
     pos_control.update_z_controller();
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 }
