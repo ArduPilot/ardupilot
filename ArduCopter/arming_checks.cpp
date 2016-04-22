@@ -495,6 +495,7 @@ bool Copter::pre_arm_ekf_attitude_check()
 // check we have required terrain data
 bool Copter::pre_arm_terrain_check()
 {
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // succeed if not using terrain data
     if (!terrain_use()) {
         return true;
@@ -504,6 +505,9 @@ bool Copter::pre_arm_terrain_check()
     uint16_t terr_pending, terr_loaded;
     terrain.get_statistics(terr_pending, terr_loaded);
     return (terr_pending <= 0);
+#else
+    return true;
+#endif
 }
 
 // arm_checks - perform final checks before arming
