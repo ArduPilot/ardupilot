@@ -99,11 +99,7 @@ const AP_Param::GroupInfo APM_OBC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ENABLE",       11, APM_OBC, _enable,          0),
 
-    // @Param: RC_FAIL_MS
-    // @DisplayName: RC failure time
-    // @Description: This is the time in milliseconds in manual mode that failsafe termination will activate if RC input is lost. For the OBC rules this should be 1500. Use 0 to disable.
-    // @User: Advanced
-    AP_GROUPINFO("RC_FAIL_MS",   12, APM_OBC, _rc_fail_time,    0),
+    // *NOTE* index 12 of AP_Int16 RC_FAIL_MS was depreciated. Replaced by RC_FAIL_TIME.
 
     // @Param: MAX_GPS_LOSS
     // @DisplayName: Maximum number of GPS loss events
@@ -141,6 +137,13 @@ const AP_Param::GroupInfo APM_OBC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DUAL_LOSS",      18, APM_OBC, _enable_dual_loss, 1),
 
+    // @Param: RC_FAIL_TIME
+    // @DisplayName: RC failure time
+    // @Description: This is the time in seconds in manual mode that failsafe termination will activate if RC input is lost. For the OBC rules this should be (1.5). Use 0 to disable.
+    // @User: Advanced
+    // @Units: seconds
+    AP_GROUPINFO("RC_FAIL_TIME",   19, APM_OBC, _rc_fail_time_seconds,    0),
+
     AP_GROUPEND
 };
 
@@ -163,14 +166,14 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     }
 
     // check if RC termination is enabled
-        // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
+    // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
     if (_state != STATE_PREFLIGHT && !_terminate && _enable_RC_fs &&
-            (mode == OBC_MANUAL || mode == OBC_FBW || !_rc_term_manual_only) && 
-            _rc_fail_time != 0 && 
-            (AP_HAL::millis() - last_valid_rc_ms) > (unsigned)_rc_fail_time.get()) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
-                _terminate.set(1);
-            }
+        (mode == OBC_MANUAL || mode == OBC_FBW || !_rc_term_manual_only) &&
+        _rc_fail_time_seconds > 0 &&
+            (AP_HAL::millis() - last_valid_rc_ms) > (_rc_fail_time_seconds * 1000.0f)) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
+        _terminate.set(1);
+    }
     
     // tell the failsafe board if we are in manual control
     // mode. This tells it to pass through controls from the
@@ -254,9 +257,9 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             // losing GCS link when GPS lock lost
             // leads to termination if AFS_DUAL_LOSS is 1
             if (!_terminate && _enable_dual_loss) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Dual loss TERMINATE");
-                    _terminate.set(1);
-                }
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Dual loss TERMINATE");
+                _terminate.set(1);
+            }
         } else if (gps_lock_ok) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS OK");
             _state = STATE_AUTO;
