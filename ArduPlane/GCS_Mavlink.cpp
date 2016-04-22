@@ -1306,6 +1306,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED
             plane.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+            result = MAV_RESULT_ACCEPTED;
 #endif
             break;
 
