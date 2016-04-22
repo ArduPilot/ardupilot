@@ -42,7 +42,7 @@ public:
         return available() && assisted_flight;
     }
     
-    bool handle_do_vtol_transition(const mavlink_command_long_t &packet);
+    bool handle_do_vtol_transition(enum MAV_VTOL_STATE state);
 
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
