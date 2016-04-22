@@ -218,6 +218,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
                                        cmd.content.mount_control.yaw);
         break;
 #endif
+
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)cmd.content.do_vtol_transition.target_state);
+        break;
     }
 
     return true;
