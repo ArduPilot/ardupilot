@@ -208,14 +208,15 @@ public:
         // location
         Location location;      // Waypoint location
 
-        // raw bytes, for reading/writing to eeprom
+        // raw bytes, for reading/writing to eeprom. Note that only 12 bytes are available
+        // if a 16 bit command ID is used
         uint8_t bytes[12];
     };
 
     // command structure
-    struct PACKED Mission_Command {
+    struct Mission_Command {
         uint16_t index;             // this commands position in the command list
-        uint8_t id;                 // mavlink command id
+        uint16_t id;                // mavlink command id
         uint16_t p1;                // general purpose parameter 1
         Content content;
     };
