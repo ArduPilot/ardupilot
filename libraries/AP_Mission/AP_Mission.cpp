@@ -726,6 +726,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
     case MAV_CMD_NAV_VTOL_LAND:
         copy_location = true;
         break;
+
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        cmd.content.do_vtol_transition.target_state = packet.param1;
+        break;
         
     default:
         // unrecognised command
@@ -1066,6 +1070,10 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_NAV_VTOL_LAND:
         copy_location = true;
+        break;
+
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        packet.param1 = cmd.content.do_vtol_transition.target_state;
         break;
         
     default:
