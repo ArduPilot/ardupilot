@@ -81,6 +81,11 @@ void DataFlash_Class::Prep() {
     FOR_EACH_BACKEND(Prep());
 }
 
+void DataFlash_Class::StopLogging()
+{
+    FOR_EACH_BACKEND(stop_logging());
+}
+
 uint16_t DataFlash_Class::find_last_log() const {
     if (_next_backend == 0) {
         return 0;
