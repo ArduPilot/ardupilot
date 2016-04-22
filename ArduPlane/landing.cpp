@@ -296,6 +296,11 @@ bool Plane::restart_landing_sequence()
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
         success =  false;
     }
+
+    if (success) {
+        // exit landing stages if we're no longer executing NAV_LAND
+        update_flight_stage();
+    }
     return success;
 }
 
