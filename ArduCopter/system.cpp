@@ -202,7 +202,7 @@ void Copter::init_ardupilot()
 
     // init Location class
     Location_Class::set_ahrs(&ahrs);
-#if AP_TERRAIN_AVAILABLE
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location_Class::set_terrain(&terrain);
 #endif
 
