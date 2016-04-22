@@ -174,7 +174,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         thrust += mthrust;
     }
 
-    body_accel = -thrust/mass;
+    body_accel = thrust/mass;
 
     if (terminal_rotation_rate > 0) {
         // rotational air resistance

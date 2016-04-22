@@ -33,7 +33,7 @@ void Motor::calculate_forces(const Aircraft::sitl_input &input,
     rot_accel.x = -radians(5000.0) * sinf(radians(angle)) * motor_speed;
     rot_accel.y =  radians(5000.0) * cosf(radians(angle)) * motor_speed;
     rot_accel.z = yaw_factor * motor_speed * radians(400.0);
-    thrust(0, 0, motor_speed * thrust_scale); // newtons
+    thrust(0, 0, -motor_speed * thrust_scale); // newtons NED
     if (roll_servo >= 0) {
         float roll;
         uint16_t servoval = input.servos[roll_servo+motor_offset];
