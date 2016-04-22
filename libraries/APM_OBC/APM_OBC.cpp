@@ -163,18 +163,14 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     }
 
     // check if RC termination is enabled
-    if(_enable_RC_fs) {
         // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
-        if (_state != STATE_PREFLIGHT && 
+    if (_state != STATE_PREFLIGHT && !_terminate && _enable_RC_fs &&
             (mode == OBC_MANUAL || mode == OBC_FBW || !_rc_term_manual_only) && 
             _rc_fail_time != 0 && 
             (AP_HAL::millis() - last_valid_rc_ms) > (unsigned)_rc_fail_time.get()) {
-            if (!_terminate) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
                 _terminate.set(1);
             }
-        }
-    }
     
     // tell the failsafe board if we are in manual control
     // mode. This tells it to pass through controls from the
@@ -257,19 +253,16 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
         if (!gcs_link_ok) {
             // losing GCS link when GPS lock lost
             // leads to termination if AFS_DUAL_LOSS is 1
-            if(_enable_dual_loss) {
-                if (!_terminate) {
+            if (!_terminate && _enable_dual_loss) {
                     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Dual loss TERMINATE");
                     _terminate.set(1);
                 }
-            }
         } else if (gps_lock_ok) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS OK");
             _state = STATE_AUTO;
             // we only return to the mission if we have not exceeded AFS_MAX_GPS_LOSS
             if (_saved_wp != 0 &&
-                (_max_gps_loss <= 0 || 
-                 _gps_loss_count <= _max_gps_loss)) {
+                (_max_gps_loss <= 0 || _gps_loss_count <= _max_gps_loss)) {
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
             }
