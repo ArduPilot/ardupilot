@@ -179,7 +179,7 @@ const Matrix3f AP_GeodesicGrid::_mid_inverses[10]{
 };
 
 int AP_GeodesicGrid::section(const Vector3f& v,
-                             const bool inclusive) const
+                             const bool inclusive)
 {
     int i = _triangle_index(v, inclusive);
     if (i < 0) {
@@ -195,7 +195,7 @@ int AP_GeodesicGrid::section(const Vector3f& v,
 }
 
 int AP_GeodesicGrid::_neighbor_umbrella_component(int idx,
-                                                  int comp_idx) const
+                                                  int comp_idx)
 {
     if (idx < 3) {
         return _neighbor_umbrellas[idx].components[comp_idx];
@@ -206,7 +206,7 @@ int AP_GeodesicGrid::_neighbor_umbrella_component(int idx,
 int AP_GeodesicGrid::_from_neighbor_umbrella(int idx,
                                              const Vector3f& v,
                                              const Vector3f& u,
-                                             bool inclusive) const
+                                             bool inclusive)
 {
     /* The following comparisons between the umbrella's first and second
      * vertices' coefficients work for this algorithm because all vertices'
@@ -301,7 +301,7 @@ int AP_GeodesicGrid::_from_neighbor_umbrella(int idx,
 }
 
 int AP_GeodesicGrid::_triangle_index(const Vector3f& v,
-                                     const bool inclusive) const
+                                     const bool inclusive)
 {
     /* w holds the coordinates of v with respect to the basis comprised by the
      * vectors of T_i */
@@ -436,7 +436,7 @@ int AP_GeodesicGrid::_triangle_index(const Vector3f& v,
 
 int AP_GeodesicGrid::_subtriangle_index(const unsigned int triangle_index,
                                         const Vector3f& v,
-                                        const bool inclusive) const
+                                        const bool inclusive)
 {
     /* w holds the coordinates of v with respect to the basis comprised by the
      * vectors of the middle triangle of T_i where i is triangle_index */

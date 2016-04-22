@@ -123,7 +123,7 @@ public:
      * the null vector or the section isn't found, which might happen when \p
      * inclusive is false.
      */
-    int section(const Vector3f& v, const bool inclusive = false) const;
+    static int section(const Vector3f& v, const bool inclusive = false);
 
 private:
     /*
@@ -235,8 +235,8 @@ private:
      *
      * @return The icosahedron triangle's index of the component.
      */
-    int _neighbor_umbrella_component(int umbrella_index,
-                                     int component_index) const;
+    static int _neighbor_umbrella_component(int umbrella_index,
+                                            int component_index);
     /**
      * Find the icosahedron triangle index of the component of
      * #_neighbor_umbrellas[umbrella_index] that is crossed by \p v.
@@ -256,10 +256,10 @@ private:
      * if \p v is the null vector or the triangle isn't found, which might
      * happen when \p inclusive is false.
      */
-    int _from_neighbor_umbrella(int umbrella_index,
-                                const Vector3f& v,
-                                const Vector3f& u,
-                                bool inclusive) const;
+    static int _from_neighbor_umbrella(int umbrella_index,
+                                       const Vector3f& v,
+                                       const Vector3f& u,
+                                       bool inclusive);
 
     /**
      * Find which icosahedron's triangle is crossed by \p v.
@@ -272,7 +272,7 @@ private:
      * @return The index of the triangle. The value -1 is returned if the
      * triangle isn't found, which might happen when \p inclusive is false.
      */
-    int _triangle_index(const Vector3f& v, const bool inclusive) const;
+    static int _triangle_index(const Vector3f& v, const bool inclusive);
 
     /**
      * Find which sub-triangle of the icosahedron's triangle pointed by \p
@@ -292,7 +292,7 @@ private:
      * @return The index of the sub-triangle. The value -1 is returned if the
      * triangle isn't found, which might happen when \p inclusive is false.
      */
-    int _subtriangle_index(const unsigned int triangle_index,
-                           const Vector3f& v,
-                           const bool inclusive) const;
+    static int _subtriangle_index(const unsigned int triangle_index,
+                                  const Vector3f& v,
+                                  const bool inclusive);
 };

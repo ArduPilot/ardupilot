@@ -42,8 +42,6 @@ public:
 
 class GeodesicGridTest : public ::testing::TestWithParam<TestParam> {
 protected:
-    static AP_GeodesicGrid grid;
-
     /**
      * Test the functions for triangles indexes.
      *
@@ -51,24 +49,27 @@ protected:
      */
     void test_triangles_indexes(const TestParam& p) {
         if (p.section >= 0) {
-            int expected_triangle = p.section / grid.NUM_SUBTRIANGLES;
-            int triangle = grid._triangle_index(p.v, false);
+            int expected_triangle =
+                    p.section / AP_GeodesicGrid::NUM_SUBTRIANGLES;
+            int triangle = AP_GeodesicGrid::_triangle_index(p.v, false);
             ASSERT_EQ(expected_triangle, triangle);
 
-            int expected_subtriangle = p.section % grid.NUM_SUBTRIANGLES;
-            int subtriangle = grid._subtriangle_index(triangle, p.v, false);
+            int expected_subtriangle =
+                    p.section % AP_GeodesicGrid::NUM_SUBTRIANGLES;
+            int subtriangle =
+                    AP_GeodesicGrid::_subtriangle_index(triangle, p.v, false);
             ASSERT_EQ(expected_subtriangle, subtriangle);
         } else {
-            int triangle = grid._triangle_index(p.v, false);
+            int triangle = AP_GeodesicGrid::_triangle_index(p.v, false);
             if (triangle >= 0) {
-                int subtriangle = grid._subtriangle_index(triangle, p.v, false);
+                int subtriangle = AP_GeodesicGrid::_subtriangle_index(triangle,
+                                                                      p.v,
+                                                                      false);
                 ASSERT_EQ(-1, subtriangle) << "triangle is " << triangle;
             }
         }
     }
 };
-
-AP_GeodesicGrid GeodesicGridTest::grid;
 
 static const Vector3f triangles[20][3] = {
     {{-M_GOLDEN, 1, 0}, {-1, 0,-M_GOLDEN}, {-M_GOLDEN,-1, 0}},
@@ -140,10 +141,10 @@ TEST_P(GeodesicGridTest, Sections)
     auto p = GetParam();
 
     test_triangles_indexes(p);
-    EXPECT_EQ(p.section, grid.section(p.v));
+    EXPECT_EQ(p.section, AP_GeodesicGrid::section(p.v));
 
     if (p.section < 0) {
-        int s = grid.section(p.v, true);
+        int s = AP_GeodesicGrid::section(p.v, true);
         int i;
         for (i = 0; p.inclusive_sections[i] > 0; i++) {
             assert(i < 7);
