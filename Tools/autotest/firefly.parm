@@ -76,4 +76,5 @@ SCHED_LOOP_RATE  300
 THR_MAX          100
 TRIM_ARSPD_CM    2500
 LOG_BITMASK      65534
-
+# map rc7 in to channel 11 out for tilt
+RC11_FUNCTION    57
