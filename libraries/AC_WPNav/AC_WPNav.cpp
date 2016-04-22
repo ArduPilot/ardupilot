@@ -431,9 +431,7 @@ bool AC_WPNav::set_wp_destination(const Location_Class& destination)
     }
 
     // set target as vector from EKF origin
-    set_wp_destination(dest_neu, terr_alt);
-
-    return true;
+    return set_wp_destination(dest_neu, terr_alt);
 }
 
 /// set_wp_destination waypoint using position vector (distance from home in cm)
