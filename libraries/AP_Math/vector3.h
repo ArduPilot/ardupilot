@@ -68,13 +68,16 @@ public:
     T        x, y, z;
 
     // trivial ctor
-    Vector3<T>() {
-        x = y = z = 0;
-    }
+    constexpr Vector3<T>()
+        : x(0)
+        , y(0)
+        , z(0) {}
 
     // setting ctor
-    Vector3<T>(const T x0, const T y0, const T z0) : x(x0), y(y0), z(z0) {
-    }
+    constexpr Vector3<T>(const T x0, const T y0, const T z0)
+        : x(x0)
+        , y(y0)
+        , z(z0) {}
 
     // function call operator
     void operator ()(const T x0, const T y0, const T z0)
