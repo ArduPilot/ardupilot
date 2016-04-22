@@ -38,13 +38,14 @@ struct Vector2
     T x, y;
 
     // trivial ctor
-    Vector2<T>() {
-        x = y = 0;
-    }
+    constexpr Vector2<T>()
+        : x(0)
+        , y(0) {}
 
     // setting ctor
-    Vector2<T>(const T x0, const T y0) : x(x0), y(y0) {
-    }
+    constexpr Vector2<T>(const T x0, const T y0)
+        : x(x0)
+        , y(y0) {}
 
     // function call operator
     void operator ()(const T x0, const T y0)
