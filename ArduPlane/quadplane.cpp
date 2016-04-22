@@ -553,6 +553,15 @@ bool QuadPlane::should_relax(void)
     return relax_loiter;
 }
 
+// see if we are flying in vtol
+bool QuadPlane::is_flying_vtol(void)
+{
+    if (in_vtol_mode() && millis() - motors_lower_limit_start_ms > 5000) {
+        return true;
+    }
+    return false;
+}
+
 /*
   smooth out descent rate for landing to prevent a jerk as we get to
   land_final_alt. 

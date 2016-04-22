@@ -62,6 +62,9 @@ public:
     // return desired forward throttle percentage
     int8_t forward_throttle_pct(void);        
     float get_weathervane_yaw_rate_cds(void);
+
+    // see if we are flying from vtol point of view
+    bool is_flying_vtol(void);
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
