@@ -60,7 +60,9 @@ bool Copter::guided_takeoff_start(float final_alt_above_home)
     target_loc.set_alt(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
 
     if (!wp_nav.set_wp_destination(target_loc)) {
+        // failure to set destination can only be because of missing terrain data
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        // failure is propagated to GCS with NAK
         return false;
     }
 
@@ -88,7 +90,9 @@ void Copter::guided_pos_control_start()
     Vector3f stopping_point;
     stopping_point.z = inertial_nav.get_altitude();
     wp_nav.get_wp_stopping_point_xy(stopping_point);
-    wp_nav.set_wp_destination(stopping_point);
+
+    // no need to check return status because terrain data is not used
+    wp_nav.set_wp_destination(stopping_point, false);
 
     // initialise yaw
     set_auto_yaw_mode(get_default_auto_yaw_mode(false));
@@ -169,7 +173,8 @@ void Copter::guided_set_destination(const Vector3f& destination)
         guided_pos_control_start();
     }
 
-    wp_nav.set_wp_destination(destination);
+    // no need to check return status because terrain data is not used
+    wp_nav.set_wp_destination(destination, false);
 
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
@@ -185,8 +190,9 @@ bool Copter::guided_set_destination(const Location_Class& dest_loc)
     }
 
     if (!wp_nav.set_wp_destination(dest_loc)) {
-        // failure to set destination (likely because of missing terrain data)
+        // failure to set destination can only be because of missing terrain data
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        // failure is propagated to GCS with NAK
         return false;
     }
 
@@ -315,9 +321,7 @@ void Copter::guided_takeoff_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    if (wp_nav.update_wpnav()) {
-        // To-Do: handle failure to update probably caused by missing terrain data
-    }
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -358,11 +362,7 @@ void Copter::guided_pos_control_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    if (!wp_nav.update_wpnav()) {
-        // failures to update probably caused by missing terrain data
-        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_UPDATE_TARGET);
-        // To-Do: handle failure by triggering RTL after 5 seconds with no update?
-    }
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
