@@ -485,7 +485,7 @@ void Plane::update_GPS_10Hz(void)
  */
 void Plane::handle_auto_mode(void)
 {
-    uint8_t nav_cmd_id;
+    uint16_t nav_cmd_id;
 
     // we should be either running a mission or RTLing home
     if (mission.state() == AP_Mission::MISSION_RUNNING) {

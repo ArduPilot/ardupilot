@@ -948,33 +948,38 @@ bool QuadPlane::init_mode(void)
 /*
   handle a MAVLink DO_VTOL_TRANSITION
  */
-bool QuadPlane::handle_do_vtol_transition(const mavlink_command_long_t &packet)
+bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state)
 {
     if (!available()) {
         plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "VTOL not available");
-        return MAV_RESULT_FAILED;
+        return false;
     }
     if (plane.control_mode != AUTO) {
         plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "VTOL transition only in AUTO");
-        return MAV_RESULT_FAILED;
+        return false;
     }
-    switch ((uint8_t)packet.param1) {
+    switch (state) {
     case MAV_VTOL_STATE_MC:
         if (!plane.auto_state.vtol_mode) {
             plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Entered VTOL mode");
         }
         plane.auto_state.vtol_mode = true;
-        return MAV_RESULT_ACCEPTED;
+        return true;
+        
     case MAV_VTOL_STATE_FW:
         if (plane.auto_state.vtol_mode) {
             plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Exited VTOL mode");
         }
         plane.auto_state.vtol_mode = false;
-        return MAV_RESULT_ACCEPTED;
+
+        return true;
+
+    default:
+        break;
     }
 
     plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Invalid VTOL mode");
-    return MAV_RESULT_FAILED;
+    return false;
 }
 
 /*

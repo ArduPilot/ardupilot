@@ -156,6 +156,11 @@ public:
         float horiz_max;        // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
     };
 
+    // do VTOL transition
+    struct PACKED Do_VTOL_Transition {
+        uint8_t target_state;
+    };
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -205,17 +210,21 @@ public:
         // cam trigg distance
         Altitude_Wait altitude_wait;
 
+        // do vtol transition
+        Do_VTOL_Transition do_vtol_transition;
+        
         // location
         Location location;      // Waypoint location
 
-        // raw bytes, for reading/writing to eeprom
+        // raw bytes, for reading/writing to eeprom. Note that only 12 bytes are available
+        // if a 16 bit command ID is used
         uint8_t bytes[12];
     };
 
     // command structure
-    struct PACKED Mission_Command {
+    struct Mission_Command {
         uint16_t index;             // this commands position in the command list
-        uint8_t id;                 // mavlink command id
+        uint16_t id;                // mavlink command id
         uint16_t p1;                // general purpose parameter 1
         Content content;
     };

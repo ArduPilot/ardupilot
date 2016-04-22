@@ -1176,7 +1176,7 @@ bool Plane::allow_reverse_thrust(void)
     switch (control_mode) {
     case AUTO:
         {
-        uint8_t nav_cmd = mission.get_current_nav_cmd().id;
+        uint16_t nav_cmd = mission.get_current_nav_cmd().id;
 
         // never allow reverse thrust during takeoff
         if (nav_cmd == MAV_CMD_NAV_TAKEOFF) {

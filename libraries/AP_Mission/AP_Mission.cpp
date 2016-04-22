@@ -424,9 +424,16 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         // read WP position
         uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
-        cmd.id = _storage.read_byte(pos_in_storage);
-        cmd.p1 = _storage.read_uint16(pos_in_storage+1);
-        _storage.read_block(cmd.content.bytes, pos_in_storage+3, 12);
+        uint8_t b1 = _storage.read_byte(pos_in_storage);
+        if (b1 == 0) {
+            cmd.id = _storage.read_uint16(pos_in_storage+1);
+            cmd.p1 = _storage.read_uint16(pos_in_storage+3);
+            _storage.read_block(cmd.content.bytes, pos_in_storage+5, 10);
+        } else {
+            cmd.id = b1;
+            cmd.p1 = _storage.read_uint16(pos_in_storage+1);
+            _storage.read_block(cmd.content.bytes, pos_in_storage+3, 12);
+        }
 
         // set command's index to it's position in eeprom
         cmd.index = index;
@@ -449,9 +456,17 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
     // calculate where in storage the command should be placed
     uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
-    _storage.write_byte(pos_in_storage, cmd.id);
-    _storage.write_uint16(pos_in_storage+1, cmd.p1);
-    _storage.write_block(pos_in_storage+3, cmd.content.bytes, 12);
+    if (cmd.id < 256) {
+        _storage.write_byte(pos_in_storage, cmd.id);
+        _storage.write_uint16(pos_in_storage+1, cmd.p1);
+        _storage.write_block(pos_in_storage+3, cmd.content.bytes, 12);
+    } else {
+        // if the command ID is above 256 we store a 0 followed by the 16 bit command ID
+        _storage.write_byte(pos_in_storage, 0);
+        _storage.write_uint16(pos_in_storage+1, cmd.id);
+        _storage.write_uint16(pos_in_storage+3, cmd.p1);
+        _storage.write_block(pos_in_storage+5, cmd.content.bytes, 10);
+    }
 
     // remember when the mission last changed
     _last_change_time_ms = AP_HAL::millis();
@@ -485,6 +500,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
     // command specific conversions from mavlink packet to mission command
     switch (cmd.id) {
 
+    case 0:
+        // this is reserved for storing 16 bit command IDs
+        return MAV_MISSION_INVALID;
+        
     case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
         copy_location = true;
         /*
@@ -707,6 +726,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
     case MAV_CMD_NAV_VTOL_LAND:
         copy_location = true;
         break;
+
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        cmd.content.do_vtol_transition.target_state = packet.param1;
+        break;
         
     default:
         // unrecognised command
@@ -819,7 +842,10 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     // command specific conversions from mission command to mavlink packet
     switch (cmd.id) {
-
+    case 0:
+        // this is reserved for 16 bit command IDs
+        return false;
+        
     case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
         copy_location = true;
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -1044,6 +1070,10 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_NAV_VTOL_LAND:
         copy_location = true;
+        break;
+
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        packet.param1 = cmd.content.do_vtol_transition.target_state;
         break;
         
     default:
