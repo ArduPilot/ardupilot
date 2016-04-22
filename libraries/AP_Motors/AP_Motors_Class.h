@@ -176,6 +176,7 @@ protected:
     // mapping to output channels
     uint8_t             _motor_map[AP_MOTORS_MAX_NUM_MOTORS];
     uint16_t            _motor_map_mask;
+    uint16_t            _motor_fast_mask;
 
     // pass through variables
     float _roll_radio_passthrough = 0.0f;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
