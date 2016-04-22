@@ -290,6 +290,16 @@ bool Copter::pre_arm_checks(bool display_failure)
             }
         }
 
+        // check lean angle
+        if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
+            if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
+                if (display_failure) {
+                    gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Leaning");
+                }
+                return false;
+            }
+        }
+
         // check gyros are healthy
         if (!ins.get_gyro_health_all()) {
             if (display_failure) {
@@ -623,6 +633,16 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         }
     }
 
+    // check lean angle
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
+        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Leaning");
+            }
+            return false;
+        }
+    }
+
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
         if (display_failure) {
@@ -705,16 +725,6 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
     #endif
-
-    // check lean angle
-    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
-        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Leaning");
-            }
-            return false;
-        }
-    }
 
     // check battery voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
