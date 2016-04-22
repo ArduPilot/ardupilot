@@ -268,6 +268,11 @@ case $FRAME in
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/y6_params.parm"
 	;;
+    firefly*)
+	BUILD_TARGET="sitl"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/firefly.parm"
+	;;
     heli*)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
@@ -307,6 +312,21 @@ case $FRAME in
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/quadplane.parm"
+	;;
+    plane-elevon*)
+	BUILD_TARGET="sitl"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/plane-elevons.parm"
+	;;
+    plane-vtail*)
+	BUILD_TARGET="sitl"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/plane-vtail.parm"
+	;;
+    plane*)
+	BUILD_TARGET="sitl"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/plane.parm"
 	;;
     *-heli)
 	BUILD_TARGET="sitl-heli"
