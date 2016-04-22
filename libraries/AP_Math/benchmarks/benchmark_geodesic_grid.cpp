@@ -18,8 +18,6 @@
 
 #include <AP_Math/AP_GeodesicGrid.h>
 
-static AP_GeodesicGrid grid;
-
 static const Vector3f triangles[20][3] = {
     {{-M_GOLDEN, 1, 0}, {-1, 0,-M_GOLDEN}, {-M_GOLDEN,-1, 0}},
     {{-1, 0,-M_GOLDEN}, {-M_GOLDEN,-1, 0}, { 0,-M_GOLDEN,-1}},
@@ -92,7 +90,7 @@ static void BM_GeodesicGridSections(benchmark::State& state)
     v = (a + b + c) / 3.0f;
 
     while (state.KeepRunning()) {
-        int s = grid.section(v);
+        int s = AP_GeodesicGrid::section(v);
         gbenchmark_escape(&s);
     }
 }
