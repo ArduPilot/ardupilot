@@ -156,6 +156,11 @@ public:
         float horiz_max;        // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
     };
 
+    // do VTOL transition
+    struct PACKED Do_VTOL_Transition {
+        uint8_t target_state;
+    };
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -205,6 +210,9 @@ public:
         // cam trigg distance
         Altitude_Wait altitude_wait;
 
+        // do vtol transition
+        Do_VTOL_Transition do_vtol_transition;
+        
         // location
         Location location;      // Waypoint location
 
