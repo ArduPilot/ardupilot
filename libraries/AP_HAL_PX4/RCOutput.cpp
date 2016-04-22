@@ -537,6 +537,12 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
         return;
     }
     if (mode == MODE_PWM_ONESHOT) {
+        // when using oneshot we don't want the regular pulses. The
+        // best we can do with the current PX4Firmware code is ask for
+        // 1Hz. This does still produce pulses, but the trigger calls
+        // mean the timer is constantly reset, so no pulses are
+        // produced except when triggered by push() when the main loop
+        // is running
         set_freq(_rate_mask, 1);
     }
     _output_mode = mode;
