@@ -7,6 +7,7 @@
 #include "AP_Compass_HIL.h"
 #include "AP_Compass_HMC5843.h"
 #include "AP_Compass_LSM303D.h"
+#include "AP_Compass_LSM9DS1.h"
 #include "AP_Compass_PX4.h"
 #include "AP_Compass_QURT.h"
 #include "AP_Compass_qflight.h"
@@ -490,6 +491,7 @@ void Compass::_detect_backends(void)
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
     _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
+    _add_backend(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")));
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
