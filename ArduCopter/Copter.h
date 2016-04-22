@@ -353,6 +353,7 @@ private:
         Location_Class return_target;
         Location_Class descent_target;
         bool land;
+        bool terrain_used;
     } rtl_path;
 
     // Circle
@@ -823,6 +824,7 @@ private:
     bool throw_height_good();
 
     bool rtl_init(bool ignore_checks);
+    void rtl_restart_without_terrain();
     void rtl_run();
     void rtl_climb_start();
     void rtl_return_start();
@@ -833,8 +835,8 @@ private:
     void rtl_descent_run();
     void rtl_land_start();
     void rtl_land_run();
-    void rtl_build_path();
-    void rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target);
+    void rtl_build_path(bool terrain_following_allowed);
+    void rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target, bool terrain_following_allowed);
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);

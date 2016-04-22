@@ -406,7 +406,7 @@ enum ThrowModeState {
 #define ERROR_CODE_MISSING_TERRAIN_DATA     2
 // subsystem specific error codes -- navigation
 #define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
-#define ERROR_CODE_FAILED_TO_UPDATE_TARGET  3
+#define ERROR_CODE_RESTARTED_RTL            3
 
 // parachute failed to deploy because of low altitude or landed
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
