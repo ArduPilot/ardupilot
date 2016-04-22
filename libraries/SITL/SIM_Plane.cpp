@@ -238,7 +238,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     accel_body += force;
 
     // add some noise
-    add_noise(fabsf(thrust) / thrust_scale);
+    if (thrust_scale > 0) {
+        add_noise(fabsf(thrust) / thrust_scale);
+    }
 }
     
 /*
