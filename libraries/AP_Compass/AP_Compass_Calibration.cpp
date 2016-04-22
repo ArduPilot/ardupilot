@@ -182,23 +182,22 @@ Compass::send_mag_cal_progress(mavlink_channel_t chan)
     uint8_t cal_mask = get_cal_mask();
 
     for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
-        uint8_t cal_status = _calibrator[compass_id].get_status();
+        auto& calibrator = _calibrator[compass_id];
+        uint8_t cal_status = calibrator.get_status();
 
         if (cal_status == COMPASS_CAL_WAITING_TO_START  ||
             cal_status == COMPASS_CAL_RUNNING_STEP_ONE ||
             cal_status == COMPASS_CAL_RUNNING_STEP_TWO) {
-            uint8_t completion_pct = _calibrator[compass_id].get_completion_percent();
-            uint8_t completion_mask[10];
+            uint8_t completion_pct = calibrator.get_completion_percent();
+            auto& completion_mask = calibrator.get_completion_mask();
             Vector3f direction(0.0f,0.0f,0.0f);
             uint8_t attempt = _calibrator[compass_id].get_attempt();
-
-            memset(completion_mask, 0, sizeof(completion_mask));
 
             // ensure we don't try to send with no space available
             if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_PROGRESS)) {
                 return;
             }
-            
+
             mavlink_msg_mag_cal_progress_send(
                 chan,
                 compass_id, cal_mask,
