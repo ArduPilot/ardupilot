@@ -65,6 +65,14 @@ public:
     virtual uint16_t start_new_log(void) = 0;
     bool log_write_started;
 
+    /* stop logging - close output files etc etc.
+     *
+     * note that this doesn't stop logging from starting up again
+     * immediately - e.g. DataFlash_MAVLink might get another start
+     * packet from a client.
+     */
+    virtual void stop_logging(void) = 0;
+
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX

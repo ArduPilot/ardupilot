@@ -96,6 +96,8 @@ public:
     void StartNewLog(void);
     void EnableWrites(bool enable);
 
+    void StopLogging();
+
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
     void Log_Write_RFND(const RangeFinder &rangefinder);
