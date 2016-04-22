@@ -65,6 +65,7 @@ static const struct {
     Aircraft *(*constructor)(const char *home_str, const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
+    { "firefly",            QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
     { "copter",             MultiCopter::create },
