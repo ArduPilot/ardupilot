@@ -69,7 +69,7 @@ for 3 new boards in this release. They are:
  - the Pixracer
 
 More information about the list of supported boards is available here:
-http://dev.ardupilot.com/wiki/supported-autopilot-controller-boards/
+http://dev.ardupilot.org/wiki/supported-autopilot-controller-boards/
 
 Startup on a moving platform
 ----------------------------
