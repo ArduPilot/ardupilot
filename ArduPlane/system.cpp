@@ -181,6 +181,11 @@ void Plane::init_ardupilot()
             ahrs.set_compass(&compass);
         }
     }
+
+    if (!g.compass_enabled) {
+        // set EKF type 1 for no compass in 3.5.3
+        AP_Param::set_default_by_name("AHRS_EKF_TYPE", 1);
+    }
     
 #if OPTFLOW == ENABLED
     // make optflow available to libraries
