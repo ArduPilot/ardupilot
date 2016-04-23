@@ -143,7 +143,7 @@ Parachute Support
 This is the first release with support for parachute landings on
 plane. The configuration and use of a parachute is the same as the
 existing copter parachute support. See
-http://copter.ardupilot.com/wiki/parachute/
+http://copter.ardupilot.org/wiki/parachute/
 
 Note that parachute support is considered experimental in planes.
 
@@ -164,7 +164,7 @@ for 3 new flight boards in this release. They are:
  - the Pixracer
 
 More information about the list of supported boards is available here:
-http://dev.ardupilot.com/wiki/supported-autopilot-controller-boards/
+http://dev.ardupilot.org/wiki/supported-autopilot-controller-boards/
 
 Startup on a moving platform
 
