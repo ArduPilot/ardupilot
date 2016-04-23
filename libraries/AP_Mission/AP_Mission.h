@@ -156,6 +156,14 @@ public:
         float horiz_max;        // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
     };
 
+     // navigation delay command structure
+    struct PACKED Navigation_Delay_Command {
+        float seconds; // period of delay in seconds
+        int8_t hour_utc; // absolute time's hour (utc)
+        int8_t min_utc; // absolute time's min (utc)
+        int8_t sec_utc; // absolute time's sec (utc)
+    };
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -207,6 +215,9 @@ public:
 
         // location
         Location location;      // Waypoint location
+
+        // navigation delay
+        Navigation_Delay_Command nav_delay;
 
         // raw bytes, for reading/writing to eeprom
         uint8_t bytes[12];
