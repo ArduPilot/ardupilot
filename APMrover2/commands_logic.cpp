@@ -186,7 +186,7 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = abs(cmd.p1);
+    loiter_time_max = cmd.p1;
 
     // this is the distance we travel past the waypoint - not there yet so 0 initially
     distance_past_wp = 0;
