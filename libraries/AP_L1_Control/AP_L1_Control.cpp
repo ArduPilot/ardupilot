@@ -119,7 +119,7 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
     const float Nu_limit = 0.9f*M_PI;
     if (fabsf(Nu) > Nu_limit &&
         fabsf(_last_Nu) > Nu_limit &&
-        fabsf(wrap_180_cd(_target_bearing_cd - _ahrs.yaw_sensor)) > 12000 &&
+        labs(wrap_180_cd(_target_bearing_cd - _ahrs.yaw_sensor)) > 12000 &&
         Nu * _last_Nu < 0.0f) {
         // we are moving away from the target waypoint and pointing
         // away from the waypoint (not flying backwards). The sign
