@@ -19,7 +19,7 @@ If you are reading this page, you are possibly interested in contributing to our
 
 # Submitting patches
 
-Please see our [wiki article](http://dev.ardupilot.com/wiki/submitting-patches-back-to-master/).
+Please see our [wiki article](http://dev.ardupilot.org/wiki/submitting-patches-back-to-master/).
 
 # Development Team
 
