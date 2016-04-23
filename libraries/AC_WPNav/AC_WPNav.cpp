@@ -452,7 +452,7 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
     // convert origin to alt-above-terrain
     if (terrain_alt) {
         float origin_terr_offset;
-        if (!get_terrain_offset(origin, origin_terr_offset)) {
+        if (!get_terrain_offset(origin_terr_offset)) {
             return false;
         }
         origin.z -= origin_terr_offset;
@@ -499,7 +499,7 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     // get origin's alt-above-terrain
     float origin_terr_offset = 0.0f;
     if (terrain_alt) {
-        if (!get_terrain_offset(origin, origin_terr_offset)) {
+        if (!get_terrain_offset(origin_terr_offset)) {
             return false;
         }
     }
@@ -568,13 +568,13 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     Vector3f curr_pos = _inav.get_position();
 
     // calculate terrain adjustments
-    float curr_terr_offset = 0.0f;
-    if (_terrain_alt && !get_terrain_offset(curr_pos, curr_terr_offset)) {
+    float terr_offset = 0.0f;
+    if (_terrain_alt && !get_terrain_offset(terr_offset)) {
         return false;
     }
 
     // calculate 3d vector from segment's origin
-    Vector3f curr_delta = (curr_pos - Vector3f(0,0,curr_terr_offset)) - _origin;
+    Vector3f curr_delta = (curr_pos - Vector3f(0,0,terr_offset)) - _origin;
 
     // calculate how far along the track we are
     track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
@@ -675,7 +675,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // recalculate the desired position
     Vector3f final_target = _origin + _pos_delta_unit * _track_desired;
     // convert final_target.z to altitude above the ekf origin
-    final_target.z += curr_terr_offset;
+    final_target.z += terr_offset;
     _pos_control.set_pos_target(final_target);
 
     // check if we've reached the waypoint
@@ -686,7 +686,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
                 _flags.reached_destination = true;
             }else{
                 // regular waypoints also require the copter to be within the waypoint radius
-                Vector3f dist_to_dest = (curr_pos - Vector3f(0,0,curr_terr_offset)) - _destination;
+                Vector3f dist_to_dest = (curr_pos - Vector3f(0,0,terr_offset)) - _destination;
                 if( dist_to_dest.length() <= _wp_radius_cm ) {
                     _flags.reached_destination = true;
                 }
@@ -863,11 +863,11 @@ bool AC_WPNav::set_spline_destination(const Vector3f& destination, bool terrain_
 
     // convert origin to alt-above-terrain
     if (terrain_alt) {
-        float origin_terr_offset;
-        if (!get_terrain_offset(origin, origin_terr_offset)) {
+        float terr_offset;
+        if (!get_terrain_offset(terr_offset)) {
             return false;
         }
-        origin.z -= origin_terr_offset;
+        origin.z -= terr_offset;
     }
 
     // set origin and destination
@@ -970,16 +970,16 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     // calculate slow down distance
     calc_slow_down_distance(_wp_speed_cms, _wp_accel_cms);
 
-    // get origin's alt-above-terrain
-    float origin_terr_offset = 0.0f;
+    // get alt-above-terrain
+    float terr_offset = 0.0f;
     if (terrain_alt) {
-        if (!get_terrain_offset(origin, origin_terr_offset)) {
+        if (!get_terrain_offset(terr_offset)) {
             return false;
         }
     }
 
     // initialise intermediate point to the origin
-    _pos_control.set_pos_target(origin + Vector3f(0,0,origin_terr_offset));
+    _pos_control.set_pos_target(origin + Vector3f(0,0,terr_offset));
     _flags.reached_destination = false;
     _flags.segment_type = SEGMENT_SPLINE;
     _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
@@ -1053,14 +1053,14 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         Vector3f curr_pos = _inav.get_position();
 
         // get terrain altitude offset for origin and current position (i.e. change in terrain altitude from a position vs ekf origin)
-        float curr_terr_offset = 0.0f;
-        if (_terrain_alt && !get_terrain_offset(curr_pos, curr_terr_offset)) {
+        float terr_offset = 0.0f;
+        if (_terrain_alt && !get_terrain_offset(terr_offset)) {
             return false;
         }
 
         // calculate position error
         Vector3f track_error = curr_pos - target_pos;
-        track_error.z -= curr_terr_offset;
+        track_error.z -= terr_offset;
 
         // calculate the horizontal error
         float track_error_xy = pythagorous2(track_error.x, track_error.y);
@@ -1108,7 +1108,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         }
 
         // update target position
-        target_pos.z += curr_terr_offset;
+        target_pos.z += terr_offset;
         _pos_control.set_pos_target(target_pos);
 
         // update the yaw
@@ -1143,26 +1143,12 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
                _hermite_spline_solution[3] * 3.0f * spline_time_sqrd;
 }
 
-// get height of terrain (in cm) above the ekf origin (+ve means current terrain higher than EKF origin's altitude)
-bool AC_WPNav::get_terrain_offset(const Vector3f &pos, float& offset_cm)
+// get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
+bool AC_WPNav::get_terrain_offset(float& offset_cm)
 {
-    // check we have terrain alt for ekf origin at least
-    if (!_ekf_origin_terrain_alt_set) {
-        Location_Class ekforigin = _inav.get_origin();
-        int32_t talt_cm;
-        if (ekforigin.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, talt_cm)) {
-            _ekf_origin_terrain_alt_set = true;
-        } else {
-            return false;
-        }
-    }
-
-    // calculate current position's terrain altitude above EKF origin's altitude
-    Location_Class curr_loc(pos);
-    curr_loc.set_alt(0,Location_Class::ALT_FRAME_ABOVE_ORIGIN);
-    int32_t pos_terr_alt_cm;
-    if (curr_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, pos_terr_alt_cm)) {
-        offset_cm = -pos_terr_alt_cm;
+    float terr_alt = 0.0f;
+    if (_terrain != NULL && _terrain->height_above_terrain(terr_alt, true)) {
+        offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
         return true;
     }
 
