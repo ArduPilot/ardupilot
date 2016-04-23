@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-   Please contribute your ideas! See http://dev.ardupilot.com for details
+   Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
