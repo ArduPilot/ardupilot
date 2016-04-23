@@ -45,10 +45,10 @@ generate_parameters() {
 }
 
 
-generate_parameters ArduPlane http://plane.ardupilot.com plane.auth 'Plane Parameters'
+generate_parameters ArduPlane http://plane.ardupilot.org plane.auth 'Plane Parameters'
 
-generate_parameters ArduCopter http://copter.ardupilot.com copter.auth 'Copter Parameters'
+generate_parameters ArduCopter http://copter.ardupilot.org copter.auth 'Copter Parameters'
 
-generate_parameters APMrover2 http://rover.ardupilot.com rover.auth 'Rover Parameters'
+generate_parameters APMrover2 http://rover.ardupilot.org rover.auth 'Rover Parameters'
 
 generate_parameters AntennaTracker NONE NONE 'AntennaTracker Parameters'
