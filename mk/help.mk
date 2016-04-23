@@ -4,7 +4,7 @@ help:
 	@echo " =================="
 	@echo ""
 	@echo " The following web page has detailed information on building the code"
-	@echo "     http://dev.ardupilot.com/wiki/building-the-code/"
+	@echo "     http://dev.ardupilot.org/wiki/building-the-code/"
 	@echo ""
 	@echo " Before building a target you need to be in the target vehicle type directory"
 	@echo " e.g. ArduPlane, ArduCopter, APMrover2, AntennaTracker"
