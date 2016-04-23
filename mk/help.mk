@@ -39,3 +39,4 @@ help:
 	@echo "  bhat - the RaspberryPi + BH HAT combination"
 	@echo "  pxfmini - the RaspberryPi Zero + PXFmini cape combination"
 	@echo "  navio2 - the RaspberryPi + NavIO2 cape combination"
+	@echo "  revomini - the OpenPilot Revolution Mini"

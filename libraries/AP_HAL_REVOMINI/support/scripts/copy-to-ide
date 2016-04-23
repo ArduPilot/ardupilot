@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# This hack copies libmaple's source, linker scripts, and support
+# libraries into the Maple IDE repository (which is expected as its
+# first argument).
+
+DEST=$1
+
+DEST_CORES=$DEST/hardware/leaflabs/cores/maple
+DEST_LIBS=$DEST/libraries
+
+LMAPLE_SRC="LICENSE
+    ./libmaple/*.h
+    ./libmaple/*.c
+    ./libmaple/*.S
+    ./libmaple/usb/*.h
+    ./libmaple/usb/*.c
+    ./libmaple/usb/usb_lib/*.h
+    ./libmaple/usb/usb_lib/*.c
+    ./wirish/*.h
+    ./wirish/main.cxx
+    ./wirish/*.cpp
+    ./wirish/comm/*.cpp
+    ./wirish/comm/*.h
+    ./wirish/boards/*.h
+    ./wirish/boards/*.cpp
+    ./support/ld/common.inc
+    ./support/ld/libcs3_stm32_high_density.a
+    ./support/ld/libcs3_stm32_med_density.a
+    ./support/ld/maple
+    ./support/ld/maple_mini
+    ./support/ld/maple_native
+    ./support/ld/maple_RET6
+    ./support/ld/names.inc"
+
+echo "First make sure DEST exists: $DEST"
+if !(test -d $DEST)
+then
+    echo "Nope! Make sure you're doing this right?"
+    exit -1
+fi
+
+# source
+echo Copying libmaple source
+rm -rf $DEST_CORES/*.c $DEST_CORES/*.cpp $DEST_CORES/*.h $DEST_CORES/*.cxx $DEST_CORES/*.S
+rm -rf $DEST_CORES/*.inc $DEST_CORES/*.a $DEST_CORES/maple $DEST_CORES/maple_* 
+cp -R $LMAPLE_SRC $DEST_CORES
+
+echo Copying over libraries
+cp -R libraries/* $DEST_LIBS
+
+# libmaple version
+echo Creating libmaple-version.txt
+git show-ref HEAD | cut -c 1-10 > $DEST/libmaple-version.txt
+
+echo Done.

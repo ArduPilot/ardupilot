@@ -18,6 +18,14 @@ flymaple: all
 flymaple-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
 flymaple-hil: flymaple
 
+vrbrain: HAL_BOARD = HAL_BOARD_VRBRAIN
+vrbrain: TOOLCHAIN = ARM
+vrbrain: all
+
+revomini: HAL_BOARD = HAL_BOARD_REVOMINI
+revomini: TOOLCHAIN = ARM
+revomini: all
+
 linux: HAL_BOARD = HAL_BOARD_LINUX
 linux: TOOLCHAIN = NATIVE
 linux: all

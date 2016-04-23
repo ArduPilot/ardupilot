@@ -1,0 +1,10 @@
+CREATE ./build/libstm32usb_lib.a
+ADDMOD ./build/usb_core.o
+ADDMOD ./build/usb_dcd.o
+ADDMOD ./build/usb_dcd_int.o
+ADDMOD ./build/usbd_cdc_core.o
+ADDMOD ./build/usbd_core.o
+ADDMOD ./build/usbd_ioreq.o
+ADDMOD ./build/usbd_req.o
+SAVE
+END

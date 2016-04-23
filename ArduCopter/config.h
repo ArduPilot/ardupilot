@@ -59,6 +59,29 @@
 # define MAIN_LOOP_SECONDS 0.0025f
 # define MAIN_LOOP_MICROS  2500
 
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_REVOMINI
+ #define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
+ #define CONFIG_PUSHBUTTON DISABLED
+ #define CONFIG_RELAY      DISABLED
+ #define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ #define MAGNETOMETER ENABLED
+ #define CONFIG_BARO     HAL_BARO_MS5611
+// #define CONFIG_MS5611_SERIAL AP_BARO_MS5611_I2C
+ #define CONFIG_ADC        DISABLED
+ #define CONFIG_PUSHBUTTON DISABLED
+ #define LOGGING_ENABLED ENABLED
+// #define SERIAL0_BAUD 57600
+
+ # define LED_ON           LOW
+ # define LED_OFF          HIGH
+ # define PUSHBUTTON_PIN   200
+ # define USB_MUX_PIN      -1
+ # define BATTERY_VOLT_PIN     7     // Battery voltage on A0 (PC1) D7
+ # define BATTERY_CURR_PIN     200   // Battery current on A1 (PC2) D8
+ # define CONFIG_SONAR_SOURCE_ANALOG_PIN 200
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // FRAME_CONFIG
 //
