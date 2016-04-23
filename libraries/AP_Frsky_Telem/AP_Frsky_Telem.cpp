@@ -506,7 +506,7 @@ void AP_Frsky_Telem::calc_gps_position()
         
         alt = loc.alt * 0.01f;
         _alt_gps_meters = (int16_t)alt;
-        _alt_gps_cm = (alt - abs(_alt_gps_meters)) * 100;
+        _alt_gps_cm = (alt - _alt_gps_meters) * 100;
         
         speed = gps.ground_speed();
         _speed_in_meter = speed;
