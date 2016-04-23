@@ -224,7 +224,7 @@ and in your \$PATH
 
 Please get it from git://github.com/tridge/jsbsim.git
 See 
-  http://dev.ardupilot.com/wiki/simulation-2/sitl-simulator-software-in-the-loop/setting-up-sitl-on-linux/ 
+  http://dev.ardupilot.org/wiki/simulation-2/sitl-simulator-software-in-the-loop/setting-up-sitl-on-linux/ 
 for more details
 =========================================================
 EOF
