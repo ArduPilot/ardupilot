@@ -309,7 +309,7 @@ with very large values for NAVL1_PERIOD of around 40. Dont use this GPS.
 I also tested with a Eagle Tree GPS$v, which is a 10Hz, 3.3V GPS board
 containing a GTPA010 GPS. This GPS worked much better with the suggested
 tuning configuration from
-http://rover.ardupilot.com/wiki/tuning-steering-and-navigation-for-a-rover/
+http://rover.ardupilot.org/wiki/tuning-steering-and-navigation-for-a-rover/
 
 For the record, the tuning I used with this was:
 
