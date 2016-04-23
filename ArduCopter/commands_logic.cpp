@@ -299,7 +299,7 @@ void Copter::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = abs(cmd.p1);
+    loiter_time_max = cmd.p1;
 
     // Set wp navigation target
     auto_wp_start(local_pos);
@@ -440,7 +440,7 @@ void Copter::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = abs(cmd.p1);
+    loiter_time_max = cmd.p1;
 
     // determine segment start and end type
     bool stopped_at_start = true;
