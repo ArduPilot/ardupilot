@@ -99,9 +99,6 @@ private:
     // previous value of cross-track velocity
     float _last_Nu;
 
-    // direction of last xtrack velocity - true positive
-    bool _xtrackVelPos;
-
     // prevent indecision in waypoint tracking
     void _prevent_indecision(float &Nu);
 
