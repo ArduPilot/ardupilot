@@ -619,11 +619,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
         cmd.p1 = packet.param1;                         // p1=0 means use current location, p=1 means use provided location
         break;
 
-    case MAV_CMD_DO_SET_PARAMETER:                      // MAV ID: 180
-        cmd.p1 = packet.param1;                         // parameter number
-        cmd.content.location.alt = packet.param2;       // parameter value
-        break;
-
     case MAV_CMD_DO_SET_RELAY:                          // MAV ID: 181
         cmd.content.relay.num = packet.param1;          // relay number
         cmd.content.relay.state = packet.param2;        // 0:off, 1:on
@@ -962,11 +957,6 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
     case MAV_CMD_DO_SET_HOME:                           // MAV ID: 179
         copy_location = true;
         packet.param1 = cmd.p1;                         // p1=0 means use current location, p=1 means use provided location
-        break;
-
-    case MAV_CMD_DO_SET_PARAMETER:                      // MAV ID: 180
-        packet.param1 = cmd.p1;                         // parameter number
-        packet.param2 = cmd.content.location.alt;       // parameter value
         break;
 
     case MAV_CMD_DO_SET_RELAY:                          // MAV ID: 181
