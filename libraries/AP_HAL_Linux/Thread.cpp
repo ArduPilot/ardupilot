@@ -154,6 +154,12 @@ bool Thread::start(const char *name, int policy, int prio)
         }
     }
 
+    if (_stack_size) {
+        if (pthread_attr_setstacksize(&attr, _stack_size) != 0) {
+            return false;
+        }
+    }
+
     r = pthread_create(&_ctx, &attr, &Thread::_run_trampoline, this);
     if (r != 0) {
         AP_HAL::panic("Failed to create thread '%s': %s",
@@ -182,6 +188,17 @@ bool PeriodicThread::set_rate(uint32_t rate_hz)
     }
 
     _period_usec = hz_to_usec(rate_hz);
+
+    return true;
+}
+
+bool Thread::set_stack_size(size_t stack_size)
+{
+    if (_started) {
+        return false;
+    }
+
+    _stack_size = stack_size;
 
     return true;
 }
