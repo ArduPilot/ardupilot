@@ -8,6 +8,7 @@
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude control library
+#include <AP_Terrain/AP_Terrain.h>
 
 // loiter maximum velocities and accelerations
 #define WPNAV_ACCELERATION              100.0f      // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
@@ -52,6 +53,9 @@ public:
 
     /// Constructor
     AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+
+    /// provide pointer to terrain database
+    void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }
 
     ///
     /// loiter controller
@@ -300,11 +304,12 @@ protected:
     //      returns false if conversion failed (likely because terrain data was not available)
     bool get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt);
 
-    // references to inertial nav and ahrs libraries
+    // references and pointers to external libraries
     const AP_InertialNav&   _inav;
     const AP_AHRS&          _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
+    AP_Terrain              *_terrain = NULL;
 
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
