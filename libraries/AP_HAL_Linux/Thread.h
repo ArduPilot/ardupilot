@@ -42,6 +42,8 @@ public:
 
     bool is_current_thread();
 
+    size_t get_stack_usage();
+
 protected:
     static void *_run_trampoline(void *arg);
 
@@ -52,9 +54,16 @@ protected:
      */
     virtual bool _run();
 
+    void _poison_stack();
+
     task_t _task;
     bool _started;
     pthread_t _ctx;
+
+    struct stack_debug {
+        uint32_t *start;
+        uint32_t *end;
+    } _stack_debug;
 };
 
 class PeriodicThread : public Thread {
