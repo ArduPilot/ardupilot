@@ -17,10 +17,6 @@ public:
     void _timer_tick(void) override;
 
 private:
-
-    uint8_t _count;
-    int8_t _direction;
-
     int _fd;
     uint8_t *_pdata;
     ssize_t _remain;
