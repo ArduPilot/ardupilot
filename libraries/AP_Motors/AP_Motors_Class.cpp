@@ -132,7 +132,7 @@ uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
     for (uint8_t i=0; i<32; i++) {
         uint32_t bit = 1UL<<i;
         if (mask & bit) {
-            if (_motor_map_mask & bit) {
+            if ((i < AP_MOTORS_MAX_NUM_MOTORS) && (_motor_map_mask & bit)) {
                 // we have a mapped motor number for this channel
                 mask2 |= (1UL << _motor_map[i]);
             } else {
