@@ -51,7 +51,6 @@ private:
     void _update();
 
     AP_AK8963_BusDriver *_bus;
-    AP_HAL::Semaphore *_bus_sem;
 
     float _magnetometer_ASA[3] {0, 0, 0};
     float _mag_x_accum;
@@ -59,7 +58,6 @@ private:
     float _mag_z_accum;
     uint32_t _accum_count;
     uint32_t _last_update_timestamp;
-    uint32_t _last_accum_time;
     uint32_t _dev_id;
 
     uint8_t _compass_instance;
