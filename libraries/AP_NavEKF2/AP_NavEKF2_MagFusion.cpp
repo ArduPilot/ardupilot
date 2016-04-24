@@ -174,7 +174,28 @@ void NavEKF2_core::SelectMagFusion()
         } else {
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
             // maintained by fusing declination as a synthesised observation
-            if (PV_AidingMode != AID_ABSOLUTE || (imuSampleTime_ms - lastPosPassTime_ms) > 4000) {
+            bool useCompassDecl = (PV_AidingMode != AID_ABSOLUTE || (imuSampleTime_ms - lastPosPassTime_ms) > 4000);
+
+            // if we are spinning rapidly, then the declination observaton used is the last learned value before the spin started
+            bool useLearnedDecl = fabsf(filtYawRate) > 1.0f;
+            printf("%e\n",fabsf(filtYawRate));
+            if (!useLearnedDecl) {
+                lastLearnedDecl = atan2f(stateStruct.earth_magfield.y,stateStruct.earth_magfield.x);
+            }
+
+            // constrain the declination angle of the learned earth field
+            if (useCompassDecl || useLearnedDecl) {
+                // select the source of the declination
+                if (useCompassDecl) {
+                    // use the value from the compass library lookup tables
+                    magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+                    declObsVar = 0.01f;
+                } else {
+                    // use the last learned value
+                    magDecAng = lastLearnedDecl;
+                    declObsVar = 0.001f;
+                }
+
                 FuseDeclination();
             }
             // fuse the three magnetometer componenents sequentially
@@ -838,9 +859,6 @@ void NavEKF2_core::fuseEulerYaw()
 */
 void NavEKF2_core::FuseDeclination()
 {
-    // declination error variance (rad^2)
-    const float R_DECL = 1e-2f;
-
     // copy required states to local variables
     float magN = stateStruct.earth_magfield.x;
     float magE = stateStruct.earth_magfield.y;
@@ -864,7 +882,7 @@ void NavEKF2_core::FuseDeclination()
     float t14 = P[17][17]*t23;
     float t10 = t9-t14;
     float t15 = t23*t10;
-    float t11 = R_DECL+t8-t15; // innovation variance
+    float t11 = declObsVar+t8-t15; // innovation variance
     float t12 = 1.0f/t11;
 
     float H_MAG[24];
@@ -879,9 +897,6 @@ void NavEKF2_core::FuseDeclination()
     for (uint8_t i=17; i<=23; i++) {
         Kfusion[i] = -t12*(P[i][16]*t22-P[i][17]*t23);
     }
-
-    // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
     // Calculate the innovation
     float innovation = atan2f(magE , magN) - magDecAng;
@@ -944,7 +959,7 @@ void NavEKF2_core::FuseDeclination()
 void NavEKF2_core::alignMagStateDeclination()
 {
     // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+    magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = stateStruct.earth_magfield;
