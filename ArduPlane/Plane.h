@@ -661,9 +661,6 @@ private:
     // The location of the active waypoint in Guided mode.
     struct Location guided_WP_loc {};
 
-    // special purpose command used only after mission completed to return vehicle to home or rally point
-    struct AP_Mission::Mission_Command auto_rtl_command;
-
     // Altitude control
     struct {
         // target altitude above sea level in cm. Used for barometric
@@ -854,7 +851,6 @@ private:
     bool verify_loiter_heading(bool init);
     void log_picture();
     void exit_mission_callback();
-    void update_commands(void);
     void mavlink_delay(uint32_t ms);
     void read_control_switch();
     uint8_t readSwitch(void);

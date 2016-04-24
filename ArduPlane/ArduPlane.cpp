@@ -487,12 +487,14 @@ void Plane::handle_auto_mode(void)
 {
     uint16_t nav_cmd_id;
 
-    // we should be either running a mission or RTLing home
-    if (mission.state() == AP_Mission::MISSION_RUNNING) {
-        nav_cmd_id = mission.get_current_nav_cmd().id;
-    }else{
-        nav_cmd_id = auto_rtl_command.id;
+    if (mission.state() != AP_Mission::MISSION_RUNNING) {
+        // this should never be reached
+        set_mode(RTL);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
+        return;
     }
+
+    nav_cmd_id = mission.get_current_nav_cmd().id;
 
     if (quadplane.in_vtol_auto()) {
         quadplane.control_auto(next_WP_loc);
@@ -739,7 +741,9 @@ void Plane::update_navigation()
     
     switch(control_mode) {
     case AUTO:
-        update_commands();
+        if (home_is_set != HOME_UNSET) {
+            mission.update();
+        }
         break;
             
     case RTL:

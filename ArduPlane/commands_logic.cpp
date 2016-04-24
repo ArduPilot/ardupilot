@@ -607,10 +607,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Plane::verify_loiter_unlim()
 {
-    if (control_mode == AUTO && mission.state() != AP_Mission::MISSION_RUNNING) {
-        // end of mission RTL
-        update_loiter(g.rtl_radius? g.rtl_radius : g.loiter_radius);
-    } else if (mission.get_current_nav_cmd().p1 <= 1 && abs(g.rtl_radius) > 1) {
+    if (mission.get_current_nav_cmd().p1 <= 1 && abs(g.rtl_radius) > 1) {
         // if mission radius is 0,1, and rtl_radius is valid, use rtl_radius.
         loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         update_loiter(abs(g.rtl_radius));
@@ -1008,15 +1005,8 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 void Plane::exit_mission_callback()
 {
     if (control_mode == AUTO) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Returning to HOME");
-        memset(&auto_rtl_command, 0, sizeof(auto_rtl_command));
-        auto_rtl_command.content.location = 
-            rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
-        auto_rtl_command.id = MAV_CMD_NAV_LOITER_UNLIM;
-        setup_terrain_target_alt(auto_rtl_command.content.location);
-        setup_glide_slope();
-        setup_turn_angle();
-        start_command(auto_rtl_command);
+        set_mode(RTL);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
 }
 
