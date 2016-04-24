@@ -555,6 +555,22 @@ AP_InertialSensor::detect_backends(void)
     _add_backend(AP_InertialSensor_QFLIGHT::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_QURT
     _add_backend(AP_InertialSensor_QURT::detect(*this));
+#elif HAL_INS_DEFAULT == HAL_INS_BBBMINI
+    AP_InertialSensor_Backend *backend = AP_InertialSensor_MPU9250::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("MPU9250: Onboard IMU detected\n");
+    } else {
+        hal.console->printf("MPU9250: Onboard IMU not detected\n");
+    }
+
+    backend = AP_InertialSensor_MPU9250::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME_EXT));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("MPU9250: External IMU detected\n");
+    } else {
+        hal.console->printf("MPU9250: External IMU not detected\n");
+    }
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
