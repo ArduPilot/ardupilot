@@ -334,6 +334,23 @@ struct PACKED log_NKF4 {
     int8_t primary;
 };
 
+struct PACKED log_NKF5 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float v0;
+    float v1;
+    float v2;
+    float v3;
+    float v4;
+    float v5;
+    float v6;
+    float v7;
+    float v8;
+    float v9;
+    float v10;
+    float v11;
+};
+
 struct PACKED log_EKF5 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -880,7 +897,11 @@ Format characters in the format string for binary log messages
     { LOG_GIMBAL3_MSG, sizeof(log_Gimbal3), \
       "GMB3", "Ihhh", "TimeMS,rl_torque_cmd,el_torque_cmd,az_torque_cmd" }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" }
+      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" }, \
+    { LOG_NKF10_MSG, sizeof(log_NKF5), \
+      "NK10", "Qffffffffffff","TimeUS,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11" }, \
+    { LOG_NKF11_MSG, sizeof(log_NKF5), \
+      "NK11", "Qffffffffffff","TimeUS,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23" }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -994,6 +1015,8 @@ enum LogMessages {
     LOG_GIMBAL2_MSG,
     LOG_GIMBAL3_MSG,
     LOG_RATE_MSG,
+    LOG_NKF10_MSG,
+    LOG_NKF11_MSG,
 };
 
 enum LogOriginType {

@@ -1402,6 +1402,45 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         WriteBlock(&pkt5, sizeof(pkt5));
     }
 
+    // Write state variances
+    float stateVar[24];
+    ahrs.get_NavEKF2().getStateVariances(stateVar);
+    struct log_NKF5 pkt10 = {
+        LOG_PACKET_HEADER_INIT(LOG_NKF10_MSG),
+        time_us : AP_HAL::micros64(),
+        v0 : stateVar[0],
+        v1 : stateVar[1],
+        v2 : stateVar[2],
+        v3 : stateVar[3],
+        v4 : stateVar[4],
+        v5 : stateVar[5],
+        v6 : stateVar[6],
+        v7 : stateVar[7],
+        v8 : stateVar[8],
+        v9 : stateVar[9],
+        v10 : stateVar[10],
+        v11 : stateVar[11]
+    };
+    WriteBlock(&pkt10, sizeof(pkt10));
+
+    struct log_NKF5 pkt11 = {
+        LOG_PACKET_HEADER_INIT(LOG_NKF11_MSG),
+        time_us : AP_HAL::micros64(),
+        v0 : stateVar[12],
+        v1 : stateVar[13],
+        v2 : stateVar[14],
+        v3 : stateVar[15],
+        v4 : stateVar[16],
+        v5 : stateVar[17],
+        v6 : stateVar[18],
+        v7 : stateVar[19],
+        v8 : stateVar[20],
+        v9 : stateVar[21],
+        v10 : stateVar[22],
+        v11 : stateVar[23]
+    };
+    WriteBlock(&pkt11, sizeof(pkt11));
+
     // log innovations for the second IMU if enabled
     if (ahrs.get_NavEKF2().activeCores() >= 2) {
         // Write 6th EKF packet
