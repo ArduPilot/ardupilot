@@ -17,7 +17,6 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 GPIO_BBB::GPIO_BBB()
 {}
 
