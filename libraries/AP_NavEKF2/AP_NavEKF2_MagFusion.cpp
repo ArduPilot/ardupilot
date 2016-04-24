@@ -845,15 +845,14 @@ void NavEKF2_core::FuseDeclination()
     float magN = stateStruct.earth_magfield.x;
     float magE = stateStruct.earth_magfield.y;
 
-    // prevent bad earth field states from causing numerical errors or exceptions
-    if (magN < 1e-3f) {
-        return;
-    }
-
     // Calculate observation Jacobian and Kalman gains
     float t2 = magE*magE;
     float t3 = magN*magN;
     float t4 = t2+t3;
+    if (t4 < 0.001f) {
+        // prevent bad earth field states from causing numerical errors or exceptions
+        return;
+    }
     float t5 = 1.0f/t4;
     float t22 = magE*t5;
     float t23 = magN*t5;
@@ -885,7 +884,7 @@ void NavEKF2_core::FuseDeclination()
     float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
     // Calculate the innovation
-    float innovation = atanf(t4) - magDecAng;
+    float innovation = atan2f(magE , magN) - magDecAng;
 
     // limit the innovation to protect against data errors
     if (innovation > 0.5f) {
