@@ -458,8 +458,6 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
     bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
-    bool optFlowNavPossible = flowDataValid && (frontend->_fusionModeGPS == 3);
-    bool gpsNavPossible = !gpsNotAvailable && (PV_AidingMode == AID_ABSOLUTE) && gpsGoodToAlign;
     bool filterHealthy = healthy() && tiltAlignComplete && yawAlignComplete;
     // If GPS height useage is specified, height is considered to be inaccurate until the GPS passes all checks
     bool hgtNotAccurate = (frontend->_altSource == 2) && !validOrigin;
