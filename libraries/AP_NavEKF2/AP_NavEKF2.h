@@ -259,6 +259,10 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set(enable); }
     
+    typedef float stateVarVec[24];
+    // return the state variances
+    void getStateVariances(stateVarVec &stateVar) const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core

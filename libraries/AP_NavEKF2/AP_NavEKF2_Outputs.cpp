@@ -574,4 +574,12 @@ uint8_t NavEKF2_core::getFramesSincePredict(void) const
     return framesSincePredict;
 }
 
+// return the state variances
+void NavEKF2_core::getStateVariances(stateVarVec stateVar)
+{
+    for (uint8_t i=0; i<24; i++) {
+        stateVar[i] = P[i][i];
+    }
+}
+
 #endif // HAL_CPU_CLASS

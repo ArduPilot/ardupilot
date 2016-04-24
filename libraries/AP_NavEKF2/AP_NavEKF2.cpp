@@ -995,4 +995,13 @@ const char *NavEKF2::prearm_failure_reason(void) const
     return core[primary].prearm_failure_reason();
 }
 
+// return the state variances
+void NavEKF2::getStateVariances(NavEKF2::stateVarVec &stateVar) const
+{
+    if (!core) {
+        return;
+    }
+    core[primary].getStateVariances(stateVar);
+}
+
 #endif //HAL_CPU_CLASS

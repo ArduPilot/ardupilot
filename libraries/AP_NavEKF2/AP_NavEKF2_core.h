@@ -252,6 +252,10 @@ public:
     // this is used by other instances to level load
     uint8_t getFramesSincePredict(void) const;
 
+    // return the state variances
+    typedef float stateVarVec[24];
+    void getStateVariances(stateVarVec stateVar);
+
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;
