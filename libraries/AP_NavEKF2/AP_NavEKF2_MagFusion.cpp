@@ -199,7 +199,6 @@ void NavEKF2_core::SelectMagFusion()
 
             // if we are spinning rapidly, then the declination observaton used is the last learned value before the spin started
             bool useLearnedDecl = fabsf(filtYawRate) > 1.0f;
-            printf("%e\n",fabsf(filtYawRate));
             if (!useLearnedDecl) {
                 lastLearnedDecl = atan2f(stateStruct.earth_magfield.y,stateStruct.earth_magfield.x);
             }
