@@ -105,6 +105,8 @@
 
 #include "AP_GeodesicGrid.h"
 
+/* This was generated with
+ * libraries/AP_Math/tools/geodesic_grid/geodesic_grid.py */
 const struct AP_GeodesicGrid::neighbor_umbrella
 AP_GeodesicGrid::_neighbor_umbrellas[3]{
     {{ 9,  8,  7, 12, 14}, 1, 2, 0, 0, 2},
@@ -112,6 +114,8 @@ AP_GeodesicGrid::_neighbor_umbrellas[3]{
     {{16, 15, 13, 18, 17}, 2, 2, 0, 2, 1},
 };
 
+/* This was generated with
+ * libraries/AP_Math/tools/geodesic_grid/geodesic_grid.py */
 const Matrix3f AP_GeodesicGrid::_inverses[10]{
     {{-0.309017f,  0.500000f,  0.190983f},
      { 0.000000f,  0.000000f, -0.618034f},
@@ -145,6 +149,8 @@ const Matrix3f AP_GeodesicGrid::_inverses[10]{
      {-0.190983f, -0.309017f, -0.500000f}},
 };
 
+/* This was generated with
+ * libraries/AP_Math/tools/geodesic_grid/geodesic_grid.py */
 const Matrix3f AP_GeodesicGrid::_mid_inverses[10]{
     {{-0.000000f,  1.000000f, -0.618034f},
      { 0.000000f, -1.000000f, -0.618034f},
