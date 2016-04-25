@@ -500,9 +500,13 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
 
     // transform body delta velocities to delta velocities in the nav frame
     // * and + operators have been overloaded
+    // NOTE: delta velocity data has already been downsampled and rotated into the frame
+    // before the delta angle rotation - hence use of the rotation from previous prediction step
     Vector3f delVelNav;  // delta velocity vector in earth axes
-    delVelNav  = Tbn_temp*imuDataDelayed.delVel;
-    delVelNav.z += GRAVITY_MSS*imuDataDelayed.delVelDT;
+    delVelNav  = prevTnb.transposed() * imuDataDelayed.delVel;
+
+    // correct for gravity
+    delVelNav.z += GRAVITY_MSS * imuDataDelayed.delVelDT;
 
     // calculate the rate of change of velocity (used for launch detect and other functions)
     velDotNED = delVelNav / imuDataDelayed.delVelDT;

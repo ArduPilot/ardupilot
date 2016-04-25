@@ -267,6 +267,11 @@ void NavEKF2_core::readIMUData()
     imuDataDownSampledNew.delAngDT += imuDataNew.delAngDT;
     imuDataDownSampledNew.delVelDT += imuDataNew.delVelDT;
 
+    // Rotate the delta velocity back to the frame at the start of the accumulation period
+    Matrix3f deltaRotMat;
+    imuQuatDownSampleNew.rotation_matrix(deltaRotMat);
+    Vector3f deltaVel1 = deltaRotMat*imuDataNew.delVel;
+
     // Rotate quaternon atitude from previous to new and normalise.
     // Accumulation using quaternions prevents introduction of coning errors due to downsampling
     Quaternion deltaQuat;
@@ -274,14 +279,14 @@ void NavEKF2_core::readIMUData()
     imuQuatDownSampleNew = imuQuatDownSampleNew*deltaQuat;
     imuQuatDownSampleNew.normalize();
 
-    // Rotate the accumulated delta velocity into the new frame of reference created by the latest delta angle
-    // This prevents introduction of sculling errors due to downsampling
-    Matrix3f deltaRotMat;
-    deltaQuat.inverse().rotation_matrix(deltaRotMat);
-    imuDataDownSampledNew.delVel = deltaRotMat*imuDataDownSampledNew.delVel;
+    // Rotate the delta velocity back to the frame at the start of the accumulation period
+    imuQuatDownSampleNew.rotation_matrix(deltaRotMat);
+    Vector3f deltaVel2 = deltaRotMat*imuDataNew.delVel;
 
-    // accumulate the latest delta velocity
-    imuDataDownSampledNew.delVel += imuDataNew.delVel;
+    // take the average from the before and after the delta angle rotation and accumulate
+    // NOTE: when using this down sampled data in the INS calculations, the delta velocities MUST be rotated using
+    // the quaternion BEFORE the delta angle rotation is applied
+    imuDataDownSampledNew.delVel += (deltaVel1 + deltaVel2) * 0.5f;
 
     // Keep track of the number of IMU frames since the last state prediction
     framesSincePredict++;
