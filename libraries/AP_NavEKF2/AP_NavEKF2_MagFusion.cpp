@@ -183,8 +183,9 @@ void NavEKF2_core::SelectMagFusion()
         controlMagYawReset();
     }
 
-    // If we are yawing rapidly, set a flag
-    if (fabsf(filtYawRate) > 1.0f) {
+    // Check if we are yawing rapidly enough for uncorrected gyro scale factor errors to cause loss of heading reference
+    // Apply hysteresis
+    if ((fabsf(filtYawRate) > 1.5f && !fastYawSpin) || (fabsf(filtYawRate) > 1.0f && fastYawSpin)) {
         if (!fastYawSpin) {
             // save variances on gyro bias states and zero elements to inhibit bias learning during rapid spins
             savedDelAngVar[0] = P[9][9];
