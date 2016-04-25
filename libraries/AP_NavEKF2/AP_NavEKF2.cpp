@@ -26,7 +26,7 @@
 #define FLOW_MEAS_DELAY           10
 #define FLOW_NOISE_DEFAULT        0.25f
 #define FLOW_GATE_DEFAULT         300
-#define GSCALE_PNOISE_DEFAULT     3.0E-04f
+#define GSCALE_PNOISE_DEFAULT     3.0E-03f
 #define CHECK_SCALER_DEFAULT      100
 
 #if APM_BUILD_TYPE(APM_BUILD_APMrover2)
