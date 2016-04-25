@@ -183,6 +183,27 @@ void NavEKF2_core::SelectMagFusion()
         controlMagYawReset();
     }
 
+    // If we are yawing rapidly, set a flag
+    if (fabsf(filtYawRate) > 1.0f) {
+        if (!fastYawSpin) {
+            // save variances on gyro bias states and zero elements to inhibit bias learning during rapid spins
+            savedDelAngVar[0] = P[9][9];
+            savedDelAngVar[1] = P[10][10];
+            savedDelAngVar[2] = P[11][11];
+            zeroRows(P,9,11);
+            zeroCols(P,9,11);
+        }
+        fastYawSpin = true;
+    } else {
+        if (fastYawSpin) {
+            // reinstate saved variances
+            P[9][9] = savedDelAngVar[0];
+            P[10][10] = savedDelAngVar[1];
+            P[11][11] = savedDelAngVar[2];
+        }
+        fastYawSpin = false;
+    }
+
     // determine if conditions are right to start a new fusion cycle
     // wait until the EKF time horizon catches up with the measurement
     bool dataReady = (magDataToFuse && statesInitialised && use_compass() && yawAlignComplete);
@@ -198,13 +219,12 @@ void NavEKF2_core::SelectMagFusion()
             bool useCompassDecl = (PV_AidingMode != AID_ABSOLUTE || (imuSampleTime_ms - lastPosPassTime_ms) > 4000);
 
             // if we are spinning rapidly, then the declination observaton used is the last learned value before the spin started
-            bool useLearnedDecl = fabsf(filtYawRate) > 1.0f;
-            if (!useLearnedDecl) {
+            if (!fastYawSpin) {
                 lastLearnedDecl = atan2f(stateStruct.earth_magfield.y,stateStruct.earth_magfield.x);
             }
 
             // constrain the declination angle of the learned earth field
-            if (useCompassDecl || useLearnedDecl) {
+            if (useCompassDecl || fastYawSpin) {
                 // select the source of the declination
                 if (useCompassDecl) {
                     // use the value from the compass library lookup tables

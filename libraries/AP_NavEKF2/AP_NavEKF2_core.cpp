@@ -256,6 +256,8 @@ void NavEKF2_core::InitialiseVariables()
     lastLearnedDecl = 0.0f;
     referenceYawAngle = 0.0f;
     posdAtLastYawReset = 0.0f;
+    fastYawSpin = false;
+    memset(&savedDelAngVar, 0, sizeof(savedDelAngVar));
 
     // zero data buffers
     storedIMU.reset();
@@ -1130,6 +1132,12 @@ void NavEKF2_core::CovariancePrediction()
                 nextP[j][i] = P[j][i];
             }
         }
+    }
+
+    // If we are spinning rapidly , turn off bias estimation
+    if (fastYawSpin) {
+        zeroRows(nextP,9,11);
+        zeroCols(nextP,9,11);
     }
 
     // copy covariances to output

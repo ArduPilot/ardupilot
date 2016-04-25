@@ -778,7 +778,9 @@ private:
     float lastLearnedDecl;          // last value of declination learned (rad)
     float declObsVar;               // variance of the magentic declination observation (rad)^2
     float referenceYawAngle;        // Euler yaw angle measured at takeoff and after a yaw reset (rad)
-    float posdAtLastYawReset;       // Verticl position at last height reset (m)
+    float posdAtLastYawReset;       // Vertical position at last height reset (m)
+    bool fastYawSpin;               // true if we are spinning rapidly in yaw
+    float savedDelAngVar[3];        // saved value of delta angle bias variance (rad^2)
 
     // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
