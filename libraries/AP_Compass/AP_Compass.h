@@ -23,6 +23,7 @@
 #define AP_COMPASS_TYPE_AK8963_MPU9250  0x06
 #define AP_COMPASS_TYPE_AK8963_I2C      0x07
 #define AP_COMPASS_TYPE_LSM303D         0x08
+#define AP_COMPASS_TYPE_LSM9DS1         0x09
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
