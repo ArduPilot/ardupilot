@@ -361,14 +361,33 @@ void NavEKF2_core::FuseVelPosNED()
                     // don't fuse GPS data on this time step
                     fusePosData = false;
                     fuseVelData = false;
-                    // Reset the position variances and corresponding covariances to a value that will pass the checks
-                    zeroRows(P,6,7);
-                    zeroCols(P,6,7);
-                    P[6][6] = sq(float(0.5f*frontend->_gpsGlitchRadiusMax));
-                    P[7][7] = P[6][6];
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
                     velTestRatio = 0.0f;
+                    // TODO need a better way to report these events
+                    hal.console->printf("EKF2 IMU%u has reset position and velocity\n",(unsigned)imu_index);
+                    // The attitude error state covariances need to be reset to allow the heading to re-align
+                    zeroRows(P,0,2);
+                    zeroCols(P,0,2);
+                    // Define angular error vector variance in body frame
+                    Matrix3f angErrVarMat;
+                    memset(&angErrVarMat, 0, sizeof(angErrVarMat));
+                    angErrVarMat.a.x = sq(0.01f);
+                    angErrVarMat.b.y = sq(0.01f);
+                    angErrVarMat.c.z = sq(0.5f);
+                    // rotate into body frame
+                    angErrVarMat = angErrVarMat * prevTnb.transposed();
+                    angErrVarMat = prevTnb * angErrVarMat;
+                    // copy to covariance matrix
+                    P[0][0] = angErrVarMat.a.x;
+                    P[0][1] = angErrVarMat.a.y;
+                    P[0][2] = angErrVarMat.a.z;
+                    P[1][0] = angErrVarMat.b.x;
+                    P[1][1] = angErrVarMat.b.y;
+                    P[1][2] = angErrVarMat.b.z;
+                    P[2][0] = angErrVarMat.c.x;
+                    P[2][1] = angErrVarMat.c.y;
+                    P[2][2] = angErrVarMat.c.z;
                 }
             } else {
                 posHealth = false;
