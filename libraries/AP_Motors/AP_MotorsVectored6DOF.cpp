@@ -104,3 +104,79 @@ void AP_MotorsVectored6DOF::setup_motors()
 	add_motor_raw_6dof(AP_MOTORS_MOT_8, MOT_8_ROLL_FACTOR, MOT_8_PITCH_FACTOR, MOT_8_YAW_FACTOR, MOT_8_THROTTLE_FACTOR, MOT_8_FORWARD_FACTOR, MOT_8_STRAFE_FACTOR,8);
 
 }
+
+
+// Band Aid fix for motor normalization issues.
+// TODO: find a global solution for managing saturation that works for all vehicles
+void AP_MotorsVectored6DOF::output_armed_stabilizing()
+{
+    uint8_t i;                          // general purpose counter
+    float   roll_thrust;                // roll thrust input value, +/- 1.0
+    float   pitch_thrust;               // pitch thrust input value, +/- 1.0
+    float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
+    float   throttle_thrust;            // throttle thrust input value, +/- 1.0
+    float   forward_thrust;             // forward thrust input value, +/- 1.0
+    float   lateral_thrust;             // lateral thrust input value, +/- 1.0
+
+	roll_thrust = _roll_in;
+	pitch_thrust = _pitch_in;
+	yaw_thrust = _yaw_in;
+	throttle_thrust = get_throttle_bidirectional();
+	forward_thrust = _forward_in;
+	lateral_thrust = _lateral_in;
+
+    float rpt_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
+    float yfl_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
+    float rpt_max;
+    float yfl_max;
+
+    // initialize limits flags
+    limit.roll_pitch = false;
+    limit.yaw = false;
+    limit.throttle_lower = false;
+    limit.throttle_upper = false;
+
+    // sanity check throttle is above zero and below current limited throttle
+    if (throttle_thrust <= -_throttle_thrust_max) {
+        throttle_thrust = -_throttle_thrust_max;
+        limit.throttle_lower = true;
+    }
+    if (throttle_thrust >= _throttle_thrust_max) {
+        throttle_thrust = _throttle_thrust_max;
+        limit.throttle_upper = true;
+    }
+
+    // calculate roll, pitch and Throttle for each motor (only used by vertical thrusters)
+    rpt_max = 1; //Initialized to 1 so that normalization will only occur if value is saturated
+    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+        	rpt_out[i] = roll_thrust * _roll_factor[i] +
+                         pitch_thrust * _pitch_factor[i] +
+                         throttle_thrust * _throttle_factor[i];
+            if (fabs(rpt_out[i]) > rpt_max) {
+                rpt_max = fabs(rpt_out[i]);
+            }   
+        }
+    }
+
+    // calculate linear/yaw command for each motor (only used for translational thrusters)
+    // linear factors should be 0.0 or 1.0 for now
+    yfl_max = 1; //Initialized to 1 so that normalization will only occur if value is saturated
+    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+        	yfl_out[i] = yaw_thrust * _yaw_factor[i] +
+        					forward_thrust * _forward_factor[i] +
+							lateral_thrust * _lateral_factor[i];
+            if (fabs(yfl_out[i]) > yfl_max) {
+                yfl_max = fabs(yfl_out[i]);
+            }                
+        }
+    }
+
+    // Calculate final output for each motor and normalize if necessary 
+    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+        	_thrust_rpyt_out[i] = constrain_float(_motor_reverse[i]*(rpt_out[i]/rpt_max + yfl_out[i]/yfl_max),-1.0f,1.0f);
+        }
+    }
+}

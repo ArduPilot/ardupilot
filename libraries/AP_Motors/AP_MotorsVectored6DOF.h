@@ -24,6 +24,8 @@ public:
     // This takes care of all of the enabling and bitmask stuff seen in the Tricopter motors class
     virtual void        setup_motors();
 
+    void output_armed_stabilizing() override;
+
 protected:
 
 };
