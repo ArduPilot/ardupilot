@@ -1025,7 +1025,9 @@ void DataFlash_File::flush(void)
            BUF_AVAILABLE(_writebuf)) {
         // convince the IO timer that it really is OK to write out
         // less than _writebuf_chunk bytes:
-        _last_write_time = tnow - 2000000;
+        if (tnow > 2000001) { // avoid resetting _last_write_time to 0
+            _last_write_time = tnow - 2000001;
+        }
         _io_timer();
     }
     hal.scheduler->resume_timer_procs();
