@@ -187,7 +187,7 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     buffer[offset++] = HEAD_BYTE2;
     buffer[offset++] = msg_type;
     for (uint8_t i=0; i<strlen(fmt); i++) {
-        // this was mechanically converted....
+        uint8_t charlen = 0;
         switch(fmt[i]) {
         case 'b': {
             int8_t tmp = va_arg(arg_list, int);
@@ -195,6 +195,7 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
             offset += sizeof(int8_t);
             break;
         }
+        case 'h':
         case 'c': {
             int16_t tmp = va_arg(arg_list, int);
             memcpy(&buffer[offset], &tmp, sizeof(int16_t));
@@ -207,6 +208,8 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
             offset += sizeof(double);
             break;
         }
+        case 'i':
+        case 'L':
         case 'e': {
             int32_t tmp = va_arg(arg_list, int);
             memcpy(&buffer[offset], &tmp, sizeof(int32_t));
@@ -219,78 +222,36 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
             offset += sizeof(float);
             break;
         }
-        case 'h': {
-            int16_t tmp = va_arg(arg_list, int);
-            memcpy(&buffer[offset], &tmp, sizeof(int16_t));
-            offset += sizeof(int16_t);
+        case 'n':
+            charlen = 4;
             break;
-        }
-        case 'i': {
-            int32_t tmp = va_arg(arg_list, int32_t);
-            memcpy(&buffer[offset], &tmp, sizeof(int32_t));
-            offset += sizeof(int32_t);
-            break;
-        }
-        case 'n': {
-            char *tmp = va_arg(arg_list, char*);
-            memcpy(&buffer[offset], tmp, 4);
-            offset += 4;
-            break;
-        }
+        case 'M':
         case 'B': {
             uint8_t tmp = va_arg(arg_list, int);
             memcpy(&buffer[offset], &tmp, sizeof(uint8_t));
             offset += sizeof(uint8_t);
             break;
         }
+        case 'H':
         case 'C': {
             uint16_t tmp = va_arg(arg_list, int);
             memcpy(&buffer[offset], &tmp, sizeof(uint16_t));
             offset += sizeof(uint16_t);
             break;
         }
+        case 'I':
         case 'E': {
             uint32_t tmp = va_arg(arg_list, uint32_t);
             memcpy(&buffer[offset], &tmp, sizeof(uint32_t));
             offset += sizeof(uint32_t);
             break;
         }
-        case 'H': {
-            uint16_t tmp = va_arg(arg_list, int);
-            memcpy(&buffer[offset], &tmp, sizeof(uint16_t));
-            offset += sizeof(uint16_t);
+        case 'N':
+            charlen = 16;
             break;
-        }
-        case 'I': {
-            uint32_t tmp = va_arg(arg_list, uint32_t);
-            memcpy(&buffer[offset], &tmp, sizeof(uint32_t));
-            offset += sizeof(uint32_t);
+        case 'Z':
+            charlen = 64;
             break;
-        }
-        case 'L': {
-            int32_t tmp = va_arg(arg_list, int32_t);
-            memcpy(&buffer[offset], &tmp, sizeof(int32_t));
-            offset += sizeof(int32_t);
-            break;
-        }
-        case 'M': {
-            uint8_t tmp = va_arg(arg_list, int);
-            memcpy(&buffer[offset], &tmp, sizeof(uint8_t));
-            offset += sizeof(uint8_t);
-            break;
-        }
-        case 'N': {
-            char *tmp = va_arg(arg_list, char*);
-            memcpy(&buffer[offset], tmp, 16);
-            offset += 16;
-            break;
-        }
-        case 'Z': {
-            char *tmp = va_arg(arg_list, char*);
-            memcpy(&buffer[offset], tmp, 64);
-            offset += 64;
-            break;
-        }
         case 'q': {
             int64_t tmp = va_arg(arg_list, int64_t);
             memcpy(&buffer[offset], &tmp, sizeof(int64_t));
@@ -303,6 +264,11 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
             offset += sizeof(uint64_t);
             break;
         }
+        }
+        if (charlen != 0) {
+            char *tmp = va_arg(arg_list, char*);
+            memcpy(&buffer[offset], tmp, charlen);
+            offset += charlen;
         }
     }
 
