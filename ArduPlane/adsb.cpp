@@ -98,14 +98,14 @@ void Plane::adsb_evasion_stop(void)
 {
     gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat gone, continuing mission");
 
-//    FlightMode prev_control_mode = control_mode;
-//    set_mode(AUTO);
-//    if (prev_control_mode == LOITER)
-//    {
-//        // if resuming from loiter, smoothly get back on track
-//        prev_WP_loc = adsb_state.prev_wp;
-//        auto_state.no_crosstrack = false;
-//    }
+    FlightMode prev_control_mode = control_mode;
+    set_mode(AUTO);
+    if (prev_control_mode == LOITER)
+    {
+        // if resuming from loiter, smoothly get back on track
+        prev_WP_loc = adsb_state.prev_wp;
+        auto_state.no_crosstrack = false;
+    }
 }
 
 /*
