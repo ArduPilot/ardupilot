@@ -583,11 +583,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
         cmd.content.delay.seconds = packet.param1;      // delay in seconds
         break;
 
-    case MAV_CMD_CONDITION_CHANGE_ALT:                  // MAV ID: 113
-        copy_alt = true;                                // only altitude is used
-        cmd.content.location.lat = packet.param1 * 100; // climb/descent converted from m/s to cm/s.  To-Do: store in proper climb_rate structure
-        break;
-
     case MAV_CMD_CONDITION_DISTANCE:                    // MAV ID: 114
         cmd.content.distance.meters = packet.param1;    // distance in meters from next waypoint
         break;
@@ -921,11 +916,6 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
         packet.param1 = cmd.content.delay.seconds;      // delay in seconds
-        break;
-
-    case MAV_CMD_CONDITION_CHANGE_ALT:                  // MAV ID: 113
-        copy_alt = true;                                // only altitude is used
-        packet.param1 = cmd.content.location.lat / 100.0f;  // climb/descent rate converted from cm/s to m/s.  To-Do: store in proper climb_rate structure
         break;
 
     case MAV_CMD_CONDITION_DISTANCE:                    // MAV ID: 114
