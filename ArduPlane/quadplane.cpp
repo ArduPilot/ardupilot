@@ -1112,8 +1112,8 @@ void QuadPlane::control_auto(const Location &loc)
             float distance = diff_wp.length();
 
             // max_speed will control how fast we will fly. It will always decrease
-            land.max_speed = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
-            land.speed_scale = land.max_speed / MAX(distance, 1);
+            land.max_speed = max(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
+            land.speed_scale = land.max_speed / max(distance, 1);
         }
 
         // run fixed wing navigation
@@ -1445,7 +1445,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
     float fwd_vel_error = vel_error_body * Vector3f(1,0,0);
 
     // scale forward velocity error by maximum airspeed
-    fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);
+    fwd_vel_error /= max(plane.aparm.airspeed_max, 5);
 
     // add in a component from our current pitch demand. This tends to
     // move us to zero pitch. Assume that LIM_PITCH would give us the

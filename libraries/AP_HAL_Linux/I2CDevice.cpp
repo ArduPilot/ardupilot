@@ -166,7 +166,7 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
     const uint8_t max_times = I2C_RDRW_IOCTL_MAX_MSGS / 2;
 
     while (times > 0) {
-        uint8_t n = MIN(times, max_times);
+        uint8_t n = min(times, max_times);
         struct i2c_msg msgs[2 * n];
         struct i2c_rdwr_ioctl_data i2c_data = { };
 

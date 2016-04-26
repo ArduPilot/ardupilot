@@ -235,7 +235,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
         return;
     }
 
-    _batt_voltage_min = MAX(_batt_voltage_min, _batt_voltage_max * 0.6f);
+    _batt_voltage_min = max(_batt_voltage_min, _batt_voltage_max * 0.6f);
 
     // add current based voltage sag to battery voltage
     float batt_voltage = _batt_voltage + _batt_current * _batt_resistance;
@@ -277,17 +277,17 @@ void AP_MotorsMulticopter::update_throttle_rpy_mix()
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
     if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f/_loop_rate, _throttle_rpy_mix_desired-_throttle_rpy_mix);
+        _throttle_rpy_mix += min(2.0f/_loop_rate, _throttle_rpy_mix_desired-_throttle_rpy_mix);
     } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f/_loop_rate, _throttle_rpy_mix-_throttle_rpy_mix_desired);
+        _throttle_rpy_mix -= min(0.5f/_loop_rate, _throttle_rpy_mix-_throttle_rpy_mix_desired);
     }
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
 }
 
 float AP_MotorsMulticopter::get_hover_throttle_as_high_end_pct() const
 {
-    return (MAX(0,(float)_hover_out-_min_throttle) / (float)(1000-_min_throttle));
+    return (max(0,(float)_hover_out-_min_throttle) / (float)(1000-_min_throttle));
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const
@@ -416,7 +416,7 @@ void AP_MotorsMulticopter::output_logic()
             _throttle_rpy_mix_desired = 0.0f;
 
             // constrain ramp value and update mode
-            if (_throttle_thrust_max >= MIN(get_throttle(), get_current_limit_max_throttle())) {
+            if (_throttle_thrust_max >= min(get_throttle(), get_current_limit_max_throttle())) {
                 _throttle_thrust_max = get_current_limit_max_throttle();
                 _multicopter_flags.spool_mode = THROTTLE_UNLIMITED;
             } else if (_throttle_thrust_max < 0.0f) {

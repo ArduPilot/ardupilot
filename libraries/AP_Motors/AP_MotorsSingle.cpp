@@ -201,15 +201,15 @@ void AP_MotorsSingle::output_armed_stabilizing()
         throttle_thrust = _throttle_thrust_max;
         limit.throttle_upper = true;
     }
-    throttle_thrust_rpy_mix = MAX(throttle_thrust, throttle_thrust*MAX(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
+    throttle_thrust_rpy_mix = max(throttle_thrust, throttle_thrust*max(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
 
-    float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
+    float rp_thrust_max = max(fabsf(roll_thrust), fabsf(pitch_thrust));
 
     // calculate how much roll and pitch must be scaled to leave enough range for the minimum yaw
     if (is_zero(roll_thrust) && is_zero(pitch_thrust)) {
         rpy_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
+        rpy_scale = constrain_float((1.0f - min(fabsf(yaw_thrust), (float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
         if (rpy_scale < 1.0f) {
             limit.roll_pitch = true;
         }
@@ -232,13 +232,13 @@ void AP_MotorsSingle::output_armed_stabilizing()
     actuator[3] = -rpy_scale * pitch_thrust + yaw_thrust;
 
     // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
-    thrust_min_rp = MAX(MAX(fabsf(actuator[0]), fabsf(actuator[1])), MAX(fabsf(actuator[2]), fabsf(actuator[3])));
+    thrust_min_rp = max(max(fabsf(actuator[0]), fabsf(actuator[1])), max(fabsf(actuator[2]), fabsf(actuator[3])));
 
     thr_adj = throttle_thrust - throttle_thrust_rpy_mix;
     if (thr_adj < (thrust_min_rp - throttle_thrust_rpy_mix)) {
         // Throttle can't be reduced to the desired level because this would mean roll or pitch control
         // would not be able to reach the desired level because of lack of thrust.
-        thr_adj = MIN(thrust_min_rp, throttle_thrust_rpy_mix) - throttle_thrust_rpy_mix;
+        thr_adj = min(thrust_min_rp, throttle_thrust_rpy_mix) - throttle_thrust_rpy_mix;
     }
 
     // calculate the throttle setting for the lift fan

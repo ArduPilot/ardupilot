@@ -303,8 +303,8 @@ RC_Channel::zero_min_max()
 void
 RC_Channel::update_min_max()
 {
-    radio_min = MIN(radio_min.get(), radio_in);
-    radio_max = MAX(radio_max.get(), radio_in);
+    radio_min = min(radio_min.get(), radio_in);
+    radio_max = max(radio_max.get(), radio_in);
 }
 
 /*

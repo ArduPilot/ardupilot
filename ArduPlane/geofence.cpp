@@ -49,7 +49,7 @@ static const StorageAccess fence_storage(StorageManager::StorageFence);
  */
 uint8_t Plane::max_fencepoints(void)
 {
-    return MIN(255U, fence_storage.size() / sizeof(Vector2l));
+    return min(255U, fence_storage.size() / sizeof(Vector2l));
 }
 
 /*
