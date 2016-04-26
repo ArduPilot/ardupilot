@@ -142,6 +142,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     } else {
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        gcs_send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
     }
 
     // update notify object
