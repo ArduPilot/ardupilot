@@ -64,10 +64,6 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
         do_within_distance(cmd);
         break;
 
-    case MAV_CMD_CONDITION_CHANGE_ALT:             // 113
-        do_change_alt(cmd);
-        break;
-
     case MAV_CMD_CONDITION_YAW:             // 115
         do_yaw(cmd);
         break;
@@ -224,9 +220,6 @@ bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
-
-    case MAV_CMD_CONDITION_CHANGE_ALT:
-        return verify_change_alt();
 
     case MAV_CMD_CONDITION_YAW:
         return verify_yaw();
@@ -724,11 +717,6 @@ void Copter::do_wait_delay(const AP_Mission::Mission_Command& cmd)
     condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
 }
 
-void Copter::do_change_alt(const AP_Mission::Mission_Command& cmd)
-{
-    // To-Do: store desired altitude in a variable so that it can be verified later
-}
-
 void Copter::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
     condition_value  = cmd.content.distance.meters * 100;
@@ -755,12 +743,6 @@ bool Copter::verify_wait_delay()
         return true;
     }
     return false;
-}
-
-bool Copter::verify_change_alt()
-{
-    // To-Do: use recorded target altitude to verify we have reached the target
-    return true;
 }
 
 bool Copter::verify_within_distance()
