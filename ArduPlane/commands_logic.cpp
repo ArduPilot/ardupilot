@@ -103,10 +103,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_within_distance(cmd);
         break;
 
-    case MAV_CMD_CONDITION_CHANGE_ALT:
-        do_change_alt(cmd);
-        break;
-
     // Do commands
 
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -276,9 +272,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
-
-    case MAV_CMD_CONDITION_CHANGE_ALT:
-        return verify_change_alt();
 
 #if PARACHUTE == ENABLED
     case MAV_CMD_DO_PARACHUTE:
@@ -792,23 +785,6 @@ void Plane::do_wait_delay(const AP_Mission::Mission_Command& cmd)
     condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
-/*
-  process a DO_CHANGE_ALT request
- */
-void Plane::do_change_alt(const AP_Mission::Mission_Command& cmd)
-{
-    condition_rate = labs((int)cmd.content.location.lat);   // climb rate in cm/s
-    condition_value = cmd.content.location.alt;             // To-Do: ensure this altitude is an absolute altitude?
-    if (condition_value < adjusted_altitude_cm()) {
-        condition_rate = -condition_rate;
-    }
-    set_target_altitude_current_adjusted();
-    change_target_altitude(condition_rate/10);
-    next_WP_loc.alt = condition_value;                                      // For future nav calculations
-    reset_offset_altitude();
-    setup_glide_slope();
-}
-
 void Plane::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
     condition_value  = cmd.content.distance.meters;
@@ -824,19 +800,6 @@ bool Plane::verify_wait_delay()
         condition_value         = 0;
         return true;
     }
-    return false;
-}
-
-bool Plane::verify_change_alt()
-{
-    if( (condition_rate>=0 && adjusted_altitude_cm() >= condition_value) || 
-        (condition_rate<=0 && adjusted_altitude_cm() <= condition_value)) {
-        condition_value = 0;
-        return true;
-    }
-    // condition_rate is climb rate in cm/s.  
-    // We divide by 10 because this function is called at 10hz
-    change_target_altitude(condition_rate/10);
     return false;
 }
 
