@@ -242,7 +242,11 @@ void LR_MsgHandler_IMT_Base::update_from_msg_imt(uint8_t imu_offset, uint8_t *ms
     if (gyro_mask & this_imu_mask) {
         Vector3f d_angle;
         require_field(msg, "DelA", d_angle);
-        ins.set_delta_angle(imu_offset, d_angle);
+        float d_angle_dt;
+        if (!field_value(msg, "DelaT", d_angle_dt)) {
+            d_angle_dt = 0;
+        }
+        ins.set_delta_angle(imu_offset, d_angle, d_angle_dt);
     }
     if (accel_mask & this_imu_mask) {
         float dvt = 0;
