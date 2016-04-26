@@ -87,6 +87,7 @@ LR_MsgHandler_PARM *parameter_handler;
  */
 static const char *generated_names[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5",
                                          "NKF1", "NKF2", "NKF3", "NKF4", "NKF5",
+                                         "NKF6", "NKF7", "NKF8", "NKF9", "NKF10",
                                          "AHR2", "POS", "CHEK", NULL };
 
 /*
