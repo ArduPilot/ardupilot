@@ -150,9 +150,10 @@ void Tracker::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
+    return false;
 }
 
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command&)
