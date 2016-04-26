@@ -25,6 +25,7 @@
 #include <SITL/SIM_Tracker.h>
 #include <SITL/SIM_Balloon.h>
 #include <SITL/SIM_FlightAxis.h>
+#include <SITL/SIM_Calibration.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -86,6 +87,7 @@ static const struct {
     { "tracker",            Tracker::create },
     { "balloon",            Balloon::create },
     { "plane",              Plane::create },
+    { "calibration",        Calibration::create },
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
