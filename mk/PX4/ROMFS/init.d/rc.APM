@@ -316,20 +316,26 @@ then
         echo "No internal hmc5883"
     fi
 
-    # external MPU6000 is rotated YAW_180 from standard
-    if mpu6000 -X -R 4 start
+    if mpu6000 -S 2 -T 20608 start
     then
-       echo "Found MPU6000 external"
-       set HAVE_FMUV3 true
+        echo "Found ICM20608 internal"
+        set HAVE_PHMINI true
     else
-       if mpu9250 -X -R 4 start
-       then
-           echo "Found MPU9250 external"
-           set HAVE_FMUV3 true
-       else
-           echo "No MPU6000 or MPU9250 external"
-           set HAVE_FMUV3 false
-       fi
+        # external MPU6000 is rotated YAW_180 from standard
+        if mpu6000 -X -R 4 start
+        then
+            echo "Found MPU6000 external"
+            set HAVE_FMUV3 true
+        else
+            if mpu9250 -X -R 4 start
+            then
+                echo "Found MPU9250 external"
+                set HAVE_FMUV3 true
+            else
+                echo "No MPU6000 or MPU9250 external"
+                set HAVE_FMUV3 false
+            fi
+        fi
     fi
     if [ $HAVE_FMUV3 == true ]
     then
@@ -368,29 +374,39 @@ then
             echo "Found SPI hmc5883"
         fi
     else
-        if mpu6000 start
+        if [ $HAVE_PHMINI == true ]
         then
-            echo "Found MPU6000"
-        else
             if mpu9250 start
             then
-                echo "Found MPU9250"
+                echo "Found MPU9250 internal"
             else
-                echo "No MPU6000 or MPU9250"
-                echo "No MPU9250" >> $logfile
+                echo "No MPU9250"
             fi
-        fi
-        if l3gd20 start
-        then
-            echo "l3gd20 started OK"
         else
-            sh /etc/init.d/rc.error
-        fi
-        if lsm303d -a 16 start
-        then
-            echo "lsm303d started OK"
-        else
-            sh /etc/init.d/rc.error
+            if mpu6000 start
+            then
+                echo "Found MPU6000"
+            else
+                if mpu9250 start
+                then
+                    echo "Found MPU9250"
+                else
+                    echo "No MPU6000 or MPU9250"
+                    echo "No MPU9250" >> $logfile
+                fi
+            fi
+            if l3gd20 start
+            then
+                echo "l3gd20 started OK"
+            else
+                sh /etc/init.d/rc.error
+            fi
+            if lsm303d -a 16 start
+            then
+                echo "lsm303d started OK"
+            else
+                sh /etc/init.d/rc.error
+            fi
         fi
     fi
 fi
