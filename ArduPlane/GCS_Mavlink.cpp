@@ -1104,11 +1104,11 @@ GCS_MAVLINK::data_stream_send(void)
   handle a request to switch to guided mode. This happens via a
   callback from handle_mission_item()
  */
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (plane.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
-        return;
+        return false;
     }
     plane.guided_WP_loc = cmd.content.location;
     
@@ -1119,6 +1119,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     }
 
     plane.set_guided_WP();
+    return true;
 }
 
 /*
