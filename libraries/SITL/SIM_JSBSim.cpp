@@ -233,6 +233,7 @@ bool JSBSim::start_JSBSim(void)
 
     started_jsbsim = true;
     check_stdout();
+    close(devnull);
     return true;
 }
 
