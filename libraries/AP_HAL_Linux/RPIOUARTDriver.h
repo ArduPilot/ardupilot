@@ -3,6 +3,7 @@
 #include "AP_HAL_Linux.h"
 
 #include "UARTDriver.h"
+#include <AP_HAL/SPIDevice.h>
 
 
 class Linux::RPIOUARTDriver : public Linux::UARTDriver {
@@ -26,8 +27,8 @@ private:
 
     bool sem_take_nonblocking();
     void sem_give();
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
     uint32_t _last_update_timestamp;
 
