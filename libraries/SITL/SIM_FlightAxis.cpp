@@ -139,6 +139,8 @@ Connection: Keep-Alive
         if (ret2 <= 0) {
             return nullptr;
         }
+        // nul terminate
+        reply[ret+ret2] = 0;
         ret += ret2;
     }
     return strdup(reply);
