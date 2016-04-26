@@ -3,6 +3,7 @@
 #include <AP_ADC/AP_ADC.h>
 
 #include "AP_HAL_Linux.h"
+#include <AP_HAL/SPIDevice.h>
 
 #define RASPILOT_ADC_MAX_CHANNELS 8
 
@@ -36,8 +37,7 @@ protected:
     AP_HAL::AnalogSource *_vcc_pin_analog_source;
 
 private:
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
     AnalogSource_Raspilot *_channels[RASPILOT_ADC_MAX_CHANNELS];
 
