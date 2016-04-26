@@ -1242,11 +1242,12 @@ void AP_InertialSensor::set_delta_velocity(uint8_t instance, float deltavt, cons
 /*
   set delta angle for next update
  */
-void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa)
+void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa, float deltaat)
 {
     if (instance < INS_MAX_INSTANCES) {
         _delta_angle_valid[instance] = true;
         _delta_angle[instance] = deltaa;
+        _delta_angle_dt[instance] = deltaat;
     }
 }
 
