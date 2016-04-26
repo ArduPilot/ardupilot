@@ -48,7 +48,7 @@ void Plane::adjust_altitude_target()
 
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(next_WP_loc, prev_WP_loc);
-    } else if (mission.get_current_do_cmd().id != MAV_CMD_CONDITION_CHANGE_ALT) {
+    } else {
         set_target_altitude_location(next_WP_loc);
     }
 

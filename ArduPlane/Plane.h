@@ -844,7 +844,6 @@ private:
     bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
-    bool verify_change_alt();
     bool verify_within_distance();
     bool verify_altitude_wait(const AP_Mission::Mission_Command &cmd);
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
@@ -1031,7 +1030,6 @@ private:
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-    void do_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
