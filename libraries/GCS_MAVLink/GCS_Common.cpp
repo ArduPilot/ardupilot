@@ -641,10 +641,10 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     if (packet.current == 2) {                                               
         // current = 2 is a flag to tell us this is a "guided mode"
         // waypoint and not for the mission
-        handle_guided_request(cmd);
+        result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
+                                             : MAV_MISSION_ERROR) ;
 
         // verify we received the command
-        result = MAV_MISSION_ACCEPTED;
         goto mission_ack;
     }
 
