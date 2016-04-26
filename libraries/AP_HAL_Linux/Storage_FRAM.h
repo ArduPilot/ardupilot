@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_Linux_Namespace.h"
+#include <AP_HAL/SPIDevice.h>
 
 #define OPCODE_WREN   0b0110        /* Write Enable Latch */
 #define OPCODE_WRDI   0b0100        /* Reset Write Enable Latch */
@@ -28,11 +29,10 @@ private:
     int8_t _register_write( uint8_t* src, uint16_t addr, uint16_t len );
     int8_t _register_read( uint16_t addr, uint8_t opcode );
     int8_t _write_enable(bool enable);
-    int8_t transaction(uint8_t* tx, uint8_t* rx, uint16_t len);
+    int8_t transaction(uint8_t* tx, uint8_t* rx);
 
     void _storage_create(void);
     void _storage_open(void);
 
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 };
