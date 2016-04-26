@@ -53,6 +53,14 @@ static const struct LogStructure log_structure[] = {
       "MSG",  "QZ",     "TimeUS,Message"}
 };
 
+// these are identical to the entries in the above log-structure.  Not
+// shared to maintain the visual similarity between the above
+// structure and that in LogStructure.h
+#define TYP1_FMT "QbBhHiIfdnNZ"
+#define TYP1_LBL "TimeUS,b,B,h,H,i,I,f,d,n,N,Z"
+#define TYP2_FMT "QcCeELMqQ"
+#define TYP2_LBL "TimeUS,c,C,e,E,L,M,q,Q"
+
 static uint16_t log_num;
 
 class DataFlashTest_AllTypes : public AP_HAL::HAL::Callbacks {
@@ -66,6 +74,7 @@ private:
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
+    void Log_Write_TypeMessages_Log_Write();
 
     void flush_dataflash(DataFlash_Class &dataflash);
 };
@@ -131,6 +140,46 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages()
     dataflash.StopLogging();
 }
 
+void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
+{
+    dataflash.StartNewLog();
+    log_num = dataflash.find_last_log();
+    hal.console->printf("Using log number for Log_Write %u\n", log_num);
+
+    dataflash.Log_Write("TYP3", TYP1_LBL, TYP1_FMT,
+                        AP_HAL::micros64(),
+                        -17, // int8_t
+                        42,  // uint8_t
+                        -12372,  // int16_t
+                        19812,   // uint16_t
+                        -98234729,   // int32_t
+                        74627293,    // uint32_t
+                        35.87654,  // float
+                        (double)67.7393274658293,   // double
+                        "ABCD", // char[4]
+                        // char[16]:
+                        "ABCDEFGHIJKLMNOP",
+                        // char[64]:
+                        "ABCDEFGHIJKLMNOPABCDEFGHIJKLMNOPABCDEFGHIJKLMNOPABCDEFGHIJKLMNOP"
+        );
+
+    dataflash.Log_Write("TYP4", TYP2_LBL, TYP2_FMT,
+                        AP_HAL::micros64(),
+                        -9823, // int16_t * 100
+                        5436,  // uint16_t * 100
+                        -9209238,  // int32_t * 100
+                        19239872,  // uint32_t * 100
+                        -3576543,   // uint32_t latitude/longitude;
+                        5,          //   uint8_t;   // flight mode;
+                        -98239832498328,   // int64_t
+                        3432345232233432   // uint64_t
+        );
+
+    flush_dataflash(dataflash);
+
+    dataflash.StopLogging();
+}
+
 void DataFlashTest_AllTypes::setup(void)
 {
     hal.console->println("Dataflash All Types 1.0");
@@ -147,6 +196,7 @@ void DataFlashTest_AllTypes::setup(void)
     }
 
     Log_Write_TypeMessages();
+    Log_Write_TypeMessages_Log_Write();
 
     hal.console->printf("tests done\n");
 }
