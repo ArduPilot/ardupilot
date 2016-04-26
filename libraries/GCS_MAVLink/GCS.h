@@ -306,7 +306,7 @@ private:
     // vehicle specific message send function
     bool try_send_message(enum ap_message id);
 
-    void handle_guided_request(AP_Mission::Mission_Command &cmd);
+    bool handle_guided_request(AP_Mission::Mission_Command &cmd);
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd);
 
     void handle_log_request_list(mavlink_message_t *msg, DataFlash_Class &dataflash);
