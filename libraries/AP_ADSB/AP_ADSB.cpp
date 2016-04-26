@@ -87,14 +87,12 @@ void AP_ADSB::update(void)
 //    Copter::gcs_send_text(MAV_SEVERITY_CRITICAL, "AP_ADSB ::Update");
 
     if (!_enabled) {
-        hal.console->printf("@@!enabled@@\n");
         if (_vehicle_list != NULL) {
             deinit();
         }
         // nothing to do
         return;
     } else if (_vehicle_list == NULL)  {
-        hal.console->printf("_vehicle_list == NULL\n");
         init();
         return;
     }
@@ -112,7 +110,7 @@ void AP_ADSB::update(void)
     }
 
     perform_threat_detection();
-    hal.console->printf("@@hal.console ADSB: cnt %u, lowT %.0f, highT %.0f@@\n", _vehicle_count, _lowest_threat_distance, _highest_threat_distance);
+    //hal.console->printf("@@hal.console ADSB: cnt %u, lowT %.0f, highT %.0f@@\n", _vehicle_count, _lowest_threat_distance, _highest_threat_distance);
 }
 
 /*
@@ -154,10 +152,8 @@ void AP_ADSB::perform_threat_detection(void)
 
         if (distance <= VEHICLE_THREAT_RADIUS_M) {
             _vehicle_list[index].threat_level = ADSB_THREAT_HIGH;
-            hal.console->printf("@@THREAT HIGH ICAO %x lat %d lon %d@@\n", _vehicle_list[index].info.ICAO_address, _vehicle_list[index].info.lat, _vehicle_list[index].info.lon);
         } else {
             _vehicle_list[index].threat_level = ADSB_THREAT_LOW;
-            hal.console->printf("@@THREAT LOW ICAO %x lat %d lon %d@@\n", _vehicle_list[index].info.ICAO_address, _vehicle_list[index].info.lat, _vehicle_list[index].info.lon);
         }
     } // for index
 

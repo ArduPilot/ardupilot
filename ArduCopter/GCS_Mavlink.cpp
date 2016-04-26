@@ -1001,7 +1001,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if(msg->sysid != copter.g.sysid_my_gcs) break;
         copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
         copter.pmTest1++;
-        copter.gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B MAVLINK HEARTBEAT");
         break;
     }
 
@@ -1984,7 +1983,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
 #if ADSB_ENABLED == ENABLED
-        copter.gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B MAVLINK MESSAGE FOUND");
         copter.adsb.update_vehicle(msg);
 #endif
         break;

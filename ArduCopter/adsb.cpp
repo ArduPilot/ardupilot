@@ -33,7 +33,6 @@
 void Copter::adsb_update(void)
 {
     adsb.update();
-    gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B Update");
 
     adsb.set_enabled(1);
     adsb.set_behavior(AP_ADSB::ADSB_BEHAVIOR_LAND);
@@ -81,7 +80,6 @@ bool Copter::adsb_evasion_start(void)
     case AP_ADSB::ADSB_BEHAVIOR_LAND:
         gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, LAND");
         set_mode(LAND);
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "IN LANDING STATE!!!!!");
         adsb_state.is_evading = true; // must be done AFTER set_mode()
         break;
 
