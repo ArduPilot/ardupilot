@@ -25,8 +25,7 @@ using namespace Linux;
 
 SPIUARTDriver::SPIUARTDriver() :
     UARTDriver(false),
-    _spi(NULL),
-    _spi_sem(NULL),
+    _dev(nullptr),
     _last_update_timestamp(0),
     _buffer(NULL),
     _external(false)
@@ -37,12 +36,12 @@ SPIUARTDriver::SPIUARTDriver() :
 
 bool SPIUARTDriver::sem_take_nonblocking()
 {
-    return _spi_sem->take_nonblocking();
+    return _dev->get_semaphore()->take_nonblocking();
 }
 
 void SPIUARTDriver::sem_give()
 {
-    _spi_sem->give();
+    _dev->get_semaphore()->give();
 }
 
 void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
@@ -97,13 +96,7 @@ void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
        }
    }
 
-   _spi = hal.spi->device(AP_HAL::SPIDevice_Ublox);
-
-   if (_spi == NULL) {
-       AP_HAL::panic("Cannot get SPIDevice_Ublox");
-   }
-
-   _spi_sem = _spi->get_semaphore();
+   _dev = hal.spi->get_device("ublox");
 
    switch (b) {
        case 4000000U:
@@ -112,15 +105,15 @@ void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 * it can lead to misconfiguraration. Once the device is initialized,
                 * it's sage to update speed
                 */
-               _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+               _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
                debug("Set higher SPI-frequency");
            } else {
-               _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+               _dev->set_speed(AP_HAL::Device::SPEED_LOW);
                debug("Set lower SPI-frequency");
            }
            break;
        default:
-           _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+           _dev->set_speed(AP_HAL::Device::SPEED_LOW);
            debug("Set lower SPI-frequency");
            debug("%s: wrong baudrate (%u) for SPI-driven device. setting default speed", __func__, b);
            break;
@@ -139,7 +132,7 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         return 0;
     }
 
-    _spi->transaction(buf, _buffer, size);
+    _dev->transfer(buf, sizeof(*buf), nullptr, 0);
 
     sem_give();
 
@@ -193,7 +186,7 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     
 }
 
-static const uint8_t ff_stub[300] = {0xff};
+static uint8_t ff_stub[300] = {0xff};
 int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     if (_external) {
@@ -214,7 +207,7 @@ int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
         n = 100;
     }
 
-    _spi->transaction(ff_stub, buf, n);
+    _dev->transfer(nullptr, 0, ff_stub, sizeof(ff_stub));
 
     sem_give();
 
