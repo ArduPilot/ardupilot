@@ -1172,7 +1172,7 @@ float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
  */
 float AP_InertialSensor::get_delta_angle_dt(uint8_t i) const
 {
-    if (_delta_angle_valid[i]) {
+    if (_delta_angle_valid[i] && _delta_angle_dt[i] > 0) {
         return _delta_angle_dt[i];
     }
     return get_delta_time();
