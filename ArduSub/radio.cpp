@@ -12,7 +12,8 @@ void Sub::default_dead_zones()
     channel_pitch->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(40);
-    g.rc_6.set_default_dead_zone(0);
+    channel_forward->set_default_dead_zone(30);
+    channel_lateral->set_default_dead_zone(30);
 }
 
 void Sub::init_rc_in()
@@ -39,10 +40,10 @@ void Sub::init_rc_in()
     channel_lateral->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     //set auxiliary servo ranges
-    g.rc_5.set_range(0,1000);
-    g.rc_6.set_range(0,1000);
-    g.rc_7.set_range(0,1000);
-    g.rc_8.set_range(0,1000);
+//    g.rc_5.set_range(0,1000);
+//    g.rc_6.set_range(0,1000);
+//    g.rc_7.set_range(0,1000);
+//    g.rc_8.set_range(0,1000);
 
     // set default dead zones
     default_dead_zones();
