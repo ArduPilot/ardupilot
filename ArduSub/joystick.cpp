@@ -7,7 +7,7 @@
 
 // Anonymous namespace to hold variables used only in this file
 namespace {
-	int16_t mode;
+	int16_t mode = 1100;
 	int16_t camTilt = 1500;
 	int16_t lights1 = 1100;
 	int16_t lights2 = 1100;
