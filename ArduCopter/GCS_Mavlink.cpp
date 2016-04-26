@@ -978,9 +978,9 @@ GCS_MAVLINK::data_stream_send(void)
 }
 
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
-    copter.do_guided(cmd);
+    return copter.do_guided(cmd);
 }
 
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
