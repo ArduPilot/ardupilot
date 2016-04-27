@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Display.h"
+#include <AP_HAL/I2CDevice.h>
 
 #define SSD1306_I2C_ADDRESS 0x3C    // default I2C bus address
 #define SSD1306_ROWS 128		    // display rows
@@ -17,4 +18,5 @@ public:
 
 private:
     uint8_t _displaybuffer[SSD1306_ROWS * SSD1306_COLUMNS_PER_PAGE];
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
