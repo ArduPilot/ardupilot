@@ -319,7 +319,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 
         #if RANGEFINDER_ENABLED == ENABLED && OPTFLOW == ENABLED
         // check range finder if optflow enabled
-        if (optflow.enabled() && !sonar.pre_arm_check()) {
+        if (optflow.enabled() && !rangefinder.pre_arm_check()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check range finder");
             }
