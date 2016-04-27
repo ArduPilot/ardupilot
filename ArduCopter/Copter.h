@@ -946,6 +946,7 @@ private:
     void read_barometer(void);
     void init_rangefinder(void);
     int16_t read_rangefinder(void);
+    bool rangefinder_alt_ok();
     void init_compass();
     void init_optflow();
     void update_optical_flow(void);
