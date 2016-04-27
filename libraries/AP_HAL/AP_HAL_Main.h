@@ -37,10 +37,11 @@
 
 #else
 
-#define AP_HAL_MAIN() extern "C" { \
+#define AP_HAL_MAIN() \
+    AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
+    extern "C" {                               \
     int AP_MAIN(int argc, char* const argv[]); \
     int AP_MAIN(int argc, char* const argv[]) { \
-        AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
         hal.run(argc, argv, &callbacks); \
         return 0; \
     } \
