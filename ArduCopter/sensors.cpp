@@ -34,7 +34,7 @@ void Copter::init_rangefinder(void)
 }
 
 // return rangefinder altitude in centimeters
-int16_t Copter::read_rangefinder(void)
+void Copter::read_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
@@ -42,19 +42,12 @@ int16_t Copter::read_rangefinder(void)
     // exit immediately if rangefinder is disabled
     if (rangefinder.status() != RangeFinder::RangeFinder_Good) {
         rangefinder_alt_health = 0;
-        return 0;
+        return;
     }
+
+    rangefinder_alt_health = rangefinder.range_valid_count();
 
     int16_t temp_alt = rangefinder.distance_cm();
-
-    if (temp_alt >= rangefinder.min_distance_cm() &&
-        temp_alt <= rangefinder.max_distance_cm() * RANGEFINDER_RELIABLE_DISTANCE_PCT) {
-        if (rangefinder_alt_health < RANGEFINDER_HEALTH_MAX) {
-            rangefinder_alt_health++;
-        }
-    }else{
-        rangefinder_alt_health = 0;
-    }
 
  #if RANGEFINDER_TILT_CORRECTION == 1
     // correct alt for angle of the rangefinder
@@ -63,9 +56,10 @@ int16_t Copter::read_rangefinder(void)
     temp_alt = (float)temp_alt * temp;
  #endif
 
-    return temp_alt;
+    rangefinder_alt = temp_alt;
 #else
-    return 0;
+    rangefinder_alt_health = 0;
+    rangefinder_alt = 0;
 #endif
 }
 

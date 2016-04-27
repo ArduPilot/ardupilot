@@ -614,7 +614,7 @@ void Copter::update_altitude()
     read_barometer();
 
     // read in rangefinder altitude
-    rangefinder_alt = read_rangefinder();
+    read_rangefinder();
 
     // write altitude info to dataflash logs
     if (should_log(MASK_LOG_CTUN)) {
