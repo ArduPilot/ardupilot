@@ -183,24 +183,24 @@ TEST(MathWrapTest, Angle180)
         }
     }
 
-    EXPECT_EQ(4500.f,   wrap_180_cd_float(4500.f));
-    EXPECT_EQ(9000.f,   wrap_180_cd_float(9000.f));
-    EXPECT_EQ(18000.f,  wrap_180_cd_float(18000.f));
-    EXPECT_EQ(-17990.f, wrap_180_cd_float(18010.f));
-    EXPECT_EQ(-9000.f,  wrap_180_cd_float(27000.f));
-    EXPECT_EQ(0.f,      wrap_180_cd_float(36000.f));
-    EXPECT_EQ(0.f,      wrap_180_cd_float(72000.f));
-    EXPECT_EQ(0.f,      wrap_180_cd_float(360000.f));
-    EXPECT_EQ(0.f,      wrap_180_cd_float(720000.f));
-    EXPECT_EQ(0.f,      wrap_180_cd_float(-3600000000.f));
+    EXPECT_EQ(4500.f,   wrap_180_cd(4500.f));
+    EXPECT_EQ(9000.f,   wrap_180_cd(9000.f));
+    EXPECT_EQ(18000.f,  wrap_180_cd(18000.f));
+    EXPECT_EQ(-17990.f, wrap_180_cd(18010.f));
+    EXPECT_EQ(-9000.f,  wrap_180_cd(27000.f));
+    EXPECT_EQ(0.f,      wrap_180_cd(36000.f));
+    EXPECT_EQ(0.f,      wrap_180_cd(72000.f));
+    EXPECT_EQ(0.f,      wrap_180_cd(360000.f));
+    EXPECT_EQ(0.f,      wrap_180_cd(720000.f));
+    EXPECT_EQ(0.f,      wrap_180_cd(-3600000000.f));
 
-    EXPECT_EQ(-4500.f, wrap_180_cd_float(-4500.f));
-    EXPECT_EQ(-9000.f, wrap_180_cd_float(-9000.f));
-    EXPECT_EQ(18000.f, wrap_180_cd_float(-18000.f));
-    EXPECT_EQ(17990.f, wrap_180_cd_float(-18010.f));
-    EXPECT_EQ(9000.f,  wrap_180_cd_float(-27000.f));
-    EXPECT_EQ(0.f,     wrap_180_cd_float(-36000.f));
-    EXPECT_EQ(0.f,     wrap_180_cd_float(-72000.f));
+    EXPECT_EQ(-4500.f, wrap_180_cd(-4500.f));
+    EXPECT_EQ(-9000.f, wrap_180_cd(-9000.f));
+    EXPECT_EQ(18000.f, wrap_180_cd(-18000.f));
+    EXPECT_EQ(17990.f, wrap_180_cd(-18010.f));
+    EXPECT_EQ(9000.f,  wrap_180_cd(-27000.f));
+    EXPECT_EQ(0.f,     wrap_180_cd(-36000.f));
+    EXPECT_EQ(0.f,     wrap_180_cd(-72000.f));
 }
 
 TEST(MathWrapTest, Angle360)
@@ -222,22 +222,22 @@ TEST(MathWrapTest, Angle360)
         }
     }
 
-    EXPECT_EQ(4500.f,  wrap_360_cd_float(4500.f));
-    EXPECT_EQ(9000.f,  wrap_360_cd_float(9000.f));
-    EXPECT_EQ(18000.f, wrap_360_cd_float(18000.f));
-    EXPECT_EQ(27000.f, wrap_360_cd_float(27000.f));
-    EXPECT_EQ(0.f,     wrap_360_cd_float(36000.f));
-    EXPECT_EQ(0.f,     wrap_360_cd_float(72000.f));
-    EXPECT_EQ(0.f,     wrap_360_cd_float(360000.f));
-    EXPECT_EQ(0.f,     wrap_360_cd_float(720000.f));
-    EXPECT_EQ( 0.f,    wrap_360_cd_float(-3600000000.f));
+    EXPECT_EQ(4500.f,  wrap_360_cd(4500.f));
+    EXPECT_EQ(9000.f,  wrap_360_cd(9000.f));
+    EXPECT_EQ(18000.f, wrap_360_cd(18000.f));
+    EXPECT_EQ(27000.f, wrap_360_cd(27000.f));
+    EXPECT_EQ(0.f,     wrap_360_cd(36000.f));
+    EXPECT_EQ(0.f,     wrap_360_cd(72000.f));
+    EXPECT_EQ(0.f,     wrap_360_cd(360000.f));
+    EXPECT_EQ(0.f,     wrap_360_cd(720000.f));
+    EXPECT_EQ( 0.f,    wrap_360_cd(-3600000000.f));
 
-    EXPECT_EQ(31500.f, wrap_360_cd_float(-4500.f));
-    EXPECT_EQ(27000.f, wrap_360_cd_float(-9000.f));
-    EXPECT_EQ(18000.f, wrap_360_cd_float(-18000.f));
-    EXPECT_EQ(9000.f,  wrap_360_cd_float(-27000.f));
-    EXPECT_EQ(0.f,     wrap_360_cd_float(-36000.f));
-    EXPECT_EQ(0.f,     wrap_360_cd_float(-72000.f));
+    EXPECT_EQ(31500.f, wrap_360_cd(-4500.f));
+    EXPECT_EQ(27000.f, wrap_360_cd(-9000.f));
+    EXPECT_EQ(18000.f, wrap_360_cd(-18000.f));
+    EXPECT_EQ(9000.f,  wrap_360_cd(-27000.f));
+    EXPECT_EQ(0.f,     wrap_360_cd(-36000.f));
+    EXPECT_EQ(0.f,     wrap_360_cd(-72000.f));
 }
 
 AP_GTEST_MAIN()

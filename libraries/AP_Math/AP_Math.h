@@ -52,25 +52,45 @@ bool                    inverse4x4(float m[],float invOut[]);
 float* mat_mul(float *A, float *B, uint8_t n);
 
 /*
-  wrap an angle in centi-degrees
+ * Constrain an angle to be within the range: -180 to 180 degrees. The second
+ * parameter changes the units. Default: 1 == degrees, 10 == dezi,
+ * 100 == centi.
  */
-int32_t wrap_360_cd(int32_t error);
-int32_t wrap_180_cd(int32_t error);
-float wrap_360_cd_float(float angle);
-float wrap_180_cd_float(float angle);
-float wrap_360(float angle);
+template <class T>
+float wrap_180(const T angle, float unit_mod = 1);
 
 /*
-  wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
+ * Wrap an angle in centi-degrees. See wrap_180().
  */
-float wrap_PI(float angle_in_radians);
+template <class T>
+auto wrap_180_cd(const T angle) -> decltype(wrap_180(angle, 100.f));
 
 /*
-  wrap an angle defined in radians to the interval [0,2*PI)
+ * Constrain an euler angle to be within the range: 0 to 360 degrees. The
+ * second parameter changes the units. Default: 1 == degrees, 10 == dezi,
+ * 100 == centi.
  */
-float wrap_2PI(float angle);
+template <class T>
+float wrap_360(const T angle, float unit_mod = 1);
 
-// constrain a value
+/*
+ * Wrap an angle in centi-degrees. See wrap_360().
+ */
+template <class T>
+auto wrap_360_cd(const T angle) -> decltype(wrap_360(angle, 100.f));
+
+/*
+  wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
+ */
+template <class T>
+float wrap_PI(const T radian);
+
+/*
+ * wrap an angle in radians to 0..2PI
+ */
+template <class T>
+float wrap_2PI(const T radian);
+
 // constrain a value
 static inline float constrain_float(float amt, float low, float high)
 {
@@ -83,6 +103,7 @@ static inline float constrain_float(float amt, float low, float high)
 	}
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
+
 // constrain a int16_t value
 static inline int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
