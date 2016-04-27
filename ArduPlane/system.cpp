@@ -840,5 +840,8 @@ bool Plane::disarm_motors(void)
     //only log if disarming was successful
     change_arm_state();
 
+    // reload target airspeed which could have been modified by a mission
+    plane.g.airspeed_cruise_cm.load();
+    
     return true;
 }

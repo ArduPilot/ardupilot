@@ -1340,6 +1340,8 @@ void QuadPlane::check_land_complete(void)
         plane.disarm_motors();
         land_state = QLAND_COMPLETE;
         plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
+        // reload target airspeed which could have been modified by the mission
+        plane.g.airspeed_cruise_cm.load();
     }
 }
 
