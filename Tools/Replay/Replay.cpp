@@ -872,7 +872,7 @@ void Replay::log_check_solution(void)
 
     float roll_error  = degrees(fabsf(euler.x - check_state.euler.x));
     float pitch_error = degrees(fabsf(euler.y - check_state.euler.y));
-    float yaw_error = wrap_180_cd_float(100*degrees(fabsf(euler.z - check_state.euler.z)))*0.01f;
+    float yaw_error = wrap_180_cd(100*degrees(fabsf(euler.z - check_state.euler.z)))*0.01f;
     float vel_error = (velocity - check_state.velocity).length();
     float pos_error = get_distance(check_state.pos, loc);
 
