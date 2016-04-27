@@ -157,12 +157,15 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 
 
 /* 
-   find difference between home terrain height and the terrain height
-   at a given location, in meters. A positive result means the terrain
-   is higher than home.
+   find difference between home terrain height and the terrain
+   height at the current location in meters. A positive result
+   means the terrain is higher than home.
 
-   return false is terrain at the given location or at home
+   return false is terrain at the current location or at home
    location is not available
+
+   If extrapolate is true then allow return of an extrapolated
+   terrain altitude based on the last available data
 */
 bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool extrapolate)
 {
