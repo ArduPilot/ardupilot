@@ -895,7 +895,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),      
     
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
     GOBJECT(sonar,   "RNGFND", RangeFinder),

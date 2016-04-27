@@ -48,8 +48,8 @@
 #endif
 
 #if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
- #undef CONFIG_SONAR
- #define CONFIG_SONAR DISABLED
+ #undef RANGEFINDER_ENABLED
+ #define RANGEFINDER_ENABLED DISABLED
 #endif
 
 #define MAGNETOMETER ENABLED
@@ -125,8 +125,8 @@
 // Sonar
 //
 
-#ifndef CONFIG_SONAR
- # define CONFIG_SONAR ENABLED
+#ifndef RANGEFINDER_ENABLED
+ # define RANGEFINDER_ENABLED ENABLED
 #endif
 
 #ifndef SONAR_ALT_HEALTH_MAX

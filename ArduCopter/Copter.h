@@ -169,7 +169,7 @@ private:
     Compass compass;
     AP_InertialSensor ins;
 
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
     RangeFinder sonar {serial_manager};
     bool sonar_enabled; // enable user switch for sonar
 #endif
