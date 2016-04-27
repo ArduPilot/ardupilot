@@ -155,7 +155,7 @@ build_arduplane() {
     tag="$1"
     echo "Building ArduPlane $tag binaries from $(pwd)"
     pushd ArduPlane
-    for b in apm1 apm2 navio pxf; do
+    for b in apm1 apm2 navio navio2 pxf; do
         checkout ArduPlane $tag $b "" || {
             echo "Failed checkout of ArduPlane $b $tag"
             error_count=$((error_count+1))
@@ -212,7 +212,7 @@ build_arducopter() {
     echo "Building ArduCopter $tag binaries from $(pwd)"
     pushd ArduCopter
     frames="quad tri hexa y6 octa octa-quad heli"
-    for b in navio pxf; do
+    for b in navio navio2 pxf; do
         for f in $frames; do
             checkout ArduCopter $tag $b $f || {
                 echo "Failed checkout of ArduCopter $b $tag $f"
@@ -263,7 +263,7 @@ build_rover() {
     tag="$1"
     echo "Building APMrover2 $tag binaries from $(pwd)"
     pushd APMrover2
-    for b in apm1 apm2 navio pxf; do
+    for b in apm1 apm2 navio navio2 pxf; do
 	echo "Building APMrover2 $b binaries"
         checkout APMrover2 $tag $b "" || continue
 	ddir=$binaries/Rover/$hdate/$b
