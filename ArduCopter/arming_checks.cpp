@@ -332,6 +332,12 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
         #endif // HELI_FRAME
+
+        // check for missing terrain data
+        if (!pre_arm_terrain_check()) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Terrain data");
+            return false;
+        }
     }
 
     // check throttle is above failsafe throttle
@@ -486,6 +492,24 @@ bool Copter::pre_arm_ekf_attitude_check()
     return filt_status.flags.attitude;
 }
 
+// check we have required terrain data
+bool Copter::pre_arm_terrain_check()
+{
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+    // succeed if not using terrain data
+    if (!terrain_use()) {
+        return true;
+    }
+
+    // show terrain statistics
+    uint16_t terr_pending, terr_loaded;
+    terrain.get_statistics(terr_pending, terr_loaded);
+    return (terr_pending <= 0);
+#else
+    return true;
+#endif
+}
+
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
 //  has side-effect that logging is started
@@ -632,6 +656,14 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Check Battery");
             }
+            return false;
+        }
+    }
+
+    // check for missing terrain data
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
+        if (!pre_arm_terrain_check()) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Terrain data");
             return false;
         }
     }

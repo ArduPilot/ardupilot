@@ -167,3 +167,15 @@ float linear_interpolate(float low_output, float high_output,
                          float var_value,
                          float var_low, float var_high);
 
+/*
+  returns the closest point on a line segment to a given point
+ */
+float closest_point_on_segment_as_ratio(const Vector2f &segment_start, const Vector2f &segment_end,
+                                        const Vector2f &point);
+
+/*
+  returns barycentric weightings of a point within a triangle
+ */
+void barycentric_interpolate(const Vector2f &triangle_vertex1, const Vector2f &triangle_vertex2, const Vector2f &triangle_vertex3,
+                              const Vector2f &point,
+                              float &weight1, float &weight2, float &weight3);
