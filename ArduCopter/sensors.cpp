@@ -69,6 +69,12 @@ int16_t Copter::read_rangefinder(void)
 #endif
 }
 
+// return true if rangefinder_alt can be used
+bool Copter::rangefinder_alt_ok()
+{
+    return (rangefinder_enabled && (rangefinder_alt_health >= RANGEFINDER_HEALTH_MAX));
+}
+
 /*
   update RPM sensors
  */
