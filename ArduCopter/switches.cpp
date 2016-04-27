@@ -347,7 +347,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
         case AUXSW_SONAR:
             // enable or disable the sonar
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
             if (ch_flag == AUX_SWITCH_HIGH) {
                 sonar_enabled = true;
             }else{

@@ -257,7 +257,7 @@ void Copter::init_ardupilot()
     init_barometer(true);
 
     // initialise sonar
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
     init_sonar();
 #endif
 

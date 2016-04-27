@@ -26,7 +26,7 @@ void Copter::read_barometer(void)
     motors.set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
 void Copter::init_sonar(void)
 {
    sonar.init();
@@ -36,7 +36,7 @@ void Copter::init_sonar(void)
 // return sonar altitude in centimeters
 int16_t Copter::read_sonar(void)
 {
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
     sonar.update();
 
     // exit immediately if sonar is disabled

@@ -249,7 +249,7 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     }
 #endif
 
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
     if (sonar.num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
@@ -409,7 +409,7 @@ void NOINLINE Copter::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
 void NOINLINE Copter::send_rangefinder(mavlink_channel_t chan)
 {
     // exit immediately if sonar is disabled
@@ -633,7 +633,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_RANGEFINDER:
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         copter.send_rangefinder(chan);
 #endif

@@ -317,7 +317,7 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 
-        #if CONFIG_SONAR == ENABLED && OPTFLOW == ENABLED
+        #if RANGEFINDER_ENABLED == ENABLED && OPTFLOW == ENABLED
         // check range finder if optflow enabled
         if (optflow.enabled() && !sonar.pre_arm_check()) {
             if (display_failure) {
