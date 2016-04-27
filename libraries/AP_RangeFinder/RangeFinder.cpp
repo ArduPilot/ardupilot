@@ -24,6 +24,8 @@
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
 
+extern const AP_HAL::HAL &hal;
+
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
@@ -461,6 +463,18 @@ void RangeFinder::update(void)
         }
     }
 }
+
+void RangeFinder::add_backend(AP_RangeFinder_Backend *driver)
+{
+    if (!driver) {
+        return;
+    }
+    if (num_instances == RANGEFINDER_MAX_INSTANCES) {
+        AP_HAL::panic("Too many RANGERS backends");
+    }
+
+    drivers[num_instances++] = driver;
+}
     
 /*
   detect if an instance of a rangefinder is connected. 
@@ -476,24 +490,17 @@ void RangeFinder::detect_instance(uint8_t instance)
     }
 #endif
     if (type == RangeFinder_TYPE_PLI2C) {
-        if (AP_RangeFinder_PulsedLightLRF::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PulsedLightLRF(*this, instance, state[instance]);
-            return;
-        }
+        add_backend(AP_RangeFinder_PulsedLightLRF::detect(*this, instance, state[instance],
+            hal.i2c_mgr->get_device(0, AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR)));
     } 
     if (type == RangeFinder_TYPE_MBI2C) {
-        if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarI2CXL(*this, instance, state[instance]);
-            return;
-        }
+        add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance],
+            hal.i2c_mgr->get_device(0, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)));
     }
     if (type == RangeFinder_TYPE_LWI2C) {
-        if (AP_RangeFinder_LightWareI2C::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareI2C(*this, instance, state[instance]);
-            return;
+        if (_address[instance]) {
+                add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
+                    hal.i2c_mgr->get_device(0, _address[instance])));
         }
     } 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
