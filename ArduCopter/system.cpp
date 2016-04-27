@@ -256,10 +256,8 @@ void Copter::init_ardupilot()
     //-----------------------------
     init_barometer(true);
 
-    // initialise sonar
-#if RANGEFINDER_ENABLED == ENABLED
-    init_sonar();
-#endif
+    // initialise rangefinder
+    init_rangefinder();
 
     // initialise AP_RPM library
     rpm_sensor.init();

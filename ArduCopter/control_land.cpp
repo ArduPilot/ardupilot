@@ -234,9 +234,9 @@ void Copter::land_nogps_run()
 float Copter::get_land_descent_speed()
 {
 #if RANGEFINDER_ENABLED == ENABLED
-    bool sonar_ok = sonar_enabled && (sonar.status() == RangeFinder::RangeFinder_Good);
+    bool rangefinder_ok = rangefinder_enabled && (rangefinder.status() == RangeFinder::RangeFinder_Good);
 #else
-    bool sonar_ok = false;
+    bool rangefinder_ok = false;
 #endif
 
     // get position controller's target altitude above terrain
@@ -251,8 +251,8 @@ float Copter::get_land_descent_speed()
         Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
     }
 
-    // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
-    if ((target_alt_cm >= LAND_START_ALT) && !(sonar_ok && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+    // if we are above 10m and the rangefinder does not sense anything perform regular alt hold descent
+    if ((target_alt_cm >= LAND_START_ALT) && !(rangefinder_ok && rangefinder_alt_health >= RANGEFINDER_HEALTH_MAX)) {
         if (g.land_speed_high > 0) {
             // user has asked for a different landing speed than normal descent rate
             return -abs(g.land_speed_high);

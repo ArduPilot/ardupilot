@@ -137,9 +137,9 @@ void Copter::tuning() {
         circle_nav.set_rate((float)g.rc_6.get_control_in()/25.0f-20.0f);
         break;
 
-    case TUNING_SONAR_GAIN:
-        // set sonar gain
-        g.sonar_gain.set(tuning_value);
+    case TUNING_RANGEFINDER_GAIN:
+        // set rangefinder gain
+        g.rangefinder_gain.set(tuning_value);
         break;
 
 #if 0

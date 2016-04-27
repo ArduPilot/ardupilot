@@ -26,38 +26,38 @@ void Copter::read_barometer(void)
     motors.set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
-#if RANGEFINDER_ENABLED == ENABLED
-void Copter::init_sonar(void)
+void Copter::init_rangefinder(void)
 {
-   sonar.init();
-}
+#if RANGEFINDER_ENABLED == ENABLED
+   rangefinder.init();
 #endif
+}
 
-// return sonar altitude in centimeters
-int16_t Copter::read_sonar(void)
+// return rangefinder altitude in centimeters
+int16_t Copter::read_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
-    sonar.update();
+    rangefinder.update();
 
-    // exit immediately if sonar is disabled
-    if (sonar.status() != RangeFinder::RangeFinder_Good) {
-        sonar_alt_health = 0;
+    // exit immediately if rangefinder is disabled
+    if (rangefinder.status() != RangeFinder::RangeFinder_Good) {
+        rangefinder_alt_health = 0;
         return 0;
     }
 
-    int16_t temp_alt = sonar.distance_cm();
+    int16_t temp_alt = rangefinder.distance_cm();
 
-    if (temp_alt >= sonar.min_distance_cm() && 
-        temp_alt <= sonar.max_distance_cm() * SONAR_RELIABLE_DISTANCE_PCT) {
-        if ( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
-            sonar_alt_health++;
+    if (temp_alt >= rangefinder.min_distance_cm() &&
+        temp_alt <= rangefinder.max_distance_cm() * RANGEFINDER_RELIABLE_DISTANCE_PCT) {
+        if (rangefinder_alt_health < RANGEFINDER_HEALTH_MAX) {
+            rangefinder_alt_health++;
         }
     }else{
-        sonar_alt_health = 0;
+        rangefinder_alt_health = 0;
     }
 
- #if SONAR_TILT_CORRECTION == 1
-    // correct alt for angle of the sonar
+ #if RANGEFINDER_TILT_CORRECTION == 1
+    // correct alt for angle of the rangefinder
     float temp = ahrs.cos_pitch() * ahrs.cos_roll();
     temp = MAX(temp, 0.707f);
     temp_alt = (float)temp_alt * temp;

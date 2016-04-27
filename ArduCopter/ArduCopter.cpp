@@ -607,14 +607,14 @@ void Copter::read_AHRS(void)
     ahrs.update();
 }
 
-// read baro and sonar altitude at 10hz
+// read baro and rangefinder altitude at 10hz
 void Copter::update_altitude()
 {
     // read in baro altitude
     read_barometer();
 
-    // read in sonar altitude
-    sonar_alt           = read_sonar();
+    // read in rangefinder altitude
+    rangefinder_alt = read_rangefinder();
 
     // write altitude info to dataflash logs
     if (should_log(MASK_LOG_CTUN)) {
