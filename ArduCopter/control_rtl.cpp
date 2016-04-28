@@ -521,7 +521,7 @@ void Copter::rtl_compute_return_alt(const Location_Class &rtl_origin_point, Loca
     if (!rtl_path.terrain_used || !rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
         if (!rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
             // this should never happen but just in case
-            rtl_return_target.set_alt(0, Location_Class::ALT_FRAME_ABOVE_HOME);
+            rtl_return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
         }
     }
 
