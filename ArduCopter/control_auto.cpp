@@ -113,11 +113,11 @@ void Copter::auto_takeoff_start(const Location& dest_loc)
 
     // sanity check target
     if (alt_target < current_loc.alt) {
-        dest.set_alt(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+        dest.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
     }
     // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
     if (alt_target < 100) {
-        dest.set_alt(100, Location_Class::ALT_FRAME_ABOVE_HOME);
+        dest.set_alt_cm(100, Location_Class::ALT_FRAME_ABOVE_HOME);
     }
 
     // set waypoint controller target
@@ -478,7 +478,7 @@ void Copter::auto_circle_movetoedge_start(const Location_Class &circle_center, f
         Location_Class circle_edge(circle_edge_neu);
 
         // convert altitude to same as command
-        circle_edge.set_alt(circle_center.alt, circle_center.get_alt_frame());
+        circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
 
         // initialise wpnav to move to edge of circle
         if (!wp_nav.set_wp_destination(circle_edge)) {
