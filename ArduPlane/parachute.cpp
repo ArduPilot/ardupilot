@@ -96,11 +96,11 @@ void Plane::parachute_emergency_check()
 
     // at this point we consider control lost
     if (parachute.control_loss_ms() == 0) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Crash: Starting to lose control, %d m error", altitude_error_cm * 0.01f);
+        gcs_send_text(MAV_SEVERITY_WARNING, "Parachute: Starting to lose control");
         parachute.control_loss_ms(now);
     } else if (now - parachute.control_loss_ms() > PARACHUTE_CHECK_TRIGGER_MS) {
         // we have lost control for too long
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Crash: Critical altitude error %d m", altitude_error_cm * 0.01f);
+        gcs_send_text(MAV_SEVERITY_WARNING, "Parachute: Loss of control sustained");
 
         // check if altitude is suitable for parachute deployment
         if (relative_altitude() > parachute.alt_min() && (parachute.alt_max() < 0 || relative_altitude() < parachute.alt_max())) {
