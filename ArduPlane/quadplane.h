@@ -8,7 +8,14 @@
 #include <AC_WPNav/AC_WPNav.h>
 
 // uncomment this to force a different motor class
-// #define AP_MOTORS_CLASS AP_MotorsTri
+// #define AP_MOTORS_FORCE_CLASS AP_MotorsTri
+
+
+#ifdef AP_MOTORS_FORCE_CLASS
+#define AP_MOTORS_CLASS AP_MOTORS_FORCE_CLASS
+#else
+#define AP_MOTORS_CLASS AP_MotorsMulticopter
+#endif
 
 /*
   QuadPlane specific functionality

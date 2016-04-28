@@ -303,7 +303,7 @@ bool QuadPlane::setup(void)
         goto failed;
     }
 
-#ifdef AP_MOTORS_CLASS
+#ifdef AP_MOTORS_FORCE_CLASS
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor1, CH_5);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
