@@ -13,7 +13,7 @@
 bool Copter::rtl_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
-        rtl_build_path(true);
+        rtl_build_path(!failsafe.terrain);
         rtl_climb_start();
         return true;
     }else{
