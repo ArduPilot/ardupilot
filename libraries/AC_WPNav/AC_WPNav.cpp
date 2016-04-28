@@ -393,6 +393,14 @@ void AC_WPNav::wp_and_spline_init()
         _wp_accel_cms.set_and_save(WPNAV_ACCELERATION);
     }
 
+    // also limit the accel using the maximum lean angle. This
+    // prevents the navigation controller from trying to move the
+    // target point at an unachievable rate
+    float accel_limit_cms = GRAVITY_MSS * 100 * tanf(radians(_attitude_control.lean_angle_max()*0.01f));
+    if (_wp_accel_cms > accel_limit_cms) {
+        _wp_accel_cms.set(accel_limit_cms);
+    }
+
     // initialise position controller
     _pos_control.init_xy_controller();
 
