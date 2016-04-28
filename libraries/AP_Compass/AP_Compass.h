@@ -294,6 +294,17 @@ public:
         Vector3f field[COMPASS_MAX_INSTANCES];
     } _hil;
 
+    enum LearnType {
+        LEARN_NONE=0,
+        LEARN_INTERNAL=1,
+        LEARN_EKF=2
+    };
+
+    // return the chosen learning type
+    enum LearnType get_learn_type(void) const {
+        return (enum LearnType)_learn.get();
+    }
+    
 private:
     /// Register a new compas driver, allocating an instance number
     ///
