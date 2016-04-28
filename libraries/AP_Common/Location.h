@@ -58,27 +58,8 @@ public:
     // return distance in meters between two locations
     float get_distance(const struct Location &loc2) const;
 
-    // return bearing in centi-degrees from this location to loc2
-    int32_t get_bearing_cd(const struct Location &loc2) const;
-
-    // see if location is past a line perpendicular to the line between point1 and point2.
-    // if point1 is our previous waypoint and point2 is our target waypoint then this function
-    // returns true if we have flown past the target waypoint
-    bool passed_point(const struct Location & point1, const struct Location & point2) const;
-
-    // return the proportion we are along the path from point1 to
-    // point2. This will be less than >1 if we have passed point2
-    float path_proportion(const struct Location &point1, const struct Location &point2) const;
-
-    // extrapolate latitude/longitude given bearing and distance
-    // bearing in degrees, distance in meters
-    void extrapolate(float bearing, float distance);
-
     // extrapolate latitude/longitude given distances (in meters) north and east
     void offset(float ofs_north, float ofs_east);
-
-    // return the distance in meters in North/East plane as a N/E vector from loc1 to loc2
-    Vector2f diff_2D(const struct Location &loc2) const;
 
 private:
     static const AP_AHRS_NavEKF *_ahrs;

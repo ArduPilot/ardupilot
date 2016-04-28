@@ -228,33 +228,6 @@ float Location_Class::get_distance(const struct Location &loc2) const
     return pythagorous2(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
-// return bearing in centi-degrees from this location to loc2
-int32_t Location_Class::get_bearing_cd(const struct Location &loc2) const
-{
-    return 0;
-}
-
-// see if location is past a line perpendicular to the line between point1 and point2.
-// if point1 is our previous waypoint and point2 is our target waypoint then this function
-// returns true if we have flown past the target waypoint
-bool Location_Class::passed_point(const struct Location & point1, const struct Location & point2) const
-{
-    return false;
-}
-
-// return the proportion we are along the path from point1 to
-// point2. This will be less than >1 if we have passed point2
-float Location_Class::path_proportion(const struct Location &point1, const struct Location &point2) const
-{
-    return 0;
-}
-
-// extrapolate latitude/longitude given bearing and distance
-// bearing in degrees, distance in meters
-void Location_Class::extrapolate(float bearing, float distance)
-{
-}
-
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location_Class::offset(float ofs_north, float ofs_east)
 {
@@ -264,10 +237,4 @@ void Location_Class::offset(float ofs_north, float ofs_east)
         lat += dlat;
         lng += dlng;
     }
-}
-
-// return the distance in meters in North/East plane as a N/E vector from loc1 to loc2
-Vector2f Location_Class::diff_2D(const struct Location &loc2) const
-{
-    return Vector2f(0,0);
 }
