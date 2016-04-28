@@ -155,6 +155,9 @@ private:
     uint64_t activation_frame_counter = 0;
     double last_frame_count_s = 0;
     Vector3f position_offset;
+
+    const char *controller_ip = "127.0.0.1";
+    uint16_t controller_port = 18083;
 };
 
 
