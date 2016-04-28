@@ -150,7 +150,7 @@
 #endif
 
 #ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
- # define RANGEFINDER_TILT_CORRECTION DISABLED
+ # define RANGEFINDER_TILT_CORRECTION ENABLED
 #endif
 
 
