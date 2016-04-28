@@ -55,7 +55,6 @@ void MultiCopter::update(const struct sitl_input &input)
     // get wind vector setup
     update_wind(input);
 
-    // how much time has passed?
     Vector3f rot_accel;
 
     calculate_forces(input, rot_accel, accel_body);
