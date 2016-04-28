@@ -113,8 +113,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERNAL
     // @DisplayName: Compass is attached via an external cable
-    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option
-    // @Values: 0:Internal,1:External
+    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state[0].external, 0),
 
@@ -244,8 +244,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERN2
     // @DisplayName: Compass2 is attached via an external cable
-    // @Description: Configure second compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
-    // @Values: 0:Internal,1:External
+    // @Description: Configure second compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN2",20, Compass, _state[1].external, 0),
 
@@ -265,8 +265,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERN3
     // @DisplayName: Compass3 is attached via an external cable
-    // @Description: Configure third compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
-    // @Values: 0:Internal,1:External
+    // @Description: Configure third compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN3",23, Compass, _state[2].external, 0),
 
