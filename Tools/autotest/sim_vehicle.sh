@@ -466,7 +466,7 @@ options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
 extra_cmd=""
 if [ $START_ANTENNA_TRACKER == 1 ]; then
     options="$options --load-module=tracker"
-    extra_cmd="$extra_cmd module load map; tracker set port $TRACKER_UARTA; tracker start;"
+    extra_cmd="$extra_cmd module load map; tracker set port $TRACKER_UARTA; tracker start; tracker arm"
 fi
 if [ $START_HIL == 1 ]; then
     options="$options --load-module=HIL"
