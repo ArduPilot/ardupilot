@@ -323,10 +323,10 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
             target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
             curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
             // if using terrain, set target altitude to current altitude above terrain
-            target_loc.set_alt(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
+            target_loc.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
         } else {
             // set target altitude to current altitude above home
-            target_loc.set_alt(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+            target_loc.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
         }
         auto_wp_start(target_loc);
     }else{
@@ -359,10 +359,10 @@ void Copter::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         // set to current altitude but in command's alt frame
         int32_t curr_alt;
         if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt(curr_alt, target_loc.get_alt_frame());
+            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
         } else {
             // default to current altitude as alt-above-home
-            target_loc.set_alt(current_loc.alt, current_loc.get_alt_frame());
+            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
     }
 
@@ -387,10 +387,10 @@ void Copter::do_circle(const AP_Mission::Mission_Command& cmd)
         int32_t curr_alt;
         if (current_loc.get_alt_cm(circle_center.get_alt_frame(),curr_alt)) {
             // circle altitude uses frame from command
-            circle_center.set_alt(curr_alt,circle_center.get_alt_frame());
+            circle_center.set_alt_cm(curr_alt,circle_center.get_alt_frame());
         } else {
             // default to current altitude above origin
-            circle_center.set_alt(current_loc.alt, current_loc.get_alt_frame());
+            circle_center.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
             Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
         }
     }
@@ -428,10 +428,10 @@ void Copter::do_spline_wp(const AP_Mission::Mission_Command& cmd)
         // set to current altitude but in command's alt frame
         int32_t curr_alt;
         if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt(curr_alt, target_loc.get_alt_frame());
+            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
         } else {
             // default to current altitude as alt-above-home
-            target_loc.set_alt(current_loc.alt, current_loc.get_alt_frame());
+            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
     }
 
@@ -469,10 +469,10 @@ void Copter::do_spline_wp(const AP_Mission::Mission_Command& cmd)
         if (next_loc.alt == 0) {
             int32_t next_alt;
             if (target_loc.get_alt_cm(next_loc.get_alt_frame(), next_alt)) {
-                next_loc.set_alt(next_alt, next_loc.get_alt_frame());
+                next_loc.set_alt_cm(next_alt, next_loc.get_alt_frame());
             } else {
                 // default to first waypoints altitude
-                next_loc.set_alt(target_loc.alt, target_loc.get_alt_frame());
+                next_loc.set_alt_cm(target_loc.alt, target_loc.get_alt_frame());
             }
         }
         // if the next nav command is a waypoint set end type to spline or straight
