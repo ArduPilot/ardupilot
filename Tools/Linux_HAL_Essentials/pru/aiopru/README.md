@@ -9,7 +9,8 @@ RC AllInOnePRU can be used with BeagleBone Black
 ## Build and install pasm (PRU Assembler) 
 1. `git clone https://github.com/beagleboard/am335x_pru_package.git`
 2. `cd am335x_pru_package`
-3. `sudo make install`
+3. `make`
+4. `sudo make install`
 
 ## Rebuild RCAioPRU.p
 1. `cd ardupilot/Tools/Linux_HAL_Essentials/pru/aiopru`
