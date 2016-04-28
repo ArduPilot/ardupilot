@@ -1155,6 +1155,17 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
 bool AC_WPNav::get_terrain_offset(float& offset_cm)
 {
 #if AP_TERRAIN_AVAILABLE
+    // use range finder if connected
+    if (_rangefinder_use) {
+        if (_rangefinder_healthy) {
+            offset_cm = _inav.get_altitude() - _rangefinder_alt_cm;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // use terrain database
     float terr_alt = 0.0f;
     if (_terrain != NULL && _terrain->height_above_terrain(terr_alt, true)) {
         offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
