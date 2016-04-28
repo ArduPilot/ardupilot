@@ -421,21 +421,6 @@ fi
 
 cmd="$cmd --model $MODEL --speedup=$SPEEDUP $EXTRA_ARGS"
 
-case $VEHICLE in
-    ArduPlane)
-        PARMS="ArduPlane.parm"
-        ;;
-    ArduCopter)
-        PARMS="copter_params.parm"
-        ;;
-    APMrover2)
-        PARMS="Rover.parm"
-        ;;
-    *)
-        PARMS=""
-        ;;
-esac
-
 if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     echo "Using MAVLink gimbal"
     cmd="$cmd --gimbal"
@@ -482,7 +467,7 @@ if [ $USER == "vagrant" ]; then
 options="$options --out 10.0.2.2:14550"
 fi
 options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
-extra_cmd1=""
+extra_cmd=""
 if [ $START_ANTENNA_TRACKER == 1 ]; then
     options="$options --load-module=tracker"
     extra_cmd="$extra_cmd module load map; tracker set port $TRACKER_UARTA; tracker start;"
