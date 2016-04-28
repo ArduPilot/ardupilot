@@ -166,31 +166,54 @@ void Copter::guided_angle_control_start()
 }
 
 // guided_set_destination - sets guided mode's target destination
-void Copter::guided_set_destination(const Vector3f& destination)
+// Returns true if the fence is enabled and guided waypoint is within the fence
+// else return false if the waypoint is outside the fence
+bool Copter::guided_set_destination(const Vector3f& destination)
 {
+    bool fence_status = true;
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
         guided_pos_control_start();
     }
 
-    // no need to check return status because terrain data is not used
+#if AC_FENCE == ENABLED
+    // ensure waypoint is within the fence
+    fence_status = fence.check_fence_location(destination.z, pv_get_home_destination_distance_cm(destination));
+#endif
+
+    if (!fence_status) {
+        // failure to set destination can only be because waypoint is outside the fence
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        // failure is propagated to GCS with NAK
+        return false;
+    }
+
+    // no need to check return status because terrain data is not used and fence is disabled
     wp_nav.set_wp_destination(destination, false);
 
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+    return true;
 }
 
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
+// or if the fence is enabled and guided waypoint is outside the fence
 bool Copter::guided_set_destination(const Location_Class& dest_loc)
 {
+    bool fence_status = true;
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
         guided_pos_control_start();
     }
 
-    if (!wp_nav.set_wp_destination(dest_loc)) {
-        // failure to set destination can only be because of missing terrain data
+#if AC_FENCE == ENABLED
+    // ensure waypoint is within the fence
+    fence_status = fence.check_fence_location((float)dest_loc.alt, (float)get_distance_cm(ahrs.get_home(),dest_loc));
+#endif
+
+    if (!fence_status || !wp_nav.set_wp_destination(dest_loc)) {
+        // failure to set destination can only be because of missing terrain data or waypoint is outside the fence
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
         return false;
