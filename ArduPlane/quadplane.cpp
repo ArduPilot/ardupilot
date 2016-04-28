@@ -13,7 +13,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Group: M_
     // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
-    AP_SUBGROUPPTR(motors, "M_", 2, QuadPlane, AP_MotorsMulticopter),
+    AP_SUBGROUPPTR(motors, "M_", 2, QuadPlane, AP_MOTORS_CLASS),
 
     // 3 ~ 8 were used by quadplane attitude control PIDs
 
@@ -303,6 +303,13 @@ bool QuadPlane::setup(void)
         goto failed;
     }
 
+#ifdef AP_MOTORS_CLASS
+    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor1, CH_5);
+    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
+    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
+    RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor7, CH_11);
+    motors = new AP_MOTORS_CLASS(plane.scheduler.get_loop_rate_hz());
+#else
     /*
       dynamically allocate the key objects for quadplane. This ensures
       that the objects don't affect the vehicle unless enabled and
@@ -333,6 +340,7 @@ bool QuadPlane::setup(void)
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
         goto failed;
     }
+#endif // AP_MOTORS_CLASS
     if (!motors) {
         hal.console->printf("Unable to allocate motors\n");
         goto failed;

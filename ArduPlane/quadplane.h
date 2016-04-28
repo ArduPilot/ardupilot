@@ -7,6 +7,9 @@
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_WPNav/AC_WPNav.h>
 
+// uncomment this to force a different motor class
+// #define AP_MOTORS_CLASS AP_MotorsTri
+
 /*
   QuadPlane specific functionality
  */
@@ -97,7 +100,7 @@ private:
     AP_Int8 frame_class;
     AP_Int8 frame_type;
     
-    AP_MotorsMulticopter *motors;
+    AP_MOTORS_CLASS *motors;
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
