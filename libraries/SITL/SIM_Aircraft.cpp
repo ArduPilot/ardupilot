@@ -142,18 +142,6 @@ void Aircraft::update_position(void)
     }
 }
 
-/*
-   rotate to the given yaw
-*/
-void Aircraft::set_yaw_degrees(float yaw_degrees)
-{
-    float roll, pitch, yaw;
-    dcm.to_euler(&roll, &pitch, &yaw);
-
-    yaw = radians(yaw_degrees);
-    dcm.from_euler(roll, pitch, yaw);
-}
-
 /* advance time by deltat in seconds */
 void Aircraft::time_advance(float deltat)
 {
