@@ -205,7 +205,7 @@ public:
     // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
     virtual float get_althold_lean_angle_max() const = 0;
 
-    // Return configured tilt angle limit in centidegrees/s
+    // Return configured tilt angle limit in centidegrees
     float lean_angle_max() const { return _aparm.angle_max; }
 
     // Proportional controller with piecewise sqrt sections to constrain second derivative
