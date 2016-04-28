@@ -99,7 +99,7 @@ static void run_test()
     uint8_t counter = 0;
     static uint8_t accel_count = ins.get_accel_count();
     static uint8_t gyro_count = ins.get_gyro_count();
-    static uint8_t ins_count = MAX(accel_count, gyro_count);
+    static uint8_t ins_count = max(accel_count, gyro_count);
 
     // flush any user input
     while (hal.console->available()) {

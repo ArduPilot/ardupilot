@@ -68,7 +68,7 @@ void NavEKF2_core::readRangeFinder(void)
             }
             rangeDataNew.time_ms = storedRngMeasTime_ms[midIndex];
             // limit the measured range to be no less than the on-ground range
-            rangeDataNew.rng = MAX(storedRngMeas[midIndex],rngOnGnd);
+            rangeDataNew.rng = max(storedRngMeas[midIndex],rngOnGnd);
             rngValidMeaTime_ms = imuSampleTime_ms;
             // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
             storedRange.push(rangeDataNew);
@@ -129,7 +129,7 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         // Correct for the average intersampling delay due to the filter updaterate
         ofDataNew.time_ms -= localFilterTimeStep_ms/2;
         // Prevent time delay exceeding age of oldest IMU data in the buffer
-        ofDataNew.time_ms = MAX(ofDataNew.time_ms,imuDataDelayed.time_ms);
+        ofDataNew.time_ms = max(ofDataNew.time_ms,imuDataDelayed.time_ms);
         // Save data to buffer
         storedOF.push(ofDataNew);
         // Check for data at the fusion time horizon
@@ -249,7 +249,7 @@ void NavEKF2_core::readIMUData()
     } else {
         readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng);
     }
-    imuDataNew.delAngDT = MAX(ins.get_delta_angle_dt(imu_index),1.0e-4f);
+    imuDataNew.delAngDT = max(ins.get_delta_angle_dt(imu_index),1.0e-4f);
 
     // Get current time stamp
     imuDataNew.time_ms = imuSampleTime_ms;
@@ -314,8 +314,8 @@ void NavEKF2_core::readIMUData()
     // extract the oldest available data from the FIFO buffer
     imuDataDelayed = storedIMU.pop_oldest_element();
     float minDT = 0.1f*dtEkfAvg;
-    imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
-    imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
+    imuDataDelayed.delAngDT = max(imuDataDelayed.delAngDT,minDT);
+    imuDataDelayed.delVelDT = max(imuDataDelayed.delVelDT,minDT);
 
 }
 
@@ -326,7 +326,7 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
 
     if (ins_index < ins.get_accel_count()) {
         ins.get_delta_velocity(ins_index,dVel);
-        dVel_dt = MAX(ins.get_delta_velocity_dt(ins_index),1.0e-4f);
+        dVel_dt = max(ins.get_delta_velocity_dt(ins_index),1.0e-4f);
         return true;
     }
     return false;
@@ -360,7 +360,7 @@ void NavEKF2_core::readGpsData()
             gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
 
             // Prevent time delay exceeding age of oldest IMU data in the buffer
-            gpsDataNew.time_ms = MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms);
+            gpsDataNew.time_ms = max(gpsDataNew.time_ms,imuDataDelayed.time_ms);
 
             // read the NED velocity from the GPS
             gpsDataNew.vel = _ahrs->get_gps().velocity();
@@ -373,7 +373,7 @@ void NavEKF2_core::readGpsData()
             if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
                 gpsSpdAccuracy = 0.0f;
             } else {
-                gpsSpdAccuracy = MAX(gpsSpdAccuracy,gpsSpdAccRaw);
+                gpsSpdAccuracy = max(gpsSpdAccuracy,gpsSpdAccRaw);
             }
 
             // check if we have enough GPS satellites and increase the gps noise scaler if we don't
@@ -514,7 +514,7 @@ void NavEKF2_core::readBaroData()
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
         if (isAiding && getTakeoffExpected()) {
-            baroDataNew.hgt = MAX(baroDataNew.hgt, meaHgtAtTakeOff);
+            baroDataNew.hgt = max(baroDataNew.hgt, meaHgtAtTakeOff);
         }
 
         // time stamp used to check for new measurement
@@ -527,7 +527,7 @@ void NavEKF2_core::readBaroData()
         baroDataNew.time_ms -= localFilterTimeStep_ms/2;
 
         // Prevent time delay exceeding age of oldest IMU data in the buffer
-        baroDataNew.time_ms = MAX(baroDataNew.time_ms,imuDataDelayed.time_ms);
+        baroDataNew.time_ms = max(baroDataNew.time_ms,imuDataDelayed.time_ms);
 
         // save baro measurement to buffer to be fused later
         storedBaro.push(baroDataNew);

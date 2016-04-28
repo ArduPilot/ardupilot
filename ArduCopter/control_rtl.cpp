@@ -85,7 +85,7 @@ void Copter::rtl_climb_start()
     wp_nav.wp_and_spline_init();
 
     // RTL_SPEED == 0 means use WPNAV_SPEED
-    if (!is_zero(g.rtl_speed_cms)) {
+    if (g.rtl_speed_cms != 0) {
         wp_nav.set_speed_xy(g.rtl_speed_cms);
     }
 
@@ -441,7 +441,7 @@ void Copter::rtl_build_path()
 
     Vector3f return_vector = rtl_path.return_target-rtl_path.origin_point;
 
-    float rtl_return_dist = pythagorous2(return_vector.x, return_vector.y);
+    float rtl_return_dist = norm(return_vector.x, return_vector.y);
 
     // compute return altitude
     rtl_path.return_target.z = rtl_compute_return_alt_above_origin(rtl_return_dist);
@@ -464,16 +464,16 @@ void Copter::rtl_build_path()
 float Copter::rtl_compute_return_alt_above_origin(float rtl_return_dist)
 {
     // maximum of current altitude + climb_min and rtl altitude
-    float ret = MAX(current_loc.alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN));
+    float ret = max(current_loc.alt + max(0, g.rtl_climb_min), max(g.rtl_altitude, RTL_ALT_MIN));
 
     if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) { // don't allow really shallow slopes
-        ret = MAX(current_loc.alt, MIN(ret, MAX(rtl_return_dist*g.rtl_cone_slope, current_loc.alt+RTL_ABS_MIN_CLIMB)));
+        ret = max(current_loc.alt, min(ret, max(rtl_return_dist*g.rtl_cone_slope, current_loc.alt+RTL_ABS_MIN_CLIMB)));
     }
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        ret = MIN(ret, fence.get_safe_alt()*100.0f);
+        ret = min(ret, fence.get_safe_alt()*100.0f);
     }
 #endif
 
@@ -481,7 +481,7 @@ float Copter::rtl_compute_return_alt_above_origin(float rtl_return_dist)
     // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
     Location rally_point = rally.calc_best_rally_or_home_location(current_loc, ret+ahrs.get_home().alt);
     rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = MAX(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
+    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
     ret = rally_point.alt;
 #endif
 

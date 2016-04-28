@@ -123,7 +123,7 @@ void Plane::stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
         
     ch_inf = (float)channel->radio_in - (float)channel->radio_trim;
     ch_inf = fabsf(ch_inf);
-    ch_inf = MIN(ch_inf, 400.0f);
+    ch_inf = min(ch_inf, 400.0f);
     ch_inf = ((400.0f - ch_inf) / 400.0f);
     servo_out *= ch_inf;
     servo_out += channel->pwm_to_angle();
@@ -605,7 +605,7 @@ bool Plane::suppress_throttle(void)
 
         uint32_t launch_duration_ms = ((int32_t)g.takeoff_throttle_delay)*100 + 2000;
         if (is_flying() &&
-            millis() - started_flying_ms > MAX(launch_duration_ms, 5000U) && // been flying >5s in any mode
+            millis() - started_flying_ms > max(launch_duration_ms, 5000U) && // been flying >5s in any mode
             adjusted_relative_altitude_cm() > 500 && // are >5m above AGL/home
             labs(ahrs.pitch_sensor) < 3000 && // not high pitch, which happens when held before launch
             gps_movement) { // definate gps movement

@@ -74,7 +74,7 @@ void AC_PID::filt_hz(float hz)
     _filt_hz.set(fabsf(hz));
 
     // sanity check _filt_hz
-    _filt_hz = MAX(_filt_hz, AC_PID_FILT_HZ_MIN);
+    _filt_hz = max(_filt_hz, AC_PID_FILT_HZ_MIN);
 }
 
 // set_input_filter_all - set input to PID controller
@@ -83,7 +83,7 @@ void AC_PID::filt_hz(float hz)
 void AC_PID::set_input_filter_all(float input)
 {
     // don't process inf or NaN
-    if (!isfinite(input)) {
+    if (!std::isfinite(input)) {
         return;
     }
 
@@ -108,7 +108,7 @@ void AC_PID::set_input_filter_all(float input)
 void AC_PID::set_input_filter_d(float input)
 {
     // don't process inf or NaN
-    if (!isfinite(input)) {
+    if (!std::isfinite(input)) {
         return;
     }
 
@@ -135,7 +135,7 @@ float AC_PID::get_p()
 
 float AC_PID::get_i()
 {
-    if(!is_zero(_ki) && !is_zero(_dt)) {
+    if(!is_zero<float>(_ki) && !is_zero<float>(_dt)) {
         _integrator += ((float)_input * _ki) * _dt;
         if (_integrator < -_imax) {
             _integrator = -_imax;
@@ -204,7 +204,7 @@ void AC_PID::operator() (float p, float i, float d, float imaxval, float input_f
 // calc_filt_alpha - recalculate the input filter alpha
 float AC_PID::get_filt_alpha() const
 {
-    if (is_zero(_filt_hz)) {
+    if (is_zero<float>(_filt_hz)) {
         return 1.0f;
     }
 

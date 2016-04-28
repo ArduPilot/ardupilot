@@ -25,7 +25,7 @@ void Copter::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float 
     pitch_in *= scaler;
 
     // do circular limit
-    float total_in = pythagorous2((float)pitch_in, (float)roll_in);
+    float total_in = norm((float)pitch_in, (float)roll_in);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
         roll_in *= ratio;
@@ -82,7 +82,7 @@ float Copter::get_roi_yaw()
 float Copter::get_look_ahead_yaw()
 {
     const Vector3f& vel = inertial_nav.get_velocity();
-    float speed = pythagorous2(vel.x,vel.y);
+    float speed = norm(vel.x,vel.y);
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
         yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
@@ -141,7 +141,7 @@ float Copter::get_pilot_desired_throttle(int16_t throttle_control)
     throttle_control = constrain_int16(throttle_control,0,1000);
     // ensure mid throttle is set within a reasonable range
     g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
-    float thr_mid = MAX(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
+    float thr_mid = max(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < mid_stick) {

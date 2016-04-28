@@ -88,7 +88,7 @@ float AC_HELI_PID::get_aff(float requested_rate)
 
 float AC_HELI_PID::get_leaky_i(float leak_rate)
 {
-    if(!is_zero(_ki) && !is_zero(_dt)){
+    if(!is_zero<float>(_ki) && !is_zero<float>(_dt)){
 
         // integrator does not leak down below Leak Min
         if (_integrator > _leak_min){

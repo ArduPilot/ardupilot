@@ -273,7 +273,7 @@ T Vector3<T>::operator *(const Vector3<T> &v) const
 template <typename T>
 float Vector3<T>::length(void) const
 {
-    return pythagorous3(x, y, z);
+    return norm(x, y, z);
 }
 
 template <typename T>

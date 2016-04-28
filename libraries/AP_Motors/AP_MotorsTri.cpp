@@ -209,7 +209,7 @@ void AP_MotorsTri::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    throttle_thrust_rpy_mix = MAX(throttle_thrust, throttle_thrust*MAX(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
+    throttle_thrust_rpy_mix = max(throttle_thrust, throttle_thrust*max(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
 
     // The following mix may be offer less coupling between axis but needs testing
     //_thrust_right = roll_thrust * -0.5f + pitch_thrust * 1.0f;
@@ -224,8 +224,8 @@ void AP_MotorsTri::output_armed_stabilizing()
     // set rpy_low and rpy_high to the lowest and highest values of the motors
 
     // record lowest roll pitch command
-    rpy_low = MIN(_thrust_right,_thrust_left);
-    rpy_high = MAX(_thrust_right,_thrust_left);
+    rpy_low = min(_thrust_right,_thrust_left);
+    rpy_high = max(_thrust_right,_thrust_left);
     if (rpy_low > _thrust_rear){
         rpy_low = _thrust_rear;
     }
@@ -246,7 +246,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favor reducing throttle instead of better yaw control because the pilot has commanded it
 
     // check everything fits
-    throttle_thrust_best_rpy = MIN(0.5f*thrust_max - (rpy_low+rpy_high)/2.0, throttle_thrust_rpy_mix);
+    throttle_thrust_best_rpy = min(0.5f*thrust_max - (rpy_low+rpy_high)/2.0, throttle_thrust_rpy_mix);
     if(is_zero(rpy_low)){
         rpy_scale = 1.0f;
     } else {

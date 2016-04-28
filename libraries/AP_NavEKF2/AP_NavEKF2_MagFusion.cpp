@@ -91,7 +91,7 @@ void NavEKF2_core::alignYawGPS()
         float gpsYaw = atan2f(gpsDataNew.vel.y,gpsDataNew.vel.x);
 
         // Check the yaw angles for consistency
-        float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),MAX(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
+        float yawErr = max(fabsf(wrap_PI(gpsYaw - velYaw)),max(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
 
         // If the angles disagree by more than 45 degrees and GPS innovations are large or no compass, we declare the magnetic yaw as bad
         badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f)) || !use_compass();
@@ -351,7 +351,7 @@ void NavEKF2_core::FuseMagnetometer()
 
         // calculate the innovation test ratios
         for (uint8_t i = 0; i<=2; i++) {
-            magTestRatio[i] = sq(innovMag[i]) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
+            magTestRatio[i] = sq(innovMag[i]) / (sq(max(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
         }
 
         // check the last values from all components and set magnetometer health accordingly
@@ -778,7 +778,7 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
+    yawTestRatio = sq(innovation) / (sq(max(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {
@@ -949,7 +949,7 @@ void NavEKF2_core::alignMagStateDeclination()
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = stateStruct.earth_magfield;
-    float magLengthNE = pythagorous2(initMagNED.x,initMagNED.y);
+    float magLengthNE = norm(initMagNED.x,initMagNED.y);
     stateStruct.earth_magfield.x = magLengthNE * cosf(magDecAng);
     stateStruct.earth_magfield.y = magLengthNE * sinf(magDecAng);
 }

@@ -137,7 +137,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!disable_integrator && gains.I > 0) {
         float k_I = gains.I;
-        if (is_zero(gains.FF)) {
+        if (is_zero<float>(gains.FF)) {
             /*
               if the user hasn't set a direct FF then assume they are
               not doing sophisticated tuning. Set a minimum I value of
@@ -148,7 +148,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
               value of 0.15 is still quite small, but a lot better
               than what many users are running.
              */
-            k_I = MAX(k_I, 0.15f);
+            k_I = max(k_I, 0.15f);
         }
         float ki_rate = k_I * gains.tau;
 		//only integrate if gain and time step are positive and airspeed above min value.
@@ -156,10 +156,10 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit
-				integrator_delta = MAX(integrator_delta , 0);
+				integrator_delta = max(integrator_delta , 0);
 			} else if (_last_out > 45) {
 				// prevent the integrator from decreasing if surface defln demand  is below the lower limit
-				integrator_delta = MIN(integrator_delta , 0);
+				integrator_delta = min(integrator_delta , 0);
 			}
 			_pid_info.I += integrator_delta;
 		}
@@ -176,7 +176,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
     float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
+	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
     float k_ff = gains.FF / eas2tas;
 	
 	// Calculate the demanded control surface deflection
@@ -258,7 +258,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / max((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
 	if (inverted) {
 		rate_offset = -rate_offset;

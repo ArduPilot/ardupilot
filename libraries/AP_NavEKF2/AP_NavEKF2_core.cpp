@@ -113,7 +113,7 @@ void NavEKF2_core::InitialiseVariables()
     // calculate the nominal filter update rate
     const AP_InertialSensor &ins = _ahrs->get_ins();
     localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
-    localFilterTimeStep_ms = MAX(localFilterTimeStep_ms,10);
+    localFilterTimeStep_ms = max(localFilterTimeStep_ms,10);
 
     // initialise time stamps
     imuSampleTime_ms = AP_HAL::millis();
@@ -277,7 +277,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
 
     // Initialise IMU data
     dtIMUavg = _ahrs->get_ins().get_loop_delta_t();
-    dtEkfAvg = MIN(0.01f,dtIMUavg);
+    dtEkfAvg = min(0.01f,dtIMUavg);
     readIMUData();
     storedIMU.reset_history(imuDataNew);
     imuDataDelayed = imuDataNew;
@@ -506,7 +506,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
-    accNavMagHoriz = pythagorous2(velDotNEDfilt.x , velDotNEDfilt.y);
+    accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
 
     // save velocity for use in trapezoidal intergration for position calcuation
     Vector3f lastVelocity = stateStruct.velocity;
@@ -1267,7 +1267,7 @@ void NavEKF2_core::ConstrainStates()
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
     for (uint8_t i=22; i<=23; i++) statesArray[i] = constrain_float(statesArray[i],-100.0f,100.0f);
     // constrain the terrain offset state
-    terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
+    terrainState = max(terrainState, stateStruct.position.z + rngOnGnd);
 }
 
 // calculate the NED earth spin vector in rad/sec

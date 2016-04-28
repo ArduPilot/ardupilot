@@ -818,15 +818,15 @@ void Replay::log_check_solution(void)
 
     float roll_error  = degrees(fabsf(euler.x - check_state.euler.x));
     float pitch_error = degrees(fabsf(euler.y - check_state.euler.y));
-    float yaw_error = wrap_180_cd_float(100*degrees(fabsf(euler.z - check_state.euler.z)))*0.01f;
+    float yaw_error = wrap_180_cd(100*degrees(fabsf(euler.z - check_state.euler.z)))*0.01f;
     float vel_error = (velocity - check_state.velocity).length();
     float pos_error = get_distance(check_state.pos, loc);
 
-    check_result.max_roll_error  = MAX(check_result.max_roll_error,  roll_error);
-    check_result.max_pitch_error = MAX(check_result.max_pitch_error, pitch_error);
-    check_result.max_yaw_error   = MAX(check_result.max_yaw_error,   yaw_error);
-    check_result.max_vel_error   = MAX(check_result.max_vel_error,   vel_error);
-    check_result.max_pos_error   = MAX(check_result.max_pos_error,   pos_error);
+    check_result.max_roll_error  = max(check_result.max_roll_error,  roll_error);
+    check_result.max_pitch_error = max(check_result.max_pitch_error, pitch_error);
+    check_result.max_yaw_error   = max(check_result.max_yaw_error,   yaw_error);
+    check_result.max_vel_error   = max(check_result.max_vel_error,   vel_error);
+    check_result.max_pos_error   = max(check_result.max_pos_error,   pos_error);
 }
 
 

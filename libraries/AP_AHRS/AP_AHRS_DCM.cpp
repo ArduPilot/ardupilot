@@ -165,7 +165,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
         // normalise the acceleration vector
         if (initAccVec.length() > 5.0f) {
             // calculate initial pitch angle
-            pitch = atan2f(initAccVec.x, pythagorous2(initAccVec.y, initAccVec.z));
+            pitch = atan2f(initAccVec.x, norm(initAccVec.y, initAccVec.z));
             // calculate initial roll angle
             roll = atan2f(-initAccVec.y, -initAccVec.z);
         } else {
@@ -354,7 +354,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 float
 AP_AHRS_DCM::_yaw_gain(void) const
 {
-    float VdotEFmag = pythagorous2(_accel_ef[_active_accel_instance].x,
+    float VdotEFmag = norm(_accel_ef[_active_accel_instance].x,
                                    _accel_ef[_active_accel_instance].y);
     if (VdotEFmag <= 4.0f) {
         return 0.2f*(4.5f - VdotEFmag);
@@ -774,7 +774,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     float earth_error_Z = error.z;
 
     // equation 10
-    float tilt = pythagorous2(GA_e.x, GA_e.y);
+    float tilt = norm(GA_e.x, GA_e.y);
 
     // equation 11
     float theta = atan2f(GA_b[besti].y, GA_b[besti].x);
@@ -792,7 +792,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // flat, but still allow for yaw correction using the
     // accelerometers at high roll angles as long as we have a GPS
     if (AP_AHRS_DCM::use_compass()) {
-        if (have_gps() && is_equal(gps_gain,1.0f)) {
+        if (have_gps() && is_equal<float>(gps_gain,1.0f)) {
             error[besti].z *= sinf(fabsf(roll));
         } else {
             error[besti].z = 0;

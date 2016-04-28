@@ -427,7 +427,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         sender_id       : sender_id,
         msg_len         : msg_len,
     };
-    memcpy(pkt.data1, msg_buff, MIN(msg_len,64)); 
+    memcpy(pkt.data1, msg_buff, min(msg_len,64)); 
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
 
     if (msg_len > 64) {

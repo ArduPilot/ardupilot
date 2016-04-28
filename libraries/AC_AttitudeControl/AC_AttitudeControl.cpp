@@ -420,7 +420,7 @@ bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const 
     float cos_phi = cosf(euler_rad.x);
 
     // When the vehicle pitches all the way up or all the way down, the euler angles become discontinuous. In this case, we just return false.
-    if (is_zero(cos_theta)) {
+    if (is_zero<float>(cos_theta)) {
         return false;
     }
 
@@ -583,13 +583,13 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 {
     if (enable_limits) {
         // If enabling limits, reload from eeprom or set to defaults
-        if (is_zero(_accel_roll_max)) {
+        if (is_zero<float>(_accel_roll_max)) {
             _accel_roll_max.load();
         }
-        if (is_zero(_accel_pitch_max)) {
+        if (is_zero<float>(_accel_pitch_max)) {
             _accel_pitch_max.load();
         }
-        if (is_zero(_accel_yaw_max)) {
+        if (is_zero<float>(_accel_yaw_max)) {
             _accel_yaw_max.load();
         }
     } else {
@@ -630,7 +630,7 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
 
 float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord_lim)
 {
-    if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
+    if (second_ord_lim < 0.0f || is_zero<float>(second_ord_lim) || is_zero<float>(p)) {
         return error*p;
     }
 

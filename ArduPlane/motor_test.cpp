@@ -97,13 +97,13 @@ uint8_t QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
 
     // set timeout
     motor_test.start_ms = AP_HAL::millis();
-    motor_test.timeout_ms = MIN(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
+    motor_test.timeout_ms = min(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
 
     // store required output
     motor_test.seq = motor_seq;
     motor_test.throttle_type = throttle_type;
     motor_test.throttle_value = throttle_value;
-    motor_test.motor_count = MIN(motor_count, 8);
+    motor_test.motor_count = min(motor_count, 8);
 
     // return success
     return MAV_RESULT_ACCEPTED;

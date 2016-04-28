@@ -238,8 +238,8 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 {
     // calculate a loiter speed limit which is the minimum of the value set by the WPNAV_LOITER_SPEED
     // parameter and the value set by the EKF to observe optical flow limits
-    float gnd_speed_limit_cms = MIN(_loiter_speed_cms,ekfGndSpdLimit*100.0f);
-    gnd_speed_limit_cms = MAX(gnd_speed_limit_cms, 10.0f);
+    float gnd_speed_limit_cms = min(_loiter_speed_cms,ekfGndSpdLimit*100.0f);
+    gnd_speed_limit_cms = max(gnd_speed_limit_cms, 10.0f);
 
     // range check nav_dt
     if( nav_dt < 0 ) {
@@ -264,7 +264,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     Vector2f des_accel_diff = (desired_accel - _loiter_desired_accel);
 
     // constrain and scale the desired acceleration
-    float des_accel_change_total = pythagorous2(des_accel_diff.x, des_accel_diff.y);
+    float des_accel_change_total = norm(des_accel_diff.x, des_accel_diff.y);
     float accel_change_max = _loiter_jerk_max_cmsss * nav_dt;
     
     if (_loiter_jerk_max_cmsss > 0.0f && des_accel_change_total > accel_change_max && des_accel_change_total > 0.0f) {
@@ -290,10 +290,10 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
         float drag_speed_delta = -_loiter_accel_cmss*nav_dt*desired_speed/gnd_speed_limit_cms;
 
         if (_pilot_accel_fwd_cms == 0 && _pilot_accel_rgt_cms == 0) {
-            drag_speed_delta = MIN(drag_speed_delta,MAX(-_loiter_accel_min_cmss*nav_dt, -2.0f*desired_speed*nav_dt));
+            drag_speed_delta = min(drag_speed_delta,max(-_loiter_accel_min_cmss*nav_dt, -2.0f*desired_speed*nav_dt));
         }
 
-        desired_speed = MAX(desired_speed+drag_speed_delta,0.0f);
+        desired_speed = max(desired_speed+drag_speed_delta,0.0f);
         desired_vel = desired_vel_norm*desired_speed;
     }
 
@@ -536,7 +536,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     track_error = curr_delta - track_covered_pos;
 
     // calculate the horizontal error
-    float track_error_xy = pythagorous2(track_error.x, track_error.y);
+    float track_error_xy = norm(track_error.x, track_error.y);
 
     // calculate the vertical error
     float track_error_z = fabsf(track_error.z);
@@ -551,7 +551,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     }
 
     // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-    track_leash_slack = MIN(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
+    track_leash_slack = min(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
     if (track_leash_slack < 0) {
         track_desired_max = track_covered;
     }else{
@@ -595,7 +595,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
             }
             // if target is slowing down, limit the speed
             if (_flags.slowing_down) {
-                _limited_speed_xy_cms = MIN(_limited_speed_xy_cms, get_slow_down_speed(dist_to_dest, _track_accel));
+                _limited_speed_xy_cms = min(_limited_speed_xy_cms, get_slow_down_speed(dist_to_dest, _track_accel));
             }
         }
 
@@ -650,7 +650,7 @@ float AC_WPNav::get_wp_distance_to_destination() const
 {
     // get current location
     Vector3f curr = _inav.get_position();
-    return pythagorous2(_destination.x-curr.x,_destination.y-curr.y);
+    return norm(_destination.x-curr.x,_destination.y-curr.y);
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
@@ -710,7 +710,7 @@ void AC_WPNav::check_wp_leash_length()
 void AC_WPNav::calculate_wp_leash_length()
 {
     // length of the unit direction vector in the horizontal
-    float pos_delta_unit_xy = pythagorous2(_pos_delta_unit.x, _pos_delta_unit.y);
+    float pos_delta_unit_xy = norm(_pos_delta_unit.x, _pos_delta_unit.y);
     float pos_delta_unit_z = fabsf(_pos_delta_unit.z);
 
     float speed_z;
@@ -737,9 +737,9 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_speed = speed_z/pos_delta_unit_z;
         _track_leash_length = leash_z/pos_delta_unit_z;
     }else{
-        _track_accel = MIN(_wp_accel_z_cms/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
-        _track_speed = MIN(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
-        _track_leash_length = MIN(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
+        _track_accel = min(_wp_accel_z_cms/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
+        _track_speed = min(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
+        _track_leash_length = min(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
     }
 
     // calculate slow down distance (the distance from the destination when the target point should begin to slow down)
@@ -937,7 +937,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         Vector3f track_error = curr_pos - target_pos;
 
         // calculate the horizontal error
-        float track_error_xy = pythagorous2(track_error.x, track_error.y);
+        float track_error_xy = norm(track_error.x, track_error.y);
 
         // calculate the vertical error
         float track_error_z = fabsf(track_error.z);
@@ -952,7 +952,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         }
 
         // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-        float track_leash_slack = MIN(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
+        float track_leash_slack = min(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
         if (track_leash_slack < 0.0f) {
             track_leash_slack = 0.0f;
         }
@@ -961,7 +961,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         float spline_dist_to_wp = (_destination - target_pos).length();
         float vel_limit = _wp_speed_cms;
         if (!is_zero(dt)) {
-            vel_limit = MIN(vel_limit, track_leash_slack/dt);
+            vel_limit = min(vel_limit, track_leash_slack/dt);
         }
 
         // if within the stopping distance from destination, set target velocity to sqrt of distance * 2 * acceleration

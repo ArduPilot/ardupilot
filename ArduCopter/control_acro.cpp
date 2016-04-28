@@ -57,7 +57,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
 
     // apply circular limit to pitch and roll inputs
-    float total_in = pythagorous2((float)pitch_in, (float)roll_in);
+    float total_in = norm((float)pitch_in, (float)roll_in);
 
     if (total_in > ROLL_PITCH_INPUT_MAX) {
         float ratio = (float)ROLL_PITCH_INPUT_MAX / total_in;
@@ -132,7 +132,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
             rate_bf_request.y += rate_bf_level.y;
             rate_bf_request.z += rate_bf_level.z;
         }else{
-            float acro_level_mix = constrain_float(1-MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*ahrs.cos_pitch();
+            float acro_level_mix = constrain_float(1-max(max(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*ahrs.cos_pitch();
 
             // Scale leveling rates by stick input
             rate_bf_level = rate_bf_level*acro_level_mix;
