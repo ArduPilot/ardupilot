@@ -274,12 +274,10 @@ case $FRAME in
 	;;
     heli-dual)
         BUILD_TARGET="sitl-heli-dual"
-        EXTRA_SIM="$EXTRA_SIM --frame=heli-dual"
         MODEL="heli-dual"
         ;;
     heli-compound)
         BUILD_TARGET="sitl-heli-compound"
-        EXTRA_SIM="$EXTRA_SIM --frame=heli-compound"
         MODEL="heli-compound"
         ;;
     heli*)
@@ -293,7 +291,6 @@ case $FRAME in
 	;;
     Gazebo)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=Gazebo"
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
