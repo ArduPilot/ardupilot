@@ -242,15 +242,15 @@ autotest="../Tools/autotest"
 
 # modify build target based on copter frame type
 case $FRAME in
-    +|quad)
+    +|quad|quad-*)
 	BUILD_TARGET="sitl"
-        MODEL="+"
+        MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
-    X)
+    X*)
 	BUILD_TARGET="sitl"
         EXTRA_PARM="param set FRAME 1;"
-        MODEL="X"
+        MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/copter_params.parm"
 	;;
     octa*)
