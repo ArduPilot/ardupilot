@@ -115,7 +115,8 @@ static const Motor firefly_motors[] =
 };
 
 /*
-  table of supported frame types
+  table of supported frame types. String order is important for
+  partial name matching
  */
 static Frame supported_frames[] =
 {
@@ -123,10 +124,10 @@ static Frame supported_frames[] =
     Frame("quad",      4, quad_plus_motors),
     Frame("copter",    4, quad_plus_motors),
     Frame("x",         4, quad_x_motors),
-    Frame("hexa",      6, hexa_motors),
     Frame("hexax",     6, hexax_motors),
-    Frame("octa",      8, octa_motors),
+    Frame("hexa",      6, hexa_motors),
     Frame("octa-quad", 8, octa_quad_motors),
+    Frame("octa",      8, octa_motors),
     Frame("tri",       3, tri_motors),
     Frame("y6",        6, y6_motors),
     Frame("firefly",   6, firefly_motors)
@@ -152,7 +153,8 @@ void Frame::init(float _mass, float hover_throttle, float _terminal_velocity, fl
 Frame *Frame::find_frame(const char *name)
 {
     for (uint8_t i=0; i < ARRAY_SIZE(supported_frames); i++) {
-        if (strcasecmp(name, supported_frames[i].name) == 0) {
+        // do partial name matching to allow for frame variants
+        if (strncasecmp(name, supported_frames[i].name, strlen(supported_frames[i].name)) == 0) {
             return &supported_frames[i];
         }
     }

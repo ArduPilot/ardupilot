@@ -33,7 +33,11 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
         printf("Frame '%s' not found", frame_str);
         exit(1);
     }
-    frame->init(1.5, 0.51, 15, 4*radians(360));
+    if (strstr(frame_str, "-fast")) {
+        frame->init(1.5, 0.5, 85, 4*radians(360));
+    } else {
+        frame->init(1.5, 0.51, 15, 4*radians(360));
+    }
     frame_height = 0.1;
 }
 
