@@ -140,6 +140,10 @@
  # define RANGEFINDER_TIMEOUT_MS  1000      // desired rangefinder alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
 #endif
 
+#ifndef RANGEFINDER_WPNAV_FILT_HZ
+ # define RANGEFINDER_WPNAV_FILT_HZ   0.25f // filter frequency for rangefinder altitude provided to waypoint navigation class
+#endif
+
 #ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
  # define RANGEFINDER_TILT_CORRECTION ENABLED
 #endif
