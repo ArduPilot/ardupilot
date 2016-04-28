@@ -40,7 +40,7 @@ public:
     Location_Class& operator=(const struct Location loc);
 
     // set altitude
-    void set_alt(int32_t alt_cm, ALT_FRAME frame);
+    void set_alt_cm(int32_t alt_cm, ALT_FRAME frame);
 
     // get altitude in desired frame
     bool get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const;

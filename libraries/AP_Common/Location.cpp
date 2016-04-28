@@ -29,7 +29,7 @@ Location_Class::Location_Class(int32_t latitude, int32_t longitude, int32_t alt_
     lat = latitude;
     lng = longitude;
     options = 0;
-    set_alt(alt_in_cm, frame);
+    set_alt_cm(alt_in_cm, frame);
 }
 
 Location_Class::Location_Class(const Location& loc)
@@ -43,7 +43,7 @@ Location_Class::Location_Class(const Location& loc)
 Location_Class::Location_Class(const Vector3f &ekf_offset_neu)
 {
     // store alt and alt frame
-    set_alt(ekf_offset_neu.z, ALT_FRAME_ABOVE_ORIGIN);
+    set_alt_cm(ekf_offset_neu.z, ALT_FRAME_ABOVE_ORIGIN);
 
     // calculate lat, lon
     if (_ahrs != NULL) {
@@ -65,7 +65,7 @@ Location_Class& Location_Class::operator=(const struct Location loc)
     return *this;
 }
 
-void Location_Class::set_alt(int32_t alt_cm, ALT_FRAME frame)
+void Location_Class::set_alt_cm(int32_t alt_cm, ALT_FRAME frame)
 {
     alt = alt_cm;
     flags.relative_alt = false;
@@ -97,7 +97,7 @@ bool Location_Class::change_alt_frame(ALT_FRAME desired_frame)
     if (!get_alt_cm(desired_frame, new_alt_cm)) {
         return false;
     }
-    set_alt(new_alt_cm, desired_frame);
+    set_alt_cm(new_alt_cm, desired_frame);
     return true;
 }
 
