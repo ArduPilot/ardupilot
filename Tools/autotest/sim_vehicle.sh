@@ -273,11 +273,6 @@ case $FRAME in
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/firefly.parm"
 	;;
-    heli*)
-	BUILD_TARGET="sitl-heli"
-        MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/Helicopter.parm"
-	;;
     heli-dual)
         BUILD_TARGET="sitl-heli-dual"
         EXTRA_SIM="$EXTRA_SIM --frame=heli-dual"
@@ -288,6 +283,11 @@ case $FRAME in
         EXTRA_SIM="$EXTRA_SIM --frame=heli-compound"
         MODEL="heli-compound"
         ;;
+    heli*)
+	BUILD_TARGET="sitl-heli"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/Helicopter.parm"
+	;;
     IrisRos)
 	BUILD_TARGET="sitl"
         DEFAULTS_PATH="$autotest/copter_params.parm"
