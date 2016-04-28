@@ -1760,7 +1760,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             copter.guided_set_velocity(vel_vector);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            copter.guided_set_destination(pos_vector);
+            if (!copter.guided_set_destination(pos_vector)) {
+                result = MAV_RESULT_FAILED;
+            }
         } else {
             result = MAV_RESULT_FAILED;
         }
@@ -1832,7 +1834,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             copter.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            copter.guided_set_destination(pos_ned);
+            if (!copter.guided_set_destination(pos_ned)) {
+                result = MAV_RESULT_FAILED;
+            }
         } else {
             result = MAV_RESULT_FAILED;
         }
