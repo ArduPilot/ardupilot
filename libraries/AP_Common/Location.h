@@ -37,7 +37,7 @@ public:
     static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
     // operators
-    Location_Class& operator=(const struct Location loc);
+    Location_Class& operator=(const struct Location &loc);
 
     // set altitude
     void set_alt_cm(int32_t alt_cm, ALT_FRAME frame);

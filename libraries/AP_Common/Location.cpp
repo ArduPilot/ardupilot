@@ -56,7 +56,7 @@ Location_Class::Location_Class(const Vector3f &ekf_offset_neu)
     }
 }
 
-Location_Class& Location_Class::operator=(const struct Location loc)
+Location_Class& Location_Class::operator=(const struct Location &loc)
 {
     lat = loc.lat;
     lng = loc.lng;
