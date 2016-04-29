@@ -158,6 +158,9 @@ void Plane::do_erase_logs(void)
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
 {
+    if (!should_log(MASK_LOG_ATTITUDE_FAST)) {
+        return;
+    }
     Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
     targets.x = nav_roll_cd;
     targets.y = nav_pitch_cd;
