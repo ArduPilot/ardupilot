@@ -84,8 +84,8 @@ void OpticalFlow::update(void)
 }
 
 void OpticalFlow::setHIL(const struct OpticalFlow::OpticalFlow_state &state)
-{ 
+{
     if (backend) {
-        backend->_update_frontend(state); 
+        backend->_update_frontend(state);
     }
 }
