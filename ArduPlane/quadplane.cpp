@@ -19,11 +19,11 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
-    // @Description: Maximum lean angle in all flight modes
+    // @Description: Maximum lean angle in all VTOL flight modes
     // @Units: Centi-degrees
     // @Range: 1000 8000
     // @User: Advanced
-    AP_GROUPINFO("ANGLE_MAX", 10, QuadPlane, aparm.angle_max, 4500),
+    AP_GROUPINFO("ANGLE_MAX", 10, QuadPlane, aparm.angle_max, 3000),
 
     // @Param: TRANSITION_MS
     // @DisplayName: Transition time
