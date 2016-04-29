@@ -32,56 +32,56 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
     // @Description: Used to change motor rotation directions without changing wires
     // @Values: 1: normal, -1: reverse
     // @User: Standard
-    AP_GROUPINFO("MOT1_REVERSE", 0, AP_Motors6DOF, _motor_reverse[0], 1),
+    AP_GROUPINFO("1_DIRECTION", 0, AP_Motors6DOF, _motor_reverse[0], 1),
 
 	// @Param: MOT2_REVERSE
 	// @DisplayName: Motor normal or reverse
 	// @Description: Used to change motor rotation directions without changing wires
 	// @Values: 1: normal, -1: reverse
 	// @User: Standard
-	AP_GROUPINFO("MOT2_REVERSE", 1, AP_Motors6DOF, _motor_reverse[1], 1),
+	AP_GROUPINFO("2_DIRECTION", 1, AP_Motors6DOF, _motor_reverse[1], 1),
 
 	// @Param: MOT3_REVERSE
 	// @DisplayName: Motor normal or reverse
 	// @Description: Used to change motor rotation directions without changing wires
 	// @Values: 1: normal, -1: reverse
 	// @User: Standard
-	AP_GROUPINFO("MOT3_REVERSE", 2, AP_Motors6DOF, _motor_reverse[2], 1),
+	AP_GROUPINFO("3_DIRECTION", 2, AP_Motors6DOF, _motor_reverse[2], 1),
 
 	// @Param: MOT4_REVERSE
 	// @DisplayName: Motor normal or reverse
 	// @Description: Used to change motor rotation directions without changing wires
 	// @Values: 1: normal, -1: reverse
 	// @User: Standard
-	AP_GROUPINFO("MOT4_REVERSE", 3, AP_Motors6DOF, _motor_reverse[3], 1),
+	AP_GROUPINFO("4_DIRECTION", 3, AP_Motors6DOF, _motor_reverse[3], 1),
 
 	// @Param: MOT5_REVERSE
 	// @DisplayName: Motor normal or reverse
 	// @Description: Used to change motor rotation directions without changing wires
 	// @Values: 1: normal, -1: reverse
 	// @User: Standard
-	AP_GROUPINFO("MOT5_REVERSE", 4, AP_Motors6DOF, _motor_reverse[4], 1),
+	AP_GROUPINFO("5_DIRECTION", 4, AP_Motors6DOF, _motor_reverse[4], 1),
 
 	// @Param: MOT6_REVERSE
 	// @DisplayName: Motor normal or reverse
 	// @Description: Used to change motor rotation directions without changing wires
 	// @Values: 1: normal, -1: reverse
 	// @User: Standard
-	AP_GROUPINFO("MOT6_REVERSE", 5, AP_Motors6DOF, _motor_reverse[5], 1),
+	AP_GROUPINFO("6_DIRECTION", 5, AP_Motors6DOF, _motor_reverse[5], 1),
 
 	// @Param: MOT7_REVERSE
 	// @DisplayName: Motor normal or reverse
 	// @Description: Used to change motor rotation directions without changing wires
 	// @Values: 1: normal, -1: reverse
 	// @User: Standard
-	AP_GROUPINFO("MOT7_REVERSE", 6, AP_Motors6DOF, _motor_reverse[6], 1),
+	AP_GROUPINFO("7_DIRECTION", 6, AP_Motors6DOF, _motor_reverse[6], 1),
 
 	// @Param: MOT8_REVERSE
 	// @DisplayName: Motor normal or reverse
 	// @Description: Used to change motor rotation directions without changing wires
 	// @Values: 1: normal, -1: reverse
 	// @User: Standard
-	AP_GROUPINFO("MOT8_REVERSE", 7, AP_Motors6DOF, _motor_reverse[7], 1),
+	AP_GROUPINFO("8_DIRECTION", 7, AP_Motors6DOF, _motor_reverse[7], 1),
 
 	// @Param: FWDVERT_CPL_K
 	// @DisplayName: Forward/vertical to pitch decoupling factor
