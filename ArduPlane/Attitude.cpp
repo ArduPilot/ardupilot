@@ -1054,7 +1054,9 @@ void Plane::set_servos(void)
                 }
                 break;
             default:
-                if (in_preLaunch_flight_stage()) {
+                if (g.takeoff_flap_percent != 0 &&
+                    flight_stage == AP_SpdHgtControl::FLIGHT_NORMAL &&
+                    mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF) {
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
                 break;
