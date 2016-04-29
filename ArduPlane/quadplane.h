@@ -35,6 +35,11 @@ public:
     bool init_mode(void);
     bool setup(void);
     void setup_defaults(void);
+
+    void land_controller(void);
+    void setup_target_position(void);
+    void takeoff_controller(void);
+    void waypoint_controller(void);
     
     // update transition handling
     void update(void);
@@ -233,18 +238,19 @@ private:
     // time we last set the loiter target
     uint32_t last_loiter_ms;
 
-    enum {
+    enum land_state {
         QLAND_POSITION1,
         QLAND_POSITION2,
         QLAND_DESCEND,
         QLAND_FINAL,
         QLAND_COMPLETE
-    } land_state;
+    };
     struct {
-        int32_t yaw_cd;
+        enum land_state state;
         float speed_scale;
         Vector2f target_velocity;
         float max_speed;
+        Vector3f target;
     } land;
 
     enum frame_class {
