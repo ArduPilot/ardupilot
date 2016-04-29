@@ -447,7 +447,6 @@ void Copter::auto_rtl_run()
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
-//  we assume the caller has set the circle's circle with circle_nav.set_center()
 //  we assume the caller has performed all required GPS_ok checks
 void Copter::auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m)
 {
