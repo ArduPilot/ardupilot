@@ -225,6 +225,14 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
+    // @Param: TKOFF_FLAP_PRELAUNCH
+    // @DisplayName: Takeoff flaps set in prelaunch
+    // @Description: Whether to set flaps in prelaunch or only after takeoff requirements are met
+    // @Values: 0:Disabled,1:Enabled
+    // @Bitmask: 0:Disabled
+    // @User: Advanced
+    GSCALAR(takeoff_flap_prelaunch,     "TKOFF_FLAP_PRELAUNCH", 0),
+
     // @Param: FBWA_TDRAG_CHAN
     // @DisplayName: FBWA taildragger channel
     // @Description: This is a RC input channel which when it goes above 1700 enables FBWA taildragger takeoff mode. It should be assigned to a momentary switch. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA. Setting it to 0 disables this option.

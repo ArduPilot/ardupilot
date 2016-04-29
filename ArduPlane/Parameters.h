@@ -124,6 +124,7 @@ public:
         k_param_rangefinder_landing,
         k_param_land_flap_percent,
         k_param_takeoff_flap_percent,
+        k_param_takeoff_flap_prelaunch,
         k_param_flap_slewrate,
         k_param_rtl_autoland,
         k_param_override_channel,
@@ -487,6 +488,7 @@ public:
     AP_Int8 flap_2_speed;
     AP_Int8 land_flap_percent;
     AP_Int8 takeoff_flap_percent;  
+    AP_Int8 takeoff_flap_prelaunch;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
