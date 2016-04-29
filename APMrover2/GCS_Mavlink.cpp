@@ -835,11 +835,11 @@ GCS_MAVLINK::data_stream_send(void)
 
 
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (rover.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
-        return;
+        return false;
     }
         
     rover.guided_WP = cmd.content.location;
@@ -847,6 +847,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     // make any new wp uploaded instant (in case we are already in Guided mode)
     rover.rtl_complete = false;
     rover.set_guided_WP();
+    return true;
 }
 
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
