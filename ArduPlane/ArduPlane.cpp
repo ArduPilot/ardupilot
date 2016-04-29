@@ -748,7 +748,11 @@ void Plane::update_navigation()
         break;
             
     case RTL:
-        if (g.rtl_autoland == 1 &&
+        if (quadplane.available() && quadplane.rtl_mode == 1 &&
+            nav_controller->reached_loiter_target()) {
+            set_mode(QRTL);
+            break;
+        } else if (g.rtl_autoland == 1 &&
             !auto_state.checked_for_autoland &&
             nav_controller->reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {

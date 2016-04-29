@@ -263,6 +263,13 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RTL_ALT", 35, QuadPlane, qrtl_alt, 15),
+
+    // @Param: RTL_MODE
+    // @DisplayName: VTOL RTL mode
+    // @Description: If this is set to 1 then an RTL will change to QRTL when the loiter target is reached
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("RTL_MODE", 36, QuadPlane, rtl_mode, 0),
     
     AP_GROUPEND
 };
@@ -1375,6 +1382,8 @@ void QuadPlane::init_qrtl(void)
     plane.do_RTL(plane.home.alt + qrtl_alt*100UL);
     plane.prev_WP_loc = plane.current_loc;
     land.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
+    land.state = QLAND_POSITION1;
+    land.speed_scale = 0;
 }
 
 /*

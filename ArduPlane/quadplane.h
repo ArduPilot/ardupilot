@@ -199,6 +199,9 @@ private:
     AP_Int8 enable;
     AP_Int8 transition_pitch_max;
 
+    // control if a VTOL RTL will be used
+    AP_Int8 rtl_mode;
+    
     struct {
         AP_Float gain;
         float integrator;
