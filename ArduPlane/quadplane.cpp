@@ -1208,12 +1208,16 @@ void QuadPlane::land_controller(void)
     case QLAND_POSITION2:
         if (plane.control_mode == QRTL) {
             plane.ahrs.get_position(plane.current_loc);
-            plane.auto_state.wp_proportion = location_path_proportion(plane.current_loc, 
-                                                                      plane.prev_WP_loc, plane.next_WP_loc);
-            float target_altitude = linear_interpolate(plane.prev_WP_loc.alt,
-                                                       plane.next_WP_loc.alt,
-                                                       plane.auto_state.wp_proportion,
-                                                       0, 1);
+            float target_altitude = plane.next_WP_loc.alt;
+            if (land.slow_descent) {
+                // gradually descend as we approach target
+                plane.auto_state.wp_proportion = location_path_proportion(plane.current_loc, 
+                                                                          plane.prev_WP_loc, plane.next_WP_loc);
+                target_altitude = linear_interpolate(plane.prev_WP_loc.alt,
+                                                     plane.next_WP_loc.alt,
+                                                     plane.auto_state.wp_proportion,
+                                                     0, 1);
+            }
             pos_control->set_alt_target(target_altitude - plane.home.alt);
         } else {
             pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false);
@@ -1370,6 +1374,7 @@ void QuadPlane::init_qrtl(void)
     // use do_RTL() to setup next_WP_loc
     plane.do_RTL(plane.home.alt + qrtl_alt*100UL);
     plane.prev_WP_loc = plane.current_loc;
+    land.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
 }
 
 /*
