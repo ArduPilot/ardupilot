@@ -582,7 +582,9 @@ void Plane::rangefinder_height_update(void)
                 (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                  flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
                  flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
-                 control_mode == QLAND) &&
+                 control_mode == QLAND ||
+                 control_mode == QRTL ||
+                 (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);

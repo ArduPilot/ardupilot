@@ -284,7 +284,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return quadplane.verify_vtol_takeoff(cmd);
 
     case MAV_CMD_NAV_VTOL_LAND:
-        return quadplane.verify_vtol_land(cmd);
+        return quadplane.verify_vtol_land();
         
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -321,12 +321,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 //  Nav (Must) commands
 /********************************************************************************/
 
-void Plane::do_RTL(void)
+void Plane::do_RTL(int32_t rtl_altitude)
 {
     auto_state.next_wp_no_crosstrack = true;
     auto_state.no_crosstrack = true;
     prev_WP_loc = current_loc;
-    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude);
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 

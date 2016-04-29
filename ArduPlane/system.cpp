@@ -439,7 +439,7 @@ void Plane::set_mode(enum FlightMode mode)
     case RTL:
         auto_throttle_mode = true;
         prev_WP_loc = current_loc;
-        do_RTL();
+        do_RTL(get_RTL_altitude());
         break;
 
     case LOITER:
@@ -462,6 +462,7 @@ void Plane::set_mode(enum FlightMode mode)
     case QHOVER:
     case QLOITER:
     case QLAND:
+    case QRTL:
         if (!quadplane.init_mode()) {
             control_mode = previous_mode;
         } else {
@@ -507,6 +508,7 @@ bool Plane::mavlink_set_mode(uint8_t mode)
     case QHOVER:
     case QLOITER:
     case QLAND:
+    case QRTL:
         set_mode((enum FlightMode)mode);
         return true;
     }
@@ -710,6 +712,9 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case QLAND:
         port->print("QLand");
+        break;
+    case QRTL:
+        port->print("QRTL");
         break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);

@@ -62,7 +62,7 @@ public:
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
-    bool verify_vtol_land(const AP_Mission::Mission_Command &cmd);
+    bool verify_vtol_land(void);
     bool in_vtol_auto(void);
     bool in_vtol_mode(void);
 
@@ -156,6 +156,9 @@ private:
     void control_loiter(void);
     void check_land_complete(void);
 
+    void init_qrtl(void);
+    void control_qrtl(void);
+    
     float assist_climb_rate_cms(void);
 
     // calculate desired yaw rate for assistance
@@ -187,6 +190,9 @@ private:
     // landing speed in cm/s
     AP_Int16 land_speed_cms;
 
+    // QRTL start altitude, meters
+    AP_Int16 qrtl_alt;
+    
     // alt to switch to QLAND_FINAL
     AP_Float land_final_alt;
     

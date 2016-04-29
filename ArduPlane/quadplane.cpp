@@ -254,6 +254,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("WVANE_MINROLL", 34, QuadPlane, weathervane.min_roll, 1),
+
+    // @Param: RTL_ALT
+    // @DisplayName: QRTL return altitude
+    // @Description: The altitude which QRTL mode heads to initially
+    // @Units: m
+    // @Range: 1 200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RTL_ALT", 35, QuadPlane, qrtl_alt, 15),
     
     AP_GROUPEND
 };
@@ -922,6 +931,10 @@ void QuadPlane::control_run(void)
     case QLOITER:
     case QLAND:
         control_loiter();
+        break;
+    case QRTL:
+        control_qrtl();
+        break;
     default:
         break;
     }
@@ -955,6 +968,9 @@ bool QuadPlane::init_mode(void)
         break;
     case QLAND:
         init_land();
+        break;
+    case QRTL:
+        init_qrtl();
         break;
     default:
         break;
@@ -1031,6 +1047,7 @@ bool QuadPlane::in_vtol_mode(void)
             plane.control_mode == QHOVER ||
             plane.control_mode == QLOITER ||
             plane.control_mode == QLAND ||
+            plane.control_mode == QRTL ||
             in_vtol_auto());
 }
 
@@ -1189,7 +1206,18 @@ void QuadPlane::land_controller(void)
     switch (land.state) {
     case QLAND_POSITION1:
     case QLAND_POSITION2:
-        pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false);
+        if (plane.control_mode == QRTL) {
+            plane.ahrs.get_position(plane.current_loc);
+            plane.auto_state.wp_proportion = location_path_proportion(plane.current_loc, 
+                                                                      plane.prev_WP_loc, plane.next_WP_loc);
+            float target_altitude = linear_interpolate(plane.prev_WP_loc.alt,
+                                                       plane.next_WP_loc.alt,
+                                                       plane.auto_state.wp_proportion,
+                                                       0, 1);
+            pos_control->set_alt_target(target_altitude - plane.home.alt);
+        } else {
+            pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false);
+        }
         break;
 
     case QLAND_DESCEND: {
@@ -1320,6 +1348,31 @@ void QuadPlane::control_auto(const Location &loc)
 }
 
 /*
+  handle QRTL mode
+ */
+void QuadPlane::control_qrtl(void)
+{
+    land_controller();
+    if (land.state >= QLAND_POSITION2) {
+        // change target altitude to home alt
+        plane.next_WP_loc.alt = plane.home.alt;
+        verify_vtol_land();
+    } else {
+        pos_control->set_alt_target(qrtl_alt*100UL);
+    }
+}
+
+/*
+  handle QRTL mode
+ */
+void QuadPlane::init_qrtl(void)
+{
+    // use do_RTL() to setup next_WP_loc
+    plane.do_RTL(plane.home.alt + qrtl_alt*100UL);
+    plane.prev_WP_loc = plane.current_loc;
+}
+
+/*
   start a VTOL takeoff
  */
 bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
@@ -1418,7 +1471,7 @@ void QuadPlane::check_land_complete(void)
 /*
   check if a VTOL landing has completed
  */
-bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
+bool QuadPlane::verify_vtol_land(void)
 {
     if (!available()) {
         return true;
@@ -1427,7 +1480,7 @@ bool QuadPlane::verify_vtol_land(const AP_Mission::Mission_Command &cmd)
         plane.auto_state.wp_distance < 2) {
         land.state = QLAND_DESCEND;
         plane.gcs_send_text(MAV_SEVERITY_INFO,"Land descend started");
-        plane.set_next_WP(cmd.content.location);        
+        plane.set_next_WP(plane.next_WP_loc);
     }
 
     if (should_relax()) {
