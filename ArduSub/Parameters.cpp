@@ -927,36 +927,16 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rally,      "RALLY_",   AP_Rally),
 #endif
 
-#if FRAME_CONFIG ==     HELI_FRAME
-    // @Group: H_
-    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp
-    GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
-
-#elif FRAME_CONFIG == SINGLE_FRAME
-    // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsSingle.cpp
-    GOBJECT(motors, "MOT_",           AP_MotorsSingle),
-
-#elif FRAME_CONFIG == COAX_FRAME
-    // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsCoax.cpp
-    GOBJECT(motors, "MOT_",           AP_MotorsCoax),
-
-#elif FRAME_CONFIG == TRI_FRAME
-    // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsTri.cpp
-    GOBJECT(motors, "MOT_",           AP_MotorsTri),
-
-#elif (FRAME_CONFIG == VECTORED_FRAME || FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED6DOF_FRAME)
+//#if (FRAME_CONFIG == VECTORED_FRAME || FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED6DOF_FRAME)
 	// @Group: MOT_
 	// @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp
 	GOBJECT(motors, "MOT_",         AP_Motors6DOF),
 
-#else
-    // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
-    GOBJECT(motors, "MOT_",         AP_MotorsMulticopter),
-#endif
+//#else
+//    // @Group: MOT_
+//    // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
+//    GOBJECT(motors, "MOT_",         AP_MotorsMulticopter),
+//#endif
 
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
