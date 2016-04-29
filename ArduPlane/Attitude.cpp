@@ -1078,6 +1078,9 @@ void Plane::set_servos(void)
                 }
                 break;
             default:
+                if (in_preLaunch_flight_stage()) {
+                    auto_flap_percent = g.takeoff_flap_percent;
+                }
                 break;
             }
         }
