@@ -225,13 +225,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
-    // @Param: TKOFF_FLAP_PRELAUNCH
-    // @DisplayName: Takeoff flaps set in prelaunch
-    // @Description: Whether to set flaps in prelaunch or only after takeoff requirements are met
-    // @Values: 0:Disabled,1:Enabled
-    // @Bitmask: 0:Disabled
-    // @User: Advanced
-    GSCALAR(takeoff_flap_prelaunch,     "TKOFF_FLAP_PRELAUNCH", 0),
 
     // @Param: FBWA_TDRAG_CHAN
     // @DisplayName: FBWA taildragger channel
