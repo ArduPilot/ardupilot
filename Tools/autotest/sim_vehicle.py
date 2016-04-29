@@ -6,13 +6,13 @@
 
 import optparse
 import sys
-import psutil
 import atexit
 import os
 import subprocess
 import tempfile
 import getpass
 import time
+import signal
 
 class CompatError(Exception):
     '''a custom exception class to hold state if we encounter the parse error we are looking for'''
@@ -42,7 +42,7 @@ class CompatOptionParser(optparse.OptionParser):
         except CompatError as e:
             if not e.opts.sim_vehicle_sh_compatible:
                 print(e)
-                print("Perhaps you want --sim_vehicle_sh_compatible?")
+                print("Perhaps you want --sim_vehicle_sh_compatible (-C)?")
                 sys.exit(1)
             if e.opts.mavproxy_args:
                 print("--mavproxy-args not permitted in compat mode")
@@ -56,6 +56,42 @@ class CompatOptionParser(optparse.OptionParser):
             opts.ensure_value("mavproxy_args", " ".join(mavproxy_args))
 
         return opts, args
+
+def cygwin_pidof(procName):
+    ''' Thanks to kata198 for this:
+    https://github.com/kata198/cygwin-ps-misc/blob/master/pidof
+    '''
+    pipe = subprocess.Popen("ps -ea | grep " + procName, shell=True, stdout=subprocess.PIPE)
+    outputLines = pipe.stdout.read().replace("\r", "").split("\n")
+    ret = pipe.wait()
+    pids = []
+    if ret != 0:
+        # No results
+	return []
+    for line in outputLines:
+	if not line:
+	    continue
+	lineSplit = [item for item in line.split(' ') if item]
+	cmd = lineSplit[-1].split('/')[-1]
+	if cmd == procName:
+	    try:
+		pid = int(lineSplit[0].strip())
+	    except:
+		pid = int(lineSplit[1].strip())
+		pid = str(pid)
+	    if pid not in pids:
+		pids.append(pid)
+    return pids
+
+def under_cygwin():
+    return os.path.exists("/usr/bin/cygstart")
+
+def kill_tasks_cygwin(victims):
+    for victim in list(victims):
+        pids = cygwin_pidof(victim)
+#        progress("pids for (%s): %s" % (victim,",".join([ str(p) for p in pids])))
+        for apid in pids:
+            os.kill(apid, signal.SIGKILL)
 
 def kill_tasks():
     '''clean up stray processes by name.  This is a somewhat shotgun approach'''
@@ -71,6 +107,11 @@ def kill_tasks():
         'runsim.py',
         'AntennaTracker.elf',
     ])
+
+    if under_cygwin():
+        return kill_tasks_cygwin(list(victim_names))
+
+    import psutil
     for proc in psutil.process_iter():
         if proc.name() in victim_names:
             proc.kill()
@@ -80,7 +121,9 @@ atexit.register(kill_tasks)
 
 def check_jsbsim_version():
     '''assert that the JSBSim we will run is the one we expect to run'''
-    jsbsim_version = subprocess.Popen(["JSBSim", "--version"], stdout=subprocess.PIPE).communicate()[0]
+    jsbsim_cmd = ["JSBSim", "--version"]
+    progress_cmd("Get JSBSim version", jsbsim_cmd)
+    jsbsim_version = subprocess.Popen(jsbsim_cmd, stdout=subprocess.PIPE).communicate()[0]
     try:
         jsbsim_version.index("ArduPilot")
     except ValueError:
@@ -129,7 +172,7 @@ parser.add_option("-G", "--gdb", action='store_true', default=False, help="use g
 parser.add_option("-g", "--gdb-stopped", action='store_true', default=False, help="use gdb for debugging ardupilot (no auto-start)")
 parser.add_option("-D", "--debug", action='store_true', default=False, help="build with debugging")
 parser.add_option("-d", "--delay-start", default=0, type='float', help='delays the start of mavproxy by the number of seconds')
-parser.add_option("-B", "--breakpoint", type='string', default=None, help='add a breakpoint at given location in debugger')
+parser.add_option("-B", "--breakpoint", type='string', action="append", default=[], help='add a breakpoint at given location in debugger')
 parser.add_option("-M", "--mavlink-gimbal", action='store_true', default=False, help='enable MAVLink gimbal')
 parser.add_option("-L", "--location", type='string', default='CMAC', help='select start location from Tools/autotest/locations.txt')
 parser.add_option("-l", "--custom-location", type='string', default=None, help='set custom start location')
@@ -140,16 +183,26 @@ parser.add_option("-S", "--speedup", default=1, type='int', help='set simulation
 parser.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type='string', help='set antenna tracker start location')
 parser.add_option("-c", "--clean", action='store_true', default=False, help='do a make clean before building')
 parser.add_option("-j", "--jobs", default=1, type='int', help='number of processors to use during build (default 1)')
+
 parser.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help='wipe EEPROM and reload parameters')
 parser.add_option("-b", "--build-target", default=None, type='string', help='override SITL build target (will be set to sitl if not specified)')
 parser.add_option("-m", "--mavproxy-args", default=None, type='string', help='additional arguments to pass to mavproxy.py')
 parser.add_option("-C", "--sim_vehicle_sh_compatible", action='store_true', default=False, help='be compatible with the way sim_vehicle.sh works; make this the first option')
 
+parser.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help='build system to use')
+
+# special-cased parameters for mavproxy, because some people's fingers
+# have long memories, and they don't want to use -C :-)
+group = optparse.OptionGroup(parser, "Compatibility MAVProxy options (consider using --mavproxy-args instead)")
+group.add_option("", "--out", default=[], type='string', action="append", help='create an additional mavlink output')
+group.add_option("", "--map", default=False, action='store_true', help='load map module on startup')
+group.add_option("", "--console", default=False, action='store_true', help='load console module on startup')
+parser.add_option_group(group)
+
 opts, args = parser.parse_args()
 
 # validate parameters
 if opts.hil:
-    opts.no_rebuild = True
     if opts.valgrind:
         print("May not use valgrind with hil")
         sys.exit(1)
@@ -174,6 +227,10 @@ default_frame_for_vehicle = {
     "AntennaTracker": "tracker"
 }
 
+# try to validate vehicle
+if not default_frame_for_vehicle.has_key(opts.vehicle):
+    progress("** Is (%s) really your vehicle type?  Try  -v VEHICLETYPE  if not, or be in the e.g. ArduCopter subdirectory" %  (opts.vehicle,))
+
 # determine frame options (e.g. build type might be "sitl")
 if opts.frame is None:
     opts.frame = default_frame_for_vehicle[opts.vehicle]
@@ -182,55 +239,67 @@ if opts.frame is None:
 mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10*opts.instance)
 simout_port = "127.0.0.1:" + str(5501 + 10*opts.instance)
 
-''' understood entries:
-build_target: option passed to make to create binaries.  Usually sitl, and "-debug" may be appended if -D is passed to sim_vehicle.py
+'''
+make_target: option passed to make to create binaries.  Usually sitl, and "-debug" may be appended if -D is passed to sim_vehicle.py
 default_params_filename: filename of default parameters file.  Taken to be relative to autotest dir.
 extra_mavlink_cmds: extra parameters that will be passed to mavproxy
 '''
 _options_for_frame = {
     "+": {
+        "waf_target": "bin/arducopter-quad",
         "default_params_filename": "copter_params.parm"
     },
     "quad": {
         "model": "+",
+        "waf_target": "bin/arducopter-quad",
         "default_params_filename": "copter_params.parm"
     },
     "X": {
+        "waf_target": "bin/arducopter-quad",
         # this param set FRAME doesn't actually work because mavproxy
         # won't set a parameter unless it knows of it, and the param fetch happens asynchronously
         "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
         "default_params_filename": "copter_params.parm"
     },
     "heli-dual": {
-        "build_target": "sitl-heli-dual",
+        "make_target": "sitl-heli-dual",
+        "waf_target": "bin/arducopter-coax", # is this correct? -pb201604301447
     },
     "heli-compound": {
-        "build_target": "sitl-heli-compound",
+        "make_target": "sitl-heli-compound",
+        "waf_target": "bin/arducopter-coax", # is this correct? -pb201604301447
     },
     "IrisRos": {
-        "default_params_filename": "copter_params.parm"
+        "default_params_filename": "copter_params.parm",
+        "waf_target": "bin/arducopter-quad",
     },
     "Gazebo": {
-        "default_params_filename": "copter_params.parm"
+        "default_params_filename": "copter_params.parm",
+        "waf_target": "bin/arducopter-quad",
     },
 
     "octa": {
-	"build_target": "sitl-octa",
+	"make_target": "sitl-octa",
+        "waf_target": "bin/arducopter-octa",
         "default_params_filename": "copter_params.parm",
     },
     "tri": {
-	"build_target": "sitl-tri",
+	"make_target": "sitl-tri",
+        "waf_target": "bin/arducopter-tri",
         "default_params_filename": "tri_params.parm",
     },
     "y6": {
-	"build_target": "sitl-y6",
+	"make_target": "sitl-y6",
+        "waf_target": "bin/arducopter-y6",
         "default_params_filename": "y6_params.parm",
     },
     "firefly": {
         "default_params_filename": "firefly.parm",
+        "waf_target": "bin/arducopter-firefly",
     },
     "heli": {
-	"build_target": "sitl-heli",
+	"make_target": "sitl-heli",
+        "waf_target": "bin/arducopter-heli",
         "default_params_filename": "Helicopter.parm",
     },
     "last_letter": {
@@ -238,18 +307,23 @@ _options_for_frame = {
     "CRRCSim": {
     },
     "jsbsim": {
+        "waf_target": "bin/arduplane",
         "default_params_filename": "ArduPlane.parm",
     },
     "quadplane": {
+        "waf_target": "bin/arduplane",
         "default_params_filename": "quadplane.parm",
     },
     "plane-elevon": {
+        "waf_target": "bin/arduplane",
         "default_params_filename": "plane-elevons.parm",
     },
     "plane-vtail": {
+        "waf_target": "bin/arduplane",
         "default_params_filename": "plane-vtail.parm",
     },
     "plane": {
+        "waf_target": "bin/arduplane",
         "default_params_filename": "plane.parm",
     },
 }
@@ -271,28 +345,79 @@ def options_for_frame(frame, opts):
 
     if not ret.has_key("model"):
         ret["model"] = frame
-    if not ret.has_key("build_target"):
-        ret["build_target"] = "sitl"
+
+    if not ret.has_key("make_target"):
+        ret["make_target"] = "sitl"
+
+#    if not ret.has_key("waf_target"):
+#        ret["waf_target"] = default_waf_target(frame)
 
     if opts.build_target is not None:
-        ret["build_target"] = opts.build_target
-    elif opts.debug:
-        ret["build_target"] += "-debug"
+        ret["make_target"] = opts.build_target
+        ret["waf_target"] = opts.build_target
 
     return ret
 
-def do_build(vehicledir, opts, build_target):
-    '''build build_target (e.g. sitl) in directory vehicledir'''
+def do_build_waf(vehicledir, opts, frame_options):
+    '''build build_target (e.g. sitl) in directory vehicledir - using waf'''
+    progress("WAF build")
+
+    old_dir = os.getcwd()
+
+    root_dir = os.path.join(vehicledir, "..")
+
+    os.chdir(root_dir)
+
+    waf_light = "./modules/waf/waf-light"
+
+    cmd_configure = [waf_light, "configure", "--board", "sitl" ]
+    run_cmd_blocking("Configure waf", cmd_configure)
+    p = subprocess.Popen(cmd_configure)
+    pid, sts = os.waitpid(p.pid,0)
+
+    if opts.clean:
+        run_cmd_blocking("Building clean", [waf_light, "clean"])
+
+    cmd_build = [waf_light, "-j", str(opts.jobs), "build", "--target", frame_options["waf_target"] ]
+    progress_cmd("Building", cmd_build)
+    p = subprocess.Popen(cmd_build)
+    pid, sts = os.waitpid(p.pid,0)
+
+    if sts != 0:
+        progress("Build failed; cleaning and rebuilding")
+        run_cmd_blocking("Building clean", [waf_light, "clean"])
+
+        progress_cmd("Building", cmd_build)
+        p = subprocess.Popen(cmd_build)
+        pid, sts = os.waitpid(p.pid,0)
+        if sts != 0:
+            progress("Build failed")
+            sys.exit(1)
+
+    os.chdir(old_dir)
+
+
+def do_build(vehicledir, opts, frame_options):
+    '''build build target (e.g. sitl) in directory vehicledir'''
+
+    if opts.build_system == 'waf':
+        return do_build_waf(vehicledir, opts, frame_options)
+
     old_dir = os.getcwd()
 
     os.chdir(vehicledir)
 
     if opts.clean:
-        progress("Building clean")
-        subprocess.Popen(["make", "clean"])
+        run_cmd_blocking("Building clean", ["make", "clean"])
 
-    progress("Building %s" % (build_target))
-    p = subprocess.Popen(["make", "-j"+str(opts.jobs), build_target])
+    build_target = frame_options["make_target"]
+    if opts.debug:
+        build_target += "-debug"
+
+    build_cmd = ["make", "-j"+str(opts.jobs), build_target]
+    progress_cmd("Building %s" % (build_target), build_cmd)
+
+    p = subprocess.Popen(build_cmd)
     pid, sts = os.waitpid(p.pid,0)
     if sts != 0:
         progress("Build failed; cleaning and rebuilding")
@@ -316,11 +441,22 @@ def find_location_by_name(autotest, locname):
     print("Failed to find location (%s)" % (opts.location))
     sys.exit(1)
 
+def progress_cmd(what, cmd):
+    '''print cmd in a way a user could cut-and-paste to get the same effect'''
+    progress(what)
+    shell_text = "%s" % (" ".join([ '"%s"' % x for x in cmd ]))
+    progress(shell_text)
+
+def run_cmd_blocking(what, cmd):
+    progress_cmd(what, cmd)
+    p = subprocess.Popen(cmd)
+    pid, sts = os.waitpid(p.pid,0)
+
 def run_in_terminal_window(autotest, name, cmd):
     '''execute the run_in_terminal_window.sh command for cmd'''
     runme = [os.path.join(autotest, "run_in_terminal_window.sh"), name]
     runme.extend(cmd)
-    progress("%s" % (str(runme),))
+    progress_cmd("Run " + name, runme)
     p = subprocess.Popen(runme) # bg this explicitly?!
 
 tracker_uarta = None # blemish
@@ -338,30 +474,28 @@ def start_antenna_tracker(autotest, opts):
     exe = os.path.join(vehicledir, "AntennaTracker.elf")
     run_in_terminal_window(autotest, "AntennaTracker", ["nice", exe, "-I" + str(tracker_instance), "--model=tracker", "--home="+tracker_home])
 
-def start_vehicle(vehicledir, autotest, opts, stuff, loc):
-    '''run the ArduPilot binary found in vehicledir'''
-    progress("Starting %s" % (opts.vehicle,))
+def start_vehicle(vehicle_binary, autotest, opts, stuff, loc):
+    '''run the ArduPilot binary'''
+
     cmd_name = opts.vehicle
     cmd = []
     if opts.valgrind:
-        progress("Using valgrind")
         cmd_name += " (valgrind)"
         cmd.append("valgrind")
     if opts.gdb:
-        progress("Using gdb")
         cmd_name += " (gdb)"
         cmd.append("gdb")
         gdb_commands_file = tempfile.NamedTemporaryFile(delete=False)
         atexit.register(os.unlink, gdb_commands_file.name)
 
-        if opts.breakpoint:
-            gdb_commands_file.write("b %s\n" % (opts.breakpoint,))
+        for breakpoint in opts.breakpoint:
+            gdb_commands_file.write("b %s\n" % (breakpoint,))
         gdb_commands_file.write("r\n")
         gdb_commands_file.close()
         cmd.extend(["-x", gdb_commands_file.name])
         cmd.append("--args")
 
-    cmd.append(os.path.join(vehicledir, opts.vehicle+".elf"))
+    cmd.append(vehicle_binary)
     cmd.append("-S")
     cmd.append("-I"+str(opts.instance))
     cmd.extend(["--home", loc])
@@ -383,13 +517,11 @@ def start_vehicle(vehicledir, autotest, opts, stuff, loc):
 def start_mavproxy(opts, stuff):
     '''run mavproxy'''
     # FIXME: would be nice to e.g. "mavproxy.mavproxy(....).run" rather than shelling out
-    progress("Starting MAVProxy")
 
     extra_cmd = ""
     cmd = []
-    cygstart = "/usr/bin/cygstart"
-    if os.path.exists(cygstart):
-        cmd.append(cygstart)
+    if under_cygwin():
+        cmd.append("/usr/bin/cygstart")
         cmd.append("-w")
         cmd.append("/cygdrive/c/Program Files (x86)/MAVProxy/mavproxy.exe")
     else:
@@ -420,12 +552,19 @@ def start_mavproxy(opts, stuff):
     if opts.mavproxy_args:
         cmd.extend(opts.mavproxy_args.split(" ")) # this could be a lot better..
 
+    # compatability pass-through parameters (for those that don't want
+    # to use -C :-)
+    for out in opts.out:
+        cmd.extend(['--out', out])
+    if opts.map:
+        cmd.append('--map')
+    if opts.console:
+        cmd.append('--console')
+
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
 
-    progress("%s" % (cmd,))
-    p = subprocess.Popen(cmd)
-    pid, sts = os.waitpid(p.pid,0)
+    run_cmd_blocking("Run MavProxy", cmd)
     progress("MAVProxy exitted")
 
 frame_options = options_for_frame(opts.frame, opts)
@@ -447,10 +586,6 @@ if not opts.hil:
 if opts.tracker:
     start_antenna_tracker(find_autotest_dir(), opts)
 
-# rebuild time:
-if not opts.no_rebuild: # i.e. we should rebuild
-    do_build(vehicledir, opts, frame_options["build_target"])
-
 if opts.custom_location:
     loc = opts.custom_location
     progress("Starting up at %s" % (loc,))
@@ -462,7 +597,19 @@ if opts.hil:
     # (unlikely)
     run_in_terminal_window(find_autotest_dir(), "JSBSim", [ os.path.join(find_autotest_dir(), "jsb_sim/runsim.py"), "--home", loc, "--speedup=" + str(opts.speedup)])
 else:
-    start_vehicle(vehicledir, find_autotest_dir(), opts, frame_options, loc)
+    if not opts.no_rebuild: # i.e. we should rebuild
+        do_build(vehicledir, opts, frame_options)
+
+    if opts.build_system == "waf":
+        vehicle_binary = os.path.join(vehicledir, "../build/sitl", frame_options["waf_target"])
+    else:
+        vehicle_binary = os.path.join(vehicledir, opts.vehicle+".elf")
+
+    if not os.path.exists(vehicle_binary):
+        print("Vehicle binary (%s) does not exist" % (vehicle_binary,))
+        sys.exit(1)
+
+    start_vehicle(vehicle_binary, find_autotest_dir(), opts, frame_options, loc)
 
 if opts.delay_start:
     progress("Sleeping for %f seconds" % (opts.delay_start,))
