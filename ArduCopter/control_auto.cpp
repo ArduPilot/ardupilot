@@ -456,6 +456,7 @@ void Copter::auto_circle_movetoedge_start(const Location_Class &circle_center, f
     if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
         // default to current position and log error
         circle_center_neu = inertial_nav.get_position();
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_CIRCLE_INIT);
     }
     circle_nav.set_center(circle_center_neu);
 
