@@ -1,3 +1,25 @@
+Release 3.5.3, 30th April 2016
+------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.3 of APM:Plane. This is a minor release with only small
+bugfix changes.
+
+The main motivation for the release is a problem with flying without a
+compass enabled. If you fly 3.5.2 with MAG_ENABLE=0 or no compass
+attached then there is a risk that the EKF2 attitude estimator may
+become unstable before takeoff. This can cause the aircraft to crash.
+
+The other changes in this release are:
+
+ - fixed loiter radius for counter-clockwise loiter
+ - fixed the loiter radius when doing a RTL at the end of a mission
+ - provide reasons to the GCS when a uBlox GPS fails to properly configure
+ - support a wider variety of NMEA GPS receivers
+ - use EKF1 by default if no compass is enabled
+
+Happy flying!
+
 Release 3.5.2, 26th March 2016
 ------------------------------
 
