@@ -217,12 +217,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
 
+#if FRAME_CONFIG == MULTICOPTER_FRAME
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
     // @Values: 0:Quad, 1:Hexa, 2:Octa, 3:OctaQuad, 4:Y6
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 0),
+#endif
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X or V)
@@ -318,7 +320,7 @@ bool QuadPlane::setup(void)
         goto failed;
     }
 
-#ifdef AP_MOTORS_FORCE_CLASS
+#if FRAME_CONFIG == TRI_FRAME
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor1, CH_5);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
