@@ -43,7 +43,8 @@ cache:
     - $HOME/opt
 
 before_install:
-  - Tools/scripts/configure-ci.sh
+  - export PATH=$(echo ${PATH} | awk -v RS=':' -v ORS=':' '/clang/ {next} {print}' | sed 's/:*$//')
+  - APMDIR=$(pwd) && Tools/scripts/configure-ci.sh
 
 script:
   - python Tools/autotest/param_metadata/param_parse.py
