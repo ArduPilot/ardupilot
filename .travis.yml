@@ -1,10 +1,6 @@
 language: cpp
 sudo: false
 
-os:
-  - linux
-  - osx
-
 addons:
   coverity_scan:
     project:
@@ -63,6 +59,7 @@ env:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
+<<<<<<< HEAD
 
 # Note: while https://github.com/travis-ci/travis-ci/issues/4393 isn't solved we need to hack compiler name to have cache work properly
 
@@ -80,3 +77,5 @@ matrix:
       env: CI_BUILD_TARGET="sitl linux minlure"
     - compiler: "clang Linux"
       env: CI_BUILD_TARGET="navio2 raspilot bebop"
+    - compiler: "clang OSX"
+      env: CI_BUILD_TARGET="sitltest"
