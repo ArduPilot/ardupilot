@@ -47,6 +47,8 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         frame_type = "y6";
     } else if (strstr(frame_str, "-tri")) {
         frame_type = "tri";
+    } else if (strstr(frame_str, "-tilttri")) {
+        frame_type = "tilttri";
     } else if (strstr(frame_str, "firefly")) {
         frame_type = "firefly";
         // elevon style surfaces

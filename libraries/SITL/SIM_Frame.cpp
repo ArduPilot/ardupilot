@@ -91,6 +91,13 @@ static const Motor tri_motors[] =
     Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, AP_MOTORS_MOT_7, -45, 45, -1, 0, 0),
 };
 
+static const Motor tilttri_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, -1, 0, 0, AP_MOTORS_MOT_8, 0, -90),
+    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3, -1, 0, 0, AP_MOTORS_MOT_8, 0, -90),
+    Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, AP_MOTORS_MOT_7, -45, 45, -1, 0, 0),
+};
+
 static const Motor y6_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,  45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
@@ -129,6 +136,7 @@ static Frame supported_frames[] =
     Frame("octa-quad", 8, octa_quad_motors),
     Frame("octa",      8, octa_motors),
     Frame("tri",       3, tri_motors),
+    Frame("tilttri",   3, tilttri_motors),
     Frame("y6",        6, y6_motors),
     Frame("firefly",   6, firefly_motors)
 };
