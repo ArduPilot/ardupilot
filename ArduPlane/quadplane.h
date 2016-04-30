@@ -7,12 +7,20 @@
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_WPNav/AC_WPNav.h>
 
-// uncomment this to force a different motor class
-// #define AP_MOTORS_FORCE_CLASS AP_MotorsTri
+/*
+  frame types for quadplane build. Most case be set with
+  parameters. Those that can't are listed here and chosen with a build
+  time FRAME_CONFIG parameter
+ */
+#define MULTICOPTER_FRAME 1
+#define TRI_FRAME 2
 
+#ifndef FRAME_CONFIG
+# define FRAME_CONFIG MULTICOPTER_FRAME
+#endif
 
-#ifdef AP_MOTORS_FORCE_CLASS
-#define AP_MOTORS_CLASS AP_MOTORS_FORCE_CLASS
+#if FRAME_CONFIG == TRI_FRAME
+#define AP_MOTORS_CLASS AP_MotorsTri
 #else
 #define AP_MOTORS_CLASS AP_MotorsMulticopter
 #endif
@@ -110,7 +118,9 @@ private:
     AC_PID                  pid_accel_z{0.3, 1, 0, 800, 10, 0.02};
     AC_PI_2D                pi_vel_xy{0.7, 0.35, 1000, 5, 0.02};
 
+#if FRAME_CONFIG == MULTICOPTER_FRAME
     AP_Int8 frame_class;
+#endif
     AP_Int8 frame_type;
     
     AP_MOTORS_CLASS *motors;
