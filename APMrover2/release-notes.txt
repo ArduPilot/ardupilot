@@ -108,14 +108,6 @@ result and plot the distribution of vibration level with
 frequency. That is great for finding the cause of vibration
 issues. Note that you need a very fast microSD card for that to work!
 
-Steering Disarm
----------------
-This is the first release that allows you to disarm using steering
-if you want to. It isn't enabled by default. You can enable it
-with the ARMING_RUDDER parameter by setting it to 2. It will only
-allow you to disarm if the autopilot thinks you are not moving at the
-time.
-
 More Sensors
 ------------
 This release includes support for a bunch more sensors. It now supports
