@@ -107,5 +107,7 @@ void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 */
 void AP_Compass_Backend::set_external(uint8_t instance, bool external)
 {
-    _compass._state[instance].external.set(external);
+    if (_compass._state[instance].external != 2) {
+        _compass._state[instance].external.set(external);
+    }
 }
