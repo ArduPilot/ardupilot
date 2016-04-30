@@ -73,7 +73,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_mount,           50,    100),
     SCHED_TASK(update_trigger,         50,    100),
     SCHED_TASK(log_perf_info,         0.2,    100),
-    SCHED_TASK(compass_save,        0.016,    200),
+    SCHED_TASK(compass_save,          0.1,    200),
     SCHED_TASK(Log_Write_Attitude,     25,    300),
     SCHED_TASK(update_logging1,        10,    300),
     SCHED_TASK(update_logging2,        10,    300),
@@ -354,7 +354,12 @@ void Plane::log_perf_info()
 
 void Plane::compass_save()
 {
-    if (g.compass_enabled) {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !hal.util->get_soft_armed()) {
+        /*
+          only save offsets when disarmed
+         */
         compass.save_offsets();
     }
 }
