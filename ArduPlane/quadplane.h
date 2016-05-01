@@ -292,6 +292,18 @@ private:
         uint8_t motor_count;          // number of motors to cycle
     } motor_test;
 
+    // tiltrotor control variables
+    struct {
+        AP_Int16 tilt_mask;
+        AP_Int16 max_rate_dps;
+        AP_Int8  max_angle_deg;
+        float current_tilt;
+        float current_throttle;
+    } tilt;
+
+    void tiltrotor_slew(float tilt);
+    void tiltrotor_update(void);
+    
 public:
     void motor_test_output();
     uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,

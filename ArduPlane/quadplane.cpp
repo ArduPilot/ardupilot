@@ -272,6 +272,30 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("RTL_MODE", 36, QuadPlane, rtl_mode, 0),
+
+    // @Param: TILT_MASK
+    // @DisplayName: Tiltrotor mask
+    // @Description: This is a bitmask of motors that are tiltable in a tiltrotor (or tiltwing). The mask is in terms of the standard motor order for the frame type.
+    // @User: Standard
+    AP_GROUPINFO("TILT_MASK", 37, QuadPlane, tilt.tilt_mask, 0),
+
+    // @Param: TILT_RATE
+    // @DisplayName: Tiltrotor tilt rate
+    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor
+    // @Units: degrees/second
+    // @Increment: 1
+    // @Range: 10 300
+    // @User: Standard
+    AP_GROUPINFO("TILT_RATE", 38, QuadPlane, tilt.max_rate_dps, 40),
+
+    // @Param: TILT_MAX
+    // @DisplayName: Tiltrotor maximum VTOL angle
+    // @Description: This is the maximum angle of the tiltable motors at which multicopter control will be enabled. Beyond this angle the plane will fly solely as a fixed wing aircraft and the motors will tilt to their maximum angle at the TILT_RATE
+    // @Units: degrees
+    // @Increment: 1
+    // @Range: 20 80
+    // @User: Standard
+    AP_GROUPINFO("TILT_MAX", 39, QuadPlane, tilt.max_angle_deg, 45),
     
     AP_GROUPEND
 };
@@ -901,6 +925,8 @@ void QuadPlane::update(void)
          plane.failsafe.ch3_counter>0)) {
         throttle_wait = false;
     }
+
+    tiltrotor_update();
 }
 
 /*
