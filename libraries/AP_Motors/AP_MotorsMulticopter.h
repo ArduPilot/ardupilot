@@ -100,6 +100,11 @@ public:
     // return true if spool up is complete
     bool spool_up_complete() const { return _multicopter_flags.spool_mode == THROTTLE_UNLIMITED; }
 
+    // output a thrust to all motors that match a given motor
+    // mask. This is used to control tiltrotor motors in forward
+    // flight. Thrust is in the range 0 to 1
+    void                output_motor_mask(float thrust, uint8_t mask);
+        
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 

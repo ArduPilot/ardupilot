@@ -128,6 +128,7 @@ void AP_MotorsMatrix::output_to_motors()
     hal.rcout->push();
 }
 
+
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsMatrix::get_motor_mask()

@@ -499,3 +499,23 @@ void AP_MotorsMulticopter::throttle_pass_through(int16_t pwm)
         hal.rcout->push();
     }
 }
+
+// output a thrust to all motors that match a given motor mask. This
+// is used to control tiltrotor motors in forward flight. Thrust is in
+// the range 0 to 1
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask)
+{
+    hal.rcout->cork();
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            int16_t motor_out;
+            if (mask & (1U<<i)) {
+                motor_out = calc_thrust_to_pwm(thrust);
+            } else {
+                motor_out = _throttle_radio_min;
+            }
+            rc_write(i, motor_out);
+        }
+    }
+    hal.rcout->push();
+}
