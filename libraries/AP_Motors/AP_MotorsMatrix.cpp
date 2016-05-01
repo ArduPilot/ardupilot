@@ -406,3 +406,16 @@ void AP_MotorsMatrix::normalise_rpy_factors()
         }
     }
 }
+
+
+/*
+  call vehicle supplied thrust compensation if set. This allows
+  vehicle code to compensate for vehicle specific motor arrangements
+  such as tiltrotors or tiltwings
+*/
+void AP_MotorsMatrix::thrust_compensation(void)
+{
+    if (_thrust_compensation_callback) {
+        _thrust_compensation_callback(_thrust_rpyt_out, AP_MOTORS_MAX_NUM_MOTORS);
+    }
+}
