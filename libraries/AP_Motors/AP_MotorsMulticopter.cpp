@@ -22,6 +22,7 @@
 
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
+
 extern const AP_HAL::HAL& hal;
 
 // parameters for the motor class
@@ -152,6 +153,9 @@ void AP_MotorsMulticopter::output()
     // calculate thrust
     output_armed_stabilizing();
 
+    // apply any thrust compensation for the frame
+    thrust_compensation();
+    
     // convert rpy_thrust values to pwm
     output_to_motors();
 };
