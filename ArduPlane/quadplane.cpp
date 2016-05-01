@@ -806,8 +806,10 @@ void QuadPlane::update_transition(void)
         plane.control_mode == ACRO ||
         plane.control_mode == TRAINING) {
         // in manual modes quad motors are always off
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        motors->output();
+        if (!tilt.motors_active) {
+            motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+            motors->output();
+        }
         transition_state = TRANSITION_DONE;
         return;
     }
@@ -879,8 +881,10 @@ void QuadPlane::update_transition(void)
     }
 
     case TRANSITION_DONE:
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        motors->output();
+        if (!tilt.motors_active) {
+            motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+            motors->output();
+        }
         break;
     }
 }
