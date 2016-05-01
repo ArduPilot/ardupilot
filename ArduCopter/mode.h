@@ -85,6 +85,8 @@ protected:
 
     virtual const char *name() const = 0;
 
+    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
+
     // returns a string for this flightmode, exactly 4 bytes
     virtual const char *name4() const = 0;
 
@@ -220,6 +222,9 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override {
+        return !must_navigate;
+    }
 
 protected:
 
@@ -263,6 +268,10 @@ public:
     void nav_guided_start();
 
     bool landing_gear_should_be_deployed() const override;
+
+    // return true if this flight mode supports user takeoff
+    //  must_nagivate is true if mode must also control horizontal position
+    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
 
     void payload_place_start();
 
@@ -675,6 +684,9 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override {
+        return !must_navigate;
+    }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -755,6 +767,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return from_gcs; }
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const { return true; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
 
     void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
@@ -868,6 +881,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
 
 #if PRECISION_LANDING == ENABLED
     void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
@@ -908,6 +922,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
 
 protected:
 
@@ -1048,6 +1063,9 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override {
+        return !must_navigate;
+    }
 
 protected:
 

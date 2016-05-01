@@ -923,8 +923,6 @@ private:
     const char* get_frame_string();
     void allocate_motors(void);
 
-    // takeoff.cpp
-    bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
     void takeoff_timer_start(float alt_cm);
     void takeoff_stop();

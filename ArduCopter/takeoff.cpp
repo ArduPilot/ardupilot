@@ -5,28 +5,10 @@
 //   A safe takeoff speed is calculated and used to calculate a time_ms
 //   the pos_control target is then slowly increased until time_ms expires
 
-// return true if this flight mode supports user takeoff
-//  must_nagivate is true if mode must also control horizontal position
-bool Copter::current_mode_has_user_takeoff(bool must_navigate)
-{
-    switch (control_mode) {
-        case GUIDED:
-        case LOITER:
-        case POSHOLD:
-            return true;
-        case ALT_HOLD:
-        case SPORT:
-        case FLOWHOLD:
-            return !must_navigate;
-        default:
-            return false;
-    }
-}
-
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
 bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
-    if (motors->armed() && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
+    if (motors->armed() && ap.land_complete && flightmode->has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
 
 #if FRAME_CONFIG == HELI_FRAME
         // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
