@@ -49,6 +49,8 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         frame_type = "tri";
     } else if (strstr(frame_str, "-tilttri")) {
         frame_type = "tilttri";
+        // fwd motor gives zero thrust
+        thrust_scale = 0;
     } else if (strstr(frame_str, "firefly")) {
         frame_type = "firefly";
         // elevon style surfaces
