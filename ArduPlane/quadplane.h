@@ -299,6 +299,7 @@ private:
         AP_Int8  max_angle_deg;
         float current_tilt;
         float current_throttle;
+        bool motors_active:1;
     } tilt;
 
     void tiltrotor_slew(float tilt);

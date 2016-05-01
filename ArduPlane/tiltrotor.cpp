@@ -15,8 +15,31 @@ void QuadPlane::tiltrotor_slew(float newtilt)
 {
     float max_change = (tilt.max_rate_dps.get() * plane.G_Dt) / 90.0f;
     tilt.current_tilt = constrain_float(newtilt, tilt.current_tilt-max_change, tilt.current_tilt+max_change);
+
     // translate to 0..1000 range and output
     RC_Channel_aux::set_servo_out(RC_Channel_aux::k_motor_tilt, 1000 * tilt.current_tilt);
+
+    /*
+      we need to tell AP_Motors about the tilt so it can compensate
+      for reduced vertical thrust
+     */
+    float tilt_factor;
+    if (tilt.current_tilt > 0.98f) {
+        tilt_factor = 1.0 / cosf(radians(0.98f*90));
+    } else {
+        tilt_factor = 1.0 / cosf(radians(tilt.current_tilt*90));
+    }
+
+    // when we got past Q_TILT_MAX we gang the tilted motors together
+    // to generate equal thrust. This makes them act as a single pitch
+    // control motor while preventing them trying to do roll and yaw
+    // control while angled over. This greatly improves the stability
+    // of the last phase of transitions
+    float tilt_threshold = (tilt.max_angle_deg/90.0f);
+    bool equal_thrust = (tilt.current_tilt > tilt_threshold);
+
+    // tell motors library about the tilt
+    motors->set_motor_tilt_factor(tilt_factor, tilt.tilt_mask, equal_thrust);
 }
 
 /*
@@ -28,6 +51,9 @@ void QuadPlane::tiltrotor_update(void)
         // no motors to tilt
         return;
     }
+
+    // default to inactive
+    tilt.motors_active = false;
 
     // the maximum rate of throttle change
     float max_change = (tilt.max_rate_dps.get() * plane.G_Dt) / 90.0f;
@@ -49,6 +75,8 @@ void QuadPlane::tiltrotor_update(void)
             tilt.current_throttle = 0;
         } else {
             motors->output_motor_mask(tilt.current_throttle, (uint8_t)tilt.tilt_mask.get());
+            // prevent motor shutdown
+            tilt.motors_active = true;
         }
         return;
     }
@@ -85,8 +113,10 @@ void QuadPlane::tiltrotor_update(void)
         // the way forward
         tiltrotor_slew(1);
     } else {
-        // anything above 50% throttle will give maximum tilt. Below that
-        // throttle is proportional to demanded forward throttle
+        // until we have completed the transition we limit the tilt to
+        // Q_TILT_MAX. Anything above 50% throttle gets
+        // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
+        // relies heavily on Q_VFWD_GAIN being set appropriately.
         float settilt = constrain_float(plane.channel_throttle->servo_out / 50.0f, 0, 1);
         tiltrotor_slew(settilt * tilt.max_angle_deg / 90.0f);
     }
