@@ -22,7 +22,7 @@
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
 
-using namespace SITL;
+namespace SITL {
 
 /*
   class to describe a multicopter frame type
@@ -58,3 +58,4 @@ public:
     float mass;
     uint8_t motor_offset;
 };
+}
