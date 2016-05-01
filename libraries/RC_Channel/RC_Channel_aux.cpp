@@ -114,6 +114,10 @@ void RC_Channel_aux::aux_servo_function_setup(void)
     case RC_Channel_aux::k_flaperon2:
         set_angle_out(4500);
         break;
+    case RC_Channel_aux::k_motor_tilt:
+        // tenth percentage tilt
+        set_range_out(0,1000);
+        break;
     default:
         break;
     }

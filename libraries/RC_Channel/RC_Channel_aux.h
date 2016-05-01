@@ -74,6 +74,7 @@ public:
         k_motor6                = 38,
         k_motor7                = 39,
         k_motor8                = 40,
+        k_motor_tilt            = 41,            ///< tiltrotor motor tilt control
         k_rcin1                 = 51,            ///< these are for pass-thru from arbitrary rc inputs
         k_rcin2                 = 52,
         k_rcin3                 = 53,
