@@ -779,6 +779,7 @@ private:
     void gcs_retry_deferred(void);
 
     void do_erase_logs(void);
+    void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
