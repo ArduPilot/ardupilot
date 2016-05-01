@@ -143,7 +143,7 @@ void AP_AHRS_NavEKF::update_EKF1(void)
             _gyro_estimate.zero();
             uint8_t healthy_count = 0;
             for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-                if (_ins.get_gyro_health(i) && healthy_count < 2) {
+                if (_ins.get_gyro_health(i) && healthy_count < 2 && _ins.use_gyro(i)) {
                     _gyro_estimate += _ins.get_gyro(i);
                     healthy_count++;
                 }
@@ -214,7 +214,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             _gyro_estimate.zero();
             uint8_t healthy_count = 0;
             for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-                if (_ins.get_gyro_health(i) && healthy_count < 2) {
+                if (_ins.get_gyro_health(i) && healthy_count < 2 && _ins.use_gyro(i)) {
                     _gyro_estimate += _ins.get_gyro(i);
                     healthy_count++;
                 }
