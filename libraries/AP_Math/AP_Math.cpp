@@ -141,7 +141,16 @@ T constrain_value(const T amt, const T low, const T high)
     if (isnan(amt)) {
         return (low + high) * 0.5f;
     }
-    return amt < low ? low : (amt > high ? high : amt);
+
+    if (amt < low) {
+        return low;
+    }
+
+    if (amt > high) {
+        return high;
+    }
+
+    return amt;
 }
 
 template int constrain_value<int>(const int amt, const int low, const int high);
