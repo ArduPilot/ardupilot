@@ -65,29 +65,19 @@ TEST(VectorTest, Rotations)
 
 TEST(MathTest, IsZero)
 {
-#define TEST_IS_ZERO(_result, _test) { \
-    bool bZero = is_zero(_test); \
-    EXPECT_EQ(_result, bZero) << "is_zero(): floating point is_zero comparator failure"; \
-}
-
-    TEST_IS_ZERO(false, 0.1);
-    TEST_IS_ZERO(false, 0.0001);
-    TEST_IS_ZERO(true,  0.f);
-    TEST_IS_ZERO(true,  FLT_MIN);
-    TEST_IS_ZERO(true, -FLT_MIN);
+    EXPECT_FALSE(is_zero(0.1));
+    EXPECT_FALSE(is_zero(0.0001));
+    EXPECT_TRUE(is_zero(0.f));
+    EXPECT_TRUE(is_zero(FLT_MIN));
+    EXPECT_TRUE(is_zero(-FLT_MIN));
 }
 
 TEST(MathTest, IsEqual)
 {
-#define TEST_IS_EQUAL(_result, _test1, _test2) { \
-    bool bEqual = is_equal(_test1, _test2); \
-    EXPECT_EQ(_result, bEqual) << "is_equal(): floating point is_equal comparator failure"; \
-}
-
-    TEST_IS_EQUAL(false, 0.1,  0.10001);
-    TEST_IS_EQUAL(false, 0.1, -0.1001);
-    TEST_IS_EQUAL(true,  0.f,   0.0f);
-    TEST_IS_EQUAL(false, 1.f,  1.f + FLT_EPSILON);
+    EXPECT_FALSE(is_equal(0.1,  0.10001));
+    EXPECT_FALSE(is_equal(0.1, -0.1001));
+    EXPECT_TRUE(is_equal(0.f,   0.0f));
+    EXPECT_FALSE(is_equal(1.f,  1.f + FLT_EPSILON));
 }
 
 TEST(MathTest, Square)
