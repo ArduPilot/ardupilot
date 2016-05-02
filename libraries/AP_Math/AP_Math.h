@@ -1,25 +1,22 @@
 #pragma once
 
-#include "definitions.h"
-
+#include <cmath>
 #include <limits>
+#include <stdint.h>
 #include <type_traits>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <cmath>
-#include <stdint.h>
 
+#include "definitions.h"
+#include "edc.h"
+#include "location.h"
+#include "matrix3.h"
+#include "polygon.h"
+#include "quaternion.h"
 #include "rotations.h"
 #include "vector2.h"
 #include "vector3.h"
-#include "matrix3.h"
-#include "quaternion.h"
-#include "polygon.h"
-#include "edc.h"
-#include <AP_Param/AP_Param.h>
-#include "location.h"
-
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
