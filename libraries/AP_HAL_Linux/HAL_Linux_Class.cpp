@@ -314,15 +314,12 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 
     scheduler->init();
     gpio->init();
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     i2c->begin();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     i2c1->begin();
     i2c2->begin();
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-    i2c->begin();
     i2c1->begin();
-#else
-    i2c->begin();
 #endif
     spi->init();
     rcout->init();
