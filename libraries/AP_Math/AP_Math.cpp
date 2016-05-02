@@ -52,13 +52,9 @@ float linear_interpolate(float low_output, float high_output,
 template <class T>
 float wrap_180(const T angle, float unit_mod)
 {
-    const float ang_180 = 180.f * unit_mod;
-    const float ang_360 = 360.f * unit_mod;
-    float res = fmod(static_cast<float>(angle) + ang_180, ang_360);
-    if (res < 0 || is_zero(res)) {
-        res += ang_180;
-    } else {
-        res -= ang_180;
+    auto res = wrap_360(angle, unit_mod);
+    if (res > 180.f * unit_mod) {
+        res -= 360.f * unit_mod;
     }
     return res;
 }
@@ -109,11 +105,9 @@ template auto wrap_360_cd<double>(const double angle) -> decltype(wrap_360(angle
 template <class T>
 float wrap_PI(const T radian)
 {
-    float res = fmod(static_cast<float>(radian) + M_PI, M_2PI);
-    if (res < 0 || is_zero(res)) {
-        res += M_PI;
-    } else {
-        res -= M_PI;
+    auto res = wrap_2PI(radian);
+    if (res > M_PI) {
+        res -= M_2PI;
     }
     return res;
 }

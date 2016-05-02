@@ -240,4 +240,25 @@ TEST(MathWrapTest, Angle360)
     EXPECT_EQ(0.f,     wrap_360_cd(-72000.f));
 }
 
+TEST(MathWrapTest, AnglePI)
+{
+    const float accuracy = 1.0e-5;
+
+    EXPECT_NEAR(M_PI,    wrap_PI(M_PI),      accuracy);
+    EXPECT_NEAR(0.f,     wrap_PI(M_2PI),     accuracy);
+    EXPECT_NEAR(0,       wrap_PI(M_PI * 10), accuracy);
+}
+
+TEST(MathWrapTest, Angle2PI)
+{
+    const float accuracy = 1.0e-5;
+
+    EXPECT_NEAR(M_PI, wrap_2PI(M_PI), accuracy);
+    EXPECT_NEAR(0.f,  wrap_2PI(M_2PI), accuracy);
+    EXPECT_NEAR(0.f,  wrap_2PI(M_PI * 10), accuracy);
+    EXPECT_NEAR(0.f,  wrap_2PI(0.f), accuracy);
+    EXPECT_NEAR(M_PI, wrap_2PI(-M_PI), accuracy);
+    EXPECT_NEAR(0,    wrap_2PI(-M_2PI), accuracy);
+}
+
 AP_GTEST_MAIN()
