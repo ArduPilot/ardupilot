@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cmath>
-#include <AP_HAL/AP_HAL.h>
 
+#include <AP_HAL/AP_HAL.h>
 
 // Double precision math must be activated
 #if defined(DBL_MATH) && CONFIG_HAL_BOARD == HAL_BOARD_LINUX

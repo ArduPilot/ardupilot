@@ -51,11 +51,11 @@
 #include <cmath>
 #include <float.h>
 #include <string.h>
-
-
 #if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif
+
+#include "rotations.h"
 
 template <typename T>
 class Matrix3;
