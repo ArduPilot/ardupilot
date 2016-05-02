@@ -69,10 +69,10 @@ SCHED_LOOP_RATE  300
 THR_MAX          100
 TRIM_ARSPD_CM    2500
 LOG_BITMASK      65534
-# map rc7 in to channel 11 out for tilt
-RC11_FUNCTION    41
-RC11_MIN         1000
-RC11_MAX         2000
+# map channel 13 out for tilt
+RC13_FUNCTION    41
+RC13_MIN         1000
+RC13_MAX         2000
 Q_ENABLE         1
 Q_ASSIST_SPEED   10
 Q_FRAME_CLASS    4
