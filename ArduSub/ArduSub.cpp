@@ -79,19 +79,8 @@
 
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called
-  (in 2.5ms units) and the maximum time they are expected to take (in
-  microseconds)
-  1    = 400hz
-  2    = 200hz
-  4    = 100hz
-  8    = 50hz
-  20   = 20hz
-  40   = 10hz
-  133  = 3hz
-  400  = 1hz
-  4000 = 0.1hz
-  
+  should be listed here, along with how often they should be called (in hz)
+  and the maximum time they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(rc_loop,              100,    130),
