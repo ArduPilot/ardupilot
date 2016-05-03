@@ -75,21 +75,22 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     AP_GROUPINFO("PRIMARY", 6, AP_Baro, _primary_baro, 0),
 
     // @Param: SPEC_GRAV
-    // @DisplayName: ROV ONLY Specific Gravity
+    // @DisplayName: Specific Gravity (For water depth measurement)
     // @Description: This sets the specific gravity of the fluid when flying an underwater ROV. Set to 1.0 for freshwater or 1.024 for saltwater
     // @Values: 1.0:Fresh Water, 1.024:Salt Water
     AP_GROUPINFO("SPEC_GRAV", 7, AP_Baro, _specific_gravity, 1.0),
 
     // @Param: BASE_PRESS
-    // @DisplayName: ROV ONLY Base Pressure
+    // @DisplayName: Base Pressure (For water depth measurement)
     // @Description: Base diving pressure. This is the ambient air pressure at launch site, and is persistent between boots.
     // @Units: pascals
     AP_GROUPINFO("BASE_PRESS", 8, AP_Baro, _base_pressure, 0.0),
 
     // @Param: BASE_RESET
-    // @DisplayName: ROV ONLY Reset Base Pressure
-    // @Description: Set to 1 to reset base pressure on next boot
+    // @DisplayName: Reset Base Pressure (For water depth measurement)
+    // @Description: Set to 1 (reset) to reset base pressure on next boot
     // @Values: 0:Keep, 1:Reset
+	// @RebootRequired: True
     AP_GROUPINFO("BASE_RESET", 9, AP_Baro, _reset_base_pressure, 1),
 
     AP_GROUPEND
