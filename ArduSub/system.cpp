@@ -192,7 +192,12 @@ void Sub::init_ardupilot()
     ahrs.set_optflow(&optflow);
 #endif
 
-    // initialise position controllers
+    // init Location class
+	Location_Class::set_ahrs(&ahrs);
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+	Location_Class::set_terrain(&terrain);
+	wp_nav.set_terrain(&terrain);
+#endif
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor

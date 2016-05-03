@@ -13,10 +13,23 @@
 bool Sub::rtl_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
+    	rtl_build_path(true);
         rtl_climb_start();
         return true;
     }else{
         return false;
+    }
+}
+
+// re-start RTL with terrain following disabled
+void Sub::rtl_restart_without_terrain()
+{
+    // log an error
+    Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_RESTARTED_RTL);
+    if (rtl_path.terrain_used) {
+        rtl_build_path(false);
+        rtl_climb_start();
+        gcs_send_text(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
     }
 }
 
@@ -79,7 +92,6 @@ void Sub::rtl_climb_start()
 {
     rtl_state = RTL_InitialClimb;
     rtl_state_complete = false;
-    rtl_alt = get_RTL_alt();
 
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
@@ -89,22 +101,13 @@ void Sub::rtl_climb_start()
         wp_nav.set_speed_xy(g.rtl_speed_cms);
     }
 
-    // get horizontal stopping point
-    Vector3f destination;
-    wp_nav.get_wp_stopping_point_xy(destination);
-
-#if AC_RALLY == ENABLED
-    // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, rtl_alt+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = MAX(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    destination.z = pv_alt_above_origin(rally_point.alt);
-#else
-    destination.z = pv_alt_above_origin(rtl_alt);
-#endif
-
     // set the destination
-    wp_nav.set_wp_destination(destination);
+    if (!wp_nav.set_wp_destination(rtl_path.climb_target)) {
+        // this should not happen because rtl_build_path will have checked terrain data was available
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        set_mode(LAND, MODE_REASON_TERRAIN_FAILSAFE);
+        return;
+    }
     wp_nav.set_fast_waypoint(true);
 
     // hold current yaw during initial climb
@@ -117,19 +120,10 @@ void Sub::rtl_return_start()
     rtl_state = RTL_ReturnHome;
     rtl_state_complete = false;
 
-    // set target to above home/rally point
-#if AC_RALLY == ENABLED
-    // rally_point will be the nearest rally point or home.  uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, rtl_alt+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = MAX(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    Vector3f destination = pv_location_to_vector(rally_point);
-#else
-    Vector3f destination = pv_location_to_vector(ahrs.get_home());
-    destination.z = pv_alt_above_origin(rtl_alt);
-#endif
-
-    wp_nav.set_wp_destination(destination);
+    if (!wp_nav.set_wp_destination(rtl_path.return_target)) {
+        // failure must be caused by missing terrain data, restart RTL
+        rtl_restart_without_terrain();
+    }
 
     // initialise yaw to point home (maybe)
     set_auto_yaw_mode(get_default_auto_yaw_mode(true));
@@ -164,7 +158,7 @@ void Sub::rtl_climb_return_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    wp_nav.update_wpnav();
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -182,7 +176,7 @@ void Sub::rtl_climb_return_run()
     rtl_state_complete = wp_nav.reached_wp_destination();
 }
 
-// rtl_return_start - initialise return to home
+// rtl_loiterathome_start - initialise return to home
 void Sub::rtl_loiterathome_start()
 {
     rtl_state = RTL_LoiterAtHome;
@@ -226,7 +220,7 @@ void Sub::rtl_loiterathome_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    wp_nav.update_wpnav();
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -321,14 +315,14 @@ void Sub::rtl_descent_run()
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call z-axis position controller
-    pos_control.set_alt_target_with_slew(pv_alt_above_origin(g.rtl_alt_final), G_Dt);
+    pos_control.set_alt_target_with_slew(rtl_path.descent_target.alt, G_Dt);
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // check if we've reached within 20cm of final altitude
-    rtl_state_complete = fabsf(pv_alt_above_origin(g.rtl_alt_final) - inertial_nav.get_altitude()) < 20.0f;
+    rtl_state_complete = fabsf(rtl_path.descent_target.alt - current_loc.alt) < 20.0f;
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
@@ -423,21 +417,87 @@ void Sub::rtl_land_run()
     rtl_state_complete = ap.land_complete;
 }
 
-// get_RTL_alt - return altitude which vehicle should return home at
-//      altitude is in cm above home
-float Sub::get_RTL_alt()
+void Sub::rtl_build_path(bool terrain_following_allowed)
 {
+    // origin point is our stopping point
+    Vector3f stopping_point;
+    pos_control.get_stopping_point_xy(stopping_point);
+    pos_control.get_stopping_point_z(stopping_point);
+    rtl_path.origin_point = Location_Class(stopping_point);
+    rtl_path.origin_point.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME);
+
+    // set return target to nearest rally point or home position
+#if AC_RALLY == ENABLED
+    rtl_path.return_target = rally.calc_best_rally_or_home_location(current_loc, ahrs.get_home().alt);
+#else
+    rtl_path.return_target = ahrs.get_home();
+#endif
+
+    // compute return altitude
+    rtl_compute_return_alt(rtl_path.origin_point, rtl_path.return_target, terrain_following_allowed);
+
+    // climb target is above our origin point at the return altitude
+    rtl_path.climb_target = Location_Class(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
+
+    // descent target is below return target at rtl_alt_final
+    rtl_path.descent_target = Location_Class(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final, Location_Class::ALT_FRAME_ABOVE_HOME);
+
+    // set land flag
+    rtl_path.land = g.rtl_alt_final <= 0;
+}
+
+// return altitude in cm above home at which vehicle should return home
+//   rtl_origin_point is the stopping point of the vehicle when rtl is initiated
+//   rtl_return_target is the home or rally point that the vehicle is returning to.  It's lat, lng and alt values must already have been filled in before this function is called
+//   rtl_return_target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
+void Sub::rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target, bool terrain_following_allowed)
+{
+    float rtl_return_dist_cm = rtl_return_target.get_distance(rtl_origin_point) * 100.0f;
+
+    // curr_alt is current altitude above home or above terrain depending upon use_terrain
+    int32_t curr_alt = current_loc.alt;
+
+    // decide if we should use terrain altitudes
+    rtl_path.terrain_used = terrain_use() && terrain_following_allowed;
+    if (rtl_path.terrain_used) {
+        // attempt to retrieve terrain alt for current location, stopping point and origin
+        int32_t origin_terr_alt, return_target_terr_alt;
+        if (!rtl_origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, origin_terr_alt) ||
+            !rtl_origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, return_target_terr_alt) ||
+            !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_alt)) {
+            rtl_path.terrain_used = false;
+            Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
+        }
+    }
+
     // maximum of current altitude + climb_min and rtl altitude
-    float ret = MAX(current_loc.alt + MAX(0, g.rtl_climb_min), g.rtl_altitude);
-    ret = MAX(ret, RTL_ALT_MIN);
+    float ret = MAX(curr_alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN));
+
+    // don't allow really shallow slopes
+    if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
+        ret = MAX(curr_alt, MIN(ret, MAX(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
+    }
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
+    // Note: we are assuming the fence alt is the same frame as ret
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
         ret = MIN(ret, fence.get_safe_alt()*100.0f);
     }
 #endif
 
-    return ret;
+    // ensure we do not descend
+    ret = MAX(ret, curr_alt);
+
+    // convert return-target to alt-above-home or alt-above-terrain
+    if (!rtl_path.terrain_used || !rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
+        if (!rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
+            // this should never happen but just in case
+            rtl_return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
+        }
+    }
+
+    // add ret to altitude
+    rtl_return_target.alt += ret;
 }
 
