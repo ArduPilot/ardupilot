@@ -120,7 +120,6 @@ void Tracker::ten_hz_logging_loop()
 {
     if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_IMU(ins);
-        DataFlash.Log_Write_IMUDT(ins);
     }
     if (should_log(MASK_LOG_ATTITUDE)) {
         Log_Write_Attitude();
