@@ -20,51 +20,44 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
-/* FrSky sensor hub data IDs
+/* 
 for FrSky D protocol (D-receivers)
 */
+// FrSky sensor hub data IDs
 #define DATA_ID_GPS_ALT_BP     0x01
 #define DATA_ID_TEMP1          0x02
-#define DATA_ID_RPM            0x03
 #define DATA_ID_FUEL           0x04
 #define DATA_ID_TEMP2          0x05
-#define DATA_ID_VOLTS          0x06
 #define DATA_ID_GPS_ALT_AP     0x09
 #define DATA_ID_BARO_ALT_BP    0x10
 #define DATA_ID_GPS_SPEED_BP   0x11
 #define DATA_ID_GPS_LONG_BP    0x12
 #define DATA_ID_GPS_LAT_BP     0x13
 #define DATA_ID_GPS_COURS_BP   0x14
-#define DATA_ID_GPS_DAY_MONTH  0x15
-#define DATA_ID_GPS_YEAR       0x16
-#define DATA_ID_GPS_HOUR_MIN   0x17
-#define DATA_ID_GPS_SEC        0x18
 #define DATA_ID_GPS_SPEED_AP   0x19
 #define DATA_ID_GPS_LONG_AP    0x1A
 #define DATA_ID_GPS_LAT_AP     0x1B
-#define DATA_ID_GPS_COURS_AP   0x1C
 #define DATA_ID_BARO_ALT_AP    0x21
 #define DATA_ID_GPS_LONG_EW    0x22
 #define DATA_ID_GPS_LAT_NS     0x23
-#define DATA_ID_ACCEL_X        0x24
-#define DATA_ID_ACCEL_Y        0x25
-#define DATA_ID_ACCEL_Z        0x26
 #define DATA_ID_CURRENT        0x28
-#define DATA_ID_VARIO          0x30
 #define DATA_ID_VFAS           0x39
-#define DATA_ID_VOLTS_BP       0x3A
-#define DATA_ID_VOLTS_AP       0x3B
 
-/* Standard FrSky Sensor IDs
-for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
+#define START_STOP_D           0x5E
+#define BYTESTUFF_D            0x5D
+
+/* 
+for FrSky SPort protocol (X-receivers)
 */
-#define SENSOR_ID_VARIO            0x00 // 0
-#define SENSOR_ID_FLVSS            0xA1 // 1
-#define SENSOR_ID_FAS              0x22 // 2
-#define SENSOR_ID_GPS              0x83 // 3
-#define SENSOR_ID_RPM              0xE4 // 4
-#define SENSOR_ID_SP2UH            0x45 // 5
-#define SENSOR_ID_SP2UR            0xC6 // 6
+// FrSky Sensor IDs
+#define SENSOR_ID_VARIO        0x00 // Sensor ID  0
+#define SENSOR_ID_FAS          0x22 // Sensor ID  2
+#define SENSOR_ID_GPS          0x83 // Sensor ID  3
+#define SENSOR_ID_SP2UR        0xC6 // Sensor ID  6
+#define SENSOR_ID_28           0x1B // Sensor ID 28
+
+#define START_STOP_SPORT       0x7E
+#define BYTESTUFF_SPORT        0x7D
 
 class AP_Frsky_Telem
 {
@@ -72,34 +65,14 @@ public:
     //constructor
     AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery);
 
-    // init - perform require initialisation including detecting which protocol to use
+    // init - perform required initialisation
     void init(const AP_SerialManager &serial_manager, uint8_t *control_mode);
 
 private:
-    // send_FrSky_SPort - main transmission function when protocol is send_FrSky_SPort
-    void send_FrSky_SPort(void);
-    // send_FrSky_D - main transmission function when protocol is FrSky_D
-    void send_FrSky_D(void);
-    
-    // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
-    void tick(void);
-
-    // methods related to the nuts-and-bolts of sending data
-    void frsky_calc_crc(uint8_t byte);
-    void frsky_send_crc(void);
-    void frsky_send_byte(uint8_t value);
-    void frsky_send_data(uint16_t id, uint32_t data);
-
-    // methods to convert flight controller data to frsky telemetry format
-    void calc_nav_alt(void);
-    float format_gps(float dec);
-    void calc_gps_position(void);
-
-    AP_AHRS &_ahrs;                             // reference to attitude estimate
-    const AP_BattMonitor &_battery;                   // reference to battery monitor object
-    AP_HAL::UARTDriver *_port;                  // UART used to send data to receiver
+    AP_AHRS &_ahrs;
+    const AP_BattMonitor &_battery;
+    AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
-
     uint16_t _crc;
 
     uint8_t *_control_mode;
@@ -118,4 +91,22 @@ private:
     int16_t speed_in_meter;
     uint16_t speed_in_centimeter;
     } _gps;
+
+    // main transmission function when protocol is FrSky SPort
+    void send_SPort(void);
+    // main transmission function when protocol is FrSky D
+    void send_D(void);
+    // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
+    void tick(void);
+
+    // methods related to the nuts-and-bolts of sending data
+    void calc_crc(uint8_t byte);
+    void send_crc(void);
+    void send_byte(uint8_t value);
+    void send_data(uint16_t id, uint32_t data);
+
+    // methods to convert flight controller data to FrSky D or SPort format
+    void calc_nav_alt(void);
+    float format_gps(float dec);
+    void calc_gps_position(void);
 };
