@@ -126,7 +126,7 @@ void Tracker::update_GPS(void)
 
         // log GPS data
         if (should_log(MASK_LOG_GPS)) {
-            DataFlash.Log_Write_GPS(gps, 0, current_loc.alt);
+            DataFlash.Log_Write_GPS(gps, 0);
         }
     }
 }

@@ -124,7 +124,7 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
 
     // log vehicle as GPS2
     if (should_log(MASK_LOG_GPS)) {
-        DataFlash.Log_Write_GPS(gps, 1, vehicle.location.alt);
+        DataFlash.Log_Write_GPS(gps, 1);
     }
 }
 
