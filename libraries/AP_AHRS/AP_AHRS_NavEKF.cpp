@@ -118,8 +118,11 @@ void AP_AHRS_NavEKF::update_EKF1(void)
             start_time_ms = AP_HAL::millis();
         }
         // slight extra delay on EKF1 to prioritise EKF2 for memory
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms + 100U) {
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms + 100U || force_ekf) {
             ekf1_started = EKF1.InitialiseFilterDynamic();
+            if (force_ekf) {
+                return;
+            }
         }
     }
     if (ekf1_started) {
@@ -189,8 +192,11 @@ void AP_AHRS_NavEKF::update_EKF2(void)
         if (start_time_ms == 0) {
             start_time_ms = AP_HAL::millis();
         }
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms || force_ekf) {
             ekf2_started = EKF2.InitialiseFilter();
+            if (force_ekf) {
+                return;
+            }
         }
     }
     if (ekf2_started) {
