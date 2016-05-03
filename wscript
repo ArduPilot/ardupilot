@@ -10,7 +10,7 @@ sys.path.insert(0, 'Tools/ardupilotwaf/')
 import ardupilotwaf
 import boards
 
-from waflib import Build, ConfigSet, Context, Utils
+from waflib import Build, ConfigSet, Configure, Context, Utils
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
@@ -24,6 +24,8 @@ from waflib import Build, ConfigSet, Context, Utils
 # be sufficient.
 
 # TODO: set git version as part of build preparation.
+
+Configure.autoconfig = 'clobber'
 
 def init(ctx):
     env = ConfigSet.ConfigSet()
