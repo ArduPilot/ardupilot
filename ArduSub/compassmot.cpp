@@ -31,6 +31,11 @@ uint8_t Sub::mavlink_compassmot(mavlink_channel_t chan)
         ap.compass_mot = true;
     }
 
+    // initialise output
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        interference_pct[i] = 0.0f;
+    }
+
     // check compass is enabled
     if (!g.compass_enabled) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Compass disabled");

@@ -234,8 +234,8 @@ void Sub::init_disarm_motors()
     gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
-    // save compass offsets learned by the EKF
-    if (ahrs.use_compass()) {
+    // save compass offsets learned by the EKF if enabled
+    if (ahrs.use_compass() && compass.get_learn_type() == Compass::LEARN_EKF) {
         for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             Vector3f magOffsets;
             if (ahrs.getMagOffsets(i, magOffsets)) {
