@@ -99,9 +99,13 @@ private:
     AP_Float _qnh_pressure;
     AP_Int32 _amsl_limit;
     AP_Int32 _amsl_margin_gps;
-    AP_Int16 _rc_fail_time;
+    AP_Float _rc_fail_time_seconds;
     AP_Int8  _max_gps_loss;
     AP_Int8  _max_comms_loss;
+    AP_Int8  _enable_geofence_fs;
+    AP_Int8  _enable_RC_fs;
+    AP_Int8  _rc_term_manual_only;
+    AP_Int8  _enable_dual_loss;
 
     bool _heartbeat_pin_value;
 

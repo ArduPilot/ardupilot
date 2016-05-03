@@ -162,6 +162,11 @@ void Plane::read_radio()
         return;
     }
 
+    if(!failsafe.ch3_failsafe)
+    {
+        failsafe.AFS_last_valid_rc_ms = millis();
+    }
+
     failsafe.last_valid_rc_ms = millis();
 
     elevon.ch1_temp = channel_roll->read();

@@ -539,7 +539,7 @@ public:
     /// Combined set and save
     ///
     bool set_and_save(const T &v) {
-        bool force = fabsf(_value - v) < FLT_EPSILON;
+        bool force = fabsf((float)(_value - v)) < FLT_EPSILON;
         set(v);
         return save(force);
     }

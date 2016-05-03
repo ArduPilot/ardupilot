@@ -99,11 +99,7 @@ const AP_Param::GroupInfo APM_OBC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ENABLE",       11, APM_OBC, _enable,          0),
 
-    // @Param: RC_FAIL_MS
-    // @DisplayName: RC failure time
-    // @Description: This is the time in milliseconds in manual mode that failsafe termination will activate if RC input is lost. For the OBC rules this should be 1500. Use 0 to disable.
-    // @User: Advanced
-    AP_GROUPINFO("RC_FAIL_MS",   12, APM_OBC, _rc_fail_time,    0),
+    // *NOTE* index 12 of AP_Int16 RC_FAIL_MS was depreciated. Replaced by RC_FAIL_TIME.
 
     // @Param: MAX_GPS_LOSS
     // @DisplayName: Maximum number of GPS loss events
@@ -117,6 +113,37 @@ const AP_Param::GroupInfo APM_OBC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAX_COM_LOSS", 14, APM_OBC, _max_comms_loss, 0),
 
+    // @Param: GEOFENCE
+    // @DisplayName: Enable geofence Advanced Failsafe
+    // @Description: This enables the geofence part of the AFS. Will only be in effect if AFS_ENABLE is also 1
+    // @User: Advanced
+    AP_GROUPINFO("GEOFENCE",     15, APM_OBC, _enable_geofence_fs, 1),
+
+    // @Param: RC
+    // @DisplayName: Enable RC Advanced Failsafe
+    // @Description: This enables the RC part of the AFS. Will only be in effect if AFS_ENABLE is also 1
+    // @User: Advanced
+    AP_GROUPINFO("RC",           16, APM_OBC, _enable_RC_fs, 1),
+
+    // @Param: RC_MAN_ONLY
+    // @DisplayName: Enable RC Termination only in manual control modes
+    // @Description: If this parameter is set to 1, then an RC loss will only cause the plane to terminate in manual control modes. If it is 0, then the plane will terminate in any flight mode.
+    // @User: Advanced
+    AP_GROUPINFO("RC_MAN_ONLY",    17, APM_OBC, _rc_term_manual_only, 1),
+
+    // @Param: DUAL_LOSS
+    // @DisplayName: Enable dual loss terminate due to failure of both GCS and GPS simultaneously
+    // @Description: This enables the dual loss termination part of the AFS system. If this parameter is 1 and both GPS and the ground control station fail simultaneously, this will be considered a "dual loss" and cause termination.
+    // @User: Advanced
+    AP_GROUPINFO("DUAL_LOSS",      18, APM_OBC, _enable_dual_loss, 1),
+
+    // @Param: RC_FAIL_TIME
+    // @DisplayName: RC failure time
+    // @Description: This is the time in seconds in manual mode that failsafe termination will activate if RC input is lost. For the OBC rules this should be (1.5). Use 0 to disable.
+    // @User: Advanced
+    // @Units: seconds
+    AP_GROUPINFO("RC_FAIL_TIME",   19, APM_OBC, _rc_fail_time_seconds,    0),
+
     AP_GROUPEND
 };
 
@@ -129,22 +156,23 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
         return;
     }
     // we always check for fence breach
-    if (geofence_breached || check_altlimit()) {
-        if (!_terminate) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Fence TERMINATE");
-            _terminate.set(1);
+    if(_enable_geofence_fs) {
+        if (geofence_breached || check_altlimit()) {
+            if (!_terminate) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Fence TERMINATE");
+                _terminate.set(1);
+            }
         }
     }
 
-    // check for RC failure in manual mode
-    if (_state != STATE_PREFLIGHT && 
-        (mode == OBC_MANUAL || mode == OBC_FBW) && 
-        _rc_fail_time != 0 && 
-        (AP_HAL::millis() - last_valid_rc_ms) > (unsigned)_rc_fail_time.get()) {
-        if (!_terminate) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
-            _terminate.set(1);
-        }
+    // check if RC termination is enabled
+    // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
+    if (_state != STATE_PREFLIGHT && !_terminate && _enable_RC_fs &&
+        (mode == OBC_MANUAL || mode == OBC_FBW || !_rc_term_manual_only) &&
+        _rc_fail_time_seconds > 0 &&
+            (AP_HAL::millis() - last_valid_rc_ms) > (_rc_fail_time_seconds * 1000.0f)) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
+        _terminate.set(1);
     }
     
     // tell the failsafe board if we are in manual control
@@ -204,10 +232,12 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     case STATE_DATA_LINK_LOSS:
         if (!gps_lock_ok) {
             // losing GPS lock when data link is lost
-            // leads to termination
-            if (!_terminate) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Dual loss TERMINATE");
-                _terminate.set(1);
+            // leads to termination if AFS_DUAL_LOSS is 1
+            if(_enable_dual_loss) {
+                if (!_terminate) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Dual loss TERMINATE");
+                    _terminate.set(1);
+                }
             }
         } else if (gcs_link_ok) {
             _state = STATE_AUTO;
@@ -225,8 +255,8 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     case STATE_GPS_LOSS:
         if (!gcs_link_ok) {
             // losing GCS link when GPS lock lost
-            // leads to termination
-            if (!_terminate) {
+            // leads to termination if AFS_DUAL_LOSS is 1
+            if (!_terminate && _enable_dual_loss) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Dual loss TERMINATE");
                 _terminate.set(1);
             }
@@ -235,8 +265,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             _state = STATE_AUTO;
             // we only return to the mission if we have not exceeded AFS_MAX_GPS_LOSS
             if (_saved_wp != 0 &&
-                (_max_gps_loss <= 0 || 
-                 _gps_loss_count <= _max_gps_loss)) {
+                (_max_gps_loss <= 0 || _gps_loss_count <= _max_gps_loss)) {
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
             }
