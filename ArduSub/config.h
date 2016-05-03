@@ -171,10 +171,6 @@
  #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
 #endif
 
-#ifndef FS_CLOSE_TO_HOME_CM
- # define FS_CLOSE_TO_HOME_CM               500 // if vehicle within 5m of home, vehicle will LAND instead of RTL during some failsafes
-#endif
-
 #ifndef PREARM_DISPLAY_PERIOD
 # define PREARM_DISPLAY_PERIOD 30
 #endif
