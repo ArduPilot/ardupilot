@@ -208,8 +208,8 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     uint16_t spacing = 0;
     Location current_loc;
     if (ahrs.get_position(current_loc) &&
-        height_amsl(ahrs.get_home(), home_terrain_height) &&
-        height_amsl(loc, terrain_height)) {
+        height_amsl(ahrs.get_home(), home_terrain_height, false) &&
+        height_amsl(loc, terrain_height, false)) {
         // non-zero spacing indicates we have data
         spacing = grid_spacing;
     } else if (extrapolate && have_current_loc_height) {

@@ -923,6 +923,7 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
 {
     float delta_t = ins.get_delta_time();
     float delta_vel_t = ins.get_delta_velocity_dt(0);
+    float delta_ang_t = ins.get_delta_angle_dt(0);
     Vector3f delta_angle, delta_velocity;
     ins.get_delta_angle(0, delta_angle);
     ins.get_delta_velocity(0, delta_velocity);
@@ -933,6 +934,7 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
         time_us : time_us,
         delta_time   : delta_t,
         delta_vel_dt : delta_vel_t,
+        delta_ang_dt : delta_ang_t,
         delta_ang_x  : delta_angle.x,
         delta_ang_y  : delta_angle.y,
         delta_ang_z  : delta_angle.z,
@@ -946,6 +948,7 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
     }
 
     delta_vel_t = ins.get_delta_velocity_dt(1);
+    delta_ang_t = ins.get_delta_angle_dt(1);
     if (!ins.get_delta_angle(1, delta_angle)) {
         delta_angle.zero();
     }
@@ -957,6 +960,7 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
         time_us     : time_us,
         delta_time   : delta_t,
         delta_vel_dt : delta_vel_t,
+        delta_ang_dt : delta_ang_t,
         delta_ang_x  : delta_angle.x,
         delta_ang_y  : delta_angle.y,
         delta_ang_z  : delta_angle.z,
@@ -970,6 +974,7 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
         return;
     }
     delta_vel_t = ins.get_delta_velocity_dt(1);
+    delta_ang_t = ins.get_delta_angle_dt(2);
     if (!ins.get_delta_angle(2, delta_angle)) {
         delta_angle.zero();
     }
@@ -981,6 +986,7 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
         time_us     : time_us,
         delta_time   : delta_t,
         delta_vel_dt : delta_vel_t,
+        delta_ang_dt : delta_ang_t,
         delta_ang_x  : delta_angle.x,
         delta_ang_y  : delta_angle.y,
         delta_ang_z  : delta_angle.z,

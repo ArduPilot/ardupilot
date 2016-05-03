@@ -6,7 +6,7 @@
  *  Created on: DEC 06, 2013
  *      Author: Andreas Jochum
  *
- *      Set-up Wiki: http://copter.ardupilot.com/wiki/common-electro-permanent-magnet-gripper/
+ *      Set-up Wiki: http://copter.ardupilot.org/wiki/common-electro-permanent-magnet-gripper/
  */
 
 /// @file	AP_EPM.h

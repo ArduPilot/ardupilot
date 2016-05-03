@@ -15,9 +15,9 @@
 extern AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-#define COMPASS_LEARN_DEFAULT 0
+#define COMPASS_LEARN_DEFAULT Compass::LEARN_NONE
 #else
-#define COMPASS_LEARN_DEFAULT 1
+#define COMPASS_LEARN_DEFAULT Compass::LEARN_INTERNAL
 #endif
 
 const AP_Param::GroupInfo Compass::var_info[] = {
@@ -56,8 +56,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
-    // @Description: Enable or disable the automatic learning of compass offsets
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle.
+    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning
     // @User: Advanced
     AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 
@@ -113,8 +113,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERNAL
     // @DisplayName: Compass is attached via an external cable
-    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option
-    // @Values: 0:Internal,1:External
+    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state[0].external, 0),
 
@@ -244,8 +244,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERN2
     // @DisplayName: Compass2 is attached via an external cable
-    // @Description: Configure second compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
-    // @Values: 0:Internal,1:External
+    // @Description: Configure second compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN2",20, Compass, _state[1].external, 0),
 
@@ -265,8 +265,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERN3
     // @DisplayName: Compass3 is attached via an external cable
-    // @Description: Configure third compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
-    // @Values: 0:Internal,1:External
+    // @Description: Configure third compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN3",23, Compass, _state[2].external, 0),
 
@@ -453,6 +453,30 @@ void Compass::_detect_backends(void)
     }
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QFLIGHT
     _add_backend(AP_Compass_QFLIGHT::detect(*this));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BBBMINI
+    AP_Compass_Backend *backend = AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("HMC5843: External compass detected\n");
+    } else {
+        hal.console->printf("HMC5843: External compass not detected\n");
+    }
+
+    backend = AP_Compass_AK8963::probe_mpu9250(*this, 0);
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("AK8953: Onboard compass detected\n");
+    } else {
+        hal.console->printf("AK8953: Onboard compass not detected\n");
+    }
+
+    backend = AP_Compass_AK8963::probe_mpu9250(*this, 1);
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("AK8953: External compass detected\n");
+    } else {
+        hal.console->printf("AK8953: External compass not detected\n");
+    }
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
     _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843

@@ -218,7 +218,7 @@ public:
     void set_gyro(uint8_t instance, const Vector3f &gyro);
     void set_delta_time(float delta_time);
     void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
-    void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
+    void set_delta_angle(uint8_t instance, const Vector3f &deltaa, float deltaat);
 
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id) { return get_auxiliary_bus(backend_id, 0); }
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);

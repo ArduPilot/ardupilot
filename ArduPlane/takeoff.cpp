@@ -165,13 +165,15 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
         }
 
         // are we entering the region where we want to start leveling off before we reach takeoff alt?
-        float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
-        if (sec_to_target > 0 &&
-            relative_alt_cm >= 1000 &&
-            sec_to_target <= g.takeoff_pitch_limit_reduction_sec) {
-            // make a note of that altitude to use it as a start height for scaling
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", remaining_height_to_target_cm/100);
-            auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
+        if (auto_state.sink_rate < -0.1f) {
+            float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
+            if (sec_to_target > 0 &&
+                relative_alt_cm >= 1000 &&
+                sec_to_target <= g.takeoff_pitch_limit_reduction_sec) {
+                // make a note of that altitude to use it as a start height for scaling
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", remaining_height_to_target_cm/100);
+                auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
+            }
         }
     }
     return auto_state.takeoff_pitch_cd;

@@ -33,7 +33,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
     uint32_t custom_mode = control_mode;
 
     // set system as critical if any failsafe have triggered
-    if (failsafe.radio || failsafe.battery || failsafe.gcs || failsafe.ekf)  {
+    if (failsafe.radio || failsafe.battery || failsafe.gcs || failsafe.ekf || failsafe.terrain)  {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -720,6 +720,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_FENCE_STATUS:
     case MSG_WIND:
+    case MSG_POSITION_TARGET_GLOBAL_INT:
         // unused
         break;
 
@@ -978,9 +979,9 @@ GCS_MAVLINK::data_stream_send(void)
 }
 
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
-    copter.do_guided(cmd);
+    return copter.do_guided(cmd);
 }
 
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
@@ -1070,9 +1071,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
         break;
     }
+    
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
+    {
+        if (handle_mission_item(msg, copter.mission)) {
+            copter.DataFlash.Log_Write_EntireMission(copter.mission);
+        }
+        break;
+    }
 
     // read an individual command from EEPROM and send it to the GCS
-    case MAVLINK_MSG_ID_MISSION_REQUEST:     // MAV ID: 40
+    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
+    case MAVLINK_MSG_ID_MISSION_REQUEST:     // MAV ID: 40, 51
     {
         handle_mission_request(copter.mission, msg);
         break;

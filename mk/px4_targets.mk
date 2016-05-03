@@ -1,15 +1,15 @@
 # PX4 build is via external build system
 
 ifneq ($(PX4_ROOT),)
-$(error PX4_ROOT found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
+$(error PX4_ROOT found in config.mk - Please see http://dev.ardupilot.org/wiki/git-submodules/)
 endif
 
 ifneq ($(NUTTX_SRC),)
-$(error NUTTX_SRC found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
+$(error NUTTX_SRC found in config.mk - Please see http://dev.ardupilot.org/wiki/git-submodules/)
 endif
 
 ifneq ($(UAVCAN_DIR),)
-$(error UAVCAN_DIR found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
+$(error UAVCAN_DIR found in config.mk - Please see http://dev.ardupilot.org/wiki/git-submodules/)
 endif
 
 # these can be overridden in developer.mk

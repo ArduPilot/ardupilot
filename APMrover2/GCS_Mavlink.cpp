@@ -598,6 +598,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_OPTICAL_FLOW:
     case MSG_GIMBAL_REPORT:
     case MSG_RPM:
+    case MSG_POSITION_TARGET_GLOBAL_INT:
         break; // just here to prevent a warning
 
     }
@@ -835,11 +836,11 @@ GCS_MAVLINK::data_stream_send(void)
 
 
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (rover.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
-        return;
+        return false;
     }
         
     rover.guided_WP = cmd.content.location;
@@ -847,6 +848,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     // make any new wp uploaded instant (in case we are already in Guided mode)
     rover.rtl_complete = false;
     rover.set_guided_WP();
+    return true;
 }
 
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
@@ -1174,6 +1176,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 
 	// XXX read a WP from EEPROM and send it to the GCS
+    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
     case MAVLINK_MSG_ID_MISSION_REQUEST:
     {
         handle_mission_request(rover.mission, msg);
@@ -1231,19 +1234,26 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
-        {
-            if (handle_mission_item(msg, rover.mission)) {
-                rover.DataFlash.Log_Write_EntireMission(rover.mission);
-            }
-            break;
+    {
+        if (handle_mission_item(msg, rover.mission)) {
+            rover.DataFlash.Log_Write_EntireMission(rover.mission);
         }
+        break;
+    }
 
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
+    {
+        if (handle_mission_item(msg, rover.mission)) {
+            rover.DataFlash.Log_Write_EntireMission(rover.mission);
+        }
+        break;
+    }
 
     case MAVLINK_MSG_ID_PARAM_SET:
-        {
-            handle_param_set(msg, &rover.DataFlash);
-            break;
-        }
+    {
+        handle_param_set(msg, &rover.DataFlash);
+        break;
+    }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
     {

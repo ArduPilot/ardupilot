@@ -170,6 +170,9 @@ void Plane::update_is_flying_5Hz(void)
 bool Plane::is_flying(void)
 {
     if (hal.util->get_soft_armed()) {
+        if (quadplane.is_flying_vtol()) {
+            return true;
+        }
         // when armed, assume we're flying unless we probably aren't
         return (isFlyingProbability >= 0.1f);
     }

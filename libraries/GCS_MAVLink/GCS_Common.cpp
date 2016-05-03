@@ -253,47 +253,91 @@ void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_messa
 void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t *msg)
 {
     AP_Mission::Mission_Command cmd;
-    // decode
-    mavlink_mission_request_t packet;
-    mavlink_msg_mission_request_decode(msg, &packet);
 
-    // retrieve mission from eeprom
-    if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
-        goto mission_item_send_failed;
-    }
+    if (msg->msgid == MAVLINK_MSG_ID_MISSION_REQUEST_INT) {  
+        // decode
+        mavlink_mission_request_int_t packet;
+        mavlink_msg_mission_request_int_decode(msg, &packet);
 
-    // convert mission command to mavlink mission item packet
-    mavlink_mission_item_t ret_packet;
-    memset(&ret_packet, 0, sizeof(ret_packet));
-    if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet)) {
-        goto mission_item_send_failed;
-    }
+        // retrieve mission from eeprom
+        if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
+            goto mission_item_send_failed;
+        }
 
-    // set packet's current field to 1 if this is the command being executed
-    if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
-        ret_packet.current = 1;
+        mavlink_mission_item_int_t ret_packet;
+        memset(&ret_packet, 0, sizeof(ret_packet));
+        if (!AP_Mission::mission_cmd_to_mavlink_int(cmd, ret_packet)) {
+            goto mission_item_send_failed;
+        }
+
+        // set packet's current field to 1 if this is the command being executed
+        if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
+            ret_packet.current = 1;
+        } else {
+            ret_packet.current = 0;
+        }
+
+        // set auto continue to 1
+        ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
+
+        /*
+          avoid the _send() function to save memory, as it avoids
+          the stack usage of the _send() function by using the already
+          declared ret_packet above
+         */
+        ret_packet.target_system = msg->sysid;
+        ret_packet.target_component = msg->compid;
+        ret_packet.seq = packet.seq;
+        ret_packet.command = cmd.id;
+
+        _mav_finalize_message_chan_send(chan, 
+                                        MAVLINK_MSG_ID_MISSION_ITEM_INT,
+                                        (const char *)&ret_packet,
+                                        MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN,
+                                        MAVLINK_MSG_ID_MISSION_ITEM_INT_CRC);
     } else {
-        ret_packet.current = 0;
+        // decode
+        mavlink_mission_request_t packet;
+        mavlink_msg_mission_request_decode(msg, &packet);
+
+        // retrieve mission from eeprom
+        if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
+            goto mission_item_send_failed;
+        }
+
+        mavlink_mission_item_t ret_packet;
+        memset(&ret_packet, 0, sizeof(ret_packet));
+        if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet)) {
+            goto mission_item_send_failed;
+        }
+            
+        // set packet's current field to 1 if this is the command being executed
+        if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
+            ret_packet.current = 1;
+        } else {
+            ret_packet.current = 0;
+        }
+
+        // set auto continue to 1
+        ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
+
+        /*
+          avoid the _send() function to save memory, as it avoids
+          the stack usage of the _send() function by using the already
+          declared ret_packet above
+         */
+        ret_packet.target_system = msg->sysid;
+        ret_packet.target_component = msg->compid;
+        ret_packet.seq = packet.seq;
+        ret_packet.command = cmd.id;
+
+        _mav_finalize_message_chan_send(chan, 
+                                        MAVLINK_MSG_ID_MISSION_ITEM,
+                                        (const char *)&ret_packet,
+                                        MAVLINK_MSG_ID_MISSION_ITEM_LEN,
+                                        MAVLINK_MSG_ID_MISSION_ITEM_CRC);
     }
 
-    // set auto continue to 1
-    ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
-
-    /*
-      avoid the _send() function to save memory, as it avoids
-      the stack usage of the _send() function by using the already
-      declared ret_packet above
-     */
-    ret_packet.target_system = msg->sysid;
-    ret_packet.target_component = msg->compid;
-    ret_packet.seq = packet.seq;
-    ret_packet.command = cmd.id;
-
-    _mav_finalize_message_chan_send(chan, 
-                                    MAVLINK_MSG_ID_MISSION_ITEM,
-                                    (const char *)&ret_packet,
-                                    MAVLINK_MSG_ID_MISSION_ITEM_LEN,
-                                    MAVLINK_MSG_ID_MISSION_ITEM_CRC);
     return;
 
 mission_item_send_failed:
@@ -625,30 +669,49 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &d
  */
 bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &mission)
 {
-    mavlink_mission_item_t packet;
     MAV_MISSION_RESULT result = MAV_MISSION_ACCEPTED;
     struct AP_Mission::Mission_Command cmd = {};
     bool mission_is_complete = false;
-
-    mavlink_msg_mission_item_decode(msg, &packet);
-
-    // convert mavlink packet to mission command
-    result = AP_Mission::mavlink_to_mission_cmd(packet, cmd);
-    if (result != MAV_MISSION_ACCEPTED) {
-        goto mission_ack;
+    uint16_t seq=0;
+    uint16_t current = 0;
+    
+    if (msg->msgid == MAVLINK_MSG_ID_MISSION_ITEM) {      
+        mavlink_mission_item_t packet;    
+        mavlink_msg_mission_item_decode(msg, &packet);
+        
+        // convert mavlink packet to mission command
+        result = AP_Mission::mavlink_to_mission_cmd(packet, cmd);
+        if (result != MAV_MISSION_ACCEPTED) {
+            goto mission_ack;
+        }
+        
+        seq = packet.seq;
+        current = packet.current;
+    } else {
+        mavlink_mission_item_int_t packet;
+        mavlink_msg_mission_item_int_decode(msg, &packet);
+        
+        // convert mavlink packet to mission command
+        result = AP_Mission::mavlink_int_to_mission_cmd(packet, cmd);
+        if (result != MAV_MISSION_ACCEPTED) {
+            goto mission_ack;
+        }
+        
+        seq = packet.seq;
+        current = packet.current;
     }
 
-    if (packet.current == 2) {                                               
+    if (current == 2) {                                               
         // current = 2 is a flag to tell us this is a "guided mode"
         // waypoint and not for the mission
-        handle_guided_request(cmd);
+        result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
+                                             : MAV_MISSION_ERROR) ;
 
         // verify we received the command
-        result = MAV_MISSION_ACCEPTED;
         goto mission_ack;
     }
 
-    if (packet.current == 3) {
+    if (current == 3) {
         //current = 3 is a flag to tell us this is a alt change only
         // add home alt if needed
         handle_change_alt_request(cmd);
@@ -665,21 +728,21 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     }
 
     // check if this is the requested waypoint
-    if (packet.seq != waypoint_request_i) {
+    if (seq != waypoint_request_i) {
         result = MAV_MISSION_INVALID_SEQUENCE;
         goto mission_ack;
     }
     
     // if command index is within the existing list, replace the command
-    if (packet.seq < mission.num_commands()) {
-        if (mission.replace_cmd(packet.seq,cmd)) {
+    if (seq < mission.num_commands()) {
+        if (mission.replace_cmd(seq,cmd)) {
             result = MAV_MISSION_ACCEPTED;
         }else{
             result = MAV_MISSION_ERROR;
             goto mission_ack;
         }
         // if command is at the end of command list, add the command
-    } else if (packet.seq == mission.num_commands()) {
+    } else if (seq == mission.num_commands()) {
         if (mission.add_cmd(cmd)) {
             result = MAV_MISSION_ACCEPTED;
         }else{
@@ -1121,11 +1184,12 @@ void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
  */
 void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
     va_end(arg_list);
+    text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
     send_statustext(severity, mavlink_active, text);
 }
 

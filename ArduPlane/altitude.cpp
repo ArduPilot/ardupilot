@@ -48,7 +48,7 @@ void Plane::adjust_altitude_target()
 
         // stay within the range of the start and end locations in altitude
         constrain_target_altitude_location(next_WP_loc, prev_WP_loc);
-    } else if (mission.get_current_do_cmd().id != MAV_CMD_CONDITION_CHANGE_ALT) {
+    } else {
         set_target_altitude_location(next_WP_loc);
     }
 
@@ -582,7 +582,9 @@ void Plane::rangefinder_height_update(void)
                 (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                  flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
                  flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
-                 control_mode == QLAND) &&
+                 control_mode == QLAND ||
+                 control_mode == QRTL ||
+                 (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);

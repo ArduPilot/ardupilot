@@ -1,3 +1,77 @@
+Release 3.6.0beta1, 30th April 2016
+-----------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.6.0beta1 of APM:Plane. This is the first beta version of a
+major release.
+
+The biggest changes in this release is the major update of the
+PX4Firmware tree which greatly improves support for the Pixracer
+board, and a lot of QuadPlane improvements and new features.
+
+Detailed changes include:
+
+ - added motortest for all quad motors in sequence
+ - merge upstream PX4Firmware changes
+ - new AC_AttitudeControl library from copter for quadplane
+ - modified default gains for quadplanes
+ - new velocity controller for initial quadplane landing
+ - smooth out final descent for VTOL landing
+ - changed default loop rate for quadplanes to 300Hz
+ - support up to 16 output channels (two via SBUS output only)
+ - fixed bug with landing flare for high values of LAND_FLARE_SEC
+ - improved crash detection logic
+ - added in-flight transmitter tuning
+ - fix handling of SET_HOME_POSITION
+ - added Q_VFWD_GAIN for forward motor in VTOL modes
+ - added Q_WVANE_GAIN for active weathervaning
+ - log the number of lost log messages
+ - Move position update to 50hz loop rather then the 10hz
+ - Suppress throttle when parachute release initiated, not after release.
+ - support Y6 frame class in quadplane
+ - log L1 xtrack error integrator and remove extra yaw logging
+ - limit roll before calculating load factor
+ - simplify landing flare logic
+ - smooth-out the end of takeoff pitch by reducing takeoff pitch min via TKOFF_PLIM_SEC
+ - added support for DO_VTOL_TRANSITION as a mission item
+ - fixed is_flying() for VTOL flight
+ - added Q_ENABLE=2 for starting AUTO in VTOL
+ - reload airspeed after VTOL landing
+ - lower default VTOL ANGLE_MAX to 30 degrees
+ - Change mode to RTL on end of mission rather then staying in auto
+ - implemented QRTL for quadplane RTL
+ - added Q_RTL_MODE parameter for QRTL after RTL approach
+ - reduced the rate of EKF and attitude logging to 25Hz
+ - added CHUTE_DELAY_MS parameter
+ - allow remapping of any input channel to any output channel
+ - numerous waf build improvements
+ - support fast timer capture for camera trigger feedback
+ - numerous improvements for Pixracer support
+ - added more general tiltrotor support to SITL
+
+
+Release 3.5.3, 30th April 2016
+------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.3 of APM:Plane. This is a minor release with only small
+bugfix changes.
+
+The main motivation for the release is a problem with flying without a
+compass enabled. If you fly 3.5.2 with MAG_ENABLE=0 or no compass
+attached then there is a risk that the EKF2 attitude estimator may
+become unstable before takeoff. This can cause the aircraft to crash.
+
+The other changes in this release are:
+
+ - fixed loiter radius for counter-clockwise loiter
+ - fixed the loiter radius when doing a RTL at the end of a mission
+ - provide reasons to the GCS when a uBlox GPS fails to properly configure
+ - support a wider variety of NMEA GPS receivers
+ - use EKF1 by default if no compass is enabled
+
+Happy flying!
+
 Release 3.5.2, 26th March 2016
 ------------------------------
 
@@ -143,7 +217,7 @@ Parachute Support
 This is the first release with support for parachute landings on
 plane. The configuration and use of a parachute is the same as the
 existing copter parachute support. See
-http://copter.ardupilot.com/wiki/parachute/
+http://copter.ardupilot.org/wiki/parachute/
 
 Note that parachute support is considered experimental in planes.
 
@@ -164,7 +238,7 @@ for 3 new flight boards in this release. They are:
  - the Pixracer
 
 More information about the list of supported boards is available here:
-http://dev.ardupilot.com/wiki/supported-autopilot-controller-boards/
+http://dev.ardupilot.org/wiki/supported-autopilot-controller-boards/
 
 Startup on a moving platform
 

@@ -35,7 +35,7 @@ RC_Channel_aux::output_ch(void)
     case k_manual:              // manual
         radio_out = radio_in;
         break;
-    case k_rcin1 ... k_rcin8: // rc pass-thru
+    case k_rcin1 ... k_rcin16: // rc pass-thru
         radio_out = hal.rcin->read(function-k_rcin1);
         break;
     case k_motor1 ... k_motor8:
@@ -345,7 +345,7 @@ RC_Channel_aux::set_servo_limit(RC_Channel_aux::Aux_servo_function_t function, R
                 // also have to override radio_in
                 ch->radio_in = pwm;
             }
-            if (ch->function.get() >= k_rcin1 && ch->function.get() <= k_rcin8) {
+            if (ch->function.get() >= k_rcin1 && ch->function.get() <= k_rcin16) {
                 // save for k_rcin*
                 ch->radio_in = pwm;
             }

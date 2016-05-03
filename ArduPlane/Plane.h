@@ -1,8 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
-#define THISFIRMWARE "ArduPlane V3.5.2"
-#define FIRMWARE_VERSION 3,5,2,FIRMWARE_VERSION_TYPE_OFFICIAL
+#define THISFIRMWARE "ArduPlane V3.6.0beta1"
+#define FIRMWARE_VERSION 3,6,0,FIRMWARE_VERSION_TYPE_BETA
 
 /*
    Lead developer: Andrew Tridgell
@@ -661,9 +661,6 @@ private:
     // The location of the active waypoint in Guided mode.
     struct Location guided_WP_loc {};
 
-    // special purpose command used only after mission completed to return vehicle to home or rally point
-    struct AP_Mission::Mission_Command auto_rtl_command;
-
     // Altitude control
     struct {
         // target altitude above sea level in cm. Used for barometric
@@ -765,6 +762,7 @@ private:
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
+    void send_position_target_global_int(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_radio_out(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
@@ -835,7 +833,7 @@ private:
     void set_guided_WP(void);
     void init_home();
     void update_home();
-    void do_RTL(void);
+    void do_RTL(int32_t alt);
     bool verify_takeoff();
     bool verify_loiter_unlim();
     bool verify_loiter_time();
@@ -844,7 +842,6 @@ private:
     bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
-    bool verify_change_alt();
     bool verify_within_distance();
     bool verify_altitude_wait(const AP_Mission::Mission_Command &cmd);
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
@@ -854,7 +851,6 @@ private:
     bool verify_loiter_heading(bool init);
     void log_picture();
     void exit_mission_callback();
-    void update_commands(void);
     void mavlink_delay(uint32_t ms);
     void read_control_switch();
     uint8_t readSwitch(void);
@@ -1031,7 +1027,6 @@ private:
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-    void do_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);

@@ -150,9 +150,10 @@ void Tracker::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
+    return false;
 }
 
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command&)
@@ -280,6 +281,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_VIBRATION:
     case MSG_RPM:
     case MSG_MISSION_ITEM_REACHED:
+    case MSG_POSITION_TARGET_GLOBAL_INT:
         break; // just here to prevent a warning
     }
     return true;

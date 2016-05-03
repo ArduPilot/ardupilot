@@ -51,6 +51,7 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     case LOITER:
     case GUIDED:
     case CIRCLE:
+    case QRTL:
         base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
                     MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
@@ -203,6 +204,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     case LOITER:
     case GUIDED:
     case CIRCLE:
+    case QRTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION; // yaw position
@@ -370,6 +372,26 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
         altitude_error_cm * 0.01f,
         airspeed_error_cm,
         nav_controller->crosstrack_error());
+}
+
+void Plane::send_position_target_global_int(mavlink_channel_t chan)
+{
+    mavlink_msg_position_target_global_int_send(
+        chan,
+        AP_HAL::millis(), // time_boot_ms
+        MAV_FRAME_GLOBAL_INT, // targets are always global altitude
+        0xFFF8, // ignore everything except the x/y/z components
+        next_WP_loc.lat, // latitude as 1e7
+        next_WP_loc.lng, // longitude as 1e7
+        next_WP_loc.alt * 0.01f, // altitude is sent as a float
+        0.0f, // vx
+        0.0f, // vy
+        0.0f, // vz
+        0.0f, // afx
+        0.0f, // afy
+        0.0f, // afz
+        0.0f, // yaw
+        0.0f); // yaw_rate
 }
 
 
@@ -668,6 +690,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         if (plane.control_mode != MANUAL) {
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
             plane.send_nav_controller_output(chan);
+        }
+        break;
+
+    case MSG_POSITION_TARGET_GLOBAL_INT:
+        if (plane.control_mode != MANUAL) {
+            CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
+            plane.send_position_target_global_int(chan);
         }
         break;
 
@@ -1037,6 +1066,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_GPS_RAW);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_FENCE_STATUS);
+        send_message(MSG_POSITION_TARGET_GLOBAL_INT);
     }
 
     if (plane.gcs_out_of_time) return;
@@ -1104,11 +1134,11 @@ GCS_MAVLINK::data_stream_send(void)
   handle a request to switch to guided mode. This happens via a
   callback from handle_mission_item()
  */
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (plane.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
-        return;
+        return false;
     }
     plane.guided_WP_loc = cmd.content.location;
     
@@ -1119,6 +1149,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     }
 
     plane.set_guided_WP();
+    return true;
 }
 
 /*
@@ -1626,7 +1657,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
             
         case MAV_CMD_DO_VTOL_TRANSITION:
-            result = plane.quadplane.handle_do_vtol_transition(packet);
+            if (!plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)packet.param1)) {
+                result = MAV_RESULT_FAILED;
+            } else {
+                result = MAV_RESULT_ACCEPTED;
+            }
             break;
             
         default:
@@ -1655,8 +1690,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-
     // XXX read a WP from EEPROM and send it to the GCS
+    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
     case MAVLINK_MSG_ID_MISSION_REQUEST:
     {
         handle_mission_request(plane.mission, msg);
@@ -1722,6 +1757,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
+    {
+        if (handle_mission_item(msg, plane.mission)) {
+            plane.DataFlash.Log_Write_EntireMission(plane.mission);
+        }
+        break;
+    }
+    
+    // GCS has sent us a mission item, store to EEPROM
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     {
         if (handle_mission_item(msg, plane.mission)) {
             plane.DataFlash.Log_Write_EntireMission(plane.mission);

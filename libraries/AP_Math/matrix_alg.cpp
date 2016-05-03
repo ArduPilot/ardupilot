@@ -222,6 +222,8 @@ bool mat_inverse(float* A, float* inv, uint8_t n)
     free(inv_pivoted);
     free(inv_unpivoted);
     free(P);
+    free(U_inv);
+    free(L_inv);
     return ret;
 }
 

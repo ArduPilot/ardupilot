@@ -87,7 +87,7 @@ void AP_Terrain::update_mission_data(void)
 
         // we have a mission command to check
         float height;
-        if (!height_amsl(cmd.content.location, height)) {
+        if (!height_amsl(cmd.content.location, height, false)) {
             // if we can't get data for a mission item then return and
             // check again next time
             return;
@@ -143,7 +143,7 @@ void AP_Terrain::update_rally_data(void)
         loc.lat = rp.lat;
         loc.lng = rp.lng;
         float height;
-        if (!height_amsl(loc, height)) {
+        if (!height_amsl(loc, height, false)) {
             // if we can't get data for a rally item then return and
             // check again next time
             return;

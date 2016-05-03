@@ -80,18 +80,22 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
     }
     char *lat_s = strtok_r(s, ",", &saveptr);
     if (!lat_s) {
+        free(s);
         return false;
     }
     char *lon_s = strtok_r(NULL, ",", &saveptr);
     if (!lon_s) {
+        free(s);
         return false;
     }
     char *alt_s = strtok_r(NULL, ",", &saveptr);
     if (!alt_s) {
+        free(s);
         return false;
     }
     char *yaw_s = strtok_r(NULL, ",", &saveptr);
     if (!yaw_s) {
+        free(s);
         return false;
     }
 

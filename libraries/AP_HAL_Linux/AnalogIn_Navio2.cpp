@@ -62,7 +62,7 @@ float AnalogSource_Navio2::read_average()
 
 float AnalogSource_Navio2::read_latest()
 {
-    return _value;
+    return voltage_average();
 }
 
 float AnalogSource_Navio2::voltage_average()
@@ -84,12 +84,13 @@ float AnalogSource_Navio2::voltage_average()
 
 float AnalogSource_Navio2::voltage_latest()
 {
+    read_latest();
     return _value;
 }
 
 float AnalogSource_Navio2::voltage_average_ratiometric()
 {
-    return _value;
+    return voltage_average();
 }
 
 AnalogIn_Navio2::AnalogIn_Navio2()

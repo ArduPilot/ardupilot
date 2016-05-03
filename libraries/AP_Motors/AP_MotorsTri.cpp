@@ -82,6 +82,10 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] = {
 // init
 void AP_MotorsTri::Init()
 {
+    add_motor_num(AP_MOTORS_MOT_1);
+    add_motor_num(AP_MOTORS_MOT_2);
+    add_motor_num(AP_MOTORS_MOT_4);
+    
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 

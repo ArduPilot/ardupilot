@@ -23,13 +23,19 @@ void MsgHandler::add_field_type(char type, size_t size)
 
 uint8_t MsgHandler::size_for_type(char type)
 {
-    return size_for_type_table[(uint8_t)(type > 'A' ? (type-'A') : (type-'a'))];
+    uint8_t ret = size_for_type_table[(uint8_t)(type > 'A' ? (type-'A') : (type-'a'))];
+    if (ret == 0) {
+        ::fprintf(stderr, "Unknown type (%c)\n", type);
+        abort();
+    }
+    return ret;
 }
 
 void MsgHandler::init_field_types()
 {
     add_field_type('b', sizeof(int8_t));
     add_field_type('c', sizeof(int16_t));
+    add_field_type('d', sizeof(double));
     add_field_type('e', sizeof(int32_t));
     add_field_type('f', sizeof(float));
     add_field_type('h', sizeof(int16_t));

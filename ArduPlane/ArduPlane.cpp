@@ -6,7 +6,7 @@
    Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
 
-   Please contribute your ideas! See http://dev.ardupilot.com for details
+   Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -73,7 +73,8 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_mount,           50,    100),
     SCHED_TASK(update_trigger,         50,    100),
     SCHED_TASK(log_perf_info,         0.2,    100),
-    SCHED_TASK(compass_save,        0.016,    200),
+    SCHED_TASK(compass_save,          0.1,    200),
+    SCHED_TASK(Log_Write_Attitude,     25,    300),
     SCHED_TASK(update_logging1,        10,    300),
     SCHED_TASK(update_logging2,        10,    300),
     SCHED_TASK(parachute_check,        10,    200),
@@ -157,10 +158,6 @@ void Plane::ahrs_update()
 #endif
 
     ahrs.update();
-
-    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
-        Log_Write_Attitude();
-    }
 
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_IMU();
@@ -357,7 +354,12 @@ void Plane::log_perf_info()
 
 void Plane::compass_save()
 {
-    if (g.compass_enabled) {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !hal.util->get_soft_armed()) {
+        /*
+          only save offsets when disarmed
+         */
         compass.save_offsets();
     }
 }
@@ -485,14 +487,16 @@ void Plane::update_GPS_10Hz(void)
  */
 void Plane::handle_auto_mode(void)
 {
-    uint8_t nav_cmd_id;
+    uint16_t nav_cmd_id;
 
-    // we should be either running a mission or RTLing home
-    if (mission.state() == AP_Mission::MISSION_RUNNING) {
-        nav_cmd_id = mission.get_current_nav_cmd().id;
-    }else{
-        nav_cmd_id = auto_rtl_command.id;
+    if (mission.state() != AP_Mission::MISSION_RUNNING) {
+        // this should never be reached
+        set_mode(RTL);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
+        return;
     }
+
+    nav_cmd_id = mission.get_current_nav_cmd().id;
 
     if (quadplane.in_vtol_auto()) {
         quadplane.control_auto(next_WP_loc);
@@ -710,7 +714,8 @@ void Plane::update_flight_mode(void)
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
-    case QLAND: {
+    case QLAND:
+    case QRTL: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
@@ -739,11 +744,17 @@ void Plane::update_navigation()
     
     switch(control_mode) {
     case AUTO:
-        update_commands();
+        if (home_is_set != HOME_UNSET) {
+            mission.update();
+        }
         break;
             
     case RTL:
-        if (g.rtl_autoland == 1 &&
+        if (quadplane.available() && quadplane.rtl_mode == 1 &&
+            nav_controller->reached_loiter_target()) {
+            set_mode(QRTL);
+            break;
+        } else if (g.rtl_autoland == 1 &&
             !auto_state.checked_for_autoland &&
             nav_controller->reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
@@ -791,6 +802,7 @@ void Plane::update_navigation()
     case QHOVER:
     case QLOITER:
     case QLAND:
+    case QRTL:
         // nothing to do
         break;
     }
