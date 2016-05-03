@@ -129,9 +129,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if ADSB_ENABLED == ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    400),
 #endif
-#if FRSKY_TELEM_ENABLED == ENABLED
-    SCHED_TASK(frsky_telemetry_send,   5,     75),
-#endif
     SCHED_TASK(terrain_update,        10,    100),
 #if EPM_ENABLED == ENABLED
     SCHED_TASK(epm_update,            10,     75),
