@@ -707,7 +707,7 @@ bool DataFlash_Backend::Log_Write_Parameter(const AP_Param *ap,
 }
 
 // Write an GPS packet
-void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relative_alt)
+void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i)
 {
     const struct Location &loc = gps.location(i);
     struct log_GPS pkt = {
@@ -720,7 +720,6 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relati
         hdop          : gps.get_hdop(i),
         latitude      : loc.lat,
         longitude     : loc.lng,
-        rel_altitude  : relative_alt,
         altitude      : loc.alt,
         ground_speed  : (uint32_t)(gps.ground_speed(i) * 100),
         ground_course : gps.ground_course_cd(i),
