@@ -78,6 +78,10 @@ enum ap_message {
     MSG_RETRY_DEFERRED // this must be last
 };
 
+// GCS_MAVLINK::deferred_messages is a 64-bit bitmap, ensure deferring
+// messages on failure will continue to work.
+static_assert(MSG_RETRY_DEFERRED < 64,
+    "Too many ap_message entries, check GCS_MAVLINK::send_message()");
 
 ///
 /// @class	GCS_MAVLINK
@@ -287,10 +291,8 @@ private:
     // start page of log data
     uint16_t _log_data_page;
 
-    // deferred message handling
-    enum ap_message deferred_messages[MSG_RETRY_DEFERRED];
-    uint8_t next_deferred_message;
-    uint8_t num_deferred_messages;
+    // deferred message handling. This maps the nth bit to the nth ap_message
+    uint64_t deferred_messages{0};
 
     // bitmask of what mavlink channels are active
     static uint8_t mavlink_active;
