@@ -145,9 +145,13 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
 void ReplayVehicle::load_parameters(void)
 {
+    unlink("Replay.stg");
     if (!AP_Param::check_var_info()) {
         AP_HAL::panic("Bad parameter table");
     }
+    AP_Param::set_default_by_name("EKF_ENABLE", 1);
+    AP_Param::set_default_by_name("EK2_ENABLE", 1);
+    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 2);
 }
 
 /*
@@ -523,12 +527,18 @@ bool Replay::find_log_info(struct log_information &info)
             // using IMU as your clock source will lead to incorrect
             // behaviour.
             if (streq(type, "IMT")) {
-                memcpy(clock_source, "IMT", 3);
+                strcpy(clock_source, "IMT");
             } else if (streq(type, "IMU")) {
-                memcpy(clock_source, "IMU", 3);
+                strcpy(clock_source, "IMU");
             } else {
                 continue;
             }
+            hal.console->printf("Using clock source %s\n", clock_source);
+        }
+        // IMT if available always overrides
+        if (streq(type, "IMT") && strcmp(clock_source, "IMT") != 0) {
+            strcpy(clock_source, "IMT");
+            hal.console->printf("Changing clock source to %s\n", clock_source);
         }
         if (streq(type, clock_source)) {
             if (prev == 0) {
