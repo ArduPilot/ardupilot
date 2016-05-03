@@ -35,6 +35,7 @@
 
 // Common dependencies
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Menu/AP_Menu.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
@@ -284,10 +285,13 @@ private:
         uint8_t battery             : 1; // 2   // A status flag for the battery failsafe
         uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
         uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
+        uint8_t terrain             : 1; // 6   // true if the missing terrain data failsafe has occurred
 
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
+        uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
+        uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
     } failsafe;
 
     // sensor health for logging
@@ -351,7 +355,16 @@ private:
     // RTL
     RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
     bool rtl_state_complete; // set to true if the current state is completed
-    float rtl_alt;     // altitude the vehicle is returning at
+
+    struct {
+		// NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
+		Location_Class origin_point;
+		Location_Class climb_target;
+		Location_Class return_target;
+		Location_Class descent_target;
+		bool land;
+		bool terrain_used;
+	} rtl_path;
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
@@ -409,7 +422,7 @@ private:
 
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
-    struct Location current_loc;
+    Location_Class current_loc;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode
@@ -645,6 +658,7 @@ private:
     void Log_Write_Home_And_Origin();
     void Log_Sensor_Health();
     void Log_Write_Precland();
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
@@ -672,7 +686,6 @@ private:
     bool verify_loiter_time();
     bool verify_RTL();
     bool verify_wait_delay();
-    bool verify_change_alt();
     bool verify_within_distance();
     bool verify_yaw();
     void do_take_picture();
@@ -686,9 +699,10 @@ private:
     void althold_run();
     bool auto_init(bool ignore_checks);
     void auto_run();
-    void auto_takeoff_start(float final_alt_above_home);
+    void auto_takeoff_start(const Location& dest_loc);
     void auto_takeoff_run();
     void auto_wp_start(const Vector3f& destination);
+    void auto_wp_start(const Location_Class& dest_loc);
     void auto_wp_run();
     void auto_spline_run();
     void auto_land_start();
@@ -696,7 +710,7 @@ private:
     void auto_land_run();
     void auto_rtl_start();
     void auto_rtl_run();
-    void auto_circle_movetoedge_start();
+    void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
     void auto_circle_start();
     void auto_circle_run();
     void auto_nav_guided_start();
@@ -740,12 +754,13 @@ private:
     bool flip_init(bool ignore_checks);
     void flip_run();
     bool guided_init(bool ignore_checks);
-    void guided_takeoff_start(float final_alt_above_home);
+    bool guided_takeoff_start(float final_alt_above_home);
     void guided_pos_control_start();
     void guided_vel_control_start();
     void guided_posvel_control_start();
     void guided_angle_control_start();
     void guided_set_destination(const Vector3f& destination);
+    bool guided_set_destination(const Location_Class& dest_loc);
     void guided_set_velocity(const Vector3f& velocity);
     void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms);
@@ -788,6 +803,7 @@ private:
     bool throw_height_good();
 
     bool rtl_init(bool ignore_checks);
+    void rtl_restart_without_terrain();
     void rtl_run();
     void rtl_climb_start();
     void rtl_return_start();
@@ -798,6 +814,8 @@ private:
     void rtl_descent_run();
     void rtl_land_start();
     void rtl_land_run();
+    void rtl_build_path(bool terrain_following_allowed);
+    void rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target, bool terrain_following_allowed);
     float get_RTL_alt();
     bool sport_init(bool ignore_checks);
     void sport_run();
@@ -822,6 +840,9 @@ private:
     void failsafe_battery_event(void);
     void failsafe_gcs_check();
     void failsafe_gcs_off_event(void);
+    void failsafe_terrain_check();
+    void failsafe_terrain_set_status(bool data_ok);
+    void failsafe_terrain_on_event();
     void set_mode_RTL_or_land_with_pause(mode_reason_t reason);
     void update_events();
     void failsafe_enable();
@@ -864,6 +885,7 @@ private:
     void pre_arm_rc_checks();
     bool pre_arm_gps_checks(bool display_failure);
     bool pre_arm_ekf_attitude_check();
+    bool pre_arm_terrain_check();
     bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
@@ -912,6 +934,9 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void epm_update();
+    void terrain_update();
+    void terrain_logging();
+    bool terrain_use();
     void report_batt_monitor();
     void report_frame();
     void report_radio();
@@ -974,7 +999,6 @@ private:
 #endif
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
-    void do_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_yaw(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
@@ -996,8 +1020,7 @@ private:
 #if NAV_GUIDED == ENABLED
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
-    void auto_spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
-
+    void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void log_init(void);
     void run_cli(AP_HAL::UARTDriver *port);

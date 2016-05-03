@@ -7,22 +7,11 @@
 // To-Do - rename and move this function to make it's purpose more clear
 void Sub::run_nav_updates(void)
 {
-    // fetch position from inertial navigation
-    calc_position();
-
     // calculate distance and bearing for reporting and autopilot decisions
     calc_distance_and_bearing();
 
     // run autopilot to make high level decisions about control modes
     run_autopilot();
-}
-
-// calc_position - get lat and lon positions from inertial nav library
-void Sub::calc_position()
-{
-    // pull position from interial nav library
-    current_loc.lng = inertial_nav.get_longitude();
-    current_loc.lat = inertial_nav.get_latitude();
 }
 
 // calc_distance_and_bearing - calculate distance and bearing to next waypoint and home

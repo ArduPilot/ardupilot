@@ -123,6 +123,62 @@ void Sub::failsafe_gcs_off_event(void)
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
+// executes terrain failsafe if data is missing for longer than a few seconds
+//  missing_data should be set to true if the vehicle failed to navigate because of missing data, false if navigation is proceeding successfully
+void Sub::failsafe_terrain_check()
+{
+    // trigger with 5 seconds of failures while in AUTO mode
+    bool valid_mode = (control_mode == AUTO || control_mode == GUIDED || control_mode == RTL);
+    bool timeout = (failsafe.terrain_last_failure_ms - failsafe.terrain_first_failure_ms) > FS_TERRAIN_TIMEOUT_MS;
+    bool trigger_event = valid_mode && timeout;
+
+    // check for clearing of event
+    if (trigger_event != failsafe.terrain) {
+        if (trigger_event) {
+            failsafe_terrain_on_event();
+        } else {
+            Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_ERROR_RESOLVED);
+            failsafe.terrain = false;
+        }
+    }
+}
+
+// set terrain data status (found or not found)
+void Sub::failsafe_terrain_set_status(bool data_ok)
+{
+    uint32_t now = millis();
+
+    // record time of first and latest failures (i.e. duration of failures)
+    if (!data_ok) {
+        failsafe.terrain_last_failure_ms = now;
+        if (failsafe.terrain_first_failure_ms == 0) {
+            failsafe.terrain_first_failure_ms = now;
+        }
+    } else {
+        // failures cleared after 0.1 seconds of persistent successes
+        if (now - failsafe.terrain_last_failure_ms > 100) {
+            failsafe.terrain_last_failure_ms = 0;
+            failsafe.terrain_first_failure_ms = 0;
+        }
+    }
+}
+
+// terrain failsafe action
+void Sub::failsafe_terrain_on_event()
+{
+    failsafe.terrain = true;
+    gcs_send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_FAILSAFE_OCCURRED);
+
+    if (should_disarm_on_failsafe()) {
+        init_disarm_motors();
+    } else if (control_mode == RTL) {
+        rtl_restart_without_terrain();
+    } else {
+        set_mode_RTL_or_land_with_pause(MODE_REASON_TERRAIN_FAILSAFE);
+    }
+}
+
 // set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
 void Sub::set_mode_RTL_or_land_with_pause(mode_reason_t reason)

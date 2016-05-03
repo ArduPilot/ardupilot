@@ -51,41 +51,51 @@ bool Sub::guided_init(bool ignore_checks)
 
 
 // guided_takeoff_start - initialises waypoint controller to implement take-off
-void Sub::guided_takeoff_start(float final_alt_above_home)
+bool Sub::guided_takeoff_start(float final_alt_above_home)
 {
-    guided_mode = Guided_TakeOff;
-    
-    // initialise wpnav destination
-    Vector3f target_pos = inertial_nav.get_position();
-    target_pos.z = pv_alt_above_origin(final_alt_above_home);
-    wp_nav.set_wp_destination(target_pos);
+	guided_mode = Guided_TakeOff;
 
-    // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+	// initialise wpnav destination
+	Location_Class target_loc = current_loc;
+	target_loc.set_alt_cm(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
 
-    // clear i term when we're taking off
-    set_throttle_takeoff();
+	if (!wp_nav.set_wp_destination(target_loc)) {
+		// failure to set destination can only be because of missing terrain data
+		Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+		// failure is propagated to GCS with NAK
+		return false;
+	}
+
+	// initialise yaw
+	set_auto_yaw_mode(AUTO_YAW_HOLD);
+
+	// clear i term when we're taking off
+	set_throttle_takeoff();
+
+	return true;
 }
 
 // initialise guided mode's position controller
 void Sub::guided_pos_control_start()
 {
-    // set to position control mode
-    guided_mode = Guided_WP;
+	// set to position control mode
+	guided_mode = Guided_WP;
 
-    // initialise waypoint and spline controller
-    wp_nav.wp_and_spline_init();
+	// initialise waypoint and spline controller
+	wp_nav.wp_and_spline_init();
 
-    // initialise wpnav to stopping point at current altitude
-    // To-Do: set to current location if disarmed?
-    // To-Do: set to stopping point altitude?
-    Vector3f stopping_point;
-    stopping_point.z = inertial_nav.get_altitude();
-    wp_nav.get_wp_stopping_point_xy(stopping_point);
-    wp_nav.set_wp_destination(stopping_point);
+	// initialise wpnav to stopping point at current altitude
+	// To-Do: set to current location if disarmed?
+	// To-Do: set to stopping point altitude?
+	Vector3f stopping_point;
+	stopping_point.z = inertial_nav.get_altitude();
+	wp_nav.get_wp_stopping_point_xy(stopping_point);
 
-    // initialise yaw
-    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+	// no need to check return status because terrain data is not used
+	wp_nav.set_wp_destination(stopping_point, false);
+
+	// initialise yaw
+	set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 }
 
 // initialise guided mode's velocity controller
@@ -163,7 +173,32 @@ void Sub::guided_set_destination(const Vector3f& destination)
         guided_pos_control_start();
     }
 
-    wp_nav.set_wp_destination(destination);
+    // no need to check return status because terrain data is not used
+    wp_nav.set_wp_destination(destination, false);
+
+    // log target
+    Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+}
+
+// sets guided mode's target from a Location object
+// returns false if destination could not be set (probably caused by missing terrain data)
+bool Sub::guided_set_destination(const Location_Class& dest_loc)
+{
+    // ensure we are in position control mode
+    if (guided_mode != Guided_WP) {
+        guided_pos_control_start();
+    }
+
+    if (!wp_nav.set_wp_destination(dest_loc)) {
+        // failure to set destination can only be because of missing terrain data
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        // failure is propagated to GCS with NAK
+        return false;
+    }
+
+    // log target
+    Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+    return true;
 }
 
 // guided_set_velocity - sets guided mode's target velocity
@@ -270,7 +305,7 @@ void Sub::guided_takeoff_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    wp_nav.update_wpnav();
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -306,7 +341,7 @@ void Sub::guided_pos_control_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    wp_nav.update_wpnav();
+    failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
