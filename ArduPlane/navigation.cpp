@@ -99,7 +99,7 @@ void Plane::calc_airspeed_errors()
     }
 
     // Landing airspeed target
-    if (control_mode == AUTO && ahrs.airspeed_sensor_enabled()) {
+    if (control_mode == AUTO) {
         float land_airspeed = SpdHgt_Controller->get_land_airspeed();
         switch (flight_stage) {
         case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
