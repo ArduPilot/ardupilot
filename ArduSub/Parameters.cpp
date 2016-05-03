@@ -33,8 +33,8 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Param: SURFACE_DEPTH
 	// @DisplayName: Depth reading at surface
 	// @Description: The depth the external pressure sensor will read when the vehicle is considered at the surface (in centimeters)
-	// @Range: -5.0 -100.0
-	// @User: Standard
+	// @Range: -5 -100
+	// @User: Advanced
 	GSCALAR(surface_depth, "SURFACE_DEPTH", SURFACE_DEPTH_DEFAULT),
 
     // @Param: SYSID_SW_MREV
