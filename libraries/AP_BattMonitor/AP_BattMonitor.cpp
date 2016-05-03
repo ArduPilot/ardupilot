@@ -269,7 +269,17 @@ uint8_t AP_BattMonitor::capacity_remaining_pct(uint8_t instance) const
     }
 }
 
-/// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
+/// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
+ int32_t AP_BattMonitor::pack_capacity_mah(uint8_t instance) const
+ {
+ if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
+        return _pack_capacity[instance];
+    } else {
+        return 0;
+    }
+ }
+ 
+ /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
 bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_capacity_mah)
 {
     // exit immediately if no monitors setup
