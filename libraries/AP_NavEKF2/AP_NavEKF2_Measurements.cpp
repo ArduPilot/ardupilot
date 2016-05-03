@@ -9,7 +9,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #include <stdio.h>
-#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -157,6 +156,8 @@ void NavEKF2_core::readMagData()
     // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
     // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
     if (use_compass() && _ahrs->get_compass()->last_update_usec() - lastMagUpdate_us > 70000) {
+        frontend->logging.log_compass = true;
+
         // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
         // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
         // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
@@ -431,6 +432,7 @@ void NavEKF2_core::readGpsData()
                 ResetVelocity();
             }
 
+            frontend->logging.log_gps = true;
         } else {
             // report GPS fix status
             gpsCheckStatus.bad_fix = true;
@@ -493,9 +495,7 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
 
     if (ins_index < ins.get_gyro_count()) {
         ins.get_delta_angle(ins_index,dAng);
-        if (frontend->_enable_logging && ins_index == 0) {
-            DataFlash_Class::instance()->Log_Write_IMUDT(ins);
-        }
+        frontend->logging.log_imu = true;
         return true;
     }
     return false;
@@ -512,6 +512,7 @@ void NavEKF2_core::readBaroData()
     // check to see if baro measurement has changed so we know if a new measurement has arrived
     // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
     if (frontend->_baro.get_last_update() - lastBaroReceived_ms > 70) {
+        frontend->logging.log_baro = true;
 
         baroDataNew.hgt = frontend->_baro.get_altitude();
 

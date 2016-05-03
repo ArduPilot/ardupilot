@@ -6,13 +6,14 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <DataFlash/DataFlash.h>
 
 /*
   parameter defaults for different types of vehicle. The
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Replay)
 // copter defaults
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
@@ -471,6 +472,33 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+/*
+  see if we should log some sensor data
+ */
+void NavEKF2::check_log_write(void)
+{
+    if (!_enable_logging) {
+        return;
+    }
+    if (logging.log_compass) {
+        DataFlash_Class::instance()->Log_Write_Compass(*_ahrs->get_compass());
+        logging.log_compass = false;
+    }
+    if (logging.log_gps) {
+        DataFlash_Class::instance()->Log_Write_GPS(_ahrs->get_gps(), 0);
+        logging.log_gps = false;
+    }
+    if (logging.log_baro) {
+        DataFlash_Class::instance()->Log_Write_Baro(_baro);
+        logging.log_baro = false;
+    }
+    if (logging.log_imu) {
+        const AP_InertialSensor &ins = _ahrs->get_ins();
+        DataFlash_Class::instance()->Log_Write_IMUDT(ins);
+        logging.log_imu = false;
+    }
+}
+
 
 // Initialise the filter
 bool NavEKF2::InitialiseFilter(void)
@@ -527,6 +555,8 @@ bool NavEKF2::InitialiseFilter(void)
     for (uint8_t i=0; i<num_cores; i++) {
         ret &= core[i].InitialiseFilterBootstrap();
     }
+
+    check_log_write();
     return ret;
 }
 
@@ -565,6 +595,8 @@ void NavEKF2::UpdateFilter(void)
             }
         }
     }
+
+    check_log_write();
 }
 
 // Check basic filter health metrics and return a consolidated health status
