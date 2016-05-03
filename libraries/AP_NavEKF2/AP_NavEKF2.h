@@ -52,6 +52,9 @@ public:
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
+    // check if we should write log messages
+    void check_log_write(void);
+    
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
@@ -339,4 +342,11 @@ private:
     const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint8_t fusionTimeStep_ms;    // The minimum time interval between covariance predictions and measurement fusions in msec
+
+    struct {
+        bool log_compass:1;
+        bool log_gps:1;
+        bool log_baro:1;
+        bool log_imu:1;
+    } logging;
 };
