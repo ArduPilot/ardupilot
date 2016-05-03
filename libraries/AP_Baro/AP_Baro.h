@@ -5,7 +5,6 @@
 #include <AP_Param/AP_Param.h>
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
-#include <AP_Buffer/AP_Buffer.h>
 
 // maximum number of sensor instances
 #define BARO_MAX_INSTANCES 3
@@ -110,8 +109,9 @@ public:
 
     // HIL variables
     struct {
-        AP_Buffer<float,10> press_buffer;
-        AP_Buffer<float,10> temp_buffer;
+        float pressure;
+        float temperature;
+        bool updated:1;
     } _hil;
 
     // register a new sensor, claiming a sensor slot. If we are out of
