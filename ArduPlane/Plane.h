@@ -417,8 +417,10 @@ private:
     AP_BattMonitor battery;
 
 #if FRSKY_TELEM_ENABLED == ENABLED
+    // Inertial Navigation
+    AP_InertialNav_NavEKF inertial_nav {ahrs};
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry {ahrs, battery};
+    AP_Frsky_Telem frsky_telemetry {ahrs, battery, rangefinder, inertial_nav};
 #endif
 
     // Airspeed Sensors
