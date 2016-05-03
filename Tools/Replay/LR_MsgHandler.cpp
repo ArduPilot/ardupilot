@@ -125,15 +125,11 @@ void LR_MsgHandler_Event::process_message(uint8_t *msg)
 
 void LR_MsgHandler_GPS2::process_message(uint8_t *msg)
 {
-    // only LOG_GPS_MSG gives us relative altitude.  We still log
-    // the relative altitude when we get a LOG_GPS2_MESSAGE - but
-    // the value we use (probably) comes from the most recent
-    // LOG_GPS_MESSAGE message!
-    update_from_msg_gps(1, msg, false);
+    update_from_msg_gps(1, msg);
 }
 
 
-void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, bool responsible_for_relalt)
+void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg)
 {
     uint64_t time_us;
     if (! field_value(msg, "TimeUS", time_us)) {
@@ -159,9 +155,17 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
         ! field_value(msg, "numSV", nsats)) {
         field_not_found(msg, "NSats");
     }
+    uint16_t GWk;
+    uint32_t GMS;
+    if (! field_value(msg, "GWk", GWk)) {
+        field_not_found(msg, "GWk");
+    }
+    if (! field_value(msg, "GMS", GMS)) {
+        field_not_found(msg, "GMS");
+    }
     gps.setHIL(gps_offset,
                (AP_GPS::GPS_Status)status,
-               uint32_t(time_us/1000),
+               AP_GPS::time_epoch_convert(GWk, GMS),
                loc,
                vel,
                nsats,
@@ -170,22 +174,13 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
     if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {
         ground_alt_cm = require_field_int32_t(msg, "Alt");
     }
-
-    if (responsible_for_relalt) {
-        // this could possibly check for the presence of "RelAlt" label?
-        int32_t tmp;
-        if (! field_value(msg, "RAlt", tmp)) {
-            tmp = require_field_int32_t(msg, "RelAlt");
-        }
-        rel_altitude = 0.01f * tmp;
-    }
 }
 
 
 
 void LR_MsgHandler_GPS::process_message(uint8_t *msg)
 {
-    update_from_msg_gps(0, msg, true);
+    update_from_msg_gps(0, msg);
 }
 
 
