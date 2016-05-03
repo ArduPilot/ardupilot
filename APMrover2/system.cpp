@@ -129,7 +129,7 @@ void Rover::init_ardupilot()
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager);
+    frsky_telemetry.init(serial_manager, (uint8_t *)&control_mode);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
@@ -486,16 +486,6 @@ bool Rover::should_log(uint32_t mask)
     }
     return ret;
 }
-
-/*
-  send FrSky telemetry. Should be called at 5Hz by scheduler
- */
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Rover::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
 
 /*
   update AHRS soft arm state and log as needed
