@@ -26,4 +26,6 @@ private:
     uint32_t last_reading_ms = 0;
     char linebuf[10];
     uint8_t linebuf_len = 0;
+    uint16_t reading_cm_average = 0;
+    float average_weight = 0.05;
 };

@@ -61,6 +61,7 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(uint16_t &reading_cm)
     int32_t sum = 0;
     int16_t nbytes = uart->available();
     uint16_t count = 0;
+    uint16_t centimeters = 0;
 
     /* MaxSonarSeriaLV might need a manual reconection */
     if (nbytes == 0) {
@@ -91,7 +92,15 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(uint16_t &reading_cm)
     }
 
     // This sonar gives the metrics in inches, so we have to transform this to centimeters
-    reading_cm = 2.54 * sum / count;
+    centimeters = 2.54f * sum / count;
+
+    // Remove the value of one element from the average
+    reading_cm_average = reading_cm_average * (1 - average_weight);
+
+    // Add on the average a new element
+    reading_cm_average = reading_cm_average ? reading_cm_average + centimeters * average_weight : centimeters;
+
+    reading_cm = reading_cm_average;
 
     return true;
 }
