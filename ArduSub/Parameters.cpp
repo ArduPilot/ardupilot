@@ -138,6 +138,15 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
 
+	// @Param: RTL_CONE_SLOPE
+	// @DisplayName: RTL cone slope
+	// @Description: Defines a cone above home which determines maximum climb
+	// @Range: 0.5 10.0
+	// @Increment: .1
+	// @Values: 0:Disabled,1:Shallow,3:Steep
+	// @User: Standard
+	GSCALAR(rtl_cone_slope,   "RTL_CONE_SLOPE",     RTL_CONE_SLOPE),
+
     // @Param: RTL_SPEED
     // @DisplayName: RTL speed
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WPNAV_SPEED will be used instead.
@@ -1022,6 +1031,13 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Values: 0:Stopped,1:Running
 	// @User: Standard
 	GSCALAR(throw_motor_start, "THROW_MOT_START", 0),
+
+	// @Param: TERRAIN_FOLLOW
+	// @DisplayName: Terrain Following use control
+	// @Description: This enables terrain following for RTL and LAND flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.
+	// @Values: 0:Do Not Use in RTL and Land 1:Use in RTL and Land
+	// @User: Standard
+	GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
     AP_VAREND
 };

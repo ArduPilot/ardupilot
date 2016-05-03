@@ -64,10 +64,6 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_within_distance(cmd);
         break;
 
-    case MAV_CMD_CONDITION_CHANGE_ALT:             // 113
-        do_change_alt(cmd);
-        break;
-
     case MAV_CMD_CONDITION_YAW:             // 115
         do_yaw(cmd);
         break;
@@ -225,9 +221,6 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
-    case MAV_CMD_CONDITION_CHANGE_ALT:
-        return verify_change_alt();
-
     case MAV_CMD_CONDITION_YAW:
         return verify_yaw();
 
@@ -284,25 +277,20 @@ void Sub::do_RTL(void)
 void Sub::do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     // Set wp navigation target to safe altitude above current position
-    float takeoff_alt = cmd.content.location.alt;
-    takeoff_alt = MAX(takeoff_alt,current_loc.alt);
-    takeoff_alt = MAX(takeoff_alt,100.0f);
-    auto_takeoff_start(takeoff_alt);
+    auto_takeoff_start(cmd.content.location);
 }
 
 // do_nav_wp - initiate move to next waypoint
 void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    const Vector3f &curr_pos = inertial_nav.get_position();
-    const Vector3f local_pos = pv_location_to_vector_with_default(cmd.content.location, curr_pos);
-
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = abs(cmd.p1);
+    loiter_time_max = cmd.p1;
 
     // Set wp navigation target
-    auto_wp_start(local_pos);
+    auto_wp_start(Location_Class(cmd.content.location));
+
     // if no delay set the waypoint as "fast"
     if (loiter_time_max == 0 ) {
         wp_nav.set_fast_waypoint(true);
@@ -320,9 +308,21 @@ void Sub::do_land(const AP_Mission::Mission_Command& cmd)
         land_state = LAND_STATE_FLY_TO_LOCATION;
 
         // calculate and set desired location above landing target
-        Vector3f pos = pv_location_to_vector(cmd.content.location);
-        pos.z = inertial_nav.get_altitude();
-        auto_wp_start(pos);
+        // convert to location class
+        Location_Class target_loc(cmd.content.location);
+
+        // decide if we will use terrain following
+        int32_t curr_terr_alt_cm, target_terr_alt_cm;
+        if (current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
+            target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
+            curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
+            // if using terrain, set target altitude to current altitude above terrain
+            target_loc.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
+        } else {
+            // set target altitude to current altitude above home
+            target_loc.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+        }
+        auto_wp_start(target_loc);
     }else{
         // set landing state
         land_state = LAND_STATE_DESCENDING;
@@ -336,95 +336,72 @@ void Sub::do_land(const AP_Mission::Mission_Command& cmd)
 // note: caller should set yaw_mode
 void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f target_pos;
-
-    // get current position
-    Vector3f curr_pos = inertial_nav.get_position();
-
-    // default to use position provided
-    target_pos = pv_location_to_vector(cmd.content.location);
+	// convert back to location
+	Location_Class target_loc(cmd.content.location);
 
     // use current location if not provided
-    if(cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-        wp_nav.get_wp_stopping_point_xy(target_pos);
+	if (target_loc.lat == 0 && target_loc.lng == 0) {
+        // To-Do: make this simpler
+        Vector3f temp_pos;
+        wp_nav.get_wp_stopping_point_xy(temp_pos);
+        target_loc.offset(temp_pos.x * 100.0f, temp_pos.y * 100.0f);
     }
 
     // use current altitude if not provided
     // To-Do: use z-axis stopping point instead of current alt
-    if( cmd.content.location.alt == 0 ) {
-        target_pos.z = curr_pos.z;
+	if (target_loc.alt == 0) {
+        // set to current altitude but in command's alt frame
+        int32_t curr_alt;
+        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
+            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
+        } else {
+            // default to current altitude as alt-above-home
+            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+        }
     }
 
     // start way point navigator and provide it the desired location
-    auto_wp_start(target_pos);
+    auto_wp_start(target_loc);
 }
 
 // do_circle - initiate moving in a circle
 void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f curr_pos = inertial_nav.get_position();
-    Vector3f circle_center = pv_location_to_vector(cmd.content.location);
+	Location_Class circle_center(cmd.content.location);
+
+    // default lat/lon to current position if not provided
+    // To-Do: use stopping point or position_controller's target instead of current location to avoid jerk?
+    if (circle_center.lat == 0 && circle_center.lng == 0) {
+        circle_center.lat = current_loc.lat;
+        circle_center.lng = current_loc.lng;
+    }
+
+    // default target altitude to current altitude if not provided
+    if (circle_center.alt == 0) {
+        int32_t curr_alt;
+        if (current_loc.get_alt_cm(circle_center.get_alt_frame(),curr_alt)) {
+            // circle altitude uses frame from command
+            circle_center.set_alt_cm(curr_alt,circle_center.get_alt_frame());
+        } else {
+            // default to current altitude above origin
+            circle_center.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+            Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
+        }
+    }
+
+    // calculate radius
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
-    bool move_to_edge_required = false;
 
-    // set target altitude if not provided
-    if (cmd.content.location.alt == 0) {
-        circle_center.z = curr_pos.z;
-    } else {
-        move_to_edge_required = true;
-    }
-
-    // set lat/lon position if not provided
-    // To-Do: use previous command's destination if it was a straight line or spline waypoint command
-    if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-        circle_center.x = curr_pos.x;
-        circle_center.y = curr_pos.y;
-    } else {
-        move_to_edge_required = true;
-    }
-
-    // set circle controller's center
-    circle_nav.set_center(circle_center);
-
-    // set circle radius
-    if (circle_radius_m != 0) {
-        circle_nav.set_radius((float)circle_radius_m * 100.0f);
-    }
-
-    // check if we need to move to edge of circle
-    if (move_to_edge_required) {
-        // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
-        auto_circle_movetoedge_start();
-    } else {
-        // start circling
-        auto_circle_start();
-    }
+    // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
+    auto_circle_movetoedge_start(circle_center, circle_radius_m);
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
 // note: caller should set yaw_mode
 void Sub::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f target_pos;
-
-    // get current position
-    Vector3f curr_pos = inertial_nav.get_position();
-
-    // default to use position provided
-    target_pos = pv_location_to_vector(cmd.content.location);
-
-    // use current location if not provided
-    if(cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-        wp_nav.get_wp_stopping_point_xy(target_pos);
-    }
-
-    // use current altitude if not provided
-    if( cmd.content.location.alt == 0 ) {
-        target_pos.z = curr_pos.z;
-    }
-
-    // start way point navigator and provide it the desired location
-    auto_wp_start(target_pos);
+	// re-use loiter unlimited
+	do_loiter_unlimited(cmd);
 
     // setup loiter timer
     loiter_time     = 0;
@@ -434,19 +411,33 @@ void Sub::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 // do_spline_wp - initiate move to next waypoint
 void Sub::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
-    const Vector3f& curr_pos = inertial_nav.get_position();
-    Vector3f local_pos = pv_location_to_vector_with_default(cmd.content.location, curr_pos);
+	Location_Class target_loc(cmd.content.location);
+    // use current lat, lon if zero
+    if (target_loc.lat == 0 && target_loc.lng == 0) {
+        target_loc.lat = current_loc.lat;
+        target_loc.lng = current_loc.lng;
+    }
+    // use current altitude if not provided
+    if (target_loc.alt == 0) {
+        // set to current altitude but in command's alt frame
+        int32_t curr_alt;
+        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
+            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
+        } else {
+            // default to current altitude as alt-above-home
+            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+        }
+    }
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = abs(cmd.p1);
+    loiter_time_max = cmd.p1;
 
     // determine segment start and end type
     bool stopped_at_start = true;
     AC_WPNav::spline_segment_end_type seg_end_type = AC_WPNav::SEGMENT_END_STOP;
     AP_Mission::Mission_Command temp_cmd;
-    Vector3f next_destination;      // end of next segment
 
     // if previous command was a wp_nav command with no delay set stopped_at_start to false
     // To-Do: move processing of delay into wp-nav controller to allow it to determine the stopped_at_start value itself?
@@ -460,19 +451,34 @@ void Sub::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // if there is no delay at the end of this segment get next nav command
+    Location_Class next_loc;
     if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+    	next_loc = temp_cmd.content.location;
+        // default lat, lon to first waypoint's lat, lon
+        if (next_loc.lat == 0 && next_loc.lng == 0) {
+            next_loc.lat = target_loc.lat;
+            next_loc.lng = target_loc.lng;
+        }
+        // default alt to first waypoint's alt but in next waypoint's alt frame
+        if (next_loc.alt == 0) {
+            int32_t next_alt;
+            if (target_loc.get_alt_cm(next_loc.get_alt_frame(), next_alt)) {
+                next_loc.set_alt_cm(next_alt, next_loc.get_alt_frame());
+            } else {
+                // default to first waypoints altitude
+                next_loc.set_alt_cm(target_loc.alt, target_loc.get_alt_frame());
+            }
+        }
         // if the next nav command is a waypoint set end type to spline or straight
         if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT) {
             seg_end_type = AC_WPNav::SEGMENT_END_STRAIGHT;
-            next_destination = pv_location_to_vector_with_default(temp_cmd.content.location, local_pos);
         }else if (temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) {
             seg_end_type = AC_WPNav::SEGMENT_END_SPLINE;
-            next_destination = pv_location_to_vector_with_default(temp_cmd.content.location, local_pos);
         }
     }
 
     // set spline navigation target
-    auto_spline_start(local_pos, stopped_at_start, seg_end_type, next_destination);
+    auto_spline_start(target_loc, stopped_at_start, seg_end_type, next_loc);
 }
 
 #if NAV_GUIDED == ENABLED
@@ -724,11 +730,6 @@ void Sub::do_wait_delay(const AP_Mission::Mission_Command& cmd)
     condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
 }
 
-void Sub::do_change_alt(const AP_Mission::Mission_Command& cmd)
-{
-    // To-Do: store desired altitude in a variable so that it can be verified later
-}
-
 void Sub::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
     condition_value  = cmd.content.distance.meters * 100;
@@ -755,12 +756,6 @@ bool Sub::verify_wait_delay()
         return true;
     }
     return false;
-}
-
-bool Sub::verify_change_alt()
-{
-    // To-Do: use recorded target altitude to verify we have reached the target
-    return true;
 }
 
 bool Sub::verify_within_distance()
@@ -797,8 +792,6 @@ bool Sub::verify_yaw()
 // do_guided - start guided mode
 bool Sub::do_guided(const AP_Mission::Mission_Command& cmd)
 {
-    Vector3f pos_or_vel;    // target location or velocity
-
     // only process guided waypoint if we are in guided mode
     if (control_mode != GUIDED && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
         return false;
@@ -808,11 +801,12 @@ bool Sub::do_guided(const AP_Mission::Mission_Command& cmd)
     switch (cmd.id) {
 
         case MAV_CMD_NAV_WAYPOINT:
+        {
             // set wp_nav's destination
-            pos_or_vel = pv_location_to_vector(cmd.content.location);
-            guided_set_destination(pos_or_vel);
-            return true;
+        	Location_Class dest(cmd.content.location);
+        	return guided_set_destination(dest);
             break;
+        }
 
         case MAV_CMD_CONDITION_YAW:
             do_yaw(cmd);
