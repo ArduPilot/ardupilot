@@ -9,6 +9,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #include <stdio.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -492,6 +493,9 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
 
     if (ins_index < ins.get_gyro_count()) {
         ins.get_delta_angle(ins_index,dAng);
+        if (frontend->_enable_logging && ins_index == 0) {
+            DataFlash_Class::instance()->Log_Write_IMUDT(ins);
+        }
         return true;
     }
     return false;
