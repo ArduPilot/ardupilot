@@ -427,6 +427,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: m/s
     AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizNoise, 10.0f),
 
+    // @Param: LOGGING
+    // @DisplayName: Enable EKF sensor logging
+    // @Description: This enables EKF sensor logging for use by Replay
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("LOGGING", 36, NavEKF2, _enable_logging, 0),
+    
     AP_GROUPEND
 };
 
