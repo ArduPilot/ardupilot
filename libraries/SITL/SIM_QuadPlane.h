@@ -41,7 +41,7 @@ public:
     }
 private:
     Frame *frame;
-    bool tiltrotors;
+    bool elevons;
 };
 
 } // namespace SITL

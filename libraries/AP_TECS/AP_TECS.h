@@ -87,6 +87,11 @@ public:
         return _land_sink;
     }
 
+    // return landing airspeed
+    float get_land_airspeed(void) const {
+        return _landAirspeed;
+    }
+
     // return height rate demand, in m/s
     float get_height_rate_demand(void) const {
         return _hgt_rate_dem;
@@ -350,9 +355,6 @@ private:
 
     // current time constant
     float timeConstant(void) const;
-
-    // return true if on landing approach
-    bool is_on_land_approach(bool include_segment_between_NORMAL_and_APPROACH);
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\

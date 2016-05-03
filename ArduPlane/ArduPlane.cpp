@@ -839,6 +839,10 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
     
 
     flight_stage = fs;
+
+    if (should_log(MASK_LOG_MODE)) {
+        Log_Write_Status();
+    }
 }
 
 void Plane::update_alt()
@@ -866,28 +870,30 @@ void Plane::update_alt()
 
     update_flight_stage();
 
-    bool is_doing_auto_land = (control_mode == AUTO) && (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND);
-    float distance_beyond_land_wp = 0;
-    if (is_doing_auto_land && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-        distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
-    }
-
     if (auto_throttle_mode && !throttle_suppressed) {        
 
-        // set Flight stage for controller. If not in AUTO then assume normal operation.
-        // this prevents TECS from being stuck in the wrong stage if you switch from
-        // AUTO to, say, FBWB during an aborted landing
-        AP_SpdHgtControl::FlightStage fs = flight_stage;
-        if (control_mode != AUTO) {
-            fs = AP_SpdHgtControl::FLIGHT_NORMAL;
+        bool is_doing_auto_land = false;
+        float distance_beyond_land_wp = 0;
+
+        switch (flight_stage) {
+        case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+        case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
+        case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+            is_doing_auto_land = true;
+            if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+                distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
+            }
+            break;
+        default:
+            break;
         }
 
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
-                                                 fs,
+                                                 flight_stage,
                                                  is_doing_auto_land,
                                                  distance_beyond_land_wp,
-                                                 auto_state.takeoff_pitch_cd,
+                                                 get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
                                                  aerodynamic_load_factor);
@@ -921,10 +927,12 @@ void Plane::update_flight_stage(void)
                 } else if (auto_state.land_pre_flare == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
                 } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-                    float path_progress = location_path_proportion(current_loc, prev_WP_loc, next_WP_loc);
-                    bool lined_up = abs(nav_controller->bearing_error_cd()) < 1000;
+                    bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
+                    bool on_flight_line = abs(nav_controller->crosstrack_error() < 5) && !nav_controller->data_is_stale();
                     bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
-                    if ((path_progress > 0.15f && lined_up && below_prev_WP) || path_progress > 0.5f) {
+                    if ((auto_state.wp_proportion >= 0 && heading_lined_up && on_flight_line) ||
+                        (auto_state.wp_proportion > 0.15f && heading_lined_up && below_prev_WP) ||
+                        (auto_state.wp_proportion > 0.5f)) {
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
                     } else {
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);                        
@@ -936,6 +944,9 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
             }
         } else {
+            // If not in AUTO then assume normal operation for normal TECS operation.
+            // This prevents TECS from being stuck in the wrong stage if you switch from
+            // AUTO to, say, FBWB during a landing, an aborted landing or takeoff.
             set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
         }
     } else if (quadplane.in_vtol_mode() ||

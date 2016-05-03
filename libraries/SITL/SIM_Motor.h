@@ -68,5 +68,5 @@ public:
                           float thrust_scale,
                           uint8_t motor_offset,
                           Vector3f &rot_accel, // rad/sec
-                          Vector3f &body_thrust) const; // newtons
+                          Vector3f &body_thrust) const; // Z is down
 };

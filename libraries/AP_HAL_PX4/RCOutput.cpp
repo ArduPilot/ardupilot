@@ -100,7 +100,7 @@ void PX4RCOutput::_init_alt_channels(void)
 void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz) 
 {
     // we can't set this per channel
-    if (freq_hz > 50) {
+    if (freq_hz > 50 || freq_hz == 1) {
         // we're being asked to set the alt rate
         if (_output_mode == MODE_PWM_ONESHOT) {
             /*
@@ -110,6 +110,7 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
              */
             freq_hz = 1;
         }
+        //::printf("SET_UPDATE_RATE %u\n", (unsigned)freq_hz);
         if (ioctl(fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) != 0) {
             hal.console->printf("RCOutput: Unable to set alt rate to %uHz\n", (unsigned)freq_hz);
             return;
@@ -128,7 +129,7 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
        For the moment we never set the channels above 8 to more than
        50Hz
      */
-    if (freq_hz > 50) {
+    if (freq_hz > 50 || freq_hz == 1) {
         // we are setting high rates on the given channels
         _rate_mask |= chmask & 0xFF;
         if (_rate_mask & 0x3) {
@@ -153,6 +154,7 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
         }
     }
 
+    //::printf("SELECT_UPDATE_RATE 0x%02x\n", (unsigned)_rate_mask);
     if (ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
         hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)_rate_mask);
     }
@@ -163,11 +165,6 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
  */
 void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
 {
-    if (_output_mode == MODE_PWM_ONESHOT) {
-        // changing the output frequency makes no sense in oneshot
-        // mode, and can disturb the timers causing spurious glitches
-        return;
-    }
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
     if (freq_hz > 400) {
@@ -435,6 +432,8 @@ void PX4RCOutput::_send_outputs(void)
             for (int i=to_send-1; i >= 0; i--) {
                 if (_period[i] == 0 || _period[i] == PWM_IGNORE_THIS_CHANNEL) {
                     to_send = i;
+                } else {
+                    break;
                 }
             }
         }
@@ -537,13 +536,22 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
         // no change
         return;
     }
+    if (mode == MODE_PWM_ONESHOT) {
+        // when using oneshot we don't want the regular pulses. The
+        // best we can do with the current PX4Firmware code is ask for
+        // 1Hz. This does still produce pulses, but the trigger calls
+        // mean the timer is constantly reset, so no pulses are
+        // produced except when triggered by push() when the main loop
+        // is running
+        set_freq(_rate_mask, 1);
+    }
     _output_mode = mode;
     if (_output_mode == MODE_PWM_ONESHOT) {
+        //::printf("enable oneshot\n");
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 1);
         if (_alt_fd != -1) {
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 1);
         }
-        set_freq(0xFFFF, 51);
     } else {
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 0);
         if (_alt_fd != -1) {

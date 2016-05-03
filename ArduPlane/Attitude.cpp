@@ -513,9 +513,8 @@ void Plane::calc_nav_pitch()
  */
 void Plane::calc_nav_roll()
 {
-    nav_roll_cd = nav_controller->nav_roll_cd();
+    nav_roll_cd = constrain_int32(nav_controller->nav_roll_cd(), -roll_limit_cd, roll_limit_cd);
     update_load_factor();
-    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 }
 
 

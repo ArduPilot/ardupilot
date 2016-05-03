@@ -272,7 +272,6 @@ void Plane::Log_Write_TECS_Tuning(void)
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint16_t yaw;
     float wp_distance;
     int16_t target_bearing_cd;
     int16_t nav_bearing_cd;
@@ -281,6 +280,7 @@ struct PACKED log_Nav_Tuning {
     float   altitude;
     uint32_t groundspeed_cm;
     float   xtrack_error;
+    float   xtrack_error_i;
 };
 
 // Write a navigation tuning packet
@@ -289,7 +289,6 @@ void Plane::Log_Write_Nav_Tuning()
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
-        yaw                 : (uint16_t)ahrs.yaw_sensor,
         wp_distance         : auto_state.wp_distance,
         target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
@@ -297,7 +296,8 @@ void Plane::Log_Write_Nav_Tuning()
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
         altitude            : barometer.get_altitude(),
         groundspeed_cm      : (uint32_t)(gps.ground_speed()*100),
-        xtrack_error        : nav_controller->crosstrack_error()
+        xtrack_error        : nav_controller->crosstrack_error(),
+        xtrack_error_i      : nav_controller->crosstrack_error_integrator()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -485,7 +485,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhh",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "QCfccccfIf",  "TimeUS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM,XT" },
+      "NTUN", "QfccccfIff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM,XT,XTi" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QHfffbBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),

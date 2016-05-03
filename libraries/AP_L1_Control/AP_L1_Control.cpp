@@ -109,11 +109,6 @@ bool AP_L1_Control::reached_loiter_target(void)
 	return _WPcircle;
 }
 
-float AP_L1_Control::crosstrack_error(void) const
-{
-	return _crosstrack_error;
-}
-
 /**
    prevent indecision in our turning by using our previous turn
    decision if we are in a narrow angle band pointing away from the
@@ -260,6 +255,8 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	_WPcircle = false;
 	
 	_bearing_error = Nu; // bearing error angle (radians), +ve to left of track
+
+	_data_is_stale = false; // status are correctly updated with current waypoint data
 }
 
 // update L1 control for loitering
@@ -366,6 +363,8 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 		_bearing_error = 0.0f; // bearing error (radians), +ve to left of track
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians)from AC to L1 point
 	}
+
+    _data_is_stale = false; // status are correctly updated with current waypoint data
 }
 
 
@@ -406,6 +405,8 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 	// Limit Nu to +-pi
 	Nu = constrain_float(Nu, -M_PI_2, M_PI_2);
 	_latAccDem = 2.0f*sinf(Nu)*VomegaA;
+
+    _data_is_stale = false; // status are correctly updated with current waypoint data
 }
 
 // update L1 control for level flight on current heading
@@ -421,4 +422,6 @@ void AP_L1_Control::update_level_flight(void)
 	_WPcircle = false;
 
 	_latAccDem = 0;
+
+    _data_is_stale = false; // status are correctly updated with current waypoint data
 }

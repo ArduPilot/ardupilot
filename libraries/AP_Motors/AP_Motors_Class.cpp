@@ -79,7 +79,7 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
         // we have a mapped motor number for this channel
         chan = _motor_map[chan];
     }
-    if (_pwm_type == PWM_TYPE_ONESHOT125) {
+    if (_pwm_type == PWM_TYPE_ONESHOT125 && (_motor_fast_mask & (1U<<chan))) {
         // OneShot125 uses a PWM range from 125 to 250 usec
         pwm /= 8;
         /*
@@ -101,9 +101,14 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
  */
 void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
 {
-    hal.rcout->set_freq(rc_map_mask(mask), freq_hz);
-    if (_pwm_type == PWM_TYPE_ONESHOT ||
-        _pwm_type == PWM_TYPE_ONESHOT125) {
+    mask = rc_map_mask(mask);
+    if (freq_hz > 50) {
+        _motor_fast_mask |= mask;
+    }
+    hal.rcout->set_freq(mask, freq_hz);
+    if ((_pwm_type == PWM_TYPE_ONESHOT ||
+         _pwm_type == PWM_TYPE_ONESHOT125) &&
+        freq_hz > 50) {
         // tell HAL to do immediate output
         hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_ONESHOT);
     }
@@ -172,4 +177,23 @@ int16_t AP_Motors::calc_pwm_output_0to1(float input, const RC_Channel& servo)
     ret = input * (servo.radio_max - servo.radio_min) + servo.radio_min;
 
     return constrain_int16(ret, servo.radio_min, servo.radio_max);
+}
+
+/*
+  add a motor, setting up _motor_map and _motor_map_mask as needed
+ */
+void AP_Motors::add_motor_num(int8_t motor_num)
+{
+    // ensure valid motor number is provided
+    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+        uint8_t chan;
+        if (RC_Channel_aux::find_channel((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+motor_num),
+                                         chan)) {
+            _motor_map[motor_num] = chan;
+            _motor_map_mask |= 1U<<motor_num;
+        } else {
+            // disable this channel from being used by RC_Channel_aux
+            RC_Channel_aux::disable_aux_channel(motor_num);
+        }
+    }
 }

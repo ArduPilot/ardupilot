@@ -79,7 +79,7 @@ def drive_mission(mavproxy, mav, filename):
     return True
 
 
-def drive_APMrover2(viewerip=None, map=False):
+def drive_APMrover2(viewerip=None, map=False, valgrind=False):
     '''drive APMrover2 in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -108,7 +108,7 @@ def drive_APMrover2(viewerip=None, map=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('APMrover2', model='rover', home=home, speedup=10)
+    sil = util.start_SIL('APMrover2', model='rover', home=home, speedup=10, valgrind=valgrind)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)

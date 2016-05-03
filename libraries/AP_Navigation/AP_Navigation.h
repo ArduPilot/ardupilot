@@ -45,7 +45,9 @@ public:
 
 	// return the crosstrack error in meters. This is the distance in
 	// the X-Y plane that we are off the desired track
-	virtual float crosstrack_error(void) const = 0;
+    virtual float crosstrack_error(void) const = 0;
+    virtual float crosstrack_error_integrator(void) const { return 0; }
+
 	
 	// return the distance in meters at which a turn should commence
 	// to allow the vehicle to neatly move to the next track in the
@@ -99,6 +101,17 @@ public:
 	// tracking towards the center. This function is only valid when
 	// the update_loiter() method is used
 	virtual bool reached_loiter_target(void) = 0;
+
+	// notify Navigation controller that a new waypoint has just been
+	// processed. This means that until we handle an update_XXX() function
+	// the data is stale with old navigation information.
+    virtual void set_data_is_stale(void) = 0;
+
+    // return true if a new waypoint has been processed by mission
+    // controller but the navigation controller still has old stale data
+    // from previous waypoint navigation handling. This gets cleared on
+    // every update_XXXXXX() call.
+    virtual bool data_is_stale(void) const = 0;
 
 	// add new navigation controllers to this enum. Users can then
 	// select which navigation controller to use by setting the

@@ -220,7 +220,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Quad, 1:Hexa, 2:Octa, 3:OctaQuad
+    // @Values: 0:Quad, 1:Hexa, 2:Octa, 3:OctaQuad, 4:Y6
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 0),
 
@@ -323,7 +323,11 @@ bool QuadPlane::setup(void)
         break;
     case FRAME_CLASS_OCTAQUAD:
         setup_default_channels(8);
-         motors = new AP_MotorsOctaQuad(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsOctaQuad(plane.scheduler.get_loop_rate_hz());
+        break;
+    case FRAME_CLASS_Y6:
+        setup_default_channels(7);
+        motors = new AP_MotorsY6(plane.scheduler.get_loop_rate_hz());
         break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());

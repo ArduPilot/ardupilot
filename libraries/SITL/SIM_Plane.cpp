@@ -39,6 +39,11 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     if (strstr(frame_str, "-revthrust")) {
         reverse_thrust = true;
     }
+    if (strstr(frame_str, "-elevon")) {
+        elevons = true;
+    } else if (strstr(frame_str, "-vtail")) {
+        vtail = true;
+    }
 }
 
 /*
@@ -195,6 +200,21 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float elevator = (input.servos[1]-1500)/500.0f;
     float rudder   = (input.servos[3]-1500)/500.0f;
     float throttle;
+    if (elevons) {
+        // fake an elevon plane
+        float ch1 = aileron;
+        float ch2 = elevator;
+        aileron  = (ch2-ch1)/2.0f;
+        // the minus does away with the need for RC2_REV=-1
+        elevator = -(ch2+ch1)/2.0f;
+    } else if (vtail) {
+        // fake a vtail plane
+        float ch1 = elevator;
+        float ch2 = rudder;
+        // this matches VTAIL_OUTPUT==2
+        elevator = (ch2-ch1)/2.0f;
+        rudder   = (ch2+ch1)/2.0f;
+    }
 
     if (reverse_thrust) {
         throttle = constrain_float((input.servos[2]-1500)/500.0f, -1, 1);
@@ -218,7 +238,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     accel_body += force;
 
     // add some noise
-    add_noise(fabsf(thrust) / thrust_scale);
+    if (thrust_scale > 0) {
+        add_noise(fabsf(thrust) / thrust_scale);
+    }
 }
     
 /*

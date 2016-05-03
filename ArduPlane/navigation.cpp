@@ -98,6 +98,31 @@ void Plane::calc_airspeed_errors()
                              ((int32_t)aparm.airspeed_min * 100);
     }
 
+    // Landing airspeed target
+    if (control_mode == AUTO && ahrs.airspeed_sensor_enabled()) {
+        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+        switch (flight_stage) {
+        case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+            if (land_airspeed >= 0) {
+                target_airspeed_cm = land_airspeed * 100;
+            }
+            break;
+
+        case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
+        case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+            if (auto_state.land_pre_flare && aparm.land_pre_flare_airspeed > 0) {
+                // if we just preflared then continue using the pre-flare airspeed during final flare
+                target_airspeed_cm = aparm.land_pre_flare_airspeed * 100;
+            } else if (land_airspeed >= 0) {
+                target_airspeed_cm = land_airspeed * 100;
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+
     // Set target to current airspeed + ground speed undershoot,
     // but only when this is faster than the target airspeed commanded
     // above.
