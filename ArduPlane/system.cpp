@@ -150,7 +150,8 @@ void Plane::init_ardupilot()
 
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager);
+    // setup frsky, and pass a number of parameters to the library
+    frsky_telemetry.init(serial_manager, (uint8_t *)&control_mode);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
@@ -769,17 +770,6 @@ bool Plane::should_log(uint32_t mask)
     return false;
 #endif
 }
-
-/*
-  send FrSky telemetry. Should be called at 5Hz by scheduler
- */
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Plane::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
-
 
 /*
   return throttle percentage from 0 to 100 for normal use and -100 to 100 when using reverse thrust
