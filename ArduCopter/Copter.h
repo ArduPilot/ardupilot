@@ -582,7 +582,7 @@ private:
     void update_trigger(void);
     void update_batt_compass(void);
     void ten_hz_logging_loop();
-    void fifty_hz_logging_loop();
+    void twentyfive_hz_logging();
     void full_rate_logging_loop();
     void three_hz_loop();
     void one_hz_loop();

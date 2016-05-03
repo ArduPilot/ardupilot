@@ -118,7 +118,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_mount,          50,     75),
     SCHED_TASK(update_trigger,        50,     75),
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
-    SCHED_TASK(fifty_hz_logging_loop, 50,    110),
+    SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK(full_rate_logging_loop,400,    100),
     SCHED_TASK(dataflash_periodic,    400,    300),
     SCHED_TASK(perf_update,           0.1,    75),
@@ -401,7 +401,7 @@ void Copter::ten_hz_logging_loop()
 
 // fifty_hz_logging_loop
 // should be run at 50hz
-void Copter::fifty_hz_logging_loop()
+void Copter::twentyfive_hz_logging()
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     // HIL for a copter needs very fast update of the servo values
@@ -421,7 +421,7 @@ void Copter::fifty_hz_logging_loop()
     }
 
     // log IMU data if we're not already logging at the higher rate
-    if (should_log(MASK_LOG_IMU) && !(should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW))) {
+    if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
@@ -431,9 +431,6 @@ void Copter::fifty_hz_logging_loop()
 // should be run at the MAIN_LOOP_RATE
 void Copter::full_rate_logging_loop()
 {
-    if (should_log(MASK_LOG_IMU_FAST) && !should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMU(ins);
-    }
     if (should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMUDT(ins);
     }
