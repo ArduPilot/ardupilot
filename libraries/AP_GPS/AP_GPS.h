@@ -282,6 +282,9 @@ public:
         return last_message_time_ms(primary_instance);
     }
 
+    // convert GPS week and millis to unix epoch in ms
+    static uint64_t time_epoch_convert(uint16_t gps_week, uint32_t gps_ms);
+    
     // return last fix time since the 1/1/1970 in microseconds
     uint64_t time_epoch_usec(uint8_t instance);
     uint64_t time_epoch_usec(void) { 
