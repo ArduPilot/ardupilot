@@ -1003,7 +1003,6 @@ private:
     void print_comma(void);
     void servo_write(uint8_t ch, uint16_t pwm);
     bool should_log(uint32_t mask);
-    void frsky_telemetry_send(void);
     int8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);
