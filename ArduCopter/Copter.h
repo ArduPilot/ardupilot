@@ -424,6 +424,11 @@ private:
     AP_Frsky_Telem frsky_telemetry;
 #endif
 
+    // Variables for extended status MAVLink messages
+    uint32_t control_sensors_present;
+    uint32_t control_sensors_enabled;
+    uint32_t control_sensors_health;
+
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
