@@ -2,6 +2,8 @@
 
 #include "DataFlash_Backend.h"
 
+DataFlash_Class *DataFlash_Class::_instance;
+
 const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: DataFlash Backend Storage type

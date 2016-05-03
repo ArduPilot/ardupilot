@@ -56,8 +56,17 @@ public:
         _firmware_string(firmware_string)
         {
             AP_Param::setup_object_defaults(this, var_info);
+            if (_instance != nullptr) {
+                AP_HAL::panic("DataFlash must be singleton");
+            }
+            _instance = this;
         }
 
+    // get singleton instance
+    static DataFlash_Class *instance(void) {
+        return _instance;
+    }
+    
     void set_mission(const AP_Mission *mission);
 
     // initialisation
@@ -230,4 +239,7 @@ private:
     // calculate the length of a message using fields specified in
     // fmt; includes the message header
     int16_t Log_Write_calc_msg_len(const char *fmt) const;
+
+private:
+    static DataFlash_Class *_instance;
 };
