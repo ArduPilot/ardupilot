@@ -51,7 +51,6 @@ struct PACKED log_GPS {
     uint16_t hdop;
     int32_t  latitude;
     int32_t  longitude;
-    int32_t  rel_altitude;
     int32_t  altitude;
     uint32_t ground_speed;
     int32_t  ground_course;
@@ -714,9 +713,9 @@ Format characters in the format string for binary log messages
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "QNf",        "TimeUS,Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
+      "GPS",  "QBIHBcLLeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPS2_MSG, sizeof(log_GPS), \
-      "GPS2", "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
+      "GPS2", "QBIHBcLLeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
       "GPA",  "QCCCC", "TimeUS,VDop,HAcc,VAcc,SAcc" }, \
     { LOG_GPA2_MSG, sizeof(log_GPA), \
