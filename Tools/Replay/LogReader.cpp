@@ -88,7 +88,12 @@ LR_MsgHandler_PARM *parameter_handler;
 static const char *generated_names[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5",
                                          "NKF1", "NKF2", "NKF3", "NKF4", "NKF5",
                                          "NKF6", "NKF7", "NKF8", "NKF9", "NKF10",
-                                         "AHR2", "POS", "CHEK", NULL };
+                                         "AHR2", "POS", "CHEK",
+                                         "IMT", "IMT2",
+                                         "MAG", "MAG2",
+                                         "BARO", "BAR2",
+                                         "GPS",
+                                         "NKA", "NKV", NULL };
 
 /*
   see if a type is in a list of types
@@ -166,15 +171,13 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	    msgparser[f.type] = parameter_handler;
 	} else if (streq(name, "GPS")) {
 	    msgparser[f.type] = new LR_MsgHandler_GPS(formats[f.type],
-						   dataflash,
-                                                   last_timestamp_usec,
-                                                   gps, ground_alt_cm,
-                                                   rel_altitude);
+                                                      dataflash,
+                                                      last_timestamp_usec,
+                                                      gps, ground_alt_cm);
 	} else if (streq(name, "GPS2")) {
 	    msgparser[f.type] = new LR_MsgHandler_GPS2(formats[f.type], dataflash,
-                                                    last_timestamp_usec,
-						    gps, ground_alt_cm,
-						    rel_altitude);
+                                                       last_timestamp_usec,
+                                                       gps, ground_alt_cm);
 	} else if (streq(name, "MSG")) {
 	    msgparser[f.type] = new LR_MsgHandler_MSG(formats[f.type], dataflash,
                                                    last_timestamp_usec,
