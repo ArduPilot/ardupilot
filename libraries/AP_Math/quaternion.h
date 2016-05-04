@@ -23,26 +23,31 @@
 #include <assert.h>
 #endif
 
-class Quaternion
-{
+class Quaternion {
 public:
     float        q1, q2, q3, q4;
 
     // constructor creates a quaternion equivalent
     // to roll=0, pitch=0, yaw=0
-    Quaternion() {
-        q1 = 1; q2 = q3 = q4 = 0;
+    Quaternion()
+    {
+        q1 = 1;
+        q2 = q3 = q4 = 0;
     }
 
     // setting constructor
     Quaternion(const float _q1, const float _q2, const float _q3, const float _q4) :
-        q1(_q1), q2(_q2), q3(_q3), q4(_q4) {
+        q1(_q1), q2(_q2), q3(_q3), q4(_q4)
+    {
     }
 
     // function call operator
-    void operator        ()(const float _q1, const float _q2, const float _q3, const float _q4)
+    void operator()(const float _q1, const float _q2, const float _q3, const float _q4)
     {
-        q1 = _q1; q2 = _q2; q3 = _q3; q4 = _q4;
+        q1 = _q1;
+        q2 = _q2;
+        q3 = _q3;
+        q4 = _q4;
     }
 
     // check if any elements are NAN
@@ -97,12 +102,17 @@ public:
     void normalize();
 
     // initialise the quaternion to no rotation
-    void initialise() { q1 = 1.0f; q2 = q3 = q4 = 0.0f; }
+    void initialise()
+    {
+        q1 = 1.0f;
+        q2 = q3 = q4 = 0.0f;
+    }
 
     Quaternion inverse(void) const;
 
     // allow a quaternion to be used as an array, 0 indexed
-    float & operator[](uint8_t i) {
+    float & operator[](uint8_t i)
+    {
         float *_v = &q1;
 #if MATH_CHECK_INDEXES
         assert(i < 4);
@@ -110,7 +120,8 @@ public:
         return _v[i];
     }
 
-    const float & operator[](uint8_t i) const {
+    const float & operator[](uint8_t i) const
+    {
         const float *_v = &q1;
 #if MATH_CHECK_INDEXES
         assert(i < 4);
