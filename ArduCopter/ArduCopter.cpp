@@ -119,7 +119,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_trigger,        50,     75),
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK(full_rate_logging_loop,400,    100),
     SCHED_TASK(dataflash_periodic,    400,    300),
     SCHED_TASK(perf_update,           0.1,    75),
     SCHED_TASK(read_receiver_rssi,    10,     75),
@@ -355,7 +354,7 @@ void Copter::update_batt_compass(void)
         compass.set_throttle(motors.get_throttle());
         compass.read();
         // log compass information
-        if (should_log(MASK_LOG_COMPASS)) {
+        if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
             DataFlash.Log_Write_Compass(compass);
         }
     }
@@ -425,15 +424,6 @@ void Copter::twentyfive_hz_logging()
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
-}
-
-// full_rate_logging_loop
-// should be run at the MAIN_LOOP_RATE
-void Copter::full_rate_logging_loop()
-{
-    if (should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMUDT(ins);
-    }
 }
 
 void Copter::dataflash_periodic(void)
@@ -520,8 +510,8 @@ void Copter::update_GPS(void)
             last_gps_reading[i] = gps.last_message_time_ms(i);
 
             // log GPS message
-            if (should_log(MASK_LOG_GPS)) {
-                DataFlash.Log_Write_GPS(gps, i, current_loc.alt);
+            if (should_log(MASK_LOG_GPS) && !ahrs.have_ekf_logging()) {
+                DataFlash.Log_Write_GPS(gps, i);
             }
 
             gps_updated = true;
