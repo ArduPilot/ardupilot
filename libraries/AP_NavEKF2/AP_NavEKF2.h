@@ -267,6 +267,9 @@ public:
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set(enable); }
+
+    // are we doing sensor logging inside the EKF?
+    bool have_ekf_logging(void) const { return _enable_logging != 0; }
     
 private:
     uint8_t num_cores; // number of allocated cores
