@@ -1648,7 +1648,8 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
         motor_offset_x  : (int16_t)mag_motor_offsets.x,
         motor_offset_y  : (int16_t)mag_motor_offsets.y,
         motor_offset_z  : (int16_t)mag_motor_offsets.z,
-        health          : (uint8_t)compass.healthy(0)
+        health          : (uint8_t)compass.healthy(0),
+        SUS             : compass.last_update_usec(0)
     };
     WriteBlock(&pkt, sizeof(pkt));
 
@@ -1668,7 +1669,8 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
             motor_offset_x  : (int16_t)mag_motor_offsets2.x,
             motor_offset_y  : (int16_t)mag_motor_offsets2.y,
             motor_offset_z  : (int16_t)mag_motor_offsets2.z,
-            health          : (uint8_t)compass.healthy(1)
+            health          : (uint8_t)compass.healthy(1),
+            SUS             : compass.last_update_usec(1)
         };
         WriteBlock(&pkt2, sizeof(pkt2));
     }
@@ -1689,7 +1691,8 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
             motor_offset_x  : (int16_t)mag_motor_offsets3.x,
             motor_offset_y  : (int16_t)mag_motor_offsets3.y,
             motor_offset_z  : (int16_t)mag_motor_offsets3.z,
-            health          : (uint8_t)compass.healthy(2)
+            health          : (uint8_t)compass.healthy(2),
+            SUS             : compass.last_update_usec(2)
         };
         WriteBlock(&pkt3, sizeof(pkt3));
     }

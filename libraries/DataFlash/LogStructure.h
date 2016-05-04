@@ -438,6 +438,7 @@ struct PACKED log_Compass {
     int16_t  motor_offset_y;
     int16_t  motor_offset_z;
     uint8_t  health;
+    uint32_t SUS;
 };
 
 struct PACKED log_Mode {
@@ -749,7 +750,7 @@ Format characters in the format string for binary log messages
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
-      "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG", "QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
@@ -832,9 +833,9 @@ Format characters in the format string for binary log messages
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
-      "MAG2","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG2","QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
-      "MAG3","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG3","QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
     { LOG_ACC1_MSG, sizeof(log_ACCEL), \
       "ACC1", "QQfff",        "TimeUS,SampleUS,AccX,AccY,AccZ" }, \
     { LOG_ACC2_MSG, sizeof(log_ACCEL), \
