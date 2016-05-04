@@ -153,7 +153,6 @@ private:
     uint32_t &ground_alt_cm;
 };
 
-
 class LR_MsgHandler_GPS : public LR_MsgHandler_GPS_Base
 {
 public:
@@ -189,6 +188,50 @@ private:
     AP_GPS &gps;
     uint32_t &ground_alt_cm;
 };
+
+class LR_MsgHandler_GPA_Base : public LR_MsgHandler
+{
+
+public:
+    LR_MsgHandler_GPA_Base(log_Format &_f, DataFlash_Class &_dataflash,
+                           uint64_t &_last_timestamp_usec, AP_GPS &_gps)
+        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), gps(_gps) { };
+
+protected:
+    void update_from_msg_gpa(uint8_t imu_offset, uint8_t *data);
+
+private:
+    AP_GPS &gps;
+};
+
+
+class LR_MsgHandler_GPA : public LR_MsgHandler_GPA_Base
+{
+public:
+    LR_MsgHandler_GPA(log_Format &_f, DataFlash_Class &_dataflash,
+                      uint64_t &_last_timestamp_usec, AP_GPS &_gps)
+        : LR_MsgHandler_GPA_Base(_f, _dataflash,_last_timestamp_usec,
+                              _gps), gps(_gps) { };
+
+    void process_message(uint8_t *msg);
+
+private:
+    AP_GPS &gps;
+};
+
+class LR_MsgHandler_GPA2 : public LR_MsgHandler_GPA_Base
+{
+public:
+    LR_MsgHandler_GPA2(log_Format &_f, DataFlash_Class &_dataflash,
+                       uint64_t &_last_timestamp_usec, AP_GPS &_gps)
+        : LR_MsgHandler_GPA_Base(_f, _dataflash, _last_timestamp_usec,
+                                 _gps), gps(_gps) { };
+    virtual void process_message(uint8_t *msg);
+private:
+    AP_GPS &gps;
+};
+
+
 
 
 

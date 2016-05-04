@@ -178,6 +178,15 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	    msgparser[f.type] = new LR_MsgHandler_GPS2(formats[f.type], dataflash,
                                                        last_timestamp_usec,
                                                        gps, ground_alt_cm);
+	} else if (streq(name, "GPA")) {
+	    msgparser[f.type] = new LR_MsgHandler_GPA(formats[f.type],
+                                                      dataflash,
+                                                      last_timestamp_usec,
+                                                      gps);
+	} else if (streq(name, "GPA2")) {
+	    msgparser[f.type] = new LR_MsgHandler_GPA2(formats[f.type], dataflash,
+                                                       last_timestamp_usec,
+                                                       gps);
 	} else if (streq(name, "MSG")) {
 	    msgparser[f.type] = new LR_MsgHandler_MSG(formats[f.type], dataflash,
                                                    last_timestamp_usec,
