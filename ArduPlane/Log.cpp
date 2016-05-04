@@ -435,7 +435,9 @@ void Plane::Log_Arm_Disarm() {
 
 void Plane::Log_Write_GPS(uint8_t instance)
 {
-    DataFlash.Log_Write_GPS(gps, instance, current_loc.alt - ahrs.get_home().alt);
+    if (!ahrs.have_ekf_logging()) {
+        DataFlash.Log_Write_GPS(gps, instance);
+    }
 }
 
 void Plane::Log_Write_IMU() 
@@ -454,7 +456,9 @@ void Plane::Log_Write_RC(void)
 
 void Plane::Log_Write_Baro(void)
 {
-    DataFlash.Log_Write_Baro(barometer);
+    if (!ahrs.have_ekf_logging()) {
+        DataFlash.Log_Write_Baro(barometer);
+    }
 }
 
 // Write a AIRSPEED packet
