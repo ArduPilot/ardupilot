@@ -4,19 +4,15 @@
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
 
-// min and max distances
-#define AP_RANGEFINDER_COMPANIONCOMPUTER_MIN_DISTANCE 0
-#define AP_RANGEFINDER_COMPANIONCOMPUTER_MAX_DISTANCE 1400
-
 // Data timeout
-#define AP_RANGEFINDER_COMPANIONCOMPUTER_TIMEOUT_MS 500
+#define AP_RANGEFINDER_MAVLINK_TIMEOUT_MS 500
 
-class AP_RangeFinder_CompanionComputer : public AP_RangeFinder_Backend
+class AP_RangeFinder_MAVLink : public AP_RangeFinder_Backend
 {
 
 public:
     // constructor
-    AP_RangeFinder_CompanionComputer(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_MAVLink(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
 
     // static detection function
     static bool detect(RangeFinder &ranger, uint8_t instance);
@@ -28,7 +24,7 @@ public:
     void handle_msg(mavlink_message_t *msg);
 
 private:
-    uint16_t cc_distance_cm;
+    uint16_t distance_cm;
     uint32_t last_update_ms;
 
     // start a reading

@@ -539,10 +539,10 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
     }
 #endif
-    if (type == RangeFinder_TYPE_CC) {
-        if (AP_RangeFinder_CompanionComputer::detect(*this, instance)) {
+    if (type == RangeFinder_TYPE_MAVLink) {
+        if (AP_RangeFinder_MAVLink::detect(*this, instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_CompanionComputer(*this, instance, state[instance]);
+            drivers[instance] = new AP_RangeFinder_MAVLink(*this, instance, state[instance]);
             return;
         }
     }

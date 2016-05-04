@@ -14,61 +14,60 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_RangeFinder_CompanionComputer.h"
+#include "AP_RangeFinder_MAVLink.h"
 #include <AP_HAL/AP_HAL.h>
 
 
 
 extern const AP_HAL::HAL& hal;
 
-/* 
+/*
    The constructor also initialises the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_CompanionComputer::AP_RangeFinder_CompanionComputer(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
+AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
     AP_RangeFinder_Backend(_ranger, instance, _state)
 {
     last_update_ms = AP_HAL::millis();
-    cc_distance_cm = 0;
+    distance_cm = 0;
 }
 
-/* 
-   detect if a CompanionComputer rangefinder is connected. We'll detect by
+/*
+   detect if a MAVLink rangefinder is connected. We'll detect by
    checking a paramter.
 */
-bool AP_RangeFinder_CompanionComputer::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_MAVLink::detect(RangeFinder &_ranger, uint8_t instance)
 {
-    //Assume that if the user set the RANGEFINDER_TYPE parameter to CompanionComputer,
-    //there is an attached companion computer rangefinder
+    // Assume that if the user set the RANGEFINDER_TYPE parameter to MAVLink,
+    // there is an attached MAVLink rangefinder
     return true;
 }
 
 /*
    Set the distance based on a MAVLINK message
 */
-void AP_RangeFinder_CompanionComputer::handle_msg(mavlink_message_t *msg)
+void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
 {
     mavlink_distance_sensor_t packet;
     mavlink_msg_distance_sensor_decode(msg, &packet);
 
     last_update_ms = AP_HAL::millis();
-    cc_distance_cm = packet.current_distance;
+    distance_cm = packet.current_distance;
 }
 
-/* 
+/*
    update the state of the sensor
 */
-void AP_RangeFinder_CompanionComputer::update(void)
+void AP_RangeFinder_MAVLink::update(void)
 {
     //Time out on incoming data; if we don't get new
     //data in 500ms, dump it
-    if(AP_HAL::millis() - last_update_ms > AP_RANGEFINDER_COMPANIONCOMPUTER_TIMEOUT_MS)
-    {
+    if(AP_HAL::millis() - last_update_ms > AP_RANGEFINDER_MAVLINK_TIMEOUT_MS) {
         set_status(RangeFinder::RangeFinder_NoData);
         state.distance_cm = 0;
     } else {
         set_status(RangeFinder::RangeFinder_Good);
-        state.distance_cm = cc_distance_cm;
+        state.distance_cm = distance_cm;
     }
 }

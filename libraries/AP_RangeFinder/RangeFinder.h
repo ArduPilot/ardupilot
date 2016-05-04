@@ -48,7 +48,7 @@ public:
         RangeFinder_TYPE_LWI2C  = 7,
         RangeFinder_TYPE_LWSER  = 8,
         RangeFinder_TYPE_BEBOP  = 9,
-        RangeFinder_TYPE_CC     = 10
+        RangeFinder_TYPE_MAVLink = 10
     };
 
     enum RangeFinder_Function {
@@ -107,7 +107,7 @@ public:
     // 10Hz from main loop
     void update(void);
 
-    // Handle an incoming message (for companion computer)
+    // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(mavlink_message_t *msg);
 
 #define _RangeFinder_STATE(instance) state[instance]
