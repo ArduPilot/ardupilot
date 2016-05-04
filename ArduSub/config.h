@@ -77,7 +77,7 @@
 #endif
 
 #ifndef SURFACE_DEPTH_DEFAULT
- # define SURFACE_DEPTH_DEFAULT -10.0 // pressure sensor reading 10cm depth means craft is considered surfaced
+ # define SURFACE_DEPTH_DEFAULT -10.0f // pressure sensor reading 10cm depth means craft is considered surfaced
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -569,7 +569,7 @@
 #endif
 
 #ifndef AUTO_DISARMING_DELAY
-# define AUTO_DISARMING_DELAY  10
+# define AUTO_DISARMING_DELAY  0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
