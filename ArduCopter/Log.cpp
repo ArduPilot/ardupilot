@@ -560,7 +560,9 @@ void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 
 void Copter::Log_Write_Baro(void)
 {
-    DataFlash.Log_Write_Baro(barometer);
+    if (!ahrs.have_ekf_logging()) {
+        DataFlash.Log_Write_Baro(barometer);
+    }
 }
 
 struct PACKED log_ParameterTuning {
