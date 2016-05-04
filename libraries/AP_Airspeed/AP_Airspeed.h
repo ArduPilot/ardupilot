@@ -137,7 +137,7 @@ public:
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
     // return health status of sensor
-    bool healthy(void) const { return _healthy && fabsf(_offset) > 0; }
+    bool healthy(void) const { return _healthy && fabsf(_offset) > 0 && _enable; }
 
     void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; }
 
