@@ -273,7 +273,7 @@ public:
 
     // HIL methods
     void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
-    void        setHIL(uint8_t instance, const Vector3f &mag);
+    void        setHIL(uint8_t instance, const Vector3f &mag, uint32_t last_update_usec);
     const Vector3f&   getHIL(uint8_t instance) const;
     void        _setup_earth_field();
 
