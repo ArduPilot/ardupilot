@@ -1369,6 +1369,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         handle_gps_inject(msg, rover.gps);
         break;
 
+    case MAVLINK_MSG_ID_DISTANCE_SENSOR:
+        rover.sonar.handle_msg(msg);
+        break;
+
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         rover.DataFlash.remote_log_block_status_msg(chan, msg);
         break;
