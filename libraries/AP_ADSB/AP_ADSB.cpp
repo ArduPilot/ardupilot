@@ -83,6 +83,9 @@ void AP_ADSB::deinit(void)
  */
 void AP_ADSB::update(void)
 {
+//    printf("console ADSB: cnt %u, lowT %.0f, highT %.0f\n", _vehicle_count, _lowest_threat_distance, _highest_threat_distance);
+//    Copter::gcs_send_text(MAV_SEVERITY_CRITICAL, "AP_ADSB ::Update");
+
     if (!_enabled) {
         if (_vehicle_list != NULL) {
             deinit();
@@ -107,7 +110,7 @@ void AP_ADSB::update(void)
     }
 
     perform_threat_detection();
-    //hal.console->printf("ADSB: cnt %u, lowT %.0f, highT %.0f\r", _vehicle_count, _lowest_threat_distance, _highest_threat_distance);
+    //hal.console->printf("@@hal.console ADSB: cnt %u, lowT %.0f, highT %.0f@@\n", _vehicle_count, _lowest_threat_distance, _highest_threat_distance);
 }
 
 /*

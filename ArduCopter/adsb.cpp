@@ -20,9 +20,8 @@
 #include "Copter.h"
 
 #if ADSB_ENABLED == ENABLED
-
 /*
- *  this module deals with ADS-B handling for ArduPilot
+ *  this module deals with ADS-B handling for ArduCopter
  *  ADS-B is an RF based collision avoidance protocol to tell nearby aircraft your location
  *  https://en.wikipedia.org/wiki/Automatic_dependent_surveillance_%E2%80%93_broadcast
  *
@@ -34,28 +33,98 @@
 void Copter::adsb_update(void)
 {
     adsb.update();
-    adsb_handle_vehicle_threats();
+    gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B Update");
+
+    adsb.set_enabled(1);
+    adsb.set_behavior(AP_ADSB::ADSB_BEHAVIOR_LAND);
+
+    if (!adsb.get_is_evading_threat()) {
+        if (adsb.get_possible_threat()) {
+            bool evasion_start_success = adsb_evasion_start();
+            adsb.set_is_evading_threat(evasion_start_success);
+        }
+    } else if (adsb_state.is_evading) {
+        // there has been no manual override, handle an auto-evasion
+        if (!adsb.get_possible_threat()) {
+                adsb.set_is_evading_threat(false);
+                adsb_evasion_stop();
+                adsb_state.is_evading = false;
+        } else {
+            adsb_evasion_ongoing();
+        }
+    }
 }
 
 /*
- * Handle ADS-B based threats which are platform dependent
+ * This fires once at the moment we realize there is a threat
  */
-void Copter::adsb_handle_vehicle_threats(void)
+bool Copter::adsb_evasion_start(void)
 {
-    // handle clearing of threat
-    if (adsb.get_is_evading_threat() && !adsb.get_possible_threat()) {
-        adsb.set_is_evading_threat(false);
-        Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_ADSB, ERROR_CODE_FAILSAFE_RESOLVED);
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat cleared");
-        return;
+    if (control_mode != AUTO) {
+        // evasion is only supported while in AUTO mode
+        return false;
+    }
+    if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
+        // We are landing already so ignore ADS-B traffic
+        return false;
     }
 
-    // handle new threat
-    if (!adsb.get_is_evading_threat() && adsb.get_possible_threat()) {
-        adsb.set_is_evading_threat(true);
-        Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_ADSB, ERROR_CODE_FAILSAFE_OCCURRED);
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat!");
-        return;
+    adsb_state.timestamp_ms =  millis();
+    //adsb_state.prev_wp = prev_WP_loc; // must be done BEFORE set_mode()
+
+    switch(adsb.get_behavior()) {
+    case AP_ADSB::ADSB_BEHAVIOR_NONE:
+    default:
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, no action taken");
+        break;
+
+    case AP_ADSB::ADSB_BEHAVIOR_LAND:
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, LAND");
+        set_mode(LAND);
+        adsb_state.is_evading = true; // must be done AFTER set_mode()
+        break;
+
+    case AP_ADSB::ADSB_BEHAVIOR_GUIDED:
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, switching to GUIDED mode");
+        set_mode(GUIDED);
+        adsb_state.is_evading = true; // must be done AFTER set_mode()
+        break;
+
+    case AP_ADSB::ADSB_BEHAVIOR_LOITER:
+    case AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND:
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, performing LOITER");
+        set_mode(LOITER);
+        adsb_state.is_evading = true; // must be done after set_mode()
+        break;
+    } // switch behavior
+
+    return true;
+}
+
+/*
+ * This fires once at the moment we realize there is no longer a threat
+ */
+void Copter::adsb_evasion_stop(void)
+{
+    gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat gone, continuing mission");
+
+    set_mode(AUTO);
+}
+
+/*
+ * This fires once per second while evading a threat
+ */
+void Copter::adsb_evasion_ongoing(void)
+{
+    uint32_t now = millis();
+
+    if (control_mode == LOITER &&
+        adsb.get_behavior() == AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND &&
+        now - adsb_state.timestamp_ms >= 1000)
+    {
+        // slowly reduce altitude 100 cm/s while loitering. Drive into the ground if threat persists
+         adsb_state.timestamp_ms = now;
+//         next_WP_loc.alt -= 100;
     }
 }
 
