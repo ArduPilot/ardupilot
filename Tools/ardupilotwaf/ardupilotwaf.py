@@ -136,7 +136,7 @@ def ap_program(bld,
 @conf
 def ap_example(bld, **kw):
     kw['program_groups'] = 'examples'
-    ap_program(bld, **kw)
+    ap_program(bld, use_legacy_defines=False, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
 # compilation is independent by providing different index for each.
