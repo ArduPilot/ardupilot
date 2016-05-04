@@ -128,7 +128,6 @@ void LR_MsgHandler_GPS2::process_message(uint8_t *msg)
     update_from_msg_gps(1, msg);
 }
 
-
 void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg)
 {
     uint64_t time_us;
@@ -182,6 +181,34 @@ void LR_MsgHandler_GPS::process_message(uint8_t *msg)
 {
     update_from_msg_gps(0, msg);
 }
+
+
+void LR_MsgHandler_GPA_Base::update_from_msg_gpa(uint8_t gps_offset, uint8_t *msg)
+{
+    uint64_t time_us;
+    require_field(msg, "TimeUS", time_us);
+    wait_timestamp_usec(time_us);
+
+    uint16_t vdop, hacc, vacc, sacc;
+    require_field(msg, "VDop", vdop);
+    require_field(msg, "HAcc", hacc);
+    require_field(msg, "VAcc", vacc);
+    require_field(msg, "SAcc", sacc);
+
+    gps.setHIL_Accuracy(gps_offset, vdop*0.01f, hacc*0.01f, vacc*0.01f, sacc*0.01f);
+}
+
+void LR_MsgHandler_GPA::process_message(uint8_t *msg)
+{
+    update_from_msg_gpa(0, msg);
+}
+
+
+void LR_MsgHandler_GPA2::process_message(uint8_t *msg)
+{
+    update_from_msg_gpa(1, msg);
+}
+
 
 
 void LR_MsgHandler_IMU2::process_message(uint8_t *msg)
