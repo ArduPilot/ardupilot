@@ -539,6 +539,9 @@ bool Replay::find_log_info(struct log_information &info)
         if (streq(type, "IMT") && strcmp(clock_source, "IMT") != 0) {
             strcpy(clock_source, "IMT");
             hal.console->printf("Changing clock source to %s\n", clock_source);
+            samplecount = 0;
+            prev = 0;
+            smallest_delta = 0;
         }
         if (streq(type, clock_source)) {
             if (prev == 0) {
