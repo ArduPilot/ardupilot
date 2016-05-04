@@ -188,6 +188,11 @@ public:
         return nullptr;
     }
 
+    // is the EKF backend doing its own sensor logging?
+    virtual bool have_ekf_logging(void) const {
+        return false;
+    }
+    
     // Euler angles (radians)
     float roll;
     float pitch;
