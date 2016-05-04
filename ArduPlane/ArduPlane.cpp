@@ -161,7 +161,6 @@ void Plane::ahrs_update()
 
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_IMU();
-        DataFlash.Log_Write_IMUDT(ins);
     }
 
     // calculate a scaled roll limit based on current pitch
