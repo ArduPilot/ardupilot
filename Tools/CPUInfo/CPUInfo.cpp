@@ -18,13 +18,13 @@ void setup() {
 static void show_sizes(void)
 {
 	hal.console->println("Type sizes:");
-	hal.console->printf("char      : %d\n", sizeof(char));
-	hal.console->printf("short     : %d\n", sizeof(short));
-	hal.console->printf("int       : %d\n", sizeof(int));
-	hal.console->printf("long      : %d\n", sizeof(long));
-	hal.console->printf("long long : %d\n", sizeof(long long));
-	hal.console->printf("bool      : %d\n", sizeof(bool));
-	hal.console->printf("void*     : %d\n", sizeof(void *));
+	hal.console->printf("char      : %lu\n", sizeof(char));
+	hal.console->printf("short     : %lu\n", sizeof(short));
+	hal.console->printf("int       : %lu\n", sizeof(int));
+	hal.console->printf("long      : %lu\n", sizeof(long));
+	hal.console->printf("long long : %lu\n", sizeof(long long));
+	hal.console->printf("bool      : %lu\n", sizeof(bool));
+	hal.console->printf("void*     : %lu\n", sizeof(void *));
 
 	hal.console->printf("printing NaN: %f\n", sqrt(-1.0f));
 	hal.console->printf("printing +Inf: %f\n", 1.0f/0.0f);
