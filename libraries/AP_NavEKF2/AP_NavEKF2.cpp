@@ -497,6 +497,9 @@ void NavEKF2::check_log_write(void)
         DataFlash_Class::instance()->Log_Write_IMUDT(ins);
         logging.log_imu = false;
     }
+
+    // this is an example of an ad-hoc log in EKF
+    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), 2.4f);
 }
 
 
