@@ -23,6 +23,8 @@ struct sitl_fdm {
     double battery_current; // Amps
     double rpm1;            // main prop RPM
     double rpm2;            // secondary RPM
+    uint8_t rcin_chan_count;
+    float  rcin[8];         // RC input 0..1
 };
 
 // number of rc output channels

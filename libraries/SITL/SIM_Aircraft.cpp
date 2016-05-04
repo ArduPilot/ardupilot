@@ -296,6 +296,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.battery_current = battery_current;
     fdm.rpm1 = rpm1;
     fdm.rpm2 = rpm2;
+    fdm.rcin_chan_count = rcin_chan_count;
+    memcpy(fdm.rcin, rcin, rcin_chan_count*sizeof(float));
 }
 
 uint64_t Aircraft::get_wall_time_us() const
