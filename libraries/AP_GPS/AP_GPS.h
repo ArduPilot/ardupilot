@@ -307,6 +307,9 @@ public:
                 const Location &location, const Vector3f &velocity, uint8_t num_sats,
                 uint16_t hdop, bool _have_vertical_velocity);
 
+    // set accuracy for HIL
+    void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc);
+    
     static const struct AP_Param::GroupInfo var_info[];
 
     // dataflash for logging, if available

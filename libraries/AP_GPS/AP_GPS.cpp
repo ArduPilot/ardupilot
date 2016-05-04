@@ -492,6 +492,19 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     _type[instance].set(GPS_TYPE_HIL);
 }
 
+// set accuracy for HIL
+void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc)
+{
+    GPS_State &istate = state[instance];
+    istate.vdop = vdop;
+    istate.horizontal_accuracy = hacc;
+    istate.vertical_accuracy = vacc;
+    istate.speed_accuracy = sacc;
+    istate.have_horizontal_accuracy = true;
+    istate.have_vertical_accuracy = true;
+    istate.have_speed_accuracy = true;
+}
+
 /**
    Lock a GPS port, prevening the GPS driver from using it. This can
    be used to allow a user to control a GPS port via the
