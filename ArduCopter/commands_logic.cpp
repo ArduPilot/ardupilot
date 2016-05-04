@@ -524,16 +524,16 @@ void Copter::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // do_nav_delay - Delay the next navigation command
 void Copter::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    delay_time_start = millis();
+    nav_delay_time_start = millis();
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
-        delay_time_max = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
+        nav_delay_time_max = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
     } else {
         // absolute delay to utc time
-        delay_time_max = hal.util->get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+        nav_delay_time_max = hal.util->get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(delay_time_max/1000));
+    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
 }
 
 #if PARACHUTE == ENABLED
@@ -762,8 +762,8 @@ bool Copter::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool Copter::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - delay_time_start > (uint32_t)MAX(delay_time_max,0)) {
-        delay_time_max = 0;
+    if (millis() - nav_delay_time_start > (uint32_t)MAX(nav_delay_time_max,0)) {
+        nav_delay_time_max = 0;
         return true;
     }
     return false;

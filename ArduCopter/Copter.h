@@ -380,8 +380,8 @@ private:
     uint32_t brake_timeout_ms;
 
     // Delay the next navigation command
-    int32_t delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
-    uint32_t delay_time_start;
+    int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
+    uint32_t nav_delay_time_start;
 
     // Flip
     Vector3f flip_orig_attitude;         // original copter attitude before flip
