@@ -761,11 +761,11 @@ void Compass::setHIL(uint8_t instance, float roll, float pitch, float yaw)
 
 // Update raw magnetometer values from HIL mag vector
 //
-void Compass::setHIL(uint8_t instance, const Vector3f &mag)
+void Compass::setHIL(uint8_t instance, const Vector3f &mag, uint32_t update_usec)
 {
     _hil.field[instance] = mag;
     _hil.healthy[instance] = true;
-    _state[instance].last_update_usec = AP_HAL::micros();
+    _state[instance].last_update_usec = update_usec;
 }
 
 const Vector3f& Compass::getHIL(uint8_t instance) const
