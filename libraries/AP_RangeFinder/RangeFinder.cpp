@@ -24,13 +24,14 @@
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
 #include "AP_RangeFinder_Bebop.h"
+#include "AP_RangeFinder_CompanionComputer.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
+    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:CompanionComputer
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
 
@@ -538,6 +539,13 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
     }
 #endif
+    if (type == RangeFinder_TYPE_CC) {
+        if (AP_RangeFinder_CompanionComputer::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_CompanionComputer(*this, instance, state[instance]);
+            return;
+        }
+    }
     if (type == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid
@@ -562,6 +570,13 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
     }
 
     return state[instance].status;
+}
+
+void RangeFinder::handle_msg(mavlink_message_t *msg) {
+  uint8_t i;
+  for (i=0; i<num_instances; i++)
+    if(_type[i] == RangeFinder_TYPE_CC)
+      drivers[i]->handle_msg(msg);
 }
 
 // true if sensor is returning data
