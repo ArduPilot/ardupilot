@@ -2030,6 +2030,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         handle_gps_inject(msg, plane.gps);
         break;
 
+#if RANGEFINDER_ENABLED == ENABLED
+    case MAVLINK_MSG_ID_DISTANCE_SENSOR:
+        plane.rangefinder.handle_msg(msg);
+        break;
+#endif
+
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
 #if AP_TERRAIN_AVAILABLE
