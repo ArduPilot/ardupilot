@@ -5,9 +5,6 @@
 /* ************************************************************ */
 #pragma once
 
-// maximum number of dynamic Log_Write formats supported
-#define MAX_LOG_WRITE_FMT_COUNT 5
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -216,17 +213,19 @@ private:
     // this structure looks much like struct LogStructure in
     // LogStructure.h, however we need to remember a pointer value for
     // efficiency of finding message types
-    struct {
+    struct log_write_fmt {
+        struct log_write_fmt *next;
         uint8_t msg_type;
         uint8_t msg_len;
+        uint8_t sent_mask; // bitmask of backends sent to
         const char *name;
         const char *fmt;
         const char *labels;
-    } log_write_fmts[MAX_LOG_WRITE_FMT_COUNT];
-    uint8_t _log_write_fmt_count = 0; // number of formats currently known
+    } *log_write_fmts;
 
-    // return (possibly allocating) a msg_type value corresponding to name
-    int16_t msg_type_for_name(const char *name, const char *labels, const char *fmt);
+    // return (possibly allocating) a log_write_fmt for a name
+    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *fmt);
+    
     // returns true if msg_type is associated with a message
     bool msg_type_in_use(uint8_t msg_type) const;
 

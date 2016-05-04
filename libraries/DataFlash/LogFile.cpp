@@ -647,6 +647,10 @@ void DataFlash_Class::StartNewLog(void)
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->start_new_log();
     }
+    // reset sent masks
+    for (struct log_write_fmt *f = log_write_fmts; f; f=f->next) {
+        f->sent_mask = 0;
+    }
 }
 
 /*

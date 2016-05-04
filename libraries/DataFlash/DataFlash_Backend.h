@@ -158,10 +158,4 @@ private:
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
-
-    // Log_Write support
-    uint8_t _written_log_write_fmt_count;
-
-    // array containing msg_types of formats already emitted
-    uint8_t log_write_fmts_sent[MAX_LOG_WRITE_FMT_COUNT];
 };

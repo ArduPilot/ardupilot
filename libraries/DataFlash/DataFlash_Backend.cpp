@@ -53,7 +53,6 @@ void DataFlash_Backend::periodic_tasks()
 void DataFlash_Backend::start_new_log_reset_variables()
 {
     _startup_messagewriter->reset();
-    memset(log_write_fmts_sent,0,sizeof(log_write_fmts_sent));
 }
 
 void DataFlash_Backend::internal_error() {
@@ -118,21 +117,6 @@ void DataFlash_Backend::WriteMoreStartupMessages()
 
 bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
 {
-    for(uint8_t i=0;i<_written_log_write_fmt_count;i++) {
-        if(log_write_fmts_sent[i] == msg_type) {
-            // have already emitted this format
-            return true;
-        }
-    }
-
-    // have not emitted this format; try to do so now.
-    if (_written_log_write_fmt_count >= ARRAY_SIZE(log_write_fmts_sent)) {
-        // this is a bug; frontend should never ask us to write more
-        // formats than we have room to store "sent" markers for
-        internal_error();
-        return false;
-    }
-
     // get log structure from front end:
     struct LogStructure logstruct = {
         // these will be overwritten, but need to keep the compiler happy:
@@ -154,8 +138,6 @@ bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
         return false;
     }
 
-    log_write_fmts_sent[_written_log_write_fmt_count] = msg_type;
-    _written_log_write_fmt_count++;
     return true;
 }
 
@@ -166,10 +148,11 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     // abstraction we could do WriteBytes() here instead?
     const char *fmt  = NULL;
     uint8_t msg_len;
-    for (uint8_t i=0; i<_written_log_write_fmt_count;i++) {
-        if (_front.log_write_fmts[i].msg_type == msg_type) {
-            fmt = _front.log_write_fmts[i].fmt;
-            msg_len = _front.log_write_fmts[i].msg_len;
+    DataFlash_Class::log_write_fmt *f;
+    for (f = _front.log_write_fmts; f; f=f->next) {
+        if (f->msg_type == msg_type) {
+            fmt = f->fmt;
+            msg_len = f->msg_len;
             break;
         }
     }

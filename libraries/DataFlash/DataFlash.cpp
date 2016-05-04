@@ -232,9 +232,9 @@ void DataFlash_Class::internal_error() const {
 void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
-
-    int16_t msg_type = msg_type_for_name(name, labels, fmt);
-    if (msg_type == -1) {
+    
+    struct log_write_fmt *f = msg_fmt_for_name(name, labels, fmt);
+    if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
         // msgtypes, could be out of slots, ...
         internal_error();
@@ -242,46 +242,57 @@ void DataFlash_Class::Log_Write(const char *name, const char *labels, const char
     }
 
     for (uint8_t i=0; i<_next_backend; i++) {
-        va_start(arg_list, fmt);
-        if (backends[i]->Log_Write_Emit_FMT(msg_type)) {
-            backends[i]->Log_Write(msg_type, arg_list);
-        } else {
-            // backend failed to write format (and has never written it)
+        if (!(f->sent_mask & (1U<<i))) {
+            if (!backends[i]->Log_Write_Emit_FMT(f->msg_type)) {
+                continue;
+            }
+            f->sent_mask |= (1U<<i);
         }
+        va_start(arg_list, fmt);
+        backends[i]->Log_Write(f->msg_type, arg_list);
         va_end(arg_list);
     }
 }
 
 
-int16_t DataFlash_Class::msg_type_for_name(const char *name, const char *labels, const char *fmt)
+DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *name, const char *labels, const char *fmt)
 {
-    for (uint8_t i=0; i<_log_write_fmt_count;i++) {
-        if (log_write_fmts[i].name == name) { // ptr comparison
+    struct log_write_fmt *f;
+    for (f = log_write_fmts; f; f=f->next) {
+        if (f->name == name) { // ptr comparison
             // already have an ID for this name:
-            return log_write_fmts[i].msg_type;
+            return f;
         }
     }
-    if (_log_write_fmt_count >= ARRAY_SIZE(log_write_fmts)) {
-        // out of slots to remember formats
-        return -1;
+    f = (struct log_write_fmt *)calloc(1, sizeof(*f));
+    if (f == nullptr) {
+        // out of memory
+        return nullptr;
     }
     // no message type allocated for this name.  Try to allocate one:
     int16_t msg_type = find_free_msg_type();
     if (msg_type == -1) {
-        return -1;
+        free(f);
+        return nullptr;
     }
-    log_write_fmts[_log_write_fmt_count].msg_type = msg_type;
-    log_write_fmts[_log_write_fmt_count].name = name;
-    log_write_fmts[_log_write_fmt_count].fmt = fmt;
-    log_write_fmts[_log_write_fmt_count].labels = labels;
+    f->msg_type = msg_type;
+    f->name = name;
+    f->fmt = fmt;
+    f->labels = labels;
+
     int16_t tmp = Log_Write_calc_msg_len(fmt);
     if (tmp == -1) {
-        return -1;
+        free(f);
+        return nullptr;
     }
-    log_write_fmts[_log_write_fmt_count].msg_len = tmp;
-    _log_write_fmt_count++;
 
-    return msg_type;
+    f->msg_len = tmp;
+
+    // add to front of list
+    f->next = log_write_fmts;
+    log_write_fmts = f;
+
+    return f;
 }
 
 // returns true if the msg_type is already taken
@@ -295,9 +306,10 @@ bool DataFlash_Class::msg_type_in_use(const uint8_t msg_type) const
             return true;
         }
     }
-    // check the write messages we've already put out:
-    for (uint8_t i=0; i<_log_write_fmt_count; i++) {
-        if (log_write_fmts[i].msg_type == msg_type) {
+
+    struct log_write_fmt *f;
+    for (f = log_write_fmts; f; f=f->next) {
+        if (f->msg_type == msg_type) {
             return true;
         }
     }
@@ -319,22 +331,17 @@ int16_t DataFlash_Class::find_free_msg_type() const
 bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
 {
     // find log structure information corresponding to msg_type:
-    uint8_t i;
-    for (i=0; i<_log_write_fmt_count; i++) {
-        if(log_write_fmts[i].msg_type == msg_type) {
+    struct log_write_fmt *f;
+    for (f = log_write_fmts; f; f=f->next) {
+        if(f->msg_type == msg_type) {
             break;
         }
     }
-    if (i >= _log_write_fmt_count) {
-        // asked to fill for a type we don't recognise
-        internal_error();
-        return false;
-    }
     logstruct.msg_type = msg_type;
-    strncpy((char*)logstruct.name, log_write_fmts[i].name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
-    strncpy((char*)logstruct.format, log_write_fmts[i].fmt, sizeof(logstruct.format));
-    strncpy((char*)logstruct.labels, log_write_fmts[i].labels, sizeof(logstruct.labels));
-    logstruct.msg_len = log_write_fmts[i].msg_len;
+    strncpy((char*)logstruct.name, f->name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
+    strncpy((char*)logstruct.format, f->fmt, sizeof(logstruct.format));
+    strncpy((char*)logstruct.labels, f->labels, sizeof(logstruct.labels));
+    logstruct.msg_len = f->msg_len;
     return true;
 }
 
