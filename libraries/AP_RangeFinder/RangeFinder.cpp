@@ -24,7 +24,7 @@
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
 #include "AP_RangeFinder_Bebop.h"
-#include "AP_RangeFinder_CompanionComputer.h"
+#include "AP_RangeFinder_MAVLink.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] = {
