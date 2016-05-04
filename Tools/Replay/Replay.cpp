@@ -701,6 +701,10 @@ void Replay::read_sensors(const char *type)
         set_user_parameters();
     }
 
+    if (done_parameters && streq(type, "PARM")) {
+        set_user_parameters();
+    }
+    
     if (!done_home_init) {
         if (streq(type, "GPS") &&
             (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) && done_baro_init) {
