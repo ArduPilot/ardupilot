@@ -574,9 +574,11 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
 
 void RangeFinder::handle_msg(mavlink_message_t *msg) {
   uint8_t i;
-  for (i=0; i<num_instances; i++)
-    if(_type[i] == RangeFinder_TYPE_CC)
-      drivers[i]->handle_msg(msg);
+  for (i=0; i<num_instances; i++) {
+      if ((drivers[i] != NULL) && (_type[i] != RangeFinder_TYPE_NONE)) {
+          drivers[i]->handle_msg(msg);
+      }
+  }
 }
 
 // true if sensor is returning data
