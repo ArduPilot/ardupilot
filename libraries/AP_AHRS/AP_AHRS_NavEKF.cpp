@@ -1275,6 +1275,12 @@ bool AP_AHRS_NavEKF::getGpsGlitchStatus()
 // is the EKF backend doing its own sensor logging?
 bool AP_AHRS_NavEKF::have_ekf_logging(void) const
 {
+    switch (ekf_type()) {
+    case 2:
+        return EKF2.have_ekf_logging();
+    default:
+        break;
+    }
     return false;
 }
 
