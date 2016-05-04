@@ -73,7 +73,7 @@ void AP_HAL::Util::get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &se
 }
 
 // get milliseconds from now to a target time of day expressed as hour, min, sec, ms
-// match starts from first non-zero value specified. I.e. specifying hour=0, minutes=10 will ignore the hour and return time until 10 minutes past 12am (utc)
+// match starts from first value that is not -1. I.e. specifying hour=-1, minutes=10 will ignore the hour and return time until 10 minutes past 12am (utc)
 uint32_t AP_HAL::Util::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms) const
 {
     // determine highest value specified (0=none, 1=ms, 2=sec, 3=min, 4=hour)
