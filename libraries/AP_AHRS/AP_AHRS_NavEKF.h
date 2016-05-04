@@ -219,6 +219,9 @@ public:
 
     // used by Replay to force start at right timestamp
     void force_ekf_start(void) { force_ekf = true; }
+
+    // is the EKF backend doing its own sensor logging?
+    bool have_ekf_logging(void) const override;
     
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
