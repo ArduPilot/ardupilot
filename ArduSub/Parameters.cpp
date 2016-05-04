@@ -33,8 +33,8 @@ const AP_Param::Info Sub::var_info[] = {
 	// @Param: SURFACE_DEPTH
 	// @DisplayName: Depth reading at surface
 	// @Description: The depth the external pressure sensor will read when the vehicle is considered at the surface (in centimeters)
-	// @Range: -5 -100
-	// @User: Advanced
+	// @Range: -100 0
+    // @User: Standard
 	GSCALAR(surface_depth, "SURFACE_DEPTH", SURFACE_DEPTH_DEFAULT),
 
     // @Param: SYSID_SW_MREV
@@ -732,6 +732,12 @@ const AP_Param::Info Sub::var_info[] = {
     // @Increment: 10
     // @Units: cm/s/s
     // @User: Advanced
+
+	// @Param: VEL_XY_FILT_HZ
+	// @DisplayName: Velocity (horizontal) filter frequency in Hz
+	// @Description: Velocity (horizontal) filter frequency in Hz
+	// @Units: Hz
+	// @User: Advanced
     GGROUP(pi_vel_xy,   "VEL_XY_",  AC_PI_2D),
 
     // @Param: VEL_Z_P
@@ -767,7 +773,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 0.000 0.400
     // @User: Standard
 
-    // @Param: ACCEL_Z_FILT_HZ
+    // @Param: ACCEL_Z_FILT
     // @DisplayName: Throttle acceleration filter
     // @Description: Filter applied to acceleration to reduce noise.  Lower values reduce noise but add delay.
     // @Range: 1.000 100.000
@@ -856,10 +862,10 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
 
     // @Group: ATC_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
+    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Multi),
 
-    // @Group: POSCON_
+    // @Group: PSC
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     GOBJECT(pos_control, "PSC", AC_PosControl),
 
