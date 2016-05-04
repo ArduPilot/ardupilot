@@ -810,49 +810,27 @@ GCS_MAVLINK::handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps)
 // send a message using mavlink, handling message queueing
 void GCS_MAVLINK::send_message(enum ap_message id)
 {
-    uint8_t i, nextid;
-
-    // see if we can send the deferred messages, if any
-    while (num_deferred_messages != 0) {
-        if (!try_send_message(deferred_messages[next_deferred_message])) {
+    // Loop through set bits and try to send the nth message.
+    while (deferred_messages) {
+        auto msg_id = __builtin_ffsl(deferred_messages) - 1;
+        if (!try_send_message(static_cast<ap_message>(msg_id))) {
             break;
         }
-        next_deferred_message++;
-        if (next_deferred_message == MSG_RETRY_DEFERRED) {
-            next_deferred_message = 0;
-        }
-        num_deferred_messages--;
+        deferred_messages &= ~(1UL<<msg_id);
     }
 
     if (id == MSG_RETRY_DEFERRED) {
         return;
     }
 
-    // this message id might already be deferred
-    for (i=0, nextid = next_deferred_message; i < num_deferred_messages; i++) {
-        if (deferred_messages[nextid] == id) {
-            // its already deferred, discard
-            return;
-        }
-        nextid++;
-        if (nextid == MSG_RETRY_DEFERRED) {
-            nextid = 0;
-        }
+    // Do nothing if message is already deferred.
+    if (deferred_messages & 1UL<<id) {
+        return;
     }
 
-    if (num_deferred_messages != 0 ||
-        !try_send_message(id)) {
-        // can't send it now, so defer it
-        if (num_deferred_messages == MSG_RETRY_DEFERRED) {
-            // the defer buffer is full, discard
-            return;
-        }
-        nextid = next_deferred_message + num_deferred_messages;
-        if (nextid >= MSG_RETRY_DEFERRED) {
-            nextid -= MSG_RETRY_DEFERRED;
-        }
-        deferred_messages[nextid] = id;
-        num_deferred_messages++;
+    if (deferred_messages || !try_send_message(id)) {
+        // Can't send the message now; defer it.
+        deferred_messages |= 1UL<<id;
     }
 }
 
