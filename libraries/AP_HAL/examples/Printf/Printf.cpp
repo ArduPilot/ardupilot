@@ -60,7 +60,7 @@ static void test_printf(void)
                                 float_tests[i].result);
             failures++;
         }
-        if (ret != strlen(float_tests[i].result)) {
+        if (ret != (int)strlen(float_tests[i].result)) {
             hal.console->printf("Failed float_tests[%u] ret=%d/%d '%s' should be '%s'\n",
                                 (unsigned)i,
                                 ret, (int)strlen(float_tests[i].result),
