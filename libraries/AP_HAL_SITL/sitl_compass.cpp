@@ -86,8 +86,8 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 
     new_mag_data -= _sitl->mag_ofs.get();
 
-    _compass->setHIL(0, new_mag_data);
-    _compass->setHIL(1, new_mag_data);
+    _compass->setHIL(0, new_mag_data, AP_HAL::micros());
+    _compass->setHIL(1, new_mag_data, AP_HAL::micros());
 }
 
 #endif
