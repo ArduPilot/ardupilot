@@ -743,7 +743,8 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_
         hacc          : (uint16_t)(hacc*100),
         vacc          : (uint16_t)(vacc*100),
         sacc          : (uint16_t)(sacc*100),
-        have_vv       : (uint8_t)gps.have_vertical_velocity(i)
+        have_vv       : (uint8_t)gps.have_vertical_velocity(i),
+        sample_ms     : gps.last_message_time_ms(i)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }
