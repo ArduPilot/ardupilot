@@ -20,10 +20,12 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    # define BUZZER_PIN     44
+    #define BUZZER_PIN     44
+ #else
+    #define BUZZER_PIN     0
  #endif
 #else
-    # define BUZZER_PIN     0
+    #define BUZZER_PIN     0
 #endif
 
 #define BUZZER_ARMING_BUZZ_MS   3000    // arming buzz length in milliseconds (i.e. 3 seconds)
@@ -50,6 +52,7 @@ public:
     /// on - turns the buzzer on or off
     void on(bool on_off);
 
+    //Patterns - how many beeps will be played
     enum BuzzerPattern {
         NONE = 0,
         SINGLE_BUZZ = 1,
