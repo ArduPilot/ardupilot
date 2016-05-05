@@ -255,9 +255,9 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	    msgparser[f.type] = new LR_MsgHandler_ARSP(formats[f.type], dataflash,
                                                     last_timestamp_usec,
                                                     airspeed);
-	} else if (streq(name, "FRAM")) {
-	    msgparser[f.type] = new LR_MsgHandler_FRAM(formats[f.type], dataflash,
-                                                    last_timestamp_usec);
+	} else if (streq(name, "NKF1")) {
+	    msgparser[f.type] = new LR_MsgHandler_NKF1(formats[f.type], dataflash,
+                                                       last_timestamp_usec);
 	} else if (streq(name, "CHEK")) {
 	  msgparser[f.type] = new LR_MsgHandler_CHEK(formats[f.type], dataflash,
                                                      last_timestamp_usec,

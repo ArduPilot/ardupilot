@@ -71,7 +71,7 @@ void LR_MsgHandler_ARSP::process_message(uint8_t *msg)
 		    require_field_float(msg, "Temp"));
 }
 
-void LR_MsgHandler_FRAM::process_message(uint8_t *msg)
+void LR_MsgHandler_NKF1::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
 }

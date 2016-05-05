@@ -263,6 +263,7 @@ private:
     float tolerance_vel = 2;
     const char **nottypes = NULL;
     uint16_t downsample = 0;
+    bool logmatch = false;
     uint32_t output_counter = 0;
 
     struct {
@@ -288,6 +289,7 @@ private:
     void usage(void);
     void set_user_parameters(void);
     void read_sensors(const char *type);
+    void write_ekf_logs(void);
     void log_check_generate();
     void log_check_solution();
     bool show_error(const char *text, float max_error, float tolerance);
@@ -313,6 +315,7 @@ void Replay::usage(void)
     ::printf("\t--tolerance-vel    tolerance for velocity in meters/second\n");
     ::printf("\t--nottypes         list of msg types not to output, comma separated\n");
     ::printf("\t--downsample       downsampling rate for output\n");
+    ::printf("\t--logmatch         match logging rate to source\n");
 }
 
 
@@ -323,7 +326,8 @@ enum {
     OPT_TOLERANCE_POS,
     OPT_TOLERANCE_VEL,
     OPT_NOTTYPES,
-    OPT_DOWNSAMPLE
+    OPT_DOWNSAMPLE,
+    OPT_LOGMATCH
 };
 
 void Replay::flush_dataflash(void) {
@@ -375,6 +379,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"tolerance-vel",   true,   0, OPT_TOLERANCE_VEL},
         {"nottypes",        true,   0, OPT_NOTTYPES},
         {"downsample",      true,   0, OPT_DOWNSAMPLE},
+        {"logmatch",        false,  0, OPT_LOGMATCH},
         {0, false, 0, 0}
     };
 
@@ -445,6 +450,10 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             downsample = atoi(gopt.optarg);
             break;
 
+        case OPT_LOGMATCH:
+            logmatch = true;
+            break;
+            
         case 'h':
         default:
             usage();
@@ -694,6 +703,22 @@ void Replay::set_user_parameters(void)
     }
 }
 
+/*
+  write out EKF log messages
+ */
+void Replay::write_ekf_logs(void)
+{
+    if (!LogReader::in_list("EKF", nottypes)) {
+        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
+    }
+    if (!LogReader::in_list("AHRS2", nottypes)) {
+        _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
+    }
+    if (!LogReader::in_list("POS", nottypes)) {
+        _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
+    }
+}
+
 void Replay::read_sensors(const char *type)
 {
     if (!done_parameters && !streq(type,"FMT") && !streq(type,"PARM")) {
@@ -763,16 +788,8 @@ void Replay::read_sensors(const char *type)
         if (_vehicle.ahrs.get_home().lat != 0) {
             _vehicle.inertial_nav.update(_vehicle.ins.get_delta_time());
         }
-        if (downsample == 0 || ++output_counter % downsample == 0) {
-            if (!LogReader::in_list("EKF", nottypes)) {
-                _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
-            }
-            if (!LogReader::in_list("AHRS2", nottypes)) {
-                _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
-            }
-            if (!LogReader::in_list("POS", nottypes)) {
-                _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
-            }
+        if ((downsample == 0 || ++output_counter % downsample == 0) && !logmatch) {
+            write_ekf_logs();
         }
         if (_vehicle.ahrs.healthy() != ahrs_healthy) {
             ahrs_healthy = _vehicle.ahrs.healthy();
@@ -785,6 +802,10 @@ void Replay::read_sensors(const char *type)
         } else if (check_solution) {
             log_check_solution();
         }
+    }
+    
+    if (logmatch && streq(type, "NKF1")) {
+        write_ekf_logs();
     }
 }
 
