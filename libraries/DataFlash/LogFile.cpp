@@ -950,7 +950,7 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
         delta_vel_z  : delta_velocity.z
     };
     WriteBlock(&pkt, sizeof(pkt));
-    if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
+    if ((ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) || !ins.use_gyro(1)) {
         return;
     }
 
@@ -977,7 +977,7 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 
-    if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
+    if ((ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) || !ins.use_gyro(2)) {
         return;
     }
     delta_vel_t = ins.get_delta_velocity_dt(1);
