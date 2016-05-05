@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Tracker.h"
+#include "version.h"
 
 // mission storage
 static const StorageAccess wp_storage(StorageManager::StorageMission);

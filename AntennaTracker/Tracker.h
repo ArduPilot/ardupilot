@@ -1,11 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "AntennaTracker V0.7.6"
-#define FIRMWARE_VERSION 0,7,6,FIRMWARE_VERSION_TYPE_DEV
-
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
- 
+
    Please contribute your ideas! See http://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
@@ -21,6 +18,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
 // Header includes
@@ -104,7 +102,7 @@ private:
     // has a log download started?
     bool in_log_download = false;
     bool logging_started = false;
-    DataFlash_Class DataFlash{FIRMWARE_STRING};
+    DataFlash_Class DataFlash;
 
     AP_GPS gps;
 
