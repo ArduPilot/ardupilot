@@ -115,7 +115,6 @@ int32_t Plane::get_RTL_altitude()
     return g.RTL_altitude_cm + home.alt;
 }
 
-
 /*
   return relative altitude in meters (relative to home)
  */
