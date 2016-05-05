@@ -8,6 +8,7 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
@@ -78,6 +79,13 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     } else if ((frontend->_fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
+        // if we have a 3D fix with no vertical velocity and
+        // EK2_GPS_TYPE=0 then change it to 1. It means the GPS is not
+        // capable of giving a vertical velocity
+        if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+            frontend->_fusionModeGPS.set(1);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EK2: Changed EK2_GPS_TYPE to 1");
+        }
     } else {
         gpsVertVelFail = false;
     }
