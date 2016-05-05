@@ -99,11 +99,16 @@ void LR_MsgHandler_CHEK::process_message(uint8_t *msg)
 void LR_MsgHandler_BARO::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
+    uint32_t last_update_ms;
+    if (!field_value(msg, "SMS", last_update_ms)) {
+        last_update_ms = 0;
+    }
     baro.setHIL(0,
 		require_field_float(msg, "Press"),
 		require_field_int16_t(msg, "Temp") * 0.01f,
 		require_field_float(msg, "Alt"),
-		require_field_float(msg, "CRt"));
+		require_field_float(msg, "CRt"),
+                last_update_ms);
 }
 
 
