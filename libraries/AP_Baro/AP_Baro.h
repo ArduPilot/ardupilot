@@ -104,14 +104,19 @@ public:
     // HIL (and SITL) interface, setting altitude
     void setHIL(float altitude_msl);
 
-    // HIL (and SITL) interface, setting pressure and temperature
-    void setHIL(uint8_t instance, float pressure, float temperature);
+    // HIL (and SITL) interface, setting pressure, temperature, altitude and climb_rate
+    // used by Replay
+    void setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate);
 
     // HIL variables
     struct {
         float pressure;
         float temperature;
+        float altitude;
+        float climb_rate;
         bool updated:1;
+        bool have_alt:1;
+        bool have_crate:1;
     } _hil;
 
     // register a new sensor, claiming a sensor slot. If we are out of
