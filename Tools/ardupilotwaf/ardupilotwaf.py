@@ -5,7 +5,7 @@ from __future__ import print_function
 from waflib import Logs, Options, Utils
 from waflib.Build import BuildContext
 from waflib.Configure import conf
-import os.path
+import os.path, os
 
 SOURCE_EXTS = [
     '*.S',
@@ -203,6 +203,20 @@ def ap_find_tests(bld, use=[]):
             use_legacy_defines=False,
             cxxflags=['-Wno-undef'],
         )
+
+_versions = []
+
+@conf
+def ap_version_append_str(ctx, k, v):
+    ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
+
+@conf
+def write_version_header(ctx, tgt):
+    with open(tgt, 'w') as f:
+        print('#pragma once\n', file=f)
+
+        for k, v in ctx.env['AP_VERSION_ITEMS']:
+            print('#define {} {}'.format(k, v), file=f)
 
 @conf
 def ap_find_benchmarks(bld, use=[]):

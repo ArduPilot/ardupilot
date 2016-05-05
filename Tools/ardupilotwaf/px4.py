@@ -17,11 +17,6 @@ def _load_dynamic_env_data(bld):
     for name in ('cxx_flags', 'include_dirs', 'definitions'):
         _dynamic_env_data[name] = bldnode.find_node(name).read().split(';')
 
-    _dynamic_env_data['DEFINES'] = [
-        'NUTTX_GIT_VERSION="%s"' % os.environ.get('NUTTX_GIT_VERSION', bld.git_submodule_head_hash('PX4NuttX')[:8]),
-        'PX4_GIT_VERSION="%s"' % os.environ.get('PX4_GIT_VERSION', bld.git_submodule_head_hash('PX4Firmware')[:8]),
-    ]
-
 @feature('px4_ap_stlib', 'px4_ap_program')
 @before_method('process_source')
 def px4_dynamic_env(self):
@@ -36,7 +31,6 @@ def px4_dynamic_env(self):
     self.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
     self.env.prepend_value('CXXFLAGS', _dynamic_env_data['cxx_flags'])
     self.env.prepend_value('CXXFLAGS', _dynamic_env_data['definitions'])
-    self.env.append_value('DEFINES', _dynamic_env_data['DEFINES'])
 
 # Single static library
 # NOTE: This only works only for local static libraries dependencies - fake
