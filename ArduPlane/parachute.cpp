@@ -46,7 +46,7 @@ bool Plane::parachute_manual_release()
         return false;
     }
 
-    if (relative_altitude() < parachute.alt_min()) {
+    if (relative_ground_altitude() < parachute.alt_min()) {
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Parachute: Too low");
         return false;
     }
