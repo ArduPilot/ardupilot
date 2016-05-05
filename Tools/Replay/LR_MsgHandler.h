@@ -69,10 +69,10 @@ private:
     AP_Airspeed &airspeed;
 };
 
-class LR_MsgHandler_FRAM : public LR_MsgHandler
+class LR_MsgHandler_NKF1 : public LR_MsgHandler
 {
 public:
-    LR_MsgHandler_FRAM(log_Format &_f, DataFlash_Class &_dataflash,
+    LR_MsgHandler_NKF1(log_Format &_f, DataFlash_Class &_dataflash,
 		    uint64_t &_last_timestamp_usec) :
 	LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
 
