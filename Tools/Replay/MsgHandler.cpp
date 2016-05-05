@@ -213,12 +213,16 @@ void MsgHandler::ground_vel_from_msg(uint8_t *msg,
                                     const char *label_course,
                                     const char *label_vz)
 {
-    uint32_t ground_speed;
+    float ground_speed;
     int32_t ground_course;
-    require_field(msg, label_speed, ground_speed);
+    if (!field_value(msg, label_speed, ground_speed)) {
+        uint32_t speed_cms;
+        require_field(msg, label_speed, speed_cms);
+        ground_speed = speed_cms * 0.01f;
+    }
     require_field(msg, label_course, ground_course);
-    vel[0] = ground_speed*0.01f*cosf(radians(ground_course*0.01f));
-    vel[1] = ground_speed*0.01f*sinf(radians(ground_course*0.01f));
+    vel[0] = ground_speed*cosf(radians(ground_course*0.01f));
+    vel[1] = ground_speed*sinf(radians(ground_course*0.01f));
     vel[2] = require_field_float(msg, label_vz);
 }
 
