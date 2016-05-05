@@ -204,8 +204,12 @@ void LR_MsgHandler_GPA_Base::update_from_msg_gpa(uint8_t gps_offset, uint8_t *ms
     if (! field_value(msg, "VV", have_vertical_velocity)) {
         have_vertical_velocity = !is_zero(gps.velocity(gps_offset).z);
     }
+    uint32_t sample_ms;
+    if (! field_value(msg, "SMS", sample_ms)) {
+        sample_ms = 0;
+    }
 
-    gps.setHIL_Accuracy(gps_offset, vdop*0.01f, hacc*0.01f, vacc*0.01f, sacc*0.01f, have_vertical_velocity);
+    gps.setHIL_Accuracy(gps_offset, vdop*0.01f, hacc*0.01f, vacc*0.01f, sacc*0.01f, have_vertical_velocity, sample_ms);
 }
 
 void LR_MsgHandler_GPA::process_message(uint8_t *msg)
