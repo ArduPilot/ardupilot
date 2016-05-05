@@ -200,6 +200,8 @@ public:
     }
     
 private:
+    float       adjust_rate_for_stream_trigger(enum streams stream_num);
+
     void        handleMessage(mavlink_message_t * msg);
 
     /// The stream we are communicating over
