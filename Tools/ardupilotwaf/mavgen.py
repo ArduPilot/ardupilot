@@ -12,7 +12,7 @@ import os
 
 class mavgen(Task.Task):
     """generate mavlink header files"""
-    color   = 'GREEN'
+    color   = 'BLUE'
     run_str = '${PYTHON} ${MAVGEN} --lang=C --wire-protocol=1.0 --output ${OUTPUT_DIR} ${SRC}'
     before  = 'cxx c'
 
