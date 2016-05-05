@@ -18,11 +18,12 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- # define BUZZER_PIN    32
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    # define BUZZER_PIN     44
+ #endif
 #else
- # define BUZZER_PIN    0       // pin undefined on other boards
+    # define BUZZER_PIN     0
 #endif
 
 #define BUZZER_ARMING_BUZZ_MS   3000    // arming buzz length in milliseconds (i.e. 3 seconds)
@@ -66,11 +67,12 @@ private:
 
     /// buzzer_flag_type - bitmask of current state and ap_notify states we track
     struct buzzer_flag_type {
+        uint8_t vehicle_lost        : 1;     //1 Vehicle Lost
         uint8_t on                  : 1;    // 1 if the buzzer is currently on
         uint8_t arming              : 1;    // 1 if we are beginning the arming process
         uint8_t armed               : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery    : 1;    // 1 if battery failsafe has triggered
-        uint8_t ekf_bad            : 1;    // 1 if ekf position has gone bad
+        uint8_t ekf_bad             : 1;    // 1 if ekf position has gone bad
     } _flags;
 
     uint8_t         _counter;           // reduces 50hz update down to 10hz for internal processing
