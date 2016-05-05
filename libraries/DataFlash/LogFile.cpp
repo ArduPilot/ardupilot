@@ -1112,6 +1112,7 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
 #if AP_AHRS_NAVEKF_AVAILABLE
 void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 {
+    uint64_t time_us = AP_HAL::micros64();
     // only log EKF if enabled
     if (ahrs.get_NavEKF().enabled()) {
         // Write first EKF packet
@@ -1129,7 +1130,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         posDownDeriv = ahrs.get_NavEKF().getPosDownDerivative();
         struct log_EKF1 pkt = {
             LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
             pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
             yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
@@ -1159,7 +1160,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF().getMagXYZ(magXYZ);
         struct log_EKF2 pkt2 = {
             LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             Ratio   : (int8_t)(100*ratio),
             AZ1bias : (int8_t)(100*az1bias),
             AZ2bias : (int8_t)(100*az2bias),
@@ -1182,7 +1183,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF().getInnovations(velInnov, posInnov, magInnov, tasInnov);
         struct log_EKF3 pkt3 = {
             LOG_PACKET_HEADER_INIT(LOG_EKF3_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             innovVN : (int16_t)(100*velInnov.x),
             innovVE : (int16_t)(100*velInnov.y),
             innovVD : (int16_t)(100*velInnov.z),
@@ -1213,7 +1214,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF().getFilterGpsStatus(gpsStatus);
         struct log_EKF4 pkt4 = {
             LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             sqrtvarV : (int16_t)(100*velVar),
             sqrtvarP : (int16_t)(100*posVar),
             sqrtvarH : (int16_t)(100*hgtVar),
@@ -1244,7 +1245,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             ahrs.get_NavEKF().getFlowDebug(normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
             struct log_EKF5 pkt5 = {
                 LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
-                time_us : AP_HAL::micros64(),
+                time_us : time_us,
                 normInnov : (uint8_t)(MIN(100*normInnov,255)),
                 FIX : (int16_t)(1000*flowInnovX),
                 FIY : (int16_t)(1000*flowInnovY),
@@ -1267,6 +1268,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 
 void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 {
+    uint64_t time_us = AP_HAL::micros64();
 	// Write first EKF packet
     Vector3f euler;
     Vector3f posNED;
@@ -1282,7 +1284,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(0);
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NKF1_MSG),
-        time_us : AP_HAL::micros64(),
+        time_us : time_us,
         roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
         pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
         yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
@@ -1313,7 +1315,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF2().getGyroScaleErrorPercentage(0,gyroScaleFactor);
     struct log_NKF2 pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF2_MSG),
-        time_us : AP_HAL::micros64(),
+        time_us : time_us,
         AZbias  : (int8_t)(100*azbias),
         scaleX  : (int16_t)(100*gyroScaleFactor.x),
         scaleY  : (int16_t)(100*gyroScaleFactor.y),
@@ -1339,7 +1341,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF2().getInnovations(0,velInnov, posInnov, magInnov, tasInnov, yawInnov);
     struct log_NKF3 pkt3 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF3_MSG),
-        time_us : AP_HAL::micros64(),
+        time_us : time_us,
         innovVN : (int16_t)(100*velInnov.x),
         innovVE : (int16_t)(100*velInnov.y),
         innovVD : (int16_t)(100*velInnov.z),
@@ -1375,7 +1377,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     uint8_t primaryIndex = ahrs.get_NavEKF2().getPrimaryCoreIndex();
     struct log_NKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
-        time_us : AP_HAL::micros64(),
+        time_us : time_us,
         sqrtvarV : (int16_t)(100*velVar),
         sqrtvarP : (int16_t)(100*posVar),
         sqrtvarH : (int16_t)(100*hgtVar),
@@ -1405,7 +1407,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF2().getFlowDebug(-1,normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
         struct log_EKF5 pkt5 = {
             LOG_PACKET_HEADER_INIT(LOG_NKF5_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             normInnov : (uint8_t)(MIN(100*normInnov,255)),
             FIX : (int16_t)(1000*flowInnovX),
             FIY : (int16_t)(1000*flowInnovY),
@@ -1429,7 +1431,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(1);
         struct log_EKF1 pkt6 = {
             LOG_PACKET_HEADER_INIT(LOG_NKF6_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
             pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
             yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
@@ -1455,7 +1457,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         magIndex = ahrs.get_NavEKF2().getActiveMag(1);
         struct log_NKF2 pkt7 = {
             LOG_PACKET_HEADER_INIT(LOG_NKF7_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             AZbias  : (int8_t)(100*azbias),
             scaleX  : (int16_t)(100*gyroScaleFactor.x),
             scaleY  : (int16_t)(100*gyroScaleFactor.y),
@@ -1476,7 +1478,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF2().getInnovations(1,velInnov, posInnov, magInnov, tasInnov, yawInnov);
         struct log_NKF3 pkt8 = {
             LOG_PACKET_HEADER_INIT(LOG_NKF8_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             innovVN : (int16_t)(100*velInnov.x),
             innovVE : (int16_t)(100*velInnov.y),
             innovVD : (int16_t)(100*velInnov.z),
@@ -1501,7 +1503,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF2().getTiltError(1,tiltError);
         struct log_NKF4 pkt9 = {
             LOG_PACKET_HEADER_INIT(LOG_NKF9_MSG),
-            time_us : AP_HAL::micros64(),
+            time_us : time_us,
             sqrtvarV : (int16_t)(100*velVar),
             sqrtvarP : (int16_t)(100*posVar),
             sqrtvarH : (int16_t)(100*hgtVar),
