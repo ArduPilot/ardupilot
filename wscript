@@ -19,11 +19,9 @@ from waflib import Build, ConfigSet, Context, Utils
 # pastable. Add the 'export waf="$PWD/waf"' trick to be copy-pastable
 # as well.
 
-# TODO: replace defines with the use of a generated config.h file
+# TODO: replace defines with the use of the generated ap_config.h file
 # this makes recompilation at least when defines change. which might
 # be sufficient.
-
-# TODO: set git version as part of build preparation.
 
 def init(ctx):
     env = ConfigSet.ConfigSet()
@@ -160,6 +158,10 @@ def _build_dynamic_sources(bld):
         ],
     )
 
+    bld.env.prepend_value('INCLUDES', [
+        bld.bldnode.abspath(),
+    ])
+
 def _build_common_taskgens(bld):
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
@@ -221,6 +223,11 @@ def _build_recursion(bld):
     for d in dirs_to_recurse:
         bld.recurse(d)
 
+def _write_version_header(tsk):
+    bld = tsk.generator.bld
+    return bld.write_version_header(tsk.outputs[0].abspath())
+
+
 def build(bld):
     config_header = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
 
@@ -246,6 +253,15 @@ def build(bld):
     _build_common_taskgens(bld)
 
     _build_recursion(bld)
+
+    bld(
+        name='ap_version',
+        target='ap_version.h',
+        vars=['AP_VERSION_ITEMS'],
+        rule=_write_version_header,
+        group='dynamic_sources',
+    )
+
 
 ardupilotwaf.build_command('check',
     program_group_list='all',

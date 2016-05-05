@@ -139,7 +139,7 @@ class Board:
         ]
 
     def build(self, bld):
-        pass
+        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
@@ -375,6 +375,8 @@ class px4(Board):
 
     def build(self, bld):
         super(px4, self).build(bld)
+        bld.ap_version_append_str('NUTTX_GIT_VERSION', bld.git_submodule_head_hash('PX4NuttX', short=True))
+        bld.ap_version_append_str('PX4_GIT_VERSION', bld.git_submodule_head_hash('PX4Firmware', short=True))
         bld.load('px4')
 
 class px4_v1(px4):
