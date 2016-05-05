@@ -85,7 +85,7 @@ public:
     // value generated from PWM
     int16_t         control_in;
 
-    int16_t         control_mix(float value);
+   // int16_t         control_mix(float value);
 
     // current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100
     int16_t        servo_out;
