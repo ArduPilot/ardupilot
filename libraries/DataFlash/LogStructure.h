@@ -66,6 +66,7 @@ struct PACKED log_GPA {
     uint16_t vacc;
     uint16_t sacc;
     uint8_t  have_vv;
+    uint32_t sample_ms;
 };
 
 struct PACKED log_Message {
@@ -720,9 +721,9 @@ Format characters in the format string for binary log messages
     { LOG_GPS2_MSG, sizeof(log_GPS), \
       "GPS2", "QBIHBcLLefefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QCCCCB", "TimeUS,VDop,HAcc,VAcc,SAcc,VV" }, \
+      "GPA",  "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
     { LOG_GPA2_MSG, sizeof(log_GPA), \
-      "GPA2", "QCCCCB", "TimeUS,VDop,HAcc,VAcc,SAcc,VV" }, \
+      "GPA2", "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
