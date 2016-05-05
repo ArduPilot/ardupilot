@@ -825,7 +825,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
         altitude      : baro.get_altitude(0),
         pressure      : baro.get_pressure(0),
         temperature   : (int16_t)(baro.get_temperature(0) * 100 + 0.5f),
-        climbrate     : baro.get_climb_rate()
+        climbrate     : baro.get_climb_rate(),
+        sample_time_ms: baro.get_last_update(0)
     };
     WriteBlock(&pkt, sizeof(pkt));
 
@@ -836,7 +837,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
             altitude      : baro.get_altitude(1),
             pressure	  : baro.get_pressure(1),
             temperature   : (int16_t)(baro.get_temperature(1) * 100 + 0.5f),
-            climbrate     : baro.get_climb_rate()
+            climbrate     : baro.get_climb_rate(),
+            sample_time_ms: baro.get_last_update(1)
         };
         WriteBlock(&pkt2, sizeof(pkt2));        
     }
@@ -848,7 +850,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
             altitude      : baro.get_altitude(2),
             pressure	  : baro.get_pressure(2),
             temperature   : (int16_t)(baro.get_temperature(2) * 100 + 0.5f),
-            climbrate     : baro.get_climb_rate()
+            climbrate     : baro.get_climb_rate(),
+            sample_time_ms: baro.get_last_update(2)
         };
         WriteBlock(&pkt3, sizeof(pkt3));        
     }
