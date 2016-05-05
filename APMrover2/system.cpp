@@ -7,6 +7,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 *****************************************************************************/
 
 #include "Rover.h"
+#include "version.h"
 
 #if CLI_ENABLED == ENABLED
 
