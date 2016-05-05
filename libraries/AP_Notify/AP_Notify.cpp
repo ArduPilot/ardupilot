@@ -31,7 +31,6 @@
 #include "ToshibaLED_PX4.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
-#include "BuzzerBBB.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
