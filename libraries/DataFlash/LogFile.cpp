@@ -721,7 +721,7 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i)
         latitude      : loc.lat,
         longitude     : loc.lng,
         altitude      : loc.alt,
-        ground_speed  : (uint32_t)(gps.ground_speed(i) * 100),
+        ground_speed  : gps.ground_speed(i),
         ground_course : gps.ground_course_cd(i),
         vel_z         : gps.velocity(i).z,
         used          : (uint8_t)(gps.primary_sensor() == i)
