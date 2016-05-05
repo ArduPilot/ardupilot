@@ -108,7 +108,7 @@ Copter::Copter(void) :
     terrain(ahrs, mission, rally),
 #endif
 #if PRECISION_LANDING == ENABLED
-    precland(ahrs, inertial_nav, MAIN_LOOP_SECONDS),
+    precland(ahrs, inertial_nav),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
     // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4
