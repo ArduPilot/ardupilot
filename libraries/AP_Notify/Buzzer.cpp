@@ -23,6 +23,7 @@
 
 extern const AP_HAL::HAL& hal;
 
+
 bool Buzzer::init()
 {
     // return immediately if disabled
@@ -32,6 +33,7 @@ bool Buzzer::init()
 
     // setup the pin and ensure it's off
     hal.gpio->pinMode(BUZZER_PIN, HAL_GPIO_OUTPUT);
+    
     on(false);
 
     // set initial boot states. This prevents us issueing a arming
@@ -184,7 +186,10 @@ void Buzzer::update()
         }
         return;
     }
-
+    if(AP_Notify::flags.vehicle_lost)
+    {
+        play_pattern(DOUBLE_BUZZ);
+    }
     // if battery failsafe constantly single buzz
     if (AP_Notify::flags.failsafe_battery) {
         play_pattern(SINGLE_BUZZ);
