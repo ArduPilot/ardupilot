@@ -967,6 +967,12 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
         cmd.content.location.alt += copter.ahrs.get_home().alt;
     }
 
+    if (copter.control_mode == GUIDED) {
+        Vector3f dest = copter.wp_nav.get_wp_destination();
+        dest.z = cmd.content.location.alt;
+        copter.guided_set_destination(dest);
+    }
+
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
 }
 
