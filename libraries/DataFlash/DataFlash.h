@@ -105,15 +105,15 @@ public:
     void StopLogging();
 
     void Log_Write_Parameter(const char *name, float value);
-    void Log_Write_GPS(const AP_GPS &gps, uint8_t instance);
+    void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, uint64_t time_us=0);
     void Log_Write_RFND(const RangeFinder &rangefinder);
     void Log_Write_IMU(const AP_InertialSensor &ins);
-    void Log_Write_IMUDT(const AP_InertialSensor &ins);
+    void Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us);
     void Log_Write_Vibration(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
     void Log_Write_RSSI(AP_RSSI &rssi);
-    void Log_Write_Baro(AP_Baro &baro);
+    void Log_Write_Baro(AP_Baro &baro, uint64_t time_us=0);
     void Log_Write_Power(void);
     void Log_Write_AHRS2(AP_AHRS &ahrs);
     void Log_Write_POS(AP_AHRS &ahrs);
@@ -131,7 +131,7 @@ public:
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
     void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
-    void Log_Write_Compass(const Compass &compass);
+    void Log_Write_Compass(const Compass &compass, uint64_t time_us=0);
     void Log_Write_Mode(uint8_t mode, uint8_t reason = 0);
 
     void Log_Write_EntireMission(const AP_Mission &mission);
