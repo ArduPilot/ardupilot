@@ -37,7 +37,7 @@ private:
     uint32_t _last_temp_read_command_time;
 
     // State machine
-    uint8_t BMP085_State;
+    uint8_t _state;
 
     // Internal calibration registers
     int16_t ac1, ac2, ac3, b1, b2, mb, mc, md;
