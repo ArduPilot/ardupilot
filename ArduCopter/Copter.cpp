@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include "Copter.h"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,13 +14,16 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
-  constructor for main Copter class
- */
+#include "Copter.h"
+#include "version.h"
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+/*
+  constructor for main Copter class
+ */
 Copter::Copter(void) :
+    DataFlash{FIRMWARE_STRING},
     flight_modes(&g.flight_mode1),
     sonar_enabled(true),
     mission(ahrs, 

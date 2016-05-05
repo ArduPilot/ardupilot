@@ -1,9 +1,4 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#pragma once
-
-#define THISFIRMWARE "APM:Copter V3.4-dev"
-#define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_DEV
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,6 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 /*
   This is the main Copter class
  */
@@ -162,7 +158,7 @@ private:
     RC_Channel *channel_yaw;
 
     // Dataflash
-    DataFlash_Class DataFlash{FIRMWARE_STRING};
+    DataFlash_Class DataFlash;
 
     AP_GPS gps;
 
