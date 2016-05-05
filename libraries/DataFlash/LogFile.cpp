@@ -707,12 +707,15 @@ bool DataFlash_Backend::Log_Write_Parameter(const AP_Param *ap,
 }
 
 // Write an GPS packet
-void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i)
+void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_us)
 {
+    if (time_us == 0) {
+        time_us = AP_HAL::micros64();
+    }
     const struct Location &loc = gps.location(i);
     struct log_GPS pkt = {
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
-        time_us       : AP_HAL::micros64(),
+        time_us       : time_us,
         status        : (uint8_t)gps.status(i),
         gps_week_ms   : gps.time_week_ms(i),
         gps_week      : gps.time_week(i),
@@ -735,7 +738,7 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i)
     gps.speed_accuracy(i, sacc);
     struct log_GPA pkt2 = {
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPA_MSG+i)),
-        time_us       : AP_HAL::micros64(),
+        time_us       : time_us,
         vdop          : gps.get_vdop(i),
         hacc          : (uint16_t)(hacc*100),
         vacc          : (uint16_t)(vacc*100),
@@ -817,9 +820,11 @@ void DataFlash_Class::Log_Write_RSSI(AP_RSSI &rssi)
 }
 
 // Write a BARO packet
-void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
+void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
 {
-    uint64_t time_us = AP_HAL::micros64();
+    if (time_us == 0) {
+        time_us = AP_HAL::micros64();
+    }
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         time_us       : time_us,
@@ -926,7 +931,7 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 }
 
 // Write an accel/gyro delta time data packet
-void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
+void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us)
 {
     float delta_t = ins.get_delta_time();
     float delta_vel_t = ins.get_delta_velocity_dt(0);
@@ -935,7 +940,6 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
     ins.get_delta_angle(0, delta_angle);
     ins.get_delta_velocity(0, delta_velocity);
 
-    uint64_t time_us = AP_HAL::micros64();
     struct log_IMUDT pkt = {
         LOG_PACKET_HEADER_INIT(LOG_IMUDT_MSG),
         time_us : time_us,
@@ -1635,14 +1639,17 @@ void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery, int16_t t
 }
 
 // Write a Compass packet
-void DataFlash_Class::Log_Write_Compass(const Compass &compass)
+void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint64_t time_us)
 {
+    if (time_us == 0) {
+        time_us = AP_HAL::micros64();
+    }
     const Vector3f &mag_field = compass.get_field(0);
     const Vector3f &mag_offsets = compass.get_offsets(0);
     const Vector3f &mag_motor_offsets = compass.get_motor_offsets(0);   
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
-        time_us         : AP_HAL::micros64(),
+        time_us         : time_us,
         mag_x           : (int16_t)mag_field.x,
         mag_y           : (int16_t)mag_field.y,
         mag_z           : (int16_t)mag_field.z,
@@ -1663,7 +1670,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
         const Vector3f &mag_motor_offsets2 = compass.get_motor_offsets(1);   
         struct log_Compass pkt2 = {
             LOG_PACKET_HEADER_INIT(LOG_COMPASS2_MSG),
-            time_us         : AP_HAL::micros64(),
+            time_us         : time_us,
             mag_x           : (int16_t)mag_field2.x,
             mag_y           : (int16_t)mag_field2.y,
             mag_z           : (int16_t)mag_field2.z,
@@ -1685,7 +1692,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
         const Vector3f &mag_motor_offsets3 = compass.get_motor_offsets(2);   
         struct log_Compass pkt3 = {
             LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
-            time_us         : AP_HAL::micros64(),
+            time_us         : time_us,
             mag_x           : (int16_t)mag_field3.x,
             mag_y           : (int16_t)mag_field3.y,
             mag_z           : (int16_t)mag_field3.z,
