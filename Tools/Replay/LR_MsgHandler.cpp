@@ -175,8 +175,7 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
                loc,
                vel,
                nsats,
-               hdop,
-               require_field_float(msg, "VZ") != 0);
+               hdop);
     if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {
         ground_alt_cm = require_field_int32_t(msg, "Alt");
     }
@@ -201,8 +200,12 @@ void LR_MsgHandler_GPA_Base::update_from_msg_gpa(uint8_t gps_offset, uint8_t *ms
     require_field(msg, "HAcc", hacc);
     require_field(msg, "VAcc", vacc);
     require_field(msg, "SAcc", sacc);
+    uint8_t have_vertical_velocity;
+    if (! field_value(msg, "VV", have_vertical_velocity)) {
+        have_vertical_velocity = !is_zero(gps.velocity(gps_offset).z);
+    }
 
-    gps.setHIL_Accuracy(gps_offset, vdop*0.01f, hacc*0.01f, vacc*0.01f, sacc*0.01f);
+    gps.setHIL_Accuracy(gps_offset, vdop*0.01f, hacc*0.01f, vacc*0.01f, sacc*0.01f, have_vertical_velocity);
 }
 
 void LR_MsgHandler_GPA::process_message(uint8_t *msg)
