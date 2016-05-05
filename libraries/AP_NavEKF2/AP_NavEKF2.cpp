@@ -481,20 +481,20 @@ void NavEKF2::check_log_write(void)
         return;
     }
     if (logging.log_compass) {
-        DataFlash_Class::instance()->Log_Write_Compass(*_ahrs->get_compass());
+        DataFlash_Class::instance()->Log_Write_Compass(*_ahrs->get_compass(), imuSampleTime_us);
         logging.log_compass = false;
     }
     if (logging.log_gps) {
-        DataFlash_Class::instance()->Log_Write_GPS(_ahrs->get_gps(), 0);
+        DataFlash_Class::instance()->Log_Write_GPS(_ahrs->get_gps(), 0, imuSampleTime_us);
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        DataFlash_Class::instance()->Log_Write_Baro(_baro);
+        DataFlash_Class::instance()->Log_Write_Baro(_baro, imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
         const AP_InertialSensor &ins = _ahrs->get_ins();
-        DataFlash_Class::instance()->Log_Write_IMUDT(ins);
+        DataFlash_Class::instance()->Log_Write_IMUDT(ins, imuSampleTime_us);
         logging.log_imu = false;
     }
 
@@ -509,6 +509,9 @@ bool NavEKF2::InitialiseFilter(void)
     if (_enable == 0) {
         return false;
     }
+
+    imuSampleTime_us = AP_HAL::micros64();
+    
     if (core == nullptr) {
 
         // don't run multiple filters for 1 IMU
@@ -570,6 +573,8 @@ void NavEKF2::UpdateFilter(void)
         return;
     }
 
+    imuSampleTime_us = AP_HAL::micros64();
+    
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     for (uint8_t i=0; i<num_cores; i++) {

@@ -352,4 +352,7 @@ private:
         bool log_baro:1;
         bool log_imu:1;
     } logging;
+
+    // time at start of current filter update
+    uint64_t imuSampleTime_us;
 };
