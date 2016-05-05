@@ -62,7 +62,7 @@ void AP_Baro::setHIL(float altitude_msl)
 /*
   set HIL pressure and temperature for an instance
  */
-void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate)
+void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate, uint32_t last_update_ms)
 {
     if (instance >= _num_sensors) {
         // invalid
@@ -74,7 +74,11 @@ void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature, float 
     _hil.climb_rate = climb_rate;
     _hil.updated = true;
     _hil.have_alt = true;
-    _hil.have_crate = true;
+
+    if (last_update_ms != 0) {
+        _hil.last_update_ms = last_update_ms;
+        _hil.have_last_update = true;
+    }
 }
 
 // Read the sensor
