@@ -20,6 +20,7 @@
  */
 
 #include "Tracker.h"
+#include "version.h"
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros)
 
@@ -135,6 +136,7 @@ void Tracker::ten_hz_logging_loop()
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)
+    : DataFlash{FIRMWARE_STRING}
 {
     memset(&current_loc, 0, sizeof(current_loc));
     memset(&vehicle, 0, sizeof(vehicle));
