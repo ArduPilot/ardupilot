@@ -78,7 +78,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
     // Send a command to read temperature
     _cmd_read_temp();
 
-    BMP085_State = 0;
+    _state = 0;
 
     sem->give();
 }
@@ -99,15 +99,15 @@ void AP_Baro_BMP085::accumulate(void)
         return;
     }
 
-    if (BMP085_State == 0) {
+    if (_state == 0) {
         _read_temp();
     } else if (_read_pressure()) {
         _calculate();
     }
 
-    BMP085_State++;
-    if (BMP085_State == 5) {
-        BMP085_State = 0;
+    _state++;
+    if (_state == 5) {
+        _state = 0;
         _cmd_read_temp();
     } else {
         _cmd_read_pressure();
@@ -237,7 +237,7 @@ bool AP_Baro_BMP085::_data_ready()
     }
 
     // No EOC pin: use time from last read instead.
-    if (BMP085_State == 0) {
+    if (_state == 0) {
         return AP_HAL::millis() > _last_temp_read_command_time + 5;
     }
 
