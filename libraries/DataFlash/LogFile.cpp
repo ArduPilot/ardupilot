@@ -722,7 +722,7 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i)
         longitude     : loc.lng,
         altitude      : loc.alt,
         ground_speed  : gps.ground_speed(i),
-        ground_course : gps.ground_course_cd(i),
+        ground_course : gps.ground_course(i),
         vel_z         : gps.velocity(i).z,
         used          : (uint8_t)(gps.primary_sensor() == i)
     };
@@ -739,7 +739,8 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i)
         vdop          : gps.get_vdop(i),
         hacc          : (uint16_t)(hacc*100),
         vacc          : (uint16_t)(vacc*100),
-        sacc          : (uint16_t)(sacc*100)
+        sacc          : (uint16_t)(sacc*100),
+        have_vv       : (uint8_t)gps.have_vertical_velocity(i)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }

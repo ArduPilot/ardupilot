@@ -53,7 +53,7 @@ struct PACKED log_GPS {
     int32_t  longitude;
     int32_t  altitude;
     float    ground_speed;
-    int32_t  ground_course;
+    float    ground_course;
     float    vel_z;
     uint8_t  used;
 };
@@ -65,6 +65,7 @@ struct PACKED log_GPA {
     uint16_t hacc;
     uint16_t vacc;
     uint16_t sacc;
+    uint8_t  have_vv;
 };
 
 struct PACKED log_Message {
@@ -715,13 +716,13 @@ Format characters in the format string for binary log messages
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "QNf",        "TimeUS,Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "QBIHBcLLefefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
+      "GPS",  "QBIHBcLLefffB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPS2_MSG, sizeof(log_GPS), \
       "GPS2", "QBIHBcLLefefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QCCCC", "TimeUS,VDop,HAcc,VAcc,SAcc" }, \
+      "GPA",  "QCCCCB", "TimeUS,VDop,HAcc,VAcc,SAcc,VV" }, \
     { LOG_GPA2_MSG, sizeof(log_GPA), \
-      "GPA2", "QCCCC", "TimeUS,VDop,HAcc,VAcc,SAcc" }, \
+      "GPA2", "QCCCCB", "TimeUS,VDop,HAcc,VAcc,SAcc,VV" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
