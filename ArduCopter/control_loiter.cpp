@@ -73,10 +73,10 @@ void Copter::loiter_run()
     }
 
     // Loiter State Machine Determination
-    if(!ap.auto_armed) {
-        loiter_state = Loiter_Disarmed;
-    } else if (!motors.get_interlock()){
-        loiter_state = Loiter_MotorStop;
+    if (!motors.armed() || !motors.get_interlock()) {
+        loiter_state = Loiter_MotorStopped;
+    } else if (!ap.auto_armed) {
+        loiter_state = Loiter_NotAutoArmed;
     } else if (takeoff_state.running || (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()))){
         loiter_state = Loiter_Takeoff;
     } else if (ap.land_complete){
@@ -88,23 +88,9 @@ void Copter::loiter_run()
     // Loiter State Machine
     switch (loiter_state) {
 
-    case Loiter_Disarmed:
+    case Loiter_MotorStopped:
 
-        wp_nav.init_loiter_target();
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
-        attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        // multicopters do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-#endif  // HELI_FRAME
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-        break;
-
-    case Loiter_MotorStop:
-
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
 #if FRAME_CONFIG == HELI_FRAME
         // helicopters are capable of flying even with the motor stopped, therefore we will attempt to keep flying
         // run loiter controller
@@ -117,12 +103,26 @@ void Copter::loiter_run()
         pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
         pos_control.update_z_controller();
 #else
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         wp_nav.init_loiter_target();
         // multicopters do not stabilize roll/pitch/yaw when motors are stopped
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-#endif  // HELI_FRAME
+#endif
+        break;
+
+    case Loiter_NotAutoArmed:
+
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        wp_nav.init_loiter_target();
+#if FRAME_CONFIG == HELI_FRAME
+        // Helicopters always stabilize roll/pitch/yaw
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else
+        // Multicopters do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         break;
 
     case Loiter_Takeoff:
