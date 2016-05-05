@@ -308,7 +308,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     }
 #endif
 
-    if (aparm.throttle_min < 0 && channel_throttle->servo_out < 0) {
+    if (aparm.throttle_min < 0 && channel_throttle->get_servo_out() < 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;
         control_sensors_health |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }
@@ -423,14 +423,14 @@ void Plane::send_radio_out(mavlink_channel_t chan)
             chan,
             micros(),
             0,     // port
-            RC_Channel::rc_channel(0)->radio_out,
-            RC_Channel::rc_channel(1)->radio_out,
-            RC_Channel::rc_channel(2)->radio_out,
-            RC_Channel::rc_channel(3)->radio_out,
-            RC_Channel::rc_channel(4)->radio_out,
-            RC_Channel::rc_channel(5)->radio_out,
-            RC_Channel::rc_channel(6)->radio_out,
-            RC_Channel::rc_channel(7)->radio_out);
+            RC_Channel::rc_channel(0)->get_radio_out(),
+            RC_Channel::rc_channel(1)->get_radio_out(),
+            RC_Channel::rc_channel(2)->get_radio_out(),
+            RC_Channel::rc_channel(3)->get_radio_out(),
+            RC_Channel::rc_channel(4)->get_radio_out(),
+            RC_Channel::rc_channel(5)->get_radio_out(),
+            RC_Channel::rc_channel(6)->get_radio_out(),
+            RC_Channel::rc_channel(7)->get_radio_out());
         return;
     }
 #endif

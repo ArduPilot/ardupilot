@@ -75,7 +75,7 @@ void Rover::read_trim_switch()
     case CH7_DO_NOTHING:
         break;
     case CH7_SAVE_WP:
-		if (channel_learn->radio_in > CH_7_PWM_TRIGGER) {
+		if (channel_learn->get_radio_in() > CH_7_PWM_TRIGGER) {
             // switch is engaged
 			ch7_flag = true;
 		} else { // switch is disengaged
@@ -86,7 +86,7 @@ void Rover::read_trim_switch()
                     hal.console->println("Erasing waypoints");
                     // if SW7 is ON in MANUAL = Erase the Flight Plan
 					mission.clear();
-                    if (channel_steer->control_in > 3000) {
+                    if (channel_steer->get_control_in() > 3000) {
 						// if roll is full right store the current location as home
                         init_home();
                     }

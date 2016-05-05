@@ -188,8 +188,8 @@ void Tracker::disarm_servos()
 void Tracker::prepare_servos()
 {
     start_time_ms = AP_HAL::millis();
-    channel_yaw.radio_out = channel_yaw.radio_trim;
-    channel_pitch.radio_out = channel_pitch.radio_trim;
+    channel_yaw.set_radio_out(channel_yaw.get_radio_trim());
+    channel_pitch.set_radio_out(channel_pitch.get_radio_trim());
     channel_yaw.output();
     channel_pitch.output();
 }

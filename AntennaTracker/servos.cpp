@@ -78,7 +78,7 @@ void Tracker::update_pitch_position_servo(float pitch)
     // PITCH2SRV_IMAX   4000.000000
 
     // calculate new servo position
-    int32_t new_servo_out = channel_pitch.servo_out + g.pidPitch2Srv.get_pid(angle_err);
+    int32_t new_servo_out = channel_pitch.get_servo_out() + g.pidPitch2Srv.get_pid(angle_err);
 
     // initialise limit flags
     servo_limit.pitch_lower = false;
@@ -90,24 +90,24 @@ void Tracker::update_pitch_position_servo(float pitch)
         if (max_change < 1) {
             max_change = 1;
         }
-        if (new_servo_out <= channel_pitch.servo_out - max_change) {
-            new_servo_out = channel_pitch.servo_out - max_change;
+        if (new_servo_out <= channel_pitch.get_servo_out() - max_change) {
+            new_servo_out = channel_pitch.get_servo_out() - max_change;
             servo_limit.pitch_lower = true;
         }
-        if (new_servo_out >= channel_pitch.servo_out + max_change) {
-            new_servo_out = channel_pitch.servo_out + max_change;
+        if (new_servo_out >= channel_pitch.get_servo_out() + max_change) {
+            new_servo_out = channel_pitch.get_servo_out() + max_change;
             servo_limit.pitch_upper = true;
         }
     }
-    channel_pitch.servo_out = new_servo_out;
+    channel_pitch.set_servo_out(new_servo_out);
 
     // position limit pitch servo
-    if (channel_pitch.servo_out <= -pitch_limit_cd) {
-        channel_pitch.servo_out = -pitch_limit_cd;
+    if (channel_pitch.get_servo_out() <= -pitch_limit_cd) {
+        channel_pitch.set_servo_out(-pitch_limit_cd);
         servo_limit.pitch_lower = true;
     }
-    if (channel_pitch.servo_out >= pitch_limit_cd) {
-        channel_pitch.servo_out = pitch_limit_cd;
+    if (channel_pitch.get_servo_out() >= pitch_limit_cd) {
+        channel_pitch.set_servo_out(pitch_limit_cd);
         servo_limit.pitch_upper = true;
     }
 }
@@ -121,21 +121,21 @@ void Tracker::update_pitch_onoff_servo(float pitch)
 {
     // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
     // pitch argument is -90 to 90, where 0 is horizontal
-    // servo_out is in 100ths of a degree
+    // get_servo_out() is in 100ths of a degree
     float ahrs_pitch = degrees(ahrs.pitch);
     float err = ahrs_pitch - pitch;
 
     float acceptable_error = g.onoff_pitch_rate * g.onoff_pitch_mintime;
     if (fabsf(err) < acceptable_error) {
-        channel_pitch.servo_out = 0;
+        channel_pitch.set_servo_out(0);
     } else if (err > 0) {
         // positive error means we are pointing too high, so push the
         // servo down
-        channel_pitch.servo_out = -9000;
+        channel_pitch.set_servo_out(-9000);
     } else {
         // negative error means we are pointing too low, so push the
         // servo up
-        channel_pitch.servo_out = 9000;
+        channel_pitch.set_servo_out(9000);
     }
 }
 
@@ -146,7 +146,7 @@ void Tracker::update_pitch_cr_servo(float pitch)
 {
     float ahrs_pitch = degrees(ahrs.pitch);
     float err_cd = (pitch - ahrs_pitch) * 100.0f;
-    channel_pitch.servo_out = g.pidPitch2Srv.get_pid(err_cd);
+    channel_pitch.set_servo_out(g.pidPitch2Srv.get_pid(err_cd));
 }
 
 /**
@@ -229,13 +229,13 @@ void Tracker::update_yaw_position_servo(float yaw)
     }
 
     // handle hitting servo limits
-    if (abs(channel_yaw.servo_out) == 18000 &&
+    if (abs(channel_yaw.get_servo_out()) == 18000 &&
         labs(angle_err) > margin &&
         making_progress &&
         AP_HAL::millis() - slew_start_ms > g.min_reverse_time*1000) {
         // we are at the limit of the servo and are not moving in the
         // right direction, so slew the other way
-        new_slew_dir = -channel_yaw.servo_out / 18000;
+        new_slew_dir = -channel_yaw.get_servo_out() / 18000;
         slew_start_ms = AP_HAL::millis();
     }
 
@@ -251,7 +251,7 @@ void Tracker::update_yaw_position_servo(float yaw)
         tracker.gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Slew: %d/%d err=%ld servo=%ld ez=%.3f",
                                   (int)slew_dir, (int)new_slew_dir,
                                   (long)angle_err,
-                                  (long)channel_yaw.servo_out,
+                                  (long)channel_yaw.get_servo_out(),
                                   (double)degrees(ahrs.get_gyro().z));
     }
 
@@ -268,7 +268,7 @@ void Tracker::update_yaw_position_servo(float yaw)
     } else {
         float servo_change = g.pidYaw2Srv.get_pid(angle_err);
         servo_change = constrain_float(servo_change, -18000, 18000);
-        new_servo_out = constrain_float(channel_yaw.servo_out - servo_change, -18000, 18000);
+        new_servo_out = constrain_float(channel_yaw.get_servo_out() - servo_change, -18000, 18000);
     }
 
     // rate limit yaw servo
@@ -277,24 +277,24 @@ void Tracker::update_yaw_position_servo(float yaw)
         if (max_change < 1) {
             max_change = 1;
         }
-        if (new_servo_out <= channel_yaw.servo_out - max_change) {
-            new_servo_out = channel_yaw.servo_out - max_change;
+        if (new_servo_out <= channel_yaw.get_servo_out() - max_change) {
+            new_servo_out = channel_yaw.get_servo_out() - max_change;
             servo_limit.yaw_lower = true;
         }
-        if (new_servo_out >= channel_yaw.servo_out + max_change) {
-            new_servo_out = channel_yaw.servo_out + max_change;
+        if (new_servo_out >= channel_yaw.get_servo_out() + max_change) {
+            new_servo_out = channel_yaw.get_servo_out() + max_change;
             servo_limit.yaw_upper = true;
         }
     }
-    channel_yaw.servo_out = new_servo_out;
+    channel_yaw.set_servo_out(new_servo_out);
 
     // position limit pitch servo
-    if (channel_yaw.servo_out <= -yaw_limit_cd) {
-        channel_yaw.servo_out = -yaw_limit_cd;
+    if (channel_yaw.get_servo_out() <= -yaw_limit_cd) {
+        channel_yaw.set_servo_out(-yaw_limit_cd);
         servo_limit.yaw_lower = true;
     }
-    if (channel_yaw.servo_out >= yaw_limit_cd) {
-        channel_yaw.servo_out = yaw_limit_cd;
+    if (channel_yaw.get_servo_out() >= yaw_limit_cd) {
+        channel_yaw.set_servo_out(yaw_limit_cd);
         servo_limit.yaw_upper = true;
     }
 }
@@ -314,15 +314,15 @@ void Tracker::update_yaw_onoff_servo(float yaw)
 
     float acceptable_error = g.onoff_yaw_rate * g.onoff_yaw_mintime;
     if (fabsf(err) < acceptable_error) {
-        channel_yaw.servo_out = 0;
+        channel_yaw.set_servo_out(0);
     } else if (err > 0) {
         // positive error means we are clockwise of the target, so
         // move anti-clockwise
-        channel_yaw.servo_out = -18000;
+        channel_yaw.set_servo_out(-18000);
     } else {
         // negative error means we are anti-clockwise of the target, so
         // move clockwise
-        channel_yaw.servo_out = 18000;
+        channel_yaw.set_servo_out(18000);
     }
 }
 
@@ -335,5 +335,5 @@ void Tracker::update_yaw_cr_servo(float yaw)
     float yaw_cd = wrap_180_cd_float(yaw*100.0f);
     float err_cd = wrap_180_cd(yaw_cd - (float)ahrs_yaw_cd);
 
-    channel_yaw.servo_out = g.pidYaw2Srv.get_pid(err_cd);
+    channel_yaw.set_servo_out(g.pidYaw2Srv.get_pid(err_cd));
 }

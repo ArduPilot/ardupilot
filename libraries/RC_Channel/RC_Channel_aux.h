@@ -108,7 +108,7 @@ public:
 	static void set_radio_trimmed(Aux_servo_function_t function, int16_t value);
 
 	// set and save the trim for a function channel to radio_in
-	static void set_radio_trim(Aux_servo_function_t function);
+	static void set_trim_to_radio_in_for(Aux_servo_function_t function);
 
 	// set radio_out to radio_min
 	static void set_radio_to_min(Aux_servo_function_t function);
@@ -123,7 +123,7 @@ public:
 	static void copy_radio_in_out(Aux_servo_function_t function, bool do_input_output=false);
 
 	// set servo_out
-	static void set_servo_out(Aux_servo_function_t function, int16_t value);
+	static void set_servo_out_for(Aux_servo_function_t function, int16_t value);
 
 	// setup failsafe for an auxillary channel function
 	static void set_servo_failsafe(Aux_servo_function_t function, RC_Channel::LimitValue limit);
