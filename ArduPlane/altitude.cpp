@@ -115,7 +115,6 @@ int32_t Plane::get_RTL_altitude()
     return g.RTL_altitude_cm + home.alt;
 }
 
-
 /*
   return relative altitude in meters (relative to home)
  */
@@ -132,6 +131,20 @@ int32_t Plane::relative_altitude_abs_cm(void)
     return labs(current_loc.alt - home.alt);
 }
 
+/*
+  return relative altitude in meters (relative to terrain, if available,
+  or home otherwise)
+ */
+float Plane::relative_ground_altitude(void)
+{
+#if AP_TERRAIN_AVAILABLE
+    float altitude;
+    if (terrain.status() == AP_Terrain::TerrainStatusOK && terrain.height_above_terrain(altitude, true)) {
+        return altitude;
+    }
+#endif
+    return relative_altitude();
+}
 
 /*
   set the target altitude to the current altitude. This is used when 
