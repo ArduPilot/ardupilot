@@ -124,15 +124,6 @@ void Copter::althold_run()
         // get take-off adjusted pilot and takeoff climb rates
         takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
-
-        // if throttle zero reset attitude and exit immediately
-        if (ap.throttle_zero) {
-            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-            attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-            pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-            return;
-        }
-
         // set motors to full range
         motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
