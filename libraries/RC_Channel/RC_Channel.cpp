@@ -221,12 +221,6 @@ RC_Channel::set_pwm_no_deadzone(int16_t pwm)
     }
 }
 
-int16_t
-RC_Channel::control_mix(float value)
-{
-    return (1 - abs(control_in / _high_in)) * value + control_in;
-}
-
 // returns just the PWM without the offset from radio_min
 void
 RC_Channel::calc_pwm(void)
