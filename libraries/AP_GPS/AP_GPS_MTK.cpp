@@ -147,7 +147,7 @@ restart:
             state.location.lng  = swap_int32(_buffer.msg.longitude) * 10;
             state.location.alt  = swap_int32(_buffer.msg.altitude);
             state.ground_speed      = swap_int32(_buffer.msg.ground_speed) * 0.01f;
-            state.ground_course_cd  = wrap_360_cd(swap_int32(_buffer.msg.ground_course) / 10000);
+            state.ground_course     = wrap_360(swap_int32(_buffer.msg.ground_course) * 1.0e-6f);
             state.num_sats          = _buffer.msg.satellites;
 
             if (state.status >= AP_GPS::GPS_OK_FIX_2D) {

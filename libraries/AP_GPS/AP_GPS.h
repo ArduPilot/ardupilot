@@ -112,7 +112,7 @@ public:
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
         float ground_speed;                 ///< ground speed in m/sec
-        int32_t ground_course_cd;           ///< ground course in 100ths of a degree
+        float ground_course;                ///< ground course in degrees
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint16_t vdop;                      ///< vertical dilution of precision in cm
         uint8_t num_sats;                   ///< Number of visible satelites        
@@ -217,8 +217,14 @@ public:
     }
 
     // ground course in centidegrees
+    float ground_course(uint8_t instance) const {
+        return state[instance].ground_course;
+    }
+    float ground_course() const {
+        return ground_course(primary_instance);
+    }
     int32_t ground_course_cd(uint8_t instance) const {
-        return state[instance].ground_course_cd;
+        return ground_course(instance) * 100;
     }
     int32_t ground_course_cd() const {
         return ground_course_cd(primary_instance);
@@ -305,10 +311,10 @@ public:
     // set position for HIL
     void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
                 const Location &location, const Vector3f &velocity, uint8_t num_sats,
-                uint16_t hdop, bool _have_vertical_velocity);
+                uint16_t hdop);
 
     // set accuracy for HIL
-    void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc);
+    void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity);
     
     static const struct AP_Param::GroupInfo var_info[];
 
