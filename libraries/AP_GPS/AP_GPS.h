@@ -314,7 +314,7 @@ public:
                 uint16_t hdop);
 
     // set accuracy for HIL
-    void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity);
+    void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms);
     
     static const struct AP_Param::GroupInfo var_info[];
 

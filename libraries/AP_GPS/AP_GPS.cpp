@@ -492,7 +492,7 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
 }
 
 // set accuracy for HIL
-void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity)
+void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms)
 {
     GPS_State &istate = state[instance];
     istate.vdop = vdop * 100;
@@ -503,6 +503,10 @@ void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vac
     istate.have_vertical_accuracy = true;
     istate.have_speed_accuracy = true;
     istate.have_vertical_velocity |= _have_vertical_velocity;
+    if (sample_ms != 0) {
+        timing[instance].last_message_time_ms = sample_ms;
+        timing[instance].last_fix_time_ms = sample_ms;
+    }
 }
 
 /**
