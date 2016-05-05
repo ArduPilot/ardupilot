@@ -373,7 +373,7 @@ void Copter::pre_arm_rc_checks()
     }
 
     // check if radio has been calibrated
-    if (!channel_throttle->radio_min.configured() && !channel_throttle->radio_max.configured()) {
+    if (!channel_throttle->radio_min.configured() || !channel_throttle->radio_max.configured()) {
         return;
     }
 
