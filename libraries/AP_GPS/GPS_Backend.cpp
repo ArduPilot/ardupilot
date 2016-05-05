@@ -131,7 +131,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
  */
 void AP_GPS_Backend::fill_3d_velocity(void)
 {
-    float gps_heading = ToRad(state.ground_course_cd * 0.01f);
+    float gps_heading = radians(state.ground_course);
 
     state.velocity.x = state.ground_speed * cosf(gps_heading);
     state.velocity.y = state.ground_speed * sinf(gps_heading);
