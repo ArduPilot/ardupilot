@@ -92,7 +92,7 @@ static const char *generated_names[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5",
                                          "IMT", "IMT2",
                                          "MAG", "MAG2",
                                          "BARO", "BAR2",
-                                         "GPS",
+                                         "GPS","GPA",
                                          "NKA", "NKV", NULL };
 
 /*
