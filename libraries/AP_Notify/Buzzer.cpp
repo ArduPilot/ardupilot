@@ -185,6 +185,11 @@ void Buzzer::update()
         return;
     }
 
+    // if vehicle lost was enabled, starting beep
+    if (AP_Notify::flags.vehicle_lost) {
+        play_pattern(DOUBLE_BUZZ);
+    }
+
     // if battery failsafe constantly single buzz
     if (AP_Notify::flags.failsafe_battery) {
         play_pattern(SINGLE_BUZZ);
