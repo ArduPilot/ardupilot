@@ -225,8 +225,8 @@ enum AltHoldModeState {
 
 // Loiter states
 enum LoiterModeState {
-    Loiter_Disarmed,
-    Loiter_MotorStop,
+    Loiter_MotorStopped,
+    Loiter_NotAutoArmed,
     Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
