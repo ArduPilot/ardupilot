@@ -54,13 +54,15 @@ void AP_Baro::setHIL(float altitude_msl)
     float p = p0 * delta;
     float T = 303.16f * theta - 273.16f; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
-    setHIL(0, p, T);
+    _hil.pressure = p;
+    _hil.temperature = T;
+    _hil.updated = true;
 }
 
 /*
   set HIL pressure and temperature for an instance
  */
-void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature)
+void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate)
 {
     if (instance >= _num_sensors) {
         // invalid
@@ -68,7 +70,11 @@ void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature)
     }
     _hil.pressure = pressure;
     _hil.temperature = temperature;
+    _hil.altitude = altitude;
+    _hil.climb_rate = climb_rate;
     _hil.updated = true;
+    _hil.have_alt = true;
+    _hil.have_crate = true;
 }
 
 // Read the sensor
