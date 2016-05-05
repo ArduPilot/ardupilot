@@ -1946,7 +1946,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         plane.gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
                          packet.time_usec/1000,
-                         loc, vel, 10, 0, true);
+                         loc, vel, 10, 0);
 
         // rad/sec
         Vector3f gyros;
