@@ -58,6 +58,7 @@ int32_t wrap_360_cd(int32_t error);
 int32_t wrap_180_cd(int32_t error);
 float wrap_360_cd_float(float angle);
 float wrap_180_cd_float(float angle);
+float wrap_360(float angle);
 
 /*
   wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)

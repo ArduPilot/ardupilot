@@ -206,6 +206,20 @@ float wrap_180_cd_float(float angle)
 }
 
 /*
+  wrap an angle in degrees to 0..360
+ */
+float wrap_360(float angle)
+{
+    if (angle >= 720.0f || angle < -360.0f) {
+        // for larger number use fmodulus
+        angle = fmod(angle, 360.0f);
+    }
+    if (angle >= 360.0f) angle -= 360.0f;
+    if (angle < 0.0f) angle += 360.0f;
+    return angle;
+}
+
+/*
   wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
  */
 float wrap_PI(float angle_in_radians)
