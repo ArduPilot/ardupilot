@@ -45,7 +45,7 @@ public:
     bool setup(void);
     void setup_defaults(void);
 
-    void land_controller(void);
+    void vtol_position_controller(void);
     void setup_target_position(void);
     void takeoff_controller(void);
     void waypoint_controller(void);
@@ -212,6 +212,9 @@ private:
 
     // control if a VTOL RTL will be used
     AP_Int8 rtl_mode;
+
+    // control if a VTOL GUIDED will be used
+    AP_Int8 guided_mode;
     
     struct {
         AP_Float gain;
@@ -258,21 +261,21 @@ private:
     // time we last set the loiter target
     uint32_t last_loiter_ms;
 
-    enum land_state {
-        QLAND_POSITION1,
-        QLAND_POSITION2,
-        QLAND_DESCEND,
-        QLAND_FINAL,
-        QLAND_COMPLETE
+    enum position_control_state {
+        QPOS_POSITION1,
+        QPOS_POSITION2,
+        QPOS_LAND_DESCEND,
+        QPOS_LAND_FINAL,
+        QPOS_LAND_COMPLETE
     };
     struct {
-        enum land_state state;
+        enum position_control_state state;
         float speed_scale;
         Vector2f target_velocity;
         float max_speed;
         Vector3f target;
         bool slow_descent:1;
-    } land;
+    } poscontrol;
 
     enum frame_class {
         FRAME_CLASS_QUAD=0,
