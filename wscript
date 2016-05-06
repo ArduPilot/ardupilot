@@ -30,11 +30,14 @@ def init(ctx):
     except:
         return
 
+    if 'VARIANT' not in env:
+        return
+
     # define the variant build commands according to the board
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
             continue
-        c.variant = env.BOARD
+        c.variant = env.VARIANT
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
@@ -67,13 +70,24 @@ def options(opt):
                  default=False,
                  help='Enable benchmarks')
 
+    g.add_option('--debug',
+                 action='store_true',
+                 default=False,
+                 help='Configure as debug variant')
+
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
-    # use a different variant for each board
-    cfg.setenv(cfg.env.BOARD)
+    cfg.env.DEBUG = cfg.options.debug
+
+    cfg.env.VARIANT = cfg.env.BOARD
+    if cfg.env.DEBUG:
+        cfg.env.VARIANT += '-debug'
+    cfg.setenv(cfg.env.VARIANT)
+
+    cfg.env.BOARD = cfg.options.board
+    cfg.env.DEBUG = cfg.options.debug
 
     cfg.msg('Setting board to', cfg.options.board)
-    cfg.env.BOARD = cfg.options.board
     boards.get_board(cfg.env.BOARD).configure(cfg)
 
     cfg.load('clang_compilation_database')

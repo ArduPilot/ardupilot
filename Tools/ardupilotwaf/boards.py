@@ -92,6 +92,12 @@ class Board:
                 '-Wno-c++11-narrowing'
             ]
 
+        if cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-g',
+                '-O0',
+            ]
+
         env.CXXFLAGS += [
             '-std=gnu++11',
 
@@ -134,6 +140,12 @@ class Board:
                 '-Werror=unused-but-set-variable'
             ]
 
+        if cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-g',
+                '-O0',
+            ]
+
         env.LINKFLAGS += [
             '-Wl,--gc-sections',
         ]
@@ -165,9 +177,12 @@ class sitl(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
         )
-        env.CXXFLAGS += [
-            '-O3',
-        ]
+
+        if not cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-O3',
+            ]
+
         env.LIB += [
             'm',
         ]
@@ -190,9 +205,12 @@ class linux(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NONE',
         )
-        env.CXXFLAGS += [
-            '-O3',
-        ]
+
+        if not cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-O3',
+            ]
+
         env.LIB += [
             'm',
             'rt',
