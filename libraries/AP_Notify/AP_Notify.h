@@ -87,6 +87,9 @@ public:
         uint16_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
         uint16_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
         uint16_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
+        uint16_t tune_started           : 1;    // tuning a parameter has started
+        uint16_t tune_next              : 1;    // tuning switched to next parameter
+        uint16_t tune_save              : 1;    // tuning saved parameters
     };
 
     // the notify flags are static to allow direct class access
