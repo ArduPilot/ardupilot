@@ -2,114 +2,65 @@
 
 #include "Plane.h"
 
-const AP_Param::GroupInfo Tuning::var_info[] = {
+/*
+  tables of tuning sets
+ */
+const uint8_t AP_Tuning_Plane::tuning_set_q_rate_roll_pitch[] = { TUNING_Q_RATE_ROLL_KD, TUNING_Q_RATE_ROLL_KPI,
+                                                                  TUNING_Q_RATE_PITCH_KD, TUNING_Q_RATE_PITCH_KPI};
+const uint8_t AP_Tuning_Plane::tuning_set_q_rate_roll[] =       { TUNING_Q_RATE_ROLL_KD, TUNING_Q_RATE_ROLL_KPI };
+const uint8_t AP_Tuning_Plane::tuning_set_q_rate_pitch[] =      { TUNING_Q_RATE_PITCH_KD, TUNING_Q_RATE_PITCH_KPI };
 
-    // @Param: CHAN
-    // @DisplayName: Transmitter tuning channel
-    // @Description: This sets the channel for transmitter tuning 
-    // @Values: 0:Disable,1:Chan1,2:Chan3,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
-    // @User: Standard
-    AP_GROUPINFO_FLAGS("CHAN", 1, Tuning, channel, 0, AP_PARAM_FLAG_ENABLE),
+// macro to prevent getting the array length wrong
+#define TUNING_ARRAY(v) ARRAY_SIZE(v), v
 
-    // @Param: PARM
-    // @DisplayName: Transmitter tuning parameter
-    // @Description: This sets which parameter or combination of parameters will be tuned
-    // @Values: 0:None,1:QuadRateRollPitch_PI,2:QuadRateRollPitch_P,3:QuadRateRollPitch_I,4:QuadRateRollPitch_D,5:QuadRATE_ROLL_PI,6:QuadRateRoll_P,7:QuadRateRoll_I,8:QuadRateRoll_D,9:QuadRatePitch_PI,10:QuadRatePitch_P,11:QuadRatePitch_I,12:QuadRatePitch_D,13:QuadRateYaw_PI,14:QuadRateYaw_P,15:QuadRateYaw_I,16:QuadRateYaw_D,17:QuadAngleRoll_P,18:QuadAnglePitch_P,19:QuadAngleYaw_P,20:QuadPXY_P,21:QuadPZ_P,22:QuadVXY_P,23:QuadVXY_I,24:QuadVZ_P,25:QuadAZ_P,26:QuadAZ_I,27:QuadAZ_D,28:Roll_P,29:Roll_I,30:Roll_D,31:Roll_FF,32:Pitch_P,33:Pitch_I,34:Pitch_D,35:Pitch_FF
-    // @User: Standard
-    AP_GROUPINFO("PARM", 2, Tuning, parm, 0),
-
-    // @Param: MIN
-    // @DisplayName: Transmitter tuning minimum value
-    // @Description: This sets the minimum value
-    // @User: Standard
-    AP_GROUPINFO("MIN", 3, Tuning, minimum, 0),
-
-    // @Param: MAX
-    // @DisplayName: Transmitter tuning maximum value
-    // @Description: This sets the maximum value
-    // @User: Standard
-    AP_GROUPINFO("MAX", 4, Tuning, maximum, 0),
-    
-    AP_GROUPEND
+// list of tuning sets
+const AP_Tuning_Plane::tuning_set AP_Tuning_Plane::tuning_sets[] = {
+    { TUNING_SET_Q_RATE_ROLL_PITCH, TUNING_ARRAY(tuning_set_q_rate_roll_pitch) },
+    { TUNING_SET_Q_RATE_ROLL,       TUNING_ARRAY(tuning_set_q_rate_roll) },
+    { TUNING_SET_Q_RATE_PITCH,      TUNING_ARRAY(tuning_set_q_rate_pitch) },
+    { TUNING_SET_NONE, 0, nullptr }
 };
 
 /*
-  constructor
+  table of tuning names
  */
-Tuning::Tuning(void)
-{
-    AP_Param::setup_object_defaults(this, var_info);
-}
+const AP_Tuning_Plane::tuning_name AP_Tuning_Plane::tuning_names[] = {
+    { TUNING_Q_RATE_ROLL_KPI, "Q_RateRollPI" },
+    { TUNING_Q_RATE_ROLL_KD,  "Q_RateRollD" },
+    { TUNING_Q_RATE_PITCH_KPI,"Q_RatePitchPI" },
+    { TUNING_Q_RATE_PITCH_KD, "Q_RatePitchD" },
+    { TUNING_NONE, nullptr }
+};
 
 /*
-  check for changed tuning input
+  get a pointer to an AP_Float for a parameter, or NULL on fail
  */
-void Tuning::check_input(void)
+AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
 {
-    if (channel <= 0 || parm <= 0) {
-        // disabled
-        return;
-    }
-
-    // only adjust values at 4Hz
-    uint32_t now = AP_HAL::millis();
-    if (now - last_check_ms < 250) {
-        return;
-    }
-    last_check_ms = now;
-
-    if (channel > hal.rcin->num_channels()) {
-        return;
-    }
-    
-    RC_Channel *chan = RC_Channel::rc_channel(channel-1);
-    if (chan == nullptr) {
-        return;
-    }
-    uint8_t input = chan->percent_input();
-    if (input == last_input_pct) {
-        // no change
-        return;
-    }
-    last_input_pct = input;
-
-    float tuning_value = minimum + (maximum-minimum)*(input*0.01f);
-
-    Log_Write_Parameter_Tuning((uint8_t)parm.get(), tuning_value, minimum, maximum);
-
-    switch((enum tuning_func)parm.get()) {
-
+    switch (parm) {
     case TUNING_RLL_P:
-        plane.rollController.kP(tuning_value);
-        break;
+        return &plane.rollController.kP();
 
     case TUNING_RLL_I:
-        plane.rollController.kI(tuning_value);
-        break;
+        return &plane.rollController.kI();
 
     case TUNING_RLL_D:
-        plane.rollController.kD(tuning_value);
-        break;
+        return &plane.rollController.kD();
 
     case TUNING_RLL_FF:
-        plane.rollController.kFF(tuning_value);
-        break;
+        return &plane.rollController.kFF();
 
     case TUNING_PIT_P:
-        plane.pitchController.kP(tuning_value);
-        break;
+        return &plane.pitchController.kP();
 
     case TUNING_PIT_I:
-        plane.pitchController.kI(tuning_value);
-        break;
+        return &plane.pitchController.kI();
 
     case TUNING_PIT_D:
-        plane.pitchController.kD(tuning_value);
-        break;
+        return &plane.pitchController.kD();
 
     case TUNING_PIT_FF:
-        plane.pitchController.kFF(tuning_value);
-        break;
+        return &plane.pitchController.kFF();
         
     default:
         break;
@@ -117,146 +68,156 @@ void Tuning::check_input(void)
         
     if (!plane.quadplane.available()) {
         // quadplane tuning options not available
-        return;
+        return nullptr;
     }
     
-    switch((enum tuning_func)parm.get()) {
-
-    case TUNING_Q_RATE_ROLL_PITCH_KPI:
-        plane.quadplane.attitude_control->get_rate_roll_pid().kP(tuning_value);
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kP(tuning_value);
-        plane.quadplane.attitude_control->get_rate_roll_pid().kI(tuning_value);
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kI(tuning_value);
-        break;
-
-    case TUNING_Q_RATE_ROLL_PITCH_KP:
-        plane.quadplane.attitude_control->get_rate_roll_pid().kP(tuning_value);
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kP(tuning_value);
-        break;
-
-    case TUNING_Q_RATE_ROLL_PITCH_KI:
-        plane.quadplane.attitude_control->get_rate_roll_pid().kI(tuning_value);
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kI(tuning_value);
-        break;
-
-    case TUNING_Q_RATE_ROLL_PITCH_KD:
-        plane.quadplane.attitude_control->get_rate_roll_pid().kD(tuning_value);
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kD(tuning_value);
-        break;
+    switch(parm) {
 
     case TUNING_Q_RATE_ROLL_KPI:
-        plane.quadplane.attitude_control->get_rate_roll_pid().kP(tuning_value);
-        plane.quadplane.attitude_control->get_rate_roll_pid().kI(tuning_value);
-        break;
+        // use P for initial value when tuning PI
+        return &plane.quadplane.attitude_control->get_rate_roll_pid().kP();
 
     case TUNING_Q_RATE_ROLL_KP:
-        plane.quadplane.attitude_control->get_rate_roll_pid().kP(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_roll_pid().kP();
 
     case TUNING_Q_RATE_ROLL_KI:
-        plane.quadplane.attitude_control->get_rate_roll_pid().kI(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_roll_pid().kI();
 
     case TUNING_Q_RATE_ROLL_KD:
-        plane.quadplane.attitude_control->get_rate_roll_pid().kD(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_roll_pid().kD();
 
     case TUNING_Q_RATE_PITCH_KPI:
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kP(tuning_value);
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kI(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_pitch_pid().kP();
 
     case TUNING_Q_RATE_PITCH_KP:
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kP(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_pitch_pid().kP();
 
     case TUNING_Q_RATE_PITCH_KI:
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kI(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_pitch_pid().kI();
 
     case TUNING_Q_RATE_PITCH_KD:
-        plane.quadplane.attitude_control->get_rate_pitch_pid().kD(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_pitch_pid().kD();
 
     case TUNING_Q_RATE_YAW_KPI:
-        plane.quadplane.attitude_control->get_rate_yaw_pid().kP(tuning_value);
-        plane.quadplane.attitude_control->get_rate_yaw_pid().kI(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_yaw_pid().kP();
 
     case TUNING_Q_RATE_YAW_KP:
-        plane.quadplane.attitude_control->get_rate_yaw_pid().kP(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_yaw_pid().kP();
 
     case TUNING_Q_RATE_YAW_KI:
-        plane.quadplane.attitude_control->get_rate_yaw_pid().kI(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_yaw_pid().kI();
 
     case TUNING_Q_RATE_YAW_KD:
-        plane.quadplane.attitude_control->get_rate_yaw_pid().kD(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_rate_yaw_pid().kD();
 
     case TUNING_Q_ANG_ROLL_KP:
-        plane.quadplane.attitude_control->get_angle_roll_p().kP(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_angle_roll_p().kP();
 
     case TUNING_Q_ANG_PITCH_KP:
-        plane.quadplane.attitude_control->get_angle_pitch_p().kP(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_angle_pitch_p().kP();
 
     case TUNING_Q_ANG_YAW_KP:
-        plane.quadplane.attitude_control->get_angle_yaw_p().kP(tuning_value);
-        break;
+        return &plane.quadplane.attitude_control->get_angle_yaw_p().kP();
 
     case TUNING_Q_PXY_P:
-        plane.quadplane.p_pos_xy.kP(tuning_value);
-        break;
+        return &plane.quadplane.p_pos_xy.kP();
 
     case TUNING_Q_PZ_P:
-        plane.quadplane.p_alt_hold.kP(tuning_value);
-        break;
+        return &plane.quadplane.p_alt_hold.kP();
 
     case TUNING_Q_VXY_P:
-        plane.quadplane.pi_vel_xy.kP(tuning_value);
-        break;
+        return &plane.quadplane.pi_vel_xy.kP();
 
     case TUNING_Q_VXY_I:
-        plane.quadplane.pi_vel_xy.kI(tuning_value);
-        break;
+        return &plane.quadplane.pi_vel_xy.kI();
 
     case TUNING_Q_VZ_P:
-        plane.quadplane.p_vel_z.kP(tuning_value);
-        break;
+        return &plane.quadplane.p_vel_z.kP();
 
     case TUNING_Q_AZ_P:
-        plane.quadplane.pid_accel_z.kP(tuning_value);
-        break;
+        return &plane.quadplane.pid_accel_z.kP();
 
     case TUNING_Q_AZ_I:
-        plane.quadplane.pid_accel_z.kI(tuning_value);
-        break;
+        return &plane.quadplane.pid_accel_z.kI();
 
     case TUNING_Q_AZ_D:
-        plane.quadplane.pid_accel_z.kD(tuning_value);
-        break;
+        return &plane.quadplane.pid_accel_z.kD();
         
     default:
-        return;
+        break;
+    }
+    return nullptr;
+}
+
+
+/*
+  save a parameter
+ */
+void AP_Tuning_Plane::save_value(uint8_t parm)
+{
+    switch(parm) {
+    // special handling of dual-parameters
+    case TUNING_Q_RATE_ROLL_KPI:
+        save_value(TUNING_Q_RATE_ROLL_KP);
+        save_value(TUNING_Q_RATE_ROLL_KI);
+        break;
+    case TUNING_Q_RATE_PITCH_KPI:
+        save_value(TUNING_Q_RATE_PITCH_KP);
+        save_value(TUNING_Q_RATE_PITCH_KI);
+        break;
+    default:
+        AP_Float *f = get_param_pointer(parm);
+        if (f != nullptr) {
+            f->save();
+        }
+        break;
     }
 }
 
 /*
-  log a tuning change
+  set a parameter
  */
-void Tuning::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_low, float tune_high)
+void AP_Tuning_Plane::set_value(uint8_t parm, float value)
 {
-    struct log_ParameterTuning pkt_tune = {
-        LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
-        time_us        : AP_HAL::micros64(),
-        parameter      : param,
-        tuning_value   : tuning_val,
-        tuning_low     : tune_low,
-        tuning_high    : tune_high
-    };
+    switch(parm) {
+    // special handling of dual-parameters
+    case TUNING_Q_RATE_ROLL_KPI:
+        set_value(TUNING_Q_RATE_ROLL_KP, value);
+        set_value(TUNING_Q_RATE_ROLL_KI, value);
+        break;
+    case TUNING_Q_RATE_PITCH_KPI:
+        set_value(TUNING_Q_RATE_PITCH_KP, value);
+        set_value(TUNING_Q_RATE_PITCH_KI, value);
+        break;
+    default:
+        AP_Float *f = get_param_pointer(parm);
+        if (f != nullptr) {
+            f->set_and_notify(value);
+        }
+        break;
+    }
+}
 
-    plane.DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
+/*
+  reload a parameter
+ */
+void AP_Tuning_Plane::reload_value(uint8_t parm)
+{
+    switch(parm) {
+    // special handling of dual-parameters
+    case TUNING_Q_RATE_ROLL_KPI:
+        reload_value(TUNING_Q_RATE_ROLL_KP);
+        reload_value(TUNING_Q_RATE_ROLL_KI);
+        break;
+    case TUNING_Q_RATE_PITCH_KPI:
+        reload_value(TUNING_Q_RATE_PITCH_KP);
+        reload_value(TUNING_Q_RATE_PITCH_KI);
+        break;
+    default:
+        AP_Float *f = get_param_pointer(parm);
+        if (f != nullptr) {
+            f->load();
+        }
+        break;
+    }
 }

@@ -24,7 +24,8 @@ class QuadPlane
 {
 public:
     friend class Plane;
-    friend class Tuning;
+    friend class AP_Tuning_Plane;
+    
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
     // var_info for holding Parameter information

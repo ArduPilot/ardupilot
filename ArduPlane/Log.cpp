@@ -508,8 +508,6 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
 #endif
-    { LOG_PARAMTUNE_MSG, sizeof(Tuning::log_ParameterTuning),
-      "PTUN", "QBfff",          "TimeUS,Param,TunVal,TunLo,TunHi" },  
     TECS_LOG_FORMAT(LOG_TECS_MSG)
 };
 

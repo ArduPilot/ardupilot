@@ -1117,7 +1117,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group: TUNE_
     // @Path: tuning.cpp
-    GOBJECT(tuning,           "TUNE_", Tuning),
+    GOBJECT(tuning,           "TUNE_", AP_Tuning_Plane),
     
     // @Group: Q_A_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp

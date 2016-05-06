@@ -221,7 +221,8 @@ void Plane::read_radio()
         rudder_input = channel_rudder->control_in;
     }
 
-    tuning.check_input();
+    // check for transmitter tuning changes
+    tuning.check_input(control_mode);
 }
 
 void Plane::control_failsafe(uint16_t pwm)

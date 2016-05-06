@@ -133,7 +133,7 @@ public:
     friend class Parameters;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
-    friend class Tuning;
+    friend class AP_Tuning_Plane;
 
     Plane(void);
 
@@ -740,7 +740,7 @@ private:
     QuadPlane quadplane{ahrs};
 
     // support for transmitter tuning
-    Tuning tuning;
+    AP_Tuning_Plane tuning;
 
     static const struct LogStructure log_structure[];
     
