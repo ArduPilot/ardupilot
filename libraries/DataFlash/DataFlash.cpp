@@ -81,6 +81,11 @@ void DataFlash_Class::Prep() {
     FOR_EACH_BACKEND(Prep());
 }
 
+void DataFlash_Class::StopLogging()
+{
+    FOR_EACH_BACKEND(stop_logging());
+}
+
 uint16_t DataFlash_Class::find_last_log() const {
     if (_next_backend == 0) {
         return 0;
@@ -213,5 +218,158 @@ uint32_t DataFlash_Class::num_dropped() const
 
 
 // end functions pass straight through to backend
+
+void DataFlash_Class::internal_error() const {
+//    _internal_errors++;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    abort();
+#endif
+}
+
+/* Log_Write support */
+void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    int16_t msg_type = msg_type_for_name(name, labels, fmt);
+    if (msg_type == -1) {
+        // unable to map name to a messagetype; could be out of
+        // msgtypes, could be out of slots, ...
+        internal_error();
+        return;
+    }
+
+    for (uint8_t i=0; i<_next_backend; i++) {
+        va_start(arg_list, fmt);
+        if (backends[i]->Log_Write_Emit_FMT(msg_type)) {
+            backends[i]->Log_Write(msg_type, arg_list);
+        } else {
+            // backend failed to write format (and has never written it)
+        }
+        va_end(arg_list);
+    }
+}
+
+
+int16_t DataFlash_Class::msg_type_for_name(const char *name, const char *labels, const char *fmt)
+{
+    for (uint8_t i=0; i<_log_write_fmt_count;i++) {
+        if (log_write_fmts[i].name == name) { // ptr comparison
+            // already have an ID for this name:
+            return log_write_fmts[i].msg_type;
+        }
+    }
+    if (_log_write_fmt_count >= ARRAY_SIZE(log_write_fmts)) {
+        // out of slots to remember formats
+        return -1;
+    }
+    // no message type allocated for this name.  Try to allocate one:
+    int16_t msg_type = find_free_msg_type();
+    if (msg_type == -1) {
+        return -1;
+    }
+    log_write_fmts[_log_write_fmt_count].msg_type = msg_type;
+    log_write_fmts[_log_write_fmt_count].name = name;
+    log_write_fmts[_log_write_fmt_count].fmt = fmt;
+    log_write_fmts[_log_write_fmt_count].labels = labels;
+    int16_t tmp = Log_Write_calc_msg_len(fmt);
+    if (tmp == -1) {
+        return -1;
+    }
+    log_write_fmts[_log_write_fmt_count].msg_len = tmp;
+    _log_write_fmt_count++;
+
+    return msg_type;
+}
+
+// returns true if the msg_type is already taken
+bool DataFlash_Class::msg_type_in_use(const uint8_t msg_type) const
+{
+    // check static list of messages (e.g. from LOG_BASE_STRUCTURES)
+    // check the write format types to see if we've used this one
+    for (uint16_t i=0; i<_num_types;i++) {
+        if (structure(i)->msg_type == msg_type) {
+            // in use
+            return true;
+        }
+    }
+    // check the write messages we've already put out:
+    for (uint8_t i=0; i<_log_write_fmt_count; i++) {
+        if (log_write_fmts[i].msg_type == msg_type) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// find a free message type
+int16_t DataFlash_Class::find_free_msg_type() const
+{
+    // avoid using 255 here; perhaps we want to use it to extend things later
+    for (uint16_t msg_type=254; msg_type>0; msg_type--) { // more likely to be free at end
+        if (! msg_type_in_use(msg_type)) {
+            return msg_type;
+        }
+    }
+    return -1;
+}
+
+bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
+{
+    // find log structure information corresponding to msg_type:
+    uint8_t i;
+    for (i=0; i<_log_write_fmt_count; i++) {
+        if(log_write_fmts[i].msg_type == msg_type) {
+            break;
+        }
+    }
+    if (i >= _log_write_fmt_count) {
+        // asked to fill for a type we don't recognise
+        internal_error();
+        return false;
+    }
+    logstruct.msg_type = msg_type;
+    strncpy((char*)logstruct.name, log_write_fmts[i].name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
+    strncpy((char*)logstruct.format, log_write_fmts[i].fmt, sizeof(logstruct.format));
+    strncpy((char*)logstruct.labels, log_write_fmts[i].labels, sizeof(logstruct.labels));
+    logstruct.msg_len = log_write_fmts[i].msg_len;
+    return true;
+}
+
+/* calculate the length of output of a format string.  Note that this
+ * returns an int16_t; if it returns -1 then an error has occured.
+ * This was mechanically converted from init_field_types in
+ * Tools/Replay/MsgHandler.cpp */
+int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
+{
+    uint8_t len =  LOG_PACKET_HEADER_LEN;
+    for (uint8_t i=0; i<strlen(fmt); i++) {
+        switch(fmt[i]) {
+        case 'b' : len += sizeof(int8_t); break;
+        case 'c' : len += sizeof(int16_t); break;
+        case 'd' : len += sizeof(double); break;
+        case 'e' : len += sizeof(int32_t); break;
+        case 'f' : len += sizeof(float); break;
+        case 'h' : len += sizeof(int16_t); break;
+        case 'i' : len += sizeof(int32_t); break;
+        case 'n' : len += sizeof(char[4]); break;
+        case 'B' : len += sizeof(uint8_t); break;
+        case 'C' : len += sizeof(uint16_t); break;
+        case 'E' : len += sizeof(uint32_t); break;
+        case 'H' : len += sizeof(uint16_t); break;
+        case 'I' : len += sizeof(uint32_t); break;
+        case 'L' : len += sizeof(int32_t); break;
+        case 'M' : len += sizeof(uint8_t); break;
+        case 'N' : len += sizeof(char[16]); break;
+        case 'Z' : len += sizeof(char[64]); break;
+        case 'q' : len += sizeof(int64_t); break;
+        case 'Q' : len += sizeof(uint64_t); break;
+        default: return -1;
+        }
+    }
+    return len;
+}
+
+/* End of Log_Write support */
 
 #undef FOR_EACH_BACKEND
