@@ -371,8 +371,8 @@ void NavEKF2_core::readGpsData()
             // read the NED velocity from the GPS
             gpsDataNew.vel = _ahrs->get_gps().velocity();
 
-            // Use the speed accuracy from the GPS if available, otherwise set it to zero.
-            // Apply a decaying envelope filter with a 5 second time constant to the raw speed accuracy data
+            // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
+            // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
             float alpha = constrain_float(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
             gpsSpdAccuracy *= (1.0f - alpha);
             float gpsSpdAccRaw;
@@ -380,6 +380,15 @@ void NavEKF2_core::readGpsData()
                 gpsSpdAccuracy = 0.0f;
             } else {
                 gpsSpdAccuracy = MAX(gpsSpdAccuracy,gpsSpdAccRaw);
+                gpsSpdAccuracy = MIN(gpsSpdAccuracy,50.0f);
+            }
+            gpsPosAccuracy *= (1.0f - alpha);
+            float gpsPosAccRaw;
+            if (!_ahrs->get_gps().horizontal_accuracy(gpsPosAccRaw)) {
+                gpsPosAccuracy = 0.0f;
+            } else {
+                gpsPosAccuracy = MAX(gpsPosAccuracy,gpsPosAccRaw);
+                gpsPosAccuracy = MIN(gpsPosAccuracy,100.0f);
             }
 
             // check if we have enough GPS satellites and increase the gps noise scaler if we don't

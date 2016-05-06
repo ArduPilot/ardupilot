@@ -209,7 +209,6 @@ void NavEKF2_core::FuseVelPosNED()
     uint8_t obsIndex;
 
     // declare variables used by state and covariance update calculations
-    float posErr;
     Vector6 R_OBS; // Measurement variances used for fusion
     Vector6 R_OBS_DATA_CHECKS; // Measurement variances used for data checks only
     Vector6 observation;
@@ -236,7 +235,7 @@ void NavEKF2_core::FuseVelPosNED()
         observation[5] = -hgtMea;
 
         // calculate additional error in GPS position caused by manoeuvring
-        posErr = frontend->gpsPosVarAccScale * accNavMag;
+        float posErr = frontend->gpsPosVarAccScale * accNavMag;
 
         // estimate the GPS Velocity, GPS horiz position and height measurement variances.
         // Use different errors if operating without external aiding using an assumed position or velocity of zero
@@ -255,7 +254,7 @@ void NavEKF2_core::FuseVelPosNED()
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
         } else {
             if (gpsSpdAccuracy > 0.0f) {
-                // use GPS receivers reported speed accuracy if available and floor at value set by gps noise parameter
+                // use GPS receivers reported speed accuracy if available and floor at value set by GPS velocity noise parameter
                 R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
                 R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
             } else {
@@ -264,11 +263,16 @@ void NavEKF2_core::FuseVelPosNED()
                 R_OBS[2] = sq(constrain_float(frontend->_gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend->gpsDVelVarAccScale  * accNavMag);
             }
             R_OBS[1] = R_OBS[0];
+            // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
+            if (gpsPosAccuracy > 0.0f) {
+                R_OBS[3] = sq(constrain_float(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
+            } else {
+                R_OBS[3] = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+            }
+            R_OBS[4] = R_OBS[3];
             // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
             // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
             // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
-            R_OBS[3] = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
-            R_OBS[4] = R_OBS[3];
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
         }
         R_OBS[5] = posDownObsNoise;

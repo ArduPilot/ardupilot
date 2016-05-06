@@ -197,6 +197,7 @@ void NavEKF2_core::InitialiseVariables()
     touchdownExpectedSet_ms = 0;
     expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
+    gpsPosAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
