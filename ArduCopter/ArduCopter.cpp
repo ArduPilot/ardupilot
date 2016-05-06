@@ -451,9 +451,6 @@ void Copter::three_hz_loop()
 #endif
 
     update_events();
-
-    // update ch6 in flight tuning
-    tuning();
 }
 
 // one_hz_loop - runs at 1Hz

@@ -575,21 +575,6 @@ struct PACKED log_ParameterTuning {
     int16_t  tuning_high;   // tuning high end value
 };
 
-void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high)
-{
-    struct log_ParameterTuning pkt_tune = {
-        LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
-        time_us        : AP_HAL::micros64(),
-        parameter      : param,
-        tuning_value   : tuning_val,
-        control_in     : control_in,
-        tuning_low     : tune_low,
-        tuning_high    : tune_high
-    };
-
-    DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
-}
-
 // log EKF origin and ahrs home to dataflash
 void Copter::Log_Write_Home_And_Origin()
 {
