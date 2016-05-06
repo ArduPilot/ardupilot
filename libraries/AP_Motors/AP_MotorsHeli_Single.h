@@ -42,11 +42,10 @@
 class AP_MotorsHeli_Single : public AP_MotorsHeli {
 public:
     // constructor
-    AP_MotorsHeli_Single(RC_Channel&    servo_aux,
-                         uint16_t       loop_rate,
+    AP_MotorsHeli_Single(uint16_t       loop_rate,
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
-        _servo_aux(servo_aux),
+        _servo_aux(CH_7),
         _main_rotor(RC_Channel_aux::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
         _tail_rotor(RC_Channel_aux::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX),
         _swash_servo_1(CH_NONE), _swash_servo_2(CH_NONE), _swash_servo_3(CH_NONE), _yaw_servo(CH_NONE)
@@ -82,7 +81,7 @@ public:
 
     // calculate_armed_scalars - recalculates scalars that can change while armed
     void calculate_armed_scalars();
-    
+
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t get_motor_mask();
@@ -100,7 +99,7 @@ public:
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const;
-    
+
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -128,7 +127,7 @@ protected:
     void servo_test();
 
     // external objects we depend upon
-    RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
+    RC_Channel          _servo_aux;             // output to ext gyro gain and tail direct drive esc (ch7)
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
 
@@ -143,7 +142,7 @@ protected:
     // parameters
     AP_Int16        _servo1_pos;                // Angular location of swash servo #1
     AP_Int16        _servo2_pos;                // Angular location of swash servo #2
-    AP_Int16        _servo3_pos;                // Angular location of swash servo #3    
+    AP_Int16        _servo3_pos;                // Angular location of swash servo #3
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int8         _swash_type;                // Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
     AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
