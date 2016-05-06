@@ -57,9 +57,9 @@ public:
     void operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt );
 
     // get accessors
-    float       kP() const { return _kp.get(); }
-    float       kI() const { return _ki.get(); }
-    float       kD() const { return _kd.get(); }
+    AP_Float   &kP() { return _kp; }
+    AP_Float   &kI() { return _ki; }
+    AP_Float   &kD() { return _kd; }
     float       imax() const { return _imax.get(); }
     float       filt_hz() const { return _filt_hz.get(); }
     float       get_filt_alpha() const;
