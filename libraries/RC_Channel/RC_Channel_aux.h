@@ -125,6 +125,9 @@ public:
 	// set servo_out
 	static void set_servo_out(Aux_servo_function_t function, int16_t value);
 
+    // setup failsafe for an auxillary channel function, by pwm
+    static void set_servo_failsafe_pwm(RC_Channel_aux::Aux_servo_function_t function, uint16_t pwm);
+    
 	// setup failsafe for an auxillary channel function
 	static void set_servo_failsafe(Aux_servo_function_t function, RC_Channel::LimitValue limit);
 
