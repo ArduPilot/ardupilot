@@ -104,9 +104,20 @@ def git_submodule(bld, git_submodule, **kw):
 
     return bld(**kw)
 
-@conf
-def git_submodule_head_hash(self, name):
-    module_node = self.srcnode.make_node(os.path.join('modules', name))
-    cmd = self.env.get_flat('GIT'), 'rev-parse', 'HEAD'
-    out = self.cmd_and_log(cmd, quiet=Context.BOTH, cwd=module_node.abspath())
+
+def _git_head_hash(ctx, path, short=False):
+    cmd = [ctx.env.get_flat('GIT'), 'rev-parse']
+    if short:
+        cmd.append('--short=8')
+    cmd.append('HEAD')
+    out = ctx.cmd_and_log(cmd, quiet=Context.BOTH, cwd=path)
     return out.strip()
+
+@conf
+def git_submodule_head_hash(self, name, short=False):
+    module_node = self.srcnode.make_node(os.path.join('modules', name))
+    return _git_head_hash(self, module_node.abspath(), short=short)
+
+@conf
+def git_head_hash(self, short=False):
+    return _git_head_hash(self, self.srcnode.abspath(), short=short)
