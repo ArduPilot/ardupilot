@@ -47,6 +47,31 @@ void NavEKF2_core::ResetVelocity(void)
 
     // store the time of the reset
     lastVelReset_ms = imuSampleTime_ms;
+
+    // reset the covariance matrix values
+    zeroRows(P,3,4);
+    zeroCols(P,3,4);
+
+    // calculate velocity variance
+    float R_OBS;
+    if (PV_AidingMode == AID_NONE) {
+        if (tiltAlignComplete && motorsArmed) {
+        // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
+            R_OBS = sq(constrain_float(frontend->_noaidHorizNoise, 0.5f, 50.0f));
+        } else {
+            // Use a smaller value to give faster initial alignment
+            R_OBS = sq(0.5f);
+        }
+    } else {
+        if (gpsSpdAccuracy > 0.0f) {
+            // use GPS receivers reported speed accuracy if available and floor at value set by gps noise parameter
+            R_OBS = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
+        } else {
+            // calculate additional error in GPS velocity caused by manoeuvring
+            R_OBS = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+        }
+    }
+    P[4][4] = P[3][3] = R_OBS;
 }
 
 // resets position states to last GPS measurement or to zero if in constant position mode
@@ -80,6 +105,28 @@ void NavEKF2_core::ResetPosition(void)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+
+    // reset the covariance matrix values
+    zeroRows(P,6,7);
+    zeroCols(P,6,7);
+
+    // calculate the initial position variance
+    float R_OBS;
+    if (PV_AidingMode == AID_NONE) {
+        if (tiltAlignComplete && motorsArmed) {
+        // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
+            R_OBS = sq(constrain_float(frontend->_noaidHorizNoise, 0.5f, 50.0f));
+        } else {
+            // Use a smaller value to give faster initial alignment
+            R_OBS = sq(0.5f);
+        }
+    } else {
+        // Use GPS reported accuracy with adjustment for maneouvre g's
+        float posErr = frontend->gpsPosVarAccScale * accNavMag;
+        R_OBS = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+    }
+    P[7][7] = P[6][6] = R_OBS;
+
 }
 
 // reset the vertical position state using the last height measurement
@@ -113,12 +160,8 @@ void NavEKF2_core::ResetHeight(void)
 // Adjust the EKf origin height so that the EKF height + origin height is the same as before
 // Return true if the height datum reset has been performed
 // If using a range finder for height do not reset and return false
-bool NavEKF2_core::resetHeightDatum(void)
+void NavEKF2_core::resetHeightDatum(void)
 {
-    // if we are using a range finder for height, return false
-    if (frontend->_altSource == 1) {
-        return false;
-    }
     // record the old height estimate
     float oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
@@ -129,7 +172,6 @@ bool NavEKF2_core::resetHeightDatum(void)
     if (validOrigin) {
         EKF_origin.alt += oldHgt*100;
     }
-    return true;
 }
 
 /********************************************************
@@ -319,14 +361,33 @@ void NavEKF2_core::FuseVelPosNED()
                     // don't fuse GPS data on this time step
                     fusePosData = false;
                     fuseVelData = false;
-                    // Reset the position variances and corresponding covariances to a value that will pass the checks
-                    zeroRows(P,6,7);
-                    zeroCols(P,6,7);
-                    P[6][6] = sq(float(0.5f*frontend->_gpsGlitchRadiusMax));
-                    P[7][7] = P[6][6];
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
                     velTestRatio = 0.0f;
+                    // TODO need a better way to report these events
+                    hal.console->printf("EKF2 IMU%u has reset position and velocity\n",(unsigned)imu_index);
+                    // The attitude error state covariances need to be reset to allow the heading to re-align
+                    zeroRows(P,0,2);
+                    zeroCols(P,0,2);
+                    // Define angular error vector variance in body frame
+                    Matrix3f angErrVarMat;
+                    memset(&angErrVarMat, 0, sizeof(angErrVarMat));
+                    angErrVarMat.a.x = sq(0.01f);
+                    angErrVarMat.b.y = sq(0.01f);
+                    angErrVarMat.c.z = sq(0.5f);
+                    // rotate into body frame
+                    angErrVarMat = angErrVarMat * prevTnb.transposed();
+                    angErrVarMat = prevTnb * angErrVarMat;
+                    // copy to covariance matrix
+                    P[0][0] = angErrVarMat.a.x;
+                    P[0][1] = angErrVarMat.a.y;
+                    P[0][2] = angErrVarMat.a.z;
+                    P[1][0] = angErrVarMat.b.x;
+                    P[1][1] = angErrVarMat.b.y;
+                    P[1][2] = angErrVarMat.b.z;
+                    P[2][0] = angErrVarMat.c.x;
+                    P[2][1] = angErrVarMat.c.y;
+                    P[2][2] = angErrVarMat.c.z;
                 }
             } else {
                 posHealth = false;
@@ -602,6 +663,11 @@ void NavEKF2_core::selectHeightForFusion()
         // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
         if (getTakeoffExpected() || getTouchdownExpected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;
+        }
+        // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
+        // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
+        if (motorsArmed && getTakeoffExpected()) {
+            hgtMea = MAX(hgtMea, meaHgtAtTakeOff);
         }
     } else {
         fuseHgtData = false;

@@ -528,12 +528,11 @@ void NavEKF::resetGyroBias(void)
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool NavEKF::resetHeightDatum(void)
+void NavEKF::resetHeightDatum(void)
 {
-    if (!core) {
-        return false;
+    if (core) {
+        core->resetHeightDatum();
     }
-    return core->resetHeightDatum();
 }
 
 // Commands the EKF to not use GPS.
@@ -629,18 +628,6 @@ bool NavEKF::getOriginLLH(struct Location &loc) const
         return false;
     }
     return core->getOriginLLH(loc);
-}
-
-// set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
-// The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-// Returns false if the filter has rejected the attempt to set the origin
-bool NavEKF::setOriginLLH(struct Location &loc)
-{
-    if (!core) {
-        return false;
-    }
-    return core->setOriginLLH(loc);
 }
 
 // return estimated height above ground level

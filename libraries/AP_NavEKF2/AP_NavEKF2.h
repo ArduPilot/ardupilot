@@ -98,7 +98,7 @@ public:
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    void resetHeightDatum(void);
 
     // Commands the EKF to not use GPS.
     // This command must be sent prior to arming as it will only be actioned when the filter is in static mode
@@ -146,12 +146,6 @@ public:
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
     bool getOriginLLH(struct Location &loc) const;
-
-    // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
-    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-    // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -265,6 +259,10 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set(enable); }
     
+    typedef float stateVarVec[24];
+    // return the state variances
+    void getStateVariances(stateVarVec &stateVar) const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
@@ -280,10 +278,12 @@ private:
     AP_Float _gpsHorizPosNoise;     // GPS horizontal position measurement noise m
     AP_Float _baroAltNoise;         // Baro height measurement noise : m^2
     AP_Float _magNoise;             // magnetometer measurement noise : gauss
+    AP_Float _yawNoise;             // magnetometer measured yaw angle noise : rad
     AP_Float _easNoise;             // equivalent airspeed measurement noise : m/s
     AP_Float _windVelProcessNoise;  // wind velocity state process noise : m/s^2
     AP_Float _wndVarHgtRateScale;   // scale factor applied to wind process noise due to height rate
-    AP_Float _magProcessNoise;      // magnetic field process noise : gauss/sec
+    AP_Float _magBodyProcessNoise;  // body magnetic field process noise : gauss/sec
+    AP_Float _magEarthProcessNoise; // earth magnetic field process noise : gauss/sec
     AP_Float _gyrNoise;             // gyro process noise : rad/s
     AP_Float _accNoise;             // accelerometer process noise : m/s^2
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s
@@ -291,17 +291,18 @@ private:
     AP_Int16 _gpsDelay_ms;          // effective average delay of GPS measurements relative to inertial measurement (msec)
     AP_Int16 _hgtDelay_ms;          // effective average delay of Height measurements relative to inertial measurements (msec)
     AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
-    AP_Int16  _gpsVelInnovGate;     // Percentage number of standard deviations applied to GPS velocity innovation consistency check
-    AP_Int16  _gpsPosInnovGate;     // Percentage number of standard deviations applied to GPS position innovation consistency check
-    AP_Int16  _hgtInnovGate;        // Percentage number of standard deviations applied to height innovation consistency check
-    AP_Int16  _magInnovGate;        // Percentage number of standard deviations applied to magnetometer innovation consistency check
-    AP_Int16  _tasInnovGate;        // Percentage number of standard deviations applied to true airspeed innovation consistency check
-    AP_Int8  _magCal;               // Sets activation condition for in-flight magnetometer calibration
+    AP_Int16 _gpsVelInnovGate;      // Percentage number of standard deviations applied to GPS velocity innovation consistency check
+    AP_Int16 _gpsPosInnovGate;      // Percentage number of standard deviations applied to GPS position innovation consistency check
+    AP_Int16 _hgtInnovGate;         // Percentage number of standard deviations applied to height innovation consistency check
+    AP_Int16 _magInnovGate;         // Percentage number of standard deviations applied to magnetometer innovation consistency check
+    AP_Int16 _tasInnovGate;         // Percentage number of standard deviations applied to true airspeed innovation consistency check
+    AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
+    AP_Int8 _magCal;                // Sets activation condition for in-flight magnetometer calibration
     AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
     AP_Float _flowNoise;            // optical flow rate measurement noise
-    AP_Int16  _flowInnovGate;       // Percentage number of standard deviations applied to optical flow innovation consistency check
+    AP_Int16 _flowInnovGate;        // Percentage number of standard deviations applied to optical flow innovation consistency check
     AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
-    AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
+    AP_Int16 _rngInnovGate;         // Percentage number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
     AP_Float _gyroScaleProcessNoise;// gyro scale factor state process noise : 1/s

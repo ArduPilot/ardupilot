@@ -143,10 +143,9 @@ void NavEKF2_core::setAidingMode()
             // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
             lastPosPassTime_ms = imuSampleTime_ms;
         }
-        // Reset all position, velocity and covariance
+        // Reset all position and velocity states
         ResetVelocity();
         ResetPosition();
-        CovarianceInit();
 
     }
 
@@ -222,17 +221,6 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
     // be quite sensitive to a rapid spin of the ground vehicle if
     // traction is lost
     return _ahrs->get_fly_forward() && _ahrs->get_vehicle_class() != AHRS_VEHICLE_GROUND;
-}
-
-// set the LLH location of the filters NED origin
-bool NavEKF2_core::setOriginLLH(struct Location &loc)
-{
-    if (isAiding) {
-        return false;
-    }
-    EKF_origin = loc;
-    validOrigin = true;
-    return true;
 }
 
 // Set the NED origin to be used until the next filter reset

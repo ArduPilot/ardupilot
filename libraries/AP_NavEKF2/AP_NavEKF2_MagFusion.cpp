@@ -28,32 +28,53 @@ void NavEKF2_core::controlMagYawReset()
     deltaQuat.to_axis_angle(deltaRotVec);
     float deltaRot = deltaRotVec.length();
 
+    // sample the yaw angle before we takeoff
+    if (onGround) {
+        referenceYawAngle = atan2f(prevTnb.a.y,prevTnb.a.x);
+        posdAtLastYawReset = stateStruct.position.z;
+    }
+
     // In-Flight reset for vehicle that cannot use a zero sideslip assumption
     // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
-    // Perform the reset earlier if high yaw and velocity innovations indicate that 'toilet bowling' is occurring
-    // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
-    // Delay if rotated too far since the last check as rapid rotations will produce errors in the magnetic field states
-    if (!firstMagYawInit && !assume_zero_sideslip() && inFlight && deltaRot < 0.1745f) {
+    // Perform a reset earlier if bad initial yaw from on-ground magnetic field distoration is detected.
+    // Don't reset if rotating rapidly as timing errors will produce large errors in the yaw estimate.
+    if (!firstMagYawInit && !assume_zero_sideslip() && !onGround && deltaRot < 0.1745f) {
         // check that we have reached a height where ground magnetic interference effects are insignificant
         bool hgtCheckPassed = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
 
-        // check for 'toilet bowling' which is characterised by large yaw and velocity innovations and caused by bad yaw alignment
-        // this can occur if there is severe magnetic interference on the ground
-        bool toiletBowling = (yawTestRatio > 1.0f) && (velTestRatio > 1.0f);
+        // Calculate the ratio of yaw change to max allowed innovation
+        float yawChange = wrap_PI(atan2f(prevTnb.a.y,prevTnb.a.x) - referenceYawAngle);
+        float yawChangeRatio = sq(yawChange) / (sq(MAX(0.01f * (float)frontend->_yawInnovGate, 1.0f)) * sq(fmaxf(frontend->_yawNoise,0.01f)));
 
-        if (hgtCheckPassed || toiletBowling) {
-            firstMagYawInit = true;
+        // A combination of large yaw innovation, increasing height and lack of significant yaw angle change from takeoff is
+        // indicative of a bad initial yaw
+        bool badInitialYaw = (yawTestRatio > 1.0f) && (yawChangeRatio < 1.0f) && (stateStruct.position.z < (posdAtLastYawReset - 0.5f));
+
+        // if we have bad initial yaw or have achieved the height, do a full yaw and mag field state reset
+        if (hgtCheckPassed || badInitialYaw) {
             // reset the timer used to prevent magnetometer fusion from affecting attitude until initial field learning is complete
             magFuseTiltInhibit_ms =  imuSampleTime_ms;
+
             // Update the yaw  angle and earth field states using the magnetic field measurements
             Quaternion tempQuat;
             Vector3f eulerAngles;
             stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
             tempQuat = stateStruct.quat;
             stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+
+            // Update the reference yaw angle and reset reference data
+            stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+            referenceYawAngle = eulerAngles.z;
+            posdAtLastYawReset = stateStruct.position.z;
+
             // calculate the change in the quaternion state and apply it to the ouput history buffer
             tempQuat = stateStruct.quat/tempQuat;
             StoreQuatRotate(tempQuat);
+
+            // Lock out further resets when we have achieved the required height
+            if (hgtCheckPassed) {
+                firstMagYawInit = true;
+            }
         }
     }
 
@@ -162,6 +183,28 @@ void NavEKF2_core::SelectMagFusion()
         controlMagYawReset();
     }
 
+    // Check if we are yawing rapidly enough for uncorrected gyro scale factor errors to cause loss of heading reference
+    // Apply hysteresis
+    if ((fabsf(filtYawRate) > 1.5f && !fastYawSpin) || (fabsf(filtYawRate) > 1.0f && fastYawSpin)) {
+        if (!fastYawSpin) {
+            // save variances on gyro bias states and zero elements to inhibit bias learning during rapid spins
+            savedDelAngVar[0] = P[9][9];
+            savedDelAngVar[1] = P[10][10];
+            savedDelAngVar[2] = P[11][11];
+            zeroRows(P,9,11);
+            zeroCols(P,9,11);
+        }
+        fastYawSpin = true;
+    } else {
+        if (fastYawSpin) {
+            // reinstate saved variances
+            P[9][9] = savedDelAngVar[0];
+            P[10][10] = savedDelAngVar[1];
+            P[11][11] = savedDelAngVar[2];
+        }
+        fastYawSpin = false;
+    }
+
     // determine if conditions are right to start a new fusion cycle
     // wait until the EKF time horizon catches up with the measurement
     bool dataReady = (magDataToFuse && statesInitialised && use_compass() && yawAlignComplete);
@@ -174,7 +217,26 @@ void NavEKF2_core::SelectMagFusion()
         } else {
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
             // maintained by fusing declination as a synthesised observation
-            if (PV_AidingMode != AID_ABSOLUTE || (imuSampleTime_ms - lastPosPassTime_ms) > 4000) {
+            bool useCompassDecl = (PV_AidingMode != AID_ABSOLUTE || (imuSampleTime_ms - lastPosPassTime_ms) > 4000);
+
+            // if we are spinning rapidly, then the declination observaton used is the last learned value before the spin started
+            if (!fastYawSpin) {
+                lastLearnedDecl = atan2f(stateStruct.earth_magfield.y,stateStruct.earth_magfield.x);
+            }
+
+            // constrain the declination angle of the learned earth field
+            if (useCompassDecl || fastYawSpin) {
+                // select the source of the declination
+                if (useCompassDecl) {
+                    // use the value from the compass library lookup tables
+                    magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+                    declObsVar = 0.01f;
+                } else {
+                    // use the last learned value
+                    magDecAng = lastLearnedDecl;
+                    declObsVar = 0.001f;
+                }
+
                 FuseDeclination();
             }
             // fuse the three magnetometer componenents sequentially
@@ -641,7 +703,12 @@ void NavEKF2_core::fuseEulerYaw()
     float q3 = stateStruct.quat[3];
 
     // compass measurement error variance (rad^2)
-    const float R_YAW = 0.25f;
+    float R_YAW;
+    if (!onGround) {
+        R_YAW = sq(fmaxf(frontend->_yawNoise,0.01f));
+    } else {
+        R_YAW = sq(0.1745f);
+    }
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
     // determine if a 321 or 312 Euler sequence is best
@@ -778,7 +845,8 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
+    float maxYawInnov2 = sq(fmaxf(0.01f * (float)frontend->_yawInnovGate, 1.0f)) * varInnov;
+    yawTestRatio = sq(innovation) / maxYawInnov2;
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {
@@ -793,10 +861,11 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // limit the innovation so that initial corrections are not too large
-    if (innovation > 0.5f) {
-        innovation = 0.5f;
-    } else if (innovation < -0.5f) {
-        innovation = -0.5f;
+    float maxYawInnov = sqrt(maxYawInnov2);
+    if (innovation > maxYawInnov) {
+        innovation = maxYawInnov;
+    } else if (innovation < -maxYawInnov) {
+        innovation = -maxYawInnov;
     }
 
     // correct the state vector
@@ -838,22 +907,18 @@ void NavEKF2_core::fuseEulerYaw()
 */
 void NavEKF2_core::FuseDeclination()
 {
-    // declination error variance (rad^2)
-    const float R_DECL = 1e-2f;
-
     // copy required states to local variables
     float magN = stateStruct.earth_magfield.x;
     float magE = stateStruct.earth_magfield.y;
-
-    // prevent bad earth field states from causing numerical errors or exceptions
-    if (magN < 1e-3f) {
-        return;
-    }
 
     // Calculate observation Jacobian and Kalman gains
     float t2 = magE*magE;
     float t3 = magN*magN;
     float t4 = t2+t3;
+    if (t4 < 0.001f) {
+        // prevent bad earth field states from causing numerical errors or exceptions
+        return;
+    }
     float t5 = 1.0f/t4;
     float t22 = magE*t5;
     float t23 = magN*t5;
@@ -865,7 +930,7 @@ void NavEKF2_core::FuseDeclination()
     float t14 = P[17][17]*t23;
     float t10 = t9-t14;
     float t15 = t23*t10;
-    float t11 = R_DECL+t8-t15; // innovation variance
+    float t11 = declObsVar+t8-t15; // innovation variance
     float t12 = 1.0f/t11;
 
     float H_MAG[24];
@@ -881,11 +946,8 @@ void NavEKF2_core::FuseDeclination()
         Kfusion[i] = -t12*(P[i][16]*t22-P[i][17]*t23);
     }
 
-    // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
-
     // Calculate the innovation
-    float innovation = atanf(t4) - magDecAng;
+    float innovation = atan2f(magE , magN) - magDecAng;
 
     // limit the innovation to protect against data errors
     if (innovation > 0.5f) {
@@ -945,7 +1007,7 @@ void NavEKF2_core::FuseDeclination()
 void NavEKF2_core::alignMagStateDeclination()
 {
     // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+    magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = stateStruct.earth_magfield;

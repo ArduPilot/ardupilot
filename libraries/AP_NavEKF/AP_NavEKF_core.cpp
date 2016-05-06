@@ -4849,17 +4849,6 @@ bool NavEKF_core::getOriginLLH(struct Location &loc) const
     return validOrigin;
 }
 
-// set the LLH location of the filters NED origin
-bool NavEKF_core::setOriginLLH(struct Location &loc)
-{
-    if (vehicleArmed) {
-        return false;
-    }
-    EKF_origin = loc;
-    validOrigin = true;
-    return true;
-}
-
 // determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
 bool NavEKF_core::getTakeoffExpected()
 {
