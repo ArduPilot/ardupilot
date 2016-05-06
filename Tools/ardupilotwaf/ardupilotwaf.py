@@ -49,6 +49,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'GCS_MAVLink',
     'RC_Channel',
     'StorageManager',
+    'AP_Tuning',
 ]
 
 def _get_legacy_defines(sketch_name):
