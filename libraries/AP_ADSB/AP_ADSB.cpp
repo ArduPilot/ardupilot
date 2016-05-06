@@ -25,6 +25,8 @@
 #include "AP_ADSB.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#include <AP_AHRS/AP_AHRS.h>
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -153,7 +155,7 @@ void AP_ADSB::perform_threat_detection(void)
     uint16_t max_distance_index = 0;
 
     for (uint16_t index = 0; index < _vehicle_count; index++) {
-        float distance = get_distance(my_loc, get_location(_vehicle_list[index]));
+        float distance = get_distance(my_loc, _vehicle_list[index].get_location());
         if (min_distance > distance || index == 0) {
             min_distance = distance;
             min_distance_index = index;
@@ -188,12 +190,12 @@ void AP_ADSB::perform_threat_detection(void)
 /*
  * Convert/Extract a Location from a vehicle
  */
-Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
+Location AP_ADSB::adsb_vehicle_t::get_location() const
 {
     Location loc {};
-    loc.alt = vehicle.info.altitude * 0.1f; // convert mm to cm.
-    loc.lat = vehicle.info.lat;
-    loc.lng = vehicle.info.lon;
+    loc.alt = info.altitude * 0.1f; // convert mm to cm.
+    loc.lat = info.lat;
+    loc.lng = info.lon;
     loc.flags.relative_alt = false;
     return loc;
 }
@@ -271,7 +273,7 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
         if (!is_zero(_lowest_threat_distance) && // nonzero means it is valid
             _ahrs.get_position(my_loc)) {       // true means my_loc is valid
 
-            float distance = get_distance(my_loc, get_location(vehicle));
+            float distance = get_distance(my_loc, vehicle.get_location());
             if (distance < _lowest_threat_distance) { // is closer than the furthest
 
                  // overwrite the lowest_threat/furthest
@@ -293,6 +295,9 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
 
         } // if !zero
     } // if buffer full
+
+    vehicle.last_update_ms = AP_HAL::millis() - vehicle.info.tslc;
+    push_sample(vehicle); // note that set_vehicle modifies vehicle
 }
 
 /*
@@ -347,3 +352,16 @@ void AP_ADSB::send_adsb_vehicle(mavlink_channel_t chan)
     }
 }
 
+#include <stdio.h>
+void AP_ADSB::push_sample(adsb_vehicle_t &vehicle)
+{
+    if (samples.is_full()) {
+        ::fprintf(stderr, "     samples full\n");
+    }
+    samples.push_back(vehicle);
+}
+
+bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
+{
+    return samples.pop_front(vehicle);
+}
