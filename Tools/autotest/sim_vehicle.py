@@ -392,6 +392,9 @@ def do_build_waf(vehicledir, opts, frame_options):
     waf_light = "./modules/waf/waf-light"
 
     cmd_configure = [waf_light, "configure", "--board", "sitl" ]
+    if opts.debug:
+        cmd_configure.append("--debug")
+
     run_cmd_blocking("Configure waf", cmd_configure)
     p = subprocess.Popen(cmd_configure)
     pid, sts = os.waitpid(p.pid,0)
