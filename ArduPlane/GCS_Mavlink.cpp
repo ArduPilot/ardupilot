@@ -1266,6 +1266,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         switch(packet.command) {
 
+        case MAV_CMD_DO_CHANGE_SPEED:
+            result = MAV_RESULT_FAILED;
+            AP_Mission::Mission_Command cmd;
+            if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd)
+                    == MAV_MISSION_ACCEPTED) {
+                plane.do_change_speed(cmd);
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+
         case MAV_CMD_START_RX_PAIR:
             // initiate bind procedure
             if (!hal.rcin->rc_bind(packet.param1)) {
