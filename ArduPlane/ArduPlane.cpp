@@ -562,9 +562,15 @@ void Plane::update_flight_mode(void)
         handle_auto_mode();
         break;
 
+    case GUIDED:
+        if (auto_state.vtol_mode && quadplane.available()) {
+            quadplane.guided_update();
+            break;
+        }
+        // fall through
+
     case RTL:
     case LOITER:
-    case GUIDED:
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();

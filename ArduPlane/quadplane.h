@@ -182,6 +182,9 @@ private:
     
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
+
+    void guided_start(void);
+    void guided_update(void);
     
     AP_Int16 transition_time_ms;
 

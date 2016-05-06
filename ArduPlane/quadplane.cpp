@@ -1060,11 +1060,18 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state)
  */
 bool QuadPlane::in_vtol_auto(void)
 {
-    if (!enable || plane.control_mode != AUTO) {
+    if (!enable) {
+        return false;
+    }
+    if (plane.control_mode != AUTO &&
+        plane.control_mode != GUIDED) {
         return false;
     }
     if (plane.auto_state.vtol_mode) {
         return true;
+    }
+    if (plane.control_mode == GUIDED) {
+        return false;
     }
     switch (plane.mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_VTOL_LAND:
@@ -1689,4 +1696,24 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
     // scale over half of yaw_rate_max. This gives the pilot twice the
     // authority of the weathervane controller
     return weathervane.last_output * (yaw_rate_max/2) * 100;
+}
+
+/*
+  start guided mode control
+ */
+void QuadPlane::guided_start(void)
+{
+    poscontrol.state = QPOS_POSITION1;
+    poscontrol.speed_scale = 0;
+    setup_target_position();
+    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
+}
+
+/*
+  update guided mode control
+ */
+void QuadPlane::guided_update(void)
+{
+    // run VTOL position controller
+    vtol_position_controller();
 }
