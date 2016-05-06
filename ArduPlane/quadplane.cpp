@@ -304,7 +304,6 @@ void QuadPlane::setup_default_channels(uint8_t num_motors)
 
 bool QuadPlane::setup(void)
 {
-    uint16_t mask;
     if (initialised) {
         return true;
     }
@@ -395,14 +394,9 @@ bool QuadPlane::setup(void)
 
     // setup the trim of any motors used by AP_Motors so px4io
     // failsafe will disable motors
-    mask = motors->get_motor_mask();
-    for (uint8_t i=0; i<16; i++) {
-        if (mask & 1U<<i) {
-            RC_Channel *ch = RC_Channel::rc_channel(i);
-            if (ch != nullptr) {
-                ch->radio_trim = thr_min_pwm;
-            }
-        }
+    for (uint8_t i=0; i<8; i++) {
+        RC_Channel_aux::set_servo_failsafe_pwm((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+i),
+                                               thr_min_pwm);
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
