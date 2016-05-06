@@ -1063,15 +1063,11 @@ bool QuadPlane::in_vtol_auto(void)
     if (!enable) {
         return false;
     }
-    if (plane.control_mode != AUTO &&
-        plane.control_mode != GUIDED) {
+    if (plane.control_mode != AUTO) {
         return false;
     }
     if (plane.auto_state.vtol_mode) {
         return true;
-    }
-    if (plane.control_mode == GUIDED) {
-        return false;
     }
     switch (plane.mission.get_current_nav_cmd().id) {
     case MAV_CMD_NAV_VTOL_LAND:
@@ -1095,6 +1091,7 @@ bool QuadPlane::in_vtol_mode(void)
             plane.control_mode == QLOITER ||
             plane.control_mode == QLAND ||
             plane.control_mode == QRTL ||
+            (plane.control_mode == GUIDED && plane.auto_state.vtol_mode) ||
             in_vtol_auto());
 }
 
@@ -1125,7 +1122,7 @@ void QuadPlane::vtol_position_controller(void)
 
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
-                                                                             get_pilot_input_yaw_rate_cds(),
+                                                                             get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
@@ -1240,7 +1237,7 @@ void QuadPlane::vtol_position_controller(void)
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
-                                                                             get_pilot_input_yaw_rate_cds(),
+                                                                             get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
         break;
 
@@ -1338,7 +1335,7 @@ void QuadPlane::takeoff_controller(void)
     
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
-                                                                         get_pilot_input_yaw_rate_cds(),
+                                                                         get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                          smoothing_gain);
     
     // nav roll and pitch are controller by position controller
