@@ -103,7 +103,8 @@ enum control_mode_t {
     AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
-    THROW =        18   // throw to launch mode using inertial/GPS system, no pilot input
+    THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
+    AVOID =        19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
 };
 
 enum mode_reason_t {
@@ -120,7 +121,8 @@ enum mode_reason_t {
     MODE_REASON_FENCE_BREACH,
     MODE_REASON_TERRAIN_FAILSAFE,
     MODE_REASON_BRAKE_TIMEOUT,
-    MODE_REASON_FLIP_COMPLETE
+    MODE_REASON_FLIP_COMPLETE,
+    MODE_REASON_AVOIDANCE,
 };
 
 // Tuning enumeration
