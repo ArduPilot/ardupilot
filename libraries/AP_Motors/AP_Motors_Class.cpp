@@ -40,7 +40,6 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
 {
     // init other flags
     _flags.armed = false;
-    _flags.stabilizing = false;
     _flags.frame_orientation = AP_MOTORS_X_FRAME;
     _flags.interlock = false;
 
