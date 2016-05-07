@@ -199,7 +199,9 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
 float Copter::get_non_takeoff_throttle()
 {
-    return (((float)g.throttle_mid/1000.0f)/2.0f);
+    // ensure mid throttle is set within a reasonable range
+    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    return MAX(0,g.throttle_mid-g.throttle_min) / ((float)(1000-g.throttle_min) * 2.0f);
 }
 
 float Copter::get_takeoff_trigger_throttle()
