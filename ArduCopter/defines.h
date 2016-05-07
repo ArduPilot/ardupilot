@@ -303,17 +303,12 @@ enum ThrowModeState {
 #define MASK_LOG_ANY                    0xFFFF
 
 // DATA - event logging
-#define DATA_MAVLINK_FLOAT                  1
-#define DATA_MAVLINK_INT32                  2
-#define DATA_MAVLINK_INT16                  3
-#define DATA_MAVLINK_INT8                   4
 #define DATA_AP_STATE                       7
 #define DATA_SYSTEM_TIME_SET                8
 #define DATA_INIT_SIMPLE_BEARING            9
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
 #define DATA_AUTO_ARMED                     15
-#define DATA_TAKEOFF                        16
 #define DATA_LAND_COMPLETE_MAYBE            17
 #define DATA_LAND_COMPLETE                  18
 #define DATA_NOT_LANDED                     28
@@ -334,7 +329,6 @@ enum ThrowModeState {
 #define DATA_AUTOTUNE_SAVEDGAINS            37
 #define DATA_SAVE_TRIM                      38
 #define DATA_SAVEWP_ADD_WP                  39
-#define DATA_SAVEWP_CLEAR_MISSION_RTL       40
 #define DATA_FENCE_ENABLE                   41
 #define DATA_FENCE_DISABLE                  42
 #define DATA_ACRO_TRAINER_DISABLED          43
@@ -342,7 +336,6 @@ enum ThrowModeState {
 #define DATA_ACRO_TRAINER_LIMITED           45
 #define DATA_EPM_GRAB                       46
 #define DATA_EPM_RELEASE                    47
-#define DATA_EPM_NEUTRAL                    48  // deprecated
 #define DATA_PARACHUTE_DISABLED             49
 #define DATA_PARACHUTE_ENABLED              50
 #define DATA_PARACHUTE_RELEASED             51
