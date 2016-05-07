@@ -255,7 +255,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 
     // reset target altitude if this controller has just been engaged
     if (now - last_call_ms > RANGEFINDER_TIMEOUT_MS) {
-        target_rangefinder_alt = rangefinder_alt + current_alt_target - current_alt;
+        target_rangefinder_alt = rangefinder_state.alt_cm + current_alt_target - current_alt;
     }
     last_call_ms = now;
 
@@ -266,10 +266,10 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
-    target_rangefinder_alt = constrain_float(target_rangefinder_alt,rangefinder_alt-pos_control.get_leash_down_z(),rangefinder_alt+pos_control.get_leash_up_z());
+    target_rangefinder_alt = constrain_float(target_rangefinder_alt,rangefinder_state.alt_cm-pos_control.get_leash_down_z(),rangefinder_state.alt_cm+pos_control.get_leash_up_z());
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
-    distance_error = (target_rangefinder_alt - rangefinder_alt) - (current_alt_target - current_alt);
+    distance_error = (target_rangefinder_alt - rangefinder_state.alt_cm) - (current_alt_target - current_alt);
     velocity_correction = distance_error * g.rangefinder_gain;
     velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 

@@ -19,7 +19,7 @@ void Copter::update_precland()
 
     // use range finder altitude if it is valid
     if (rangefinder_alt_ok()) {
-        final_alt = rangefinder_alt;
+        final_alt = rangefinder_state.alt_cm;
     }
 
     copter.precland.update(final_alt);

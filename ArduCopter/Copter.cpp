@@ -25,7 +25,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Copter::Copter(void) :
     DataFlash{FIRMWARE_STRING},
     flight_modes(&g.flight_mode1),
-    rangefinder_enabled(true),
     mission(ahrs, 
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
@@ -60,8 +59,6 @@ Copter::Copter(void) :
     frsky_telemetry(ahrs, battery),
 #endif
     climb_rate(0),
-    rangefinder_alt(0),
-    rangefinder_alt_health(0),
     target_rangefinder_alt(0.0f),
     baro_alt(0),
     baro_climbrate(0.0f),
