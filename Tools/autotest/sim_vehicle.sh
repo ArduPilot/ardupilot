@@ -22,6 +22,7 @@ WIPE_EEPROM=0
 REVERSE_THROTTLE=0
 NO_REBUILD=0
 START_HIL=0
+SITLRCIN=1
 EXTRA_ARGS=""
 MODEL=""
 BREAKPOINT=""
@@ -329,6 +330,10 @@ case $FRAME in
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/plane.parm"
 	;;
+    flightaxis*)
+        MODEL="$FRAME"
+        SITLRCIN=0
+	;;
     *-heli)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
@@ -460,7 +465,10 @@ trap kill_tasks SIGINT
 # mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
 options=""
 if [ $START_HIL == 0 ]; then
-options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT"
+    options="--master $MAVLINK_PORT"
+    if [ $SITLRCIN == 1 ]; then
+        options="$options --sitl $SIMOUT_PORT"
+    fi
 fi
 
 # If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
