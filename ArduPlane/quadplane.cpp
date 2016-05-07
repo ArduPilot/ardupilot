@@ -1131,6 +1131,7 @@ void QuadPlane::vtol_position_controller(void)
 
     case QPOS_POSITION1: {
         Vector2f diff_wp = location_diff(plane.current_loc, loc);
+        float distance = diff_wp.length();
 
         if (poscontrol.speed_scale <= 0) {
             // initialise scaling so we start off targeting our
@@ -1140,10 +1141,10 @@ void QuadPlane::vtol_position_controller(void)
             // velocity as we approach the waypoint, aiming for zero
             // speed at the waypoint
             Vector2f groundspeed = ahrs.groundspeed_vector();
-            float speed_towards_target = diff_wp.normalized() * groundspeed;
-            // setup land_speed_scale so at current distance we maintain speed towards target, and slow down as
-            // we approach
-            float distance = diff_wp.length();
+            float speed_towards_target = distance>1?(diff_wp.normalized() * groundspeed):0;
+            // setup land_speed_scale so at current distance we
+            // maintain speed towards target, and slow down as we
+            // approach
 
             // max_speed will control how fast we will fly. It will always decrease
             poscontrol.max_speed = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
@@ -1159,6 +1160,10 @@ void QuadPlane::vtol_position_controller(void)
         const float final_speed = 2.0f;
         Vector2f target_speed_xy = diff_wp * poscontrol.speed_scale;
         float target_speed = target_speed_xy.length();
+        if (distance < 1) {
+            // prevent numerical error before switching to POSITION2
+            target_speed_xy(0.1, 0.1);
+        }
         if (target_speed < final_speed) {
             // until we enter the loiter we always aim for at least 2m/s
             target_speed_xy = target_speed_xy.normalized() * final_speed;
