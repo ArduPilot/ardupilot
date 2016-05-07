@@ -330,6 +330,7 @@ _options_for_frame = {
 
 def options_for_frame(frame, opts):
     '''return informatiom about how to sitl for frame e.g. build-type==sitl'''
+    ret = None
     if frame in _options_for_frame:
         ret = _options_for_frame[frame]
     else:
