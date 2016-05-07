@@ -160,36 +160,43 @@ progress("Start")
 parser = CompatOptionParser("sim_vehicle.py", epilog='''
     eeprom.bin in the starting directory contains the parameters for your simulated vehicle. Always start from the same directory. It is recommended that you start in the main vehicle directory for the vehicle you are simulating, for example, start in the ArduPlane directory to simulate ArduPlane
 ''')
+
 parser.add_option("-v", "--vehicle", type='string', default=None, help='vehicle type (ArduPlane, ArduCopter or APMrover2)')
-parser.add_option("-I", "--instance", default=0, type='int', help='instance of simulator')
-parser.add_option("-V", "--valgrind", action='store_true', default=False, help='enable valgrind for memory access checking (very slow!)')
-parser.add_option("-N", "--no-rebuild", action='store_true', default=False, help="don't rebuild before starting ardupilot")
-parser.add_option("-H", "--hil", action='store_true', default=False, help="start HIL")
-parser.add_option("-T", "--tracker", action='store_true', default=False, help="start an antenna tracker instance")
-parser.add_option("-A", "--sitl-instance-args", type='string', default=None, help='pass arguments to SITL instance')
-parser.add_option("-R", "--reverse-throttle", action='store_true', default=False, help="reverse throttle in plane")
-parser.add_option("-G", "--gdb", action='store_true', default=False, help="use gdb for debugging ardupilot")
-parser.add_option("-g", "--gdb-stopped", action='store_true', default=False, help="use gdb for debugging ardupilot (no auto-start)")
-parser.add_option("-D", "--debug", action='store_true', default=False, help="build with debugging")
-parser.add_option("-d", "--delay-start", default=0, type='float', help='delays the start of mavproxy by the number of seconds')
-parser.add_option("-B", "--breakpoint", type='string', action="append", default=[], help='add a breakpoint at given location in debugger')
-parser.add_option("-M", "--mavlink-gimbal", action='store_true', default=False, help='enable MAVLink gimbal')
-parser.add_option("-L", "--location", type='string', default='CMAC', help='select start location from Tools/autotest/locations.txt')
-parser.add_option("-l", "--custom-location", type='string', default=None, help='set custom start location')
 parser.add_option("-f", "--frame", type='string', default=None, help='''set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail''')
-parser.add_option("-S", "--speedup", default=1, type='int', help='set simulation speedup (1 for wall clock time)')
-parser.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type='string', help='set antenna tracker start location')
-parser.add_option("-c", "--clean", action='store_true', default=False, help='do a make clean before building')
-parser.add_option("-j", "--jobs", default=1, type='int', help='number of processors to use during build (default 1)')
-
-parser.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help='wipe EEPROM and reload parameters')
-parser.add_option("-b", "--build-target", default=None, type='string', help='override SITL build target (will be set to sitl if not specified)')
-parser.add_option("-m", "--mavproxy-args", default=None, type='string', help='additional arguments to pass to mavproxy.py')
 parser.add_option("-C", "--sim_vehicle_sh_compatible", action='store_true', default=False, help='be compatible with the way sim_vehicle.sh works; make this the first option')
+parser.add_option("-H", "--hil", action='store_true', default=False, help="start HIL")
 
-parser.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help='build system to use')
+group_build = optparse.OptionGroup(parser, "Build options")
+group_build.add_option("-N", "--no-rebuild", action='store_true', default=False, help="don't rebuild before starting ardupilot")
+group_build.add_option("-D", "--debug", action='store_true', default=False, help="build with debugging")
+group_build.add_option("-c", "--clean", action='store_true', default=False, help='do a make clean before building')
+group_build.add_option("-j", "--jobs", default=1, type='int', help='number of processors to use during build (default 1)')
+group_build.add_option("-b", "--build-target", default=None, type='string', help='override SITL build target')
+group_build.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help='build system to use')
+group_build.add_option("", "--no-rebuild-on-failure", dest="rebuild_on_failure", action='store_false', default=True, help='if build fails, do not clean and rebuild')
+parser.add_option_group(group_build)
+
+group_sim = optparse.OptionGroup(parser, "Simulation options")
+group_sim.add_option("-I", "--instance", default=0, type='int', help='instance of simulator')
+group_sim.add_option("-V", "--valgrind", action='store_true', default=False, help='enable valgrind for memory access checking (very slow!)')
+group_sim.add_option("-T", "--tracker", action='store_true', default=False, help="start an antenna tracker instance")
+group_sim.add_option("-A", "--sitl-instance-args", type='string', default=None, help='pass arguments to SITL instance')
+#group_sim.add_option("-R", "--reverse-throttle", action='store_true', default=False, help="reverse throttle in plane")
+group_sim.add_option("-G", "--gdb", action='store_true', default=False, help="use gdb for debugging ardupilot")
+group_sim.add_option("-g", "--gdb-stopped", action='store_true', default=False, help="use gdb for debugging ardupilot (no auto-start)")
+group_sim.add_option("-d", "--delay-start", default=0, type='float', help='delays the start of mavproxy by the number of seconds')
+group_sim.add_option("-B", "--breakpoint", type='string', action="append", default=[], help='add a breakpoint at given location in debugger')
+group_sim.add_option("-M", "--mavlink-gimbal", action='store_true', default=False, help='enable MAVLink gimbal')
+group_sim.add_option("-L", "--location", type='string', default='CMAC', help='select start location from Tools/autotest/locations.txt')
+group_sim.add_option("-l", "--custom-location", type='string', default=None, help='set custom start location')
+group_sim.add_option("-S", "--speedup", default=1, type='int', help='set simulation speedup (1 for wall clock time)')
+group_sim.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type='string', help='set antenna tracker start location')
+group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help='wipe EEPROM and reload parameters')
+group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help='additional arguments to pass to mavproxy.py')
+parser.add_option_group(group_sim)
+
 
 # special-cased parameters for mavproxy, because some people's fingers
 # have long memories, and they don't want to use -C :-)
@@ -303,8 +310,10 @@ _options_for_frame = {
         "default_params_filename": "Helicopter.parm",
     },
     "last_letter": {
+        "waf_target": "bin/arduplane",
     },
     "CRRCSim": {
+        "waf_target": "bin/arduplane",
     },
     "jsbsim": {
         "waf_target": "bin/arduplane",
@@ -328,7 +337,18 @@ _options_for_frame = {
     },
 }
 
-def options_for_frame(frame, opts):
+_default_waf_target = {
+    "ArduPlane": "bin/arduplane",
+    "ArduCopter": "bin/arducopter-quad",
+    "APMRover2": "bin/ardurover",
+    "AntennaTracker": "bin/antennatracker",
+}
+
+def default_waf_target(vehicle):
+    '''returns a waf target based on vehicle type, which is often determined by which directory the user is in'''
+    return _default_waf_target[vehicle]
+
+def options_for_frame(frame, vehicle, opts):
     '''return informatiom about how to sitl for frame e.g. build-type==sitl'''
     ret = None
     if frame in _options_for_frame:
@@ -350,8 +370,8 @@ def options_for_frame(frame, opts):
     if not ret.has_key("make_target"):
         ret["make_target"] = "sitl"
 
-#    if not ret.has_key("waf_target"):
-#        ret["waf_target"] = default_waf_target(frame)
+    if not ret.has_key("waf_target"):
+        ret["waf_target"] = default_waf_target(vehicle)
 
     if opts.build_target is not None:
         ret["make_target"] = opts.build_target
@@ -384,14 +404,18 @@ def do_build_waf(vehicledir, opts, frame_options):
     p = subprocess.Popen(cmd_build)
     pid, sts = os.waitpid(p.pid,0)
 
-    if sts != 0:
-        progress("Build failed; cleaning and rebuilding")
-        run_cmd_blocking("Building clean", [waf_light, "clean"])
+    if sts != 0: # build failed
+        if opts.rebuild_on_failure:
+            progress("Build failed; cleaning and rebuilding")
+            run_cmd_blocking("Building clean", [waf_light, "clean"])
 
-        progress_cmd("Building", cmd_build)
-        p = subprocess.Popen(cmd_build)
-        pid, sts = os.waitpid(p.pid,0)
-        if sts != 0:
+            progress_cmd("Building", cmd_build)
+            p = subprocess.Popen(cmd_build)
+            pid, sts = os.waitpid(p.pid,0)
+            if sts != 0:
+                progress("Build failed")
+                sys.exit(1)
+        else:
             progress("Build failed")
             sys.exit(1)
 
@@ -568,7 +592,7 @@ def start_mavproxy(opts, stuff):
     run_cmd_blocking("Run MavProxy", cmd)
     progress("MAVProxy exitted")
 
-frame_options = options_for_frame(opts.frame, opts)
+frame_options = options_for_frame(opts.frame, opts.vehicle, opts)
 
 if frame_options["model"] == "jsbsim":
     check_jsbsim_version()
