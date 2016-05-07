@@ -80,7 +80,7 @@ public:
 
     // return current throttle as a percentate
     uint8_t throttle_percentage(void) const {
-        return last_throttle * 0.1f;
+        return last_throttle * 100;
     }
 
     // return desired forward throttle percentage
@@ -194,6 +194,7 @@ private:
     AP_Int16 thr_min_pwm;
     AP_Int16 thr_max_pwm;
     AP_Int16 throttle_mid;
+    AP_Int16 throttle_min;
 
     // speed below which quad assistance is given
     AP_Float assist_speed;

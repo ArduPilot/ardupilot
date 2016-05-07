@@ -303,6 +303,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("GUIDED_MODE", 40, QuadPlane, guided_mode, 0),
+
+    // @Param: THR_MIN
+    // @DisplayName: Throttle Minimum
+    // @Description: The minimum throttle that will be sent to the motors to keep them spinning
+    // @Units: Percent*10
+    // @Range: 0 300
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("THR_MIN", 41, QuadPlane, throttle_min,  100),
     
     AP_GROUPEND
 };
@@ -418,7 +427,7 @@ bool QuadPlane::setup(void)
 
     motors->set_frame_orientation(frame_type);
     motors->Init();
-    motors->set_throttle_range(100, thr_min_pwm, thr_max_pwm);
+    motors->set_throttle_range(throttle_min, thr_min_pwm, thr_max_pwm);
     motors->set_hover_throttle(throttle_mid);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
