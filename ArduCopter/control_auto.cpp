@@ -206,6 +206,7 @@ void Copter::auto_wp_start(const Location_Class& dest_loc)
     if (!wp_nav.set_wp_destination(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
         failsafe_terrain_on_event();
+        return;
     }
 
     // initialise yaw
@@ -275,9 +276,9 @@ void Copter::auto_spline_start(const Location_Class& destination, bool stopped_a
 
     // initialise wpnav
     if (!wp_nav.set_spline_destination(destination, stopped_at_start, seg_end_type, next_destination)) {
-        // failure to set destination (likely because of missing terrain data)
-        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-        // To-Do: handle failure
+        // failure to set destination can only be because of missing terrain data
+        failsafe_terrain_on_event();
+        return;
     }
 
     // initialise yaw
