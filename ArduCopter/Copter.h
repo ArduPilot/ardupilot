@@ -171,7 +171,11 @@ private:
 
 #if RANGEFINDER_ENABLED == ENABLED
     RangeFinder rangefinder {serial_manager};
-    bool rangefinder_enabled; // enable user switch for rangefinder
+    struct {
+        bool enabled:1;
+        bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
+        int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
+    } rangefinder_state = { true, false, 0 };
 #endif
 
     AP_RPM rpm_sensor;
@@ -403,8 +407,6 @@ private:
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
-    int16_t rangefinder_alt;        // altitude as reported by the rangefinder in cm
-    uint8_t rangefinder_alt_health; // true if we can trust the altitude from the rangefinder
     float target_rangefinder_alt;   // desired altitude in cm above the ground
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s

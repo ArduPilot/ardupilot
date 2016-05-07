@@ -41,11 +41,11 @@ void Copter::read_rangefinder(void)
 
     // exit immediately if rangefinder is disabled
     if (rangefinder.status() != RangeFinder::RangeFinder_Good) {
-        rangefinder_alt_health = 0;
+        rangefinder_state.alt_healthy = false;
         return;
     }
 
-    rangefinder_alt_health = rangefinder.range_valid_count();
+    rangefinder_state.alt_healthy = (rangefinder.range_valid_count() >= RANGEFINDER_HEALTH_MAX);
 
     int16_t temp_alt = rangefinder.distance_cm();
 
@@ -54,17 +54,17 @@ void Copter::read_rangefinder(void)
     temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
  #endif
 
-    rangefinder_alt = temp_alt;
+    rangefinder_state.alt_cm = temp_alt;
 #else
-    rangefinder_alt_health = 0;
-    rangefinder_alt = 0;
+    rangefinder_state.alt_healthy = false;
+    rangefinder_state.alt_cm = 0;
 #endif
 }
 
 // return true if rangefinder_alt can be used
 bool Copter::rangefinder_alt_ok()
 {
-    return (rangefinder_enabled && (rangefinder_alt_health >= RANGEFINDER_HEALTH_MAX));
+    return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
 }
 
 /*
