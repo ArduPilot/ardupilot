@@ -47,11 +47,6 @@
  #define HIL_MODE        HIL_MODE_DISABLED
 #endif
 
-#if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
- #undef RANGEFINDER_ENABLED
- #define RANGEFINDER_ENABLED DISABLED
-#endif
-
 #define MAGNETOMETER ENABLED
 
 // run at 400Hz on all systems
@@ -131,10 +126,6 @@
 
 #ifndef RANGEFINDER_HEALTH_MAX
  # define RANGEFINDER_HEALTH_MAX 3          // number of good reads that indicates a healthy rangefinder
-#endif
-
-#ifndef RANGEFINDER_RELIABLE_DISTANCE_PCT
- # define RANGEFINDER_RELIABLE_DISTANCE_PCT 0.60f   // we trust the rangefinder out to 60% of it's maximum range
 #endif
 
 #ifndef RANGEFINDER_GAIN_DEFAULT
