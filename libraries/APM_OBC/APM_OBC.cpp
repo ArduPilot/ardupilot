@@ -399,10 +399,10 @@ void APM_OBC::check_crash_plane(void)
     RC_Channel *ch_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
     RC_Channel *ch_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
 
-    ch_roll->radio_out     = ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
-    ch_pitch->radio_out    = ch_pitch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    ch_yaw->radio_out      = ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    ch_throttle->radio_out = ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
+    ch_roll->set_radio_out(ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
+    ch_pitch->set_radio_out(ch_pitch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
+    ch_yaw->set_radio_out(ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
+    ch_throttle->set_radio_out(ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
 
     // and all aux channels
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap_auto, RC_Channel::RC_CHANNEL_LIMIT_MAX);
