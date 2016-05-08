@@ -44,7 +44,6 @@ private:
     AP_Int16 channel_min;
     AP_Int16 channel_max;
     AP_Int8 selector;
-    AP_Int16 parmset;
     AP_Float range;
 
     // when selector was triggered
@@ -97,4 +96,7 @@ protected:
     virtual void save_value(uint8_t parm) = 0;
     virtual void reload_value(uint8_t parm) = 0;
     virtual void set_value(uint8_t parm, float value) = 0;
+
+    // parmset is in vehicle subclass var table
+    AP_Int16 parmset;
 };

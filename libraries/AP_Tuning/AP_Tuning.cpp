@@ -6,22 +6,33 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Tuning::var_info[] = {
-
     // @Param: CHAN
     // @DisplayName: Transmitter tuning channel
     // @Description: This sets the channel for transmitter tuning. This should be connected to a knob or slider on your transmitter. It needs to be setup to use the PWM range given by TUNE_CHAN_MIN to TUNE_CHAN_MAX
     // @Values: 0:Disable,1:Chan1,2:Chan3,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
     // @User: Standard
-    AP_GROUPINFO_FLAGS("CHAN", 1, AP_Tuning, channel, 0, AP_PARAM_FLAG_ENABLE),
-
-    // @Param: PARM
-    // @DisplayName: Transmitter tuning parameter or set of parameters
-    // @Description: This sets which parameter or set of parameters will be tuned. Values greater than 100 indicate a set of parameters rather than a single parameter
-    // @Values: 0:None,1:RateRollPitch,2:RateRoll,3:RatePitch
+    AP_GROUPINFO("CHAN", 1, AP_Tuning, channel, 0),
+    
+    // @Param: CHAN_MIN
+    // @DisplayName: Transmitter tuning channel minimum pwm
+    // @Description: This sets the PWM lower limit for the tuning channel
+    // @Range: 900 2100
     // @User: Standard
-    AP_GROUPINFO("PARM", 2, AP_Tuning, parmset, 0),
+    AP_GROUPINFO("CHAN_MIN", 2, AP_Tuning, channel_min, 1000),
 
-    // index 2 and 3 reserved for old MIN and MAX parameters
+    // @Param: CHAN_MAX
+    // @DisplayName: Transmitter tuning channel maximum pwm
+    // @Description: This sets the PWM upper limit for the tuning channel
+    // @Range: 900 2100
+    // @User: Standard
+    AP_GROUPINFO("CHAN_MAX", 3, AP_Tuning, channel_max, 2000),
+
+    // @Param: SELECTOR
+    // @DisplayName: Transmitter tuning selector channel
+    // @Description: This sets the channel for the transmitter tuning selector switch. This should be a 2 position switch, preferably spring loaded. A PWM above 1700 means high, below 1300 means low. If no selector is set then you won't be able to switch between parameters during flight or re-center the tuning knob
+    // @Values: 0:Disable,1:Chan1,2:Chan3,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
+    // @User: Standard
+    AP_GROUPINFO("SELECTOR", 4, AP_Tuning, selector, 0),
     
     // @Param: RANGE
     // @DisplayName: Transmitter tuning range
@@ -29,27 +40,6 @@ const AP_Param::GroupInfo AP_Tuning::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RANGE", 5, AP_Tuning, range, 2.0f),
 
-    // @Param: SELECTOR
-    // @DisplayName: Transmitter tuning selector channel
-    // @Description: This sets the channel for the transmitter tuning selector switch. This should be a 2 position switch, preferably spring loaded. A PWM above 1700 means high, below 1300 means low. If no selector is set then you won't be able to switch between parameters during flight or re-center the tuning knob
-    // @Values: 0:Disable,1:Chan1,2:Chan3,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
-    // @User: Standard
-    AP_GROUPINFO("SELECTOR", 6, AP_Tuning, selector, 0),
-
-    // @Param: CHAN_MIN
-    // @DisplayName: Transmitter tuning channel minimum pwm
-    // @Description: This sets the PWM lower limit for the tuning channel
-    // @Range: 900 2100
-    // @User: Standard
-    AP_GROUPINFO("CHAN_MIN", 7, AP_Tuning, channel_min, 1000),
-
-    // @Param: CHAN_MAX
-    // @DisplayName: Transmitter tuning channel maximum pwm
-    // @Description: This sets the PWM upper limit for the tuning channel
-    // @Range: 900 2100
-    // @User: Standard
-    AP_GROUPINFO("CHAN_MAX", 8, AP_Tuning, channel_max, 2000),
-    
     AP_GROUPEND
 };
 
