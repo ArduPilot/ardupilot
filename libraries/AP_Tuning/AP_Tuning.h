@@ -44,7 +44,7 @@ private:
     AP_Int16 channel_min;
     AP_Int16 channel_max;
     AP_Int8 selector;
-    AP_Int8 parmset;
+    AP_Int16 parmset;
     AP_Float range;
 
     // when selector was triggered

@@ -145,6 +145,16 @@ void AP_Tuning::check_input(uint8_t flightmode)
     if (range < 1.1f) {
         range.set(1.1f);
     }
+
+    if (current_parm == 0) {
+        next_parameter();
+    }
+
+    // cope with user changing parmset while tuning
+    if (current_set != parmset) {
+        re_center();
+    }
+    current_set = parmset;
     
     check_selector_switch();
 
@@ -153,9 +163,6 @@ void AP_Tuning::check_input(uint8_t flightmode)
         return;
     }
 
-    if (current_parm == 0) {
-        next_parameter();
-    }
     if (current_parm == 0) {
         return;
     }
