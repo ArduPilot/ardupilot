@@ -634,12 +634,12 @@ void NavEKF2_core::CovariancePrediction()
     float dAngScaleSigma;// delta angle scale factor 1-Sigma process noise
     float magEarthSigma;// earth magnetic field 1-sigma process noise
     float magBodySigma; // body magnetic field 1-sigma process noise
-    float daxNoise;     // X axis delta angle noise (rad)
-    float dayNoise;     // Y axis delta angle noise (rad)
-    float dazNoise;     // Z axis delta angle noise (rad)
-    float dvxNoise;     // X axis delta velocity noise (m/s)
-    float dvyNoise;     // Y axis delta velocity noise (m/s)
-    float dvzNoise;     // Z axis delta velocity noise (m/s)
+    float daxNoise;     // X axis delta angle noise variance rad^2
+    float dayNoise;     // Y axis delta angle noise variance rad^2
+    float dazNoise;     // Z axis delta angle noise variance rad^2
+    float dvxNoise;     // X axis delta velocity variance noise (m/s)^2
+    float dvyNoise;     // Y axis delta velocity variance noise (m/s)^2
+    float dvzNoise;     // Z axis delta velocity variance noise (m/s)^2
     float dvx;          // X axis delta velocity (m/s)
     float dvy;          // Y axis delta velocity (m/s)
     float dvz;          // Z axis delta velocity (m/s)
