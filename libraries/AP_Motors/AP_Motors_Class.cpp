@@ -154,12 +154,12 @@ int16_t AP_Motors::calc_pwm_output_1to1(float input, const RC_Channel& servo)
     }
 
     if (input >= 0.0f) {
-        ret = ((input * (servo.radio_max - servo.radio_trim)) + servo.radio_trim);
+        ret = ((input * (servo.get_radio_max() - servo.get_radio_trim())) + servo.get_radio_trim());
     } else {
-        ret = ((input * (servo.radio_trim - servo.radio_min)) + servo.radio_trim);
+        ret = ((input * (servo.get_radio_trim() - servo.get_radio_min())) + servo.get_radio_trim());
     }
 
-    return constrain_int16(ret, servo.radio_min, servo.radio_max);
+    return constrain_int16(ret, servo.get_radio_min(), servo.get_radio_max());
 }
 
 // convert input in 0 to +1 range to pwm output
@@ -173,9 +173,9 @@ int16_t AP_Motors::calc_pwm_output_0to1(float input, const RC_Channel& servo)
         input = 1.0f-input;
     }
 
-    ret = input * (servo.radio_max - servo.radio_min) + servo.radio_min;
+    ret = input * (servo.get_radio_max() - servo.get_radio_min()) + servo.get_radio_min();
 
-    return constrain_int16(ret, servo.radio_min, servo.radio_max);
+    return constrain_int16(ret, servo.get_radio_min(), servo.get_radio_max());
 }
 
 /*
