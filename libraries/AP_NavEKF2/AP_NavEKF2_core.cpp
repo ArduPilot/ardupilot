@@ -706,15 +706,15 @@ void NavEKF2_core::CovariancePrediction()
     daz_s = stateStruct.gyro_scale.z;
     dvz_b = stateStruct.accel_zbias;
     float _gyrNoise = constrain_float(frontend->_gyrNoise, 1e-4f, 1e-2f);
-    daxNoise = dayNoise = dazNoise = dt*_gyrNoise;
     float _accNoise = constrain_float(frontend->_accNoise, 1e-2f, 1.0f);
-    dvxNoise = dvyNoise = dvzNoise = dt*_accNoise;
+    daxNoise = dayNoise = dazNoise = sq(dt*_gyrNoise);
+    dvxNoise = dvyNoise = dvzNoise = sq(dt*_accNoise);
 
     // calculate the predicted covariance due to inertial sensor error propagation
     // we calculate the upper diagonal and copy to take advantage of symmetry
-    SF[0] = daz_b/2 + dazNoise/2 - (daz*daz_s)/2;
-    SF[1] = day_b/2 + dayNoise/2 - (day*day_s)/2;
-    SF[2] = dax_b/2 + daxNoise/2 - (dax*dax_s)/2;
+    SF[0] = daz_b/2 - (daz*daz_s)/2;
+    SF[1] = day_b/2 - (day*day_s)/2;
+    SF[2] = dax_b/2 - (dax*dax_s)/2;
     SF[3] = q3/2 - (q0*SF[0])/2 + (q1*SF[1])/2 - (q2*SF[2])/2;
     SF[4] = q0/2 - (q1*SF[2])/2 - (q2*SF[1])/2 + (q3*SF[0])/2;
     SF[5] = q1/2 + (q0*SF[2])/2 - (q2*SF[0])/2 - (q3*SF[1])/2;
@@ -728,9 +728,9 @@ void NavEKF2_core::CovariancePrediction()
     SF[13] = q1/2 - (q0*SF[2])/2 + (q2*SF[0])/2 - (q3*SF[1])/2;
     SF[14] = q3/2 + (q0*SF[0])/2 + (q1*SF[1])/2 + (q2*SF[2])/2;
     SF[15] = - sq(q0) - sq(q1) - sq(q2) - sq(q3);
-    SF[16] = dvz_b - dvz + dvzNoise;
-    SF[17] = dvx - dvxNoise;
-    SF[18] = dvy - dvyNoise;
+    SF[16] = dvz_b - dvz;
+    SF[17] = dvx;
+    SF[18] = dvy;
     SF[19] = sq(q2);
     SF[20] = SF[19] - sq(q0) + sq(q1) - sq(q3);
     SF[21] = SF[19] + sq(q0) - sq(q1) - sq(q3);
