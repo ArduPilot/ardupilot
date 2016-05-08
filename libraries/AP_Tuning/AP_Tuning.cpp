@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_Tuning::var_info[] = {
 
     // @Param: SELECTOR
     // @DisplayName: Transmitter tuning selector channel
-    // @Description: This sets the channel for the transmitter tuning selector switch. This should be a 2 position switch, preferably spring loaded. A PWM above 1700 means high, below 1300 means low.
+    // @Description: This sets the channel for the transmitter tuning selector switch. This should be a 2 position switch, preferably spring loaded. A PWM above 1700 means high, below 1300 means low. If no selector is set then you won't be able to switch between parameters during flight or re-center the tuning knob
     // @Values: 0:Disable,1:Chan1,2:Chan3,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
     // @User: Standard
     AP_GROUPINFO("SELECTOR", 6, AP_Tuning, selector, 0),
@@ -58,6 +58,10 @@ const AP_Param::GroupInfo AP_Tuning::var_info[] = {
 */
 void AP_Tuning::check_selector_switch(void)
 {
+    if (selector == 0) {
+        // no selector switch enabled
+        return;
+    }
     RC_Channel *selchan = RC_Channel::rc_channel(selector-1);
     if (selchan == nullptr) {
         return;
@@ -112,7 +116,7 @@ void AP_Tuning::re_center(void)
  */
 void AP_Tuning::check_input(uint8_t flightmode)
 {
-    if (channel <= 0 || selector <= 0 || parmset <= 0) {
+    if (channel <= 0 || parmset <= 0) {
         // disabled
         return;
     }
@@ -135,9 +139,8 @@ void AP_Tuning::check_input(uint8_t flightmode)
     }
     last_check_ms = now;
 
-    if (channel > hal.rcin->num_channels() ||
-        selector > hal.rcin->num_channels()) {
-        // not valid channels
+    if (channel > hal.rcin->num_channels()) {
+        // not valid channel
         return;
     }
 
