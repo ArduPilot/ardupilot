@@ -109,7 +109,7 @@ void AP_ServoRelayEvents::update_events(void)
     case EVENT_TYPE_SERVO:
         hal.rcout->enable_ch(channel-1);
         if (repeat & 1) {
-            hal.rcout->write(channel-1, RC_Channel::rc_channel(channel-1)->radio_trim);
+            hal.rcout->write(channel-1, RC_Channel::rc_channel(channel-1)->get_radio_trim());
         } else {
             hal.rcout->write(channel-1, servo_value);
         }
