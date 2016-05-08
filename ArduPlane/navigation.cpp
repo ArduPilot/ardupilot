@@ -34,7 +34,7 @@ void Plane::loiter_angle_update(void)
 {
     int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
-    if (loiter.sum_cd == 0 && !nav_controller->reached_loiter_target()) {
+    if (loiter.sum_cd == 0 && !reached_loiter_target()) {
         // we don't start summing until we are doing the real loiter
         loiter_delta_cd = 0;
     } else if (loiter.sum_cd == 0) {
@@ -188,7 +188,7 @@ void Plane::update_loiter(uint16_t radius)
     }
 
     if (loiter.start_time_ms == 0) {
-        if (nav_controller->reached_loiter_target() ||
+        if (reached_loiter_target() ||
             auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
@@ -291,3 +291,14 @@ void Plane::setup_turn_angle(void)
     }
 }    
 
+/*
+  see if we have reached our loiter target
+ */
+bool Plane::reached_loiter_target(void)
+{
+    if (quadplane.in_vtol_auto()) {
+        return auto_state.wp_distance < 3;
+    }
+    return nav_controller->reached_loiter_target();
+}
+    

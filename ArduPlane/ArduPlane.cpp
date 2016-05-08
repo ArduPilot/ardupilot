@@ -761,7 +761,7 @@ void Plane::update_navigation()
             break;
         } else if (g.rtl_autoland == 1 &&
             !auto_state.checked_for_autoland &&
-            nav_controller->reached_loiter_target() && 
+            reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
             // we've reached the RTL point, see if we have a landing sequence
             jump_to_landing_sequence();
