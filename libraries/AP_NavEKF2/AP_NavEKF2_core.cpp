@@ -669,8 +669,8 @@ void NavEKF2_core::CovariancePrediction()
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
     windVelSigma  = dt * constrain_float(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
-    dAngBiasSigma = dt * constrain_float(frontend->_gyroBiasProcessNoise, 0.0f, 1.0f);
-    dVelBiasSigma = dt * constrain_float(frontend->_accelBiasProcessNoise, 0.0f, 1.0f);
+    dAngBiasSigma = sq(dt) * constrain_float(frontend->_gyroBiasProcessNoise, 0.0f, 1.0f);
+    dVelBiasSigma = sq(dt) * constrain_float(frontend->_accelBiasProcessNoise, 0.0f, 1.0f);
     dAngScaleSigma = dt * constrain_float(frontend->_gyroScaleProcessNoise, 0.0f, 1.0f);
     magEarthSigma = dt * constrain_float(frontend->_magProcessNoise, 0.0f, 1.0f);
     magBodySigma  = dt * constrain_float(frontend->_magProcessNoise, 0.0f, 1.0f);
