@@ -460,7 +460,7 @@ void QuadPlane::hold_stabilize(float throttle_in)
 // quadplane stabilize mode
 void QuadPlane::control_stabilize(void)
 {
-    float pilot_throttle_scaled = plane.channel_throttle->control_in / 100.0f;
+    float pilot_throttle_scaled = plane.channel_throttle->get_control_in() / 100.0f;
     hold_stabilize(pilot_throttle_scaled);
 
 }
@@ -622,8 +622,8 @@ void QuadPlane::control_loiter()
     pos_control->set_accel_z(pilot_accel_z);
 
     // process pilot's roll and pitch input
-    wp_nav->set_pilot_desired_acceleration(plane.channel_roll->control_in,
-                                           plane.channel_pitch->control_in);
+    wp_nav->set_pilot_desired_acceleration(plane.channel_roll->get_control_in(),
+                                           plane.channel_pitch->get_control_in());
 
     // Update EKF speed limit - used to limit speed when we are using optical flow
     float ekfGndSpdLimit, ekfNavVelGainScaler;    
@@ -666,7 +666,7 @@ void QuadPlane::control_loiter()
  */
 float QuadPlane::get_pilot_input_yaw_rate_cds(void)
 {
-    if (plane.channel_throttle->control_in <= 0 && !plane.auto_throttle_mode) {
+    if (plane.channel_throttle->get_control_in() <= 0 && !plane.auto_throttle_mode) {
         // the user may be trying to disarm
         return 0;
     }
@@ -685,7 +685,7 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
         // use bank angle to get desired yaw rate
         yaw_cds += desired_auto_yaw_rate_cds();
     }
-    if (plane.channel_throttle->control_in <= 0 && !plane.auto_throttle_mode) {
+    if (plane.channel_throttle->get_control_in() <= 0 && !plane.auto_throttle_mode) {
         // the user may be trying to disarm
         return 0;
     }
@@ -706,7 +706,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void)
         return -50;
     }
     uint16_t dead_zone = plane.channel_throttle->get_dead_zone();
-    uint16_t trim = (plane.channel_throttle->radio_max + plane.channel_throttle->radio_min)/2;
+    uint16_t trim = (plane.channel_throttle->get_radio_max() + plane.channel_throttle->get_radio_min())/2;
     return pilot_velocity_z_max * plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) / 100.0f;
 }
 
@@ -716,7 +716,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void)
  */
 void QuadPlane::init_throttle_wait(void)
 {
-    if (plane.channel_throttle->control_in >= 10 ||
+    if (plane.channel_throttle->get_control_in() >= 10 ||
         plane.is_flying()) {
         throttle_wait = false;
     } else {
@@ -749,7 +749,7 @@ float QuadPlane::assist_climb_rate_cms(void)
     } else {
         // otherwise estimate from pilot input
         climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(float)plane.aparm.pitch_limit_max_cd);
-        climb_rate *= plane.channel_throttle->control_in;
+        climb_rate *= plane.channel_throttle->get_control_in();
     }
     climb_rate = constrain_float(climb_rate, -wp_nav->get_speed_down(), wp_nav->get_speed_up());
     return climb_rate;
@@ -794,7 +794,7 @@ void QuadPlane::update_transition(void)
      */
     if (have_airspeed && aspeed < assist_speed &&
         (plane.auto_throttle_mode ||
-         plane.channel_throttle->control_in>0 ||
+         plane.channel_throttle->get_control_in()>0 ||
          plane.is_flying())) {
         // the quad should provide some assistance to the plane
         transition_state = TRANSITION_AIRSPEED_WAIT;
@@ -894,7 +894,7 @@ void QuadPlane::update(void)
 
     // disable throttle_wait when throttle rises above 10%
     if (throttle_wait &&
-        (plane.channel_throttle->control_in > 10 ||
+        (plane.channel_throttle->get_control_in() > 10 ||
          plane.failsafe.ch3_failsafe ||
          plane.failsafe.ch3_counter>0)) {
         throttle_wait = false;
@@ -1620,7 +1620,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         weathervane.last_output = 0;
         return 0;
     }
-    if (plane.channel_rudder->control_in != 0) {
+    if (plane.channel_rudder->get_control_in() != 0) {
         weathervane.last_pilot_input_ms = AP_HAL::millis();
         weathervane.last_output = 0;
         return 0;

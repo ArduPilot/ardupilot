@@ -518,7 +518,7 @@ void Plane::handle_auto_mode(void)
         if (auto_state.land_complete) {
             // we are in the final stage of a landing - force
             // zero throttle
-            channel_throttle->servo_out = 0;
+            channel_throttle->set_servo_out(0);
         }
     } else {
         // we are doing normal AUTO flight, the special cases
@@ -638,7 +638,7 @@ void Plane::update_flight_mode(void)
             // FBWA failsafe glide
             nav_roll_cd = 0;
             nav_pitch_cd = 0;
-            channel_throttle->servo_out = 0;
+            channel_throttle->set_servo_out(0);
         }
         if (g.fbwa_tdrag_chan > 0) {
             // check for the user enabling FBWA taildrag takeoff mode
@@ -667,7 +667,7 @@ void Plane::update_flight_mode(void)
           roll when heading is locked. Heading becomes unlocked on
           any aileron or rudder input
         */
-        if ((channel_roll->control_in != 0 ||
+        if ((channel_roll->get_control_in() != 0 ||
              rudder_input != 0)) {                
             cruise_state.locked_heading = false;
             cruise_state.lock_timer_ms = 0;
@@ -703,8 +703,8 @@ void Plane::update_flight_mode(void)
     case MANUAL:
         // servo_out is for Sim control only
         // ---------------------------------
-        channel_roll->servo_out = channel_roll->pwm_to_angle();
-        channel_pitch->servo_out = channel_pitch->pwm_to_angle();
+        channel_roll->set_servo_out(channel_roll->pwm_to_angle());
+        channel_pitch->set_servo_out(channel_pitch->pwm_to_angle());
         steering_control.steering = steering_control.rudder = channel_rudder->pwm_to_angle();
         break;
         //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
@@ -928,7 +928,7 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if ((g.land_abort_throttle_enable && channel_throttle->control_in >= 90) ||
+                if ((g.land_abort_throttle_enable && channel_throttle->get_control_in() >= 90) ||
                         auto_state.commanded_go_around ||
                         flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT){
                     // abort mode is sticky, it must complete while executing NAV_LAND

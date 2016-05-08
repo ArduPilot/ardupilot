@@ -260,8 +260,8 @@ void Plane::Log_Write_Control_Tuning()
         roll            : (int16_t)ahrs.roll_sensor,
         nav_pitch_cd    : (int16_t)nav_pitch_cd,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)channel_throttle->servo_out,
-        rudder_out      : (int16_t)channel_rudder->servo_out,
+        throttle_out    : (int16_t)channel_throttle->get_servo_out(),
+        rudder_out      : (int16_t)channel_rudder->get_servo_out(),
         throttle_dem    : (int16_t)SpdHgt_Controller->get_throttle_demand()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -417,7 +417,7 @@ struct PACKED log_Arm_Disarm {
 
 void Plane::Log_Write_Current()
 {
-    DataFlash.Log_Write_Current(battery, channel_throttle->control_in);
+    DataFlash.Log_Write_Current(battery, channel_throttle->get_control_in());
 
     // also write power status
     DataFlash.Log_Write_Power();
