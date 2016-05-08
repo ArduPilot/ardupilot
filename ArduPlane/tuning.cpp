@@ -3,6 +3,25 @@
 #include "Plane.h"
 
 /*
+  the vehicle class has its own var table for TUNE_PARAM so it can
+  have separate parameter docs for the list of available parameters
+ */
+const AP_Param::GroupInfo AP_Tuning_Plane::var_info[] = {
+    // @Param: PARAM
+    // @DisplayName: Transmitter tuning parameter or set of parameters
+    // @Description: This sets which parameter or set of parameters will be tuned. Values greater than 100 indicate a set of parameters rather than a single parameter. Parameters less than 50 are for QuadPlane vertical lift motors only.
+    // @Values: 0:None,1:RateRollPI,2:RateRollP,3:RateRollI,4:RateRollD,5:RatePitchPI,6:RatePitchP,7:RatePitchI,8:RatePitchD,9:RateYawPI,10:RateYawP,11:RateYawI,12:RateYawD,13:AngleRollP,14:AnglePitchP,15:AngleYawP,16:PosXYP,17:PosZP,18:VelXYP,19:VelXYI,20:VelZP,21:AccelZP,22:AccelZI,23:AccelZD,50:FixedWingRollP,51:FixedWingRollI,52:FixedWingRollD,53:FixedWingRollFF,54:FixedWingPitchP,55:FixedWingPitchI,56:FixedWingPitchD,57:FixedWingPitchFF
+    // @User: Standard
+    AP_GROUPINFO("PARAM", 1, AP_Tuning_Plane, parmset, 0),
+
+    // the rest of the parameters are from AP_Tuning
+    AP_NESTEDGROUPINFO(AP_Tuning, 0),
+
+    AP_GROUPEND
+};
+
+
+/*
   tables of tuning sets
  */
 const uint8_t AP_Tuning_Plane::tuning_set_rate_roll_pitch[] = { TUNING_RATE_ROLL_D, TUNING_RATE_ROLL_PI,

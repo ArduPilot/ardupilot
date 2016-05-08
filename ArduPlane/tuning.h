@@ -17,6 +17,8 @@ private:
 public:
     // constructor
     AP_Tuning_Plane(void) : AP_Tuning(tuning_sets, tuning_names) {}
+
+    static const struct AP_Param::GroupInfo  var_info[];
     
 private:
 
