@@ -334,7 +334,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: GYRO_PNOISE
     // @DisplayName: Rate gyro noise (rad/s)
     // @Description: This control disturbance noise controls the growth of estimated error due to gyro measurement errors excluding bias. Increasing it makes the flter trust the gyro measurements less and other measurements more.
-    // @Range: 0.0001 0.01
+    // @Range: 0.0001 0.1
     // @Increment: 0.0001
     // @User: Advanced
     // @Units: rad/s
@@ -358,9 +358,9 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     AP_GROUPINFO("GBIAS_PNOISE", 26, NavEKF2, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
 
     // @Param: GSCL_PNOISE
-    // @DisplayName: Rate gyro scale factor process noise (1/s)
+    // @DisplayName: Rate gyro scale factor stability (1/s)
     // @Description: This noise controls the rate of gyro scale factor learning. Increasing it makes rate gyro scale factor estimation faster and noisier.
-    // @Range: 0.0000001 0.00001
+    // @Range: 0.000001 0.001
     // @User: Advanced
     // @Units: 1/s
     AP_GROUPINFO("GSCL_PNOISE", 27, NavEKF2, _gyroScaleProcessNoise, GSCALE_PNOISE_DEFAULT),
