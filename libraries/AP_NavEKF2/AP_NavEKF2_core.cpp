@@ -708,7 +708,7 @@ void NavEKF2_core::CovariancePrediction()
     dvz_b = stateStruct.accel_zbias;
     float _gyrNoise = constrain_float(frontend->_gyrNoise, 0.0f, 1.0f);
     daxNoise = dayNoise = dazNoise = sq(dt*_gyrNoise);
-    float _accNoise = constrain_float(frontend->_accNoise, 0.0f, 1.0f);
+    float _accNoise = constrain_float(frontend->_accNoise, 0.0f, 10.0f);
     dvxNoise = dvyNoise = dvzNoise = sq(dt*_accNoise);
 
     // calculate the predicted covariance due to inertial sensor error propagation
