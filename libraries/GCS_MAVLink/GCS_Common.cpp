@@ -1330,6 +1330,11 @@ void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type p
             }
         }
     }
+    // also log to DataFlash
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash != nullptr) {
+        dataflash->Log_Write_Parameter(param_name, param_value);
+    }
 }
 
 // report battery2 state
