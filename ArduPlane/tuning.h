@@ -77,6 +77,10 @@ private:
         TUNING_SET_RATE_ROLL_PITCH =         1,
         TUNING_SET_RATE_ROLL =               2,
         TUNING_SET_RATE_PITCH =              3,
+        TUNING_SET_RATE_YAW =                4,
+        TUNING_SET_ANG_ROLL_PITCH =          5,
+        TUNING_SET_VXY =                     6,
+        TUNING_SET_AZ =                      7,
     };
 
     AP_Float *get_param_pointer(uint8_t parm);
@@ -88,4 +92,8 @@ private:
     static const uint8_t tuning_set_rate_roll_pitch[];
     static const uint8_t tuning_set_rate_roll[];
     static const uint8_t tuning_set_rate_pitch[];
+    static const uint8_t tuning_set_rate_yaw[];
+    static const uint8_t tuning_set_ang_roll_pitch[];
+    static const uint8_t tuning_set_vxy[];
+    static const uint8_t tuning_set_az[];
 };
