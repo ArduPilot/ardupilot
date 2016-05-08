@@ -14,12 +14,12 @@ const AP_Param::GroupInfo AP_Tuning::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("CHAN", 1, AP_Tuning, channel, 0, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: PARMSET
-    // @DisplayName: Transmitter tuning parameter set
-    // @Description: This sets which set of parameters will be tuned
-    // @Values: 0:None,1:QuadRateRollPitch,2:QuadRateRoll,3:QuadRatePitch
+    // @Param: PARM
+    // @DisplayName: Transmitter tuning parameter or set of parameters
+    // @Description: This sets which parameter or set of parameters will be tuned. Values greater than 100 indicate a set of parameters rather than a single parameter
+    // @Values: 0:None,1:RateRollPitch,2:RateRoll,3:RatePitch
     // @User: Standard
-    AP_GROUPINFO("PARMSET", 2, AP_Tuning, parmset, 0),
+    AP_GROUPINFO("PARM", 2, AP_Tuning, parmset, 0),
 
     // index 2 and 3 reserved for old MIN and MAX parameters
     
@@ -221,8 +221,14 @@ void AP_Tuning::Log_Write_Parameter_Tuning(float value)
 void AP_Tuning::save_parameters(void)
 {
     uint8_t set = (uint8_t)parmset.get();
+    if (set < set_base) {
+        // single parameter tuning
+        save_value(set);
+        return;
+    }
+    // multiple parameter tuning
     for (uint8_t i=0; tuning_sets[i].num_parms != 0; i++) {
-        if (tuning_sets[i].set == set) {
+        if (tuning_sets[i].set+set_base == set) {
             for (uint8_t p=0; p<tuning_sets[i].num_parms; p++) {
                 save_value(tuning_sets[i].parms[p]);
             }
@@ -238,8 +244,13 @@ void AP_Tuning::save_parameters(void)
 void AP_Tuning::revert_parameters(void)
 {
     uint8_t set = (uint8_t)parmset.get();
+    if (set < set_base) {
+        // single parameter tuning
+        reload_value(set);
+        return;
+    }
     for (uint8_t i=0; tuning_sets[i].num_parms != 0; i++) {
-        if (tuning_sets[i].set == set) {
+        if (tuning_sets[i].set+set_base == set) {
             for (uint8_t p=0; p<tuning_sets[i].num_parms; p++) {
                 if (p >= 32 || (need_revert & (1U<<p))) {
                     reload_value(tuning_sets[i].parms[p]);
@@ -257,8 +268,14 @@ void AP_Tuning::revert_parameters(void)
 void AP_Tuning::next_parameter(void)
 {
     uint8_t set = (uint8_t)parmset.get();
+    if (set < set_base) {
+        // nothing to do but re-center
+        current_parm = set;
+        re_center();        
+        return;
+    }
     for (uint8_t i=0; tuning_sets[i].num_parms != 0; i++) {
-        if (tuning_sets[i].set == set) {
+        if (tuning_sets[i].set+set_base == set) {
             if (current_parm == 0) {
                 current_parm_index = 0;
             } else {

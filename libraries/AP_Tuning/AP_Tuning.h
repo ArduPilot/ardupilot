@@ -36,6 +36,9 @@ public:
     // update function called on new radio frames
     void check_input(uint8_t flightmode);
 
+    // base parameter number for tuning sets of parameters in one flight
+    const uint8_t set_base = 100;
+    
 private:
     AP_Int8 channel;
     AP_Int16 channel_min;
