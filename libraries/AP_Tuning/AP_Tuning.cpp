@@ -56,7 +56,7 @@ void AP_Tuning::check_selector_switch(void)
     if (selchan == nullptr) {
         return;
     }
-    uint16_t selector_in = selchan->radio_in;
+    uint16_t selector_in = selchan->get_radio_in();
     if (selector_in >= 1700) {
         // high selector
         if (selector_start_ms == 0) {
@@ -164,7 +164,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
     if (chan == nullptr) {
         return;
     }
-    float chan_value = linear_interpolate(-1, 1, chan->radio_in, channel_min, channel_max);
+    float chan_value = linear_interpolate(-1, 1, chan->get_radio_in(), channel_min, channel_max);
     if (dt_ms > 500) {
         last_channel_value = chan_value;
     }
