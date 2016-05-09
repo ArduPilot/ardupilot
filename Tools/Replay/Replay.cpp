@@ -139,6 +139,10 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass, "COMPASS_", Compass),
 
+    // @Group: LOG
+    // @Path: ../libraries/DataFlash/DataFlash.cpp
+    GOBJECT(dataflash, "LOG", DataFlash_Class),
+    
     AP_VAREND
 };
 
@@ -151,6 +155,7 @@ void ReplayVehicle::load_parameters(void)
     }
     AP_Param::set_default_by_name("EKF_ENABLE", 1);
     AP_Param::set_default_by_name("EK2_ENABLE", 1);
+    AP_Param::set_default_by_name("LOG_REPLAY", 1);
     AP_Param::set_default_by_name("AHRS_EKF_TYPE", 2);
 }
 
