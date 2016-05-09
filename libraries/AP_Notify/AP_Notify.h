@@ -74,22 +74,22 @@ public:
     /// notify_events_type - bitmask of active events.
     //      Notify library is responsible for setting back to zero after notification has been completed
     struct notify_events_type {
-        uint16_t arming_failed          : 1;    // 1 if copter failed to arm after user input
-        uint16_t user_mode_change       : 1;    // 1 if user has initiated a flight mode change
-        uint16_t user_mode_change_failed: 1;    // 1 when user initiated flight mode change fails
-        uint16_t failsafe_mode_change   : 1;    // 1 when failsafe has triggered a flight mode change
-        uint16_t autotune_complete      : 1;    // 1 when autotune has successfully completed
-        uint16_t autotune_failed        : 1;    // 1 when autotune has failed
-        uint16_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
-        uint16_t mission_complete       : 1;    // 1 when the mission has completed successfully
-        uint16_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
-        uint16_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
-        uint16_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
-        uint16_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
-        uint16_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
-        uint16_t tune_started           : 1;    // tuning a parameter has started
-        uint16_t tune_next              : 1;    // tuning switched to next parameter
-        uint16_t tune_save              : 1;    // tuning saved parameters
+        uint32_t arming_failed          : 1;    // 1 if copter failed to arm after user input
+        uint32_t user_mode_change       : 1;    // 1 if user has initiated a flight mode change
+        uint32_t user_mode_change_failed: 1;    // 1 when user initiated flight mode change fails
+        uint32_t failsafe_mode_change   : 1;    // 1 when failsafe has triggered a flight mode change
+        uint32_t autotune_complete      : 1;    // 1 when autotune has successfully completed
+        uint32_t autotune_failed        : 1;    // 1 when autotune has failed
+        uint32_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
+        uint32_t mission_complete       : 1;    // 1 when the mission has completed successfully
+        uint32_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
+        uint32_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
+        uint32_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
+        uint32_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
+        uint32_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
+        uint32_t tune_started           : 1;    // tuning a parameter has started
+        uint32_t tune_next              : 3;    // tuning switched to next parameter
+        uint32_t tune_save              : 1;    // tuning saved parameters
     };
 
     // the notify flags are static to allow direct class access
