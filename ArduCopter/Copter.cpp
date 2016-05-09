@@ -76,7 +76,6 @@ Copter::Copter(void) :
     yaw_look_at_heading(0),
     yaw_look_at_heading_slew(0),
     yaw_look_ahead_bearing(0.0f),
-    compasses_consistent(false),
     condition_value(0),
     condition_start(0),
     G_Dt(0.0025f),
