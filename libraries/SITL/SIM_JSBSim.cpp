@@ -182,6 +182,7 @@ bool JSBSim::start_JSBSim(void)
     pid_t child_pid = fork();
     if (child_pid == 0) {
         // in child
+        setsid();
         dup2(devnull, 0);
         dup2(p[1], 1);
         close(p[0]);
