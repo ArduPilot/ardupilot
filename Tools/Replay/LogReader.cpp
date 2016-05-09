@@ -344,7 +344,7 @@ void LogReader::end_format_msgs(void)
                 strncpy(pkt.name, s->name, sizeof(pkt.name));
                 strncpy(pkt.format, s->format, sizeof(pkt.format));
                 strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
-                dataflash.WriteBlock(&pkt, sizeof(pkt));
+                dataflash.WriteCriticalBlock(&pkt, sizeof(pkt));
             }
         }
     }

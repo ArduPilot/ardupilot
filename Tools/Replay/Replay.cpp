@@ -157,6 +157,7 @@ void ReplayVehicle::load_parameters(void)
     AP_Param::set_default_by_name("EK2_ENABLE", 1);
     AP_Param::set_default_by_name("LOG_REPLAY", 1);
     AP_Param::set_default_by_name("AHRS_EKF_TYPE", 2);
+    AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
 }
 
 /*
