@@ -120,6 +120,124 @@ class CalController(object):
             self.handle_simstate(m)
 
 
+class AccelcalController(CalController):
+    state_data = {
+        'level': dict(
+            name='Level',
+            attitude=(0, 0, 0),
+        ),
+        'LEFT': dict(
+            name='Left side',
+            attitude=(-math.pi / 2, 0, 0),
+        ),
+        'RIGHT': dict(
+            name='Right side',
+            attitude=(math.pi / 2, 0, 0),
+        ),
+        'DOWN': dict(
+            name='Nose down',
+            attitude=(0, -math.pi / 2, 0),
+        ),
+        'UP': dict(
+            name='Nose up',
+            attitude=(0, math.pi / 2, 0),
+        ),
+        'BACK': dict(
+            name='Back',
+            attitude=(math.pi, 0, 0),
+        ),
+    }
+
+    def __init__(self, mpstate):
+        super(AccelcalController, self).__init__(mpstate)
+        self.state = None
+
+    def reset(self):
+        super(AccelcalController, self).reset()
+
+    def start(self):
+        super(AccelcalController, self).start()
+        if self.state:
+            self.set_side_state(self.state)
+
+    def side_from_msg(self, m):
+        text = str(m.text)
+        if text.startswith('Place '):
+            for side in self.state_data:
+                if side in text:
+                    return side
+        return None
+
+    def report_from_msg(self, m):
+        '''Return true if successful, false if failed, None if unknown'''
+        text = str(m.text)
+        if 'Calibration successful' in text:
+            return True
+        elif 'Calibration FAILED' in text:
+            return False
+        return None
+
+    def set_side_state(self, side):
+        self.state = side
+
+        if not self.active:
+            return
+
+        data = self.state_data[side]
+
+        def callback():
+            self.mpstate.console.set_status(
+                name='sitl_accelcal',
+                text='sitl_accelcal: %s ready - Waiting for user input' % data['name'],
+                row=4,
+                fg='blue',
+            )
+            self.mpstate.console.writeln('sitl_accelcal: attitude detected, please press any key..')
+
+        self.mpstate.console.writeln('sitl_accelcal: sending attitude, please wait..')
+
+        roll, pitch, yaw = data['attitude']
+        self.set_attitute(roll, pitch, yaw, callback=callback)
+
+        self.mpstate.console.set_status(
+            name='sitl_accelcal',
+            text='sitl_accelcal: %s - Waiting for attitude' % data['name'],
+            row=4,
+            fg='orange',
+        )
+
+    def mavlink_packet(self, m):
+        super(AccelcalController, self).mavlink_packet(m)
+
+        if m.get_type() != 'STATUSTEXT':
+            return
+
+        side = self.side_from_msg(m)
+        if side:
+            self.set_side_state(side)
+        else:
+            success = self.report_from_msg(m)
+            if success is None:
+                return
+
+            self.state = None
+            if success:
+                self.mpstate.console.set_status(
+                    name='sitl_accelcal',
+                    text='sitl_accelcal: Calibration successful',
+                    row=4,
+                    fg='blue',
+                )
+            else:
+                self.mpstate.console.set_status(
+                    name='sitl_accelcal',
+                    text='sitl_accelcal: Calibration failed',
+                    row=4,
+                    fg='red',
+                )
+
+
+
 class SitlCalibrationModule(mp_module.MPModule):
     def __init__(self, mpstate):
         super(SitlCalibrationModule, self).__init__(mpstate, "sitl_calibration")
@@ -136,6 +254,11 @@ class SitlCalibrationModule(mp_module.MPModule):
             'magnitude in degrees/s',
         )
         self.add_command(
+            'sitl_accelcal',
+            self.cmd_sitl_accelcal,
+            'actuate on the simulator vehicle for accelerometer calibration',
+        )
+        self.add_command(
             'sitl_stop',
             self.cmd_sitl_stop,
             'stop the current calibration control',
@@ -143,6 +266,7 @@ class SitlCalibrationModule(mp_module.MPModule):
 
         self.controllers = dict(
             generic_controller=CalController(mpstate),
+            accelcal_controller=AccelcalController(mpstate),
         )
 
         self.current_controller = None
@@ -191,6 +315,9 @@ class SitlCalibrationModule(mp_module.MPModule):
 
     def cmd_sitl_stop(self, args):
         self.set_controller('generic_controller')
+
+    def cmd_sitl_accelcal(self, args):
+        self.set_controller('accelcal_controller')
 
     def mavlink_packet(self, m):
         for c in self.controllers.values():
