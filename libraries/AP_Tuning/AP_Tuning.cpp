@@ -287,7 +287,7 @@ void AP_Tuning::next_parameter(void)
             current_parm = tuning_sets[i].parms[current_parm_index];
             re_center();
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Tuning: started %s", get_tuning_name(current_parm));
-            AP_Notify::events.tune_next = 1;
+            AP_Notify::events.tune_next = current_parm_index+1;
             break;
         }
     }
