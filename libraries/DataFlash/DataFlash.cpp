@@ -28,7 +28,7 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @Param: _REPLAY
     // @DisplayName: Enable logging of information needed for Replay
     // @Description: If LOG_REPLAY is set to 1 then the EKF2 state estimator will log detailed information needed for diagnosing problems with the Kalman filter. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost
-    // @Values:0:Disabled,1:EnabledIMU1,3:EnabledIMU1andIMU2
+    // @Values:0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("_REPLAY",  3, DataFlash_Class, _params.log_replay,       0),
     
