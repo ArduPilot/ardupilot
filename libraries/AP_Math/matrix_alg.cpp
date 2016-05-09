@@ -242,7 +242,7 @@ bool inverse3x3(float m[], float invOut[])
     float  det = m[0] * (m[4] * m[8] - m[7] * m[5]) -
     m[1] * (m[3] * m[8] - m[5] * m[6]) +
     m[2] * (m[3] * m[7] - m[4] * m[6]);
-    if (is_zero(det)){
+    if (is_zero(det) || isinf(det)) {
         return false;
     }
 
@@ -393,7 +393,7 @@ bool inverse4x4(float m[],float invOut[])
 
     det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
 
-    if (is_zero(det)){
+    if (is_zero(det) || isinf(det)){
         return false;
     }
 
