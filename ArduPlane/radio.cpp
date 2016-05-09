@@ -67,7 +67,7 @@ void Plane::init_rc_out()
       configuration error where the user sets CH3_TRIM incorrectly and
       the motor may start on power up
      */
-    channel_throttle->set_radio_trim (throttle_min());
+    channel_throttle->set_radio_trim(throttle_min());
     
     if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
         channel_throttle->enable_out();
