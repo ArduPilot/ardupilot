@@ -527,6 +527,16 @@ private:
     } auto_state;
 
     struct {
+        // guiding roll from an external controller? (e.g., companion computer)
+        bool guiding_roll:1;
+        // roll commanded from external controller in centidegrees
+        int32_t guided_roll_cd;
+        
+        // last time we heard from the external controller
+        uint32_t last_guided_ms;
+    } guided_state;
+
+    struct {
         // on hard landings, only check once after directly a landing so you
         // don't trigger a crash when picking up the aircraft
         bool checkedHardLanding:1;
@@ -553,7 +563,7 @@ private:
 
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
-
+	
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
