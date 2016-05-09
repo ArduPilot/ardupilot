@@ -269,7 +269,7 @@ public:
     void set_enable(bool enable) { _enable.set(enable); }
 
     // are we doing sensor logging inside the EKF?
-    bool have_ekf_logging(void) const { return _enable_logging != 0; }
+    bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
     
 private:
     uint8_t num_cores; // number of allocated cores
@@ -316,7 +316,7 @@ private:
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF2 for
     AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
     AP_Float _noaidHorizNoise;      // horizontal position measurement noise assumed when synthesised zero position measurements are used to constrain attitude drift : m
-    AP_Int8 _enable_logging;        // Enable logging for Replay
+    AP_Int8 _logging_mask;          // mask of IMUs to log
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -347,6 +347,7 @@ private:
     const uint8_t fusionTimeStep_ms;    // The minimum time interval between covariance predictions and measurement fusions in msec
 
     struct {
+        bool enabled:1;
         bool log_compass:1;
         bool log_gps:1;
         bool log_baro:1;

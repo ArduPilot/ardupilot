@@ -428,12 +428,12 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: m/s
     AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizNoise, 10.0f),
 
-    // @Param: LOGGING
-    // @DisplayName: Enable EKF sensor logging
-    // @Description: This enables EKF sensor logging for use by Replay
-    // @Values: 0:Disabled,1:Enabled
+    // @Param: LOG_MASK
+    // @DisplayName: EKF sensor logging IMU mask
+    // @Description: This sets the IMU mask of sensors to do full logging for
+    // @Values: 0:Disabled,1:FirstIMU,3:FirstAndSecondIMU,7:AllIMUs
     // @User: Advanced
-    AP_GROUPINFO("LOGGING", 36, NavEKF2, _enable_logging, 0),
+    AP_GROUPINFO("LOG_MASK", 36, NavEKF2, _logging_mask, 1),
     
     AP_GROUPEND
 };
@@ -477,7 +477,7 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
  */
 void NavEKF2::check_log_write(void)
 {
-    if (!_enable_logging) {
+    if (!have_ekf_logging()) {
         return;
     }
     if (logging.log_compass) {
@@ -494,7 +494,7 @@ void NavEKF2::check_log_write(void)
     }
     if (logging.log_imu) {
         const AP_InertialSensor &ins = _ahrs->get_ins();
-        DataFlash_Class::instance()->Log_Write_IMUDT(ins, imuSampleTime_us);
+        DataFlash_Class::instance()->Log_Write_IMUDT(ins, imuSampleTime_us, _logging_mask.get());
         logging.log_imu = false;
     }
 
@@ -511,6 +511,12 @@ bool NavEKF2::InitialiseFilter(void)
     }
 
     imuSampleTime_us = AP_HAL::micros64();
+
+    // see if we will be doing logging
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash != nullptr) {
+        logging.enabled = dataflash->log_replay();
+    }
     
     if (core == nullptr) {
 
