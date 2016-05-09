@@ -97,7 +97,7 @@ void RC_UART::loop()
             rc[i].enable_out();
             enable_mask |= 1U<<i;
         }
-        rc[i].radio_out = u.period[i];
+        rc[i].set_radio_out(u.period[i]);
         rc[i].output();
     }
 
