@@ -17,6 +17,8 @@
 from __future__ import division, print_function
 import math
 from pymavlink import quaternion
+import random
+import time
 
 from MAVProxy.modules.lib import mp_module
 
@@ -237,6 +239,100 @@ class AccelcalController(CalController):
                 )
 
 
+class MagcalController(CalController):
+    yaw_increment = math.radians(45)
+    yaw_noise_range = math.radians(5)
+
+    rotation_angspeed = math.pi / 4
+    '''rotation angular speed in rad/s'''
+    rotation_angspeed_noise = math.radians(2)
+    rotation_axes = (
+        (1, 0, 0),
+        (0, 1, 0),
+        (1, 1, 0),
+    )
+
+    full_turn_time = 2 * math.pi / rotation_angspeed
+
+    max_full_turns = 3
+    '''maximum number of full turns to be performed for each initial attitude'''
+
+    def reset(self):
+        super(MagcalController, self).reset()
+        self.yaw = 0
+        self.rotation_start_time = 0
+        self.last_progress = {}
+        self.rotation_axis_idx = 0
+
+    def start(self):
+        super(MagcalController, self).start()
+        self.set_attitute(0, 0, 0, callback=self.next_rot_att_callback)
+
+    def next_rot_att_callback(self):
+        x, y, z = self.rotation_axes[self.rotation_axis_idx]
+        angspeed = self.rotation_angspeed
+        angspeed += random.uniform(-1, 1) * self.rotation_angspeed_noise
+        self.angvel(x, y, z, angspeed)
+        self.rotation_start_time = time.time()
+
+    def next_rotation(self):
+        self.rotation_axis_idx += 1
+        self.rotation_axis_idx %= len(self.rotation_axes)
+
+        if self.rotation_axis_idx == 0:
+            yaw_inc = self.yaw_increment
+            yaw_inc += random.uniform(-1, 1) * self.yaw_noise_range
+            self.yaw = (self.yaw + yaw_inc) % (2 * math.pi)
+
+        self.rotation_start_time = 0
+        self.last_progress = {}
+        self.set_attitute(0, 0, self.yaw, callback=self.next_rot_att_callback)
+
+    def mavlink_packet(self, m):
+        super(MagcalController, self).mavlink_packet(m)
+
+        if m.get_type() == 'MAG_CAL_REPORT':
+            # NOTE: This may be not the ideal way to handle it
+            if m.compass_id in self.last_progress:
+                del self.last_progress[m.compass_id]
+            if not self.last_progress:
+                self.stop()
+            return
+
+        if m.get_type() != 'MAG_CAL_PROGRESS':
+            return
+
+        if not self.rotation_start_time:
+            return
+
+        t = time.time()
+        m.time = t
+
+        if m.compass_id not in self.last_progress:
+            self.last_progress[m.compass_id] = m
+            m.stuck = False
+            return
+
+        last = self.last_progress[m.compass_id]
+
+        dt = t - self.rotation_start_time
+        if dt > self.max_full_turns * self.full_turn_time:
+            self.next_rotation()
+            return
+
+        if m.completion_pct == last.completion_pct:
+            if m.time - last.time > self.full_turn_time / 2:
+                last.stuck = True
+        else:
+            self.last_progress[m.compass_id] = m
+            m.stuck = False
+
+        for p in self.last_progress.values():
+            if not p.stuck:
+                break
+        else:
+            self.next_rotation()
+
 
 class SitlCalibrationModule(mp_module.MPModule):
     def __init__(self, mpstate):
@@ -259,6 +355,11 @@ class SitlCalibrationModule(mp_module.MPModule):
             'actuate on the simulator vehicle for accelerometer calibration',
         )
         self.add_command(
+            'sitl_magcal',
+            self.cmd_sitl_magcal,
+            'actuate on the simulator vehicle for magnetometer calibration',
+        )
+        self.add_command(
             'sitl_stop',
             self.cmd_sitl_stop,
             'stop the current calibration control',
@@ -267,6 +368,7 @@ class SitlCalibrationModule(mp_module.MPModule):
         self.controllers = dict(
             generic_controller=CalController(mpstate),
             accelcal_controller=AccelcalController(mpstate),
+            magcal_controller=MagcalController(mpstate),
         )
 
         self.current_controller = None
@@ -318,6 +420,9 @@ class SitlCalibrationModule(mp_module.MPModule):
 
     def cmd_sitl_accelcal(self, args):
         self.set_controller('accelcal_controller')
+
+    def cmd_sitl_magcal(self, args):
+        self.set_controller('magcal_controller')
 
     def mavlink_packet(self, m):
         for c in self.controllers.values():
