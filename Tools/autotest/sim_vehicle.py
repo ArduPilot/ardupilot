@@ -633,7 +633,11 @@ else:
         do_build(vehicledir, opts, frame_options)
 
     if opts.build_system == "waf":
-        vehicle_binary = os.path.join(vehicledir, "../build/sitl", frame_options["waf_target"])
+        if opts.debug:
+            binary_basedir = "../build/sitl-debug"
+        else:
+            binary_basedir = "../build/sitl"
+        vehicle_binary = os.path.join(vehicledir, binary_basedir, frame_options["waf_target"])
     else:
         vehicle_binary = os.path.join(vehicledir, opts.vehicle+".elf")
 
