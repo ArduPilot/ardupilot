@@ -106,9 +106,9 @@ void Plane::stabilize_pitch(float speed_scaler)
     if (control_mode == STABILIZE && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
-    channel_pitch->set_servo_out (pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
+    channel_pitch->set_servo_out(pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                              speed_scaler, 
-                                                             disable_integrator) );
+                                                             disable_integrator));
 }
 
 /*
@@ -129,16 +129,15 @@ void Plane::stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
     servo_out += channel->pwm_to_angle();
 }
 
-// one argument version when 
-void Plane::stick_mix_channel(RC_Channel *channel)
+/*
+  One argument version for when the servo out in the rc channel 
+  is the target
+ */
+void Plane::stick_mix_channel(RC_Channel * channel)
 {
-    float ch_inf;
-        
-    ch_inf = (float)channel->get_radio_in() - (float)channel->get_radio_trim();
-    ch_inf = fabsf(ch_inf);
-    ch_inf = MIN(ch_inf, 400.0f);
-    ch_inf = ((400.0f - ch_inf) / 400.0f);
-    channel->set_servo_out(channel->get_servo_out() * ch_inf + channel->pwm_to_angle());
+   int16_t servo_out = channel->get_servo_out();
+   stick_mix_channel(channel,servo_out);
+   channel->set_servo_out(servo_out);
 }
 
 /*
