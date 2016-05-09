@@ -383,6 +383,7 @@ Compass::Compass(void) :
 bool
 Compass::init()
 {
+    _consistency_fail_ms = AP_HAL::millis();
     if (_compass_count == 0) {
         // detect available backends. Only called once
         _detect_backends();
@@ -492,6 +493,9 @@ Compass::read(void)
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
         _state[i].healthy = (AP_HAL::millis() - _state[i].last_update_ms < 500);
     }
+
+    check_consistency();
+
     return healthy();
 }
 
@@ -773,15 +777,20 @@ void Compass::motor_compensation_type(const uint8_t comp_type)
     }
 }
 
-bool Compass::consistent() const
+void Compass::check_consistency()
 {
+    if (_consistent) {
+        return;
+    }
+
     Vector3f primary_mag_field = get_field();
     Vector3f primary_mag_field_norm;
 
     if (!primary_mag_field.is_zero()) {
         primary_mag_field_norm = primary_mag_field.normalized();
     } else {
-        return false;
+        _consistency_fail_ms = AP_HAL::millis();
+        return;
     }
 
     Vector2f primary_mag_field_xy = Vector2f(primary_mag_field.x,primary_mag_field.y);
@@ -790,7 +799,8 @@ bool Compass::consistent() const
     if (!primary_mag_field_xy.is_zero()) {
         primary_mag_field_xy_norm = primary_mag_field_xy.normalized();
     } else {
-        return false;
+        _consistency_fail_ms = AP_HAL::millis();
+        return;
     }
 
     for (uint8_t i=0; i<get_count(); i++) {
@@ -801,7 +811,8 @@ bool Compass::consistent() const
             if (!mag_field.is_zero()) {
                 mag_field_norm = mag_field.normalized();
             } else {
-                return false;
+                _consistency_fail_ms = AP_HAL::millis();
+                return;
             }
 
             Vector2f mag_field_xy = Vector2f(mag_field.x,mag_field.y);
@@ -810,7 +821,8 @@ bool Compass::consistent() const
             if (!mag_field_xy.is_zero()) {
                 mag_field_xy_norm = mag_field_xy.normalized();
             } else {
-                return false;
+                _consistency_fail_ms = AP_HAL::millis();
+                return;
             }
 
             float xyz_ang_diff = acosf(constrain_float(mag_field_norm * primary_mag_field_norm,-1.0f,1.0f));
@@ -828,10 +840,15 @@ bool Compass::consistent() const
 
             // check for inconsistency in the XY plane
             if (xyz_ang_diff_large || xy_ang_diff_large || xy_length_diff_large) {
-                return false;
+                _consistency_fail_ms = AP_HAL::millis();
+                return;
             }
         }
     }
-    return true;
+
+    // checks are passing
+    if (AP_HAL::millis()-_consistency_fail_ms > 1000) {
+        _consistent = true;
+    }
 }
 

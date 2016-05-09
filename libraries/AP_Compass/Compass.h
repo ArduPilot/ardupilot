@@ -167,7 +167,7 @@ public:
     void send_mag_cal_report(mavlink_channel_t chan);
 
     // check if the compasses are pointing in the same direction
-    bool consistent() const;
+    bool consistent() const { return _consistent; }
 
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _state[i].healthy; }
@@ -409,6 +409,11 @@ private:
     bool _hil_mode:1;
 
     AP_Float _calibration_threshold;
+
+    uint32_t _consistency_fail_ms = 0;
+    bool _consistent = false;
+
+    void check_consistency();
 };
 
 #include "AP_Compass_Backend.h"
