@@ -250,7 +250,7 @@ void Copter::init_disarm_motors()
     mission.reset();
 
     // suspend logging
-    if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
+    if (!DataFlash.log_while_disarmed()) {
         DataFlash.EnableWrites(false);
     }
 
