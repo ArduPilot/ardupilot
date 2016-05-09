@@ -4899,6 +4899,9 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
 {
     static struct Location gpsloc_prev;    // LLH location of previous GPS measurement
 
+    // User defined multiplier to be applied to check thresholds
+    float checkScaler = 0.01f*(float)frontend._gpsCheckScaler;
+
     // calculate absolute difference between GPS vert vel and inertial vert vel
     float velDiffAbs;
     if (_ahrs->get_gps().have_vertical_velocity()) {
@@ -4908,7 +4911,7 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     }
 
     // fail if velocity difference or reported speed accuracy greater than threshold
-    bool gpsVelFail = ((velDiffAbs > 1.0f) || (gpsSpdAccuracy > 1.0f)) && (frontend._gpsCheck & MASK_GPS_SPD_ERR);
+    bool gpsVelFail = ((velDiffAbs > 1.0f) || (gpsSpdAccuracy > 1.0f*checkScaler)) && (frontend._gpsCheck & MASK_GPS_SPD_ERR);
 
     if (velDiffAbs > 1.0f) {
         hal.util->snprintf(prearm_fail_string,
@@ -4951,14 +4954,14 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     float hAcc = 0.0f;
     bool hAccFail;
     if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
-        hAccFail = (hAcc > 5.0f)  && (frontend._gpsCheck & MASK_GPS_POS_ERR);
+        hAccFail = (hAcc > 5.0f*checkScaler)  && (frontend._gpsCheck & MASK_GPS_POS_ERR);
     } else {
         hAccFail =  false;
     }
     if (hAccFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS horiz error %.1f", (double)hAcc);
+                           "GPS horiz error %.1f", (double)hAcc, (double)(5.0f*checkScaler));
         gpsCheckStatus.bad_hAcc = true;
     } else {
         gpsCheckStatus.bad_hAcc = false;
@@ -5012,11 +5015,11 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     gpsDriftNE = MIN(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst pre-armed when the vehicle is supposed to be stationary
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
-    bool gpsDriftFail = (gpsDriftNE > 3.0f) && !vehicleArmed && (frontend._gpsCheck & MASK_GPS_POS_DRIFT);
+    bool gpsDriftFail = (gpsDriftNE > 3.0f*checkScaler) && !vehicleArmed && (frontend._gpsCheck & MASK_GPS_POS_DRIFT);
     if (gpsDriftFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS drift %.1fm (needs 3.0)", (double)gpsDriftNE);
+                           "GPS drift %.1fm (needs %.1f)", (double)gpsDriftNE, (double)(3.0f*checkScaler));
         gpsCheckStatus.bad_horiz_drift = true;
     } else {
         gpsCheckStatus.bad_horiz_drift = false;
@@ -5028,7 +5031,7 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * velNED.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
-        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f) && (frontend._gpsCheck & MASK_GPS_VERT_SPD);
+        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend._gpsCheck & MASK_GPS_VERT_SPD);
     } else if ((frontend._fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
@@ -5038,7 +5041,7 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     if (gpsVertVelFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS vertical speed %.2fm/s (needs 0.30)", (double)fabsf(gpsVertVelFilt));
+                           "GPS vertical speed %.2fm/s (needs %.2f)", (double)fabsf(gpsVertVelFilt),(double)(0.3f*checkScaler));
         gpsCheckStatus.bad_vert_vel = true;
     } else {
         gpsCheckStatus.bad_vert_vel = false;
@@ -5049,14 +5052,14 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     if (!vehicleArmed) {
         gpsHorizVelFilt = 0.1f * pythagorous2(velNED.x,velNED.y) + 0.9f * gpsHorizVelFilt;
         gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
-        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f) && (frontend._gpsCheck & MASK_GPS_HORIZ_SPD);
+        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f*checkScaler) && (frontend._gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {
         gpsHorizVelFail = false;
     }
     if (gpsHorizVelFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS horizontal speed %.2fm/s (needs 0.30)", (double)gpsDriftNE);
+                           "GPS horizontal speed %.2fm/s (needs %.2f)", (double)gpsDriftNE,(double)(0.3f*checkScaler));
         gpsCheckStatus.bad_horiz_vel = true;
     } else {
         gpsCheckStatus.bad_horiz_vel = false;

@@ -402,6 +402,14 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GPS_CHECK",    33, NavEKF, _gpsCheck, 31),
 
+    // @Param: CHECK_SCALE
+    // @DisplayName: GPS accuracy check scaler (%)
+    // @Description: This scales the thresholds that are used to check GPS accuracy before it is used by the EKF. A value of 100 is the default. Values greater than 100 increase and values less than 100 reduce the maximum GPS error the EKF will accept. A value of 200 will double the allowable GPS error.
+    // @Range: 50 200
+    // @User: Advanced
+    // @Units: %
+    AP_GROUPINFO("CHECK_SCALE", 35, NavEKF, _gpsCheckScaler, 100),
+
     AP_GROUPEND
 };
 
