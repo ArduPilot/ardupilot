@@ -20,6 +20,8 @@
 #include <AP_Notify/AP_Notify.h>
 #include "AP_GPS.h"
 
+#include <stdio.h>
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -221,7 +223,7 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
-        // try the next baud rate
+        // try the next baud rate        
 		dstate->last_baud++;
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
@@ -254,7 +256,7 @@ AP_GPS::detect_instance(uint8_t instance)
             pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print_P(PSTR(" ublox "));
-            new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
+            new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);            
         } 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
@@ -273,7 +275,7 @@ AP_GPS::detect_instance(uint8_t instance)
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #endif // HAL_CPU_CLASS
-#if !defined(GPS_SKIP_SIRF_NMEA)
+//#if !defined(GPS_SKIP_SIRF_NMEA)
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
@@ -286,10 +288,10 @@ AP_GPS::detect_instance(uint8_t instance)
 			if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
                 AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
 				hal.console->print_P(PSTR(" NMEA "));
-				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
+				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);                
 			}
 		}
-#endif
+//#endif
 	}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
