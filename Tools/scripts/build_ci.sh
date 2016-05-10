@@ -25,7 +25,7 @@ fi
 
 # If CI_BUILD_TARGET is not set, default to all of them
 if [ -z "$CI_BUILD_TARGET" ]; then
-    CI_BUILD_TARGET="sitl linux navio2 raspilot minlure bebop px4-v2 px4-v4"
+    CI_BUILD_TARGET="sitl linux navio2 raspilot minlure bebop px4-v2 px4-v4 pxfmini"
 fi
 
 declare -A build_platforms
@@ -33,10 +33,10 @@ declare -A build_concurrency
 declare -A build_extra_clean
 declare -A waf_supported_boards
 
-build_platforms=(  ["ArduPlane"]="navio2 raspilot minlure bebop sitl linux px4-v2"
-                   ["ArduCopter"]="navio2 raspilot minlure bebop sitl linux px4-v2 px4-v4"
-                   ["APMrover2"]="navio2 raspilot minlure bebop sitl linux px4-v2"
-                   ["AntennaTracker"]="navio2 raspilot minlure bebop sitl linux px4-v2"
+build_platforms=(  ["ArduPlane"]="navio2 raspilot minlure bebop sitl linux px4-v2 pxfmini"
+                   ["ArduCopter"]="navio2 raspilot minlure bebop sitl linux px4-v2 px4-v4 pxfmini"
+                   ["APMrover2"]="navio2 raspilot minlure bebop sitl linux px4-v2 pxfmini"
+                   ["AntennaTracker"]="navio2 raspilot minlure bebop sitl linux px4-v2 pxfmini"
                    ["Tools/Replay"]="linux")
 
 build_concurrency=(["navio2"]="-j2"
@@ -46,7 +46,8 @@ build_concurrency=(["navio2"]="-j2"
                    ["sitl"]="-j2"
                    ["linux"]="-j2"
                    ["px4-v2"]=""
-                   ["px4-v4"]="")
+                   ["px4-v4"]=""
+                   ["pxfmini"]="-j2")
 
 build_extra_clean=(["px4-v2"]="make px4-cleandep")
 
