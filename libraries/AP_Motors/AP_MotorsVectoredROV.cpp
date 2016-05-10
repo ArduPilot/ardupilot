@@ -142,7 +142,7 @@ void AP_MotorsVectoredROV::output_armed_stabilizing()
     if ( forward_coupling_limit < 0 ) {
     	forward_coupling_limit = 0;
     }
-    int8_t forward_coupling_direction[] = {1,1,0,0,-1,-1,0,0};
+    int8_t forward_coupling_direction[] = {1,1,-1,-1,0,0,0,0};
 
     // calculate linear command for each motor
     // linear factors should be 0.0 or 1.0 for now
