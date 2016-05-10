@@ -776,20 +776,18 @@ void NavEKF2_core::fuseEulerYaw()
     float varInnovInv;
     if (varInnov >= R_YAW) {
         varInnovInv = 1.0f / varInnov;
-        // All three magnetometer components are used in this measurement, so we output health status on three axes
-        faultStatus.bad_xmag = false;
-        faultStatus.bad_ymag = false;
-        faultStatus.bad_zmag = false;
+        // output numerical health status
+        faultStatus.bad_yaw = false;
     } else {
         // the calculation is badly conditioned, so we cannot perform fusion on this step
         // we reset the covariance matrix and try again next measurement
         CovarianceInit();
-        // All three magnetometer components are used in this measurement, so we output health status on three axes
-        faultStatus.bad_xmag = true;
-        faultStatus.bad_ymag = true;
-        faultStatus.bad_zmag = true;
+        // output numerical health status
+        faultStatus.bad_yaw = true;
         return;
     }
+
+    // calculate Kalman gain
     for (uint8_t rowIndex=0; rowIndex<=stateIndexLim; rowIndex++) {
         Kfusion[rowIndex] = 0.0f;
         for (uint8_t colIndex=0; colIndex<=2; colIndex++) {
@@ -867,11 +865,11 @@ void NavEKF2_core::fuseEulerYaw()
         // is used to correct the estimated quaternion on the current time step
         stateStruct.quat.rotate(stateStruct.angErr);
 
-        // record fusion health status
+        // record fusion numerical health status
         faultStatus.bad_yaw = false;
 
     } else {
-        // record fusion health satus
+        // record fusion numerical health status
         faultStatus.bad_yaw = true;
     }
 }
