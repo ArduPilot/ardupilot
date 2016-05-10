@@ -291,6 +291,9 @@ class MagcalController(CalController):
     def mavlink_packet(self, m):
         super(MagcalController, self).mavlink_packet(m)
 
+        if not self.active:
+            return
+
         if m.get_type() == 'MAG_CAL_REPORT':
             # NOTE: This may be not the ideal way to handle it
             if m.compass_id in self.last_progress:
