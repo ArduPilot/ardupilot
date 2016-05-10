@@ -7,6 +7,7 @@
 #include "AP_Compass_HIL.h"
 #include "AP_Compass_HMC5843.h"
 #include "AP_Compass_LSM303D.h"
+#include "AP_Compass_LSM9DS1.h"
 #include "AP_Compass_PX4.h"
 #include "AP_Compass_QURT.h"
 #include "AP_Compass_qflight.h"
@@ -477,6 +478,48 @@ void Compass::_detect_backends(void)
     } else {
         hal.console->printf("AK8953: External compass not detected\n");
     }
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO2
+    AP_Compass_Backend *backend = AP_Compass_AK8963::probe_mpu9250(*this, 0);
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("AK8953: Compass detected\n");
+    } else {
+        hal.console->printf("AK8953: Compass not detected\n");
+    }
+
+    backend = AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m"));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("LSM9DS1: Compass detected\n");
+    } else {
+        hal.console->printf("LSM9DS1: Compass not detected\n");
+    }
+
+    backend = AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("HMC5843: External compass detected\n");
+    } else {
+        hal.console->printf("HMC5843: External compass not detected\n");
+    }
+
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO
+    AP_Compass_Backend *backend = AP_Compass_AK8963::probe_mpu9250(*this, 0);
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("AK8953: Compass detected\n");
+    } else {
+        hal.console->printf("AK8953: Compass not detected\n");
+    }
+
+    backend = AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("HMC5843: External compass detected\n");
+    } else {
+        hal.console->printf("HMC5843: External compass not detected\n");
+    }
+
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
     _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
@@ -490,6 +533,7 @@ void Compass::_detect_backends(void)
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
     _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
+    _add_backend(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")));
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
