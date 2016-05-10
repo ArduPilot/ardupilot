@@ -144,8 +144,8 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
     }
 
     sonar_pin_value    = _ground_sonar();
-    float airspeed_simulated = (fabsf(_sitl->aspd_fail) > 1.0e-6f) ? _sitl->aspd_fail : airspeed;
-    airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->aspd_noise * _rand_float()));
+    float airspeed_simulated = (fabsf(_sitl->arspd_fail) > 1.0e-6f) ? _sitl->arspd_fail : airspeed;
+    airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * _rand_float()));
 }
 
 #endif
