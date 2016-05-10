@@ -4941,10 +4941,10 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     }
 
     // fail if satellite geometry is poor
-    bool hdopFail = (_ahrs->get_gps().get_hdop() > 250)  && (frontend._gpsCheck & MASK_GPS_HDOP);
+    bool hdopFail = (_ahrs->get_gps().get_hdop() > 170)  && (frontend._gpsCheck & MASK_GPS_HDOP);
     if (hdopFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * _ahrs->get_gps().get_hdop()));
+                           "GPS HDOP %.1f (needs 1.7)", (double)(0.01f * _ahrs->get_gps().get_hdop()));
         gpsCheckStatus.bad_hdop = true;
     } else {
         gpsCheckStatus.bad_hdop = false;
