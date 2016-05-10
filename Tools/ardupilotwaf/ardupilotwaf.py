@@ -50,6 +50,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'RC_Channel',
     'StorageManager',
     'AP_Tuning',
+    'AP_RPM',
 ]
 
 def _get_legacy_defines(sketch_name):
