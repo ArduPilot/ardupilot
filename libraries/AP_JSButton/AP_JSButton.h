@@ -40,12 +40,13 @@ public:
 		k_mode_4                = 9,            ///< enter mode 4
 		k_mode_5                = 10,           ///< enter mode 5
 		k_mode_6                = 11,           ///< enter mode 6
-		// 8-20 reserved for future mode functions
+		// 12-20 reserved for future mode functions
 		k_mount_center          = 21,           ///< move mount to center
 		k_mount_tilt_up         = 22,           ///< tilt mount up
 		k_mount_tilt_down       = 23,           ///< tilt mount down
 		k_camera_trigger        = 24,           ///< trigger camera shutter
-		// 24-30 reserved for future camera functions
+		k_camera_source_toggle  = 25,           ///< toggle camera source
+		// 26-30 reserved for future camera functions
 		k_lights1_cycle         = 31,           ///< lights 1 cycle
 		k_lights1_brighter      = 32,           ///< lights 1 up
 		k_lights1_dimmer        = 33,           ///< lights 1 down
@@ -60,6 +61,8 @@ public:
 		k_trim_roll_dec         = 45,           ///< decrease roll trim
 		k_trim_pitch_inc        = 46,           ///< increase pitch trim
 		k_trim_pitch_dec        = 47,           ///< decrease pitch trim
+		k_input_hold_toggle     = 48,           ///< toggle input hold (trim to current controls)
+		// 49-60 reserved for future gain and trim functions
 		k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
 	} button_function_t;
 
