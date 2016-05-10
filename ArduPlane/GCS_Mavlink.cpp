@@ -371,7 +371,7 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->target_bearing_cd() * 0.01f,
         auto_state.wp_distance,
         altitude_error_cm * 0.01f,
-        airspeed_error_cm,
+        airspeed_error * 100,
         nav_controller->crosstrack_error());
 }
 

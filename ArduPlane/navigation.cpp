@@ -143,7 +143,7 @@ void Plane::calc_airspeed_errors()
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed
-    airspeed_error_cm = SpdHgt_Controller->get_target_airspeed()*100 - airspeed_measured_cm;
+    airspeed_error = SpdHgt_Controller->get_target_airspeed() - airspeed_measured_cm * 0.01f;
 }
 
 void Plane::calc_gndspeed_undershoot()

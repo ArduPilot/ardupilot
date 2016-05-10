@@ -359,8 +359,8 @@ private:
     // Also used for flap deployment criteria.  Centimeters per second.
     int32_t target_airspeed_cm;
 
-    // The difference between current and desired airspeed.  Used in the pitch controller.  Centimeters per second.
-    float airspeed_error_cm;
+    // The difference between current and desired airspeed.  Used in the pitch controller.  Meters per second.
+    float airspeed_error;
 
     // An amount that the airspeed should be increased in auto modes based on the user positioning the
     // throttle stick in the top half of the range.  Centimeters per second.
