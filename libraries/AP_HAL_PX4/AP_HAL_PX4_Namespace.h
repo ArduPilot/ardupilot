@@ -12,7 +12,8 @@ namespace PX4 {
         class PX4GPIO;
         class PX4DigitalSource;
         class NSHShellStream;
-        class PX4I2CDriver;
+        class I2CDevice;
+        class I2CDeviceManager;
         class PX4_I2C;
         class Semaphore;
 }
