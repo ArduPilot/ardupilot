@@ -279,9 +279,6 @@ struct PACKED log_Nav_Tuning {
     int16_t target_bearing_cd;
     int16_t nav_bearing_cd;
     int16_t altitude_error_cm;
-    int16_t airspeed_cm;
-    float   altitude;
-    uint32_t groundspeed_cm;
     float   xtrack_error;
     float   xtrack_error_i;
 };
@@ -296,9 +293,6 @@ void Plane::Log_Write_Nav_Tuning()
         target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
         altitude_error_cm   : (int16_t)altitude_error_cm,
-        airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
-        altitude            : barometer.get_altitude(),
-        groundspeed_cm      : (uint32_t)(gps.ground_speed()*100),
         xtrack_error        : nav_controller->crosstrack_error(),
         xtrack_error_i      : nav_controller->crosstrack_error_integrator()
     };
@@ -492,7 +486,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhh",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "QfccccfIff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM,XT,XTi" },
+      "NTUN", "Qfcccff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,XT,XTi" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QHfffbBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
