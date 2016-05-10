@@ -543,13 +543,13 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     }
 
     // warn about hdop separately - to prevent user confusion with no gps lock
-    if (gps.get_hdop() > g.gps_hdop_good) {
+    /*if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
-    }
+    }*/
 
     // if we got here all must be ok
     AP_Notify::flags.pre_arm_gps_check = true;
