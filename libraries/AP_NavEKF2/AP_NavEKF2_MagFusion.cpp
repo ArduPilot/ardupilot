@@ -941,18 +941,6 @@ void NavEKF2_core::FuseDeclination()
         innovation = -0.5f;
     }
 
-    // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
-    stateStruct.angErr.zero();
-
-    // correct the state vector
-    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-        statesArray[j] = statesArray[j] - Kfusion[j] * innovation;
-    }
-
-    // the first 3 states represent the angular misalignment vector. This is
-    // is used to correct the estimated quaternion on the current time step
-    stateStruct.quat.rotate(stateStruct.angErr);
-
     // correct the covariance P = (I - K*H)*P
     // take advantage of the empty columns in KH to reduce the
     // number of operations
@@ -971,17 +959,45 @@ void NavEKF2_core::FuseDeclination()
             KHP[i][j] = KH[i][16] * P[16][j] + KH[i][17] * P[17][j];
         }
     }
-    for (unsigned i = 0; i<=stateIndexLim; i++) {
-        for (unsigned j = 0; j<=stateIndexLim; j++) {
-            P[i][j] = P[i][j] - KHP[i][j];
+
+    // Check that we are not going to drive any variances negative and skip the update if so
+    bool healthyFusion = true;
+    for (uint8_t i= 0; i<=stateIndexLim; i++) {
+        if (KHP[i][i] > P[i][i]) {
+            healthyFusion = false;
         }
     }
 
-    // force the covariance matrix to be symmetrical and limit the variances to prevent
-    // ill-condiioning.
-    ForceSymmetry();
-    ConstrainVariances();
+    if (healthyFusion) {
+        // update the covariance matrix
+        for (uint8_t i= 0; i<=stateIndexLim; i++) {
+            for (uint8_t j= 0; j<=stateIndexLim; j++) {
+                P[i][j] = P[i][j] - KHP[i][j];
+            }
+        }
 
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+        ForceSymmetry();
+        ConstrainVariances();
+
+        // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+        stateStruct.angErr.zero();
+
+        // correct the state vector
+        for (uint8_t j= 0; j<=stateIndexLim; j++) {
+            statesArray[j] = statesArray[j] - Kfusion[j] * innovation;
+        }
+
+        // the first 3 states represent the angular misalignment vector. This is
+        // is used to correct the estimated quaternion on the current time step
+        stateStruct.quat.rotate(stateStruct.angErr);
+
+        // record fusion health status
+        faultStatus.bad_decl = false;
+    } else {
+        // record fusion health status
+        faultStatus.bad_decl = true;
+    }
 }
 
 /********************************************************

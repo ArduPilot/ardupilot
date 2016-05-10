@@ -885,6 +885,7 @@ private:
         bool bad_epos:1;
         bool bad_dpos:1;
         bool bad_yaw:1;
+        bool bad_decl:1;
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing
