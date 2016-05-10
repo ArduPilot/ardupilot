@@ -24,8 +24,10 @@ class mavgen(Task.Task):
                                 python, mavgen, out, self.inputs[0].abspath()))
 
         if ret != 0:
-            # ignore if there was a signal to the interpreter rather than a real error in the script
-            if ret > 128:
+            # ignore if there was a signal to the interpreter rather
+            # than a real error in the script. Some environments use a
+            # signed and some an unsigned return for this
+            if ret > 128 or ret < 0:
                 Logs.warn('mavgen crashed with code: {}'.format(ret))
                 ret = 0
             else:
