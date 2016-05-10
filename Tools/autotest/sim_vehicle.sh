@@ -304,6 +304,11 @@ case $FRAME in
         check_jsbsim_version
         DEFAULTS_PATH="$autotest/ArduPlane.parm"
 	;;
+    quadplane-tilttri*)
+	BUILD_TARGET="sitl-tri"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/quadplane-tilttri.parm"
+	;;
     quadplane*)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"

@@ -41,7 +41,6 @@ public:
     }
 private:
     Frame *frame;
-    bool elevons;
 };
 
 } // namespace SITL

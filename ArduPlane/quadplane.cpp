@@ -217,12 +217,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
 
+#if FRAME_CONFIG == MULTICOPTER_FRAME
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
     // @Values: 0:Quad, 1:Hexa, 2:Octa, 3:OctaQuad, 4:Y6
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 0),
+#endif
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X or V)
@@ -270,6 +272,30 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("RTL_MODE", 36, QuadPlane, rtl_mode, 0),
+
+    // @Param: TILT_MASK
+    // @DisplayName: Tiltrotor mask
+    // @Description: This is a bitmask of motors that are tiltable in a tiltrotor (or tiltwing). The mask is in terms of the standard motor order for the frame type.
+    // @User: Standard
+    AP_GROUPINFO("TILT_MASK", 37, QuadPlane, tilt.tilt_mask, 0),
+
+    // @Param: TILT_RATE
+    // @DisplayName: Tiltrotor tilt rate
+    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor
+    // @Units: degrees/second
+    // @Increment: 1
+    // @Range: 10 300
+    // @User: Standard
+    AP_GROUPINFO("TILT_RATE", 38, QuadPlane, tilt.max_rate_dps, 40),
+
+    // @Param: TILT_MAX
+    // @DisplayName: Tiltrotor maximum VTOL angle
+    // @Description: This is the maximum angle of the tiltable motors at which multicopter control will be enabled. Beyond this angle the plane will fly solely as a fixed wing aircraft and the motors will tilt to their maximum angle at the TILT_RATE
+    // @Units: degrees
+    // @Increment: 1
+    // @Range: 20 80
+    // @User: Standard
+    AP_GROUPINFO("TILT_MAX", 39, QuadPlane, tilt.max_angle_deg, 45),
     
     AP_GROUPEND
 };
@@ -318,7 +344,7 @@ bool QuadPlane::setup(void)
         goto failed;
     }
 
-#ifdef AP_MOTORS_FORCE_CLASS
+#if FRAME_CONFIG == TRI_FRAME
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor1, CH_5);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
@@ -780,8 +806,10 @@ void QuadPlane::update_transition(void)
         plane.control_mode == ACRO ||
         plane.control_mode == TRAINING) {
         // in manual modes quad motors are always off
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        motors->output();
+        if (!tilt.motors_active) {
+            motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+            motors->output();
+        }
         transition_state = TRANSITION_DONE;
         return;
     }
@@ -853,8 +881,10 @@ void QuadPlane::update_transition(void)
     }
 
     case TRANSITION_DONE:
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        motors->output();
+        if (!tilt.motors_active) {
+            motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+            motors->output();
+        }
         break;
     }
 }
@@ -899,6 +929,8 @@ void QuadPlane::update(void)
          plane.failsafe.ch3_counter>0)) {
         throttle_wait = false;
     }
+
+    tiltrotor_update();
 }
 
 /*

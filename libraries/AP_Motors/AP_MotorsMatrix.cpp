@@ -128,6 +128,7 @@ void AP_MotorsMatrix::output_to_motors()
     hal.rcout->push();
 }
 
+
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsMatrix::get_motor_mask()
@@ -403,5 +404,18 @@ void AP_MotorsMatrix::normalise_rpy_factors()
                 _yaw_factor[i] = 0.5f*_yaw_factor[i]/yaw_fac;
             }
         }
+    }
+}
+
+
+/*
+  call vehicle supplied thrust compensation if set. This allows
+  vehicle code to compensate for vehicle specific motor arrangements
+  such as tiltrotors or tiltwings
+*/
+void AP_MotorsMatrix::thrust_compensation(void)
+{
+    if (_thrust_compensation_callback) {
+        _thrust_compensation_callback(_thrust_rpyt_out, AP_MOTORS_MAX_NUM_MOTORS);
     }
 }
