@@ -314,7 +314,7 @@ struct PACKED log_EKF4 {
     int16_t sqrtvarVT;
     int8_t  offsetNorth;
     int8_t  offsetEast;
-    uint8_t faults;
+    uint16_t faults;
     uint8_t timeouts;
     uint16_t solution;
     uint16_t gps;
@@ -331,7 +331,7 @@ struct PACKED log_NKF4 {
     float   tiltErr;
     int8_t  offsetNorth;
     int8_t  offsetEast;
-    uint8_t faults;
+    uint16_t faults;
     uint8_t timeouts;
     uint16_t solution;
     uint16_t gps;
@@ -782,7 +782,7 @@ Format characters in the format string for binary log messages
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
       "EKF3","Qcccccchhhc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","QcccccccbbBBHH","TimeUS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,OFE,FS,TS,SS,GPS" }, \
+      "EKF4","QcccccccbbHBHH","TimeUS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,OFE,FS,TS,SS,GPS" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
       "EKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
@@ -792,7 +792,7 @@ Format characters in the format string for binary log messages
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
       "NKF3","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
-      "NKF4","QcccccfbbBBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
+      "NKF4","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_NKF5_MSG, sizeof(log_EKF5), \
       "NKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
     { LOG_NKF6_MSG, sizeof(log_EKF1), \
@@ -802,7 +802,7 @@ Format characters in the format string for binary log messages
     { LOG_NKF8_MSG, sizeof(log_NKF3), \
       "NKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT" }, \
     { LOG_NKF9_MSG, sizeof(log_NKF4), \
-      "NKF9","QcccccfbbBBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
+      "NKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
