@@ -6,6 +6,7 @@ from waflib import Logs, Options, Utils
 from waflib.Build import BuildContext
 from waflib.Configure import conf
 import os.path, os
+from collections import OrderedDict
 
 SOURCE_EXTS = [
     '*.S',
@@ -153,6 +154,10 @@ def _get_next_idx():
     LAST_IDX += 1
     return LAST_IDX
 
+def unique_list(items):
+    '''remove duplicate elements from a list while maintaining ordering'''
+    return list(OrderedDict.fromkeys(items))
+
 @conf
 def ap_stlib(bld, **kw):
     if 'name' not in kw:
@@ -163,7 +168,7 @@ def ap_stlib(bld, **kw):
         bld.fatal('Missing libraries for ap_stlib')
 
     sources = []
-    libraries = kw['libraries'] + bld.env.AP_LIBRARIES
+    libraries = unique_list(kw['libraries'] + bld.env.AP_LIBRARIES)
 
     for lib_name in libraries:
         lib_node = bld.srcnode.find_dir('libraries/' + lib_name)
