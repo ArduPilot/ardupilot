@@ -495,24 +495,6 @@ void NavEKF2_core::FuseVelPosNED()
                     Kfusion[23] = 0.0f;
                 }
 
-                // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
-                stateStruct.angErr.zero();
-
-                // calculate state corrections and re-normalise the quaternions for states predicted using the blended IMU data
-                for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                    statesArray[i] = statesArray[i] - Kfusion[i] * innovVelPos[obsIndex];
-                }
-
-                // the first 3 states represent the angular misalignment vector. This is
-                // is used to correct the estimated quaternion
-                stateStruct.quat.rotate(stateStruct.angErr);
-
-                // sum the attitude error from velocity and position fusion only
-                // used as a metric for convergence monitoring
-                if (obsIndex != 5) {
-                    tiltErrVec += stateStruct.angErr;
-                }
-
                 // update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
                 // this is a numerically optimised implementation of standard equation P = (I - K*H)*P;
                 for (uint8_t i= 0; i<=stateIndexLim; i++) {
@@ -521,18 +503,76 @@ void NavEKF2_core::FuseVelPosNED()
                         KHP[i][j] = Kfusion[i] * P[stateIndex][j];
                     }
                 }
+                // Check that we are not going to drive any variances negative and skip the update if so
+                bool healthyFusion = true;
                 for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                        P[i][j] = P[i][j] - KHP[i][j];
+                    if (KHP[i][i] > P[i][i]) {
+                        healthyFusion = false;
+                    }
+                }
+                if (healthyFusion) {
+                    // update the covariance matrix
+                    for (uint8_t i= 0; i<=stateIndexLim; i++) {
+                        for (uint8_t j= 0; j<=stateIndexLim; j++) {
+                            P[i][j] = P[i][j] - KHP[i][j];
+                        }
+                    }
+
+                    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+                    ForceSymmetry();
+                    ConstrainVariances();
+
+                    // update the states
+                    // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+                    stateStruct.angErr.zero();
+
+                    // calculate state corrections and re-normalise the quaternions for states predicted using the blended IMU data
+                    for (uint8_t i = 0; i<=stateIndexLim; i++) {
+                        statesArray[i] = statesArray[i] - Kfusion[i] * innovVelPos[obsIndex];
+                    }
+
+                    // the first 3 states represent the angular misalignment vector. This is
+                    // is used to correct the estimated quaternion
+                    stateStruct.quat.rotate(stateStruct.angErr);
+
+                    // sum the attitude error from velocity and position fusion only
+                    // used as a metric for convergence monitoring
+                    if (obsIndex != 5) {
+                        tiltErrVec += stateStruct.angErr;
+                    }
+                    // record good fusion status
+                    if (obsIndex == 0) {
+                        faultStatus.bad_nvel = false;
+                    } else if (obsIndex == 1) {
+                        faultStatus.bad_evel = false;
+                    } else if (obsIndex == 2) {
+                        faultStatus.bad_dvel = false;
+                    } else if (obsIndex == 3) {
+                        faultStatus.bad_npos = false;
+                    } else if (obsIndex == 4) {
+                        faultStatus.bad_epos = false;
+                    } else if (obsIndex == 5) {
+                        faultStatus.bad_dpos = false;
+                    }
+                } else {
+                    // record bad fusion status
+                    if (obsIndex == 0) {
+                        faultStatus.bad_nvel = true;
+                    } else if (obsIndex == 1) {
+                        faultStatus.bad_evel = true;
+                    } else if (obsIndex == 2) {
+                        faultStatus.bad_dvel = true;
+                    } else if (obsIndex == 3) {
+                        faultStatus.bad_npos = true;
+                    } else if (obsIndex == 4) {
+                        faultStatus.bad_epos = true;
+                    } else if (obsIndex == 5) {
+                        faultStatus.bad_dpos = true;
                     }
                 }
             }
         }
     }
-
-    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
-    ForceSymmetry();
-    ConstrainVariances();
 
     // stop performance timer
     hal.util->perf_end(_perf_FuseVelPosNED);
