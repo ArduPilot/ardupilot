@@ -202,7 +202,7 @@ public:
      7 = badly conditioned synthetic sideslip fusion
      7 = filter is not initialised
     */
-    void  getFilterFaults(uint8_t &faults) const;
+    void  getFilterFaults(uint16_t &faults) const;
 
     /*
     return filter timeout status as a bitmasked integer
@@ -878,6 +878,12 @@ private:
         bool bad_zmag:1;
         bool bad_airspeed:1;
         bool bad_sideslip:1;
+        bool bad_nvel:1;
+        bool bad_evel:1;
+        bool bad_dvel:1;
+        bool bad_npos:1;
+        bool bad_epos:1;
+        bool bad_dpos:1;
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing

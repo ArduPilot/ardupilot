@@ -17,7 +17,7 @@ extern const AP_HAL::HAL& hal;
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF2_core::healthy(void) const
 {
-    uint8_t faultInt;
+    uint16_t faultInt;
     getFilterFaults(faultInt);
     if (faultInt > 0) {
         return false;
@@ -409,7 +409,7 @@ return the filter fault status as a bitmasked integer
  7 = badly conditioned synthetic sideslip fusion
  7 = filter is not initialised
 */
-void  NavEKF2_core::getFilterFaults(uint8_t &faults) const
+void  NavEKF2_core::getFilterFaults(uint16_t &faults) const
 {
     faults = (stateStruct.quat.is_nan()<<0 |
               stateStruct.velocity.is_nan()<<1 |
