@@ -90,6 +90,8 @@ void Plane::read_airspeed(void)
         if (should_log(MASK_LOG_IMU)) {
             Log_Write_Airspeed();
         }
+
+        // set target_airspeed_cm and airspeed_error
         calc_airspeed_errors();
 
         // supply a new temperature to the barometer from the digital
@@ -97,6 +99,31 @@ void Plane::read_airspeed(void)
         float temperature;
         if (airspeed.get_temperature(temperature)) {
             barometer.set_external_temperature(temperature);
+        }
+
+        // check for airspeed hardware failure but wait until:
+        // a few seconds after a launch or until after an auto takeoff completes.
+        bool stages_to_ignore = (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF ||
+                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
+                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+                flight_stage == AP_SpdHgtControl::FLIGHT_VTOL);
+
+        if (is_flying() &&
+            !(control_mode == AUTO && stages_to_ignore) &&
+            AP_HAL::millis() - started_flying_ms > 10000) {
+
+            bool airspeed_data_validity;
+
+            // perform airspeed hardware failure self-check. Fail when error > abs(target*25%)
+            float trashf; Vector2f trash2f; Vector3f trash3f;
+            float true_airspeed_variance;
+            if (ahrs.get_variances(trashf,trashf,trashf,trash3f, true_airspeed_variance, trash2f)) {
+                airspeed_data_validity = true_airspeed_variance < 1.0f;
+            } else {
+                const float error_threshold = target_airspeed_cm * 0.002f; // cmd to m conversion * 20% error.
+                airspeed_data_validity = fabsf(airspeed_error) < error_threshold;
+            }
+            airspeed.self_check(airspeed_data_validity);
         }
     }
 
