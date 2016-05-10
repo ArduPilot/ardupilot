@@ -35,6 +35,12 @@ private:
     const AP_Vehicle::FixedWing &aparm;
 };
 
+#define AP_AIRSPEED_FAILURE_ACTION_BIT_DISABLE               0x01
+//#define AP_AIRSPEED_FAILURE_ACTION_BIT_ALLOW_REENABLE      0x02 // NOT SUPPORTED YET
+#define AP_AIRSPEED_FAILURE_ACTION_BIT_SAVE                  0x04
+
+#define AP_AIRSPEED_FAILURE_ACTION_BIT_DEFAULT               0
+
 class AP_Airspeed
 {
 public:
@@ -152,6 +158,14 @@ public:
                             PITOT_TUBE_ORDER_NEGATIVE = 1,
                             PITOT_TUBE_ORDER_AUTO     = 2 };
 
+    // apply fail actions on hardware failure detection. Return true if failure was just detected or _use state changes
+    bool self_check(bool airspeed_data_validity);
+
+    struct {
+        uint32_t    hysteresis_timer_ms;
+        bool        trustable;
+    } _self_check;
+
 private:
     AP_Float        _offset;
     AP_Float        _ratio;
@@ -161,6 +175,7 @@ private:
     AP_Int8         _autocal;
     AP_Int8         _tube_order;
     AP_Int8         _skip_cal;
+    AP_Int8         _fail_action_mask;
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
