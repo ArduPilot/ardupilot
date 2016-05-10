@@ -6,15 +6,31 @@
 The **mavgen.py** program is a code generator which creates mavlink header files.
 """
 
-from waflib import Task, Utils, Node
+from waflib import Logs, Task, Utils, Node
 from waflib.TaskGen import feature, before_method, extension
 import os
 
 class mavgen(Task.Task):
     """generate mavlink header files"""
     color   = 'BLUE'
-    run_str = '${PYTHON} ${MAVGEN} --lang=C --wire-protocol=1.0 --output ${OUTPUT_DIR} ${SRC}'
     before  = 'cxx c'
+
+    def run(self):
+        python = self.env.get_flat('PYTHON')
+        mavgen = self.env.get_flat('MAVGEN')
+        out = self.env.get_flat('OUTPUT_DIR')
+        src = self.env.get_flat('SRC')
+        ret = self.exec_command('{} {} --lang=C --wire-protocol=1.0 --output {} {}'.format(
+                                python, mavgen, out, self.inputs[0].abspath()))
+
+        if ret != 0:
+            # ignore if there was a signal to the interpreter rather than a real error in the script
+            if ret > 128:
+                Logs.warning('mavgen crashed with code: {}'.format(ret))
+                ret = 0
+            else:
+                Logs.error('mavgen returned {} error code'.format(ret))
+        return ret
 
     def post_run(self):
         super(mavgen, self).post_run()
