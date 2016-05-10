@@ -739,7 +739,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             return EKF_TYPE_NONE;
         }
         if (always_use_EKF()) {
-            uint8_t ekf_faults;
+            uint16_t ekf_faults;
             EKF1.getFilterFaults(ekf_faults);
             if (ekf_faults == 0) {
                 ret = EKF_TYPE1;
@@ -757,7 +757,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             return EKF_TYPE_NONE;
         }
         if (always_use_EKF()) {
-            uint8_t ekf2_faults;
+            uint16_t ekf2_faults;
             EKF2.getFilterFaults(-1,ekf2_faults);
             if (ekf2_faults == 0) {
                 ret = EKF_TYPE2;
