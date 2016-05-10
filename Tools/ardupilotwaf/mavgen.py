@@ -26,7 +26,7 @@ class mavgen(Task.Task):
         if ret != 0:
             # ignore if there was a signal to the interpreter rather than a real error in the script
             if ret > 128:
-                Logs.warning('mavgen crashed with code: {}'.format(ret))
+                Logs.warn('mavgen crashed with code: {}'.format(ret))
                 ret = 0
             else:
                 Logs.error('mavgen returned {} error code'.format(ret))
