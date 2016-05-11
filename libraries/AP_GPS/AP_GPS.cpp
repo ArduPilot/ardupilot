@@ -20,8 +20,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include "AP_GPS.h"
 
-#include <stdio.h>
-
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
