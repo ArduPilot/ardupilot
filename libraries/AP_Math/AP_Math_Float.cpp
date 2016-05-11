@@ -1,4 +1,4 @@
-#include "AP_Math.h"
+#include "AP_Math_Float.h"
 #include <float.h>
 
 template <class FloatOne, class FloatTwo>

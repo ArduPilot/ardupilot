@@ -1789,7 +1789,7 @@ void NavEKF_core::FuseVelPosNED()
             }
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate the test ratio
-            velTestRatio = innovVelSumSq / (varVelSum * sq(frontend._gpsVelInnovGate));
+            velTestRatio = innovVelSumSq / (varVelSum * sq(frontend._gpsVelInnovGate.get()));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
@@ -1816,7 +1816,7 @@ void NavEKF_core::FuseVelPosNED()
             // calculate the innovation variance
             varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
-            hgtTestRatio = sq(innovVelPos[5]) / (sq(frontend._hgtInnovGate) * varInnovVelPos[5]);
+            hgtTestRatio = sq(innovVelPos[5]) / (sq(frontend._hgtInnovGate.get()) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             hgtTimeout = (imuSampleTime_ms - lastHgtPassTime_ms) > hgtRetryTime;
@@ -2335,7 +2335,7 @@ void NavEKF_core::FuseMagnetometer()
     // calculate the measurement innovation
     innovMag[obsIndex] = MagPred[obsIndex] - magData[obsIndex];
     // calculate the innovation test ratio
-    magTestRatio[obsIndex] = sq(innovMag[obsIndex]) / (sq(frontend._magInnovGate) * varInnovMag[obsIndex]);
+    magTestRatio[obsIndex] = sq(innovMag[obsIndex]) / (sq(frontend._magInnovGate.get()) * varInnovMag[obsIndex]);
     // check the last values from all components and set magnetometer health accordingly
     magHealth = (magTestRatio[0] < 1.0f && magTestRatio[1] < 1.0f && magTestRatio[2] < 1.0f);
     // Don't fuse unless all componenets pass. The exception is if the bad health has timed out and we are not a fly forward vehicle
@@ -2481,7 +2481,7 @@ void NavEKF_core::EstimateTerrainOffset()
             innovRng = predRngMeas - rngMea;
 
             // calculate the innovation consistency test ratio
-            auxRngTestRatio = sq(innovRng) / (sq(frontend._rngInnovGate) * varInnovRng);
+            auxRngTestRatio = sq(innovRng) / (sq(frontend._rngInnovGate.get()) * varInnovRng);
 
             // Check the innovation for consistency and don't fuse if > 5Sigma
             if ((sq(innovRng)*SK_RNG) < 25.0f)
@@ -2569,7 +2569,7 @@ void NavEKF_core::EstimateTerrainOffset()
             K_OPT = Popt*H_OPT/auxFlowObsInnovVar;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(frontend._flowInnovGate) * auxFlowObsInnovVar);
+            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(frontend._flowInnovGate.get()) * auxFlowObsInnovVar);
 
             // don't fuse if optical flow data is outside valid range
             if (max(flowRadXY[0],flowRadXY[1]) < frontend._maxFlowRate) {
@@ -2794,7 +2794,7 @@ void NavEKF_core::FuseOptFlow()
     }
 
     // calculate the innovation consistency test ratio
-    flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(frontend._flowInnovGate) * varInnovOptFlow[obsIndex]);
+    flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(frontend._flowInnovGate.get()) * varInnovOptFlow[obsIndex]);
 
     // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
     if ((flowTestRatio[obsIndex]) < 1.0f && (flowRadXY[obsIndex] < frontend._maxFlowRate)) {
@@ -2963,7 +2963,7 @@ void NavEKF_core::FuseAirspeed()
         innovVtas = VtasPred - VtasMeas;
 
         // calculate the innovation consistency test ratio
-        tasTestRatio = sq(innovVtas) / (sq(frontend._tasInnovGate) * varInnovVtas);
+        tasTestRatio = sq(innovVtas) / (sq(frontend._tasInnovGate.get()) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);

@@ -167,7 +167,7 @@ void Plane::init_ardupilot()
     if (g.compass_enabled==true) {
         bool compass_ok = compass.init() && compass.read();
 #if HIL_SUPPORT
-    if (!is_zero(g.hil_mode)) {
+    if (!is_zero(g.hil_mode.get())) {
         compass_ok = true;
     }
 #endif
