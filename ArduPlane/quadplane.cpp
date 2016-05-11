@@ -628,7 +628,7 @@ bool QuadPlane::is_flying_vtol(void)
  */
 float QuadPlane::landing_descent_rate_cms(float height_above_ground)
 {
-    float ret = linear_interpolate(land_speed_cms, wp_nav->get_speed_down(),
+    float ret = linear_interpolate<float>(land_speed_cms, wp_nav->get_speed_down(),
                                    height_above_ground,
                                    land_final_alt, land_final_alt+3);
     return ret;
@@ -1209,7 +1209,7 @@ void QuadPlane::vtol_position_controller(void)
           wings which will draw a lot of current and also cause the
           aircraft to lose altitude rapidly.
          */
-        float pitch_limit_cd = linear_interpolate(-300, plane.aparm.pitch_limit_min_cd,
+        float pitch_limit_cd = linear_interpolate<float>(-300, plane.aparm.pitch_limit_min_cd,
                                                   plane.auto_state.wp_proportion, 0, 1);
         if (plane.nav_pitch_cd < pitch_limit_cd) {
             plane.nav_pitch_cd = pitch_limit_cd;
@@ -1274,7 +1274,7 @@ void QuadPlane::vtol_position_controller(void)
                 // gradually descend as we approach target
                 plane.auto_state.wp_proportion = location_path_proportion(plane.current_loc, 
                                                                           plane.prev_WP_loc, plane.next_WP_loc);
-                target_altitude = linear_interpolate(plane.prev_WP_loc.alt,
+                target_altitude = linear_interpolate<float>(plane.prev_WP_loc.alt,
                                                      plane.next_WP_loc.alt,
                                                      plane.auto_state.wp_proportion,
                                                      0, 1);

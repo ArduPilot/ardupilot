@@ -49,23 +49,6 @@ template float safe_sqrt<short>(const short v);
 template float safe_sqrt<float>(const float v);
 template float safe_sqrt<double>(const double v);
 
-/*
-  linear interpolation based on a variable in a range
- */
-float linear_interpolate(float low_output, float high_output,
-                         float var_value,
-                         float var_low, float var_high)
-{
-    if (var_value <= var_low) {
-        return low_output;
-    }
-    if (var_value >= var_high) {
-        return high_output;
-    }
-    float p = (var_value - var_low) / (var_high - var_low);
-    return low_output + p * (high_output - low_output);
-}
-
 template <class T>
 float wrap_180(const T angle, float unit_mod)
 {
