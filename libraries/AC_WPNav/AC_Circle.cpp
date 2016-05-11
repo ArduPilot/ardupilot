@@ -209,7 +209,7 @@ void AC_Circle::calc_velocities(bool init_velocity)
 {
     // if we are doing a panorama set the circle_angle to the current heading
     if (_radius <= 0) {
-        _angular_vel_max = ToRad(_rate);
+        _angular_vel_max = radians(_rate.get());
         _angular_accel = MAX(fabsf(_angular_vel_max),ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
     }else{
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
@@ -217,7 +217,7 @@ void AC_Circle::calc_velocities(bool init_velocity)
 
         // angular_velocity in radians per second
         _angular_vel_max = velocity_max/_radius;
-        _angular_vel_max = constrain_float(ToRad(_rate),-_angular_vel_max,_angular_vel_max);
+        _angular_vel_max = constrain_float(radians(_rate.get()),-_angular_vel_max,_angular_vel_max);
 
         // angular_velocity in radians per second
         _angular_accel = MAX(_pos_control.get_accel_xy()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));

@@ -115,18 +115,6 @@ auto const constrain_float = &constrain_value<float>;
 auto const constrain_int16 = &constrain_value<int16_t>;
 auto const constrain_int32 = &constrain_value<int32_t>;
 
-// degrees -> radians
-static inline float radians(float deg)
-{
-    return deg * DEG_TO_RAD;
-}
-
-// radians -> degrees
-static inline float degrees(float rad)
-{
-    return rad * RAD_TO_DEG;
-}
-
 template<class T>
 float sq(const T val)
 {
@@ -165,34 +153,57 @@ static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one :
     return one > two ? one : two;
 }
 
-inline uint32_t hz_to_nsec(uint32_t freq)
+/* 
+ * @brief: Converts an euler angle with units 'degree' to an angle with the unit 'radian'
+ */
+template <class T>
+T radians(const T deg);
+
+/* 
+ * @brief: Converts an euler angle with units 'radian' to an angle with the unit 'degree'
+ */
+template <class T>
+T degrees(const T rad);
+
+/*
+ * Converter functions
+ *  - Avoid zero divisions
+ *  - Inheritss a float cast (because of PX4)
+ */
+template<class T>
+T hz_to_nsec(const T freq) 
 {
-    return NSEC_PER_SEC / freq;
+    return freq != 0 ? NSEC_PER_SEC / freq : 0;
 }
 
-inline uint32_t nsec_to_hz(uint32_t nsec)
+template<class T>
+T nsec_to_hz(const T nsec) 
 {
-    return NSEC_PER_SEC / nsec;
+    return nsec != 0 ? NSEC_PER_SEC / nsec : 0;
 }
 
-inline uint32_t usec_to_nsec(uint32_t usec)
+template<class T>
+T usec_to_nsec(const T usec) 
 {
     return usec * NSEC_PER_USEC;
 }
 
-inline uint32_t nsec_to_usec(uint32_t nsec)
+template<class T>
+T nsec_to_usec(const T nsec) 
 {
     return nsec / NSEC_PER_USEC;
 }
 
-inline uint32_t hz_to_usec(uint32_t freq)
+template<class T>
+T hz_to_usec(const T freq) 
 {
-    return USEC_PER_SEC / freq;
+    return freq != 0 ? USEC_PER_SEC / freq : 0;
 }
 
-inline uint32_t usec_to_hz(uint32_t usec)
+template<class T>
+T usec_to_hz(const T usec) 
 {
-    return USEC_PER_SEC / usec;
+    return usec != 0 ? USEC_PER_SEC / usec : 0;
 }
 
 /*

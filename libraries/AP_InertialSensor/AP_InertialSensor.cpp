@@ -592,8 +592,8 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& tri
 {
     trim_pitch = atan2f(accel_sample.x, norm(accel_sample.y, accel_sample.z));
     trim_roll = atan2f(-accel_sample.y, -accel_sample.z);
-    if (fabsf(trim_roll) > radians(10) ||
-        fabsf(trim_pitch) > radians(10)) {
+    if (fabsf(trim_roll) > radians(10.0f) ||
+        fabsf(trim_pitch) > radians(10.0f)) {
         hal.console->println("trim over maximum of 10 degrees");
         return false;
     }
@@ -1404,8 +1404,8 @@ void AP_InertialSensor::_acal_save_calibrations()
             /* no break */
     }
 
-    if (fabsf(_trim_roll) > radians(10) ||
-        fabsf(_trim_pitch) > radians(10)) {
+    if (fabsf(_trim_roll) > radians(10.0f) ||
+        fabsf(_trim_pitch) > radians(10.0f)) {
         hal.console->print("ERR: Trim over maximum of 10 degrees!!");
         _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers
     }

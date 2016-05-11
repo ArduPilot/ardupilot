@@ -239,15 +239,15 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 	float bank_angle = _ahrs.roll;
 
 	// limit bank angle between +- 80 deg if right way up
-	if (fabsf(bank_angle) < radians(90))	{
-	    bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
+	if (fabsf(bank_angle) < radians(90.0f))	{
+	    bank_angle = constrain_float(bank_angle,-radians(80.0f),radians(80.0f));
         inverted = false;
 	} else {
 		inverted = true;
 		if (bank_angle > 0.0f) {
-			bank_angle = constrain_float(bank_angle,radians(100),radians(180));
+			bank_angle = constrain_float(bank_angle,radians(100.0f),radians(180.0f));
 		} else {
-			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
+			bank_angle = constrain_float(bank_angle,-radians(180.0f),-radians(100.0f));
 		}
 	}
 	if (!_ahrs.airspeed_estimate(&aspeed)) {

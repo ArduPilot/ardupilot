@@ -174,3 +174,31 @@ template int constrain_value<int>(const int amt, const int low, const int high);
 template short constrain_value<short>(const short amt, const short low, const short high);
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
+
+/* 
+ * @brief: Converts an euler angle with units 'degree' to an angle with the unit 'radian'
+ */
+template <class T>
+T radians(const T deg) 
+{
+    return deg * DEG_TO_RAD;
+}
+
+template int radians<int>(const int);
+template short radians<short>(const short);
+template float radians<float>(const float);
+template double radians<double>(const double);
+
+/* 
+ * @brief: Converts an euler angle with units 'radian' to an angle with the unit 'degree'
+ */
+template <class T>
+T degrees(const T rad) 
+{
+    return rad * RAD_TO_DEG;
+}
+
+template int degrees<int>(const int);
+template short degrees<short>(const short);
+template float degrees<float>(const float);
+template double degrees<double>(const double);

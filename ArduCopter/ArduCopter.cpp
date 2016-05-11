@@ -588,7 +588,7 @@ void Copter::update_super_simple_bearing(bool force_update)
         // check the bearing to home has changed by at least 5 degrees
         if (labs(super_simple_last_bearing - home_bearing) > 500) {
             super_simple_last_bearing = home_bearing;
-            float angle_rad = radians((super_simple_last_bearing+18000)/100);
+            float angle_rad = radians((super_simple_last_bearing+18000.0f)/100.0f);
             super_simple_cos_yaw = cosf(angle_rad);
             super_simple_sin_yaw = sinf(angle_rad);
         }
