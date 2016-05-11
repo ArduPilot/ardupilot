@@ -185,7 +185,12 @@ public:
       This is a no-op if no routes to components have been learned
     */
     static void send_to_components(const mavlink_message_t* msg) { routing.send_to_components(msg); }
-
+    
+    /*
+      allow forwarding of packets / heartbeats to be blocked as required by some components to reduce traffic
+    */
+    static void disable_channel_routing(mavlink_channel_t chan) { routing.no_route_mask |= (1U<<(chan-MAVLINK_COMM_0)); }
+    
     /*
       search for a component in the routing table with given mav_type and retrieve it's sysid, compid and channel
       returns if a matching component is found
