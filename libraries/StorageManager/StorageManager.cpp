@@ -34,6 +34,7 @@ extern const AP_HAL::HAL& hal;
   layout for fixed wing and rovers
   On PX4v1 this gives 309 waypoints, 30 rally points and 52 fence points
   On Pixhawk this gives 724 waypoints, 50 rally points and 84 fence points
+  On Linux based boards this is, for now, 200 rally points, 1000 fence points, 7000 waypoints
  */
 const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_AREAS] = {
     { StorageParam,   0,     1280}, // 0x500 parameter bytes
@@ -52,6 +53,12 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
     { StorageRally,    9472,   300},
     { StorageFence,    9772,   256},
     { StorageMission, 10028,  6228}, // leave 128 byte gap for expansion
+#endif
+#if STORAGE_NUM_AREAS >= 16
+    { StorageParam,   16384,  3840}, // 0xF00 parameter bytes
+    { StorageRally,   20224,  2250}, // 200 rally points
+    { StorageFence,   22474,  7328}, // 1000 fence points
+    { StorageMission, 29802, 94140}, // 7000 waypoints - leave 7130 byte gap for expansion
 #endif
 };
 
@@ -78,6 +85,12 @@ const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREA
     { StorageRally,    9472,   300},
     { StorageFence,    9772,   256},
     { StorageMission, 10028,  6228}, // leave 128 byte gap for expansion
+#endif
+#if STORAGE_NUM_AREAS >= 16
+    { StorageParam,   16384,  3840}, // 0xF00 parameter bytes
+    { StorageRally,   20224,  2250}, // 200 rally points
+    { StorageFence,   22474,  7328}, // 1000 fence points
+    { StorageMission, 29802, 94140}, // 7000 waypoints - leave 7130 byte gap for expansion
 #endif
 };
 
