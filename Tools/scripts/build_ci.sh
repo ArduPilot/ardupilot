@@ -23,32 +23,10 @@ if [[ "$cxx_compiler" == "clang++" ]]; then
   export CCACHE_CPP2="true"
 fi
 
-# If CI_BUILD_TARGET is not set, default to all of them
+# If CI_BUILD_TARGET is not set, build 3 different ones
 if [ -z "$CI_BUILD_TARGET" ]; then
-    CI_BUILD_TARGET="sitl linux navio2 raspilot minlure bebop px4-v2 px4-v4"
+    CI_BUILD_TARGET="sitl linux px4-v2"
 fi
-
-declare -A build_platforms
-declare -A build_concurrency
-declare -A build_extra_clean
-declare -A waf_supported_boards
-
-build_platforms=(  ["ArduPlane"]="navio2 raspilot minlure bebop sitl linux px4-v2"
-                   ["ArduCopter"]="navio2 raspilot minlure bebop sitl linux px4-v2 px4-v4"
-                   ["APMrover2"]="navio2 raspilot minlure bebop sitl linux px4-v2"
-                   ["AntennaTracker"]="navio2 raspilot minlure bebop sitl linux px4-v2"
-                   ["Tools/Replay"]="linux")
-
-build_concurrency=(["navio2"]="-j2"
-                   ["raspilot"]="-j2"
-                   ["minlure"]="-j2"
-                   ["bebop"]="-j2"
-                   ["sitl"]="-j2"
-                   ["linux"]="-j2"
-                   ["px4-v2"]=""
-                   ["px4-v4"]="")
-
-build_extra_clean=(["px4-v2"]="make px4-cleandep")
 
 # special case for SITL testing in CI
 if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
@@ -63,6 +41,8 @@ if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
     Tools/autotest/autotest.py -j2 build.ArduPlane fly.QuadPlane
     exit 0
 fi
+
+declare -A waf_supported_boards
 
 waf=modules/waf/waf-light
 
@@ -79,28 +59,38 @@ for t in $CI_BUILD_TARGET; do
     # skip make-based build for clang
     if [[ "$cxx_compiler" != "clang++" ]]; then
         echo "Starting make based build for target ${t}..."
-        for v in ${!build_platforms[@]}; do
-            if [[ ${build_platforms[$v]} != *$t* ]]; then
-                continue
-            fi
+        for v in "ArduPlane" "ArduCopter" "APMrover2" "AntennaTracker"; do
             echo "Building $v for ${t}..."
 
             pushd $v
             make clean
-            if [ ${build_extra_clean[$t]+_} ]; then
-                ${build_extra_clean[$t]}
+            if [[ $t == "px4"* ]]; then
+                make px4-cleandep
             fi
 
-            make $t ${build_concurrency[$t]}
+            make $t -j2
             popd
         done
+
+        if [[ $t == linux ]]; then
+            echo "Building Replay for ${t}..."
+
+            pushd "Tools/Replay"
+            make clean
+            if [[ $t == "px4"* ]]; then
+                make px4-cleandep
+            fi
+
+            make $t -j2
+            popd
+        fi
     fi
 
     if [[ -n ${waf_supported_boards[$t]} ]]; then
         echo "Starting waf build for board ${t}..."
         $waf configure --board $t --enable-benchmarks --check-c-compiler="$c_compiler" --check-cxx-compiler="$cxx_compiler"
         $waf clean
-        $waf ${build_concurrency[$t]} all
+        $waf -j2 all
         if [[ $t == linux ]]; then
             $waf check
         fi
