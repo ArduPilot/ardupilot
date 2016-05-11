@@ -222,8 +222,8 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
             }
 
             // record maximum throttle and current
-            throttle_pct_max = MAX(throttle_pct_max, throttle_pct);
-            current_amps_max = MAX(current_amps_max, battery.current_amps());
+            throttle_pct_max = max(throttle_pct_max, throttle_pct);
+            current_amps_max = max(current_amps_max, battery.current_amps());
 
         }
         if (AP_HAL::millis() - last_send_time > 500) {

@@ -160,7 +160,7 @@ void QuadPlane::tilt_compensate(float *thrust, uint8_t num_motors)
             if (equal_thrust) {
                 thrust[i] = tilt_total / tilt_count;
             }
-            largest_tilted = MAX(largest_tilted, thrust[i]);
+            largest_tilted = max(largest_tilted, thrust[i]);
         }
     }
 

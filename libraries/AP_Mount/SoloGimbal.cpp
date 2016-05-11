@@ -188,7 +188,7 @@ void SoloGimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     ang_vel -= ekf_gyro_bias;
     float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+0.5f),0.0f,1.0f);
     _ang_vel_mag_filt += (ang_vel.length()-_ang_vel_mag_filt)*alpha;
-    _ang_vel_mag_filt = MIN(_ang_vel_mag_filt,20.0f);
+    _ang_vel_mag_filt = min(_ang_vel_mag_filt,20.0f);
 
     // get complementary filter inputs
     _vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);

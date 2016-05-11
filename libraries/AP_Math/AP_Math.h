@@ -9,6 +9,7 @@
 #include <AP_Param/AP_Param.h>
 
 #include "definitions.h"
+
 #include "edc.h"
 #include "location.h"
 #include "matrix3.h"
@@ -141,14 +142,20 @@ float norm(const T first, const Params... parameters)
     return sqrt(static_cast<float>(sq(first, parameters...)));
 }
 
+/*
+ * Return the smaller number of both parameters
+ */
 template<typename A, typename B>
-static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two)
-{
+auto min(const A one, const B two) -> decltype(one < two ? one : two) 
+{ 
     return one < two ? one : two;
 }
 
+/*
+ * Return the bigger number of both parameters
+ */
 template<typename A, typename B>
-static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one : two)
+auto max(const A one, const B two) -> decltype(one > two ? one : two) 
 {
     return one > two ? one : two;
 }

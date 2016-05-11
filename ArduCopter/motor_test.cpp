@@ -131,7 +131,7 @@ uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_s
 
     // set timeout
     motor_test_start_ms = AP_HAL::millis();
-    motor_test_timeout_ms = MIN(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
+    motor_test_timeout_ms = min(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
 
     // store required output
     motor_test_seq = motor_seq;
