@@ -275,7 +275,7 @@ AP_GPS::detect_instance(uint8_t instance)
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #endif // HAL_CPU_CLASS
-//#if !defined(GPS_SKIP_SIRF_NMEA)
+#if !defined(GPS_SKIP_SIRF_NMEA)
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
@@ -291,7 +291,7 @@ AP_GPS::detect_instance(uint8_t instance)
 				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);                
 			}
 		}
-//#endif
+#endif
 	}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
