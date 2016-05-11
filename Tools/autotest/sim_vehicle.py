@@ -344,7 +344,7 @@ _options_for_frame = {
 _default_waf_target = {
     "ArduPlane": "bin/arduplane",
     "ArduCopter": "bin/arducopter-quad",
-    "APMRover2": "bin/ardurover",
+    "APMrover2": "bin/ardurover",
     "AntennaTracker": "bin/antennatracker",
 }
 
