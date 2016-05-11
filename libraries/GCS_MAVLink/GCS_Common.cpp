@@ -1673,3 +1673,23 @@ bool GCS_MAVLINK::telemetry_delayed(mavlink_channel_t _chan)
 }
 
 
+void GCS_MAVLINK::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour)
+{
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_COLLISION) {
+                mavlink_msg_collision_send(
+                    chan,
+                    MAV_COLLISION_SRC_ADSB,
+                    threat.src_id,
+                    behaviour,
+                    threat.threat_level,
+                    threat.time_to_closest_approach,
+                    threat.closest_approach_z,
+                    threat.closest_approach_xy
+                    );
+            }
+        }
+    }
+}
