@@ -382,7 +382,7 @@ void Plane::set_mode(enum FlightMode mode)
 
     // assume non-VTOL mode
     auto_state.vtol_mode = false;
-    auto_state.vtol_guided = false;
+    auto_state.vtol_loiter = false;
     
     switch(control_mode)
     {

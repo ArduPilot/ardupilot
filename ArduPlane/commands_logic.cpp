@@ -7,7 +7,10 @@
 /********************************************************************************/
 bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 {
-    // log when new commands start
+    // default to non-VTOL loiter
+    auto_state.vtol_loiter = false;
+
+        // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
@@ -636,6 +639,7 @@ bool Plane::verify_loiter_time()
 
     if (result) {
         gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER time complete");
+        auto_state.vtol_loiter = false;
     }
     return result;
 }
@@ -645,6 +649,9 @@ bool Plane::verify_loiter_turns()
     bool result = false;
     uint16_t radius = HIGHBYTE(mission.get_current_nav_cmd().p1);
     update_loiter(radius);
+
+    // LOITER_TURNS makes no sense as VTOL
+    auto_state.vtol_loiter = false;
 
     if (condition_value != 0) {
         // primary goal, loiter time

@@ -505,8 +505,8 @@ private:
         // are we in VTOL mode in AUTO?
         bool vtol_mode:1;
 
-        // are we doing GUIDED mode as a VTOL?
-        bool vtol_guided:1;
+        // are we doing loiter mode as a VTOL?
+        bool vtol_loiter:1;
     } auto_state;
 
     struct {

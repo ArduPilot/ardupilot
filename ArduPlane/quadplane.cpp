@@ -1082,6 +1082,9 @@ bool QuadPlane::in_vtol_auto(void)
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         return true;
+    case MAV_CMD_NAV_LOITER_UNLIM:
+    case MAV_CMD_NAV_LOITER_TIME:
+        return plane.auto_state.vtol_loiter;
     default:
         return false;
     }
@@ -1100,7 +1103,7 @@ bool QuadPlane::in_vtol_mode(void)
             plane.control_mode == QLOITER ||
             plane.control_mode == QLAND ||
             plane.control_mode == QRTL ||
-            (plane.control_mode == GUIDED && plane.auto_state.vtol_guided) ||
+            (plane.control_mode == GUIDED && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }
 
@@ -1399,14 +1402,19 @@ void QuadPlane::control_auto(const Location &loc)
 
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_TAKEOFF) {
+    switch (plane.mission.get_current_nav_cmd().id) {
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
         takeoff_controller();
-    } else if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND) {
+        break;
+    case MAV_CMD_NAV_VTOL_LAND:
+    case MAV_CMD_NAV_LOITER_UNLIM:
+    case MAV_CMD_NAV_LOITER_TIME:
         vtol_position_controller();
-    } else {
+        break;
+    default:
         waypoint_controller();
+        break;
     }
-    
 }
 
 /*
