@@ -21,7 +21,11 @@ public:
     }
 
     /* AP_HAL::I2CDevice implementation */
-    I2CDevice(uint8_t bus, uint8_t address);
+    I2CDevice(PX4_I2C &device, uint8_t address)
+        : _device(device)
+        , _address(address)
+    {
+    }
 
     ~I2CDevice();
 
@@ -57,14 +61,7 @@ public:
     int get_fd() override;
 
 protected:
-    class PX4_I2C : public device::I2C {
-    public:
-        PX4_I2C(uint8_t bus);
-        bool do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len,
-                         uint8_t *recv, uint32_t recv_len);
-    };
-
-    PX4_I2C _device;
+    PX4_I2C &_device;
     uint8_t _address;
     uint8_t _retries = 0;
 
