@@ -483,13 +483,6 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
         return false;
     }
 
-    if (position_ok() && ekf_innovation_peak > 1.0f) {
-        if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav Checks");
-        }
-        return false;
-    }
-
     // check if flight mode requires GPS
     bool gps_required = mode_requires_GPS(control_mode);
 
