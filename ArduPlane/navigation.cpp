@@ -175,7 +175,7 @@ void Plane::update_loiter(uint16_t radius)
     if (loiter.start_time_ms != 0 &&
         quadplane.available() &&
         quadplane.guided_mode != 0) {
-        auto_state.vtol_mode = true;
+        auto_state.vtol_guided = true;
     } else if (loiter.start_time_ms == 0 &&
         control_mode == AUTO &&
         !auto_state.no_crosstrack &&

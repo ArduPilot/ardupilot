@@ -563,7 +563,7 @@ void Plane::update_flight_mode(void)
         break;
 
     case GUIDED:
-        if (auto_state.vtol_mode && quadplane.available()) {
+        if (auto_state.vtol_guided && quadplane.available()) {
             quadplane.guided_update();
             break;
         }

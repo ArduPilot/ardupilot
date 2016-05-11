@@ -382,6 +382,7 @@ void Plane::set_mode(enum FlightMode mode)
 
     // assume non-VTOL mode
     auto_state.vtol_mode = false;
+    auto_state.vtol_guided = false;
     
     switch(control_mode)
     {
@@ -784,7 +785,7 @@ void Plane::frsky_telemetry_send(void)
  */
 int8_t Plane::throttle_percentage(void)
 {
-    if (auto_state.vtol_mode) {
+    if (quadplane.in_vtol_mode()) {
         return quadplane.throttle_percentage();
     }
     // to get the real throttle we need to use norm_output() which
