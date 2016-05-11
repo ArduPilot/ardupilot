@@ -31,6 +31,7 @@ void Copter::init_rangefinder(void)
 #if RANGEFINDER_ENABLED == ENABLED
    rangefinder.init();
    rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+   rangefinder_state.enabled = (rangefinder.num_sensors() >= 1);
 #endif
 }
 
@@ -68,6 +69,7 @@ void Copter::read_rangefinder(void)
     wp_nav.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
 
 #else
+    rangefinder_state.enabled = false;
     rangefinder_state.alt_healthy = false;
     rangefinder_state.alt_cm = 0;
 #endif
