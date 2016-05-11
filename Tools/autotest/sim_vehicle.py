@@ -172,7 +172,7 @@ group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild", action='store_true', default=False, help="don't rebuild before starting ardupilot")
 group_build.add_option("-D", "--debug", action='store_true', default=False, help="build with debugging")
 group_build.add_option("-c", "--clean", action='store_true', default=False, help='do a make clean before building')
-group_build.add_option("-j", "--jobs", default=1, type='int', help='number of processors to use during build (default 1)')
+group_build.add_option("-j", "--jobs", default=None, type='int', help='number of processors to use during build (default for waf : number of processor, for make : 1)')
 group_build.add_option("-b", "--build-target", default=None, type='string', help='override SITL build target')
 group_build.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help='build system to use')
 group_build.add_option("", "--no-rebuild-on-failure", dest="rebuild_on_failure", action='store_false', default=True, help='if build fails, do not clean and rebuild')
@@ -406,7 +406,10 @@ def do_build_waf(vehicledir, opts, frame_options):
     if opts.clean:
         run_cmd_blocking("Building clean", [waf_light, "clean"])
 
-    cmd_build = [waf_light, "-j", str(opts.jobs), "build", "--target", frame_options["waf_target"] ]
+    cmd_build = [waf_light, "build", "--target", frame_options["waf_target"]]
+    if opts.jobs is not None:
+        cmd_build += ['-j', str(opts.jobs)]
+
     progress_cmd("Building", cmd_build)
     p = subprocess.Popen(cmd_build)
     pid, sts = os.waitpid(p.pid,0)
@@ -446,7 +449,10 @@ def do_build(vehicledir, opts, frame_options):
     if opts.debug:
         build_target += "-debug"
 
-    build_cmd = ["make", "-j"+str(opts.jobs), build_target]
+    build_cmd = ["make", build_target]
+    if opts.jobs is not None:
+        build_cmd += ['-j', str(opts.jobs)]
+
     progress_cmd("Building %s" % (build_target), build_cmd)
 
     p = subprocess.Popen(build_cmd)
