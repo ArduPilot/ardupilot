@@ -221,7 +221,7 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
-        // try the next baud rate
+        // try the next baud rate        
 		dstate->last_baud++;
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
@@ -254,7 +254,7 @@ AP_GPS::detect_instance(uint8_t instance)
             pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print_P(PSTR(" ublox "));
-            new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
+            new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);            
         } 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
@@ -286,7 +286,7 @@ AP_GPS::detect_instance(uint8_t instance)
 			if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
                 AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
 				hal.console->print_P(PSTR(" NMEA "));
-				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
+				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);                
 			}
 		}
 #endif

@@ -336,13 +336,24 @@ bool AP_GPS_NMEA::_term_complete()
 
     // the first term determines the sentence type
     if (_term_number == 0) {
-        if (!strcmp_P(_term, _gprmc_string)) {
+        /*
+          The first two letters of the NMEA term are the talker
+          ID. The most common is 'GP' but there are a bunch of others
+          that are valid. We accept any two characters here.
+         */
+        if (_term[0] < 'A' || _term[0] > 'Z' ||
+            _term[1] < 'A' || _term[1] > 'Z') {
+            _sentence_type = _GPS_SENTENCE_OTHER;
+            return false;
+        }
+        const char *term_type = &_term[2];
+        if (strcmp(term_type, "RMC") == 0) {
             _sentence_type = _GPS_SENTENCE_GPRMC;
             _last_GPRMC_ms = hal.scheduler->millis();
-        } else if (!strcmp_P(_term, _gpgga_string)) {
+        } else if (strcmp(term_type, "GGA") == 0) {
             _sentence_type = _GPS_SENTENCE_GPGGA;
             _last_GPGGA_ms = hal.scheduler->millis();
-        } else if (!strcmp_P(_term, _gpvtg_string)) {
+        } else if (strcmp(term_type, "VTG") == 0) {
             _sentence_type = _GPS_SENTENCE_GPVTG;
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
