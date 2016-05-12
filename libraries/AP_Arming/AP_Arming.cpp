@@ -454,7 +454,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     return ret;
 }
 
-//returns true if arming occured successfully
+//returns true if arming occurred successfully
 bool AP_Arming::arm(uint8_t method)
 {
     if (armed) { //already armed
