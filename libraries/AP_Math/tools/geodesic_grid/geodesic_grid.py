@@ -20,6 +20,7 @@ import numpy as np
 import sys
 
 import icosahedron as ico
+import grid
 
 def print_code_gen_notice():
     print("/* This was generated with")
@@ -59,7 +60,7 @@ Plot results when applicable.
 )
 
 parser.add_argument(
-    '-s', '--plot-subtriangles',
+    '-b', '--plot-subtriangles',
     action='store_true',
     help="""
 Plot subtriangles as well. This implies -p.
@@ -80,6 +81,17 @@ parser.add_argument(
     metavar='INDEX',
     help="""
 Get the icosahedron triangle at INDEX.
+""",
+)
+
+parser.add_argument(
+    '-s', '--section',
+    action='append',
+    type=int,
+    nargs='+',
+    help="""
+Get the grid section SECTION. If --plot is passed, then --plot-subtriangles is
+implied.
 """,
 )
 
@@ -151,6 +163,23 @@ if args.triangle:
         print(ico.triangles[i])
         if args.plot:
             plot.polygon(ico.triangles[i])
+
+if args.section:
+    sections = []
+    for l in args.section:
+        sections += l
+
+    for s in sections:
+        if 0 > s or s >= 4 * len(ico.triangles):
+            print(
+                'Section must be in the range [0,%d)' % 4 * len(ico.triangles),
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        print(grid.section_triangle(s))
+    if args.plot:
+        args.plot_subtriangles = True
+        plot.sections(sections)
 
 if args.umbrella:
     for pivot in args.umbrella:
