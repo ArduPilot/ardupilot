@@ -15,7 +15,7 @@ public:
     virtual uint8_t write(uint8_t addr, uint8_t len, uint8_t* data) = 0;
     /* writeRegister: write a single 8-bit value to a register */
     virtual uint8_t writeRegister(uint8_t addr, uint8_t reg, uint8_t val) = 0;
-    /* writeRegisters: write bytes to contigious registers */
+    /* writeRegisters: write bytes to contiguous registers */
     virtual uint8_t writeRegisters(uint8_t addr, uint8_t reg,
                                    uint8_t len, uint8_t* data) = 0;
 
@@ -25,13 +25,13 @@ public:
      * then reads back an 8-bit value. */
     virtual uint8_t readRegister(uint8_t addr, uint8_t reg, uint8_t* data) = 0;
 
-    /* readRegisters: read contigious device registers - writes the first 
+    /* readRegisters: read contiguous device registers - writes the first 
      * register, then reads back multiple bytes */
     virtual uint8_t readRegisters(uint8_t addr, uint8_t reg,
                                   uint8_t len, uint8_t* data) = 0;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    /* readRegistersMultiple: read contigious device registers. 
+    /* readRegistersMultiple: read contiguous device registers. 
        Equivalent to count calls to readRegisters() */
     virtual uint8_t readRegistersMultiple(uint8_t addr, uint8_t reg,
                                           uint8_t len, uint8_t count, 
