@@ -113,6 +113,30 @@ void AP_Mission::resume()
     }
 }
 
+// return false if next command in the mission is not takeoff
+bool AP_Mission::check_takeoff_cmd()
+{
+    Mission_Command cmd = {};
+    uint16_t cmd_index;
+
+    // get starting point for search or Reset cmd_index, if _restart is set
+    cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        // start from beginning of the mission command list
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+        get_next_cmd(cmd_index, cmd, true);
+
+    } else {
+        read_cmd_from_storage(cmd_index, cmd);
+    }
+
+    if (cmd.id != MAV_CMD_NAV_TAKEOFF) {
+        return false;
+    }
+    return true;
+}
+
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {

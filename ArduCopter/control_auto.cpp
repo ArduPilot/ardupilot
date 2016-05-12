@@ -37,6 +37,10 @@ bool Copter::auto_init(bool ignore_checks)
         // clear guided limits
         guided_limit_clear();
 
+        // Deny switching to auto mode if land is completed and motors are armed but the next command in the mission is lateral flying
+        if (motors.armed() && ap.land_complete && !mission.check_takeoff_cmd()) {
+            return false;
+        }
         // start/resume the mission (based on MIS_RESTART parameter)
         mission.start_or_resume();
         return true;
