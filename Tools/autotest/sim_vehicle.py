@@ -208,6 +208,9 @@ parser.add_option_group(group)
 
 opts, args = parser.parse_args()
 
+if opts.sim_vehicle_sh_compatible and opts.jobs is None:
+    opts.jobs = 1
+
 # validate parameters
 if opts.hil:
     if opts.valgrind:
