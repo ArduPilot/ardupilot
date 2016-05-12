@@ -608,8 +608,6 @@ if not os.path.exists(vehicledir):
     print("vehicle directory (%s) does not exist" % (vehicledir,))
     sys.exit(1)
 
-os.environ['AUTOTEST'] = find_autotest_dir() # should we only drop this in subprocess env?
-
 if not opts.hil:
     if opts.instance == 0:
         kill_tasks()
