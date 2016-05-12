@@ -229,7 +229,7 @@ bool DataFlash_Block::check_wrapped(void)
         return 1;
 }
 
-// This funciton finds the last log number
+// This function finds the last log number
 uint16_t DataFlash_Block::find_last_log(void)
 {
     uint16_t last_page = find_last_page();
@@ -731,7 +731,7 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_
     };
     WriteBlock(&pkt, sizeof(pkt));
 
-    /* write auxillary accuracy information as well */
+    /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
     gps.horizontal_accuracy(i, hacc);
     gps.vertical_accuracy(i, vacc);

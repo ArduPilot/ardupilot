@@ -360,7 +360,7 @@ bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct
 }
 
 /* calculate the length of output of a format string.  Note that this
- * returns an int16_t; if it returns -1 then an error has occured.
+ * returns an int16_t; if it returns -1 then an error has occurred.
  * This was mechanically converted from init_field_types in
  * Tools/Replay/MsgHandler.cpp */
 int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
