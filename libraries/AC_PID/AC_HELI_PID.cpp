@@ -44,10 +44,7 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ILMI", 7, AC_HELI_PID, _leak_min, AC_PID_LEAK_MIN),
 
-    // @Param: AFF
-    // @DisplayName: Acceleration FF FeedForward Gain
-    // @Description: Acceleration FF Gain which produces an output value that is proportional to the change in demanded input
-    AP_GROUPINFO("AFF",    8, AC_HELI_PID, _aff, 0),
+    // index 8 was for AFF, now removed
 
     AP_GROUPEND
 };
@@ -57,7 +54,6 @@ AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, floa
     AC_PID(initial_p, initial_i, initial_d, initial_imax, initial_filt_hz, dt)
 {
     _vff = initial_vff;
-    _aff = 0;
     _last_requested_rate = 0;
 }
 
@@ -65,22 +61,6 @@ float AC_HELI_PID::get_vff(float requested_rate)
 {
     _pid_info.FF = (float)requested_rate * _vff;
     return _pid_info.FF;
-}
-
-float AC_HELI_PID::get_aff(float requested_rate)
-{
-    float derivative;
-
-    // calculate derivative
-    if (_dt > 0.0f) {
-        derivative = (requested_rate - _last_requested_rate) / _dt;
-    } else {
-        derivative = 0;
-    }
-
-    _pid_info.AFF = derivative * _aff;
-    _last_requested_rate = requested_rate;
-    return _pid_info.AFF;
 }
 
 // This is an integrator which tends to decay to zero naturally
