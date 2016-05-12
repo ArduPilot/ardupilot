@@ -340,6 +340,10 @@ _options_for_frame = {
         "waf_target": "bin/arduplane",
         "default_params_filename": "plane.parm",
     },
+    "rover": {
+        "waf_target": "bin/ardurover",
+        "default_params_filename": "Rover.parm",
+    },
 }
 
 _default_waf_target = {
