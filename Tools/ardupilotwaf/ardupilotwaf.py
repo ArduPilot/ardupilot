@@ -71,7 +71,7 @@ IGNORED_AP_LIBRARIES = [
 @conf
 def ap_get_all_libraries(bld):
     libraries = []
-    for lib_node in bld.srcnode.ant_glob('libraries/*', dir=True):
+    for lib_node in bld.srcnode.ant_glob('libraries/*', dir=True, src=False):
         name = lib_node.name
         if name in IGNORED_AP_LIBRARIES:
             continue
