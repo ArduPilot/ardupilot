@@ -192,7 +192,7 @@ bool AccelCalibrator::get_sample_corrected(uint8_t i, Vector3f& s) const {
     return true;
 }
 
-// checks if no new sample has been recieved for considerable amount of time
+// checks if no new sample has been received for considerable amount of time
 void AccelCalibrator::check_for_timeout() {
     const uint32_t timeout = _conf_sample_time*2*1000 + 500;
     if (_status == ACCEL_CAL_COLLECTING_SAMPLE && AP_HAL::millis() - _last_samp_frag_collected_ms > timeout) {
@@ -459,7 +459,7 @@ void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& p
     };
 }
 
-// returns number of paramters are required for selected Fit type
+// returns number of parameters are required for selected Fit type
 uint8_t AccelCalibrator::get_num_params() const {
     switch (_conf_fit_type) {
         case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:

@@ -52,7 +52,7 @@ private:
     // update the state of the Accel calibrator server
     void update_status();
 
-    // checks if no new sample has been recieved for considerable amount of time
+    // checks if no new sample has been received for considerable amount of time
     bool check_for_timeout();
 
     // check if client's calibrator is active
