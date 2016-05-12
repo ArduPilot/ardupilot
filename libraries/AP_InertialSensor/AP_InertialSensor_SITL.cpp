@@ -62,7 +62,7 @@ void AP_InertialSensor_SITL::timer_update(void)
         // add extra noise when the motors are on
         accel_noise += sitl->accel_noise;
         accel2_noise += sitl->accel2_noise;
-        gyro_noise += ToRad(sitl->gyro_noise);
+        gyro_noise += radians(sitl->gyro_noise.get());
     }
 
     // get accel bias (add only to first accelerometer)
@@ -86,9 +86,9 @@ void AP_InertialSensor_SITL::timer_update(void)
     _notify_new_accel_raw_sample(accel_instance[0], accel0);
     _notify_new_accel_raw_sample(accel_instance[1], accel1);
 
-    float p = radians(sitl->state.rollRate) + gyro_drift();
-    float q = radians(sitl->state.pitchRate) + gyro_drift();
-    float r = radians(sitl->state.yawRate) + gyro_drift();
+    float p = radians((float)sitl->state.rollRate) + gyro_drift();
+    float q = radians((float)sitl->state.pitchRate) + gyro_drift();
+    float r = radians((float)sitl->state.yawRate) + gyro_drift();
 
     float p1 = p + gyro_noise * rand_float();
     float q1 = q + gyro_noise * rand_float();
@@ -130,9 +130,9 @@ float AP_InertialSensor_SITL::gyro_drift(void)
     double period  = sitl->drift_time * 2;
     double minutes = fmod(AP_HAL::micros64() / 60.0e6, period);
     if (minutes < period/2) {
-        return minutes * ToRad(sitl->drift_speed);
+        return minutes * radians(sitl->drift_speed.get());
     }
-    return (period - minutes) * ToRad(sitl->drift_speed);
+    return (period - minutes) * radians(sitl->drift_speed.get());
 
 }
 

@@ -314,7 +314,7 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
         int32_t curr_terr_alt_cm, target_terr_alt_cm;
         if (current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
             target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
-            curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
+            curr_terr_alt_cm = max(curr_terr_alt_cm,200);
             // if using terrain, set target altitude to current altitude above terrain
             target_loc.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
         } else {
@@ -750,7 +750,7 @@ void Copter::do_yaw(const AP_Mission::Mission_Command& cmd)
 
 bool Copter::verify_wait_delay()
 {
-    if (millis() - condition_start > (uint32_t)MAX(condition_value,0)) {
+    if (millis() - condition_start > (uint32_t)max(condition_value,0)) {
         condition_value = 0;
         return true;
     }
@@ -761,7 +761,7 @@ bool Copter::verify_within_distance()
 {
     // update distance calculation
     calc_wp_distance();
-    if (wp_distance < (uint32_t)MAX(condition_value,0)) {
+    if (wp_distance < (uint32_t)max(condition_value,0)) {
         condition_value = 0;
         return true;
     }

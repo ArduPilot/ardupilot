@@ -708,7 +708,7 @@ bool Plane::verify_RTL()
         loiter.direction = 1;
     }
     update_loiter(abs(g.rtl_radius));
-	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
+	if (auto_state.wp_distance <= max(g.waypoint_radius, 0) || 
         reached_loiter_target()) {
 			gcs_send_text(MAV_SEVERITY_INFO,"Reached HOME");
 			return true;
@@ -812,7 +812,7 @@ bool Plane::verify_wait_delay()
 
 bool Plane::verify_within_distance()
 {
-    if (auto_state.wp_distance < MAX(condition_value,0)) {
+    if (auto_state.wp_distance < max(condition_value,0)) {
         condition_value = 0;
         return true;
     }

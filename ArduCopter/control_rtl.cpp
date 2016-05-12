@@ -97,7 +97,7 @@ void Copter::rtl_climb_start()
     wp_nav.wp_and_spline_init();
 
     // RTL_SPEED == 0 means use WPNAV_SPEED
-    if (!is_zero(g.rtl_speed_cms)) {
+    if (!is_zero(g.rtl_speed_cms.get())) {
         wp_nav.set_speed_xy(g.rtl_speed_cms);
     }
 
@@ -499,23 +499,23 @@ void Copter::rtl_compute_return_alt(const Location_Class &rtl_origin_point, Loca
     }
 
     // maximum of current altitude + climb_min and rtl altitude
-    float ret = MAX(curr_alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN));
+    float ret = max(curr_alt + max(0, g.rtl_climb_min), max(g.rtl_altitude, RTL_ALT_MIN));
 
     // don't allow really shallow slopes
     if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
-        ret = MAX(curr_alt, MIN(ret, MAX(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
+        ret = max(curr_alt, min(ret, max(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
     }
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
     // Note: we are assuming the fence alt is the same frame as ret
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        ret = MIN(ret, fence.get_safe_alt()*100.0f);
+        ret = min(ret, fence.get_safe_alt()*100.0f);
     }
 #endif
 
     // ensure we do not descend
-    ret = MAX(ret, curr_alt);
+    ret = max(ret, curr_alt);
 
     // convert return-target to alt-above-home or alt-above-terrain
     if (!rtl_path.terrain_used || !rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {

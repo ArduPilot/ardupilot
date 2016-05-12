@@ -210,7 +210,7 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     // get time since last sample
     float dt = _accel_sample_time[i];
 
-    _accel_dt_max[i] = MAX(_accel_dt_max[i],dt);
+    _accel_dt_max[i] = max(_accel_dt_max[i],dt);
 
     _accel_meas_count[i] ++;
 
@@ -245,7 +245,7 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
     // get time since last sample
     float dt = _gyro_sample_time[i];
 
-    _gyro_dt_max[i] = MAX(_gyro_dt_max[i],dt);
+    _gyro_dt_max[i] = max(_gyro_dt_max[i],dt);
 
     _gyro_meas_count[i] ++;
 
@@ -263,7 +263,7 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
 
 void AP_InertialSensor_PX4::_get_sample()
 {
-    for (uint8_t i=0; i<MAX(_num_accel_instances,_num_gyro_instances);i++) {
+    for (uint8_t i=0; i<max(_num_accel_instances,_num_gyro_instances);i++) {
         struct accel_report accel_report;
         struct gyro_report gyro_report;
 

@@ -146,7 +146,7 @@ void Copter::flip_run()
         attitude_control.input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * flip_roll_dir, 0.0, 0.0);
         // decrease throttle
         if (throttle_out >= g.throttle_min) {
-            throttle_out = MAX(throttle_out - FLIP_THR_DEC, g.throttle_min);
+            throttle_out = max(throttle_out - FLIP_THR_DEC, g.throttle_min);
         }
 
         // beyond -90deg move on to recovery
@@ -160,7 +160,7 @@ void Copter::flip_run()
         attitude_control.input_rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
         // decrease throttle
         if (throttle_out >= g.throttle_min) {
-            throttle_out = MAX(throttle_out - FLIP_THR_DEC, g.throttle_min);
+            throttle_out = max(throttle_out - FLIP_THR_DEC, g.throttle_min);
         }
 
         // check roll for inversion
@@ -174,7 +174,7 @@ void Copter::flip_run()
         attitude_control.input_rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
         // decrease throttle
         if (throttle_out >= g.throttle_min) {
-            throttle_out = MAX(throttle_out - FLIP_THR_DEC, g.throttle_min);
+            throttle_out = max(throttle_out - FLIP_THR_DEC, g.throttle_min);
         }
 
         // check roll for inversion

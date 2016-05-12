@@ -233,14 +233,14 @@ static bool have_rotation(const Matrix3f &m)
 static void missing_rotations(void)
 {
     hal.console->println("testing for missing rotations");
-    uint16_t roll, pitch, yaw;
+    float roll, pitch, yaw;
     for (yaw=0; yaw<360; yaw += 90)
         for (pitch=0; pitch<360; pitch += 90)
             for (roll=0; roll<360; roll += 90) {
                 Matrix3f m;
-                m.from_euler(ToRad(roll), ToRad(pitch), ToRad(yaw));
+                m.from_euler(radians(roll), radians(pitch), radians(yaw));
                 if (!have_rotation(m)) {
-                    hal.console->printf("Missing rotation (%u, %u, %u)\n", roll, pitch, yaw);
+                    hal.console->printf("Missing rotation (%u, %u, %u)\n", (int)roll, (int)pitch, (int)yaw);
                 }
             }
 }

@@ -32,8 +32,8 @@ void setup() {
 void loop()
 {
     static const uint8_t compass_count = compass.get_count();
-    static float min[COMPASS_MAX_INSTANCES][3];
-    static float max[COMPASS_MAX_INSTANCES][3];
+    static float _min[COMPASS_MAX_INSTANCES][3];
+    static float _max[COMPASS_MAX_INSTANCES][3];
     static float offset[COMPASS_MAX_INSTANCES][3];
 
     compass.accumulate();
@@ -62,19 +62,19 @@ void loop()
             const Vector3f &mag = compass.get_field(i);
 
             // capture min
-            min[i][0] = MIN(mag.x, min[i][0]);
-            min[i][1] = MIN(mag.y, min[i][1]);
-            min[i][2] = MIN(mag.z, min[i][2]);
+            _min[i][0] = min(mag.x, _min[i][0]);
+            _min[i][1] = min(mag.y, _min[i][1]);
+            _min[i][2] = min(mag.z, _min[i][2]);
 
             // capture max
-            max[i][0] = MAX(mag.x, max[i][0]);
-            max[i][1] = MAX(mag.y, max[i][1]);
-            max[i][2] = MAX(mag.z, max[i][2]);
+            _max[i][0] = max(mag.x, _max[i][0]);
+            _max[i][1] = max(mag.y, _max[i][1]);
+            _max[i][2] = max(mag.z, _max[i][2]);
 
             // calculate offsets
-            offset[i][0] = -(max[i][0] + min[i][0]) / 2;
-            offset[i][1] = -(max[i][1] + min[i][1]) / 2;
-            offset[i][2] = -(max[i][2] + min[i][2]) / 2;
+            offset[i][0] = -(_max[i][0] + _min[i][0]) / 2;
+            offset[i][1] = -(_max[i][1] + _min[i][1]) / 2;
+            offset[i][2] = -(_max[i][2] + _min[i][2]) / 2;
 
             // display all to user
             hal.console->printf("Heading: %.2f (%3d,%3d,%3d) i2c error: %u",

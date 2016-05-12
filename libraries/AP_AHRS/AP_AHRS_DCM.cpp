@@ -335,13 +335,13 @@ AP_AHRS_DCM::yaw_error_compass(void)
 float
 AP_AHRS_DCM::_P_gain(float spin_rate)
 {
-    if (spin_rate < ToRad(50)) {
+    if (spin_rate < radians(50.0f)) {
         return 1.0f;
     }
-    if (spin_rate > ToRad(500)) {
+    if (spin_rate > radians(500.0f)) {
         return 10.0f;
     }
-    return spin_rate/ToRad(50);
+    return spin_rate/radians(50.0f);
 }
 
 // _yaw_gain reduces the gain of the PI controller applied to heading errors
@@ -531,7 +531,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 
     // don't update the drift term if we lost the yaw reference
     // for more than 2 seconds
-    if (yaw_deltat < 2.0f && spin_rate < ToRad(SPIN_RATE_LIMIT)) {
+    if (yaw_deltat < 2.0f && spin_rate < radians(static_cast<float>(SPIN_RATE_LIMIT))) {
         // also add to the I term
         _omega_I_sum.z += error_z * _ki_yaw * yaw_deltat;
     }
@@ -845,7 +845,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     // accumulate some integrator error
-    if (spin_rate < ToRad(SPIN_RATE_LIMIT)) {
+    if (spin_rate < radians(static_cast<float>(SPIN_RATE_LIMIT))) {
         _omega_I_sum += error[besti] * _ki * _ra_deltat;
         _omega_I_sum_time += _ra_deltat;
     }

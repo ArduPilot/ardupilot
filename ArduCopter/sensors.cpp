@@ -59,7 +59,7 @@ int16_t Copter::read_sonar(void)
  #if SONAR_TILT_CORRECTION == 1
     // correct alt for angle of the sonar
     float temp = ahrs.cos_pitch() * ahrs.cos_roll();
-    temp = MAX(temp, 0.707f);
+    temp = max(temp, 0.707f);
     temp_alt = (float)temp_alt * temp;
  #endif
 

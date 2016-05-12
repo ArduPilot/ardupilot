@@ -108,8 +108,8 @@ void SoloGimbal::send_controls(mavlink_channel_t chan)
                 _ang_vel_dem_rads += get_ang_vel_dem_body_lock();
                 _ang_vel_dem_rads += get_ang_vel_dem_gyro_bias();
                 float _ang_vel_dem_radsLen = _ang_vel_dem_rads.length();
-                if (_ang_vel_dem_radsLen > radians(400)) {
-                    _ang_vel_dem_rads *= radians(400)/_ang_vel_dem_radsLen;
+                if (_ang_vel_dem_radsLen > radians(400.0f)) {
+                    _ang_vel_dem_rads *= radians(400.0f)/_ang_vel_dem_radsLen;
                 }
                 mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
                                                 _ang_vel_dem_rads.x, _ang_vel_dem_rads.y, _ang_vel_dem_rads.z);
@@ -121,8 +121,8 @@ void SoloGimbal::send_controls(mavlink_channel_t chan)
                 _ang_vel_dem_rads += get_ang_vel_dem_feedforward(quatEst);
                 _ang_vel_dem_rads += get_ang_vel_dem_gyro_bias();
                 float ang_vel_dem_norm = _ang_vel_dem_rads.length();
-                if (ang_vel_dem_norm > radians(400)) {
-                    _ang_vel_dem_rads *= radians(400)/ang_vel_dem_norm;
+                if (ang_vel_dem_norm > radians(400.0f)) {
+                    _ang_vel_dem_rads *= radians(400.0f)/ang_vel_dem_norm;
                 }
                 mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
                                                 _ang_vel_dem_rads.x, _ang_vel_dem_rads.y, _ang_vel_dem_rads.z);
@@ -188,7 +188,7 @@ void SoloGimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     ang_vel -= ekf_gyro_bias;
     float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+0.5f),0.0f,1.0f);
     _ang_vel_mag_filt += (ang_vel.length()-_ang_vel_mag_filt)*alpha;
-    _ang_vel_mag_filt = MIN(_ang_vel_mag_filt,20.0f);
+    _ang_vel_mag_filt = min(_ang_vel_mag_filt,20.0f);
 
     // get complementary filter inputs
     _vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);
@@ -370,7 +370,7 @@ void SoloGimbal::update_target(Vector3f newTarget)
     // Low-pass filter
     _att_target_euler_rad.y = _att_target_euler_rad.y + 0.02f*(newTarget.y - _att_target_euler_rad.y);
     // Update tilt
-    _att_target_euler_rad.y = constrain_float(_att_target_euler_rad.y,radians(-90),radians(0));
+    _att_target_euler_rad.y = constrain_float(_att_target_euler_rad.y,radians(-90.0f),radians(0.0f));
 }
 
 void SoloGimbal::write_logs(DataFlash_Class* dataflash)
@@ -423,7 +423,7 @@ void SoloGimbal::write_logs(DataFlash_Class* dataflash)
 
 bool SoloGimbal::joints_near_limits()
 {
-    return fabsf(_measurement.joint_angles.x) > radians(40) || _measurement.joint_angles.y > radians(45) || _measurement.joint_angles.y < -radians(135);
+    return fabsf(_measurement.joint_angles.x) > radians(40.0f) || _measurement.joint_angles.y > radians(45.0f) || _measurement.joint_angles.y < -radians(135.0f);
 }
 
 AccelCalibrator* SoloGimbal::_acal_get_calibrator(uint8_t instance)
@@ -437,7 +437,7 @@ AccelCalibrator* SoloGimbal::_acal_get_calibrator(uint8_t instance)
 
 bool SoloGimbal::_acal_get_ready_to_sample()
 {
-    return _ang_vel_mag_filt < radians(10);
+    return _ang_vel_mag_filt < radians(10.0f);
 }
 
 bool SoloGimbal::_acal_get_saving()

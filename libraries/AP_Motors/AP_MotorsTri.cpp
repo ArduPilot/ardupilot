@@ -151,7 +151,7 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_1, calc_thrust_to_pwm(_thrust_right));
             rc_write(AP_MOTORS_MOT_2, calc_thrust_to_pwm(_thrust_left));
             rc_write(AP_MOTORS_MOT_4, calc_thrust_to_pwm(_thrust_rear));
-            rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, radians(_yaw_servo_angle_max_deg)));
+            rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, radians(_yaw_servo_angle_max_deg.get())));
             hal.rcout->push();
             break;
     }
@@ -190,14 +190,14 @@ void AP_MotorsTri::output_armed_stabilizing()
     // apply voltage and air pressure compensation
     roll_thrust = _roll_in * get_compensation_gain();
     pitch_thrust = _pitch_in * get_compensation_gain();
-    yaw_thrust = _yaw_in * get_compensation_gain()*sinf(radians(_yaw_servo_angle_max_deg)); // we scale this so a thrust request of 1.0f will ask for full servo deflection at full rear throttle
+    yaw_thrust = _yaw_in * get_compensation_gain()*sinf(radians(_yaw_servo_angle_max_deg.get())); // we scale this so a thrust request of 1.0f will ask for full servo deflection at full rear throttle
     throttle_thrust = get_throttle() * get_compensation_gain();
 
     // calculate angle of yaw pivot
     _pivot_angle = safe_asin(yaw_thrust);
-    if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
+    if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg.get())) {
         limit.yaw = true;
-        _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
+        _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg.get()), radians(_yaw_servo_angle_max_deg.get()));
     }
 
     float pivot_thrust_max = cosf(_pivot_angle);
@@ -213,7 +213,7 @@ void AP_MotorsTri::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    throttle_thrust_rpy_mix = MAX(throttle_thrust, throttle_thrust*MAX(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
+    throttle_thrust_rpy_mix = max(throttle_thrust, throttle_thrust*max(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
 
     // The following mix may be offer less coupling between axis but needs testing
     //_thrust_right = roll_thrust * -0.5f + pitch_thrust * 1.0f;
@@ -228,8 +228,8 @@ void AP_MotorsTri::output_armed_stabilizing()
     // set rpy_low and rpy_high to the lowest and highest values of the motors
 
     // record lowest roll pitch command
-    rpy_low = MIN(_thrust_right,_thrust_left);
-    rpy_high = MAX(_thrust_right,_thrust_left);
+    rpy_low = min(_thrust_right,_thrust_left);
+    rpy_high = max(_thrust_right,_thrust_left);
     if (rpy_low > _thrust_rear){
         rpy_low = _thrust_rear;
     }
@@ -250,7 +250,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favor reducing throttle instead of better yaw control because the pilot has commanded it
 
     // check everything fits
-    throttle_thrust_best_rpy = MIN(0.5f*thrust_max - (rpy_low+rpy_high)/2.0, throttle_thrust_rpy_mix);
+    throttle_thrust_best_rpy = min(0.5f*thrust_max - (rpy_low+rpy_high)/2.0, throttle_thrust_rpy_mix);
     if(is_zero(rpy_low)){
         rpy_scale = 1.0f;
     } else {

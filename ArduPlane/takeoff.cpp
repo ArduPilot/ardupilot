@@ -18,7 +18,7 @@ bool Plane::auto_takeoff_check(void)
     static bool launchTimerStarted;
     static uint32_t last_tkoff_arm_time;
     static uint32_t last_check_ms;
-    uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
+    uint16_t wait_time_ms = min(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // Reset states if process has been interrupted
     if (last_check_ms && (now - last_check_ms) > 200) {

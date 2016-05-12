@@ -144,7 +144,8 @@ float AC_AttitudeControl_Multi::get_althold_lean_angle_max() const
         return 0.0f;
     }
 
-    return ToDeg(acos(constrain_float(_throttle_in_filt.get()/(0.9f * thr_max), 0.0f, 1.0f))) * 100.0f;
+    float val = acos(constrain_float(_throttle_in_filt.get()/(0.9f * thr_max), 0.0f, 1.0f));
+    return degrees(val) * 100.0f;
 }
 
 // returns a throttle including compensation for roll/pitch angle

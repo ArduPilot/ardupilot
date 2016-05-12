@@ -141,7 +141,7 @@ float Copter::get_pilot_desired_throttle(int16_t throttle_control)
     throttle_control = constrain_int16(throttle_control,0,1000);
     // ensure mid throttle is set within a reasonable range
     g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
-    float thr_mid = MAX(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
+    float thr_mid = max(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < mid_stick) {
@@ -201,7 +201,7 @@ float Copter::get_non_takeoff_throttle()
 {
     // ensure mid throttle is set within a reasonable range
     g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
-    return MAX(0,g.throttle_mid-g.throttle_min) / ((float)(1000-g.throttle_min) * 2.0f);
+    return max(0,g.throttle_mid-g.throttle_min) / ((float)(1000-g.throttle_min) * 2.0f);
 }
 
 float Copter::get_takeoff_trigger_throttle()
