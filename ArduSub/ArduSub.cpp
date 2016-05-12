@@ -115,8 +115,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(update_mount,          50,     75),
 	SCHED_TASK(update_trigger,        50,     75),
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
-    SCHED_TASK(fifty_hz_logging_loop, 50,    110),
-    SCHED_TASK(full_rate_logging_loop,400,    100),
+    SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK(dataflash_periodic,    400,    300),
     SCHED_TASK(perf_update,           0.1,    75),
     SCHED_TASK(read_receiver_rssi,    10,     75),
@@ -339,7 +338,7 @@ void Sub::update_batt_compass(void)
         compass.set_throttle(motors.get_throttle()/1000.0f);
         compass.read();
         // log compass information
-        if (should_log(MASK_LOG_COMPASS)) {
+        if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
             DataFlash.Log_Write_Compass(compass);
         }
     }
@@ -380,9 +379,9 @@ void Sub::ten_hz_logging_loop()
     }
 }
 
-// fifty_hz_logging_loop
-// should be run at 50hz
-void Sub::fifty_hz_logging_loop()
+// twentyfive_hz_logging_loop
+// should be run at 25hz
+void Sub::twentyfive_hz_logging()
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     // HIL for a copter needs very fast update of the servo values
@@ -402,22 +401,10 @@ void Sub::fifty_hz_logging_loop()
     }
 
     // log IMU data if we're not already logging at the higher rate
-    if (should_log(MASK_LOG_IMU) && !(should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW))) {
+    if (should_log(MASK_LOG_IMU) && should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
-}
-
-// full_rate_logging_loop
-// should be run at the MAIN_LOOP_RATE
-void Sub::full_rate_logging_loop()
-{
-    if (should_log(MASK_LOG_IMU_FAST) && !should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMU(ins);
-    }
-    if (should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMUDT(ins);
-    }
 }
 
 void Sub::dataflash_periodic(void)
@@ -468,7 +455,7 @@ void Sub::one_hz_loop()
         motors.set_frame_orientation(g.frame_orientation);
 
         // set all throttle channel settings
-        motors.set_throttle_range(g.throttle_min, channel_throttle->radio_min, channel_throttle->radio_max);
+        motors.set_throttle_range(g.throttle_min, channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
         // set hover throttle
         motors.set_hover_throttle(g.throttle_mid);
     }
@@ -502,7 +489,7 @@ void Sub::update_GPS(void)
             last_gps_reading[i] = gps.last_message_time_ms(i);
 
             // log GPS message
-            if (should_log(MASK_LOG_GPS)) {
+            if (should_log(MASK_LOG_GPS) && !ahrs.have_ekf_logging()) {
                 DataFlash.Log_Write_GPS(gps, i, current_loc.alt);
             }
 
@@ -558,17 +545,17 @@ void Sub::update_simple_mode(void)
 
     if (ap.simple_mode == 1) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
-        rollx = channel_roll->control_in*simple_cos_yaw - channel_pitch->control_in*simple_sin_yaw;
-        pitchx = channel_roll->control_in*simple_sin_yaw + channel_pitch->control_in*simple_cos_yaw;
+        rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
+        pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
     }else{
         // rotate roll, pitch input by -super simple heading (reverse of heading to home)
-        rollx = channel_roll->control_in*super_simple_cos_yaw - channel_pitch->control_in*super_simple_sin_yaw;
-        pitchx = channel_roll->control_in*super_simple_sin_yaw + channel_pitch->control_in*super_simple_cos_yaw;
+        rollx = channel_roll->get_control_in()*super_simple_cos_yaw - channel_pitch->get_control_in()*super_simple_sin_yaw;
+        pitchx = channel_roll->get_control_in()*super_simple_sin_yaw + channel_pitch->get_control_in()*super_simple_cos_yaw;
     }
 
     // rotate roll, pitch input from north facing to vehicle's perspective
-    channel_roll->control_in = rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw();
-    channel_pitch->control_in = -rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw();
+    channel_roll->set_control_in(rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw());
+    channel_pitch->set_control_in(-rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw());
 }
 
 // update_super_simple_bearing - adjusts simple bearing based on location

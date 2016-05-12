@@ -53,7 +53,7 @@ bool Sub::flip_init(bool ignore_checks)
     }
 
     // ensure roll input is less than 40deg
-    if (abs(channel_roll->control_in) >= 4000) {
+    if (abs(channel_roll->get_control_in()) >= 4000) {
         return false;
     }
 
@@ -73,11 +73,11 @@ bool Sub::flip_init(bool ignore_checks)
     flip_roll_dir = flip_pitch_dir = 0;
 
     // choose direction based on pilot's roll and pitch sticks
-    if (channel_pitch->control_in > 300) {
+    if (channel_pitch->get_control_in() > 300) {
         flip_pitch_dir = FLIP_PITCH_BACK;
-    }else if(channel_pitch->control_in < -300) {
+    }else if(channel_pitch->get_control_in() < -300) {
         flip_pitch_dir = FLIP_PITCH_FORWARD;
-    }else if (channel_roll->control_in >= 0) {
+    }else if (channel_roll->get_control_in() >= 0) {
         flip_roll_dir = FLIP_ROLL_RIGHT;
     }else{
         flip_roll_dir = FLIP_ROLL_LEFT;
@@ -102,12 +102,12 @@ void Sub::flip_run()
     float recovery_angle;
 
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors.armed() || (abs(channel_roll->control_in) >= 4000) || (abs(channel_pitch->control_in) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
+    if (!motors.armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
         flip_state = Flip_Abandon;
     }
 
     // get pilot's desired throttle
-    throttle_out = get_pilot_desired_throttle(channel_throttle->control_in);
+    throttle_out = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // get corrected angle based on direction and axis of rotation
     // we flip the sign of flip_angle to minimize the code repetition

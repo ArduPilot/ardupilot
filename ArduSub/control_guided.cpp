@@ -241,7 +241,7 @@ void Sub::guided_set_angle(const Quaternion &q, float climb_rate_cms)
     q.to_euler(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd);
     guided_angle_state.roll_cd = ToDeg(guided_angle_state.roll_cd) * 100.0f;
     guided_angle_state.pitch_cd = ToDeg(guided_angle_state.pitch_cd) * 100.0f;
-    guided_angle_state.yaw_cd = wrap_180_cd_float(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
+    guided_angle_state.yaw_cd = wrap_180_cd(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
 
     guided_angle_state.climb_rate_cms = climb_rate_cms;
     guided_angle_state.update_time_ms = millis();
@@ -298,7 +298,7 @@ void Sub::guided_takeoff_run()
     float target_yaw_rate = 0;
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
     // set motors to full range
@@ -331,7 +331,7 @@ void Sub::guided_pos_control_run()
     float target_yaw_rate = 0;
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -375,7 +375,7 @@ void Sub::guided_vel_control_run()
     float target_yaw_rate = 0;
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -424,7 +424,7 @@ void Sub::guided_posvel_control_run()
 
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -489,7 +489,7 @@ void Sub::guided_angle_control_run()
     // constrain desired lean angles
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
-    float total_in = pythagorous2(roll_in, pitch_in);
+    float total_in = norm(roll_in, pitch_in);
     float angle_max = MIN(attitude_control.get_althold_lean_angle_max(), aparm.angle_max);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
@@ -498,7 +498,7 @@ void Sub::guided_angle_control_run()
     }
 
     // wrap yaw request
-    float yaw_in = wrap_180_cd_float(guided_angle_state.yaw_cd);
+    float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
 
     // constrain climb rate
     float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabs(wp_nav.get_speed_down()), wp_nav.get_speed_up());

@@ -97,8 +97,8 @@ void Sub::land_gps_run()
             update_simple_mode();
 
             // process pilot's roll and pitch input
-            roll_control = channel_roll->control_in;
-            pitch_control = channel_pitch->control_in;
+            roll_control = channel_roll->get_control_in();
+            pitch_control = channel_pitch->get_control_in();
 
             // record if pilot has overriden roll or pitch
             if (roll_control != 0 || pitch_control != 0) {
@@ -107,7 +107,7 @@ void Sub::land_gps_run()
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
     // set motors to full range
@@ -161,11 +161,11 @@ void Sub::land_nogps_run()
             update_simple_mode();
 
             // get pilot desired lean angles
-            get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, aparm.angle_max);
+            get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately

@@ -25,7 +25,7 @@ void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &ro
     pitch_in *= scaler;
 
     // do circular limit
-    float total_in = pythagorous2((float)pitch_in, (float)roll_in);
+    float total_in = norm(pitch_in, roll_in);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
         roll_in *= ratio;
@@ -82,7 +82,7 @@ float Sub::get_roi_yaw()
 float Sub::get_look_ahead_yaw()
 {
     const Vector3f& vel = inertial_nav.get_velocity();
-    float speed = pythagorous2(vel.x,vel.y);
+    float speed = norm(vel.x,vel.y);
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
         yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
@@ -199,7 +199,9 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
 float Sub::get_non_takeoff_throttle()
 {
-    return (((float)g.throttle_mid/1000.0f)/2.0f);
+	// ensure mid throttle is set within a reasonable range
+	g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+	return MAX(0,g.throttle_mid-g.throttle_min) / ((float)(1000-g.throttle_min) * 2.0f);
 }
 
 float Sub::get_takeoff_trigger_throttle()

@@ -1,0 +1,1120 @@
+// BUILDROOT=/Users/rustyj110/git/APMROV/Build.ArduSub HAL_BOARD=HAL_BOARD_PX4 HAL_BOARD_SUBTYPE= TOOLCHAIN=NATIVE EXTRAFLAGS=-DGIT_VERSION="e9af17f0" -I/Users/rustyj110/git/APMROV/libraries/AP_Common/missing -DNUTTX_GIT_VERSION="579e82d4" -DPX4_GIT_VERSION="4e5cccf6" -DUAVCAN=1 -DHAVE_STD_NULLPTR_T=0
+Checking modules
+Building /Users/rustyj110/git/APMROV/module.mk
+%% module_mk
+/Users/rustyj110/git/APMROV/module.mk /Users/rustyj110/git/APMROV/module.mk.new differ: char 704, line 3
+make[1]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware'
+Skipping submodules. NUTTX_SRC is set to /Users/rustyj110/git/APMROV/modules/PX4Firmware/NuttX/nuttx/
+Generating uORB topic headers
+actuator_armed.h: unchanged
+actuator_controls.h: unchanged
+actuator_controls_0.h: unchanged
+actuator_controls_1.h: unchanged
+actuator_controls_2.h: unchanged
+actuator_controls_3.h: unchanged
+actuator_controls_virtual_fw.h: unchanged
+actuator_controls_virtual_mc.h: unchanged
+actuator_direct.h: unchanged
+actuator_outputs.h: unchanged
+airspeed.h: unchanged
+att_pos_mocap.h: unchanged
+battery_status.h: unchanged
+camera_trigger.h: unchanged
+control_state.h: unchanged
+debug_key_value.h: unchanged
+differential_pressure.h: unchanged
+distance_sensor.h: unchanged
+encoders.h: unchanged
+esc_report.h: unchanged
+esc_status.h: unchanged
+estimator_status.h: unchanged
+fence.h: unchanged
+fence_vertex.h: unchanged
+filtered_bottom_flow.h: unchanged
+fw_virtual_rates_setpoint.h: unchanged
+geofence_result.h: unchanged
+hil_sensor.h: unchanged
+home_position.h: unchanged
+input_rc.h: unchanged
+manual_control_setpoint.h: unchanged
+mc_att_ctrl_status.h: unchanged
+mc_virtual_rates_setpoint.h: unchanged
+mission.h: unchanged
+mission_result.h: unchanged
+multirotor_motor_limits.h: unchanged
+navigation_capabilities.h: unchanged
+offboard_control_mode.h: unchanged
+optical_flow.h: unchanged
+output_pwm.h: unchanged
+parameter_update.h: unchanged
+position_setpoint.h: unchanged
+position_setpoint_triplet.h: unchanged
+pwm_input.h: unchanged
+rc_channels.h: unchanged
+rc_parameter_map.h: unchanged
+safety.h: unchanged
+satellite_info.h: unchanged
+sensor_accel.h: unchanged
+sensor_baro.h: unchanged
+sensor_combined.h: unchanged
+sensor_gyro.h: unchanged
+sensor_mag.h: unchanged
+servorail_status.h: unchanged
+subsystem_info.h: unchanged
+system_power.h: unchanged
+tecs_status.h: unchanged
+telemetry_status.h: unchanged
+test_motor.h: unchanged
+time_offset.h: unchanged
+uavcan_parameter_request.h: unchanged
+uavcan_parameter_value.h: unchanged
+vehicle_attitude.h: unchanged
+vehicle_attitude_setpoint.h: unchanged
+vehicle_command.h: unchanged
+vehicle_control_mode.h: unchanged
+vehicle_force_setpoint.h: unchanged
+vehicle_global_position.h: unchanged
+vehicle_global_velocity_setpoint.h: unchanged
+vehicle_gps_position.h: unchanged
+vehicle_land_detected.h: unchanged
+vehicle_local_position.h: unchanged
+vehicle_local_position_setpoint.h: unchanged
+vehicle_rates_setpoint.h: unchanged
+vehicle_status.h: unchanged
+vision_position_estimate.h: unchanged
+vtol_vehicle_status.h: unchanged
+wind_estimate.h: unchanged
+Generating multiplatform uORB topic wrapper headers
+actuator_armed.h: unchanged
+actuator_controls.h: unchanged
+actuator_controls_0.h: unchanged
+actuator_controls_1.h: unchanged
+actuator_controls_2.h: unchanged
+actuator_controls_3.h: unchanged
+actuator_controls_virtual_fw.h: unchanged
+actuator_controls_virtual_mc.h: unchanged
+actuator_direct.h: unchanged
+actuator_outputs.h: unchanged
+airspeed.h: unchanged
+att_pos_mocap.h: unchanged
+battery_status.h: unchanged
+camera_trigger.h: unchanged
+control_state.h: unchanged
+debug_key_value.h: unchanged
+differential_pressure.h: unchanged
+distance_sensor.h: unchanged
+encoders.h: unchanged
+esc_report.h: unchanged
+esc_status.h: unchanged
+estimator_status.h: unchanged
+fence.h: unchanged
+fence_vertex.h: unchanged
+filtered_bottom_flow.h: unchanged
+fw_virtual_rates_setpoint.h: unchanged
+geofence_result.h: unchanged
+hil_sensor.h: unchanged
+home_position.h: unchanged
+input_rc.h: unchanged
+manual_control_setpoint.h: unchanged
+mc_att_ctrl_status.h: unchanged
+mc_virtual_rates_setpoint.h: unchanged
+mission.h: unchanged
+mission_result.h: unchanged
+multirotor_motor_limits.h: unchanged
+navigation_capabilities.h: unchanged
+offboard_control_mode.h: unchanged
+optical_flow.h: unchanged
+output_pwm.h: unchanged
+parameter_update.h: unchanged
+position_setpoint.h: unchanged
+position_setpoint_triplet.h: unchanged
+pwm_input.h: unchanged
+rc_channels.h: unchanged
+rc_parameter_map.h: unchanged
+safety.h: unchanged
+satellite_info.h: unchanged
+sensor_accel.h: unchanged
+sensor_baro.h: unchanged
+sensor_combined.h: unchanged
+sensor_gyro.h: unchanged
+sensor_mag.h: unchanged
+servorail_status.h: unchanged
+subsystem_info.h: unchanged
+system_power.h: unchanged
+tecs_status.h: unchanged
+telemetry_status.h: unchanged
+test_motor.h: unchanged
+time_offset.h: unchanged
+uavcan_parameter_request.h: unchanged
+uavcan_parameter_value.h: unchanged
+vehicle_attitude.h: unchanged
+vehicle_attitude_setpoint.h: unchanged
+vehicle_command.h: unchanged
+vehicle_control_mode.h: unchanged
+vehicle_force_setpoint.h: unchanged
+vehicle_global_position.h: unchanged
+vehicle_global_velocity_setpoint.h: unchanged
+vehicle_gps_position.h: unchanged
+vehicle_land_detected.h: unchanged
+vehicle_local_position.h: unchanged
+vehicle_local_position_setpoint.h: unchanged
+vehicle_rates_setpoint.h: unchanged
+vehicle_status.h: unchanged
+vision_position_estimate.h: unchanged
+vtol_vehicle_status.h: unchanged
+wind_estimate.h: unchanged
+%%%%
+%%%% Building px4io-v2_default in /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/
+%%%%
+make[2]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build'
+%  PX4_BASE            = /Users/rustyj110/git/APMROV/modules/PX4Firmware/
+%  GIT_DESC            = 
+%  CONFIG              = px4io-v2_default
+%  BOARD               = px4io-v2
+%  WORK_DIR            = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/
+%  NUTTX_EXPORT_DIR    = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/nuttx-export/
+%  NUTTX_CONFIG_HEADER = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/nuttx-export/include/nuttx/config.h
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4io-v2'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4io-v2/module.mk
+%  MODULE_NAME         = px4io-v2
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4io-v2/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4io-v2/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4io-v2
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4io-v2'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/module.mk
+%  MODULE_NAME         = stm32
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/px4iofirmware'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/px4iofirmware/module.mk
+%  MODULE_NAME         = px4iofirmware
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/px4iofirmware/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/px4iofirmware/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/px4iofirmware
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/px4iofirmware'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common/module.mk
+%  MODULE_NAME         = common
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer/module.mk
+%  MODULE_NAME         = px4_layer
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer'
+LINK:    /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/firmware.elf
+BIN:     /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/firmware.bin
+%% Generating /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build/firmware.px4
+make[2]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4io-v2_default.build'
+%% Copying /Users/rustyj110/git/APMROV/modules/PX4Firmware/Images/px4io-v2_default.px4
+make[1]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware'
+PX4IOv2 Firmware is in px4io-v2.bin
+%% px4-v2
+make[1]: Entering directory '/Users/rustyj110/git/APMROV'
+Skipping submodules. NUTTX_SRC is set to /Users/rustyj110/git/APMROV/modules/PX4NuttX/nuttx/
+Generating uORB topic headers
+actuator_armed.h: unchanged
+actuator_controls.h: unchanged
+actuator_controls_0.h: unchanged
+actuator_controls_1.h: unchanged
+actuator_controls_2.h: unchanged
+actuator_controls_3.h: unchanged
+actuator_controls_virtual_fw.h: unchanged
+actuator_controls_virtual_mc.h: unchanged
+actuator_direct.h: unchanged
+actuator_outputs.h: unchanged
+airspeed.h: unchanged
+att_pos_mocap.h: unchanged
+battery_status.h: unchanged
+camera_trigger.h: unchanged
+control_state.h: unchanged
+debug_key_value.h: unchanged
+differential_pressure.h: unchanged
+distance_sensor.h: unchanged
+encoders.h: unchanged
+esc_report.h: unchanged
+esc_status.h: unchanged
+estimator_status.h: unchanged
+fence.h: unchanged
+fence_vertex.h: unchanged
+filtered_bottom_flow.h: unchanged
+fw_virtual_rates_setpoint.h: unchanged
+geofence_result.h: unchanged
+hil_sensor.h: unchanged
+home_position.h: unchanged
+input_rc.h: unchanged
+manual_control_setpoint.h: unchanged
+mc_att_ctrl_status.h: unchanged
+mc_virtual_rates_setpoint.h: unchanged
+mission.h: unchanged
+mission_result.h: unchanged
+multirotor_motor_limits.h: unchanged
+navigation_capabilities.h: unchanged
+offboard_control_mode.h: unchanged
+optical_flow.h: unchanged
+output_pwm.h: unchanged
+parameter_update.h: unchanged
+position_setpoint.h: unchanged
+position_setpoint_triplet.h: unchanged
+pwm_input.h: unchanged
+rc_channels.h: unchanged
+rc_parameter_map.h: unchanged
+safety.h: unchanged
+satellite_info.h: unchanged
+sensor_accel.h: unchanged
+sensor_baro.h: unchanged
+sensor_combined.h: unchanged
+sensor_gyro.h: unchanged
+sensor_mag.h: unchanged
+servorail_status.h: unchanged
+subsystem_info.h: unchanged
+system_power.h: unchanged
+tecs_status.h: unchanged
+telemetry_status.h: unchanged
+test_motor.h: unchanged
+time_offset.h: unchanged
+uavcan_parameter_request.h: unchanged
+uavcan_parameter_value.h: unchanged
+vehicle_attitude.h: unchanged
+vehicle_attitude_setpoint.h: unchanged
+vehicle_command.h: unchanged
+vehicle_control_mode.h: unchanged
+vehicle_force_setpoint.h: unchanged
+vehicle_global_position.h: unchanged
+vehicle_global_velocity_setpoint.h: unchanged
+vehicle_gps_position.h: unchanged
+vehicle_land_detected.h: unchanged
+vehicle_local_position.h: unchanged
+vehicle_local_position_setpoint.h: unchanged
+vehicle_rates_setpoint.h: unchanged
+vehicle_status.h: unchanged
+vision_position_estimate.h: unchanged
+vtol_vehicle_status.h: unchanged
+wind_estimate.h: unchanged
+Generating multiplatform uORB topic wrapper headers
+actuator_armed.h: unchanged
+actuator_controls.h: unchanged
+actuator_controls_0.h: unchanged
+actuator_controls_1.h: unchanged
+actuator_controls_2.h: unchanged
+actuator_controls_3.h: unchanged
+actuator_controls_virtual_fw.h: unchanged
+actuator_controls_virtual_mc.h: unchanged
+actuator_direct.h: unchanged
+actuator_outputs.h: unchanged
+airspeed.h: unchanged
+att_pos_mocap.h: unchanged
+battery_status.h: unchanged
+camera_trigger.h: unchanged
+control_state.h: unchanged
+debug_key_value.h: unchanged
+differential_pressure.h: unchanged
+distance_sensor.h: unchanged
+encoders.h: unchanged
+esc_report.h: unchanged
+esc_status.h: unchanged
+estimator_status.h: unchanged
+fence.h: unchanged
+fence_vertex.h: unchanged
+filtered_bottom_flow.h: unchanged
+fw_virtual_rates_setpoint.h: unchanged
+geofence_result.h: unchanged
+hil_sensor.h: unchanged
+home_position.h: unchanged
+input_rc.h: unchanged
+manual_control_setpoint.h: unchanged
+mc_att_ctrl_status.h: unchanged
+mc_virtual_rates_setpoint.h: unchanged
+mission.h: unchanged
+mission_result.h: unchanged
+multirotor_motor_limits.h: unchanged
+navigation_capabilities.h: unchanged
+offboard_control_mode.h: unchanged
+optical_flow.h: unchanged
+output_pwm.h: unchanged
+parameter_update.h: unchanged
+position_setpoint.h: unchanged
+position_setpoint_triplet.h: unchanged
+pwm_input.h: unchanged
+rc_channels.h: unchanged
+rc_parameter_map.h: unchanged
+safety.h: unchanged
+satellite_info.h: unchanged
+sensor_accel.h: unchanged
+sensor_baro.h: unchanged
+sensor_combined.h: unchanged
+sensor_gyro.h: unchanged
+sensor_mag.h: unchanged
+servorail_status.h: unchanged
+subsystem_info.h: unchanged
+system_power.h: unchanged
+tecs_status.h: unchanged
+telemetry_status.h: unchanged
+test_motor.h: unchanged
+time_offset.h: unchanged
+uavcan_parameter_request.h: unchanged
+uavcan_parameter_value.h: unchanged
+vehicle_attitude.h: unchanged
+vehicle_attitude_setpoint.h: unchanged
+vehicle_command.h: unchanged
+vehicle_control_mode.h: unchanged
+vehicle_force_setpoint.h: unchanged
+vehicle_global_position.h: unchanged
+vehicle_global_velocity_setpoint.h: unchanged
+vehicle_gps_position.h: unchanged
+vehicle_land_detected.h: unchanged
+vehicle_local_position.h: unchanged
+vehicle_local_position_setpoint.h: unchanged
+vehicle_rates_setpoint.h: unchanged
+vehicle_status.h: unchanged
+vision_position_estimate.h: unchanged
+vtol_vehicle_status.h: unchanged
+wind_estimate.h: unchanged
+%%%%
+%%%% Building px4fmu-v2_APM in /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/
+%%%%
+make[2]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build'
+%  PX4_BASE            = /Users/rustyj110/git/APMROV/modules/PX4Firmware/
+%  GIT_DESC            = 
+%  CONFIG              = px4fmu-v2_APM
+%  BOARD               = px4fmu-v2
+%  WORK_DIR            = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/
+%  NUTTX_EXPORT_DIR    = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/nuttx-export/
+%  NUTTX_CONFIG_HEADER = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/nuttx-export/include/nuttx/config.h
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/module.mk
+%  MODULE_NAME         = APMROV
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/compassmot.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/compat.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/landing_gear.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/failsafe.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/motor_test.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/system.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/Log.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/takeoff.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/perf_info.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/position_vector.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/commands_logic.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/setup.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_throw.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/tuning.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/flight_mode.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/ekf_check.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_loiter.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/AP_State.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/ArduSub.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/test.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_brake.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_acro.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/land_detector.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_autotune.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/baro_ground_effect.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/Attitude.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/Sub.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/motors.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/joystick.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_poshold.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_circle.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/capabilities.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_land.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_guided.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/navigation.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/events.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_stabilize.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/fence.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/crash_check.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/Parameters.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/esc_calibration.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/GCS_Mavlink.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/arming_checks.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/UserCode.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_drift.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/switches.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_flip.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/commands.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_auto.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/surface_bottom_detector.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_althold.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/leds.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/radio.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_sport.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/sensors.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/precision_landing.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/inertia.cpp
+CXX:     /Users/rustyj110/git/APMROV/ArduSub/control_rtl.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Common/c++.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Common/AP_Common.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Menu/AP_Menu.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Param/AP_Param.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/StorageManager/StorageManager.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/GCS_MAVLink/GCS_MAVLink.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/GCS_MAVLink/MAVLink_routing.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/GCS_MAVLink/GCS_Logs.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/GCS_MAVLink/GCS_serial_control.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/GCS_MAVLink/GCS_Common.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_SerialManager/AP_SerialManager.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_MTK.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_QURT.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/GPS_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_MTK19.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_GSOF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_SBP.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_SIRF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_NMEA.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_UBLOX.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_ERB.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_GPS/AP_GPS_SBF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/DataFlash/DataFlash_File.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/DataFlash/DataFlash_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/DataFlash/DataFlash_MAVLink.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/DataFlash/DataFlash_Block.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/DataFlash/DataFlash.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/DataFlash/DFMessageWriter.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/DataFlash/DataFlash_SITL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/DataFlash/LogFile.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_ADC/AP_ADC_ADS7844.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_ADC/AP_ADC_ADS1115.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_ADC/AP_ADC.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Baro/AP_Baro_BMP085.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Baro/AP_Baro_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Baro/AP_Baro_QURT.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Baro/AP_Baro_MS5611.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Baro/AP_Baro_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Baro/AP_Baro_HIL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Baro/AP_Baro_qflight.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Baro/AP_Baro.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_LSM303D.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_AK8963.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_HIL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/CompassCalibrator.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_QURT.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_HMC5843.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_qflight.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/Compass_learn.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Compass/AP_Compass_Calibration.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/location.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/vector3.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/AP_Math.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/edc.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/matrix_alg.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/matrix3.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/polygon.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/vector2.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Math/quaternion.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_HIL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_LSM9DS0.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_UserInteract_MAVLink.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_Flymaple.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_qflight.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_L3G4200D.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_UserInteract_Stream.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_MPU6000.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_MPU9250.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AuxiliaryBus.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_QURT.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialSensor/AP_InertialSensor_SITL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_AccelCal/AP_AccelCal.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_AccelCal/AccelCalibrator.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_AHRS/AP_AHRS_NavEKF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_AHRS/AP_AHRS.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_AHRS/AP_AHRS_DCM.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF/AP_NavEKF_core.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF/AP_NavEKF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_Control.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_AirDataFusion.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_PosVelFusion.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_VehicleStatus.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_MagFusion.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF_GyroBias.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_core.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_OptFlowFusion.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_Measurements.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_NavEKF2/AP_NavEKF2_Outputs.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mission/AP_Mission.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Rally/AP_Rally.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_PID/AC_P.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_PID/AC_HELI_PID.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_PID/AC_PI_2D.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_PID/AC_PID.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_AttitudeControl/AC_PosControl.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/RC_Channel/RC_Channel_aux.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/RC_Channel/RC_Channel.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsMulticopter.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_Motors6DOF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsTri.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsOctaQuad.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_Motors_Class.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsBlueROV6DOF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsVectoredROV.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsCoax.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsHeli_Single.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsMatrix.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsHeli.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsHexa.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsOcta.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsQuad.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsSingle.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsHeli_RSC.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsY6.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Motors/AP_MotorsVectored6DOF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/AP_RangeFinder_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/AP_RangeFinder_LightWareSerial.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/AP_RangeFinder_BBB_PRU.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/AP_RangeFinder_MaxsonarI2CXL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/RangeFinder_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/AP_RangeFinder_PulsedLightLRF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/AP_RangeFinder_LightWareI2C.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/AP_RangeFinder_PX4_PWM.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RangeFinder/RangeFinder.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_OpticalFlow/AP_OpticalFlow_Onboard.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_OpticalFlow/OpticalFlow.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_OpticalFlow/OpticalFlow_backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_OpticalFlow/AP_OpticalFlow_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_OpticalFlow/AP_OpticalFlow_Linux.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_OpticalFlow/AP_OpticalFlow_HIL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RSSI/AP_RSSI.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/Filter/LowPassFilter2p.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/Filter/DerivativeFilter.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/Filter/LowPassFilter.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Relay/AP_Relay.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_ServoRelayEvents/AP_ServoRelayEvents.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Camera/AP_Camera.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/AP_Mount_SToRM32_serial.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/AP_Mount_Servo.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/AP_Mount_SoloGimbal.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/SoloGimbal_Parameters.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/SoloGimbal.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/AP_Mount.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/AP_Mount_SToRM32.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/AP_Mount_Alexmos.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/SoloGimbalEKF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Mount/AP_Mount_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Airspeed/AP_Airspeed_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Airspeed/AP_Airspeed.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Airspeed/AP_Airspeed_analog.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Airspeed/Airspeed_Calibration.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Airspeed/AP_Airspeed_I2C.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_InertialNav/AP_InertialNav_NavEKF.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_WPNav/AC_Circle.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_WPNav/AC_WPNav.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Declination/AP_Declination.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_Fence/AC_Fence.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Scheduler/AP_Scheduler.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RCMapper/AP_RCMapper.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/ToneAlarm_Linux.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/RCOutputRGBLed.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/NavioLED_I2C.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/ToshibaLED_I2C.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/RGBLed.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/AP_Notify.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/VRBoard_LED.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/ToshibaLED_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/DiscreteRGBLed.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/AP_BoardLED.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/Display.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/Buzzer.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/ToneAlarm_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/OreoLED_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/NavioLED.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/ToshibaLED.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/ExternalLED.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Notify/Display_SSD1306_I2C.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_BattMonitor/AP_BattMonitor_SMBus_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_BattMonitor/AP_BattMonitor.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_BattMonitor/AP_BattMonitor_Analog.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_BattMonitor/AP_BattMonitor_SMBus_I2C.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_BattMonitor/AP_BattMonitor_Bebop.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_BattMonitor/AP_BattMonitor_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_BoardConfig/AP_BoardConfig.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Frsky_Telem/AP_Frsky_Telem.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_Sprayer/AC_Sprayer.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_EPM/AP_EPM.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Parachute/AP_Parachute.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_LandingGear/AP_LandingGear.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Terrain/TerrainUtil.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Terrain/AP_Terrain.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Terrain/TerrainGCS.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Terrain/TerrainMission.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_Terrain/TerrainIO.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RPM/RPM_SITL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RPM/AP_RPM.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RPM/RPM_PX4_PWM.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_RPM/RPM_Backend.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_PrecLand/AC_PrecLand.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_PrecLand/AC_PrecLand_IRLock.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_PrecLand/AC_PrecLand_Companion.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_IRLock/IRLock.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_IRLock/AP_IRLock_PX4.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_InputManager/AC_InputManager_Heli.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AC_InputManager/AC_InputManager.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_JSButton/AP_JSButton.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/Util.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/HAL.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/UARTDriver.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/HAL_Empty_Class.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/RCInput.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/AnalogIn.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/Scheduler.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/RCOutput.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/SPIDriver.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/I2CDriver.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/PrivateMember.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/Storage.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/UARTDriver.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/Semaphores.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_Empty/GPIO.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/RCInput.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/Util.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/AnalogIn.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/HAL_PX4_Class.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/system.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/I2CDriver.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/NSHShellStream.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/px4_param.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/Storage.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/UARTDriver.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/RCOutput.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/Semaphores.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/Scheduler.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL_PX4/GPIO.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/utility/ftoa_engine.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/utility/getopt_cpp.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/utility/RingBuffer.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/utility/print_vprintf.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/utility/Print.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/utility/dsm.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/utility/utoa_invert.cpp
+CXX:     /Users/rustyj110/git/APMROV/libraries/AP_HAL/utility/Socket.cpp
+PRELINK: /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/module.pre.o
+CMD:     ArduPilot
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/airspeed'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/airspeed/module.mk
+%  MODULE_NAME         = airspeed
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/airspeed/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/airspeed/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/airspeed
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/airspeed'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/batt_smbus'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/batt_smbus/module.mk
+%  MODULE_NAME         = batt_smbus
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/batt_smbus/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/batt_smbus/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/batt_smbus
+CMD:     batt_smbus
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/batt_smbus'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4fmu-v2'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4fmu-v2/module.mk
+%  MODULE_NAME         = px4fmu-v2
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4fmu-v2/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4fmu-v2/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4fmu-v2
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/boards/px4fmu-v2'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/device'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/device/module.mk
+%  MODULE_NAME         = device
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/device/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/device/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/device
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/device'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ets_airspeed'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ets_airspeed/module.mk
+%  MODULE_NAME         = ets_airspeed
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ets_airspeed/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ets_airspeed/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ets_airspeed
+CMD:     ets_airspeed
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ets_airspeed'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/hmc5883'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/hmc5883/module.mk
+%  MODULE_NAME         = hmc5883
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/hmc5883/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/hmc5883/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/hmc5883
+CMD:     hmc5883
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/hmc5883'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/irlock'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/irlock/module.mk
+%  MODULE_NAME         = irlock
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/irlock/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/irlock/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/irlock
+CMD:     irlock
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/irlock'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/l3gd20'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/l3gd20/module.mk
+%  MODULE_NAME         = l3gd20
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/l3gd20/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/l3gd20/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/l3gd20
+CMD:     l3gd20
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/l3gd20'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/led'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/led/module.mk
+%  MODULE_NAME         = led
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/led/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/led/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/led
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/led'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ll40ls'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ll40ls/module.mk
+%  MODULE_NAME         = ll40ls
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ll40ls/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ll40ls/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ll40ls
+CMD:     ll40ls
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ll40ls'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/lsm303d'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/lsm303d/module.mk
+%  MODULE_NAME         = lsm303d
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/lsm303d/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/lsm303d/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/lsm303d
+CMD:     lsm303d
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/lsm303d'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mb12xx'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mb12xx/module.mk
+%  MODULE_NAME         = mb12xx
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mb12xx/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mb12xx/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mb12xx
+CMD:     mb12xx
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mb12xx'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/meas_airspeed'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/meas_airspeed/module.mk
+%  MODULE_NAME         = meas_airspeed
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/meas_airspeed/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/meas_airspeed/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/meas_airspeed
+CMD:     meas_airspeed
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/meas_airspeed'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mkblctrl'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mkblctrl/module.mk
+%  MODULE_NAME         = mkblctrl
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mkblctrl/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mkblctrl/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mkblctrl
+CMD:     mkblctrl
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mkblctrl'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu6000'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu6000/module.mk
+%  MODULE_NAME         = mpu6000
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu6000/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu6000/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu6000
+CMD:     mpu6000
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu6000'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu9250'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu9250/module.mk
+%  MODULE_NAME         = mpu9250
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu9250/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu9250/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu9250
+CMD:     mpu9250
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/mpu9250'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ms5611'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ms5611/module.mk
+%  MODULE_NAME         = ms5611
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ms5611/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ms5611/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ms5611
+CMD:     ms5611
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/ms5611'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/oreoled'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/oreoled/module.mk
+%  MODULE_NAME         = oreoled
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/oreoled/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/oreoled/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/oreoled
+CMD:     oreoled
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/oreoled'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/pwm_input'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/pwm_input/module.mk
+%  MODULE_NAME         = pwm_input
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/pwm_input/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/pwm_input/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/pwm_input
+CMD:     pwm_input
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/pwm_input'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4flow'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4flow/module.mk
+%  MODULE_NAME         = px4flow
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4flow/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4flow/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4flow
+CMD:     px4flow
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4flow'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4fmu'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4fmu/module.mk
+%  MODULE_NAME         = px4fmu
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4fmu/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4fmu/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4fmu
+CMD:     fmu
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4fmu'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4io'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4io/module.mk
+%  MODULE_NAME         = px4io
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4io/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4io/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4io
+CMD:     px4io
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/px4io'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/rgbled'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/rgbled/module.mk
+%  MODULE_NAME         = rgbled
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/rgbled/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/rgbled/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/rgbled
+CMD:     rgbled
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/rgbled'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/module.mk
+%  MODULE_NAME         = stm32
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/adc'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/adc/module.mk
+%  MODULE_NAME         = adc
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/adc/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/adc/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/adc
+CMD:     adc
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/adc'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/tone_alarm'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/tone_alarm/module.mk
+%  MODULE_NAME         = tone_alarm
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/tone_alarm/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/tone_alarm/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/tone_alarm
+CMD:     tone_alarm
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/stm32/tone_alarm'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/trone'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/trone/module.mk
+%  MODULE_NAME         = trone
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/trone/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/trone/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/trone
+CMD:     trone
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/drivers/trone'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/conversion'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/conversion/module.mk
+%  MODULE_NAME         = conversion
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/conversion/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/conversion/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/conversion
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/conversion'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/module.mk
+%  MODULE_NAME         = mathlib
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/math/filter'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/math/filter/module.mk
+%  MODULE_NAME         = filter
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/math/filter/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/math/filter/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/math/filter
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/lib/mathlib/math/filter'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/module.mk
+%  MODULE_NAME         = systemlib
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib
+CC:      /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/git_version.c
+PRELINK: /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/module.pre.o
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/mixer'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/mixer/module.mk
+%  MODULE_NAME         = mixer
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/mixer/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/mixer/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/mixer
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/systemlib/mixer'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uORB'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uORB/module.mk
+%  MODULE_NAME         = uORB
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uORB/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uORB/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uORB
+CMD:     uorb
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uORB'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uavcan'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uavcan/module.mk
+Running from the source directory
+%  MODULE_NAME         = uavcan
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uavcan/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uavcan/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uavcan
+CMD:     uavcan
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/modules/uavcan'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common/module.mk
+%  MODULE_NAME         = common
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/common'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer/module.mk
+%  MODULE_NAME         = px4_layer
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer
+make[3]: Nothing to be done for 'module'.
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/platforms/nuttx/px4_layer'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/bl_update'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/bl_update/module.mk
+%  MODULE_NAME         = bl_update
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/bl_update/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/bl_update/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/bl_update
+CMD:     bl_update
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/bl_update'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mixer'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mixer/module.mk
+%  MODULE_NAME         = mixer
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mixer/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mixer/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mixer
+CMD:     mixer
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mixer'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/motor_test'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/motor_test/module.mk
+%  MODULE_NAME         = motor_test
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/motor_test/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/motor_test/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/motor_test
+CMD:     motor_test
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/motor_test'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mtd'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mtd/module.mk
+%  MODULE_NAME         = mtd
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mtd/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mtd/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mtd
+CMD:     mtd
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/mtd'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/nshterm'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/nshterm/module.mk
+%  MODULE_NAME         = nshterm
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/nshterm/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/nshterm/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/nshterm
+CMD:     nshterm
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/nshterm'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/perf'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/perf/module.mk
+%  MODULE_NAME         = perf
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/perf/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/perf/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/perf
+CMD:     perf
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/perf'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/pwm'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/pwm/module.mk
+%  MODULE_NAME         = pwm
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/pwm/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/pwm/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/pwm
+CMD:     pwm
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/pwm'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reboot'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reboot/module.mk
+%  MODULE_NAME         = reboot
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reboot/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reboot/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reboot
+CMD:     reboot
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reboot'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reflect'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reflect/module.mk
+%  MODULE_NAME         = reflect
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reflect/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reflect/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reflect
+CMD:     reflect
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/reflect'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/top'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/top/module.mk
+%  MODULE_NAME         = top
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/top/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/top/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/top
+CMD:     top
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/top'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/usb_connected'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/usb_connected/module.mk
+%  MODULE_NAME         = usb_connected
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/usb_connected/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/usb_connected/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/usb_connected
+CMD:     usb_connected
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/usb_connected'
+make[3]: Entering directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/ver'
+%% MODULE_MK           = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/ver/module.mk
+%  MODULE_NAME         = ver
+%  MODULE_SRC          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/ver/
+%  MODULE_OBJ          = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/ver/module.pre.o
+%  MODULE_WORK_DIR     = /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build//Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/ver
+CMD:     ver
+make[3]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/Users/rustyj110/git/APMROV/modules/PX4Firmware/src/systemcmds/ver'
+CMDS:    /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/builtin_commands.c
+CC:      /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/builtin_commands.c
+Pruning ROMFS files.
+ROMFS:   romfs.img
+OBJ:     romfs.o
+CC:      romfs.o.c
+CC:      romfs.o.c
+LINK:    /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/firmware.elf
+BIN:     /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/firmware.bin
+%% Generating /Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/firmware.px4
+make[2]: Leaving directory '/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build'
+%% Copying /Users/rustyj110/git/APMROV/modules/PX4Firmware/Images/px4fmu-v2_APM.px4
+make[1]: Leaving directory '/Users/rustyj110/git/APMROV'
+   text	   data	    bss	    dec	    hex	filename
+ 959604	   2820	  54704	1017128	  f8528	/Users/rustyj110/git/APMROV/modules/PX4Firmware/Build/px4fmu-v2_APM.build/firmware.elf
+PX4 ArduSub Firmware is in ArduSub-v2.px4

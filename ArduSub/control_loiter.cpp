@@ -47,13 +47,13 @@ void Sub::loiter_run()
         update_simple_mode();
 
         // process pilot's roll and pitch input
-        wp_nav.set_pilot_desired_acceleration(channel_roll->control_in, channel_pitch->control_in);
+        wp_nav.set_pilot_desired_acceleration(channel_roll->get_control_in(), channel_pitch->get_control_in());
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
         // get pilot desired climb rate
-        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
+        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
         target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
@@ -66,11 +66,11 @@ void Sub::loiter_run()
     }
 
     // Loiter State Machine Determination
-    if(!ap.auto_armed) {
-        loiter_state = Loiter_Disarmed;
-    } else if (!motors.get_interlock()){
-        loiter_state = Loiter_MotorStop;
-    } else if (takeoff_state.running || (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()))){
+    if (!motors.armed() || !motors.get_interlock()) {
+        loiter_state = Loiter_MotorStopped;
+    } else if (!ap.auto_armed) {
+        loiter_state = Loiter_NotAutoArmed;
+    } else if (takeoff_state.running || (ap.land_complete && (channel_throttle->get_control_in() > get_takeoff_trigger_throttle()))){
         loiter_state = Loiter_Takeoff;
     } else if (ap.land_complete){
         loiter_state = Loiter_Landed;
@@ -81,21 +81,20 @@ void Sub::loiter_run()
     // Loiter State Machine
     switch (loiter_state) {
 
-    case Loiter_Disarmed:
-        wp_nav.init_loiter_target();
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        // multicopters do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-        break;
-
-    case Loiter_MotorStop:
+    case Loiter_MotorStopped:
         motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         wp_nav.init_loiter_target();
         // multicopters do not stabilize roll/pitch/yaw when motors are stopped
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-throttle_average);
+        break;
+
+    case Loiter_NotAutoArmed:
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        wp_nav.init_loiter_target();
+        // Multicopters do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-throttle_average);
         break;
 
     case Loiter_Takeoff:
@@ -129,15 +128,17 @@ void Sub::loiter_run()
     case Loiter_Landed:
 
         wp_nav.init_loiter_target();
+        // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
         // if throttle zero reset attitude and exit immediately
         if (ap.throttle_zero) {
             motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        }else{
+        } else {
             motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
         // multicopters do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-throttle_average);
         break;
 
     case Loiter_Flying:

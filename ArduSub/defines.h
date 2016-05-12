@@ -224,8 +224,8 @@ enum RTLState {
 
 // Alt_Hold states
 enum AltHoldModeState {
-    AltHold_Disarmed,
-    AltHold_MotorStop,
+    AltHold_MotorStopped,
+	AltHold_NotAutoArmed,
     AltHold_Takeoff,
     AltHold_Flying,
     AltHold_Landed
@@ -233,8 +233,8 @@ enum AltHoldModeState {
 
 // Loiter states
 enum LoiterModeState {
-    Loiter_Disarmed,
-    Loiter_MotorStop,
+    Loiter_MotorStopped,
+	Loiter_NotAutoArmed,
     Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
@@ -304,7 +304,6 @@ enum ThrowModeState {
 #define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)
-#define MASK_LOG_WHEN_DISARMED          (1UL<<16)
 #define MASK_LOG_MOTBATT                (1UL<<17)
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)

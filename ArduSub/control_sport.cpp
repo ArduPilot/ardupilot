@@ -36,7 +36,7 @@ void Sub::sport_run()
     if (!motors.armed() || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-throttle_average);
         return;
     }
 
@@ -46,8 +46,8 @@ void Sub::sport_run()
     // get pilot's desired roll and pitch rates
 
     // calculate rate requests
-    target_roll_rate = channel_roll->control_in * g.acro_rp_p;
-    target_pitch_rate = channel_pitch->control_in * g.acro_rp_p;
+    target_roll_rate = channel_roll->get_control_in() * g.acro_rp_p;
+    target_pitch_rate = channel_pitch->get_control_in() * g.acro_rp_p;
 
     int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
     target_roll_rate -= constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
@@ -69,17 +69,17 @@ void Sub::sport_run()
     }
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot desired climb rate
-    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
+    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
     // get takeoff adjusted pilot and takeoff climb rates
     takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
     // check for take-off
-    if (ap.land_complete && (takeoff_state.running || (channel_throttle->control_in > get_takeoff_trigger_throttle()))) {
+    if (ap.land_complete && (takeoff_state.running || (channel_throttle->get_control_in() > get_takeoff_trigger_throttle()))) {
         if (!takeoff_state.running) {
             takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
@@ -98,8 +98,8 @@ void Sub::sport_run()
             motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-throttle_average);
     }else{
         // set motors to full range
         motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
