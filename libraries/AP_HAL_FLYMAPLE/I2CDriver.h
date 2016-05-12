@@ -33,7 +33,7 @@ public:
     uint8_t write(uint8_t addr, uint8_t len, uint8_t* data);
     /* writeRegister: write a single 8-bit value to a register */
     uint8_t writeRegister(uint8_t addr, uint8_t reg, uint8_t val);
-    /* writeRegisters: write bytes to contigious registers */
+    /* writeRegisters: write bytes to contiguous registers */
     uint8_t writeRegisters(uint8_t addr, uint8_t reg,
                                    uint8_t len, uint8_t* data);
 
@@ -42,7 +42,7 @@ public:
     /* readRegister: read from a device register - writes the register,
      * then reads back an 8-bit value. */
     uint8_t readRegister(uint8_t addr, uint8_t reg, uint8_t* data);
-    /* readRegister: read contigious device registers - writes the first 
+    /* readRegister: read contiguous device registers - writes the first 
      * register, then reads back multiple bytes */
     uint8_t readRegisters(uint8_t addr, uint8_t reg,
                                   uint8_t len, uint8_t* data);

@@ -42,7 +42,7 @@ volatile uint32_t FLYMAPLERCInput::_last_input_interrupt_time = 0; // Last time 
 
 // This is the rollover count of the timer
 // each count is 0.5us, so 600000 = 30ms
-// We cant reliably measure intervals that exceed this time.
+// We can't reliably measure intervals that exceed this time.
 #define FLYMAPLE_TIMER_RELOAD 60000
 
 FLYMAPLERCInput::FLYMAPLERCInput()
