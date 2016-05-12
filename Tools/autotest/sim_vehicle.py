@@ -146,13 +146,11 @@ def progress(text):
 
 def find_autotest_dir():
     '''return path to autotest directory'''
-    if os.path.exists("../Tools/autotest"):
-        return "../Tools/autotest"
-
-    # we are not running from one of the standard vehicle directories. Use
-    # the location of the sim_vehicle script to find the path
     return os.path.dirname(os.path.realpath(__file__))
 
+def find_root_dir():
+    '''return path to root directory'''
+    return os.path.realpath(os.path.join(find_autotest_dir(), '../..'))
 
 progress("Start")
 
@@ -387,16 +385,14 @@ def options_for_frame(frame, vehicle, opts):
     return ret
 
 def do_build_waf(vehicledir, opts, frame_options):
-    '''build build_target (e.g. sitl) in directory vehicledir - using waf'''
+    '''build sitl using waf'''
     progress("WAF build")
 
     old_dir = os.getcwd()
-
-    root_dir = os.path.join(vehicledir, "..")
-
+    root_dir = find_root_dir()
     os.chdir(root_dir)
 
-    waf_light = "./modules/waf/waf-light"
+    waf_light = os.path.join(root_dir, "modules/waf/waf-light")
 
     cmd_configure = [waf_light, "configure", "--board", "sitl" ]
     if opts.debug:
@@ -603,7 +599,7 @@ frame_options = options_for_frame(opts.frame, opts.vehicle, opts)
 if frame_options["model"] == "jsbsim":
     check_jsbsim_version()
 
-vehicledir = os.path.join(find_autotest_dir(), "../../" + opts.vehicle)
+vehicledir = os.path.realpath(os.path.join(find_root_dir(), opts.vehicle))
 if not os.path.exists(vehicledir):
     print("vehicle directory (%s) does not exist" % (vehicledir,))
     sys.exit(1)
@@ -631,10 +627,10 @@ else:
 
     if opts.build_system == "waf":
         if opts.debug:
-            binary_basedir = "../build/sitl-debug"
+            binary_basedir = "build/sitl-debug"
         else:
-            binary_basedir = "../build/sitl"
-        vehicle_binary = os.path.join(vehicledir, binary_basedir, frame_options["waf_target"])
+            binary_basedir = "build/sitl"
+        vehicle_binary = os.path.join(find_root_dir(), binary_basedir, frame_options["waf_target"])
     else:
         vehicle_binary = os.path.join(vehicledir, opts.vehicle+".elf")
 
