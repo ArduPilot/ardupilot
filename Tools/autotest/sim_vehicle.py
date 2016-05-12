@@ -403,8 +403,6 @@ def do_build_waf(vehicledir, opts, frame_options):
         cmd_configure.append("--debug")
 
     run_cmd_blocking("Configure waf", cmd_configure)
-    p = subprocess.Popen(cmd_configure)
-    pid, sts = os.waitpid(p.pid,0)
 
     if opts.clean:
         run_cmd_blocking("Building clean", [waf_light, "clean"])
