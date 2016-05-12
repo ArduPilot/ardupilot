@@ -600,7 +600,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     tracker.nav_status.need_altitude_calibration = true;
                 }
                 if (is_equal(packet.param4,1.0f)) {
-                    // Cant trim radio
+                    // Can't trim radio
                 } else if (is_equal(packet.param5,1.0f)) {
                     result = MAV_RESULT_ACCEPTED;
                     // start with gyro calibration

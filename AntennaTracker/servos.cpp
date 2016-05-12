@@ -190,7 +190,7 @@ void Tracker::update_yaw_position_servo(float yaw)
     // the servo limits are reached and the servo has to slew 360 degrees to the 'other side' to keep tracking.
     //
     // This algorithm accounts for the fact that the antenna mount may not be aligned with North
-    // (in fact, any alignment is permissable), and that the alignment may change (possibly rapidly) over time
+    // (in fact, any alignment is permissible), and that the alignment may change (possibly rapidly) over time
     // (as when the antenna is mounted on a moving, turning vehicle)
     // When the servo is being forced beyond its limits, it rapidly slews to the 'other side' then normal tracking takes over.
     //
