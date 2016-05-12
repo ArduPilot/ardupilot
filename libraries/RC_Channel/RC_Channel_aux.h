@@ -96,10 +96,10 @@ public:
 
     AP_Int8         function;           ///< see Aux_servo_function_t enum
 
-    // output one auxillary channel
+    // output one auxiliary channel
     void            output_ch(void);
 
-    // output all auxillary channels
+    // output all auxiliary channels
     static void     output_ch_all(void);
 
 	// set radio_out for a function channel
@@ -126,10 +126,10 @@ public:
 	// set servo_out
 	static void set_servo_out_for(Aux_servo_function_t function, int16_t value);
 
-    // setup failsafe for an auxillary channel function, by pwm
+    // setup failsafe for an auxiliary channel function, by pwm
     static void set_servo_failsafe_pwm(RC_Channel_aux::Aux_servo_function_t function, uint16_t pwm);
     
-	// setup failsafe for an auxillary channel function
+	// setup failsafe for an auxiliary channel function
 	static void set_servo_failsafe(Aux_servo_function_t function, RC_Channel::LimitValue limit);
 
 	// set servo to a LimitValue
@@ -144,10 +144,10 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-    // assigned and enable auxillary channels
+    // assigned and enable auxiliary channels
     static void enable_aux_servos(void);
     
-    // prevent a channel from being used for auxillary functions
+    // prevent a channel from being used for auxiliary functions
     static void disable_aux_channel(uint8_t channel);
 
     // return the current function for a channel
@@ -156,7 +156,7 @@ public:
     // refresh aux servo to function mapping
     static void update_aux_servo_function(void);
 
-    // set default channel for an auxillary function
+    // set default channel for an auxiliary function
     static bool set_aux_channel_default(Aux_servo_function_t function, uint8_t channel);
 
     // find first channel that a function is assigned to
