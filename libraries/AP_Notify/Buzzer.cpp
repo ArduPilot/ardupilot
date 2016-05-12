@@ -34,7 +34,7 @@ bool Buzzer::init()
     hal.gpio->pinMode(BUZZER_PIN, HAL_GPIO_OUTPUT);
     on(false);
 
-    // set initial boot states. This prevents us issueing a arming
+    // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot
     _flags.armed = AP_Notify::flags.armed;
     _flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
