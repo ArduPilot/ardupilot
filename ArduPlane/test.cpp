@@ -60,14 +60,14 @@ int8_t Plane::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
         read_radio();
 
         cliSerial->printf("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
-                        (int)channel_roll->radio_in,
-                        (int)channel_pitch->radio_in,
-                        (int)channel_throttle->radio_in,
-                        (int)channel_rudder->radio_in,
-                        (int)g.rc_5.radio_in,
-                        (int)g.rc_6.radio_in,
-                        (int)g.rc_7.radio_in,
-                        (int)g.rc_8.radio_in);
+                        (int)channel_roll->get_radio_in(),
+                        (int)channel_pitch->get_radio_in(),
+                        (int)channel_throttle->get_radio_in(),
+                        (int)channel_rudder->get_radio_in(),
+                        (int)g.rc_5.get_radio_in(),
+                        (int)g.rc_6.get_radio_in(),
+                        (int)g.rc_7.get_radio_in(),
+                        (int)g.rc_8.get_radio_in());
 
         if(cliSerial->available() > 0) {
             return (0);
@@ -124,14 +124,14 @@ int8_t Plane::test_radio(uint8_t argc, const Menu::arg *argv)
         set_servos();
 
         cliSerial->printf("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
-                        (int)channel_roll->control_in,
-                        (int)channel_pitch->control_in,
-                        (int)channel_throttle->control_in,
-                        (int)channel_rudder->control_in,
-                        (int)g.rc_5.control_in,
-                        (int)g.rc_6.control_in,
-                        (int)g.rc_7.control_in,
-                        (int)g.rc_8.control_in);
+                        (int)channel_roll->get_control_in(),
+                        (int)channel_pitch->get_control_in(),
+                        (int)channel_throttle->get_control_in(),
+                        (int)channel_rudder->get_control_in(),
+                        (int)g.rc_5.get_control_in(),
+                        (int)g.rc_6.get_control_in(),
+                        (int)g.rc_7.get_control_in(),
+                        (int)g.rc_8.get_control_in() );
 
         if(cliSerial->available() > 0) {
             return (0);
@@ -155,7 +155,7 @@ int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
     oldSwitchPosition = readSwitch();
 
     cliSerial->printf("Unplug battery, throttle in neutral, turn off radio.\n");
-    while(channel_throttle->control_in > 0) {
+    while(channel_throttle->get_control_in() > 0) {
         hal.scheduler->delay(20);
         read_radio();
     }
@@ -164,8 +164,8 @@ int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
         hal.scheduler->delay(20);
         read_radio();
 
-        if(channel_throttle->control_in > 0) {
-            cliSerial->printf("THROTTLE CHANGED %d \n", (int)channel_throttle->control_in);
+        if(channel_throttle->get_control_in() > 0) {
+            cliSerial->printf("THROTTLE CHANGED %d \n", (int)channel_throttle->get_control_in());
             fail_test++;
         }
 
@@ -177,7 +177,7 @@ int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
         }
 
         if(rc_failsafe_active()) {
-            cliSerial->printf("THROTTLE FAILSAFE ACTIVATED: %d, ", (int)channel_throttle->radio_in);
+            cliSerial->printf("THROTTLE FAILSAFE ACTIVATED: %d, ", (int)channel_throttle->get_radio_in());
             print_flight_mode(cliSerial, readSwitch());
             cliSerial->println();
             fail_test++;
@@ -442,7 +442,7 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
                 if (compass.healthy()) {
                     const Vector3f &mag_ofs = compass.get_offsets();
                     const Vector3f &mag = compass.get_field();
-                    cliSerial->printf("Heading: %d, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
+                    cliSerial->printf("Heading: %f, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
                                         (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                         (double)mag.x, (double)mag.y, (double)mag.z,
                                         (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);

@@ -6,6 +6,7 @@
  */
 #define LOG_PACKET_HEADER	       uint8_t head1, head2, msgid;
 #define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
+#define LOG_PACKET_HEADER_LEN 3 // bytes required for LOG_PACKET_HEADER
 
 // once the logging code is all converted we will remove these from
 // this header
@@ -50,10 +51,9 @@ struct PACKED log_GPS {
     uint16_t hdop;
     int32_t  latitude;
     int32_t  longitude;
-    int32_t  rel_altitude;
     int32_t  altitude;
-    uint32_t ground_speed;
-    int32_t  ground_course;
+    float    ground_speed;
+    float    ground_course;
     float    vel_z;
     uint8_t  used;
 };
@@ -65,6 +65,8 @@ struct PACKED log_GPA {
     uint16_t hacc;
     uint16_t vacc;
     uint16_t sacc;
+    uint8_t  have_vv;
+    uint32_t sample_ms;
 };
 
 struct PACKED log_Message {
@@ -185,6 +187,7 @@ struct PACKED log_BARO {
     float   pressure;
     int16_t temperature;
     float   climbrate;
+    uint32_t sample_time_ms;
 };
 
 struct PACKED log_AHRS {
@@ -438,6 +441,7 @@ struct PACKED log_Compass {
     int16_t  motor_offset_y;
     int16_t  motor_offset_z;
     uint8_t  health;
+    uint32_t SUS;
 };
 
 struct PACKED log_Mode {
@@ -713,13 +717,13 @@ Format characters in the format string for binary log messages
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "QNf",        "TimeUS,Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
+      "GPS",  "QBIHBcLLefffB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPS2_MSG, sizeof(log_GPS), \
-      "GPS2", "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
+      "GPS2", "QBIHBcLLefefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QCCCC", "TimeUS,VDop,HAcc,VAcc,SAcc" }, \
+      "GPA",  "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
     { LOG_GPA2_MSG, sizeof(log_GPA), \
-      "GPA2", "QCCCC", "TimeUS,VDop,HAcc,VAcc,SAcc" }, \
+      "GPA2", "QCCCCBI", "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -731,7 +735,7 @@ Format characters in the format string for binary log messages
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
+      "BARO",  "QffcfI", "TimeUS,Alt,Press,Temp,CRt,SMS" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QCCH","TimeUS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -749,7 +753,7 @@ Format characters in the format string for binary log messages
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
-      "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG", "QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
@@ -832,9 +836,9 @@ Format characters in the format string for binary log messages
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
-      "MAG2","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG2","QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
-      "MAG3","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG3","QhhhhhhhhhBI",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S" }, \
     { LOG_ACC1_MSG, sizeof(log_ACCEL), \
       "ACC1", "QQfff",        "TimeUS,SampleUS,AccX,AccY,AccZ" }, \
     { LOG_ACC2_MSG, sizeof(log_ACCEL), \
@@ -858,9 +862,9 @@ Format characters in the format string for binary log messages
     { LOG_PIDS_MSG, sizeof(log_PID), \
       "PIDS", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_BAR2_MSG, sizeof(log_BARO), \
-      "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
+      "BAR2",  "QffcfI", "TimeUS,Alt,Press,Temp,CRt,SMS" }, \
     { LOG_BAR3_MSG, sizeof(log_BARO), \
-      "BAR3",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
+      "BAR3",  "QffcfI", "TimeUS,Alt,Press,Temp,CRt,SMS" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
       "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2" }, \
     { LOG_IMUDT_MSG, sizeof(log_IMUDT), \

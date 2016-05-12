@@ -142,18 +142,6 @@ void Aircraft::update_position(void)
     }
 }
 
-/*
-   rotate to the given yaw
-*/
-void Aircraft::set_yaw_degrees(float yaw_degrees)
-{
-    float roll, pitch, yaw;
-    dcm.to_euler(&roll, &pitch, &yaw);
-
-    yaw = radians(yaw_degrees);
-    dcm.from_euler(roll, pitch, yaw);
-}
-
 /* advance time by deltat in seconds */
 void Aircraft::time_advance(float deltat)
 {
@@ -296,6 +284,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.battery_current = battery_current;
     fdm.rpm1 = rpm1;
     fdm.rpm2 = rpm2;
+    fdm.rcin_chan_count = rcin_chan_count;
+    memcpy(fdm.rcin, rcin, rcin_chan_count*sizeof(float));
 }
 
 uint64_t Aircraft::get_wall_time_us() const

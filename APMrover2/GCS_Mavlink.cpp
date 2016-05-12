@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Rover.h"
+#include "version.h"
 
 // default sensors are present and healthy: gyro, accelerometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
@@ -279,14 +280,14 @@ void Rover::send_radio_out(mavlink_channel_t chan)
         chan,
         micros(),
         0,     // port
-        RC_Channel::rc_channel(0)->radio_out,
-        RC_Channel::rc_channel(1)->radio_out,
-        RC_Channel::rc_channel(2)->radio_out,
-        RC_Channel::rc_channel(3)->radio_out,
-        RC_Channel::rc_channel(4)->radio_out,
-        RC_Channel::rc_channel(5)->radio_out,
-        RC_Channel::rc_channel(6)->radio_out,
-        RC_Channel::rc_channel(7)->radio_out);
+        RC_Channel::rc_channel(0)->get_radio_out(),
+        RC_Channel::rc_channel(1)->get_radio_out(),
+        RC_Channel::rc_channel(2)->get_radio_out(),
+        RC_Channel::rc_channel(3)->get_radio_out(),
+        RC_Channel::rc_channel(4)->get_radio_out(),
+        RC_Channel::rc_channel(5)->get_radio_out(),
+        RC_Channel::rc_channel(6)->get_radio_out(),
+        RC_Channel::rc_channel(7)->get_radio_out());
 #endif
 }
 
@@ -694,38 +695,14 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-
-// see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
 {
-    if (stream_num >= NUM_STREAMS) {
-        return false;
-    }
-    float rate = (uint8_t)streamRates[stream_num].get();
-
-    // send at a much lower rate while handling waypoints and
-    // parameter sends
     if ((stream_num != STREAM_PARAMS) && 
         (waypoint_receiving || _queued_parameter != NULL)) {
-        rate *= 0.25f;
+        return 0.25f;
     }
 
-    if (rate <= 0) {
-        return false;
-    }
-
-    if (stream_ticks[stream_num] == 0) {
-        // we're triggering now, setup the next trigger point
-        if (rate > 50) {
-            rate = 50;
-        }
-        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
-        return true;
-    }
-
-    // count down at 50Hz
-    stream_ticks[stream_num]--;
-    return false;
+    return 1.0f;
 }
 
 void
@@ -1306,7 +1283,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             
             gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
                        packet.time_usec/1000,
-                       loc, vel, 10, 0, true);
+                       loc, vel, 10, 0);
 			
 			// rad/sec
             Vector3f gyros;

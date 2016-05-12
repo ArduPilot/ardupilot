@@ -6,13 +6,14 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <DataFlash/DataFlash.h>
 
 /*
   parameter defaults for different types of vehicle. The
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Replay)
 // copter defaults
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
@@ -427,6 +428,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: m/s
     AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizNoise, 10.0f),
 
+    // @Param: LOG_MASK
+    // @DisplayName: EKF sensor logging IMU mask
+    // @Description: This sets the IMU mask of sensors to do full logging for
+    // @Values: 0:Disabled,1:FirstIMU,3:FirstAndSecondIMU,7:AllIMUs
+    // @User: Advanced
+    AP_GROUPINFO("LOG_MASK", 36, NavEKF2, _logging_mask, 1),
+    
     AP_GROUPEND
 };
 
@@ -464,6 +472,36 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+/*
+  see if we should log some sensor data
+ */
+void NavEKF2::check_log_write(void)
+{
+    if (!have_ekf_logging()) {
+        return;
+    }
+    if (logging.log_compass) {
+        DataFlash_Class::instance()->Log_Write_Compass(*_ahrs->get_compass(), imuSampleTime_us);
+        logging.log_compass = false;
+    }
+    if (logging.log_gps) {
+        DataFlash_Class::instance()->Log_Write_GPS(_ahrs->get_gps(), 0, imuSampleTime_us);
+        logging.log_gps = false;
+    }
+    if (logging.log_baro) {
+        DataFlash_Class::instance()->Log_Write_Baro(_baro, imuSampleTime_us);
+        logging.log_baro = false;
+    }
+    if (logging.log_imu) {
+        const AP_InertialSensor &ins = _ahrs->get_ins();
+        DataFlash_Class::instance()->Log_Write_IMUDT(ins, imuSampleTime_us, _logging_mask.get());
+        logging.log_imu = false;
+    }
+
+    // this is an example of an ad-hoc log in EKF
+    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), 2.4f);
+}
+
 
 // Initialise the filter
 bool NavEKF2::InitialiseFilter(void)
@@ -471,6 +509,15 @@ bool NavEKF2::InitialiseFilter(void)
     if (_enable == 0) {
         return false;
     }
+
+    imuSampleTime_us = AP_HAL::micros64();
+
+    // see if we will be doing logging
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash != nullptr) {
+        logging.enabled = dataflash->log_replay();
+    }
+    
     if (core == nullptr) {
 
         // don't run multiple filters for 1 IMU
@@ -520,6 +567,8 @@ bool NavEKF2::InitialiseFilter(void)
     for (uint8_t i=0; i<num_cores; i++) {
         ret &= core[i].InitialiseFilterBootstrap();
     }
+
+    check_log_write();
     return ret;
 }
 
@@ -530,6 +579,8 @@ void NavEKF2::UpdateFilter(void)
         return;
     }
 
+    imuSampleTime_us = AP_HAL::micros64();
+    
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     for (uint8_t i=0; i<num_cores; i++) {
@@ -558,6 +609,8 @@ void NavEKF2::UpdateFilter(void)
             }
         }
     }
+
+    check_log_write();
 }
 
 // Check basic filter health metrics and return a consolidated health status

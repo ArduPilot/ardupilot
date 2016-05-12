@@ -63,7 +63,7 @@ AP_GPS_PX4::read(void)
                 state.location.alt = _gps_pos.alt/10;
 
                 state.ground_speed = _gps_pos.vel_m_s;
-                state.ground_course_cd = wrap_360_cd(degrees(_gps_pos.cog_rad)*100);
+                state.ground_course = wrap_360(degrees(_gps_pos.cog_rad));
                 state.hdop = _gps_pos.eph*100;
 
                 // convert epoch timestamp back to gps epoch - evil hack until we get the genuine

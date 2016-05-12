@@ -27,7 +27,7 @@ using namespace SITL;
 Plane::Plane(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str)
 {
-    mass = 1.0f;
+    mass = 2.0f;
 
     /*
        scaling from motor power to Newtons. Allows the plane to hold
@@ -234,8 +234,8 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     // scale thrust to newtons
     thrust *= thrust_scale;
 
-    accel_body = Vector3f(thrust/mass, 0, 0);
-    accel_body += force;
+    accel_body = Vector3f(thrust, 0, 0) + force;
+    accel_body /= mass;
 
     // add some noise
     if (thrust_scale > 0) {

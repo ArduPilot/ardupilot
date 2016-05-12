@@ -10,7 +10,7 @@
 bool Copter::acro_init(bool ignore_checks)
 {
    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-   if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (get_pilot_desired_throttle(channel_throttle->control_in) > get_non_takeoff_throttle())) {
+   if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
        return false;
    }
    // set target altitude to zero for reporting
@@ -36,10 +36,10 @@ void Copter::acro_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // convert the input to the desired body frame rate
-    get_pilot_desired_angle_rates(channel_roll->control_in, channel_pitch->control_in, channel_yaw->control_in, target_roll, target_pitch, target_yaw);
+    get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
+    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // run attitude controller
     attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
@@ -57,7 +57,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
 
     // apply circular limit to pitch and roll inputs
-    float total_in = pythagorous2((float)pitch_in, (float)roll_in);
+    float total_in = norm(pitch_in, roll_in);
 
     if (total_in > ROLL_PITCH_INPUT_MAX) {
         float ratio = (float)ROLL_PITCH_INPUT_MAX / total_in;

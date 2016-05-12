@@ -122,7 +122,7 @@ void Copter::update_throttle_thr_mix()
 
     if (mode_has_manual_throttle(control_mode)) {
         // manual throttle
-        if(channel_throttle->control_in <= 0) {
+        if(channel_throttle->get_control_in() <= 0) {
             motors.set_throttle_mix_min();
         } else {
             motors.set_throttle_mix_mid();
@@ -132,11 +132,11 @@ void Copter::update_throttle_thr_mix()
 
         // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
         const Vector3f angle_target = attitude_control.get_att_target_euler_cd();
-        bool large_angle_request = (pythagorous2(angle_target.x, angle_target.y) > 1500.0f);
+        bool large_angle_request = (norm(angle_target.x, angle_target.y) > 1500.0f);
 
         // check for large external disturbance - angle error over 30 degrees
         const Vector3f angle_error = attitude_control.get_att_error_rot_vec_cd();
-        bool large_angle_error = (pythagorous2(angle_error.x, angle_error.y) > 3000.0f);
+        bool large_angle_error = (norm(angle_error.x, angle_error.y) > 3000.0f);
 
         // check for large acceleration - falling or high turbulence
         Vector3f accel_ef = ahrs.get_accel_ef_blended();

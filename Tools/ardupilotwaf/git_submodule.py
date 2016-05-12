@@ -40,12 +40,12 @@ import os.path
 
 class update_submodule(Task.Task):
     color = 'BLUE'
-    run_str = '${GIT} -C ${SRC_ROOT} submodule update --recursive --init -- ${SUBMODULE_PATH}'
+    run_str = '${GIT} submodule update --recursive --init -- ${SUBMODULE_PATH}'
 
     def runnable_status(self):
         e = self.env.get_flat
-        cmd = e('GIT'), '-C', e('SRC_ROOT'), 'submodule', 'status', '--recursive', '--', e('SUBMODULE_PATH')
-        out = self.generator.bld.cmd_and_log(cmd, quiet=Context.BOTH)
+        cmd = e('GIT'), 'submodule', 'status', '--recursive', '--', e('SUBMODULE_PATH')
+        out = self.generator.bld.cmd_and_log(cmd, quiet=Context.BOTH, cwd=self.cwd)
 
         # git submodule status uses a blank prefix for submodules that are up
         # to date
@@ -80,7 +80,7 @@ def git_submodule_update(self, name):
         module_node = self.bld.srcnode.make_node(os.path.join('modules', name))
 
         tsk = self.create_task('update_submodule', submodule=name)
-        tsk.env.SRC_ROOT = self.bld.srcnode.abspath()
+        tsk.cwd = self.bld.srcnode.abspath()
         tsk.env.SUBMODULE_PATH = module_node.abspath()
 
         _submodules_tasks[name] = tsk
@@ -104,9 +104,20 @@ def git_submodule(bld, git_submodule, **kw):
 
     return bld(**kw)
 
-@conf
-def git_submodule_head_hash(self, name):
-    module_node = self.srcnode.make_node(os.path.join('modules', name))
-    cmd = self.env.get_flat('GIT'), '-C', module_node.abspath(), 'rev-parse', 'HEAD'
-    out = self.cmd_and_log(cmd, quiet=Context.BOTH)
+
+def _git_head_hash(ctx, path, short=False):
+    cmd = [ctx.env.get_flat('GIT'), 'rev-parse']
+    if short:
+        cmd.append('--short=8')
+    cmd.append('HEAD')
+    out = ctx.cmd_and_log(cmd, quiet=Context.BOTH, cwd=path)
     return out.strip()
+
+@conf
+def git_submodule_head_hash(self, name, short=False):
+    module_node = self.srcnode.make_node(os.path.join('modules', name))
+    return _git_head_hash(self, module_node.abspath(), short=short)
+
+@conf
+def git_head_hash(self, short=False):
+    return _git_head_hash(self, self.srcnode.abspath(), short=short)

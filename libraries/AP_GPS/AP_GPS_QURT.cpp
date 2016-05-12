@@ -88,7 +88,7 @@ AP_GPS_QURT::read(void)
     state.location.alt = data.alt_from_MSL;
 
     state.ground_speed = data.speed_over_ground;
-    state.ground_course_cd = data.course_over_ground;
+    state.ground_course = data.course_over_ground*0.01f;
 
     // convert epoch timestamp back to gps epoch - evil hack until we get the genuine
     // raw week information (or APM switches to Posix epoch ;-) )
@@ -101,7 +101,7 @@ AP_GPS_QURT::read(void)
     }
     
     state.have_vertical_velocity = true;
-    float gps_heading = radians(state.ground_course_cd * 0.01f);
+    float gps_heading = radians(state.ground_course);
     state.velocity.x = state.ground_speed * cosf(gps_heading);
     state.velocity.y = state.ground_speed * sinf(gps_heading);
     state.velocity.z = -data.climb_rate;

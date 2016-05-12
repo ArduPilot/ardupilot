@@ -85,7 +85,7 @@ protected:
 			   const char *label_roll,
 			   const char *label_pitch,
 			   const char *label_yaw);
-    void field_not_found(uint8_t *msg, const char *label);
+    [[noreturn]] void field_not_found(uint8_t *msg, const char *label);
 };
 
 template<typename R>

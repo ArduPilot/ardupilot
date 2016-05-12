@@ -66,7 +66,9 @@ void AP_Compass_HIL::read()
             rotate_field(field, compass_instance);
             publish_raw_field(field, AP_HAL::micros(), compass_instance);
             correct_field(field, compass_instance);
+            uint32_t saved_last_update = _compass.last_update_usec(compass_instance);
             publish_filtered_field(field, compass_instance);
+            set_last_update_usec(saved_last_update, compass_instance);
         }
     }
 }

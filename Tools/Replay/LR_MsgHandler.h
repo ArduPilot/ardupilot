@@ -69,10 +69,10 @@ private:
     AP_Airspeed &airspeed;
 };
 
-class LR_MsgHandler_FRAM : public LR_MsgHandler
+class LR_MsgHandler_NKF1 : public LR_MsgHandler
 {
 public:
-    LR_MsgHandler_FRAM(log_Format &_f, DataFlash_Class &_dataflash,
+    LR_MsgHandler_NKF1(log_Format &_f, DataFlash_Class &_dataflash,
 		    uint64_t &_last_timestamp_usec) :
 	LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
 
@@ -141,37 +141,33 @@ class LR_MsgHandler_GPS_Base : public LR_MsgHandler
 public:
     LR_MsgHandler_GPS_Base(log_Format &_f, DataFlash_Class &_dataflash,
                            uint64_t &_last_timestamp_usec, AP_GPS &_gps,
-                           uint32_t &_ground_alt_cm, float &_rel_altitude)
+                           uint32_t &_ground_alt_cm)
         : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec),
-          gps(_gps), ground_alt_cm(_ground_alt_cm),
-          rel_altitude(_rel_altitude) { };
+          gps(_gps), ground_alt_cm(_ground_alt_cm) { };
 
 protected:
-    void update_from_msg_gps(uint8_t imu_offset, uint8_t *data, bool responsible_for_relalt);
+    void update_from_msg_gps(uint8_t imu_offset, uint8_t *data);
 
 private:
     AP_GPS &gps;
     uint32_t &ground_alt_cm;
-    float &rel_altitude;
 };
-
 
 class LR_MsgHandler_GPS : public LR_MsgHandler_GPS_Base
 {
 public:
     LR_MsgHandler_GPS(log_Format &_f, DataFlash_Class &_dataflash,
                    uint64_t &_last_timestamp_usec, AP_GPS &_gps,
-                   uint32_t &_ground_alt_cm, float &_rel_altitude)
+                   uint32_t &_ground_alt_cm)
         : LR_MsgHandler_GPS_Base(_f, _dataflash,_last_timestamp_usec,
-                              _gps, _ground_alt_cm, _rel_altitude),
-          gps(_gps), ground_alt_cm(_ground_alt_cm), rel_altitude(_rel_altitude) { };
+                              _gps, _ground_alt_cm),
+        gps(_gps), ground_alt_cm(_ground_alt_cm) { };
 
     void process_message(uint8_t *msg);
 
 private:
     AP_GPS &gps;
     uint32_t &ground_alt_cm;
-    float &rel_altitude;
 };
 
 // it would be nice to use the same parser for both GPS message types
@@ -183,17 +179,59 @@ class LR_MsgHandler_GPS2 : public LR_MsgHandler_GPS_Base
 public:
     LR_MsgHandler_GPS2(log_Format &_f, DataFlash_Class &_dataflash,
                     uint64_t &_last_timestamp_usec, AP_GPS &_gps,
-                    uint32_t &_ground_alt_cm, float &_rel_altitude)
+                    uint32_t &_ground_alt_cm)
         : LR_MsgHandler_GPS_Base(_f, _dataflash, _last_timestamp_usec,
-                                 _gps, _ground_alt_cm,
-                                 _rel_altitude), gps(_gps),
-          ground_alt_cm(_ground_alt_cm), rel_altitude(_rel_altitude) { };
+                                 _gps, _ground_alt_cm), gps(_gps),
+        ground_alt_cm(_ground_alt_cm) { };
     virtual void process_message(uint8_t *msg);
 private:
     AP_GPS &gps;
     uint32_t &ground_alt_cm;
-    float &rel_altitude;
 };
+
+class LR_MsgHandler_GPA_Base : public LR_MsgHandler
+{
+
+public:
+    LR_MsgHandler_GPA_Base(log_Format &_f, DataFlash_Class &_dataflash,
+                           uint64_t &_last_timestamp_usec, AP_GPS &_gps)
+        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), gps(_gps) { };
+
+protected:
+    void update_from_msg_gpa(uint8_t imu_offset, uint8_t *data);
+
+private:
+    AP_GPS &gps;
+};
+
+
+class LR_MsgHandler_GPA : public LR_MsgHandler_GPA_Base
+{
+public:
+    LR_MsgHandler_GPA(log_Format &_f, DataFlash_Class &_dataflash,
+                      uint64_t &_last_timestamp_usec, AP_GPS &_gps)
+        : LR_MsgHandler_GPA_Base(_f, _dataflash,_last_timestamp_usec,
+                              _gps), gps(_gps) { };
+
+    void process_message(uint8_t *msg);
+
+private:
+    AP_GPS &gps;
+};
+
+class LR_MsgHandler_GPA2 : public LR_MsgHandler_GPA_Base
+{
+public:
+    LR_MsgHandler_GPA2(log_Format &_f, DataFlash_Class &_dataflash,
+                       uint64_t &_last_timestamp_usec, AP_GPS &_gps)
+        : LR_MsgHandler_GPA_Base(_f, _dataflash, _last_timestamp_usec,
+                                 _gps), gps(_gps) { };
+    virtual void process_message(uint8_t *msg);
+private:
+    AP_GPS &gps;
+};
+
+
 
 
 

@@ -344,3 +344,24 @@ int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max
 
     return ret;
 }
+
+/*
+  call vehicle supplied thrust compensation if set. This allows for
+  vehicle specific thrust compensation for motor arrangements such as
+  the forward motors tilting
+*/
+void AP_MotorsTri::thrust_compensation(void)
+{
+    if (_thrust_compensation_callback) {
+        // convert 3 thrust values into an array indexed by motor number
+        float thrust[4] { _thrust_right, _thrust_left, 0, _thrust_rear };
+
+        // apply vehicle supplied compensation function
+        _thrust_compensation_callback(thrust, 4);
+
+        // extract compensated thrust values
+        _thrust_right = thrust[0];
+        _thrust_left  = thrust[1];
+        _thrust_rear  = thrust[3];
+    }
+}

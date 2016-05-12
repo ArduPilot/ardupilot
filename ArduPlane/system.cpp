@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Plane.h"
+#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -381,6 +382,7 @@ void Plane::set_mode(enum FlightMode mode)
 
     // assume non-VTOL mode
     auto_state.vtol_mode = false;
+    auto_state.vtol_loiter = false;
     
     switch(control_mode)
     {
@@ -737,7 +739,7 @@ void Plane::servo_write(uint8_t ch, uint16_t pwm)
 #if HIL_SUPPORT
     if (g.hil_mode==1 && !g.hil_servos) {
         if (ch < 8) {
-            RC_Channel::rc_channel(ch)->radio_out = pwm;
+            RC_Channel::rc_channel(ch)->set_radio_out(pwm);
         }
         return;
     }
@@ -755,7 +757,7 @@ bool Plane::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = hal.util->get_soft_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = hal.util->get_soft_armed() || DataFlash.log_while_disarmed();
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         // we have to set in_mavlink_delay to prevent logging while
         // writing headers
@@ -783,7 +785,7 @@ void Plane::frsky_telemetry_send(void)
  */
 int8_t Plane::throttle_percentage(void)
 {
-    if (auto_state.vtol_mode) {
+    if (quadplane.in_vtol_mode()) {
         return quadplane.throttle_percentage();
     }
     // to get the real throttle we need to use norm_output() which

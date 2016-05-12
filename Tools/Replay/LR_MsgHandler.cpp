@@ -71,7 +71,7 @@ void LR_MsgHandler_ARSP::process_message(uint8_t *msg)
 		    require_field_float(msg, "Temp"));
 }
 
-void LR_MsgHandler_FRAM::process_message(uint8_t *msg)
+void LR_MsgHandler_NKF1::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
 }
@@ -99,9 +99,16 @@ void LR_MsgHandler_CHEK::process_message(uint8_t *msg)
 void LR_MsgHandler_BARO::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
+    uint32_t last_update_ms;
+    if (!field_value(msg, "SMS", last_update_ms)) {
+        last_update_ms = 0;
+    }
     baro.setHIL(0,
 		require_field_float(msg, "Press"),
-		require_field_int16_t(msg, "Temp") * 0.01f);
+		require_field_int16_t(msg, "Temp") * 0.01f,
+		require_field_float(msg, "Alt"),
+		require_field_float(msg, "CRt"),
+                last_update_ms);
 }
 
 
@@ -125,15 +132,10 @@ void LR_MsgHandler_Event::process_message(uint8_t *msg)
 
 void LR_MsgHandler_GPS2::process_message(uint8_t *msg)
 {
-    // only LOG_GPS_MSG gives us relative altitude.  We still log
-    // the relative altitude when we get a LOG_GPS2_MESSAGE - but
-    // the value we use (probably) comes from the most recent
-    // LOG_GPS_MESSAGE message!
-    update_from_msg_gps(1, msg, false);
+    update_from_msg_gps(1, msg);
 }
 
-
-void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, bool responsible_for_relalt)
+void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg)
 {
     uint64_t time_us;
     if (! field_value(msg, "TimeUS", time_us)) {
@@ -159,25 +161,23 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
         ! field_value(msg, "numSV", nsats)) {
         field_not_found(msg, "NSats");
     }
+    uint16_t GWk;
+    uint32_t GMS;
+    if (! field_value(msg, "GWk", GWk)) {
+        field_not_found(msg, "GWk");
+    }
+    if (! field_value(msg, "GMS", GMS)) {
+        field_not_found(msg, "GMS");
+    }
     gps.setHIL(gps_offset,
                (AP_GPS::GPS_Status)status,
-               uint32_t(time_us/1000),
+               AP_GPS::time_epoch_convert(GWk, GMS),
                loc,
                vel,
                nsats,
-               hdop,
-               require_field_float(msg, "VZ") != 0);
+               hdop);
     if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {
         ground_alt_cm = require_field_int32_t(msg, "Alt");
-    }
-
-    if (responsible_for_relalt) {
-        // this could possibly check for the presence of "RelAlt" label?
-        int32_t tmp;
-        if (! field_value(msg, "RAlt", tmp)) {
-            tmp = require_field_int32_t(msg, "RelAlt");
-        }
-        rel_altitude = 0.01f * tmp;
     }
 }
 
@@ -185,8 +185,44 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
 
 void LR_MsgHandler_GPS::process_message(uint8_t *msg)
 {
-    update_from_msg_gps(0, msg, true);
+    update_from_msg_gps(0, msg);
 }
+
+
+void LR_MsgHandler_GPA_Base::update_from_msg_gpa(uint8_t gps_offset, uint8_t *msg)
+{
+    uint64_t time_us;
+    require_field(msg, "TimeUS", time_us);
+    wait_timestamp_usec(time_us);
+
+    uint16_t vdop, hacc, vacc, sacc;
+    require_field(msg, "VDop", vdop);
+    require_field(msg, "HAcc", hacc);
+    require_field(msg, "VAcc", vacc);
+    require_field(msg, "SAcc", sacc);
+    uint8_t have_vertical_velocity;
+    if (! field_value(msg, "VV", have_vertical_velocity)) {
+        have_vertical_velocity = !is_zero(gps.velocity(gps_offset).z);
+    }
+    uint32_t sample_ms;
+    if (! field_value(msg, "SMS", sample_ms)) {
+        sample_ms = 0;
+    }
+
+    gps.setHIL_Accuracy(gps_offset, vdop*0.01f, hacc*0.01f, vacc*0.01f, sacc*0.01f, have_vertical_velocity, sample_ms);
+}
+
+void LR_MsgHandler_GPA::process_message(uint8_t *msg)
+{
+    update_from_msg_gpa(0, msg);
+}
+
+
+void LR_MsgHandler_GPA2::process_message(uint8_t *msg)
+{
+    update_from_msg_gpa(1, msg);
+}
+
 
 
 void LR_MsgHandler_IMU2::process_message(uint8_t *msg)
@@ -286,8 +322,12 @@ void LR_MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uin
     require_field(msg, "Mag", mag);
     Vector3f mag_offset;
     require_field(msg, "Ofs", mag_offset);
+    uint32_t last_update_usec;
+    if (!field_value(msg, "S", last_update_usec)) {
+        last_update_usec = AP_HAL::micros();
+    }
 
-    compass.setHIL(compass_offset, mag - mag_offset);
+    compass.setHIL(compass_offset, mag - mag_offset, last_update_usec);
     // compass_offset is which compass we are setting info for;
     // mag_offset is a vector indicating the compass' calibration...
     compass.set_offsets(compass_offset, mag_offset);
@@ -339,9 +379,9 @@ void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 
 bool LR_MsgHandler::set_parameter(const char *name, float value)
 {
-    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE",
+    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE", "EKF_ENABLE",
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
-                                   "COMPASS_ORIENT3"};
+                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE"};
     for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);

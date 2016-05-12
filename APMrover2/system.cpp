@@ -7,6 +7,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 *****************************************************************************/
 
 #include "Rover.h"
+#include "version.h"
 
 #if CLI_ENABLED == ENABLED
 
@@ -481,7 +482,7 @@ bool Rover::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = hal.util->get_soft_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = hal.util->get_soft_armed() || DataFlash.log_while_disarmed();
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         start_logging();
     }

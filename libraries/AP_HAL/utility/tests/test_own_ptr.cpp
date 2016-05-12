@@ -60,7 +60,7 @@ TEST(OwnPtrTest, DeleteOutOfScope)
         AP_HAL::OwnPtr<TestDeleted> own(new TestDeleted{deleted});
     }
 
-    EXPECT_EQ(deleted, 1);
+    EXPECT_EQ(deleted, 1U);
 }
 
 TEST(OwnPtrTest, DeleteOutOfScopeAfterMove)
@@ -74,12 +74,12 @@ TEST(OwnPtrTest, DeleteOutOfScopeAfterMove)
     }
 
     // own2 is now out of scope, but it has been moved already
-    EXPECT_EQ(deleted, 0);
+    EXPECT_EQ(deleted, 0U);
 
     // now remove also 'own'
     own.clear();
 
-    EXPECT_EQ(deleted, 1);
+    EXPECT_EQ(deleted, 1U);
 }
 
 class TestCall {
@@ -107,11 +107,11 @@ TEST(OwnPtrTest, MoveToConstructor)
 
     AP_HAL::OwnPtr<TestDeleted> own(new TestDeleted{deleted});
     {
-        EXPECT_EQ(0, deleted);
+        EXPECT_EQ(0U, deleted);
         TestDestructor destructor{std::move(own)};
-        EXPECT_EQ(0, deleted);
+        EXPECT_EQ(0U, deleted);
     }
-    EXPECT_EQ(1, deleted);
+    EXPECT_EQ(1U, deleted);
 }
 
 static AP_HAL::OwnPtr<TestDeleted> create_test_deleted(unsigned int &deleted)
@@ -124,14 +124,14 @@ TEST(OwnPtrTest, ReturnType)
     unsigned int deleted = 0;
 
     auto own = create_test_deleted(deleted);
-    EXPECT_EQ(0, deleted);
+    EXPECT_EQ(0U, deleted);
     {
         auto own2 = create_test_deleted(deleted);
-        EXPECT_EQ(0, deleted);
+        EXPECT_EQ(0U, deleted);
     }
-    EXPECT_EQ(1, deleted);
+    EXPECT_EQ(1U, deleted);
     own.clear();
-    EXPECT_EQ(2, deleted);
+    EXPECT_EQ(2U, deleted);
 }
 
 TEST(OwnPtrTest, ReplacePointer)
@@ -140,14 +140,14 @@ TEST(OwnPtrTest, ReplacePointer)
     unsigned int deleted2 = 0;
 
     auto own = create_test_deleted(deleted1);
-    EXPECT_EQ(0, deleted1);
+    EXPECT_EQ(0U, deleted1);
     {
         own = create_test_deleted(deleted2);
-        EXPECT_EQ(1, deleted1);
+        EXPECT_EQ(1U, deleted1);
     }
-    EXPECT_EQ(0, deleted2);
+    EXPECT_EQ(0U, deleted2);
     own = nullptr;
-    EXPECT_EQ(1, deleted2);
+    EXPECT_EQ(1U, deleted2);
 }
 
 TEST(OwnPtrTest, ReplaceWithRawPointer)
@@ -155,10 +155,10 @@ TEST(OwnPtrTest, ReplaceWithRawPointer)
     unsigned int deleted1 = 0;
 
     auto own = create_test_deleted(deleted1);
-    EXPECT_EQ(0, deleted1);
+    EXPECT_EQ(0U, deleted1);
     {
         own = new TestDeleted{deleted1};
-        EXPECT_EQ(1, deleted1);
+        EXPECT_EQ(1U, deleted1);
     }
 }
 

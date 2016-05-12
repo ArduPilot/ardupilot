@@ -67,8 +67,6 @@ public:
     void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
 	void                set_lateral(float lateral_in) { _lateral_in = lateral_in; };     // range -1 ~ +1
 
-	void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
-
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
     float               get_pitch() const { return _pitch_in; }

@@ -66,8 +66,11 @@ void FlightAxis::parse_reply(const char *reply)
         }
         p += strlen(keytable[i].key) + 1;
         keytable[i].ref = atof(p);
-        // this assumes key order
-        reply = p;
+        // this assumes key order and allows us to decode arrays
+        p = strchr(p, '>');
+        if (p != nullptr) {
+            reply = p;
+        }
     }
 }
 
@@ -296,6 +299,14 @@ void FlightAxis::update(const struct sitl_input &input)
     battery_current = state.m_batteryCurrentDraw_AMPS;
     rpm1 = state.m_propRPM;
     rpm2 = state.m_heliMainRotorRPM;
+
+    /*
+      the interlink interface supports 8 input channels
+     */
+    rcin_chan_count = 8;
+    for (uint8_t i=0; i<rcin_chan_count; i++) {
+        rcin[i] = state.rcin[i];
+    }
     
     update_position();
     time_now_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;

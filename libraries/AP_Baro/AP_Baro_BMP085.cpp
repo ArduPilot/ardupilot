@@ -22,12 +22,17 @@
 
 extern const AP_HAL::HAL &hal;
 
+#define BMP085_OVERSAMPLING_ULTRALOWPOWER 0
+#define BMP085_OVERSAMPLING_STANDARD      1
+#define BMP085_OVERSAMPLING_HIGHRES       2
+#define BMP085_OVERSAMPLING_ULTRAHIGHRES  3
+
 #ifndef BMP085_EOC
 #define BMP085_EOC -1
+#define OVERSAMPLING BMP085_OVERSAMPLING_ULTRAHIGHRES
+#else
+#define OVERSAMPLING BMP085_OVERSAMPLING_HIGHRES
 #endif
-
-// oversampling 3 gives 26ms conversion time. We then average
-#define OVERSAMPLING 3
 
 AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_Baro_Backend(baro)
@@ -43,9 +48,9 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
         AP_HAL::panic("BMP085: unable to get semaphore");
     }
 
-    // End Of Conversion (PC7) input
     if (BMP085_EOC >= 0) {
-        hal.gpio->pinMode(BMP085_EOC, HAL_GPIO_INPUT);
+        _eoc = hal.gpio->channel(BMP085_EOC);
+        _eoc->mode(HAL_GPIO_INPUT);
     }
 
     // We read the calibration data registers
@@ -73,7 +78,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
     // Send a command to read temperature
     _cmd_read_temp();
 
-    BMP085_State = 0;
+    _state = 0;
 
     sem->give();
 }
@@ -94,15 +99,15 @@ void AP_Baro_BMP085::accumulate(void)
         return;
     }
 
-    if (BMP085_State == 0) {
+    if (_state == 0) {
         _read_temp();
     } else if (_read_pressure()) {
         _calculate();
     }
 
-    BMP085_State++;
-    if (BMP085_State == 5) {
-        BMP085_State = 0;
+    _state++;
+    if (_state == 25) {
+        _state = 0;
         _cmd_read_temp();
     } else {
         _cmd_read_pressure();
@@ -116,27 +121,22 @@ void AP_Baro_BMP085::accumulate(void)
  */
 void AP_Baro_BMP085::update(void)
 {
-    if (_count == 0 && _data_ready()) {
+    if (!_has_sample && _data_ready()) {
         accumulate();
     }
-    if (_count == 0) {
+    if (!_has_sample) {
         return;
     }
 
-    float temperature = 0.1f * _temp_sum / _count;
-    float pressure = _press_sum / _count;
+    float temperature = 0.1f * _temp;
 
-    _count = 0;
-    _temp_sum = 0;
-    _press_sum = 0;
-
+    float pressure = _pressure_filter.getf();
     _copy_to_frontend(_instance, pressure, temperature);
 }
 
 // Send command to Read Pressure
 void AP_Baro_BMP085::_cmd_read_pressure()
 {
-    // Mode 0x34+(OVERSAMPLING << 6) is osrs=3 when OVERSAMPLING=3 => 25.5ms conversion time
     _dev->write_register(0xF4, 0x34 + (OVERSAMPLING << 6));
     _last_press_read_command_time = AP_HAL::millis();
 }
@@ -194,7 +194,7 @@ void AP_Baro_BMP085::_calculate()
     x1 = ((int32_t)_raw_temp - ac6) * ac5 >> 15;
     x2 = ((int32_t) mc << 11) / (x1 + md);
     b5 = x1 + x2;
-    _temp_sum += (b5 + 8) >> 4;
+    _temp = (b5 + 8) >> 4;
 
     // Pressure calculations
     b6 = b5 - 4000;
@@ -216,26 +216,40 @@ void AP_Baro_BMP085::_calculate()
     x1 = (p >> 8) * (p >> 8);
     x1 = (x1 * 3038) >> 16;
     x2 = (-7357 * p) >> 16;
-    _press_sum += p + ((x1 + x2 + 3791) >> 4);
+    p += ((x1 + x2 + 3791) >> 4);
 
-    _count++;
-    if (_count == 254) {
-        _temp_sum *= 0.5f;
-        _press_sum *= 0.5f;
-        _count /= 2;
-    }
+    _pressure_filter.apply(p);
+    _has_sample = true;
 }
 
 bool AP_Baro_BMP085::_data_ready()
 {
     if (BMP085_EOC >= 0) {
-        return hal.gpio->read(BMP085_EOC);
+        return _eoc->read();
     }
 
     // No EOC pin: use time from last read instead.
-    if (BMP085_State == 0) {
+    if (_state == 0) {
         return AP_HAL::millis() > _last_temp_read_command_time + 5;
     }
 
-    return AP_HAL::millis() > _last_press_read_command_time + 26;
+    uint32_t conversion_time_msec;
+
+    switch (OVERSAMPLING) {
+    case BMP085_OVERSAMPLING_ULTRALOWPOWER:
+        conversion_time_msec = 5;
+        break;
+    case BMP085_OVERSAMPLING_STANDARD:
+        conversion_time_msec = 8;
+        break;
+    case BMP085_OVERSAMPLING_HIGHRES:
+        conversion_time_msec = 14;
+        break;
+    case BMP085_OVERSAMPLING_ULTRAHIGHRES:
+        conversion_time_msec = 26;
+    default:
+        break;
+    }
+
+    return AP_HAL::millis() > _last_press_read_command_time + conversion_time_msec;
 }

@@ -67,6 +67,24 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     { "MBNT255<C16P2", true },
     #define AP_NOTIFY_PX4_TONE_WAITING_FOR_THROW 15
     { "MBNT90L4O2A#O3DFN0N0N0", true},
+    #define AP_NOTIFY_PX4_TONE_LOUD_1 16
+    { "MFT100L8>B", false},
+    #define AP_NOTIFY_PX4_TONE_LOUD_2 17
+    { "MFT100L8>BB", false},
+    #define AP_NOTIFY_PX4_TONE_LOUD_3 18
+    { "MFT100L8>BBB", false},
+    #define AP_NOTIFY_PX4_TONE_LOUD_4 19
+    { "MFT100L8>BBBB", false},
+    #define AP_NOTIFY_PX4_TONE_LOUD_5 20
+    { "MFT100L8>BBBBB", false},
+    #define AP_NOTIFY_PX4_TONE_LOUD_6 21
+    { "MFT100L8>BBBBBB", false},
+    #define AP_NOTIFY_PX4_TONE_LOUD_7 22
+    { "MFT100L8>BBBBBBB", false},
+    #define AP_NOTIFY_PX4_TONE_TUNING_START 23
+    { "MFT100L20>C#D#", false},
+    #define AP_NOTIFY_PX4_TONE_TUNING_SAVE 24
+    { "MFT100L10DBDB>", false},
 };
 
 bool ToneAlarm_PX4::init()
@@ -295,6 +313,20 @@ void ToneAlarm_PX4::update()
         } else {
             stop_cont_tone();
         }
+    }
+
+    if (AP_Notify::events.tune_started) {
+        play_tone(AP_NOTIFY_PX4_TONE_TUNING_START);
+        AP_Notify::events.tune_started = 0;        
+    }
+    if (AP_Notify::events.tune_next) {
+        // signify which parameter in the set is starting
+        play_tone(AP_NOTIFY_PX4_TONE_LOUD_1 + (AP_Notify::events.tune_next-1));
+        AP_Notify::events.tune_next = 0;        
+    }
+    if (AP_Notify::events.tune_save) {
+        play_tone(AP_NOTIFY_PX4_TONE_TUNING_SAVE);
+        AP_Notify::events.tune_save = 0;
     }
 }
 

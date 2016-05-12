@@ -254,11 +254,14 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
 void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg)
 {
     uint16_t mask = GCS_MAVLINK::active_channel_mask();
-
+    
     // don't send on the incoming channel. This should only matter if
     // the routing table is full
     mask &= ~(1U<<(in_channel-MAVLINK_COMM_0));
-
+    
+    // mask out channels that do not want the heartbeat to be forwarded
+    mask &= ~no_route_mask;
+    
     // mask out channels that are known sources for this sysid/compid
     for (uint8_t i=0; i<num_routes; i++) {
         if (routes[i].sysid == msg->sysid && routes[i].compid == msg->compid) {

@@ -29,37 +29,55 @@ void Motor::calculate_forces(const Aircraft::sitl_input &input,
                              Vector3f &rot_accel,
                              Vector3f &thrust) const
 {
+    // fudge factors
+    const float arm_scale = radians(5000);
+    const float yaw_scale = radians(400);
+
+    // get motor speed from 0 to 1
     float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
-    rot_accel.x = -radians(5000.0) * sinf(radians(angle)) * motor_speed;
-    rot_accel.y =  radians(5000.0) * cosf(radians(angle)) * motor_speed;
-    rot_accel.z = yaw_factor * motor_speed * radians(400.0);
-    thrust(0, 0, -motor_speed * thrust_scale); // newtons NED
+
+    // the yaw torque of the motor
+    Vector3f rotor_torque(0, 0, yaw_factor * motor_speed * yaw_scale);
+
+    // get thrust for untilted motor
+    thrust(0, 0, -motor_speed);
+
+    // define the arm position relative to center of mass
+    Vector3f arm(arm_scale * cosf(radians(angle)), arm_scale * sinf(radians(angle)), 0);
+
+    // work out roll and pitch of motor relative to it pointing straight up
+    float roll = 0, pitch = 0;
+    
+    // possibly roll and/or pitch the motor
     if (roll_servo >= 0) {
-        float roll;
         uint16_t servoval = input.servos[roll_servo+motor_offset];
         if (roll_min < roll_max) {
             roll = constrain_float(roll_min + (servoval-1000)*0.001*(roll_max-roll_min), roll_min, roll_max);
         } else {
             roll = constrain_float(roll_max + (2000-servoval)*0.001*(roll_min-roll_max), roll_max, roll_min);
         }
-        Matrix3f rotation;
-        rotation.from_euler(radians(roll), 0, 0);
-        rot_accel = rotation * rot_accel;
-        thrust = rotation * thrust;
     }
     if (pitch_servo >= 0) {
-        float pitch;
         uint16_t servoval = input.servos[pitch_servo+motor_offset];
         if (pitch_min < pitch_max) {
             pitch = constrain_float(pitch_min + (servoval-1000)*0.001*(pitch_max-pitch_min), pitch_min, pitch_max);
         } else {
             pitch = constrain_float(pitch_max + (2000-servoval)*0.001*(pitch_min-pitch_max), pitch_max, pitch_min);
         }
-        Matrix3f rotation;
-        rotation.identity();
-        rotation.from_euler(0, radians(pitch), 0);
-        rot_accel = rotation * rot_accel;
-        thrust = rotation * thrust;
     }
+
+    // possibly rotate the thrust vector and the rotor torque
+    if (!is_zero(roll) || !is_zero(pitch)) {
+        Matrix3f rotation;
+        rotation.from_euler(radians(roll), radians(pitch), 0);
+        thrust = rotation * thrust;
+        rotor_torque = rotation * rotor_torque;
+    }
+
+    // calculate total rotational acceleration
+    rot_accel = (arm % thrust) + rotor_torque;
+
+    // scale the thrust
+    thrust = thrust * thrust_scale;
 }
 

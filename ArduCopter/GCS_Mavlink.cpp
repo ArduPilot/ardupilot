@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Copter.h"
+#include "version.h"
 
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
@@ -348,10 +349,10 @@ void NOINLINE Copter::send_servo_out(mavlink_channel_t chan)
         chan,
         millis(),
         0, // port 0
-        g.rc_1.servo_out,
-        g.rc_2.servo_out,
-        g.rc_3.radio_out,
-        g.rc_4.servo_out,
+        g.rc_1.get_servo_out(),
+        g.rc_2.get_servo_out(),
+        g.rc_3.get_radio_out(),
+        g.rc_4.get_servo_out(),
         0,
         0,
         0,
@@ -362,10 +363,10 @@ void NOINLINE Copter::send_servo_out(mavlink_channel_t chan)
         chan,
         millis(),
         0,         // port 0
-        g.rc_1.servo_out,
-        g.rc_2.servo_out,
-        g.rc_3.radio_out,
-        g.rc_4.servo_out,
+        g.rc_1.get_servo_out(),
+        g.rc_2.get_servo_out(),
+        g.rc_3.get_radio_out(),
+        g.rc_4.get_servo_out(),
         10000 * g.rc_1.norm_output(),
         10000 * g.rc_2.norm_output(),
         10000 * g.rc_3.norm_output(),
@@ -839,38 +840,13 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-
-// see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
 {
-    if (stream_num >= NUM_STREAMS) {
-        return false;
-    }
-    float rate = (uint8_t)streamRates[stream_num].get();
-
-    // send at a much lower rate while handling waypoints and
-    // parameter sends
     if ((stream_num != STREAM_PARAMS) &&
         (waypoint_receiving || _queued_parameter != NULL)) {
-        rate *= 0.25f;
+        return 0.25f;
     }
-
-    if (rate <= 0) {
-        return false;
-    }
-
-    if (stream_ticks[stream_num] == 0) {
-        // we're triggering now, setup the next trigger point
-        if (rate > 50) {
-            rate = 50;
-        }
-        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
-        return true;
-    }
-
-    // count down at 50Hz
-    stream_ticks[stream_num]--;
-    return false;
+    return 1.0f;
 }
 
 void
@@ -1791,6 +1767,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_DISTANCE_SENSOR:
+    {
+        result = MAV_RESULT_ACCEPTED;
+        copter.sonar.handle_msg(msg);
+        break;
+    }
+
 #if HIL_MODE != HIL_MODE_DISABLED
     case MAVLINK_MSG_ID_HIL_STATE:          // MAV ID: 90
     {
@@ -1807,7 +1790,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
                    packet.time_usec/1000,
-                   loc, vel, 10, 0, true);
+                   loc, vel, 10, 0);
 
         // rad/sec
         Vector3f gyros;

@@ -5,7 +5,8 @@ from __future__ import print_function
 from waflib import Logs, Options, Utils
 from waflib.Build import BuildContext
 from waflib.Configure import conf
-import os.path
+import os.path, os
+from collections import OrderedDict
 
 SOURCE_EXTS = [
     '*.S',
@@ -49,6 +50,10 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'GCS_MAVLink',
     'RC_Channel',
     'StorageManager',
+    'AP_Tuning',
+    'AP_RPM',
+    'AP_RSSI',
+    'AP_Mount',
 ]
 
 def _get_legacy_defines(sketch_name):
@@ -136,7 +141,7 @@ def ap_program(bld,
 @conf
 def ap_example(bld, **kw):
     kw['program_groups'] = 'examples'
-    ap_program(bld, **kw)
+    ap_program(bld, use_legacy_defines=False, **kw)
 
 # NOTE: Code in libraries/ is compiled multiple times. So ensure each
 # compilation is independent by providing different index for each.
@@ -149,6 +154,10 @@ def _get_next_idx():
     LAST_IDX += 1
     return LAST_IDX
 
+def unique_list(items):
+    '''remove duplicate elements from a list while maintaining ordering'''
+    return list(OrderedDict.fromkeys(items))
+
 @conf
 def ap_stlib(bld, **kw):
     if 'name' not in kw:
@@ -159,7 +168,7 @@ def ap_stlib(bld, **kw):
         bld.fatal('Missing libraries for ap_stlib')
 
     sources = []
-    libraries = kw['libraries'] + bld.env.AP_LIBRARIES
+    libraries = unique_list(kw['libraries'] + bld.env.AP_LIBRARIES)
 
     for lib_name in libraries:
         lib_node = bld.srcnode.find_dir('libraries/' + lib_name)
@@ -203,6 +212,20 @@ def ap_find_tests(bld, use=[]):
             use_legacy_defines=False,
             cxxflags=['-Wno-undef'],
         )
+
+_versions = []
+
+@conf
+def ap_version_append_str(ctx, k, v):
+    ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
+
+@conf
+def write_version_header(ctx, tgt):
+    with open(tgt, 'w') as f:
+        print('#pragma once\n', file=f)
+
+        for k, v in ctx.env['AP_VERSION_ITEMS']:
+            print('#define {} {}'.format(k, v), file=f)
 
 @conf
 def ap_find_benchmarks(bld, use=[]):

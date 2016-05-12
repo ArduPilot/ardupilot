@@ -204,6 +204,10 @@ void SITL_State::_fdm_input(void)
         uint8_t i;
         for (i=0; i<size/2; i++) {
             // setup the pwm input for the RC channel inputs
+            if (i < _sitl->state.rcin_chan_count) {
+                // we're using rc from simulator
+                continue;
+            }
             if (pwm_pkt.pwm[i] != 0) {
                 pwm_input[i] = pwm_pkt.pwm[i];
             }
@@ -268,6 +272,10 @@ void SITL_State::_fdm_input_local(void)
     if (_sitl) {
         sitl_model->fill_fdm(_sitl->state);
         _sitl->update_rate_hz = sitl_model->get_rate_hz();
+
+        for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
+            pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
+        }
     }
 
     if (gimbal != NULL) {

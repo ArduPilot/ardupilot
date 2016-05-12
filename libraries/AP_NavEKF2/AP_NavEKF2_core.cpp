@@ -116,7 +116,7 @@ void NavEKF2_core::InitialiseVariables()
     localFilterTimeStep_ms = MAX(localFilterTimeStep_ms,10);
 
     // initialise time stamps
-    imuSampleTime_ms = AP_HAL::millis();
+    imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
     lastHealthyMagTime_ms = imuSampleTime_ms;
     prevTasStep_ms = imuSampleTime_ms;
     prevBetaStep_ms = imuSampleTime_ms;
@@ -423,7 +423,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
     // TODO - in-flight restart method
 
     //get starting time for update step
-    imuSampleTime_ms = AP_HAL::millis();
+    imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
 
     // Check arm status and perform required checks and mode changes
     controlFilterModes();
@@ -506,7 +506,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
-    accNavMagHoriz = pythagorous2(velDotNEDfilt.x , velDotNEDfilt.y);
+    accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
 
     // save velocity for use in trapezoidal intergration for position calcuation
     Vector3f lastVelocity = stateStruct.velocity;

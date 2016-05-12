@@ -19,11 +19,9 @@ from waflib import Build, ConfigSet, Context, Utils
 # pastable. Add the 'export waf="$PWD/waf"' trick to be copy-pastable
 # as well.
 
-# TODO: replace defines with the use of a generated config.h file
+# TODO: replace defines with the use of the generated ap_config.h file
 # this makes recompilation at least when defines change. which might
 # be sufficient.
-
-# TODO: set git version as part of build preparation.
 
 def init(ctx):
     env = ConfigSet.ConfigSet()
@@ -32,11 +30,14 @@ def init(ctx):
     except:
         return
 
+    if 'VARIANT' not in env:
+        return
+
     # define the variant build commands according to the board
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
             continue
-        c.variant = env.BOARD
+        c.variant = env.VARIANT
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
@@ -69,13 +70,24 @@ def options(opt):
                  default=False,
                  help='Enable benchmarks')
 
+    g.add_option('--debug',
+                 action='store_true',
+                 default=False,
+                 help='Configure as debug variant')
+
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
-    # use a different variant for each board
-    cfg.setenv(cfg.env.BOARD)
+    cfg.env.DEBUG = cfg.options.debug
+
+    cfg.env.VARIANT = cfg.env.BOARD
+    if cfg.env.DEBUG:
+        cfg.env.VARIANT += '-debug'
+    cfg.setenv(cfg.env.VARIANT)
+
+    cfg.env.BOARD = cfg.options.board
+    cfg.env.DEBUG = cfg.options.debug
 
     cfg.msg('Setting board to', cfg.options.board)
-    cfg.env.BOARD = cfg.options.board
     boards.get_board(cfg.env.BOARD).configure(cfg)
 
     cfg.load('clang_compilation_database')
@@ -160,6 +172,10 @@ def _build_dynamic_sources(bld):
         ],
     )
 
+    bld.env.prepend_value('INCLUDES', [
+        bld.bldnode.abspath(),
+    ])
+
 def _build_common_taskgens(bld):
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
@@ -221,6 +237,11 @@ def _build_recursion(bld):
     for d in dirs_to_recurse:
         bld.recurse(d)
 
+def _write_version_header(tsk):
+    bld = tsk.generator.bld
+    return bld.write_version_header(tsk.outputs[0].abspath())
+
+
 def build(bld):
     config_header = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
 
@@ -246,6 +267,15 @@ def build(bld):
     _build_common_taskgens(bld)
 
     _build_recursion(bld)
+
+    bld(
+        name='ap_version',
+        target='ap_version.h',
+        vars=['AP_VERSION_ITEMS'],
+        rule=_write_version_header,
+        group='dynamic_sources',
+    )
+
 
 ardupilotwaf.build_command('check',
     program_group_list='all',

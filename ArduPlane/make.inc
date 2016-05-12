@@ -54,3 +54,4 @@ LIBRARIES += AC_AttitudeControl
 LIBRARIES += AC_PID
 LIBRARIES += AP_InertialNav
 LIBRARIES += AC_WPNav
+LIBRARIES += AP_Tuning

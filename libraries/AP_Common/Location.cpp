@@ -225,7 +225,7 @@ float Location_Class::get_distance(const struct Location &loc2) const
 {
     float dlat = (float)(loc2.lat - lat);
     float dlng = ((float)(loc2.lng - lng)) * longitude_scale(loc2);
-    return pythagorous2(dlat, dlng) * LOCATION_SCALING_FACTOR;
+    return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
 // extrapolate latitude/longitude given distances (in meters) north and east

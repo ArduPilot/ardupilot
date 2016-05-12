@@ -1,12 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#pragma once
-
-#define THISFIRMWARE "ArduPlane V3.6.0beta1"
-#define FIRMWARE_VERSION 3,6,0,FIRMWARE_VERSION_TYPE_BETA
-
 /*
    Lead developer: Andrew Tridgell
- 
+
    Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger, Tom Pittenger
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
 
@@ -25,6 +20,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
 // Header includes
@@ -137,7 +133,7 @@ public:
     friend class Parameters;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
-    friend class Tuning;
+    friend class AP_Tuning_Plane;
 
     Plane(void);
 
@@ -171,7 +167,7 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    DataFlash_Class DataFlash{FIRMWARE_STRING};
+    DataFlash_Class DataFlash;
 
     // has a log download started?
     bool in_log_download;
@@ -506,8 +502,11 @@ private:
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
 
-        // are we in VTOL mode?
+        // are we in VTOL mode in AUTO?
         bool vtol_mode:1;
+
+        // are we doing loiter mode as a VTOL?
+        bool vtol_loiter:1;
     } auto_state;
 
     struct {
@@ -744,7 +743,7 @@ private:
     QuadPlane quadplane{ahrs};
 
     // support for transmitter tuning
-    Tuning tuning;
+    AP_Tuning_Plane tuning;
 
     static const struct LogStructure log_structure[];
     
@@ -783,6 +782,7 @@ private:
     void gcs_retry_deferred(void);
 
     void do_erase_logs(void);
+    void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
@@ -810,6 +810,7 @@ private:
     int32_t get_RTL_altitude();
     float relative_altitude(void);
     int32_t relative_altitude_abs_cm(void);
+    float relative_ground_altitude(void);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
@@ -894,6 +895,7 @@ private:
     void update_cruise();
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
+    bool reached_loiter_target(void);
     bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);
     uint16_t create_mixer(char *buf, uint16_t buf_size, const char *filename);
     bool setup_failsafe_mixing(void);
@@ -997,7 +999,8 @@ private:
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
     void stabilize_pitch(float speed_scaler);
-    void stick_mix_channel(RC_Channel *channel, int16_t &servo_out);
+    static void stick_mix_channel(RC_Channel *channel);
+    static void stick_mix_channel(RC_Channel *channel, int16_t &servo_out);
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw(float speed_scaler);
@@ -1009,7 +1012,8 @@ private:
     void throttle_slew_limit(int16_t last_throttle);
     void flap_slew_limit(int8_t &last_value, int8_t &new_value);
     bool suppress_throttle(void);
-    void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out);
+    void channel_output_mixer(uint8_t mixing_type, int16_t & chan1, int16_t & chan2)const;
+    void channel_output_mixer(uint8_t mixing_type, RC_Channel* chan1, RC_Channel* chan2)const;
     void flaperon_update(int8_t flap_percent);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);

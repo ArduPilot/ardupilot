@@ -23,6 +23,7 @@
 #define AP_COMPASS_TYPE_AK8963_MPU9250  0x06
 #define AP_COMPASS_TYPE_AK8963_I2C      0x07
 #define AP_COMPASS_TYPE_LSM303D         0x08
+#define AP_COMPASS_TYPE_LSM9DS1         0x09
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
@@ -273,7 +274,7 @@ public:
 
     // HIL methods
     void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
-    void        setHIL(uint8_t instance, const Vector3f &mag);
+    void        setHIL(uint8_t instance, const Vector3f &mag, uint32_t last_update_usec);
     const Vector3f&   getHIL(uint8_t instance) const;
     void        _setup_earth_field();
 

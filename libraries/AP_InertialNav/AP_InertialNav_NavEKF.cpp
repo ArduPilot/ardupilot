@@ -120,7 +120,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
  */
 float AP_InertialNav_NavEKF::get_velocity_xy() const
 {
-    return pythagorous2(_velocity_cm.x, _velocity_cm.y);
+    return norm(_velocity_cm.x, _velocity_cm.y);
 }
 
 /**

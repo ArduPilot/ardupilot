@@ -16,12 +16,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "GCS.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+
+#include "ap_version.h"
+#include "GCS.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -621,6 +622,33 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     }
 }
 
+// see if we should send a stream now. Called at 50Hz
+bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+{
+    if (stream_num >= NUM_STREAMS) {
+        return false;
+    }
+    float rate = (uint8_t)streamRates[stream_num].get();
+
+    rate *= adjust_rate_for_stream_trigger(stream_num);
+
+    if (rate <= 0) {
+        return false;
+    }
+
+    if (stream_ticks[stream_num] == 0) {
+        // we're triggering now, setup the next trigger point
+        if (rate > 50) {
+            rate = 50;
+        }
+        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
+        return true;
+    }
+
+    // count down at 50Hz
+    stream_ticks[stream_num]--;
+    return false;
+}
 
 void
 GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
@@ -1301,6 +1329,11 @@ void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type p
                     -1);
             }
         }
+    }
+    // also log to DataFlash
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash != nullptr) {
+        dataflash->Log_Write_Parameter(param_name, param_value);
     }
 }
 

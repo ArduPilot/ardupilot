@@ -15,7 +15,8 @@ public:
         k_param_airspeed,
         k_param_NavEKF,
         k_param_NavEKF2,
-        k_param_compass
+        k_param_compass,
+        k_param_dataflash
     };
     AP_Int8 dummy;
 };

@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Copter.h"
+#include "version.h"
 
 #if LOGGING_ENABLED == ENABLED
 
@@ -371,7 +372,7 @@ void Copter::Log_Write_Performance()
 void Copter::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control.get_att_target_euler_cd();
-    targets.z = wrap_360_cd_float(targets.z);
+    targets.z = wrap_360_cd(targets.z);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
  #if OPTFLOW == ENABLED
@@ -559,7 +560,9 @@ void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 
 void Copter::Log_Write_Baro(void)
 {
-    DataFlash.Log_Write_Baro(barometer);
+    if (!ahrs.have_ekf_logging()) {
+        DataFlash.Log_Write_Baro(barometer);
+    }
 }
 
 struct PACKED log_ParameterTuning {

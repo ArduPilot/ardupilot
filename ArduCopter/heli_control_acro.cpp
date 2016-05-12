@@ -49,7 +49,7 @@ void Copter::heli_acro_run()
 
     if (!motors.has_flybar()){
         // convert the input to the desired body frame rate
-        get_pilot_desired_angle_rates(channel_roll->control_in, channel_pitch->control_in, channel_yaw->control_in, target_roll, target_pitch, target_yaw);
+        get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
 
         if (motors.supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
@@ -78,7 +78,7 @@ void Copter::heli_acro_run()
             // if there is no external gyro then run the usual
             // ACRO_YAW_P gain on the input control, including
             // deadzone
-            yaw_in = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+            yaw_in = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         }
 
         // run attitude controller
@@ -86,7 +86,7 @@ void Copter::heli_acro_run()
     }
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = input_manager.get_pilot_desired_collective(channel_throttle->control_in);
+    pilot_throttle_scaled = input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);

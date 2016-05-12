@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Rover.h"
+#include "version.h"
 
 #if LOGGING_ENABLED == ENABLED
 
@@ -239,10 +240,10 @@ void Rover::Log_Write_Control_Tuning()
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
-        steer_out       : (int16_t)channel_steer->servo_out,
+        steer_out       : (int16_t)channel_steer->get_servo_out(),
         roll            : (int16_t)ahrs.roll_sensor,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)channel_throttle->servo_out,
+        throttle_out    : (int16_t)channel_throttle->get_servo_out(),
         accel_y         : accel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -332,7 +333,7 @@ void Rover::Log_Write_Sonar()
 
 void Rover::Log_Write_Current()
 {
-    DataFlash.Log_Write_Current(battery, channel_throttle->control_in);
+    DataFlash.Log_Write_Current(battery, channel_throttle->get_control_in());
 
     // also write power status
     DataFlash.Log_Write_Power();

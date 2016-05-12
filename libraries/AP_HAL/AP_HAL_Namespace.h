@@ -62,7 +62,9 @@ namespace AP_HAL {
         SPIDevice_LSM9DS0_AM        = 9,
         SPIDevice_LSM9DS0_G         = 10,
         SPIDevice_Ublox             = 11,
-        SPIDevice_RASPIO            = 12
+        SPIDevice_RASPIO            = 12,
+        SPIDevice_Bebop             = 13,
+        SPIDevice_LSM9DS1_M         = 14
     };
 
     // Must be implemented by the concrete HALs.
