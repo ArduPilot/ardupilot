@@ -411,18 +411,14 @@ def do_build_waf(vehicledir, opts, frame_options):
     if opts.jobs is not None:
         cmd_build += ['-j', str(opts.jobs)]
 
-    progress_cmd("Building", cmd_build)
-    p = subprocess.Popen(cmd_build)
-    pid, sts = os.waitpid(p.pid,0)
+    _, sts = run_cmd_blocking("Building", cmd_build)
 
     if sts != 0: # build failed
         if opts.rebuild_on_failure:
             progress("Build failed; cleaning and rebuilding")
             run_cmd_blocking("Building clean", [waf_light, "clean"])
 
-            progress_cmd("Building", cmd_build)
-            p = subprocess.Popen(cmd_build)
-            pid, sts = os.waitpid(p.pid,0)
+            _, sts = run_cmd_blocking("Building", cmd_build)
             if sts != 0:
                 progress("Build failed")
                 sys.exit(1)
@@ -454,15 +450,11 @@ def do_build(vehicledir, opts, frame_options):
     if opts.jobs is not None:
         build_cmd += ['-j', str(opts.jobs)]
 
-    progress_cmd("Building %s" % (build_target), build_cmd)
-
-    p = subprocess.Popen(build_cmd)
-    pid, sts = os.waitpid(p.pid,0)
+    _, sts = run_cmd_blocking("Building %s" % (build_target), build_cmd)
     if sts != 0:
         progress("Build failed; cleaning and rebuilding")
-        subprocess.Popen(["make", "clean"])
-        p = subprocess.Popen(["make", "-j"+str(opts.jobs), build_target])
-        pid, sts = os.waitpid(p.pid,0)
+        run_cmd_blocking("Cleaning", ["make", "clean"])
+        _, sts = run_cmd_blocking("Building %s" % (build_target), build_cmd)
         if sts != 0:
             progress("Build failed")
             sys.exit(1)
@@ -489,7 +481,7 @@ def progress_cmd(what, cmd):
 def run_cmd_blocking(what, cmd):
     progress_cmd(what, cmd)
     p = subprocess.Popen(cmd)
-    pid, sts = os.waitpid(p.pid,0)
+    return os.waitpid(p.pid,0)
 
 def run_in_terminal_window(autotest, name, cmd):
     '''execute the run_in_terminal_window.sh command for cmd'''
