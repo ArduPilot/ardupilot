@@ -103,7 +103,7 @@ void Copter::failsafe_gcs_check()
         return;
     }
 
-    // GCS failsafe event has occured
+    // GCS failsafe event has occurred
     // update state, log to dataflash
     set_failsafe_gcs(true);
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);

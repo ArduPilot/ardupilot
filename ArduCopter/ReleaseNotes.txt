@@ -178,7 +178,7 @@ Changes from 3.3-rc3
     b) H_COLYAW param can be float 
 8) Small Improvements / Bug Fixes:
     a) reduced spline overshoot after very long track followed by very short track
-    b) log entire mission to dataflash whenver it's uploaded
+    b) log entire mission to dataflash whenever it's uploaded
     c) altitude reported if vehicle takes off before GPS lock
     d) high speed logging of IMU
     e) STOP flight mode renamed to BRAKE and aux switch option added
@@ -332,7 +332,7 @@ Changes from 3.2-rc7
 3) sensor health flags sent to GCS only after initialisation to remove false alerts 
 4) suppress bad terrain data alerts
 5) Bug Fix:
-    a)PX4 dataflash RAM useage reduced to 8k so it works again  
+    a)PX4 dataflash RAM usage reduced to 8k so it works again  
 ------------------------------------------------------------------
 ArduCopter 3.2-rc7 04-Sep-2014
 Changes from 3.2-rc6
@@ -694,7 +694,7 @@ Improvements over 3.0.0-rc3
 6) RTL returns to initial yaw heading before descending
 7) safe features:
     i) check for gps lock when entering failsafe
-    ii) pre-arm check for mag field lenght
+    ii) pre-arm check for mag field length
     iii) pre-arm check for board voltage between 4.5v ~ 5.8V
     iv) beep twice during arming
     v) GPS failsafe enabled by default (will LAND if loses GPS in Loiter, AUTO, Guided modes)
@@ -794,7 +794,7 @@ Improvements over 2.9-rc3:
 ArduCopter 2.9-rc3 11-Jan-2013
 Improvements over 2.9-rc2:
 1) alt hold with sonar improvements - now on by default (Leonard/Randy)
-2) performance and memory useage improvements (Tridge/Randy)
+2) performance and memory usage improvements (Tridge/Randy)
 3) increase APM1 baro pressure read from 5hz to 8.3hz to improve alt hold (Randy)
 4) bug fix: altitude error reported to GCS (Randy)
 5) limit inertial nav's max accel offset correction to 100cm/s/s to speed up recovery after hard impacts (Randy)_
