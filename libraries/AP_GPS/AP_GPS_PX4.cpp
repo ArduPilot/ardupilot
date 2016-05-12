@@ -75,7 +75,7 @@ AP_GPS_PX4::read(void)
 
                 if (_gps_pos.time_utc_usec == 0) {
                   // This is a work-around for https://github.com/PX4/Firmware/issues/1474
-                  // reject position reports with invalid time, as APM adjusts it's clock after the first lock has been aquired
+                  // reject position reports with invalid time, as APM adjusts it's clock after the first lock has been acquired
                   state.status = AP_GPS::NO_FIX;
                 }
             }
