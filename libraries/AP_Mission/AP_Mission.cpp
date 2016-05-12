@@ -783,7 +783,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         }
     }
 
-    // if we got this far then it must have been succesful
+    // if we got this far then it must have been successful
     return MAV_MISSION_ACCEPTED;
 }
 
@@ -1437,7 +1437,7 @@ void AP_Mission::init_jump_tracking()
 /// get_jump_times_run - returns number of times the jump command has been run
 int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 {
-    // exit immediatley if cmd is not a do-jump command or target is invalid
+    // exit immediately if cmd is not a do-jump command or target is invalid
     if ((cmd.id != MAV_CMD_DO_JUMP) || (cmd.content.jump.target >= (unsigned)_cmd_total) || (cmd.content.jump.target == 0)) {
         // To-Do: log an error?
         return AP_MISSION_JUMP_TIMES_MAX;

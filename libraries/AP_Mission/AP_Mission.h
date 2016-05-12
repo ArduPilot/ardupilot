@@ -7,7 +7,7 @@
  *   The AP_Mission library:
  *   - responsible for managing a list of commands made up of "nav", "do" and "conditional" commands
  *   - reads and writes the mission commands to storage.
- *   - provides easy acces to current, previous and upcoming waypoints
+ *   - provides easy access to current, previous and upcoming waypoints
  *   - calls main program's command execution and verify functions.
  *   - accounts for the DO_JUMP command
  *
