@@ -32,3 +32,6 @@ enum ServoType {
 #define MASK_LOG_RCOUT                  (1<<4)
 #define MASK_LOG_COMPASS                (1<<5)
 #define MASK_LOG_ANY                    0xFFFF
+
+//  Logging messages
+#define LOG_V_BAR_MSG                   0x04
