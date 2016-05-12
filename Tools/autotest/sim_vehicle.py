@@ -193,6 +193,7 @@ group_sim.add_option("-S", "--speedup", default=1, type='int', help='set simulat
 group_sim.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type='string', help='set antenna tracker start location')
 group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help='wipe EEPROM and reload parameters')
 group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help='additional arguments to pass to mavproxy.py')
+group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
 parser.add_option_group(group_sim)
 
 
@@ -217,10 +218,20 @@ if opts.hil:
     if opts.gdb or opts.gdb_stopped:
         print("May not use gdb with hil")
         sys.exit(1)
+    if opts.strace:
+        print("May not use strace with hil")
+        sys.exit(1)
 
 if opts.valgrind and (opts.gdb or opts.gdb_stopped):
     print("May not use valgrind with gdb")
     sys.exit(1)
+
+if opts.strace and (opts.gdb or opts.gdb_stopped):
+    print("May not use strace with gdb")
+    sys.exit(1)
+
+if opts.strace and opts.valgrind:
+    print("valgrind and strace almost certainly not a good idea")
 
 # magically determine vehicle type (if required):
 if opts.vehicle is None:
@@ -521,6 +532,11 @@ def start_vehicle(vehicle_binary, autotest, opts, stuff, loc):
         gdb_commands_file.close()
         cmd.extend(["-x", gdb_commands_file.name])
         cmd.append("--args")
+    if opts.strace:
+        cmd_name += " (strace)"
+        cmd.append("strace")
+        strace_options = [ '-o', vehicle_binary + '.strace', '-s' , '8000', '-ttt' ]
+        cmd.extend(strace_options)
 
     cmd.append(vehicle_binary)
     cmd.append("-S")
