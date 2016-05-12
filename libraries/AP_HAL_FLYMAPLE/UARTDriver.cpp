@@ -42,7 +42,7 @@ FLYMAPLEUARTDriver::FLYMAPLEUARTDriver(HardwareSerial* hws):
 
 void FLYMAPLEUARTDriver::begin(uint32_t b) 
 {
-    // Dont let the ISRs access the ring buffers until we are fully set up:
+    // Don't let the ISRs access the ring buffers until we are fully set up:
     nvic_irq_disable(_hws->c_dev()->irq_num);
     _hws->begin(b);
     if (_txBuf)
@@ -73,7 +73,7 @@ void FLYMAPLEUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 	_rxBufSize = rxS;
     }
 
-    // Dont let the IRs access the ring buffers until we are fully set up:
+    // Don't let the IRs access the ring buffers until we are fully set up:
     nvic_irq_disable(_hws->c_dev()->irq_num);
     begin(b); // libmaple internal ring buffer reinitialised to defaults here
     if (_txBuf)

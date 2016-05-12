@@ -118,7 +118,7 @@ uint8_t FLYMAPLERCOutput::_channel_to_flymaple_pin(uint8_t ch)
     // Channels on the same timer ALWAYS use the same frequency (the last one set)
     // 28, 27, 11, 12 use Timer 3 OK
     // 24, 14, 5,  9  use Timer 4 BREAKS I2C on pins 5 and 9
-    // 35, 36, 37, 38 use Timer 8 DONT USE: CRASHES. WHY?
+    // 35, 36, 37, 38 use Timer 8 DON'T USE: CRASHES. WHY?
     // 0   1,  2,  3  use Timer 2 OK
     static uint8_t ch_to_pin[FLYMAPLE_RC_OUTPUT_NUM_CHANNELS] = { 28, 27, 11, 12, 24, 14 };
     if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
