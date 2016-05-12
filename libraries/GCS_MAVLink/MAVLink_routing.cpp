@@ -248,7 +248,7 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
 
 /*
   special handling for heartbeat messages. To ensure routing
-  propogation heartbeat messages need to be forwarded on all channels
+  propagation heartbeat messages need to be forwarded on all channels
   except channels where the sysid/compid of the heartbeat could come from
 */
 void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg)

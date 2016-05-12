@@ -50,7 +50,7 @@ void loop(void)
         err_count++;
     }
 
-    // incoming targetted message for someone else
+    // incoming targeted message for someone else
     mavlink_param_set_t param_set = {0};
     param_set.target_system = mavlink_system.sysid+1;
     param_set.target_component = mavlink_system.compid;
@@ -60,7 +60,7 @@ void loop(void)
         err_count++;
     }
 
-    // incoming targetted message for us
+    // incoming targeted message for us
     param_set.target_system = mavlink_system.sysid;
     param_set.target_component = mavlink_system.compid;
     mavlink_msg_param_set_encode(3, 1, &msg, &param_set);
@@ -69,7 +69,7 @@ void loop(void)
         err_count++;
     }
 
-    // incoming targetted message for our system, but other compid
+    // incoming targeted message for our system, but other compid
     // should be processed locally
     param_set.target_system = mavlink_system.sysid;
     param_set.target_component = mavlink_system.compid+1;
