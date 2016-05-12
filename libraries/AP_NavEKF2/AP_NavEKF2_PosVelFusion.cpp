@@ -243,7 +243,7 @@ void NavEKF2_core::FuseVelPosNED()
         if (PV_AidingMode == AID_NONE) {
             if (tiltAlignComplete && motorsArmed) {
             // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
-                R_OBS[0] = sq(constrain_float(frontend->_noaidHorizNoise, 0.5f, 50.0f));
+                R_OBS[0] = sq(constrain_value<float>(frontend->_noaidHorizNoise, 0.5f, 50.0f));
             } else {
                 // Use a smaller value to give faster initial alignment
                 R_OBS[0] = sq(0.5f);
@@ -256,20 +256,20 @@ void NavEKF2_core::FuseVelPosNED()
         } else {
             if (gpsSpdAccuracy > 0.0f) {
                 // use GPS receivers reported speed accuracy if available and floor at value set by gps noise parameter
-                R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
-                R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
+                R_OBS[0] = sq(constrain_value<float>(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
+                R_OBS[2] = sq(constrain_value<float>(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
             } else {
                 // calculate additional error in GPS velocity caused by manoeuvring
-                R_OBS[0] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
-                R_OBS[2] = sq(constrain_float(frontend->_gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend->gpsDVelVarAccScale  * accNavMag);
+                R_OBS[0] = sq(constrain_value<float>(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+                R_OBS[2] = sq(constrain_value<float>(frontend->_gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend->gpsDVelVarAccScale  * accNavMag);
             }
             R_OBS[1] = R_OBS[0];
             // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
             // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
             // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
-            R_OBS[3] = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+            R_OBS[3] = sq(constrain_value<float>(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
             R_OBS[4] = R_OBS[3];
-            for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+            for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_value<float>(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
         }
         R_OBS[5] = posDownObsNoise;
         for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
@@ -396,7 +396,7 @@ void NavEKF2_core::FuseVelPosNED()
                 if (onGround) {
                     float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms)*1.0e-3f;
                     const float hgtInnovFiltTC = 2.0f;
-                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
+                    float alpha = constrain_value<float>(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
                     hgtInnovFiltState += (innovVelPos[5]-hgtInnovFiltState)*alpha;
                 } else {
                     hgtInnovFiltState = 0.0f;
@@ -460,7 +460,7 @@ void NavEKF2_core::FuseVelPosNED()
                         //    ____/|
                         //   /     |
                         //  /      |
-                        innovVelPos[5] += constrain_float(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
+                        innovVelPos[5] += constrain_value<float>(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
                     }
                 }
 
@@ -565,7 +565,7 @@ void NavEKF2_core::selectHeightForFusion()
         if (!getTakeoffExpected()) {
             const float gndHgtFiltTC = 0.5f;
             const float dtBaro = frontend->hgtAvg_ms*1.0e-3f;
-            float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
+            float alpha = constrain_value<float>(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
             meaHgtAtTakeOff += (baroDataDelayed.hgt-meaHgtAtTakeOff)*alpha;
         }
     }
@@ -579,7 +579,7 @@ void NavEKF2_core::selectHeightForFusion()
             // enable fusion
             fuseHgtData = true;
             // set the observation noise
-            posDownObsNoise = sq(constrain_float(frontend->_rngNoise, 0.1f, 10.0f));
+            posDownObsNoise = sq(constrain_value<float>(frontend->_rngNoise, 0.1f, 10.0f));
         } else {
             // disable fusion if tilted too far
             fuseHgtData = false;
@@ -591,14 +591,14 @@ void NavEKF2_core::selectHeightForFusion()
         fuseHgtData = true;
         // set the observation noise to the horizontal GPS noise plus a scaler becasue GPS vertical position is usually less accurate
         // TODO use VDOP/HDOP, reported accuracy or a separate parameter
-        posDownObsNoise = sq(constrain_float(frontend->_gpsHorizPosNoise * 1.5f, 0.1f, 10.0f));
+        posDownObsNoise = sq(constrain_value<float>(frontend->_gpsHorizPosNoise * 1.5f, 0.1f, 10.0f));
     } else if (baroDataToFuse && !usingRangeForHgt && !usingGpsForHgt) {
         // using Baro data
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
         // enable fusion
         fuseHgtData = true;
         // set the observation noise
-        posDownObsNoise = sq(constrain_float(frontend->_baroAltNoise, 0.1f, 10.0f));
+        posDownObsNoise = sq(constrain_value<float>(frontend->_baroAltNoise, 0.1f, 10.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
         if (getTakeoffExpected() || getTouchdownExpected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;

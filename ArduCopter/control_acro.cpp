@@ -99,11 +99,11 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
     if (g.acro_trainer != ACRO_TRAINER_DISABLED) {
         // Calculate trainer mode earth frame rate command for roll
         int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
-        rate_ef_level.x = -constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
+        rate_ef_level.x = -constrain_value<int32_t>(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
 
         // Calculate trainer mode earth frame rate command for pitch
         int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
-        rate_ef_level.y = -constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
+        rate_ef_level.y = -constrain_value<int32_t>(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
 
         // Calculate trainer mode earth frame rate command for yaw
         rate_ef_level.z = 0;
@@ -132,7 +132,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
             rate_bf_request.y += rate_bf_level.y;
             rate_bf_request.z += rate_bf_level.z;
         }else{
-            float acro_level_mix = constrain_float(1-MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*ahrs.cos_pitch();
+            float acro_level_mix = constrain_value<float>(1-max(max(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*ahrs.cos_pitch();
 
             // Scale leveling rates by stick input
             rate_bf_level = rate_bf_level*acro_level_mix;
@@ -140,17 +140,17 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
             // Calculate rate limit to prevent change of rate through inverted
             rate_limit = fabsf(fabsf(rate_bf_request.x)-fabsf(rate_bf_level.x));
             rate_bf_request.x += rate_bf_level.x;
-            rate_bf_request.x = constrain_float(rate_bf_request.x, -rate_limit, rate_limit);
+            rate_bf_request.x = constrain_value<float>(rate_bf_request.x, -rate_limit, rate_limit);
 
             // Calculate rate limit to prevent change of rate through inverted
             rate_limit = fabsf(fabsf(rate_bf_request.y)-fabsf(rate_bf_level.y));
             rate_bf_request.y += rate_bf_level.y;
-            rate_bf_request.y = constrain_float(rate_bf_request.y, -rate_limit, rate_limit);
+            rate_bf_request.y = constrain_value<float>(rate_bf_request.y, -rate_limit, rate_limit);
 
             // Calculate rate limit to prevent change of rate through inverted
             rate_limit = fabsf(fabsf(rate_bf_request.z)-fabsf(rate_bf_level.z));
             rate_bf_request.z += rate_bf_level.z;
-            rate_bf_request.z = constrain_float(rate_bf_request.z, -rate_limit, rate_limit);
+            rate_bf_request.z = constrain_value<float>(rate_bf_request.z, -rate_limit, rate_limit);
         }
     }
 

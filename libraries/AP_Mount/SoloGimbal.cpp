@@ -186,7 +186,7 @@ void SoloGimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     Vector3f ekf_gyro_bias;
     _ekf.getGyroBias(ekf_gyro_bias);
     ang_vel -= ekf_gyro_bias;
-    float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+0.5f),0.0f,1.0f);
+    float alpha = constrain_value<float>(_measurement.delta_time/(_measurement.delta_time+0.5f),0.0f,1.0f);
     _ang_vel_mag_filt += (ang_vel.length()-_ang_vel_mag_filt)*alpha;
     _ang_vel_mag_filt = MIN(_ang_vel_mag_filt,20.0f);
 
@@ -243,7 +243,7 @@ void SoloGimbal::update_joint_angle_est()
 {
     static const float tc = 1.0f;
     float dt = _measurement.delta_time;
-    float alpha = constrain_float(dt/(dt+tc),0.0f,1.0f);
+    float alpha = constrain_value<float>(dt/(dt+tc),0.0f,1.0f);
 
     Matrix3f Tvg; // vehicle frame to gimbal frame
     _vehicle_to_gimbal_quat.inverse().rotation_matrix(Tvg);
@@ -293,8 +293,8 @@ Vector3f SoloGimbal::get_ang_vel_dem_yaw(const Quaternion &quatEst)
     //_yaw_rate_ff_ef_filt += (yaw_rate_ff - _yaw_rate_ff_ef_filt) * alpha;
 
     Vector3f gimbalRateDemVecYaw;
-    gimbalRateDemVecYaw.z = yaw_rate_ff - _gimbalParams.get_K_rate() * _filtered_joint_angles.z / constrain_float(Tve.c.z,0.5f,1.0f);
-    gimbalRateDemVecYaw.z /= constrain_float(Tve.c.z,0.5f,1.0f);
+    gimbalRateDemVecYaw.z = yaw_rate_ff - _gimbalParams.get_K_rate() * _filtered_joint_angles.z / constrain_value<float>(Tve.c.z,0.5f,1.0f);
+    gimbalRateDemVecYaw.z /= constrain_value<float>(Tve.c.z,0.5f,1.0f);
 
     // rotate the rate demand into gimbal frame
     gimbalRateDemVecYaw = Teg * gimbalRateDemVecYaw;
@@ -370,7 +370,7 @@ void SoloGimbal::update_target(Vector3f newTarget)
     // Low-pass filter
     _att_target_euler_rad.y = _att_target_euler_rad.y + 0.02f*(newTarget.y - _att_target_euler_rad.y);
     // Update tilt
-    _att_target_euler_rad.y = constrain_float(_att_target_euler_rad.y,radians(-90.0f),radians(0.0f));
+    _att_target_euler_rad.y = constrain_value<float>(_att_target_euler_rad.y,radians(-90.0f),radians(0.0f));
 }
 
 void SoloGimbal::write_logs(DataFlash_Class* dataflash)

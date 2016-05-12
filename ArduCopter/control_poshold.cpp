@@ -159,7 +159,7 @@ void Copter::poshold_run()
 
         // get pilot desired climb rate (for alt-hold mode and take-off)
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+        target_climb_rate = constrain_value<float>(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
         // get takeoff adjusted pilot and takeoff climb rates
         takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
@@ -167,7 +167,7 @@ void Copter::poshold_run()
         // check for take-off
         if (ap.land_complete && (takeoff_state.running || channel_throttle->get_control_in() > get_takeoff_trigger_throttle())) {
             if (!takeoff_state.running) {
-                takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+                takeoff_timer_start(constrain_value<float>(g.pilot_takeoff_alt,0.0f,1000.0f));
             }
 
             // indicate we are taking off
@@ -513,8 +513,8 @@ void Copter::poshold_run()
         }
         
         // constrain target pitch/roll angles
-        poshold.roll = constrain_int16(poshold.roll, -aparm.angle_max, aparm.angle_max);
-        poshold.pitch = constrain_int16(poshold.pitch, -aparm.angle_max, aparm.angle_max);
+        poshold.roll = constrain_value<int16_t>(poshold.roll, -aparm.angle_max, aparm.angle_max);
+        poshold.pitch = constrain_value<int16_t>(poshold.pitch, -aparm.angle_max, aparm.angle_max);
 
         // update attitude controller targets
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(poshold.roll, poshold.pitch, target_yaw_rate);
@@ -556,7 +556,7 @@ void Copter::poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &
 //  mix_ratio of 1 = use first_control completely, 0 = use second_control completely, 0.5 = mix evenly
 int16_t Copter::poshold_mix_controls(float mix_ratio, int16_t first_control, int16_t second_control)
 {
-    mix_ratio = constrain_float(mix_ratio, 0.0f, 1.0f);
+    mix_ratio = constrain_value<float>(mix_ratio, 0.0f, 1.0f);
     return (int16_t)((mix_ratio * first_control) + ((1.0f-mix_ratio)*second_control));
 }
 
@@ -581,10 +581,10 @@ void Copter::poshold_update_brake_angle_from_velocity(int16_t &brake_angle, floa
     }
 
     // do not let lean_angle be too far from brake_angle
-    brake_angle = constrain_int16((int16_t)lean_angle, brake_angle - brake_rate, brake_angle + brake_rate);
+    brake_angle = constrain_value<int16_t>((int16_t)lean_angle, brake_angle - brake_rate, brake_angle + brake_rate);
 
     // constrain final brake_angle
-    brake_angle = constrain_int16(brake_angle, -g.poshold_brake_angle_max, g.poshold_brake_angle_max);
+    brake_angle = constrain_value<int16_t>(brake_angle, -g.poshold_brake_angle_max, g.poshold_brake_angle_max);
 }
 
 // poshold_update_wind_comp_estimate - updates wind compensation estimate

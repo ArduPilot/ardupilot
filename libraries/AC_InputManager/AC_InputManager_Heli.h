@@ -32,7 +32,7 @@ public:
     void set_use_stab_col(bool use) { _im_flags_heli.use_stab_col = use; }
 
     // set_heli_stab_col_ramp - setter function
-    void set_stab_col_ramp(float ramp) { _stab_col_ramp = constrain_float(ramp, 0.0, 1.0); }
+    void set_stab_col_ramp(float ramp) { _stab_col_ramp = constrain_value<float>(ramp, 0.0, 1.0); }
 
     static const struct AP_Param::GroupInfo        var_info[];
 

@@ -19,7 +19,7 @@ float Plane::get_speed_scaler(void)
         } else {
             speed_scaler = 2.0;
         }
-        speed_scaler = constrain_float(speed_scaler, 0.5f, 2.0f);
+        speed_scaler = constrain_value<float>(speed_scaler, 0.5f, 2.0f);
     } else {
         if (channel_throttle->get_servo_out() > 0) {
             speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / channel_throttle->get_servo_out() / 2.0f);                 // First order taylor expansion of square root
@@ -28,7 +28,7 @@ float Plane::get_speed_scaler(void)
             speed_scaler = 1.67f;
         }
         // This case is constrained tighter as we don't have real speed info
-        speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
+        speed_scaler = constrain_value<float>(speed_scaler, 0.6f, 1.67f);
     }
     return speed_scaler;
 }
@@ -197,7 +197,7 @@ void Plane::stabilize_stick_mixing_fbw()
         roll_input = (3*roll_input + 1);
     }
     nav_roll_cd += roll_input * roll_limit_cd;
-    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+    nav_roll_cd = constrain_value<int32_t>(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
     
     float pitch_input = channel_pitch->norm_input();
     if (fabsf(pitch_input) > 0.5f) {
@@ -211,7 +211,7 @@ void Plane::stabilize_stick_mixing_fbw()
     } else {
         nav_pitch_cd += -(pitch_input * pitch_limit_min_cd);
     }
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_value<int32_t>(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
 
@@ -448,7 +448,7 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
     // add in rudder mixing from roll
     steering_control.rudder += channel_roll->get_servo_out() * g.kff_rudder_mix;
     steering_control.rudder += rudder_input;
-    steering_control.rudder = constrain_int16(steering_control.rudder, -4500, 4500);
+    steering_control.rudder = constrain_value<int16_t>(steering_control.rudder, -4500, 4500);
 }
 
 /*
@@ -463,7 +463,7 @@ void Plane::calc_nav_yaw_course(void)
     if (stick_mixing_enabled()) {
         stick_mix_channel(channel_rudder, steering_control.steering);
     }
-    steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
+    steering_control.steering = constrain_value<int16_t>(steering_control.steering, -4500, 4500);
 }
 
 /*
@@ -506,7 +506,7 @@ void Plane::calc_nav_yaw_ground(void)
         int32_t yaw_error_cd = -degrees(steer_state.locked_course_err)*100;
         steering_control.steering = steerController.get_steering_out_angle_error(yaw_error_cd);
     }
-    steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
+    steering_control.steering = constrain_value<int16_t>(steering_control.steering, -4500, 4500);
 }
 
 
@@ -518,7 +518,7 @@ void Plane::calc_nav_pitch()
     // Calculate the Pitch of the plane
     // --------------------------------
     nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_value<int32_t>(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
 
@@ -527,7 +527,7 @@ void Plane::calc_nav_pitch()
  */
 void Plane::calc_nav_roll()
 {
-    nav_roll_cd = constrain_int32(nav_controller->nav_roll_cd(), -roll_limit_cd, roll_limit_cd);
+    nav_roll_cd = constrain_value<int32_t>(nav_controller->nav_roll_cd(), -roll_limit_cd, roll_limit_cd);
     update_load_factor();
 }
 
@@ -554,7 +554,7 @@ void Plane::throttle_slew_limit(int16_t last_throttle)
         if (temp < 1) {
             temp = 1;
         }
-        channel_throttle->set_radio_out(constrain_int16(channel_throttle->get_radio_out(), last_throttle - temp, last_throttle + temp));
+        channel_throttle->set_radio_out(constrain_value<int16_t>(channel_throttle->get_radio_out(), last_throttle - temp, last_throttle + temp));
     }
 }
 
@@ -573,7 +573,7 @@ void Plane::flap_slew_limit(int8_t &last_value, int8_t &new_value)
         if (temp < 1) {
             temp = 1;
         }
-        new_value = constrain_int16(new_value, last_value - temp, last_value + temp);
+        new_value = constrain_value<int16_t>(new_value, last_value - temp, last_value + temp);
     }
     last_value = new_value;
 }
@@ -708,8 +708,8 @@ void Plane::channel_output_mixer(uint8_t mixing_type, int16_t & chan1_out, int16
     }
 
     // scale for a 1500 center and 900..2100 range, symmetric
-    v1 = constrain_int16(v1, -600, 600);
-    v2 = constrain_int16(v2, -600, 600);
+    v1 = constrain_value<int16_t>(v1, -600, 600);
+    v2 = constrain_value<int16_t>(v2, -600, 600);
 
     chan1_out = 1500 + v1;
     chan2_out = 1500 + v2;
@@ -987,12 +987,12 @@ void Plane::set_servos(void)
             }
         }
 
-        max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
+        max_throttle = constrain_value<int16_t>(max_throttle, 0, max_throttle - throttle_watt_limit_max);
         if (min_throttle < 0) {
-            min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
+            min_throttle = constrain_value<int16_t>(min_throttle, min_throttle + throttle_watt_limit_min, 0);
         }
 
-        channel_throttle->set_servo_out(constrain_int16(channel_throttle->get_servo_out(), 
+        channel_throttle->set_servo_out(constrain_value<int16_t>(channel_throttle->get_servo_out(), 
                                                       min_throttle,
                                                       max_throttle));
 
@@ -1320,8 +1320,8 @@ void Plane::update_load_factor(void)
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
-        nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
-        roll_limit_cd = constrain_int32(roll_limit_cd, -2500, 2500);
+        nav_roll_cd = constrain_value<int32_t>(nav_roll_cd, -2500, 2500);
+        roll_limit_cd = constrain_value<int32_t>(roll_limit_cd, -2500, 2500);
     } else if (max_load_factor < aerodynamic_load_factor) {
         // the demanded nav_roll would take us past the aerodymamic
         // load limit. Limit our roll to a bank angle that will keep
@@ -1333,7 +1333,7 @@ void Plane::update_load_factor(void)
         if (roll_limit < 2500) {
             roll_limit = 2500;
         }
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
-        roll_limit_cd = constrain_int32(roll_limit_cd, -roll_limit, roll_limit);
+        nav_roll_cd = constrain_value<int32_t>(nav_roll_cd, -roll_limit, roll_limit);
+        roll_limit_cd = constrain_value<int32_t>(roll_limit_cd, -roll_limit, roll_limit);
     }    
 }

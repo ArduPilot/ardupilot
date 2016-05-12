@@ -147,7 +147,7 @@ int16_t AP_Motors::calc_pwm_output_1to1(float input, const RC_Channel& servo)
 {
     int16_t ret;
 
-    input = constrain_float(input, -1.0f, 1.0f);
+    input = constrain_value<float>(input, -1.0f, 1.0f);
 
     if (servo.get_reverse()) {
         input = -input;
@@ -159,7 +159,7 @@ int16_t AP_Motors::calc_pwm_output_1to1(float input, const RC_Channel& servo)
         ret = ((input * (servo.get_radio_trim() - servo.get_radio_min())) + servo.get_radio_trim());
     }
 
-    return constrain_int16(ret, servo.get_radio_min(), servo.get_radio_max());
+    return constrain_value<int16_t>(ret, servo.get_radio_min(), servo.get_radio_max());
 }
 
 // convert input in 0 to +1 range to pwm output
@@ -167,7 +167,7 @@ int16_t AP_Motors::calc_pwm_output_0to1(float input, const RC_Channel& servo)
 {
     int16_t ret;
 
-    input = constrain_float(input, 0.0f, 1.0f);
+    input = constrain_value<float>(input, 0.0f, 1.0f);
 
     if (servo.get_reverse()) {
         input = 1.0f-input;
@@ -175,7 +175,7 @@ int16_t AP_Motors::calc_pwm_output_0to1(float input, const RC_Channel& servo)
 
     ret = input * (servo.get_radio_max() - servo.get_radio_min()) + servo.get_radio_min();
 
-    return constrain_int16(ret, servo.get_radio_min(), servo.get_radio_max());
+    return constrain_value<int16_t>(ret, servo.get_radio_min(), servo.get_radio_max());
 }
 
 /*

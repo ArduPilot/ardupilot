@@ -186,9 +186,9 @@ void SoloGimbalEKF::predictStates()
     // sum delta velocities to get velocity
     state.velocity += delVelNav;
 
-    state.delAngBias.x = constrain_float(state.delAngBias.x, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
-    state.delAngBias.y = constrain_float(state.delAngBias.y, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
-    state.delAngBias.z = constrain_float(state.delAngBias.z, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
+    state.delAngBias.x = constrain_value<float>(state.delAngBias.x, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
+    state.delAngBias.y = constrain_value<float>(state.delAngBias.y, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
+    state.delAngBias.z = constrain_value<float>(state.delAngBias.z, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
 }
 
 // covariance prediction using optimised algebraic toolbox expressions

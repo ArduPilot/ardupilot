@@ -14,7 +14,7 @@ void Rover::throttle_slew_limit(int16_t last_throttle) {
         if (temp < 1) {
             temp = 1;
         }
-        channel_throttle->set_radio_out (constrain_int16(channel_throttle->get_radio_out(), last_throttle - temp, last_throttle + temp));
+        channel_throttle->set_radio_out (constrain_value<int16_t>(channel_throttle->get_radio_out(), last_throttle - temp, last_throttle + temp));
     }
 }
 
@@ -97,12 +97,12 @@ void Rover::calc_throttle(float target_speed) {
         SPEED_TURN_GAIN percentage.
     */
     float steer_rate = fabsf(lateral_acceleration / (g.turn_max_g*GRAVITY_MSS));
-    steer_rate = constrain_float(steer_rate, 0.0f, 1.0f);
+    steer_rate = constrain_value<float>(steer_rate, 0.0f, 1.0f);
 
     // use g.speed_turn_gain for a 90 degree turn, and in proportion
     // for other turn angles
     int32_t turn_angle = wrap_180_cd(next_navigation_leg_cd - ahrs.yaw_sensor);
-    float speed_turn_ratio = constrain_float(fabsf(turn_angle / 9000.0f), 0, 1);
+    float speed_turn_ratio = constrain_value<float>(fabsf(turn_angle / 9000.0f), 0, 1);
     float speed_turn_reduction = (100 - g.speed_turn_gain) * speed_turn_ratio * 0.01f;
 
     float reduction = 1.0f - steer_rate*speed_turn_reduction;
@@ -127,9 +127,9 @@ void Rover::calc_throttle(float target_speed) {
     throttle *= reduction;
 
     if (in_reverse) {
-        channel_throttle->set_servo_out(constrain_int16(-throttle, -g.throttle_max, -g.throttle_min));
+        channel_throttle->set_servo_out(constrain_value<int16_t>(-throttle, -g.throttle_max, -g.throttle_min));
     } else {
-        channel_throttle->set_servo_out(constrain_int16(throttle, g.throttle_min, g.throttle_max));
+        channel_throttle->set_servo_out(constrain_value<int16_t>(throttle, g.throttle_min, g.throttle_max));
     }
 
     if (!in_reverse && g.braking_percent != 0 && groundspeed_error < -g.braking_speederr) {
@@ -140,9 +140,9 @@ void Rover::calc_throttle(float target_speed) {
         // We use a linear gain, with 0 gain at a ground speed error
         // of braking_speederr, and 100% gain when groundspeed_error
         // is 2*braking_speederr
-        float brake_gain = constrain_float(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0, 1);
+        float brake_gain = constrain_value<float>(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0, 1);
         int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
-        channel_throttle->set_servo_out(constrain_int16(-braking_throttle, -g.throttle_max, -g.throttle_min));
+        channel_throttle->set_servo_out(constrain_value<int16_t>(-braking_throttle, -g.throttle_max, -g.throttle_min));
 
         // temporarily set us in reverse to allow the PWM setting to
         // go negative
@@ -202,7 +202,7 @@ void Rover::calc_nav_steer() {
     lateral_acceleration += (obstacle.turn_angle/45.0f) * g.turn_max_g;
 
     // constrain to max G force
-    lateral_acceleration = constrain_float(lateral_acceleration, -g.turn_max_g*GRAVITY_MSS, g.turn_max_g*GRAVITY_MSS);
+    lateral_acceleration = constrain_value<float>(lateral_acceleration, -g.turn_max_g*GRAVITY_MSS, g.turn_max_g*GRAVITY_MSS);
 
     channel_steer->set_servo_out(steerController.get_steering_out_lat_accel(lateral_acceleration));
 }
@@ -227,11 +227,11 @@ void Rover::set_servos(void) {
     } else {
         channel_steer->calc_pwm();
         if (in_reverse) {
-            channel_throttle->set_servo_out(constrain_int16(channel_throttle->get_servo_out(),
+            channel_throttle->set_servo_out(constrain_value<int16_t>(channel_throttle->get_servo_out(),
                                           -g.throttle_max,
                                           -g.throttle_min));
         } else {
-            channel_throttle->set_servo_out(constrain_int16(channel_throttle->get_servo_out(),
+            channel_throttle->set_servo_out(constrain_value<int16_t>(channel_throttle->get_servo_out(),
                                           g.throttle_min.get(),
                                           g.throttle_max.get()));
         }

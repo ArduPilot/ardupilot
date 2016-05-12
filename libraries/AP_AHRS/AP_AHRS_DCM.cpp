@@ -600,7 +600,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (_ins.get_accel_count() == 2 && _ins.use_accel(0) && _ins.use_accel(1)) {
         float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
         // slew _imu1_weight over one second
-        _imu1_weight += constrain_float(imu1_weight_target-_imu1_weight, -deltat, deltat);
+        _imu1_weight += constrain_value<float>(imu1_weight_target-_imu1_weight, -deltat, deltat);
         _accel_ef_blended = _accel_ef[0] * _imu1_weight + _accel_ef[1] * (1.0f - _imu1_weight);
     } else {
         _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
@@ -856,9 +856,9 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // short term errors don't cause a buildup of omega_I
         // beyond the physical limits of the device
         float change_limit = _gyro_drift_limit * _omega_I_sum_time;
-        _omega_I_sum.x = constrain_float(_omega_I_sum.x, -change_limit, change_limit);
-        _omega_I_sum.y = constrain_float(_omega_I_sum.y, -change_limit, change_limit);
-        _omega_I_sum.z = constrain_float(_omega_I_sum.z, -change_limit, change_limit);
+        _omega_I_sum.x = constrain_value<float>(_omega_I_sum.x, -change_limit, change_limit);
+        _omega_I_sum.y = constrain_value<float>(_omega_I_sum.y, -change_limit, change_limit);
+        _omega_I_sum.z = constrain_value<float>(_omega_I_sum.z, -change_limit, change_limit);
         _omega_I += _omega_I_sum;
         _omega_I_sum.zero();
         _omega_I_sum_time = 0;
@@ -991,7 +991,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
         // and AHRS_WIND_MAX
         float gnd_speed = _gps.ground_speed();
         float true_airspeed = *airspeed_ret * get_EAS2TAS();
-        true_airspeed = constrain_float(true_airspeed,
+        true_airspeed = constrain_value<float>(true_airspeed,
                                         gnd_speed - _wind_max,
                                         gnd_speed + _wind_max);
         *airspeed_ret = true_airspeed / get_EAS2TAS();

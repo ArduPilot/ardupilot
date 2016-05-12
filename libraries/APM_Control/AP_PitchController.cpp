@@ -171,7 +171,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
-    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
+    _pid_info.I = constrain_value<float>(_pid_info.I, -intLimScaled, intLimScaled);
 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
@@ -203,7 +203,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	_last_out += _pid_info.I;
 	
 	// Convert to centi-degrees and constrain
-	return constrain_float(_last_out * 100, -4500, 4500);
+	return constrain_value<float>(_last_out * 100, -4500, 4500);
 }
 
 /*
@@ -240,14 +240,14 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < radians(90.0f))	{
-	    bank_angle = constrain_float(bank_angle,-radians(80.0f),radians(80.0f));
+	    bank_angle = constrain_value<float>(bank_angle,-radians(80.0f),radians(80.0f));
         inverted = false;
 	} else {
 		inverted = true;
 		if (bank_angle > 0.0f) {
-			bank_angle = constrain_float(bank_angle,radians(100.0f),radians(180.0f));
+			bank_angle = constrain_value<float>(bank_angle,radians(100.0f),radians(180.0f));
 		} else {
-			bank_angle = constrain_float(bank_angle,-radians(180.0f),-radians(100.0f));
+			bank_angle = constrain_value<float>(bank_angle,-radians(180.0f),-radians(100.0f));
 		}
 	}
 	if (!_ahrs.airspeed_estimate(&aspeed)) {

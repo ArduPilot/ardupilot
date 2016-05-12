@@ -49,7 +49,7 @@ int32_t AP_L1_Control::nav_roll_cd(void) const
 {
     float ret;
     ret = cosf(_ahrs.pitch)*degrees(atanf(_latAccDem * 0.101972f) * 100.0f); // 0.101972 = 1/9.81
-    ret = constrain_float(ret, -9000, 9000);
+    ret = constrain_value<float>(ret, -9000, 9000);
     return ret;
 }
 
@@ -221,7 +221,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
         //Calculate Nu1 angle (Angle to L1 reference point)
         float sine_Nu1 = _crosstrack_error/MAX(_L1_dist, 0.1f);
         //Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
-        sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
+        sine_Nu1 = constrain_value<float>(sine_Nu1, -0.7071f, 0.7071f);
         float Nu1 = asinf(sine_Nu1);
 
         // compute integral error component to converge to a crosstrack of zero when traveling
@@ -234,7 +234,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
             _L1_xtrack_i += Nu1 * _L1_xtrack_i_gain * dt;
 
             // an AHRS_TRIM_X=0.1 will drift to about 0.08 so 0.1 is a good worst-case to clip at
-            _L1_xtrack_i = constrain_float(_L1_xtrack_i, -0.1f, 0.1f);
+            _L1_xtrack_i = constrain_value<float>(_L1_xtrack_i, -0.1f, 0.1f);
         }
 
         // to converge to zero we must push Nu1 harder
@@ -248,7 +248,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     _last_Nu = Nu;
 
     //Limit Nu to +-pi
-    Nu = constrain_float(Nu, -1.5708f, +1.5708f);
+    Nu = constrain_value<float>(Nu, -1.5708f, +1.5708f);
     _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
 
     // Waypoint capture status is always false during waypoint following
@@ -320,7 +320,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     _prevent_indecision(Nu);
     _last_Nu = Nu;
 
-    Nu = constrain_float(Nu, -M_PI_2, M_PI_2); //Limit Nu to +- Pi/2
+    Nu = constrain_value<float>(Nu, -M_PI_2, M_PI_2); //Limit Nu to +- Pi/2
 
     //Calculate lat accln demand to capture center_WP (use L1 guidance law)
     float latAccDemCap = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
@@ -403,7 +403,7 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
     _bearing_error = Nu; // bearing error angle (radians), +ve to left of track
 
     // Limit Nu to +-pi
-    Nu = constrain_float(Nu, -M_PI_2, M_PI_2);
+    Nu = constrain_value<float>(Nu, -M_PI_2, M_PI_2);
     _latAccDem = 2.0f*sinf(Nu)*VomegaA;
 
     _data_is_stale = false; // status are correctly updated with current waypoint data

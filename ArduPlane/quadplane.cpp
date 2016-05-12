@@ -793,7 +793,7 @@ float QuadPlane::assist_climb_rate_cms(void)
         climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(float)plane.aparm.pitch_limit_max_cd);
         climb_rate *= plane.channel_throttle->get_control_in();
     }
-    climb_rate = constrain_float(climb_rate, -wp_nav->get_speed_down(), wp_nav->get_speed_up());
+    climb_rate = constrain_value<float>(climb_rate, -wp_nav->get_speed_down(), wp_nav->get_speed_up());
     return climb_rate;
 }
 
@@ -1660,7 +1660,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
     vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
 
     // constrain to throttle range. This allows for reverse throttle if configured
-    vel_forward.integrator = constrain_float(vel_forward.integrator, plane.aparm.throttle_min, plane.aparm.throttle_max);
+    vel_forward.integrator = constrain_value<float>(vel_forward.integrator, plane.aparm.throttle_min, plane.aparm.throttle_max);
     
     vel_forward.last_pct = vel_forward.integrator;
 
@@ -1706,7 +1706,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         roll += weathervane.min_roll;
     }
     
-    float output = constrain_float((roll/45.0f) * weathervane.gain, -1, 1);
+    float output = constrain_value<float>((roll/45.0f) * weathervane.gain, -1, 1);
     if (should_relax()) {
         output = 0;
     }

@@ -177,7 +177,7 @@ RC_Channel_aux::set_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t
     }
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			   _aux_channels[i]->set_radio_out(constrain_int16(value,_aux_channels[i]->get_radio_min(),_aux_channels[i]->get_radio_max()));
+			   _aux_channels[i]->set_radio_out(constrain_value<int16_t>(value,_aux_channels[i]->get_radio_min(),_aux_channels[i]->get_radio_max()));
             _aux_channels[i]->output();
 		  }
     }
@@ -195,7 +195,7 @@ RC_Channel_aux::set_radio_trimmed(RC_Channel_aux::Aux_servo_function_t function,
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
         	   int16_t value2 = value - 1500 + _aux_channels[i]->get_radio_trim();
-			   _aux_channels[i]->set_radio_out(constrain_int16(value2,_aux_channels[i]->get_radio_min(),_aux_channels[i]->get_radio_max()));
+			   _aux_channels[i]->set_radio_out(constrain_value<int16_t>(value2,_aux_channels[i]->get_radio_min(),_aux_channels[i]->get_radio_max()));
             _aux_channels[i]->output();
 		  }
     }

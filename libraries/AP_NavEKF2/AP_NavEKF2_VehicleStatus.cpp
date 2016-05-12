@@ -46,7 +46,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     const struct Location &gpsloc = _ahrs->get_gps().location(); // Current location
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
     // calculate time lapsesd since last update and limit to prevent numerical errors
-    float deltaTime = constrain_float(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
+    float deltaTime = constrain_value<float>(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
     lastPreAlignGpsCheckTime_ms = imuDataDelayed.time_ms;
     // Sum distance moved
     gpsDriftNE += location_diff(gpsloc_prev, gpsloc).length();
@@ -74,7 +74,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if (_ahrs->get_gps().have_vertical_velocity() && onGround) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
-        gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
+        gpsVertVelFilt = constrain_value<float>(gpsVertVelFilt,-10.0f,10.0f);
         gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
     } else if ((frontend->_fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
@@ -105,7 +105,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     bool gpsHorizVelFail;
     if (onGround) {
         gpsHorizVelFilt = 0.1f * norm(gpsDataDelayed.vel.x,gpsDataDelayed.vel.y) + 0.9f * gpsHorizVelFilt;
-        gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
+        gpsHorizVelFilt = constrain_value<float>(gpsHorizVelFilt,-10.0f,10.0f);
         gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {
         gpsHorizVelFail = false;
@@ -229,7 +229,7 @@ void NavEKF2_core::calcGpsGoodForFlight(void)
     }
     float dtLPF = (imuSampleTime_ms - lastGpsCheckTime_ms) * 1e-3f;
     lastGpsCheckTime_ms = imuSampleTime_ms;
-    float alpha2 = constrain_float(dtLPF/tau,0.0f,1.0f);
+    float alpha2 = constrain_value<float>(dtLPF/tau,0.0f,1.0f);
 
     // get the receivers reported speed accuracy
     float gpsSpdAccRaw;
@@ -238,7 +238,7 @@ void NavEKF2_core::calcGpsGoodForFlight(void)
     }
 
     // filter the raw speed accuracy using a LPF
-    sAccFilterState1 = constrain_float((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * sAccFilterState1),0.0f,10.0f);
+    sAccFilterState1 = constrain_value<float>((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * sAccFilterState1),0.0f,10.0f);
 
     // apply a peak hold filter to the LPF output
     sAccFilterState2 = MAX(sAccFilterState1,((1.0f - alpha2) * sAccFilterState2));

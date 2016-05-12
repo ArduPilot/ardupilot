@@ -34,7 +34,7 @@ void Motor::calculate_forces(const Aircraft::sitl_input &input,
     const float yaw_scale = radians(400);
 
     // get motor speed from 0 to 1
-    float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
+    float motor_speed = constrain_value<float>((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
 
     // the yaw torque of the motor
     Vector3f rotor_torque(0, 0, yaw_factor * motor_speed * yaw_scale);
@@ -52,17 +52,17 @@ void Motor::calculate_forces(const Aircraft::sitl_input &input,
     if (roll_servo >= 0) {
         uint16_t servoval = input.servos[roll_servo+motor_offset];
         if (roll_min < roll_max) {
-            roll = constrain_float(roll_min + (servoval-1000)*0.001*(roll_max-roll_min), roll_min, roll_max);
+            roll = constrain_value<float>(roll_min + (servoval-1000)*0.001*(roll_max-roll_min), roll_min, roll_max);
         } else {
-            roll = constrain_float(roll_max + (2000-servoval)*0.001*(roll_min-roll_max), roll_max, roll_min);
+            roll = constrain_value<float>(roll_max + (2000-servoval)*0.001*(roll_min-roll_max), roll_max, roll_min);
         }
     }
     if (pitch_servo >= 0) {
         uint16_t servoval = input.servos[pitch_servo+motor_offset];
         if (pitch_min < pitch_max) {
-            pitch = constrain_float(pitch_min + (servoval-1000)*0.001*(pitch_max-pitch_min), pitch_min, pitch_max);
+            pitch = constrain_value<float>(pitch_min + (servoval-1000)*0.001*(pitch_max-pitch_min), pitch_min, pitch_max);
         } else {
-            pitch = constrain_float(pitch_max + (2000-servoval)*0.001*(pitch_min-pitch_max), pitch_max, pitch_min);
+            pitch = constrain_value<float>(pitch_max + (2000-servoval)*0.001*(pitch_min-pitch_max), pitch_max, pitch_min);
         }
     }
 

@@ -13,8 +13,8 @@
 void Tracker::update_manual(void)
 {
     // copy yaw and pitch input to output
-    channel_yaw.set_radio_out(constrain_int16(channel_yaw.get_radio_in(), channel_yaw.get_radio_min(), channel_yaw.get_radio_max()));
-    channel_pitch.set_radio_out(constrain_int16(channel_pitch.get_radio_in(), channel_pitch.get_radio_min(), channel_pitch.get_radio_max()));
+    channel_yaw.set_radio_out(constrain_value<int16_t>(channel_yaw.get_radio_in(), channel_yaw.get_radio_min(), channel_yaw.get_radio_max()));
+    channel_pitch.set_radio_out(constrain_value<int16_t>(channel_pitch.get_radio_in(), channel_pitch.get_radio_min(), channel_pitch.get_radio_max()));
 
     // send output to servos
     channel_yaw.output();

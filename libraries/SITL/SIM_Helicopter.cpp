@@ -57,7 +57,7 @@ void Helicopter::update(const struct sitl_input &input)
     // get wind vector setup
     update_wind(input);
 
-    float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
+    float rsc = constrain_value<float>((input.servos[7]-1000) / 1000.0f, 0, 1);
     // ignition only for gas helis
     bool ignition_enabled = gas_heli?(input.servos[5] > 1500):true;
 

@@ -14,7 +14,7 @@
 void QuadPlane::tiltrotor_slew(float newtilt)
 {
     float max_change = (tilt.max_rate_dps.get() * plane.G_Dt) / 90.0f;
-    tilt.current_tilt = constrain_float(newtilt, tilt.current_tilt-max_change, tilt.current_tilt+max_change);
+    tilt.current_tilt = constrain_value<float>(newtilt, tilt.current_tilt-max_change, tilt.current_tilt+max_change);
 
     // translate to 0..1000 range and output
     RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_motor_tilt, 1000 * tilt.current_tilt);
@@ -46,7 +46,7 @@ void QuadPlane::tiltrotor_update(void)
 
         float new_throttle = plane.channel_throttle->get_servo_out()*0.01f;
         if (tilt.current_tilt < 1) {
-            tilt.current_throttle = constrain_float(new_throttle,
+            tilt.current_throttle = constrain_value<float>(new_throttle,
                                                     tilt.current_throttle-max_change,
                                                     tilt.current_throttle+max_change);
         } else {
@@ -63,7 +63,7 @@ void QuadPlane::tiltrotor_update(void)
     }
 
     // remember the throttle level we're using for VTOL flight
-    tilt.current_throttle = constrain_float(motors->get_throttle(),
+    tilt.current_throttle = constrain_value<float>(motors->get_throttle(),
                                             tilt.current_throttle-max_change,
                                             tilt.current_throttle+max_change);
     
@@ -98,7 +98,7 @@ void QuadPlane::tiltrotor_update(void)
         // Q_TILT_MAX. Anything above 50% throttle gets
         // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
         // relies heavily on Q_VFWD_GAIN being set appropriately.
-        float settilt = constrain_float(plane.channel_throttle->get_servo_out() / 50.0f, 0, 1);
+        float settilt = constrain_value<float>(plane.channel_throttle->get_servo_out() / 50.0f, 0, 1);
         tiltrotor_slew(settilt * tilt.max_angle_deg / 90.0f);
     }
 }

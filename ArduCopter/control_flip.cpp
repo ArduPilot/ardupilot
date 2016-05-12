@@ -87,8 +87,8 @@ bool Copter::flip_init(bool ignore_checks)
     Log_Write_Event(DATA_FLIP_START);
 
     // capture current attitude which will be used during the Flip_Recovery stage
-    flip_orig_attitude.x = constrain_float(ahrs.roll_sensor, -aparm.angle_max, aparm.angle_max);
-    flip_orig_attitude.y = constrain_float(ahrs.pitch_sensor, -aparm.angle_max, aparm.angle_max);
+    flip_orig_attitude.x = constrain_value<float>(ahrs.roll_sensor, -aparm.angle_max, aparm.angle_max);
+    flip_orig_attitude.y = constrain_value<float>(ahrs.pitch_sensor, -aparm.angle_max, aparm.angle_max);
     flip_orig_attitude.z = ahrs.yaw_sensor;
 
     return true;

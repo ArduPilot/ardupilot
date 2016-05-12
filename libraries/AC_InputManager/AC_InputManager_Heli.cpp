@@ -84,7 +84,7 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
 
     scalar = (slope_high - slope_low)/slope_range;
     stab_col_out = slope_low + slope_run * scalar;
-    stab_col_out = constrain_float(stab_col_out, 0.0f, 1.0f);
+    stab_col_out = constrain_value<float>(stab_col_out, 0.0f, 1.0f);
 
     //
     // calculate expo-scaled acro collective
@@ -103,7 +103,7 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
         col_out = (_acro_col_expo * col_in3) + ((1.0f-_acro_col_expo)*col_in);
         acro_col_out = 0.5f + col_out*0.5f;
     }
-    acro_col_out = constrain_float(acro_col_out, 0.0f, 1.0f);
+    acro_col_out = constrain_value<float>(acro_col_out, 0.0f, 1.0f);
 
     // ramp to and from stab col over 1/2 second
     if (_im_flags_heli.use_stab_col && (_stab_col_ramp < 1.0f)){
@@ -111,12 +111,12 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     } else if(!_im_flags_heli.use_stab_col && (_stab_col_ramp > 0.0f)){
         _stab_col_ramp -= 2.0f/(float)_loop_rate;
     }
-    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0f, 1.0f);
+    _stab_col_ramp = constrain_value<float>(_stab_col_ramp, 0.0f, 1.0f);
 
     // scale collective output smoothly between acro and stab col
     float collective_out;
     collective_out = (float)((1.0f-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
-    collective_out = constrain_float(collective_out, 0.0f, 1.0f);
+    collective_out = constrain_value<float>(collective_out, 0.0f, 1.0f);
 
     return collective_out;
 }

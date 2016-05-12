@@ -137,9 +137,9 @@ void AP_MotorsTri::output_to_motors()
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             hal.rcout->cork();
-            rc_write(AP_MOTORS_MOT_1, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
-            rc_write(AP_MOTORS_MOT_2, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
-            rc_write(AP_MOTORS_MOT_4, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_1, constrain_value<int16_t>(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_2, constrain_value<int16_t>(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_4, constrain_value<int16_t>(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
             hal.rcout->push();
             break;
@@ -185,7 +185,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     float   throttle_thrust_hover = get_hover_throttle_as_high_end_pct();   // throttle hover thrust value, 0.0 - 1.0
 
     // sanity check YAW_SV_ANGLE parameter value to avoid divide by zero
-    _yaw_servo_angle_max_deg = constrain_float(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX);
+    _yaw_servo_angle_max_deg = constrain_value<float>(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX);
 
     // apply voltage and air pressure compensation
     roll_thrust = _roll_in * get_compensation_gain();
@@ -197,7 +197,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     _pivot_angle = safe_asin(yaw_thrust);
     if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg.get())) {
         limit.yaw = true;
-        _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg.get()), radians(_yaw_servo_angle_max_deg.get()));
+        _pivot_angle = constrain_value<float>(_pivot_angle, -radians(_yaw_servo_angle_max_deg.get()), radians(_yaw_servo_angle_max_deg.get()));
     }
 
     float pivot_thrust_max = cosf(_pivot_angle);
@@ -254,7 +254,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     if(is_zero(rpy_low)){
         rpy_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float(-throttle_thrust_best_rpy/rpy_low, 0.0f, 1.0f);
+        rpy_scale = constrain_value<float>(-throttle_thrust_best_rpy/rpy_low, 0.0f, 1.0f);
     }
 
     // calculate how close the motors can come to the desired throttle
@@ -288,9 +288,9 @@ void AP_MotorsTri::output_armed_stabilizing()
 
     // constrain all outputs to 0.0f to 1.0f
     // test code should be run with these lines commented out as they should not do anything
-    _thrust_right = constrain_float(_thrust_right, 0.0f, 1.0f);
-    _thrust_left = constrain_float(_thrust_left, 0.0f, 1.0f);
-    _thrust_rear = constrain_float(_thrust_rear, 0.0f, 1.0f);
+    _thrust_right = constrain_value<float>(_thrust_right, 0.0f, 1.0f);
+    _thrust_left = constrain_value<float>(_thrust_left, 0.0f, 1.0f);
+    _thrust_rear = constrain_value<float>(_thrust_rear, 0.0f, 1.0f);
 }
 
 // output_test - spin a motor at the pwm value specified
