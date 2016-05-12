@@ -225,7 +225,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // We should always go through the waypoint i.e. the above code
     // first before we go past it.
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        // check if we have gone futher past the wp then last time and output new message if we have
+        // check if we have gone further past the wp then last time and output new message if we have
         if ((uint32_t)distance_past_wp != (uint32_t)get_distance(current_loc, next_WP)) {
             distance_past_wp = get_distance(current_loc, next_WP);
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i. Distance %um",
