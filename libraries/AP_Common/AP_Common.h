@@ -100,7 +100,7 @@ struct PACKED Location {
     // storage cost per mission item at 15 bytes, and allows mission
     // altitudes of up to +/- 83km
     int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100)
-    int32_t lat;                                        ///< param 3 - Lattitude * 10**7
+    int32_t lat;                                        ///< param 3 - Latitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
