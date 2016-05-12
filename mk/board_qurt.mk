@@ -1,4 +1,4 @@
-# extra rules for qualcomm flight build targetting the DSPs
+# extra rules for qualcomm flight build targeting the DSPs
 
 # host name of flight board for "qurt_send" target
 FLIGHT_BOARD		 ?= flight4
