@@ -21,14 +21,14 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
     // @Description: If LOG_DISARMED is set to 1 then logging will be enabled while disarmed. This can make for very large logfiles but can help a lot when tracking down startup issues
-    // @Values:0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("_DISARMED",  2, DataFlash_Class, _params.log_disarmed,       0),
 
     // @Param: _REPLAY
     // @DisplayName: Enable logging of information needed for Replay
     // @Description: If LOG_REPLAY is set to 1 then the EKF2 state estimator will log detailed information needed for diagnosing problems with the Kalman filter. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost
-    // @Values:0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("_REPLAY",  3, DataFlash_Class, _params.log_replay,       0),
     
