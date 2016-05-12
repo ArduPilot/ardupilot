@@ -113,7 +113,7 @@ private:
 };
 
 
-// Folowing buffer model is for IMU data,
+// Following buffer model is for IMU data,
 // it achieves a distance of sample size
 // between youngest and oldest
 template <typename element_type>

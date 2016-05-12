@@ -102,8 +102,8 @@ void NavEKF2_core::alignYawGPS()
             // calculate new filter quaternion states from Euler angles
             stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
 
-            // The correlations between attitude errors and positon and velocity errors in the covariance matrix
-            // are invalid becasue og the changed yaw angle, so reset the corresponding row and columns
+            // The correlations between attitude errors and position and velocity errors in the covariance matrix
+            // are invalid because og the changed yaw angle, so reset the corresponding row and columns
             zeroCols(P,0,2);
             zeroRows(P,0,2);
 
@@ -111,7 +111,7 @@ void NavEKF2_core::alignYawGPS()
             P[1][1] = P[0][0] = sq(radians(5.0f));
             P[2][2] = sq(radians(45.0f));
 
-            // reset tposition fusion timer to casue the states to be reset to the GPS on the next GPS fusion cycle
+            // reset tposition fusion timer to cause the states to be reset to the GPS on the next GPS fusion cycle
             lastPosPassTime_ms = 0;
         }
     }
