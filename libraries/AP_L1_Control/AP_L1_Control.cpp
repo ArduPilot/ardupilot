@@ -230,7 +230,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
         if (_L1_xtrack_i_gain <= 0 || !is_equal(_L1_xtrack_i_gain.get(), _L1_xtrack_i_gain_prev)) {
             _L1_xtrack_i = 0;
             _L1_xtrack_i_gain_prev = _L1_xtrack_i_gain;
-        } else if (fabsf(Nu1) < radians(5)) {
+        } else if (fabsf(Nu1) < radians(5.0f)) {
             _L1_xtrack_i += Nu1 * _L1_xtrack_i_gain * dt;
 
             // an AHRS_TRIM_X=0.1 will drift to about 0.08 so 0.1 is a good worst-case to clip at

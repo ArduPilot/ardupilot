@@ -129,7 +129,7 @@ void Copter::tuning() {
 
     case TUNING_DECLINATION:
         // set declination to +-20degrees
-        compass.set_declination(ToRad((2.0f * g.rc_6.get_control_in() - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
+        compass.set_declination(radians((2.0f * g.rc_6.get_control_in() - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
 
     case TUNING_CIRCLE_RATE:

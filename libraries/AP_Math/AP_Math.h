@@ -126,17 +126,17 @@ inline int32_t constrain_int32(const int32_t amt, const int32_t low, const int32
     return constrain_value(amt, low, high);
 }
 
-// degrees -> radians
-static inline float radians(float deg)
-{
-    return deg * DEG_TO_RAD;
-}
+/* 
+ * @brief: Converts an euler angle with units 'degree' to an angle with the unit 'radian'
+ */
+template <class T>
+T radians(const T deg);
 
-// radians -> degrees
-static inline float degrees(float rad)
-{
-    return rad * RAD_TO_DEG;
-}
+/* 
+ * @brief: Converts an euler angle with units 'radian' to an angle with the unit 'degree'
+ */
+template <class T>
+T degrees(const T rad);
 
 template<class T>
 float sq(const T val)

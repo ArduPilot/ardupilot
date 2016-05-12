@@ -150,8 +150,8 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 void AP_AHRS::set_trim(Vector3f new_trim)
 {
     Vector3f trim;
-    trim.x = constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain_float(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.x = constrain_float(new_trim.x, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain_float(new_trim.y, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
     _trim.set_and_save(trim);
 }
 
@@ -161,8 +161,8 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     Vector3f trim = _trim.get();
 
     // add new trim
-    trim.x = constrain_float(trim.x + roll_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain_float(trim.y + pitch_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.x = constrain_float(trim.x + roll_in_radians, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain_float(trim.y + pitch_in_radians, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
 
     // set new trim values
     _trim.set(trim);

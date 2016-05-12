@@ -33,9 +33,9 @@ void AP_Mount_SToRM32::update()
         case MAV_MOUNT_MODE_RETRACT:
             {
             const Vector3f &target = _state._retract_angles.get();
-            _angle_ef_target_rad.x = ToRad(target.x);
-            _angle_ef_target_rad.y = ToRad(target.y);
-            _angle_ef_target_rad.z = ToRad(target.z);
+            _angle_ef_target_rad.x = radians(target.x);
+            _angle_ef_target_rad.y = radians(target.y);
+            _angle_ef_target_rad.z = radians(target.z);
             }
             break;
 
@@ -43,9 +43,9 @@ void AP_Mount_SToRM32::update()
         case MAV_MOUNT_MODE_NEUTRAL:
             {
             const Vector3f &target = _state._neutral_angles.get();
-            _angle_ef_target_rad.x = ToRad(target.x);
-            _angle_ef_target_rad.y = ToRad(target.y);
-            _angle_ef_target_rad.z = ToRad(target.z);
+            _angle_ef_target_rad.x = radians(target.x);
+            _angle_ef_target_rad.y = radians(target.y);
+            _angle_ef_target_rad.z = radians(target.z);
             }
             break;
 
@@ -76,7 +76,7 @@ void AP_Mount_SToRM32::update()
 
     // resend target angles at least once per second
     if (resend_now || ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_RESEND_MS)) {
-        send_do_mount_control(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z), MAV_MOUNT_MODE_MAVLINK_TARGETING);
+        send_do_mount_control(degrees(_angle_ef_target_rad.y), degrees(_angle_ef_target_rad.x), degrees(_angle_ef_target_rad.z), MAV_MOUNT_MODE_MAVLINK_TARGETING);
     }
 }
 
@@ -103,7 +103,7 @@ void AP_Mount_SToRM32::set_mode(enum MAV_MOUNT_MODE mode)
 void AP_Mount_SToRM32::status_msg(mavlink_channel_t chan)
 {
     // return target angles as gimbal's actual attitude.  To-Do: retrieve actual gimbal attitude and send these instead
-    mavlink_msg_mount_status_send(chan, 0, 0, ToDeg(_angle_ef_target_rad.y)*100, ToDeg(_angle_ef_target_rad.x)*100, ToDeg(_angle_ef_target_rad.z)*100);
+    mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_ef_target_rad.y)*100, degrees(_angle_ef_target_rad.x)*100, degrees(_angle_ef_target_rad.z)*100);
 }
 
 // search for gimbal in GCS_MAVLink routing table

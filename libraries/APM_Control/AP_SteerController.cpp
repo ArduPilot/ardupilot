@@ -114,7 +114,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     _pid_info.desired = desired_rate;
 
 	// Calculate the steering rate error (deg/sec) and apply gain scaler
-	float rate_error = (desired_rate - ToDeg(_ahrs.get_gyro().z)) * scaler;
+	float rate_error = (desired_rate - degrees(_ahrs.get_gyro().z)) * scaler;
 	
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
@@ -149,8 +149,8 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
 
     _pid_info.D = rate_error * _K_D * 4.0f; 
-    _pid_info.P = (ToRad(desired_rate) * kp_ff) * scaler;
-    _pid_info.FF = (ToRad(desired_rate) * k_ff) * scaler;
+    _pid_info.P = (radians(desired_rate) * kp_ff) * scaler;
+    _pid_info.FF = (radians(desired_rate) * k_ff) * scaler;
 	
 	// Calculate the demanded control surface deflection
 	_last_out = _pid_info.D + _pid_info.FF + _pid_info.P + _pid_info.I;
@@ -173,7 +173,7 @@ int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
     }
 
 	// Calculate the desired steering rate given desired_accel and speed
-    float desired_rate = ToDeg(desired_accel / speed);
+    float desired_rate = degrees(desired_accel / speed);
     return get_steering_out_rate(desired_rate);
 }
 

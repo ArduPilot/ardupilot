@@ -50,9 +50,9 @@ void AP_Mount_SoloGimbal::update()
             {
             _gimbal.set_lockedToBody(false);
             const Vector3f &target = _state._neutral_angles.get();
-            _angle_ef_target_rad.x = ToRad(target.x);
-            _angle_ef_target_rad.y = ToRad(target.y);
-            _angle_ef_target_rad.z = ToRad(target.z);
+            _angle_ef_target_rad.x = radians(target.x);
+            _angle_ef_target_rad.y = radians(target.y);
+            _angle_ef_target_rad.z = radians(target.z);
             }
             break;
 

@@ -23,7 +23,7 @@ void setup() {
     // set offsets to account for surrounding interference
     compass.set_and_save_offsets(0, 0, 0, 0);
     // set local difference between magnetic north and true north
-    compass.set_declination(ToRad(0.0f));
+    compass.set_declination(radians(0.0f));
 
     hal.scheduler->delay(1000);
     timer = AP_HAL::micros();
@@ -78,7 +78,7 @@ void loop()
 
             // display all to user
             hal.console->printf("Heading: %.2f (%3d,%3d,%3d) i2c error: %u",
-                                ToDeg(heading),
+                                degrees(heading),
                                 (int)mag.x,
                                 (int)mag.y,
                                 (int)mag.z,

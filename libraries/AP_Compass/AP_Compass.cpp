@@ -837,7 +837,7 @@ void Compass::_setup_earth_field(void)
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
     Matrix3f R;
-    R.from_euler(0, ToRad(66), get_declination());
+    R.from_euler(0, degrees(66.0f), get_declination());
     _hil.Bearth = R * _hil.Bearth;
 }
 

@@ -32,7 +32,7 @@ static void test_rotation_accuracy(void)
         attitude.from_euler(0,0,0);
 
         // calculate small rotation vector
-        rot_angle = ToRad(i);
+        rot_angle = radians(i);
         small_rotation = Vector3f(rot_angle,0,0);
 
         // apply small rotation
@@ -52,7 +52,7 @@ static void test_rotation_accuracy(void)
         
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
-                            (int)i,ToDeg(roll), ToDeg(roll2));
+                            (int)i,degrees(roll), degrees(roll2));
     }
 
     // test pitch
@@ -62,7 +62,7 @@ static void test_rotation_accuracy(void)
         attitude.from_euler(0,0,0);
 
         // calculate small rotation vector
-        rot_angle = ToRad(i);
+        rot_angle = radians(i);
         small_rotation = Vector3f(0,rot_angle,0);
 
         // apply small rotation
@@ -82,7 +82,7 @@ static void test_rotation_accuracy(void)
         
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
-                            (int)i,ToDeg(pitch), ToDeg(pitch2));
+                            (int)i,degrees(pitch), degrees(pitch2));
     }
     
 
@@ -93,7 +93,7 @@ static void test_rotation_accuracy(void)
         attitude.from_euler(0,0,0);
 
         // calculate small rotation vector
-        rot_angle = ToRad(i);
+        rot_angle = radians(i);
         small_rotation = Vector3f(0,0,rot_angle);
 
         // apply small rotation
@@ -113,7 +113,7 @@ static void test_rotation_accuracy(void)
         
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
-                            (int)i,ToDeg(yaw), ToDeg(yaw2));
+                            (int)i,degrees(yaw), degrees(yaw2));
     }
 }
 
@@ -233,14 +233,14 @@ static bool have_rotation(const Matrix3f &m)
 static void missing_rotations(void)
 {
     hal.console->println("testing for missing rotations");
-    uint16_t roll, pitch, yaw;
+    float roll, pitch, yaw;
     for (yaw=0; yaw<360; yaw += 90)
         for (pitch=0; pitch<360; pitch += 90)
             for (roll=0; roll<360; roll += 90) {
                 Matrix3f m;
-                m.from_euler(ToRad(roll), ToRad(pitch), ToRad(yaw));
+                m.from_euler(radians(roll), radians(pitch), radians(yaw));
                 if (!have_rotation(m)) {
-                    hal.console->printf("Missing rotation (%u, %u, %u)\n", roll, pitch, yaw);
+                    hal.console->printf("Missing rotation (%u, %u, %u)\n", (int)roll, (int)pitch, (int)yaw);
                 }
             }
 }
