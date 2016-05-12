@@ -10,7 +10,7 @@
 #include <cmath>
 #include "AC_PID.h"
 
-#define AC_PID_LEAK_MIN     500.0  // Default I-term Leak Minimum
+#define AC_PID_LEAK_MIN     0.1  // Default I-term Leak Minimum
 
 /// @class	AC_HELI_PID
 /// @brief	Heli PID control class
