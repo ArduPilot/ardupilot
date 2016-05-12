@@ -169,7 +169,6 @@ private:
     Compass compass;
     AP_InertialSensor ins;
 
-#if RANGEFINDER_ENABLED == ENABLED
     RangeFinder rangefinder {serial_manager};
     struct {
         bool enabled:1;
@@ -178,7 +177,6 @@ private:
         uint32_t last_healthy_ms;
         LowPassFilterFloat alt_cm_filt; // altitude filter
     } rangefinder_state = { false, false, 0, 0 };
-#endif
 
     AP_RPM rpm_sensor;
 

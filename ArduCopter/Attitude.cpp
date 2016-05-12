@@ -246,6 +246,7 @@ float Copter::get_throttle_pre_takeoff(float input_thr)
 //      returns climb rate (in cm/s) which should be passed to the position controller
 float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
 {
+#if RANGEFINDER_ENABLED == ENABLED
     static uint32_t last_call_ms = 0;
     float distance_error;
     float velocity_correction;
@@ -275,6 +276,9 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 
     // return combined pilot climb rate + rate to correct rangefinder alt error
     return (target_rate + velocity_correction);
+#else
+    return (float)target_rate;
+#endif
 }
 
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
