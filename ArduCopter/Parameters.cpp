@@ -1043,11 +1043,21 @@ void Copter::convert_pid_parameters(void)
         { Parameters::k_param_pid_rate_yaw, 0, AP_PARAM_FLOAT, "ATC_RAT_YAW_P" },
         { Parameters::k_param_pid_rate_yaw, 1, AP_PARAM_FLOAT, "ATC_RAT_YAW_I" },
         { Parameters::k_param_pid_rate_yaw, 2, AP_PARAM_FLOAT, "ATC_RAT_YAW_D" },
+#if FRAME_CONFIG == HELI_FRAME
+        { Parameters::k_param_pid_rate_roll,  4, AP_PARAM_FLOAT, "ATC_RAT_RLL_VFF" },
+        { Parameters::k_param_pid_rate_pitch, 4, AP_PARAM_FLOAT, "ATC_RAT_PIT_VFF" },
+        { Parameters::k_param_pid_rate_yaw  , 4, AP_PARAM_FLOAT, "ATC_RAT_YAW_VFF" },
+#endif
     };
     AP_Param::ConversionInfo imax_conversion_info[] = {
         { Parameters::k_param_pid_rate_roll,  5, AP_PARAM_FLOAT, "ATC_RAT_RLL_IMAX" },
         { Parameters::k_param_pid_rate_pitch, 5, AP_PARAM_FLOAT, "ATC_RAT_PIT_IMAX" },
-        { Parameters::k_param_pid_rate_yaw,   5, AP_PARAM_FLOAT, "ATC_RAT_YAW_IMAX" }
+        { Parameters::k_param_pid_rate_yaw,   5, AP_PARAM_FLOAT, "ATC_RAT_YAW_IMAX" },
+#if FRAME_CONFIG == HELI_FRAME
+        { Parameters::k_param_pid_rate_roll,  7, AP_PARAM_FLOAT, "ATC_RAT_RLL_ILMI" },
+        { Parameters::k_param_pid_rate_pitch, 7, AP_PARAM_FLOAT, "ATC_RAT_PIT_ILMI" },
+        { Parameters::k_param_pid_rate_yaw,   7, AP_PARAM_FLOAT, "ATC_RAT_YAW_ILMI" },
+#endif
     };
     AP_Param::ConversionInfo filt_conversion_info[] = {
         { Parameters::k_param_pid_rate_roll, 6, AP_PARAM_FLOAT, "ATC_RAT_RLL_FILT" },
