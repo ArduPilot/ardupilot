@@ -19,6 +19,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 import icosahedron as ico
+import grid
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
@@ -36,18 +37,35 @@ ax.invert_xaxis()
 ax.set_aspect('equal')
 
 added_polygons = set()
+added_sections = set()
 
 def polygons(polygons):
     for p in polygons:
         polygon(p)
 
-
 def polygon(polygon):
     added_polygons.add(polygon)
+
+def section(s):
+    added_sections.add(s)
+
+def sections(sections):
+    for s in sections:
+        section(s)
 
 def show(subtriangles=False):
     polygons = []
     facecolors = []
+
+    subtriangle_facecolors = (
+        '#CCCCCC',
+        '#CCE5FF',
+        '#E5FFCC',
+        '#FFCCCC',
+    )
+
+    if added_sections:
+        subtriangles = True
 
     for p in added_polygons:
         try:
@@ -57,23 +75,7 @@ def show(subtriangles=False):
             continue
 
         if subtriangles:
-            a, b, c = p
-
-            # project the middle points to the sphere
-            alpha = a.length() / (2.0 * ico.g)
-            ma, mb, mc = alpha * (a + b), alpha * (b + c), alpha * (c + a)
-
-            polygons.append(ico.Triangle(ma, mb, mc))
-            facecolors.append('#CCCCCC')
-
-            polygons.append(ico.Triangle( a, ma, mc))
-            facecolors.append('#CCE5FF')
-
-            polygons.append(ico.Triangle(ma,  b, mb))
-            facecolors.append('#E5FFCC')
-
-            polygons.append(ico.Triangle(mc, mb,  c))
-            facecolors.append('#FFCCCC')
+            sections(range(i * 4, i * 4 + 4))
         else:
             polygons.append(p)
             facecolors.append('#DDDDDD')
@@ -85,6 +87,11 @@ def show(subtriangles=False):
             mz += z
         ax.text(mx / 2.6, my /2.6, mz / 2.6, i, color='#444444')
 
+    for s in added_sections:
+        subtriangle_index = s % 4
+        polygons.append(grid.section_triangle(s))
+        facecolors.append(subtriangle_facecolors[subtriangle_index])
+
     ax.add_collection3d(Poly3DCollection(
         polygons,
         facecolors=facecolors,
@@ -93,11 +100,9 @@ def show(subtriangles=False):
 
     if subtriangles:
         ax.legend(
-            handles=(
-                mpatches.Patch(color='#CCCCCC', label='Sub-triangle #0'),
-                mpatches.Patch(color='#CCE5FF', label='Sub-triangle #1'),
-                mpatches.Patch(color='#E5FFCC', label='Sub-triangle #2'),
-                mpatches.Patch(color='#FFCCCC', label='Sub-triangle #3'),
+            handles=tuple(
+                mpatches.Patch(color=c, label='Sub-triangle #%d' % i)
+                for i, c in enumerate(subtriangle_facecolors)
             ),
         )
 
