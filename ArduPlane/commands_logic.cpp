@@ -506,7 +506,7 @@ bool Plane::verify_takeoff()
             // estimation we save our current GPS ground course
             // corrected for summed yaw to set the take off
             // course. This keeps wings level until we are ready to
-            // rotate, and also allows us to cope with arbitary
+            // rotate, and also allows us to cope with arbitrary
             // compass errors for auto takeoff
             float takeoff_course = wrap_PI(radians(gps.ground_course_cd()*0.01f)) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);

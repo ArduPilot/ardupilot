@@ -131,7 +131,7 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             continue;
         }
         if (mix == 0) {
-            // pass thru channel, possibly with reversal. We also
+            // pass through channel, possibly with reversal. We also
             // adjust the gain based on the range of input and output
             // channels and adjust for trims
             const RC_Channel *chan1 = RC_Channel::rc_channel(i);
