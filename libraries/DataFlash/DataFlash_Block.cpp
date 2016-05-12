@@ -34,7 +34,7 @@ void DataFlash_Block::FinishWrite(void)
     // Write Buffer to flash, NO WAIT
     BufferToPage(df_BufferNum, df_PageAdr, 0);      
     df_PageAdr++;
-    // If we reach the end of the memory, start from the begining    
+    // If we reach the end of the memory, start from the beginning    
     if (df_PageAdr > df_NumPages)
         df_PageAdr = 1;
 
