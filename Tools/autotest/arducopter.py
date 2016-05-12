@@ -802,6 +802,10 @@ def fly_auto_test(mavproxy, mav):
     # fly the mission
     ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
 
+    # land if mission failed
+    if ret == False:
+        land(mavproxy, mav)
+    
     # set throttle to minimum
     mavproxy.send('rc 3 1000\n')
 
