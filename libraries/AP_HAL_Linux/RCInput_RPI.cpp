@@ -472,7 +472,7 @@ void RCInput_RPI::_timer_tick()
         break;}
     }
     
-    //How many bytes have DMA transfered (and we can process)?
+    //How many bytes have DMA transferred (and we can process)?
     counter = circle_buffer->bytes_available(curr_pointer, circle_buffer->get_offset(circle_buffer->_virt_pages, (uintptr_t)x));
     //We can't stay in method for a long time, because it may lead to delays
     if (counter > RCIN_RPI_MAX_COUNTER) {

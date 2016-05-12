@@ -73,7 +73,7 @@ void RCInput_UART::_timer_tick()
 
     if (_data.magic != MAGIC) {
         /* try to find the magic number and move
-         * it to the beggining of our buffer */
+         * it to the beginning of our buffer */
         uint16_t magic = MAGIC;
 
         _pdata = (uint8_t *)memmem(&_data, sizeof(_data), &magic, sizeof(magic));
