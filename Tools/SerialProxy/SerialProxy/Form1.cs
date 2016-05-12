@@ -47,12 +47,12 @@ namespace SerialProxy
                 try
                 {
                     comPort.PortName = Comports.Text.ToString();
-                    comPort.DtrEnable = false; // dont reset yet
+                    comPort.DtrEnable = false; // don't reset yet
                     comPort.Open();
                     StatusCom.Text = "Com Connected";
                     ConnectComPort.Text = "Disconnect";
                 }
-                catch (Exception) { outputlog.AppendText("Cant open serial port\r\n"); return; }
+                catch (Exception) { outputlog.AppendText("Can't open serial port\r\n"); return; }
 
                 try
                 {

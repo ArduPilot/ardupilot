@@ -422,7 +422,7 @@ def apparent_wind(wind_sp, obj_speed, alpha):
 # (let's assume it's low, .e.g., 0.2), p : density of air (assume about 1
 # kg/m^3, the density just over 1500m elevation), v : relative speed of wind
 # (to the body), a : area acted on (this is captured by the cross_section
-# paramter).
+# parameter).
 # 
 # So then we have 
 # F(a) = 0.2 * 1/2 * v^2 * cross_section = 0.1 * v^2 * cross_section
