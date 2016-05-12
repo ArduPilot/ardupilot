@@ -525,7 +525,7 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     const Vector3f &curr_vel = _inav.get_velocity();
     // get speed along track (note: we convert vertical speed into horizontal speed equivalent)
     float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
-    _limited_speed_xy_cms = constrain_float(speed_along_track,0,_wp_speed_cms);
+    _limited_speed_xy_cms = constrain_value<float>(speed_along_track,0,_wp_speed_cms);
 
     return true;
 }
@@ -640,7 +640,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
             _limited_speed_xy_cms += 2.0f * _track_accel * dt;
         }
         // do not allow speed to be below zero or over top speed
-        _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms, 0.0f, _track_speed);
+        _limited_speed_xy_cms = constrain_value<float>(_limited_speed_xy_cms, 0.0f, _track_speed);
 
         // check if we should begin slowing down
         if (!_flags.fast_waypoint) {
@@ -656,7 +656,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 
         // if our current velocity is within the linear velocity range limit the intermediate point's velocity to be no more than the linear_velocity above or below our current velocity
         if (fabsf(speed_along_track) < linear_velocity) {
-            _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms,speed_along_track-linear_velocity,speed_along_track+linear_velocity);
+            _limited_speed_xy_cms = constrain_value<float>(_limited_speed_xy_cms,speed_along_track-linear_velocity,speed_along_track+linear_velocity);
         }
     }
     // advance the current target
@@ -675,9 +675,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 
     // do not let desired point go past the end of the track unless it's a fast waypoint
     if (!_flags.fast_waypoint) {
-        _track_desired = constrain_float(_track_desired, 0, _track_length);
+        _track_desired = constrain_value<float>(_track_desired, 0, _track_length);
     } else {
-        _track_desired = constrain_float(_track_desired, 0, _track_length + WPNAV_WP_FAST_OVERSHOOT_MAX);
+        _track_desired = constrain_value<float>(_track_desired, 0, _track_length + WPNAV_WP_FAST_OVERSHOOT_MAX);
     }
 
     // recalculate the desired position
@@ -1107,7 +1107,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         }
 
         // constrain target velocity
-        _spline_vel_scaler = constrain_float(_spline_vel_scaler, 0.0f, vel_limit);
+        _spline_vel_scaler = constrain_value<float>(_spline_vel_scaler, 0.0f, vel_limit);
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
         float target_vel_length = target_vel.length();

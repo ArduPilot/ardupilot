@@ -401,7 +401,7 @@ void AP_TECS::_update_speed_demand(void)
     }
 
     // Constrain speed demand, taking into account the load factor
-    _TAS_dem = constrain_float(_TAS_dem, _TASmin, _TASmax);
+    _TAS_dem = constrain_value<float>(_TAS_dem, _TASmin, _TASmax);
 
     // calculate velocity rate limits based on physical performance limits
     // provision to use a different rate limit if bad descent or underspeed condition exists
@@ -436,7 +436,7 @@ void AP_TECS::_update_speed_demand(void)
         _TAS_rate_dem = (_TAS_dem - _TAS_dem_last) / 0.1f;
     }
     // Constrain speed demand again to protect against bad values on initialisation.
-    _TAS_dem_adj = constrain_float(_TAS_dem_adj, _TASmin, _TASmax);
+    _TAS_dem_adj = constrain_value<float>(_TAS_dem_adj, _TASmin, _TASmax);
     _TAS_dem_last = _TAS_dem;
 }
 
@@ -584,8 +584,8 @@ void AP_TECS::_update_throttle(void)
     float SPE_err_min = 0.5f * _TASmin * _TASmin - _SKE_dem;
 
     // Calculate total energy error
-    _STE_error = constrain_float((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max) + _SKE_dem - _SKE_est;
-    float STEdot_dem = constrain_float((_SPEdot_dem + _SKEdot_dem), _STEdot_min, _STEdot_max);
+    _STE_error = constrain_value<float>((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max) + _SKE_dem - _SKE_est;
+    float STEdot_dem = constrain_value<float>((_SPEdot_dem + _SKEdot_dem), _STEdot_min, _STEdot_max);
     float STEdot_error = STEdot_dem - _SPEdot - _SKEdot;
 
     // Apply 0.5 second first order filter to STEdot_error
@@ -612,7 +612,7 @@ void AP_TECS::_update_throttle(void)
         // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
         // drag increase during turns.
         float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
-        STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(cosPhi * cosPhi , 0.1f, 1.0f) - 1.0f);
+        STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_value<float>(cosPhi * cosPhi , 0.1f, 1.0f) - 1.0f);
         ff_throttle = nomThr + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
 
         // Calculate PD + FF throttle
@@ -623,16 +623,16 @@ void AP_TECS::_update_throttle(void)
         _throttle_dem = (_STE_error + STEdot_error * throttle_damp) * K_STE2Thr + ff_throttle;
 
         // Constrain throttle demand
-        _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
+        _throttle_dem = constrain_value<float>(_throttle_dem, _THRminf, _THRmaxf);
 
-        float THRminf_clipped_to_zero = constrain_float(_THRminf, 0, _THRmaxf);
+        float THRminf_clipped_to_zero = constrain_value<float>(_THRminf, 0, _THRmaxf);
 
         // Rate limit PD + FF throttle
         // Calculate the throttle increment from the specified slew time
         if (aparm.throttle_slewrate != 0) {
             float thrRateIncr = _DT * (_THRmaxf - THRminf_clipped_to_zero) * aparm.throttle_slewrate * 0.01f;
 
-            _throttle_dem = constrain_float(_throttle_dem,
+            _throttle_dem = constrain_value<float>(_throttle_dem,
                                             _last_throttle_dem - thrRateIncr,
                                             _last_throttle_dem + thrRateIncr);
             _last_throttle_dem = _throttle_dem;
@@ -642,8 +642,8 @@ void AP_TECS::_update_throttle(void)
         // Set to a value that will allow 0.1 (10%) throttle saturation to allow for noise on the demand
         // Additionally constrain the integrator state amplitude so that the integrator comes off limits faster.
         float maxAmp = 0.5f*(_THRmaxf - THRminf_clipped_to_zero);
-        float integ_max = constrain_float((_THRmaxf - _throttle_dem + 0.1f),-maxAmp,maxAmp);
-        float integ_min = constrain_float((_THRminf - _throttle_dem - 0.1f),-maxAmp,maxAmp);
+        float integ_max = constrain_value<float>((_THRmaxf - _throttle_dem + 0.1f),-maxAmp,maxAmp);
+        float integ_min = constrain_value<float>((_THRminf - _throttle_dem - 0.1f),-maxAmp,maxAmp);
 
         // Calculate integrator state, constraining state
         // Set integrator to a max throttle value during climbout
@@ -654,7 +654,7 @@ void AP_TECS::_update_throttle(void)
         }
         else
         {
-            _integ6_state = constrain_float(_integ6_state, integ_min, integ_max);
+            _integ6_state = constrain_value<float>(_integ6_state, integ_min, integ_max);
         }
 
         // Sum the components.
@@ -667,7 +667,7 @@ void AP_TECS::_update_throttle(void)
     }
 
     // Constrain throttle demand
-    _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
+    _throttle_dem = constrain_value<float>(_throttle_dem, _THRminf, _THRmaxf);
 }
 
 float AP_TECS::_get_i_gain(void)
@@ -716,7 +716,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
     // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
     // drag increase during turns.
     float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
-    float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi * cosPhi , 0.1f, 1.0f) - 1.0f);
+    float STEdot_dem = _rollComp * (1.0f/constrain_value<float>(cosPhi * cosPhi , 0.1f, 1.0f) - 1.0f);
     _throttle_dem = _throttle_dem + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
 }
 
@@ -753,7 +753,7 @@ void AP_TECS::_update_pitch(void)
     // A SKE_weighting of 0 provides 100% priority to height control. This is used when no airspeed measurement is available
     // A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
     // rises above the demanded value, the pitch angle will be increased by the TECS controller.
-    float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
+    float SKE_weighting = constrain_value<float>(_spdWeight, 0.0f, 2.0f);
     if (!_ahrs.airspeed_sensor_enabled()) {
         SKE_weighting = 0.0f;
     } else if ( _flags.underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
@@ -761,10 +761,10 @@ void AP_TECS::_update_pitch(void)
     } else if (_flags.is_doing_auto_land) {
         if (_spdWeightLand < 0) {
             // use sliding scale from normal weight down to zero at landing
-            float scaled_weight = _spdWeight * (1.0f - constrain_float(_path_proportion,0,1));
-            SKE_weighting = constrain_float(scaled_weight, 0.0f, 2.0f);
+            float scaled_weight = _spdWeight * (1.0f - constrain_value<float>(_path_proportion,0,1));
+            SKE_weighting = constrain_value<float>(scaled_weight, 0.0f, 2.0f);
         } else {
-            SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+            SKE_weighting = constrain_value<float>(_spdWeightLand, 0.0f, 2.0f);
         }
     }
 
@@ -820,13 +820,13 @@ void AP_TECS::_update_pitch(void)
     if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         temp += _PITCHminf * gainInv;
     }
-    _integ7_state = constrain_float(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
+    _integ7_state = constrain_value<float>(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
 
     // Calculate pitch demand from specific energy balance signals
     _pitch_dem_unc = (temp + _integ7_state) / gainInv;
 
     // Constrain pitch demand
-    _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
+    _pitch_dem = constrain_value<float>(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
 
     // Rate limit the pitch demand to comply with specified vertical
     // acceleration limit
@@ -842,7 +842,7 @@ void AP_TECS::_update_pitch(void)
     }
 
     // re-constrain pitch demand
-    _pitch_dem = constrain_float(_pitch_dem, _PITCHminf, _PITCHmaxf);
+    _pitch_dem = constrain_value<float>(_pitch_dem, _PITCHminf, _PITCHmaxf);
 
     _last_pitch_dem = _pitch_dem;
 }
@@ -941,8 +941,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     // apply temporary pitch limit and clear
     if (_pitch_max_limit < 90) {
-        _PITCHmaxf = constrain_float(_PITCHmaxf, -90, _pitch_max_limit);
-        _PITCHminf = constrain_float(_PITCHminf, -_pitch_max_limit, _PITCHmaxf);
+        _PITCHmaxf = constrain_value<float>(_PITCHmaxf, -90, _pitch_max_limit);
+        _PITCHminf = constrain_value<float>(_PITCHminf, -_pitch_max_limit, _PITCHmaxf);
         _pitch_max_limit = 90;
     }
         

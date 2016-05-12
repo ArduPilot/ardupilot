@@ -217,7 +217,7 @@ void AC_Circle::calc_velocities(bool init_velocity)
 
         // angular_velocity in radians per second
         _angular_vel_max = velocity_max/_radius;
-        _angular_vel_max = constrain_float(radians(_rate.get()),-_angular_vel_max,_angular_vel_max);
+        _angular_vel_max = constrain_value<float>(radians(_rate.get()),-_angular_vel_max,_angular_vel_max);
 
         // angular_velocity in radians per second
         _angular_accel = MAX(_pos_control.get_accel_xy()/_radius, radians(AC_CIRCLE_ANGULAR_ACCEL_MIN));

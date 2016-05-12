@@ -21,7 +21,7 @@ void Tracker::update_scan(void)
         if (nav_status.bearing > 360 && !nav_status.scan_reverse_yaw) {
             nav_status.scan_reverse_yaw = true;
         }
-        nav_status.bearing = constrain_float(nav_status.bearing, 0, 360);
+        nav_status.bearing = constrain_value<float>(nav_status.bearing, 0, 360);
     }
 
     if (!nav_status.manual_control_pitch) {
@@ -33,7 +33,7 @@ void Tracker::update_scan(void)
         if (nav_status.pitch > 90 && !nav_status.scan_reverse_pitch) {
             nav_status.scan_reverse_pitch = true;
         }
-        nav_status.pitch = constrain_float(nav_status.pitch, -90, 90);
+        nav_status.pitch = constrain_value<float>(nav_status.pitch, -90, 90);
     }
 
     update_auto();

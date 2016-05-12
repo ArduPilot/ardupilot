@@ -665,12 +665,12 @@ void NavEKF2_core::CovariancePrediction()
 
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
-    windVelSigma  = dt * constrain_float(frontend->_windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
-    dAngBiasSigma = dt * constrain_float(frontend->_gyroBiasProcessNoise, 0.0f, 1e-4f);
-    dVelBiasSigma = dt * constrain_float(frontend->_accelBiasProcessNoise, 1e-6f, 1e-2f);
-    dAngScaleSigma = dt * constrain_float(frontend->_gyroScaleProcessNoise,1e-6f,1e-2f);
-    magEarthSigma = dt * constrain_float(frontend->_magProcessNoise, 1e-4f, 1e-1f);
-    magBodySigma  = dt * constrain_float(frontend->_magProcessNoise, 1e-4f, 1e-1f);
+    windVelSigma  = dt * constrain_value<float>(frontend->_windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_value<float>(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
+    dAngBiasSigma = dt * constrain_value<float>(frontend->_gyroBiasProcessNoise, 0.0f, 1e-4f);
+    dVelBiasSigma = dt * constrain_value<float>(frontend->_accelBiasProcessNoise, 1e-6f, 1e-2f);
+    dAngScaleSigma = dt * constrain_value<float>(frontend->_gyroScaleProcessNoise,1e-6f,1e-2f);
+    magEarthSigma = dt * constrain_value<float>(frontend->_magProcessNoise, 1e-4f, 1e-1f);
+    magBodySigma  = dt * constrain_value<float>(frontend->_magProcessNoise, 1e-4f, 1e-1f);
     for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 0.0f;
     for (uint8_t i=9; i<=11; i++) processNoise[i] = dAngBiasSigma;
     for (uint8_t i=12; i<=14; i++) processNoise[i] = dAngScaleSigma;
@@ -703,9 +703,9 @@ void NavEKF2_core::CovariancePrediction()
     day_s = stateStruct.gyro_scale.y;
     daz_s = stateStruct.gyro_scale.z;
     dvz_b = stateStruct.accel_zbias;
-    float _gyrNoise = constrain_float(frontend->_gyrNoise, 1e-4f, 1e-2f);
+    float _gyrNoise = constrain_value<float>(frontend->_gyrNoise, 1e-4f, 1e-2f);
     daxNoise = dayNoise = dazNoise = dt*_gyrNoise;
-    float _accNoise = constrain_float(frontend->_accNoise, 1e-2f, 1.0f);
+    float _accNoise = constrain_value<float>(frontend->_accNoise, 1e-2f, 1.0f);
     dvxNoise = dvyNoise = dvzNoise = dt*_accNoise;
 
     // calculate the predicted covariance due to inertial sensor error propagation
@@ -1224,48 +1224,48 @@ void NavEKF2_core::CopyCovariances()
 // constrain variances (diagonal terms) in the state covariance matrix to  prevent ill-conditioning
 void NavEKF2_core::ConstrainVariances()
 {
-    for (uint8_t i=0; i<=2; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f); // attitude error
-    for (uint8_t i=3; i<=5; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // velocities
-    for (uint8_t i=6; i<=7; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f);
-    P[8][8] = constrain_float(P[8][8],0.0f,1.0e6f); // vertical position
-    for (uint8_t i=9; i<=11; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtEkfAvg)); // delta angle biases
+    for (uint8_t i=0; i<=2; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0f); // attitude error
+    for (uint8_t i=3; i<=5; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0e3f); // velocities
+    for (uint8_t i=6; i<=7; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0e6f);
+    P[8][8] = constrain_value<float>(P[8][8],0.0f,1.0e6f); // vertical position
+    for (uint8_t i=9; i<=11; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,sq(0.175f * dtEkfAvg)); // delta angle biases
     if (PV_AidingMode != AID_NONE) {
-        for (uint8_t i=12; i<=14; i++) P[i][i] = constrain_float(P[i][i],0.0f,0.01f); // delta angle scale factors
+        for (uint8_t i=12; i<=14; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,0.01f); // delta angle scale factors
     } else {
         // we can't reliably estimate scale factors when there is no aiding data due to transient manoeuvre induced innovations
         // so inhibit estimation by keeping covariance elements at zero
         zeroRows(P,12,14);
         zeroCols(P,12,14);
     }
-    P[15][15] = constrain_float(P[15][15],0.0f,sq(10.0f * dtEkfAvg)); // delta velocity bias
-    for (uint8_t i=16; i<=18; i++) P[i][i] = constrain_float(P[i][i],0.0f,0.01f); // earth magnetic field
-    for (uint8_t i=19; i<=21; i++) P[i][i] = constrain_float(P[i][i],0.0f,0.01f); // body magnetic field
-    for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // wind velocity
+    P[15][15] = constrain_value<float>(P[15][15],0.0f,sq(10.0f * dtEkfAvg)); // delta velocity bias
+    for (uint8_t i=16; i<=18; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,0.01f); // earth magnetic field
+    for (uint8_t i=19; i<=21; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,0.01f); // body magnetic field
+    for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0e3f); // wind velocity
 }
 
 // constrain states to prevent ill-conditioning
 void NavEKF2_core::ConstrainStates()
 {
     // attitude errors are limited between +-1
-    for (uint8_t i=0; i<=2; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f,1.0f);
+    for (uint8_t i=0; i<=2; i++) statesArray[i] = constrain_value<float>(statesArray[i],-1.0f,1.0f);
     // velocity limit 500 m/sec (could set this based on some multiple of max airspeed * EAS2TAS)
-    for (uint8_t i=3; i<=5; i++) statesArray[i] = constrain_float(statesArray[i],-5.0e2f,5.0e2f);
+    for (uint8_t i=3; i<=5; i++) statesArray[i] = constrain_value<float>(statesArray[i],-5.0e2f,5.0e2f);
     // position limit 1000 km - TODO apply circular limit
-    for (uint8_t i=6; i<=7; i++) statesArray[i] = constrain_float(statesArray[i],-1.0e6f,1.0e6f);
+    for (uint8_t i=6; i<=7; i++) statesArray[i] = constrain_value<float>(statesArray[i],-1.0e6f,1.0e6f);
     // height limit covers home alt on everest through to home alt at SL and ballon drop
-    stateStruct.position.z = constrain_float(stateStruct.position.z,-4.0e4f,1.0e4f);
+    stateStruct.position.z = constrain_value<float>(stateStruct.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit (this needs to be set based on manufacturers specs)
-    for (uint8_t i=9; i<=11; i++) statesArray[i] = constrain_float(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
+    for (uint8_t i=9; i<=11; i++) statesArray[i] = constrain_value<float>(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
     // gyro scale factor limit of +-5% (this needs to be set based on manufacturers specs)
-    for (uint8_t i=12; i<=14; i++) statesArray[i] = constrain_float(statesArray[i],0.95f,1.05f);
+    for (uint8_t i=12; i<=14; i++) statesArray[i] = constrain_value<float>(statesArray[i],0.95f,1.05f);
     // Z accel bias limit 1.0 m/s^2	(this needs to be finalised from test data)
-    stateStruct.accel_zbias = constrain_float(stateStruct.accel_zbias,-1.0f*dtEkfAvg,1.0f*dtEkfAvg);
+    stateStruct.accel_zbias = constrain_value<float>(stateStruct.accel_zbias,-1.0f*dtEkfAvg,1.0f*dtEkfAvg);
     // earth magnetic field limit
-    for (uint8_t i=16; i<=18; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f,1.0f);
+    for (uint8_t i=16; i<=18; i++) statesArray[i] = constrain_value<float>(statesArray[i],-1.0f,1.0f);
     // body magnetic field limit
-    for (uint8_t i=19; i<=21; i++) statesArray[i] = constrain_float(statesArray[i],-0.5f,0.5f);
+    for (uint8_t i=19; i<=21; i++) statesArray[i] = constrain_value<float>(statesArray[i],-0.5f,0.5f);
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
-    for (uint8_t i=22; i<=23; i++) statesArray[i] = constrain_float(statesArray[i],-100.0f,100.0f);
+    for (uint8_t i=22; i<=23; i++) statesArray[i] = constrain_value<float>(statesArray[i],-100.0f,100.0f);
     // constrain the terrain offset state
     terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
 }

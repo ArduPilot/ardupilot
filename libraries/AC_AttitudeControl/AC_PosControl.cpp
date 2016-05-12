@@ -144,12 +144,12 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 
     // adjust desired alt if motors have not hit their limits
     if ((alt_change<0 && !_motors.limit.throttle_lower) || (alt_change>0 && !_motors.limit.throttle_upper)) {
-        _pos_target.z += constrain_float(alt_change, _speed_down_cms*dt, _speed_up_cms*dt);
+        _pos_target.z += constrain_value<float>(alt_change, _speed_down_cms*dt, _speed_up_cms*dt);
     }
 
     // do not let target get too far from current altitude
     float curr_alt = _inav.get_altitude();
-    _pos_target.z = constrain_float(_pos_target.z,curr_alt-_leash_down_z,curr_alt+_leash_up_z);
+    _pos_target.z = constrain_value<float>(_pos_target.z,curr_alt-_leash_down_z,curr_alt+_leash_up_z);
 }
 
 
@@ -192,7 +192,7 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     if (_vel_desired.z > _speed_up_cms && !is_zero(_speed_up_cms)) {
         accel_z_cms *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _speed_up_cms;
     }
-    accel_z_cms = constrain_float(accel_z_cms, 0.0f, 750.0f);
+    accel_z_cms = constrain_value<float>(accel_z_cms, 0.0f, 750.0f);
 
     // jerk_z is calculated to reach full acceleration in 1000ms.
     float jerk_z = accel_z_cms * POSCONTROL_JERK_RATIO;
@@ -203,7 +203,7 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     _accel_last_z_cms = MIN(accel_z_max, _accel_last_z_cms);
 
     float vel_change_limit = _accel_last_z_cms * dt;
-    _vel_desired.z = constrain_float(climb_rate_cms, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
+    _vel_desired.z = constrain_value<float>(climb_rate_cms, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
     _flags.use_desvel_ff_z = true;
 
     // adjust desired alt if motors have not hit their limits
@@ -217,7 +217,7 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
         _pos_target.z = _alt_max;
         _limit.pos_up = true;
         // decelerate feed forward to zero
-        _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
+        _vel_desired.z = constrain_value<float>(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
     }
 }
 
@@ -290,7 +290,7 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
             stopping_point.z = curr_pos_z - (linear_distance + curr_vel_z*curr_vel_z/(2.0f*_accel_z_cms));
         }
     }
-    stopping_point.z = constrain_float(stopping_point.z, curr_pos_z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos_z + POSCONTROL_STOPPING_DIST_Z_MAX);
+    stopping_point.z = constrain_value<float>(stopping_point.z, curr_pos_z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos_z + POSCONTROL_STOPPING_DIST_Z_MAX);
 }
 
 /// init_takeoff - initialises target altitude if we are taking off
@@ -521,8 +521,8 @@ void AC_PosControl::set_pos_target(const Vector3f& position)
     _vel_desired.z = 0.0f;
     // initialise roll and pitch to current roll and pitch.  This avoids a twitch between when the target is set and the pos controller is first run
     // To-Do: this initialisation of roll and pitch targets needs to go somewhere between when pos-control is initialised and when it completes it's first cycle
-    //_roll_target = constrain_int32(_ahrs.roll_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
-    //_pitch_target = constrain_int32(_ahrs.pitch_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
+    //_roll_target = constrain_value<int32_t>(_ahrs.roll_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
+    //_pitch_target = constrain_value<int32_t>(_ahrs.pitch_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
 }
 
 /// set_xy_target in cm from home
@@ -596,7 +596,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     }
 
     // constrain stopping distance
-    stopping_dist = constrain_float(stopping_dist, 0, _leash);
+    stopping_dist = constrain_value<float>(stopping_dist, 0, _leash);
 
     // convert the stopping distance into a stopping point using velocity vector
     stopping_point.x = curr_pos.x + (stopping_dist * curr_vel.x / vel_total);
@@ -915,7 +915,7 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bo
 
     // limit acceleration if necessary
     if (use_althold_lean_angle) {
-        accel_max = MIN(accel_max, GRAVITY_MSS * 100.0f * tanf(radians(constrain_float(_attitude_control.get_althold_lean_angle_max(),1000,8000)/100.0f)));
+        accel_max = MIN(accel_max, GRAVITY_MSS * 100.0f * tanf(radians(constrain_value<float>(_attitude_control.get_althold_lean_angle_max(),1000,8000)/100.0f)));
     }
 
     // scale desired acceleration if it's beyond acceptable limit
@@ -958,9 +958,9 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bo
     accel_right = -accel_target_filtered.x*_ahrs.sin_yaw() + accel_target_filtered.y*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    _pitch_target = constrain_float(atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
+    _pitch_target = constrain_value<float>(atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
     float cos_pitch_target = cosf(_pitch_target*M_PI/18000);
-    _roll_target = constrain_float(atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
+    _roll_target = constrain_value<float>(atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s

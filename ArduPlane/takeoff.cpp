@@ -114,7 +114,7 @@ void Plane::takeoff_calc_roll(void)
         float proportion = (baro_alt - (auto_state.baro_takeoff_alt+lim1)) / (lim2 - lim1);
         roll_limit = (1-proportion) * g.level_roll_limit + proportion * roll_limit;
     }
-    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit*100UL, roll_limit*100UL);
+    nav_roll_cd = constrain_value<int32_t>(nav_roll_cd, -roll_limit*100UL, roll_limit*100UL);
 }
 
         
@@ -140,7 +140,7 @@ void Plane::takeoff_calc_pitch(void)
         }
     } else {
         nav_pitch_cd = ((gps.ground_speed()*100) / (float)g.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
-        nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
+        nav_pitch_cd = constrain_value<int32_t>(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
     }
 }
 

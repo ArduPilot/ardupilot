@@ -69,7 +69,7 @@ public:
     float               get_roll() const { return _roll_in; }
     float               get_pitch() const { return _pitch_in; }
     float               get_yaw() const { return _yaw_in; }
-    float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
+    float               get_throttle() const { return constrain_value<float>(_throttle_filter.get(),0.0f,1.0f); }
 
     // spool up states
     enum spool_up_down_desired {

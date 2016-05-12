@@ -120,9 +120,9 @@ Compass::learn_offsets(void)
         }
 
         // constrain offsets
-        new_offsets.x = constrain_float(new_offsets.x, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
-        new_offsets.y = constrain_float(new_offsets.y, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
-        new_offsets.z = constrain_float(new_offsets.z, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
+        new_offsets.x = constrain_value<float>(new_offsets.x, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
+        new_offsets.y = constrain_value<float>(new_offsets.y, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
+        new_offsets.z = constrain_value<float>(new_offsets.z, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
             
         // set the new offsets
         _state[k].offset.set(new_offsets);

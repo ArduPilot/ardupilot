@@ -36,8 +36,8 @@ void Tracker::update_position_servos(float delta_time, float &yaw_rate, float &p
     float pitch_target = pitch_input*pitch_range;
     float yaw_target = yaw_input*yaw_range;
 
-    pitch_rate = constrain_float(pitch_target - pitch_current_relative, -pitchrate, pitchrate);
-    yaw_rate   = constrain_float(yaw_target - yaw_current_relative, -yawrate, yawrate);
+    pitch_rate = constrain_value<float>(pitch_target - pitch_current_relative, -pitchrate, pitchrate);
+    yaw_rate   = constrain_value<float>(yaw_target - yaw_current_relative, -yawrate, yawrate);
 }
 
 /*

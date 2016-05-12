@@ -138,7 +138,7 @@ void AP_AutoTune::start(void)
     current.D.set(tuning_table[level-1].Dratio * current.P);
     current.tau.set(tuning_table[level-1].tau);
 
-    current.imax = constrain_float(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
+    current.imax = constrain_value<float>(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
 
     // force a fixed ratio of I to D gain on the rate feedback path
     current.I = 0.5f * current.D / current.tau;

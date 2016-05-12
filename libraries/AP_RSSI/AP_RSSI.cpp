@@ -4,12 +4,10 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -176,7 +174,7 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
     // (Some radio receivers put out inverted ranges for RSSI-type values).    
     bool range_is_inverted = (high_rssi_range < low_rssi_range);
     // Constrain to the possible range - values outside are clipped to ends 
-    current_rssi_value = constrain_float(current_rssi_value, 
+    current_rssi_value = constrain_value<float>(current_rssi_value, 
                                         range_is_inverted ? high_rssi_range : low_rssi_range, 
                                         range_is_inverted ? low_rssi_range : high_rssi_range);    
 
@@ -191,5 +189,5 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
     float rssi_value_scaled = (current_rssi_value - low_rssi_range) / rssi_value_range;
     // Make absolutely sure the value is clipped to the 0.0 - 1.0 range. This should handle things if the
     // value retrieved falls outside the user-supplied range.
-    return constrain_float(rssi_value_scaled, 0.0f, 1.0f);
+    return constrain_value<float>(rssi_value_scaled, 0.0f, 1.0f);
 }

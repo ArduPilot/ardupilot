@@ -696,7 +696,7 @@ void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, 
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
     }else{
         int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / turn_rate_dps;
-        yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
+        yaw_look_at_heading_slew = constrain_value<int32_t>(turn_rate, 1, 360);    // deg / sec
     }
 
     // set yaw mode

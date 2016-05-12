@@ -93,7 +93,7 @@ public:
     void do_piro_comp(bool piro_comp) { _flags_heli.do_piro_comp = piro_comp; }
 
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
-    void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
+    void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_value<float>(scalar, 0.0f, 1.0f);}
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -134,7 +134,7 @@ private:
     int16_t _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_rad() { return constrain_float(radians(_hover_roll_trim_scalar * _hover_roll_trim * 0.01f), -radians(10.0f),radians(10.0f));}
+    float get_roll_trim_rad() { return constrain_value<float>(radians(_hover_roll_trim_scalar * _hover_roll_trim * 0.01f), -radians(10.0f),radians(10.0f));}
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim

@@ -50,11 +50,11 @@ void Copter::sport_run()
     target_pitch_rate = channel_pitch->get_control_in() * g.acro_rp_p;
 
     int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
-    target_roll_rate -= constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
+    target_roll_rate -= constrain_value<int32_t>(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
 
     // Calculate trainer mode earth frame rate command for pitch
     int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
-    target_pitch_rate -= constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
+    target_pitch_rate -= constrain_value<int32_t>(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
 
     if (roll_angle > aparm.angle_max){
         target_roll_rate -=  g.acro_rp_p*(roll_angle-aparm.angle_max);
@@ -73,7 +73,7 @@ void Copter::sport_run()
 
     // get pilot desired climb rate
     target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    target_climb_rate = constrain_value<float>(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
     // get takeoff adjusted pilot and takeoff climb rates
     takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
@@ -81,7 +81,7 @@ void Copter::sport_run()
     // check for take-off
     if (ap.land_complete && (takeoff_state.running || (channel_throttle->get_control_in() > get_takeoff_trigger_throttle()))) {
         if (!takeoff_state.running) {
-            takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff_timer_start(constrain_value<float>(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
 
         // indicate we are taking off

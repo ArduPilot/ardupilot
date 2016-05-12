@@ -206,7 +206,7 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
     _throttle_limit += AP_MOTORS_CURRENT_LIMIT_P*(1.0f - batt_current_ratio)/_loop_rate;
 
     // throttle limit drops to 20% between hover and full throttle
-    _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
+    _throttle_limit = constrain_value<float>(_throttle_limit, 0.2f, 1.0f);
 
     // limit max throttle
     float throttle_thrust_hover = get_hover_throttle_as_high_end_pct();
@@ -225,7 +225,7 @@ float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) co
     // scale to maximum thrust point
     throttle_ratio *= _thrust_curve_max;
 
-    return constrain_float(throttle_ratio, 0.0f, _thrust_curve_max);
+    return constrain_value<float>(throttle_ratio, 0.0f, _thrust_curve_max);
 }
 
 // update_lift_max from battery voltage - used for voltage compensation
@@ -243,7 +243,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 
     // add current based voltage sag to battery voltage
     float batt_voltage = _batt_voltage + _batt_current * _batt_resistance;
-    batt_voltage = constrain_float(batt_voltage, _batt_voltage_min, _batt_voltage_max);
+    batt_voltage = constrain_value<float>(batt_voltage, _batt_voltage_min, _batt_voltage_max);
 
     // filter at 0.5 Hz
     float bvf = _batt_voltage_filt.apply(batt_voltage/_batt_voltage_max, 1.0f/_loop_rate);
@@ -286,7 +286,7 @@ void AP_MotorsMulticopter::update_throttle_rpy_mix()
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
         _throttle_rpy_mix -= MIN(0.5f/_loop_rate, _throttle_rpy_mix-_throttle_rpy_mix_desired);
     }
-    _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
+    _throttle_rpy_mix = constrain_value<float>(_throttle_rpy_mix, 0.1f, 1.0f);
 }
 
 float AP_MotorsMulticopter::get_hover_throttle_as_high_end_pct() const
@@ -306,7 +306,7 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 #if AP_MOTORS_DENSITY_COMP == 1
     // air density ratio is increasing in density / decreasing in altitude
     if (_air_density_ratio > 0.3f && _air_density_ratio < 1.5f) {
-        ret *= 1.0f / constrain_float(_air_density_ratio,0.5f,1.25f);
+        ret *= 1.0f / constrain_value<float>(_air_density_ratio,0.5f,1.25f);
     }
 #endif
     return ret;
@@ -314,7 +314,7 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 
 int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 {
-    return constrain_int16((_throttle_radio_min + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
+    return constrain_value<int16_t>((_throttle_radio_min + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
             ( _throttle_radio_max - (_throttle_radio_min + _min_throttle))), _throttle_radio_min + _min_throttle, _throttle_radio_max);
 }
 
@@ -390,7 +390,7 @@ void AP_MotorsMulticopter::output_logic()
                 if (_min_throttle > 0) {
                     spin_when_armed_low_end_pct = (float)_spin_when_armed / _min_throttle;
                 }
-                _throttle_low_end_pct += constrain_float(spin_when_armed_low_end_pct-_throttle_low_end_pct, -spool_step, spool_step);
+                _throttle_low_end_pct += constrain_value<float>(spin_when_armed_low_end_pct-_throttle_low_end_pct, -spool_step, spool_step);
             }
             _throttle_thrust_max = 0.0f;
             _throttle_rpy_mix = 0.0f;

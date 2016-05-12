@@ -1604,7 +1604,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         // convert thrust to climb rate
-        packet.thrust = constrain_float(packet.thrust, 0.0f, 1.0f);
+        packet.thrust = constrain_value<float>(packet.thrust, 0.0f, 1.0f);
         float climb_rate_cms = 0.0f;
         if (is_equal(packet.thrust, 0.5f)) {
             climb_rate_cms = 0.0f;

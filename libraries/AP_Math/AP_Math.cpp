@@ -136,7 +136,7 @@ template <class T>
 T constrain_value(const T amt, const T low, const T high)
 {
     // the check for NaN as a float prevents propogation of floating point
-    // errors through any function that uses constrain_float(). The normal
+    // errors through any function that uses constrain_value<float>(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
         return (low + high) * 0.5f;

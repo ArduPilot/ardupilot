@@ -73,7 +73,7 @@ void Copter::arm_motors_check()
 void Copter::auto_disarm_check()
 {
     uint32_t tnow_ms = millis();
-    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
+    uint32_t disarm_delay_ms = 1000*constrain_value<int16_t>(g.disarm_delay, 0, 127);
 
     // exit immediately if we are already disarmed, or if auto
     // disarming is disabled

@@ -72,8 +72,8 @@ void Copter::drift_run()
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
     target_yaw_rate = ((float)target_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
 
-    roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
-    pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
+    roll_vel = constrain_value<float>(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
+    pitch_vel = constrain_value<float>(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     
     roll_input = roll_input * .96f + (float)channel_yaw->get_control_in() * .04f;
 
@@ -82,7 +82,7 @@ void Copter::drift_run()
 
     // Roll velocity is feed into roll acceleration to minimize slip
     target_roll = roll_vel_error * -DRIFT_SPEEDGAIN;
-    target_roll = constrain_int16(target_roll, -4500, 4500);
+    target_roll = constrain_value<int16_t>(target_roll, -4500, 4500);
 
     // If we let go of sticks, bring us to a stop
     if(is_zero(target_pitch)){
@@ -114,11 +114,11 @@ float Copter::get_throttle_assist(float velz, float pilot_throttle_scaled)
     if (pilot_throttle_scaled > DRIFT_THR_MIN && pilot_throttle_scaled < DRIFT_THR_MAX) {
         // calculate throttle assist gain
         thr_assist = 1.2f - ((float)fabsf(pilot_throttle_scaled - 0.5f) / 0.24f);
-        thr_assist = constrain_float(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * velz;
+        thr_assist = constrain_value<float>(thr_assist, 0.0f, 1.0f) * -DRIFT_THR_ASSIST_GAIN * velz;
 
         // ensure throttle assist never adjusts the throttle by more than 300 pwm
-        thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
+        thr_assist = constrain_value<float>(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
     }
     
-    return constrain_float(pilot_throttle_scaled + thr_assist, 0.0f, 1.0f);
+    return constrain_value<float>(pilot_throttle_scaled + thr_assist, 0.0f, 1.0f);
 }
