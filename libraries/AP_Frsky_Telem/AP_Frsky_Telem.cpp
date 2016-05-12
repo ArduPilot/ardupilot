@@ -609,7 +609,7 @@ void AP_Frsky_Telem::send_heading(void)
 }
 
 /*
- * send gps lattitude degree and minute integer part; Initialize gps info
+ * send gps latitude degree and minute integer part; Initialize gps info
  */
 void AP_Frsky_Telem::send_gps_lat_dd(void)
 {
@@ -617,7 +617,7 @@ void AP_Frsky_Telem::send_gps_lat_dd(void)
 }
 
 /*
- * send gps lattitude minutes decimal part 
+ * send gps latitude minutes decimal part 
  */
 void AP_Frsky_Telem::send_gps_lat_mm(void)
 {
