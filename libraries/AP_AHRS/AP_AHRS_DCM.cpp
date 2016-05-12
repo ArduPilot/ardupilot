@@ -169,7 +169,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
             // calculate initial roll angle
             roll = atan2f(-initAccVec.y, -initAccVec.z);
         } else {
-            // If we cant use the accel vector, then align flat
+            // If we can't use the accel vector, then align flat
             roll = 0.0f;
             pitch = 0.0f;
         }
