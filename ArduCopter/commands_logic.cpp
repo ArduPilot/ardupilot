@@ -283,13 +283,31 @@ void Copter::do_takeoff(const AP_Mission::Mission_Command& cmd)
 // do_nav_wp - initiate move to next waypoint
 void Copter::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+    Location_Class target_loc(cmd.content.location);
+    // use current lat, lon if zero
+    if (target_loc.lat == 0 && target_loc.lng == 0) {
+        target_loc.lat = current_loc.lat;
+        target_loc.lng = current_loc.lng;
+    }
+    // use current altitude if not provided
+    if (target_loc.alt == 0) {
+        // set to current altitude but in command's alt frame
+        int32_t curr_alt;
+        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
+            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
+        } else {
+            // default to current altitude as alt-above-home
+            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+        }
+    }
+    
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
     loiter_time_max = cmd.p1;
 
     // Set wp navigation target
-    auto_wp_start(Location_Class(cmd.content.location));
+    auto_wp_start(target_loc);
 
     // if no delay set the waypoint as "fast"
     if (loiter_time_max == 0 ) {
