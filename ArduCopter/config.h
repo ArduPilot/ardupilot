@@ -469,7 +469,7 @@
 #endif
 
 #ifndef RTL_LOITER_TIME
- # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before begining final descent
+ # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
 #endif
 
 // AUTO Mode

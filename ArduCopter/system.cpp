@@ -312,7 +312,7 @@ void Copter::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if succesfully calibrated
+// calibrate gyros - returns true if successfully calibrated
 bool Copter::calibrate_gyros()
 {
     // gyro offset calibration
