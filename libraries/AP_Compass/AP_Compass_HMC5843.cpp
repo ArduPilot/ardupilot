@@ -18,7 +18,7 @@
  *       AP_Compass_HMC5843.cpp - Arduino Library for HMC5843 I2C magnetometer
  *       Code by Jordi Muñoz and Jose Julio. DIYDrones.com
  *
- *       Sensor is conected to I2C port
+ *       Sensor is connected to I2C port
  *       Sensor is initialized in Continuos mode (10Hz)
  *
  */
