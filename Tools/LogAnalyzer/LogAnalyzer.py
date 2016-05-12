@@ -189,12 +189,12 @@ class TestSuite(object):
                 print >>xml, "    <name>" + escape(test.name) + "</name>"
                 print >>xml, "    <status>FAIL</status>"
                 print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
-                print >>xml, "    <data>(test data will be embeded here at some point)</data>"
+                print >>xml, "    <data>(test data will be embedded here at some point)</data>"
             elif test.result.status == TestResult.StatusType.WARN:
                 print >>xml, "    <name>" + escape(test.name) + "</name>"
                 print >>xml, "    <status>WARN</status>"
                 print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
-                print >>xml, "    <data>(test data will be embeded here at some point)</data>"
+                print >>xml, "    <data>(test data will be embedded here at some point)</data>"
             elif test.result.status == TestResult.StatusType.NA:
                 print >>xml, "    <name>" + escape(test.name) + "</name>"
                 print >>xml, "    <status>NA</status>"

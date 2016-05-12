@@ -197,7 +197,7 @@
 
 		/* Inline Functions: */
 			/** Resets the delay counter value to the current tick count. This should be called to reset the period
-			 *  for a delay in a task which is dependant on the current tick value.
+			 *  for a delay in a task which is dependent on the current tick value.
 			 *
 			 *  \param[out] DelayCounter  Counter which is storing the starting tick count for a given delay.
 			 */
