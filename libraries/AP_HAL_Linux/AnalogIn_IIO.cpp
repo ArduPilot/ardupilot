@@ -42,7 +42,7 @@ void AnalogSource_IIO::init_pins(void)
 }
 
 /*
-  selects a diferent file descriptor among in the fd_analog_sources array
+  selects a different file descriptor among in the fd_analog_sources array
  */
 void AnalogSource_IIO::select_pin(void)
 {
