@@ -109,7 +109,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         FiltInit = true;
         hal.console->printf("\nSoloGimbalEKF Alignment Started\n");
 
-        // Don't run the filter in this timestep becasue we have already used the delta velocity data to set an initial orientation
+        // Don't run the filter in this timestep because we have already used the delta velocity data to set an initial orientation
         return;
     }
 
