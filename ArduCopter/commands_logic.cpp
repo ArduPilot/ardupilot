@@ -361,7 +361,9 @@ void Copter::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         // To-Do: make this simpler
         Vector3f temp_pos;
         wp_nav.get_wp_stopping_point_xy(temp_pos);
-        target_loc.offset(temp_pos.x * 100.0f, temp_pos.y * 100.0f);
+        Location_Class temp_loc(temp_pos);
+        target_loc.lat = temp_loc.lat;
+        target_loc.lng = temp_loc.lng;
     }
 
     // use current altitude if not provided
