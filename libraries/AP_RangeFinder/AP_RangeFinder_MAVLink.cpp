@@ -35,7 +35,7 @@ AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder &_ranger, uint8_t ins
 
 /*
    detect if a MAVLink rangefinder is connected. We'll detect by
-   checking a paramter.
+   checking a parameter.
 */
 bool AP_RangeFinder_MAVLink::detect(RangeFinder &_ranger, uint8_t instance)
 {
