@@ -235,7 +235,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
     return;
   }
 
-  /* Caluclate some other constants as defined in the Fukushima paper. */
+  /* Calculate some other constants as defined in the Fukushima paper. */
   const double P = p / WGS84_A;
   const double e_c = sqrt(1. - WGS84_E*WGS84_E);
   const double Z = fabs(ecef[2]) * e_c / WGS84_A;
