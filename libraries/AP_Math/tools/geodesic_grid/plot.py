@@ -56,6 +56,7 @@ def sections(sections):
 def show(subtriangles=False):
     polygons = []
     facecolors = []
+    triangles_indexes = set()
 
     subtriangle_facecolors = (
         '#CCCCCC',
@@ -77,17 +78,12 @@ def show(subtriangles=False):
         if subtriangles:
             sections(range(i * 4, i * 4 + 4))
         else:
+            triangles_indexes.add(i)
             polygons.append(p)
             facecolors.append('#DDDDDD')
 
-        mx = my = mz = 0
-        for x, y, z in p:
-            mx += x
-            my += y
-            mz += z
-        ax.text(mx / 2.6, my /2.6, mz / 2.6, i, color='#444444')
-
     for s in added_sections:
+        triangles_indexes.add(int(s / 4))
         subtriangle_index = s % 4
         polygons.append(grid.section_triangle(s))
         facecolors.append(subtriangle_facecolors[subtriangle_index])
@@ -97,6 +93,15 @@ def show(subtriangles=False):
         facecolors=facecolors,
         edgecolors="#777777",
     ))
+
+    for i in triangles_indexes:
+        t = ico.triangles[i]
+        mx = my = mz = 0
+        for x, y, z in t:
+            mx += x
+            my += y
+            mz += z
+        ax.text(mx / 2.6, my / 2.6, mz / 2.6, i, color='#444444')
 
     if subtriangles:
         ax.legend(
