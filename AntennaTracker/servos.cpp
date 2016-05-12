@@ -267,8 +267,8 @@ void Tracker::update_yaw_position_servo(float yaw)
         g.pidYaw2Srv.reset_I();
     } else {
         float servo_change = g.pidYaw2Srv.get_pid(angle_err);
-        servo_change = constrain_float(servo_change, -18000, 18000);
-        new_servo_out = constrain_float(channel_yaw.get_servo_out() - servo_change, -18000, 18000);
+        servo_change = constrain_value<float>(servo_change, -18000, 18000);
+        new_servo_out = constrain_value<float>(channel_yaw.get_servo_out() - servo_change, -18000, 18000);
     }
 
     // rate limit yaw servo

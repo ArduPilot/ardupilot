@@ -281,7 +281,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     velned.ned_down  = 100.0f * d->speedD;
     velned.speed_2d = norm(d->speedN, d->speedE) * 100;
     velned.speed_3d = norm(d->speedN, d->speedE, d->speedD) * 100;
-    velned.heading_2d = ToDeg(atan2f(d->speedE, d->speedN)) * 100000.0f;
+    velned.heading_2d = degrees(atan2f(d->speedE, d->speedN)) * 100000.0f;
     if (velned.heading_2d < 0.0f) {
         velned.heading_2d += 360.0f * 100000.0f;
     }
@@ -362,7 +362,7 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d)
     p.longitude     = d->longitude * 1.0e6;
     p.altitude      = d->altitude * 100;
     p.ground_speed  = norm(d->speedN, d->speedE) * 100;
-    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0f;
+    p.ground_course = degrees(atan2f(d->speedE, d->speedN)) * 1000000.0f;
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 1000000.0f;
     }
@@ -419,7 +419,7 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
     p.longitude     = d->longitude * 1.0e6;
     p.altitude      = d->altitude * 100;
     p.ground_speed  = norm(d->speedN, d->speedE) * 100;
-    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0f;
+    p.ground_course = degrees(atan2f(d->speedE, d->speedN)) * 100.0f;
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 100.0f;
     }
@@ -477,7 +477,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
     p.longitude     = d->longitude * 1.0e7;
     p.altitude      = d->altitude * 100;
     p.ground_speed  = norm(d->speedN, d->speedE) * 100;
-    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0f;
+    p.ground_course = degrees(atan2f(d->speedE, d->speedN)) * 100.0f;
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 100.0f;
     }
@@ -585,7 +585,7 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d)
                      2.0,
                      d->altitude);
     float speed_knots = norm(d->speedN, d->speedE)*1.94384449f;
-    float heading = ToDeg(atan2f(d->speedE, d->speedN));
+    float heading = degrees(atan2f(d->speedE, d->speedN));
     if (heading < 0) {
         heading += 360.0f;
     }

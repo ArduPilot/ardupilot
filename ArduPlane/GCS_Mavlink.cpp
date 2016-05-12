@@ -1947,9 +1947,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // cope with DCM getting badly off due to HIL lag
         if (plane.g.hil_err_limit > 0 &&
-            (fabsf(packet.roll - plane.ahrs.roll) > ToRad(plane.g.hil_err_limit) ||
-             fabsf(packet.pitch - plane.ahrs.pitch) > ToRad(plane.g.hil_err_limit) ||
-             wrap_PI(fabsf(packet.yaw - plane.ahrs.yaw)) > ToRad(plane.g.hil_err_limit))) {
+            (fabsf(packet.roll - plane.ahrs.roll) > radians(plane.g.hil_err_limit.get()) ||
+             fabsf(packet.pitch - plane.ahrs.pitch) > radians(plane.g.hil_err_limit.get()) ||
+             wrap_PI(fabsf(packet.yaw - plane.ahrs.yaw)) > radians(plane.g.hil_err_limit.get()))) {
             plane.ahrs.reset_attitude(packet.roll, packet.pitch, packet.yaw);
         }
 #endif

@@ -119,9 +119,9 @@ void Gimbal::update(void)
     Vector3f gimbalJointRates = matrix * relativeGimbalRate;
 
     // 6) Apply the rate limits from 4)
-    gimbalJointRates.x = constrain_float(gimbalJointRates.x, lowerRatelimit.x, upperRatelimit.x);
-    gimbalJointRates.y = constrain_float(gimbalJointRates.y, lowerRatelimit.y, upperRatelimit.y);
-    gimbalJointRates.z = constrain_float(gimbalJointRates.z, lowerRatelimit.z, upperRatelimit.z);
+    gimbalJointRates.x = constrain_value<float>(gimbalJointRates.x, lowerRatelimit.x, upperRatelimit.x);
+    gimbalJointRates.y = constrain_value<float>(gimbalJointRates.y, lowerRatelimit.y, upperRatelimit.y);
+    gimbalJointRates.z = constrain_value<float>(gimbalJointRates.z, lowerRatelimit.z, upperRatelimit.z);
     /*
       7) Convert the modified gimbal joint rates to body rates (still copter
       relative)

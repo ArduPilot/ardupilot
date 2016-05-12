@@ -180,7 +180,7 @@ void ToneAlarm_Raspilot::_set_pwm0_period(uint32_t time_us)
 
 void ToneAlarm_Raspilot::_set_pwm0_duty(uint8_t percent)
 {
-    int bit_count = constrain_int32(320 * percent / 100, 320, 0);
+    int bit_count = constrain_value<int32_t>(320 * percent / 100, 320, 0);
     unsigned int bits = 0;
 
     while (bit_count) {

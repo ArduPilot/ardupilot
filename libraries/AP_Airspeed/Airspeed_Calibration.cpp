@@ -101,9 +101,9 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     P.b.y = MAX(P.b.y, 0.0f);
     P.c.z = MAX(P.c.z, 0.0f);
 
-    state.x = constrain_float(state.x, -aparm.airspeed_max, aparm.airspeed_max);
-    state.y = constrain_float(state.y, -aparm.airspeed_max, aparm.airspeed_max);
-    state.z = constrain_float(state.z, 0.5f, 1.0f);
+    state.x = constrain_value<float>(state.x, -aparm.airspeed_max, aparm.airspeed_max);
+    state.y = constrain_value<float>(state.y, -aparm.airspeed_max, aparm.airspeed_max);
+    state.z = constrain_value<float>(state.z, 0.5f, 1.0f);
 
     return state.z;
 }
@@ -122,7 +122,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     // set state.z based on current ratio, this allows the operator to
     // override the current ratio in flight with autocal, which is
     // very useful both for testing and to force a reasonable value.
-    float ratio = constrain_float(_ratio, 1.0f, 4.0f);
+    float ratio = constrain_value<float>(_ratio, 1.0f, 4.0f);
 
     _calibration.state.z = 1.0f / sqrtf(ratio);
 
@@ -137,7 +137,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     }
 
     // this constrains the resulting ratio to between 1.0 and 4.0
-    zratio = constrain_float(zratio, 0.5f, 1.0f);
+    zratio = constrain_value<float>(zratio, 0.5f, 1.0f);
     _ratio.set(1/sq(zratio));
     if (_counter > 60) {
         if (_last_saved_ratio > 1.05f*_ratio ||

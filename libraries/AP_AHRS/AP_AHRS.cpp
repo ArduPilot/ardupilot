@@ -136,7 +136,7 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
             // and AHRS_WIND_MAX
             float gnd_speed = _gps.ground_speed();
             float true_airspeed = *airspeed_ret * get_EAS2TAS();
-            true_airspeed = constrain_float(true_airspeed,
+            true_airspeed = constrain_value<float>(true_airspeed,
                                             gnd_speed - _wind_max,
                                             gnd_speed + _wind_max);
             *airspeed_ret = true_airspeed / get_EAS2TAS();
@@ -150,8 +150,8 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 void AP_AHRS::set_trim(Vector3f new_trim)
 {
     Vector3f trim;
-    trim.x = constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain_float(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.x = constrain_value<float>(new_trim.x, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain_value<float>(new_trim.y, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
     _trim.set_and_save(trim);
 }
 
@@ -161,8 +161,8 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     Vector3f trim = _trim.get();
 
     // add new trim
-    trim.x = constrain_float(trim.x + roll_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain_float(trim.y + pitch_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.x = constrain_value<float>(trim.x + roll_in_radians, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain_value<float>(trim.y + pitch_in_radians, radians(-AP_AHRS_TRIM_LIMIT), radians(AP_AHRS_TRIM_LIMIT));
 
     // set new trim values
     _trim.set(trim);
@@ -237,8 +237,8 @@ void AP_AHRS::update_trig(void)
     yaw_vector.x = temp.a.x;
     yaw_vector.y = temp.b.x;
     yaw_vector.normalize();
-    _sin_yaw = constrain_float(yaw_vector.y, -1.0, 1.0);
-    _cos_yaw = constrain_float(yaw_vector.x, -1.0, 1.0);
+    _sin_yaw = constrain_value<float>(yaw_vector.y, -1.0, 1.0);
+    _cos_yaw = constrain_value<float>(yaw_vector.x, -1.0, 1.0);
 
     // cos_roll, cos_pitch
     float cx2 = temp.c.x * temp.c.x;
@@ -249,8 +249,8 @@ void AP_AHRS::update_trig(void)
         _cos_pitch = safe_sqrt(1 - cx2);
         _cos_roll = temp.c.z / _cos_pitch;
     }
-    _cos_pitch = constrain_float(_cos_pitch, 0, 1.0);
-    _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
+    _cos_pitch = constrain_value<float>(_cos_pitch, 0, 1.0);
+    _cos_roll = constrain_value<float>(_cos_roll, -1.0, 1.0); // this relies on constrain_value<float>() of infinity doing the right thing
 
     // sin_roll, sin_pitch
     _sin_pitch = -temp.c.x;

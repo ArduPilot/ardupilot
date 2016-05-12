@@ -92,9 +92,9 @@ void SITL::simstate_send(mavlink_channel_t chan)
     }
 
     mavlink_msg_simstate_send(chan,
-                              ToRad(state.rollDeg),
-                              ToRad(state.pitchDeg),
-                              ToRad(yaw),
+                              radians(state.rollDeg),
+                              radians(state.pitchDeg),
+                              radians(yaw),
                               state.xAccel,
                               state.yAccel,
                               state.zAccel,
@@ -139,11 +139,11 @@ void SITL::convert_body_frame(double rollDeg, double pitchDeg,
 {
     double phi, theta, phiDot, thetaDot, psiDot;
 
-    phi = ToRad(rollDeg);
-    theta = ToRad(pitchDeg);
-    phiDot = ToRad(rollRate);
-    thetaDot = ToRad(pitchRate);
-    psiDot = ToRad(yawRate);
+    phi = radians(rollDeg);
+    theta = radians(pitchDeg);
+    phiDot = radians(rollRate);
+    thetaDot = radians(pitchRate);
+    psiDot = radians(yawRate);
 
     *p = phiDot - psiDot*sin(theta);
     *q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);

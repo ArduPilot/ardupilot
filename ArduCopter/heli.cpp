@@ -87,7 +87,7 @@ void Copter::update_heli_control_dynamics(void)
         // if we are not landed and motor power is demanded, increment slew scalar
         hover_roll_trim_scalar_slew++;
     }
-    hover_roll_trim_scalar_slew = constrain_int16(hover_roll_trim_scalar_slew, 0, MAIN_LOOP_RATE);
+    hover_roll_trim_scalar_slew = constrain_value<int16_t>(hover_roll_trim_scalar_slew, 0, MAIN_LOOP_RATE);
 
     // set hover roll trim scalar, will ramp from 0 to 1 over 1 second after we think helicopter has taken off
     attitude_control.set_hover_roll_trim_scalar((float)(hover_roll_trim_scalar_slew/MAIN_LOOP_RATE));

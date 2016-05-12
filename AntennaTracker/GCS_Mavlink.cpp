@@ -762,9 +762,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL_NED
         case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
         {
-            tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
+            tell_command.lat = 1.0e7f*degrees(packet.x/
+                                           (RADIUS_OF_EARTH*cosf(radians(home.lat/1.0e7f)))) + home.lat;
+            tell_command.lng = 1.0e7f*degrees(packet.y/RADIUS_OF_EARTH) + home.lng;
             tell_command.alt = -packet.z*1.0e2f;
             tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
             break;
@@ -774,9 +774,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL
         case MAV_FRAME_LOCAL:                         // local (relative to home position)
         {
-            tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
+            tell_command.lat = 1.0e7f*degrees(packet.x/
+                                           (RADIUS_OF_EARTH*cosf(radians(home.lat/1.0e7f)))) + home.lat;
+            tell_command.lng = 1.0e7f*degrees(packet.y/RADIUS_OF_EARTH) + home.lng;
             tell_command.alt = packet.z*1.0e2f;
             tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
             break;

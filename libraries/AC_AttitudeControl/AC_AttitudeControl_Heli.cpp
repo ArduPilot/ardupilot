@@ -157,7 +157,7 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     if (get_accel_yaw_max_radss() > 0.0f) {
         float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt;
         float rate_change_rads = yaw_rate_bf_rads - _att_target_ang_vel_rads.z;
-        rate_change_rads = constrain_float(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
+        rate_change_rads = constrain_value<float>(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
         _att_target_ang_vel_rads.z += rate_change_rads;
     } else {
         _att_target_ang_vel_rads.z = yaw_rate_bf_rads;
@@ -236,7 +236,7 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 float AC_AttitudeControl_Heli::get_althold_lean_angle_max() const
 {
     // calc maximum tilt angle based on throttle
-    float ret = acosf(constrain_float(_throttle_in_filt.get()/0.9f, 0.0f, 1.0f));
+    float ret = acosf(constrain_value<float>(_throttle_in_filt.get()/0.9f, 0.0f, 1.0f));
 
     // TEMP: convert to centi-degrees for public interface
     return degrees(ret) * 100.0f;
@@ -307,13 +307,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 
     // constrain output and update limit flags
     if (fabsf(roll_out) > AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX) {
-        roll_out = constrain_float(roll_out,-AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
+        roll_out = constrain_value<float>(roll_out,-AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
         _flags_heli.limit_roll = true;
     }else{
         _flags_heli.limit_roll = false;
     }
     if (fabsf(pitch_out) > AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX) {
-        pitch_out = constrain_float(pitch_out,-AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
+        pitch_out = constrain_value<float>(pitch_out,-AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
         _flags_heli.limit_pitch = true;
     }else{
         _flags_heli.limit_pitch = false;
@@ -390,7 +390,7 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_rads)
 
     // constrain output and update limit flag
     if (fabsf(yaw_out) > AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX) {
-        yaw_out = constrain_float(yaw_out,-AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX);
+        yaw_out = constrain_value<float>(yaw_out,-AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX);
         _flags_heli.limit_yaw = true;
     }else{
         _flags_heli.limit_yaw = false;

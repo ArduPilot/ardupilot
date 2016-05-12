@@ -93,7 +93,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	float bank_angle = _ahrs.roll;
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < 1.5707964f)	{
-	    bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
+	    bank_angle = constrain_value<float>(bank_angle,-1.3962634f,1.3962634f);
 	}
 	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
@@ -109,7 +109,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 
 	// Subtract the steady turn component of rate from the measured rate
 	// to calculate the rate relative to the turn requirement in degrees/sec
-	float rate_hp_in = ToDeg(omega_z - rate_offset);
+	float rate_hp_in = degrees(omega_z - rate_offset);
 	
 	// Apply a high-pass filter to the rate to washout any steady state error
 	// due to bias errors in rate_offset
@@ -152,7 +152,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     float intLimScaled = _imax * 0.01f / (_K_D * scaler * scaler);
 
     // Constrain the integrator state
-    _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
+    _integrator = constrain_value<float>(_integrator, -intLimScaled, intLimScaled);
 	
 	// Protect against increases to _K_D during in-flight tuning from creating large control transients
 	// due to stored integrator values
@@ -170,7 +170,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	_last_out =  _pid_info.I + _pid_info.D;
 
 	// Convert to centi-degrees and constrain
-	return constrain_float(_last_out * 100, -4500, 4500);
+	return constrain_value<float>(_last_out * 100, -4500, 4500);
 }
 
 void AP_YawController::reset_I()

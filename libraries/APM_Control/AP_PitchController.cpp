@@ -128,7 +128,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	float omega_y = _ahrs.get_gyro().y;
 	
 	// Calculate the pitch rate error (deg/sec) and scale
-    float achieved_rate = ToDeg(omega_y);
+    float achieved_rate = degrees(omega_y);
 	float rate_error = (desired_rate - achieved_rate) * scaler;
 	
 	// Multiply pitch rate error by _ki_rate and integrate
@@ -171,7 +171,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
-    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
+    _pid_info.I = constrain_value<float>(_pid_info.I, -intLimScaled, intLimScaled);
 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
@@ -203,7 +203,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	_last_out += _pid_info.I;
 	
 	// Convert to centi-degrees and constrain
-	return constrain_float(_last_out * 100, -4500, 4500);
+	return constrain_value<float>(_last_out * 100, -4500, 4500);
 }
 
 /*
@@ -239,15 +239,15 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 	float bank_angle = _ahrs.roll;
 
 	// limit bank angle between +- 80 deg if right way up
-	if (fabsf(bank_angle) < radians(90))	{
-	    bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
+	if (fabsf(bank_angle) < radians(90.0f))	{
+	    bank_angle = constrain_value<float>(bank_angle,-radians(80.0f),radians(80.0f));
         inverted = false;
 	} else {
 		inverted = true;
 		if (bank_angle > 0.0f) {
-			bank_angle = constrain_float(bank_angle,radians(100),radians(180));
+			bank_angle = constrain_value<float>(bank_angle,radians(100.0f),radians(180.0f));
 		} else {
-			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
+			bank_angle = constrain_value<float>(bank_angle,-radians(180.0f),-radians(100.0f));
 		}
 	}
 	if (!_ahrs.airspeed_estimate(&aspeed)) {
@@ -258,7 +258,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.pitch)*fabsf(degrees((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
 	if (inverted) {
 		rate_offset = -rate_offset;

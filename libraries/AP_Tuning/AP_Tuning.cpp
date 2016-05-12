@@ -164,7 +164,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
     if (chan == nullptr) {
         return;
     }
-    float chan_value = linear_interpolate(-1, 1, chan->get_radio_in(), channel_min, channel_max);
+    float chan_value = linear_interpolate<float>(-1, 1, chan->get_radio_in(), channel_min, channel_max);
     if (dt_ms > 500) {
         last_channel_value = chan_value;
     }
@@ -194,9 +194,9 @@ void AP_Tuning::check_input(uint8_t flightmode)
 
     float new_value;
     if (chan_value > 0) {
-        new_value = linear_interpolate(center_value, range*center_value, chan_value, 0, 1);
+        new_value = linear_interpolate<float>(center_value, range*center_value, chan_value, 0, 1);
     } else {
-        new_value = linear_interpolate(center_value/range, center_value, chan_value, -1, 0);
+        new_value = linear_interpolate<float>(center_value/range, center_value, chan_value, -1, 0);
     }
     changed = true;
     need_revert |= (1U << current_parm_index);

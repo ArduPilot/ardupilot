@@ -592,8 +592,8 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& tri
 {
     trim_pitch = atan2f(accel_sample.x, norm(accel_sample.y, accel_sample.z));
     trim_roll = atan2f(-accel_sample.y, -accel_sample.z);
-    if (fabsf(trim_roll) > radians(10) ||
-        fabsf(trim_pitch) > radians(10)) {
+    if (fabsf(trim_roll) > radians(10.0f) ||
+        fabsf(trim_pitch) > radians(10.0f)) {
         hal.console->println("trim over maximum of 10 degrees");
         return false;
     }
@@ -865,7 +865,7 @@ AP_InertialSensor::_init_gyro()
             if (j == 0) {
                 best_diff[k] = diff_norm[k];
                 best_avg[k] = gyro_avg[k];
-            } else if (gyro_diff[k].length() < ToRad(0.1f)) {
+            } else if (gyro_diff[k].length() < radians(0.1f)) {
                 // we want the average to be within 0.1 bit, which is 0.04 degrees/s
                 last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
                 if (!converged[k] || last_average[k].length() < new_gyro_offset[k].length()) {
@@ -889,7 +889,7 @@ AP_InertialSensor::_init_gyro()
     for (uint8_t k=0; k<num_gyros; k++) {
         if (!converged[k]) {
             hal.console->printf("gyro[%u] did not converge: diff=%f dps\n",
-                                  (unsigned)k, (double)ToDeg(best_diff[k]));
+                                  (unsigned)k, (double)degrees(best_diff[k]));
             _gyro_offset[k] = best_avg[k];
             // flag calibration as failed for this gyro
             _gyro_cal_ok[k] = false;
@@ -1404,8 +1404,8 @@ void AP_InertialSensor::_acal_save_calibrations()
             /* no break */
     }
 
-    if (fabsf(_trim_roll) > radians(10) ||
-        fabsf(_trim_pitch) > radians(10)) {
+    if (fabsf(_trim_roll) > radians(10.0f) ||
+        fabsf(_trim_pitch) > radians(10.0f)) {
         hal.console->print("ERR: Trim over maximum of 10 degrees!!");
         _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers
     }

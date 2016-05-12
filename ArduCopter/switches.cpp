@@ -608,8 +608,8 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 void Copter::save_trim()
 {
     // save roll and pitch trim
-    float roll_trim = ToRad((float)channel_roll->get_control_in()/100.0f);
-    float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
+    float roll_trim = radians((float)channel_roll->get_control_in()/100.0f);
+    float pitch_trim = radians((float)channel_pitch->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
     Log_Write_Event(DATA_SAVE_TRIM);
     gcs_send_text(MAV_SEVERITY_INFO, "Trim saved");
@@ -626,10 +626,10 @@ void Copter::auto_trim()
         AP_Notify::flags.save_trim = true;
 
         // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)channel_roll->get_control_in() / 4000.0f);
+        float roll_trim_adjustment = radians((float)channel_roll->get_control_in() / 4000.0f);
 
         // calculate pitch trim adjustment
-        float pitch_trim_adjustment = ToRad((float)channel_pitch->get_control_in() / 4000.0f);
+        float pitch_trim_adjustment = radians((float)channel_pitch->get_control_in() / 4000.0f);
 
         // add trim to ahrs object
         // save to eeprom on last iteration

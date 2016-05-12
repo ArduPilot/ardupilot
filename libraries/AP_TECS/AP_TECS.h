@@ -99,7 +99,7 @@ public:
 
     // set path_proportion
     void set_path_proportion(float path_proportion) {
-        _path_proportion = constrain_float(path_proportion, 0.0f, 1.0f);
+        _path_proportion = constrain_value<float>(path_proportion, 0.0f, 1.0f);
     }
 
     // set pitch max limit in degrees

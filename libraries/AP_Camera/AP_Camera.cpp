@@ -111,7 +111,7 @@ AP_Camera::servo_pic()
 	RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
 
 	// leave a message that it should be active for this many loops (assumes 50hz loops)
-	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+	_trigger_counter = constrain_value<int16_t>(_trigger_duration*5,0,255);
 }
 
 /// basic relay activation
@@ -125,7 +125,7 @@ AP_Camera::relay_pic()
     }
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
-    _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+    _trigger_counter = constrain_value<int16_t>(_trigger_duration*5,0,255);
 }
 
 /// single entry point to take pictures

@@ -61,7 +61,7 @@ void Copter::loiter_run()
 
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+        target_climb_rate = constrain_value<float>(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         wp_nav.clear_pilot_desired_acceleration();
@@ -128,7 +128,7 @@ void Copter::loiter_run()
     case Loiter_Takeoff:
 
         if (!takeoff_state.running) {
-            takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff_timer_start(constrain_value<float>(g.pilot_takeoff_alt,0.0f,1000.0f));
             // indicate we are taking off
             set_land_complete(false);
             // clear i term when we're taking off

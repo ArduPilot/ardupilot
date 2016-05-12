@@ -234,7 +234,7 @@ bool AP_Arming::ins_checks(bool report)
                 Vector3f vec_diff = gyro_vec - prime_gyro_vec;
                 // allow for up to 5 degrees/s difference. Pass if its
                 // been OK in last 10 seconds
-                if (vec_diff.length() <= radians(5)) {
+                if (vec_diff.length() <= radians(5.0f)) {
                     last_gyro_pass_ms[i] = AP_HAL::millis();
                 }
                 if (AP_HAL::millis() - last_gyro_pass_ms[i] > 10000) {

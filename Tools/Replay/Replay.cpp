@@ -1087,15 +1087,15 @@ void Replay::loop()
                     innovVT);
 
             // define messages for EKF4 data packet
-            int16_t sqrtvarV = (int16_t)(constrain_float(100*velVar,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarP = (int16_t)(constrain_float(100*posVar,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarH = (int16_t)(constrain_float(100*hgtVar,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarMX = (int16_t)(constrain_float(100*magVar.x,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarMY = (int16_t)(constrain_float(100*magVar.y,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarMZ = (int16_t)(constrain_float(100*magVar.z,INT16_MIN,INT16_MAX));
-            int16_t sqrtvarVT = (int16_t)(constrain_float(100*tasVar,INT16_MIN,INT16_MAX));
-            int16_t offsetNorth = (int8_t)(constrain_float(offset.x,INT16_MIN,INT16_MAX));
-            int16_t offsetEast = (int8_t)(constrain_float(offset.y,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarV = (int16_t)(constrain_value<float>(100*velVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarP = (int16_t)(constrain_value<float>(100*posVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarH = (int16_t)(constrain_value<float>(100*hgtVar,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMX = (int16_t)(constrain_value<float>(100*magVar.x,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMY = (int16_t)(constrain_value<float>(100*magVar.y,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarMZ = (int16_t)(constrain_value<float>(100*magVar.z,INT16_MIN,INT16_MAX));
+            int16_t sqrtvarVT = (int16_t)(constrain_value<float>(100*tasVar,INT16_MIN,INT16_MAX));
+            int16_t offsetNorth = (int8_t)(constrain_value<float>(offset.x,INT16_MIN,INT16_MAX));
+            int16_t offsetEast = (int8_t)(constrain_value<float>(offset.y,INT16_MIN,INT16_MAX));
 
             // print EKF4 data packet
             fprintf(ekf4f, "%.3f %u %d %d %d %d %d %d %d %d %d %d\n",

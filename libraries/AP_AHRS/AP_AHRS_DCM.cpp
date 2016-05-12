@@ -335,13 +335,13 @@ AP_AHRS_DCM::yaw_error_compass(void)
 float
 AP_AHRS_DCM::_P_gain(float spin_rate)
 {
-    if (spin_rate < ToRad(50)) {
+    if (spin_rate < radians(50.0f)) {
         return 1.0f;
     }
-    if (spin_rate > ToRad(500)) {
+    if (spin_rate > radians(500.0f)) {
         return 10.0f;
     }
-    return spin_rate/ToRad(50);
+    return spin_rate/radians(50.0f);
 }
 
 // _yaw_gain reduces the gain of the PI controller applied to heading errors
@@ -464,7 +464,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             yaw_deltat = (_gps.last_fix_time_ms() - _gps_last_update) * 1.0e-3f;
             _gps_last_update = _gps.last_fix_time_ms();
             new_value = true;
-            float gps_course_rad = ToRad(_gps.ground_course_cd() * 0.01f);
+            float gps_course_rad = radians(_gps.ground_course_cd() * 0.01f);
             float yaw_error_rad = wrap_PI(gps_course_rad - yaw);
             yaw_error = sinf(yaw_error_rad);
 
@@ -531,7 +531,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 
     // don't update the drift term if we lost the yaw reference
     // for more than 2 seconds
-    if (yaw_deltat < 2.0f && spin_rate < ToRad(SPIN_RATE_LIMIT)) {
+    if (yaw_deltat < 2.0f && spin_rate < radians(static_cast<float>(SPIN_RATE_LIMIT))) {
         // also add to the I term
         _omega_I_sum.z += error_z * _ki_yaw * yaw_deltat;
     }
@@ -600,7 +600,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (_ins.get_accel_count() == 2 && _ins.use_accel(0) && _ins.use_accel(1)) {
         float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
         // slew _imu1_weight over one second
-        _imu1_weight += constrain_float(imu1_weight_target-_imu1_weight, -deltat, deltat);
+        _imu1_weight += constrain_value<float>(imu1_weight_target-_imu1_weight, -deltat, deltat);
         _accel_ef_blended = _accel_ef[0] * _imu1_weight + _accel_ef[1] * (1.0f - _imu1_weight);
     } else {
         _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
@@ -845,7 +845,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     // accumulate some integrator error
-    if (spin_rate < ToRad(SPIN_RATE_LIMIT)) {
+    if (spin_rate < radians(static_cast<float>(SPIN_RATE_LIMIT))) {
         _omega_I_sum += error[besti] * _ki * _ra_deltat;
         _omega_I_sum_time += _ra_deltat;
     }
@@ -856,9 +856,9 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // short term errors don't cause a buildup of omega_I
         // beyond the physical limits of the device
         float change_limit = _gyro_drift_limit * _omega_I_sum_time;
-        _omega_I_sum.x = constrain_float(_omega_I_sum.x, -change_limit, change_limit);
-        _omega_I_sum.y = constrain_float(_omega_I_sum.y, -change_limit, change_limit);
-        _omega_I_sum.z = constrain_float(_omega_I_sum.z, -change_limit, change_limit);
+        _omega_I_sum.x = constrain_value<float>(_omega_I_sum.x, -change_limit, change_limit);
+        _omega_I_sum.y = constrain_value<float>(_omega_I_sum.y, -change_limit, change_limit);
+        _omega_I_sum.z = constrain_value<float>(_omega_I_sum.z, -change_limit, change_limit);
         _omega_I += _omega_I_sum;
         _omega_I_sum.zero();
         _omega_I_sum_time = 0;
@@ -991,7 +991,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
         // and AHRS_WIND_MAX
         float gnd_speed = _gps.ground_speed();
         float true_airspeed = *airspeed_ret * get_EAS2TAS();
-        true_airspeed = constrain_float(true_airspeed,
+        true_airspeed = constrain_value<float>(true_airspeed,
                                         gnd_speed - _wind_max,
                                         gnd_speed + _wind_max);
         *airspeed_ret = true_airspeed / get_EAS2TAS();

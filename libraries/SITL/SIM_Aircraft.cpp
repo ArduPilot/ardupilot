@@ -326,9 +326,9 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     // update rotational rates in body frame
     gyro += rot_accel * delta_time;
 
-    gyro.x = constrain_float(gyro.x, -radians(2000), radians(2000));
-    gyro.y = constrain_float(gyro.y, -radians(2000), radians(2000));
-    gyro.z = constrain_float(gyro.z, -radians(2000), radians(2000));
+    gyro.x = constrain_value<float>(gyro.x, -radians(2000), radians(2000));
+    gyro.y = constrain_value<float>(gyro.y, -radians(2000), radians(2000));
+    gyro.z = constrain_value<float>(gyro.z, -radians(2000), radians(2000));
     
     // update attitude
     dcm.rotate(gyro * delta_time);
@@ -364,7 +364,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     airspeed = velocity_air_ef.length();
 
     // airspeed as seen by a fwd pitot tube (limited to 120m/s)
-    airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1, 0, 0), 0, 120);
+    airspeed_pitot = constrain_value<float>(velocity_air_bf * Vector3f(1, 0, 0), 0, 120);
     
     // constrain height to the ground
     if (on_ground(position)) {

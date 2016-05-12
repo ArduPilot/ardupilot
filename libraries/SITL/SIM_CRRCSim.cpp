@@ -59,11 +59,11 @@ void CRRCSim::send_servos_heli(const struct sitl_input &input)
     float yaw_rate = -(tail_rotor - 0.5);
 
     servo_packet pkt;
-    pkt.roll_rate  = constrain_float(roll_rate, -0.5, 0.5);
-    pkt.pitch_rate = constrain_float(pitch_rate, -0.5, 0.5);
-    pkt.throttle   = constrain_float(rsc, 0, 1);
-    pkt.yaw_rate   = constrain_float(yaw_rate, -0.5, 0.5);
-    pkt.col_pitch  = constrain_float(col_pitch, -0.5, 0.5);
+    pkt.roll_rate  = constrain_value<float>(roll_rate, -0.5, 0.5);
+    pkt.pitch_rate = constrain_value<float>(pitch_rate, -0.5, 0.5);
+    pkt.throttle   = constrain_value<float>(rsc, 0, 1);
+    pkt.yaw_rate   = constrain_value<float>(yaw_rate, -0.5, 0.5);
+    pkt.col_pitch  = constrain_value<float>(col_pitch, -0.5, 0.5);
 
     sock.sendto(&pkt, sizeof(pkt), "127.0.0.1", 9002);
 }
@@ -79,10 +79,10 @@ void CRRCSim::send_servos_fixed_wing(const struct sitl_input &input)
     float throttle   = ((input.servos[2]-1000)/1000.0);
 
     servo_packet pkt;
-    pkt.roll_rate  = constrain_float(roll_rate, -0.5, 0.5);
-    pkt.pitch_rate = constrain_float(pitch_rate, -0.5, 0.5);
-    pkt.throttle   = constrain_float(throttle, 0, 1);
-    pkt.yaw_rate   = constrain_float(yaw_rate, -0.5, 0.5);
+    pkt.roll_rate  = constrain_value<float>(roll_rate, -0.5, 0.5);
+    pkt.pitch_rate = constrain_value<float>(pitch_rate, -0.5, 0.5);
+    pkt.throttle   = constrain_value<float>(throttle, 0, 1);
+    pkt.yaw_rate   = constrain_value<float>(yaw_rate, -0.5, 0.5);
     pkt.col_pitch  = 0;
 
     sock.sendto(&pkt, sizeof(pkt), "127.0.0.1", 9002);
