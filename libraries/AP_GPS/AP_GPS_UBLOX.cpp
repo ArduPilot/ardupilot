@@ -17,7 +17,7 @@
 //
 //  u-blox GPS driver for ArduPilot
 //	Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
-//  Substantially rewitten for new GPS driver structure by Andrew Tridgell
+//  Substantially rewritten for new GPS driver structure by Andrew Tridgell
 //
 #include "AP_GPS.h"
 #include "AP_GPS_UBLOX.h"

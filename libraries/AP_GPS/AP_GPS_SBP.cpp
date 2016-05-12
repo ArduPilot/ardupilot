@@ -214,7 +214,7 @@ AP_GPS_SBP::_sbp_process_message() {
 
         case SBP_TRACKING_STATE_MSGTYPE:
             //INTENTIONALLY BLANK
-            //Currenly unhandled, but logged after switch statement.
+            //Currently unhandled, but logged after switch statement.
             break;
 
         case SBP_IAR_STATE_MSGTYPE: {
