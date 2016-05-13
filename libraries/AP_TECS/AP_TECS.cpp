@@ -753,29 +753,34 @@ void AP_TECS::_update_pitch(void)
     // A SKE_weighting of 0 provides 100% priority to height control. This is used when no airspeed measurement is available
     // A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
     // rises above the demanded value, the pitch angle will be increased by the TECS controller.
-    float _SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
+    float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
     if (!_ahrs.airspeed_sensor_enabled()) {
-        _SKE_weighting = 0.0f;
+        SKE_weighting = 0.0f;
     } else if ( _flags.underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
-        _SKE_weighting = 2.0f;
+        SKE_weighting = 2.0f;
     } else if (_flags.is_doing_auto_land) {
         if (_spdWeightLand < 0) {
             // use sliding scale from normal weight down to zero at landing
             float scaled_weight = _spdWeight * (1.0f - constrain_float(_path_proportion,0,1));
-            _SKE_weighting = constrain_float(scaled_weight, 0.0f, 2.0f);
+            SKE_weighting = constrain_float(scaled_weight, 0.0f, 2.0f);
         } else {
-            _SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+            SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
         }
     }
 
-    float SPE_weighting = 2.0f - _SKE_weighting;
+    logging.SKE_weighting = SKE_weighting;
+    
+    float SPE_weighting = 2.0f - SKE_weighting;
 
     // Calculate Specific Energy Balance demand, and error
-    float SEB_dem      = _SPE_dem * SPE_weighting - _SKE_dem * _SKE_weighting;
-    float SEBdot_dem   = _SPEdot_dem * SPE_weighting - _SKEdot_dem * _SKE_weighting;
-    float SEB_error    = SEB_dem - (_SPE_est * SPE_weighting - _SKE_est * _SKE_weighting);
-    float SEBdot_error = SEBdot_dem - (_SPEdot * SPE_weighting - _SKEdot * _SKE_weighting);
+    float SEB_dem      = _SPE_dem * SPE_weighting - _SKE_dem * SKE_weighting;
+    float SEBdot_dem   = _SPEdot_dem * SPE_weighting - _SKEdot_dem * SKE_weighting;
+    float SEB_error    = SEB_dem - (_SPE_est * SPE_weighting - _SKE_est * SKE_weighting);
+    float SEBdot_error = SEBdot_dem - (_SPEdot * SPE_weighting - _SKEdot * SKE_weighting);
 
+    logging.SKE_error = _SKE_dem - _SKE_est;
+    logging.SPE_error = _SPE_dem - _SPE_est;
+    
     // Calculate integrator state, constraining input if pitch limits are exceeded
     float integSEB_input = SEB_error * _get_i_gain();
     if (_pitch_dem > _PITCHmaxf)
@@ -822,6 +827,8 @@ void AP_TECS::_update_pitch(void)
     float integSEB_max = (gainInv * (_PITCHmaxf + 0.0783f)) - temp;
     float integSEB_range = integSEB_max - integSEB_min;
 
+    logging.SEB_delta = integSEB_delta;
+    
     // don't allow the integrator to rise by more than 20% of its full
     // range in one step. This prevents single value glitches from
     // causing massive integrator changes. See Issue#4066
@@ -1036,6 +1043,11 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                            _throttle_dem,
                                            _pitch_dem,
                                            _TAS_rate_dem,
-                                           _SKE_weighting,
+                                           logging.SKE_weighting,
                                            _flags_byte);
+    DataFlash_Class::instance()->Log_Write("TEC2", "TimeUS,KErr,PErr,EDelta", "Qfff",
+                                           now,
+                                           logging.SKE_error,
+                                           logging.SPE_error,
+                                           logging.SEB_delta);
 }
