@@ -1042,10 +1042,22 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 }
 
 // log the contents of the log_tuning structure to dataflash
-void AP_TECS::log_data(DataFlash_Class &dataflash, uint8_t msgid)
+void AP_TECS::log_data(DataFlash_Class &dataflash)
 {
-    log_tuning.head1 = HEAD_BYTE1;
-    log_tuning.head2 = HEAD_BYTE2;
-    log_tuning.msgid = msgid;
-    dataflash.WriteBlock(&log_tuning, sizeof(log_tuning));
+    dataflash.Log_Write("TECS", "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f", "QfffffffffffffB",
+                        AP_HAL::micros64(),
+                        log_tuning.hgt,
+                        log_tuning.dhgt,
+                        log_tuning.hgt_dem,
+                        log_tuning.dhgt_dem,
+                        log_tuning.spd_dem,
+                        log_tuning.spd,
+                        log_tuning.dspd,
+                        log_tuning.ithr,
+                        log_tuning.iptch,
+                        log_tuning.thr,
+                        log_tuning.ptch,
+                        log_tuning.dspd_dem,
+                        log_tuning.speed_weight,
+                        log_tuning.flags);
 }
