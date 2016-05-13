@@ -13,10 +13,11 @@ namespace {
 	int16_t lights2 = 1100;
 	int16_t rollTrim = 0;
 	int16_t pitchTrim = 0;
-	int16_t throttleTrim = 0;
-	int16_t forwardTrim = 0;
-	int16_t lateralTrim = 0;
+	int16_t zTrim = 0;
+	int16_t xTrim = 0;
+	int16_t yTrim = 0;
 	int16_t video_switch = 1100;
+	int16_t x_last, y_last, z_last;
 	float gain = 0.5;
 	float maxGain = 1.0;
 	float minGain = 0.25;
@@ -37,9 +38,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	static uint32_t buttonDebounce;
 
 	// Debouncing timer
-	if ( tnow_ms - buttonDebounce > 50 ) {
-		buttonDebounce = tnow_ms;
-
+	if ( tnow_ms - buttonDebounce > 250 ) {
 		// Detect if any shift button is pressed
 		for ( uint8_t i = 0 ; i < 16 ; i++ ) {
 			if ( (buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift ) { shift = true; }
@@ -47,8 +46,9 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
 		// Act if button is pressed
 		for ( uint8_t i = 0 ; i < 16 ; i++ ) {
-			if ( buttons & (1 << i) ) {
+			if ( (buttons & (1 << i)) && get_button(i)->function() != JSButton::button_function_t::k_shift ) {
 				handle_jsbutton_press(i,shift);
+				buttonDebounce = tnow_ms;
 			}
 		}
 	}
@@ -56,15 +56,20 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	// Set channels to override
 	channels[0] = 1500 + pitchTrim;                           // pitch
 	channels[1] = 1500 + rollTrim;                            // roll
-	channels[2] = z*throttleScale+throttleTrim+throttleBase;  // throttle
-	channels[3] = r*rpyScale+rpyCenter;                       // yaw
+	channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900);  // throttle
+	channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                       // yaw
 	channels[4] = mode;                                       // for testing only
-	channels[5] = x*rpyScale+forwardTrim+rpyCenter;           // forward for ROV
-	channels[6] = y*rpyScale+lateralTrim+rpyCenter;           // lateral for ROV
+	channels[5] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900);           // forward for ROV
+	channels[6] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900);           // lateral for ROV
 	channels[7] = camTilt;                                    // camera tilt
 	channels[8] = lights1;                                    // lights 1
 	channels[9] = lights2;                                    // lights 2
 	channels[10] = video_switch;                              // video switch
+
+	// Store old x, y, z values for use in input hold logic
+	x_last = x;
+	y_last = y;
+	z_last = z;
 
 	// record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
 	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
@@ -202,18 +207,10 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			pitchTrim = constrain_float(pitchTrim-10,-200,200);
 			break;
 		case JSButton::button_function_t::k_input_hold_toggle:
-			{
-				static bool input_toggle_on = false;
-				input_toggle_on = !input_toggle_on;
-				if ( input_toggle_on ) {
-					throttleTrim = channel_throttle->get_control_in() - 1500;
-					forwardTrim = channel_forward->get_control_in() - 1500;
-					lateralTrim = channel_lateral->get_control_in() - 1500;
-					gcs_send_text(MAV_SEVERITY_INFO,"Input Hold ON");
-				} else {
-					gcs_send_text(MAV_SEVERITY_INFO,"Input Hold OFF");
-				}
-			}
+			zTrim = z_last-500;
+			xTrim = x_last;
+			yTrim = y_last;
+			gcs_send_text(MAV_SEVERITY_INFO,"Input Hold Set");
 			break;
 	}
 }
