@@ -472,6 +472,9 @@ void Plane::update_GPS_10Hz(void)
 
         if (!hal.util->get_soft_armed()) {
             update_home();
+
+            // zero out any baro drift
+            barometer.set_baro_drift_altitude(0);
         }
 
         // update wind estimate
