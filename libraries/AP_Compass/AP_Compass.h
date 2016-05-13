@@ -313,7 +313,7 @@ private:
     uint8_t register_compass(void);
 
     // load backend drivers
-    void _add_backend(AP_Compass_Backend *backend);
+    bool _add_backend(AP_Compass_Backend *backend, const char *name, bool external);
     void _detect_backends(void);
 
     //keep track of number of calibration reports sent
