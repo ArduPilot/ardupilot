@@ -24,7 +24,7 @@ namespace {
 }
 
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
-	int16_t channels[10];
+	int16_t channels[11];
 
 	uint32_t tnow_ms = millis();
 
@@ -74,6 +74,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 	// Act based on the function assigned to this button
 	switch ( get_button(button)->function(shift) ) {
 		case JSButton::button_function_t::k_arm_toggle:
+			if ( motors.armed() ) {
+				init_disarm_motors();
+			} else {
+				init_arm_motors(true);
+			}
 			break;
 		case JSButton::button_function_t::k_arm:
 			init_arm_motors(true);
