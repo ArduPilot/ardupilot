@@ -826,6 +826,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
     if (time_us == 0) {
         time_us = AP_HAL::micros64();
     }
+    float drift_offset = baro.get_baro_drift_offset();
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         time_us       : time_us,
@@ -833,7 +834,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
         pressure      : baro.get_pressure(0),
         temperature   : (int16_t)(baro.get_temperature(0) * 100 + 0.5f),
         climbrate     : baro.get_climb_rate(),
-        sample_time_ms: baro.get_last_update(0)
+        sample_time_ms: baro.get_last_update(0),
+        drift_offset  : drift_offset,
     };
     WriteBlock(&pkt, sizeof(pkt));
 
@@ -845,7 +847,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
             pressure	  : baro.get_pressure(1),
             temperature   : (int16_t)(baro.get_temperature(1) * 100 + 0.5f),
             climbrate     : baro.get_climb_rate(),
-            sample_time_ms: baro.get_last_update(1)
+            sample_time_ms: baro.get_last_update(1),
+            drift_offset  : drift_offset,
         };
         WriteBlock(&pkt2, sizeof(pkt2));        
     }
@@ -858,7 +861,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
             pressure	  : baro.get_pressure(2),
             temperature   : (int16_t)(baro.get_temperature(2) * 100 + 0.5f),
             climbrate     : baro.get_climb_rate(),
-            sample_time_ms: baro.get_last_update(2)
+            sample_time_ms: baro.get_last_update(2),
+            drift_offset  : drift_offset,
         };
         WriteBlock(&pkt3, sizeof(pkt3));        
     }

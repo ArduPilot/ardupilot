@@ -188,6 +188,7 @@ struct PACKED log_BARO {
     int16_t temperature;
     float   climbrate;
     uint32_t sample_time_ms;
+    float   drift_offset;
 };
 
 struct PACKED log_AHRS {
@@ -736,7 +737,7 @@ Format characters in the format string for binary log messages
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "QffcfI", "TimeUS,Alt,Press,Temp,CRt,SMS" }, \
+      "BARO",  "QffcfIf", "TimeUS,Alt,Press,Temp,CRt,SMS,Offset" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QCCH","TimeUS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
