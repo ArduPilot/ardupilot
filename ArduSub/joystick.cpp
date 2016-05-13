@@ -18,6 +18,7 @@ namespace {
 	int16_t yTrim = 0;
 	int16_t video_switch = 1100;
 	int16_t x_last, y_last, z_last;
+	uint16_t buttons_prev;
 	float gain = 0.5;
 	float maxGain = 1.0;
 	float minGain = 0.25;
@@ -38,19 +39,22 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	static uint32_t buttonDebounce;
 
 	// Debouncing timer
-	if ( tnow_ms - buttonDebounce > 250 ) {
+	if ( tnow_ms - buttonDebounce > 100 ) {
 		// Detect if any shift button is pressed
 		for ( uint8_t i = 0 ; i < 16 ; i++ ) {
 			if ( (buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift ) { shift = true; }
 		}
 
 		// Act if button is pressed
+		// Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
 		for ( uint8_t i = 0 ; i < 16 ; i++ ) {
-			if ( (buttons & (1 << i)) && get_button(i)->function() != JSButton::button_function_t::k_shift ) {
+			if ( (buttons & (1 << i)) && !(buttons_prev & (1 << i)) ) {
 				handle_jsbutton_press(i,shift);
 				buttonDebounce = tnow_ms;
 			}
 		}
+
+		buttons_prev = buttons;
 	}
 
 	// Set channels to override
