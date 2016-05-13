@@ -278,9 +278,6 @@ private:
     float _SPEdot;
     float _SKEdot;
 
-    // speed weight for logging
-    float _SKE_weighting;
-    
     // Specific energy error quantities
     float _STE_error;
 
@@ -295,6 +292,14 @@ private:
 
     float _distance_beyond_land_wp;
 
+    // internal variables to be logged
+    struct {
+        float SKE_weighting;
+        float SPE_error;
+        float SKE_error;
+        float SEB_delta;
+    } logging;
+    
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);
 
