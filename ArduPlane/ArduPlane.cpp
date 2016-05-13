@@ -843,7 +843,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted via throttle. Climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
