@@ -16,6 +16,7 @@ namespace {
 	int16_t throttleTrim = 0;
 	int16_t forwardTrim = 0;
 	int16_t lateralTrim = 0;
+	int16_t video_switch = 1100;
 	float gain = 0.5;
 	float maxGain = 1.0;
 	float minGain = 0.25;
@@ -61,8 +62,9 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	channels[5] = x*rpyScale+forwardTrim+rpyCenter;           // forward for ROV
 	channels[6] = y*rpyScale+lateralTrim+rpyCenter;           // lateral for ROV
 	channels[7] = camTilt;                                    // camera tilt
-	channels[8] = lights1;
-	channels[9] = lights2;
+	channels[8] = lights1;                                    // lights 1
+	channels[9] = lights2;                                    // lights 2
+	channels[10] = video_switch;                              // video switch
 
 	// record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
 	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
@@ -112,7 +114,18 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 		case JSButton::button_function_t::k_camera_trigger:
 			break;
 		case JSButton::button_function_t::k_camera_source_toggle:
-					break;
+			{
+				static bool video_toggle = false;
+				video_toggle = !video_toggle;
+				if ( video_toggle ) {
+					video_switch = 1900;
+					gcs_send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 2");
+				} else {
+					video_switch = 1100;
+					gcs_send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 1");
+				}
+			}
+			break;
 		case JSButton::button_function_t::k_lights1_cycle:
 			{
 				static bool increasing = true;
@@ -184,9 +197,18 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			pitchTrim = constrain_float(pitchTrim-10,-200,200);
 			break;
 		case JSButton::button_function_t::k_input_hold_toggle:
-			throttleTrim = channel_throttle->get_control_in() - 1500;
-			forwardTrim = channel_forward->get_control_in() - 1500;
-			lateralTrim = channel_lateral->get_control_in() - 1500;
+			{
+				static bool input_toggle_on = false;
+				input_toggle_on = !input_toggle_on;
+				if ( input_toggle_on ) {
+					throttleTrim = channel_throttle->get_control_in() - 1500;
+					forwardTrim = channel_forward->get_control_in() - 1500;
+					lateralTrim = channel_lateral->get_control_in() - 1500;
+					gcs_send_text(MAV_SEVERITY_INFO,"Input Hold ON");
+				} else {
+					gcs_send_text(MAV_SEVERITY_INFO,"Input Hold OFF");
+				}
+			}
 			break;
 	}
 }
