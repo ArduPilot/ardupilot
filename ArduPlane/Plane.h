@@ -406,6 +406,13 @@ private:
         uint32_t lock_timer_ms;
     } cruise_state;
 
+    struct {
+        uint32_t last_tkoff_arm_time;
+        uint32_t last_check_ms;
+        uint32_t last_report_ms;
+        bool launchTimerStarted;
+    } takeoff_state;
+    
     // ground steering controller state
     struct {
         // Direction held during phases of takeoff and landing centidegrees
