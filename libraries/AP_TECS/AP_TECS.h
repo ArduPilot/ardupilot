@@ -69,9 +69,6 @@ public:
         return _vel_dot;
     }
 
-    // log data on internal state of the controller. Called at 10Hz
-    void log_data(DataFlash_Class &dataflash);
-
     // return current target airspeed
     float get_target_airspeed(void) const {
         return _TAS_dem / _ahrs.get_EAS2TAS();
@@ -109,25 +106,6 @@ public:
     
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
-
-    struct PACKED log_TECS_Tuning {
-        LOG_PACKET_HEADER;
-        uint64_t time_us;
-        float hgt;
-        float dhgt;
-        float hgt_dem;
-        float dhgt_dem;
-        float spd_dem;
-        float spd;
-        float dspd;
-        float ithr;
-        float iptch;
-        float thr;
-        float ptch;
-        float dspd_dem;
-        float speed_weight;
-        uint8_t flags;
-    } log_tuning;
 
 private:
     // Last time update_50Hz was called
@@ -300,6 +278,9 @@ private:
     float _SPEdot;
     float _SKEdot;
 
+    // speed weight for logging
+    float _SKE_weighting;
+    
     // Specific energy error quantities
     float _STE_error;
 

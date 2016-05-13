@@ -753,30 +753,28 @@ void AP_TECS::_update_pitch(void)
     // A SKE_weighting of 0 provides 100% priority to height control. This is used when no airspeed measurement is available
     // A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
     // rises above the demanded value, the pitch angle will be increased by the TECS controller.
-    float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
+    float _SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
     if (!_ahrs.airspeed_sensor_enabled()) {
-        SKE_weighting = 0.0f;
+        _SKE_weighting = 0.0f;
     } else if ( _flags.underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
-        SKE_weighting = 2.0f;
+        _SKE_weighting = 2.0f;
     } else if (_flags.is_doing_auto_land) {
         if (_spdWeightLand < 0) {
             // use sliding scale from normal weight down to zero at landing
             float scaled_weight = _spdWeight * (1.0f - constrain_float(_path_proportion,0,1));
-            SKE_weighting = constrain_float(scaled_weight, 0.0f, 2.0f);
+            _SKE_weighting = constrain_float(scaled_weight, 0.0f, 2.0f);
         } else {
-            SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
+            _SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
         }
     }
 
-    log_tuning.speed_weight = SKE_weighting;
-    
-    float SPE_weighting = 2.0f - SKE_weighting;
+    float SPE_weighting = 2.0f - _SKE_weighting;
 
     // Calculate Specific Energy Balance demand, and error
-    float SEB_dem      = _SPE_dem * SPE_weighting - _SKE_dem * SKE_weighting;
-    float SEBdot_dem   = _SPEdot_dem * SPE_weighting - _SKEdot_dem * SKE_weighting;
-    float SEB_error    = SEB_dem - (_SPE_est * SPE_weighting - _SKE_est * SKE_weighting);
-    float SEBdot_error = SEBdot_dem - (_SPEdot * SPE_weighting - _SKEdot * SKE_weighting);
+    float SEB_dem      = _SPE_dem * SPE_weighting - _SKE_dem * _SKE_weighting;
+    float SEBdot_dem   = _SPEdot_dem * SPE_weighting - _SKEdot_dem * _SKE_weighting;
+    float SEB_error    = SEB_dem - (_SPE_est * SPE_weighting - _SKE_est * _SKE_weighting);
+    float SEBdot_error = SEBdot_dem - (_SPEdot * SPE_weighting - _SKEdot * _SKE_weighting);
 
     // Calculate integrator state, constraining input if pitch limits are exceeded
     float integSEB_input = SEB_error * _get_i_gain();
@@ -1023,41 +1021,21 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate pitch demand
     _update_pitch();
 
-    // Write internal variables to the log_tuning structure. This
-    // structure will be logged in dataflash at 10Hz
-    log_tuning.hgt_dem  = _hgt_dem_adj;
-    log_tuning.hgt      = _height;
-    log_tuning.dhgt_dem = _hgt_rate_dem;
-    log_tuning.dhgt     = _climb_rate;
-    log_tuning.spd_dem  = _TAS_dem_adj;
-    log_tuning.spd      = _TAS_state;
-    log_tuning.dspd     = _vel_dot;
-    log_tuning.ithr     = _integTHR_state;
-    log_tuning.iptch    = _integSEB_state;
-    log_tuning.thr      = _throttle_dem;
-    log_tuning.ptch     = _pitch_dem;
-    log_tuning.dspd_dem = _TAS_rate_dem;
-    log_tuning.flags    = _flags_byte;
-    log_tuning.time_us  = AP_HAL::micros64();
-}
-
-// log the contents of the log_tuning structure to dataflash
-void AP_TECS::log_data(DataFlash_Class &dataflash)
-{
-    dataflash.Log_Write("TECS", "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f", "QfffffffffffffB",
-                        AP_HAL::micros64(),
-                        log_tuning.hgt,
-                        log_tuning.dhgt,
-                        log_tuning.hgt_dem,
-                        log_tuning.dhgt_dem,
-                        log_tuning.spd_dem,
-                        log_tuning.spd,
-                        log_tuning.dspd,
-                        log_tuning.ithr,
-                        log_tuning.iptch,
-                        log_tuning.thr,
-                        log_tuning.ptch,
-                        log_tuning.dspd_dem,
-                        log_tuning.speed_weight,
-                        log_tuning.flags);
+    // log to DataFlash
+    DataFlash_Class::instance()->Log_Write("TECS", "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f", "QfffffffffffffB",
+                                           now,
+                                           _height,
+                                           _climb_rate,
+                                           _hgt_dem_adj,
+                                           _hgt_rate_dem,
+                                           _TAS_dem_adj,
+                                           _TAS_state,
+                                           _vel_dot,
+                                           _integTHR_state,
+                                           _integSEB_state,
+                                           _throttle_dem,
+                                           _pitch_dem,
+                                           _TAS_rate_dem,
+                                           _SKE_weighting,
+                                           _flags_byte);
 }
