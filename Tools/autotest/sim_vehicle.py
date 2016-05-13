@@ -272,6 +272,9 @@ default_params_filename: filename of default parameters file.  Taken to be relat
 extra_mavlink_cmds: extra parameters that will be passed to mavproxy
 '''
 _options_for_frame = {
+    "calibration": {
+        "extra_mavlink_cmds": "module load sitl_calibration;",
+    },
     "+": {
         "waf_target": "bin/arducopter-quad",
         "default_params_filename": "copter_params.parm"
