@@ -29,6 +29,8 @@ public:
     /* Probe for AK8963 on auxiliary bus of MPU9250, connected through SPI */
     static AP_Compass_Backend *probe_mpu9250(Compass &compass, uint8_t mpu9250_instance);
 
+    static constexpr const char *name = "AK8963";
+
     virtual ~AP_Compass_AK8963();
 
     bool init() override;

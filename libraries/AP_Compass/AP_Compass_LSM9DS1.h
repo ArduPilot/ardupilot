@@ -14,6 +14,8 @@ public:
     static AP_Compass_Backend *probe(Compass &compass,
                                      AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
+    static constexpr const char *name = "LSM9DS1";
+
     bool init() override;
     void read() override;
 
