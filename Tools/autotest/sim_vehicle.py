@@ -496,9 +496,9 @@ def progress_cmd(what, cmd):
     shell_text = "%s" % (" ".join([ '"%s"' % x for x in cmd ]))
     progress(shell_text)
 
-def run_cmd_blocking(what, cmd):
+def run_cmd_blocking(what, cmd, **kw):
     progress_cmd(what, cmd)
-    p = subprocess.Popen(cmd)
+    p = subprocess.Popen(cmd, **kw)
     return os.waitpid(p.pid,0)
 
 def run_in_terminal_window(autotest, name, cmd):
