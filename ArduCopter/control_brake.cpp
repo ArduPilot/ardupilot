@@ -78,10 +78,9 @@ void Copter::brake_run()
     pos_control.set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
     pos_control.update_z_controller();
 
-    if (brake_timeout_ms != 0 && millis()-brake_timeout_start >= brake_timeout_ms)
-    {
-        if(!set_mode(LOITER)) {
-            set_mode(ALT_HOLD);
+    if (brake_timeout_ms != 0 && millis()-brake_timeout_start >= brake_timeout_ms) {
+        if (!set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
+            set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
         }
     }
 }
