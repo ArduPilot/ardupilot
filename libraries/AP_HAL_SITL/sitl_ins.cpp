@@ -94,7 +94,7 @@ uint16_t SITL_State::_ground_sonar(void)
 
         // Altitude in in m, scaler in meters/volt
         voltage = altitude / _sitl->sonar_scale;
-        voltage = constrain_float(voltage, 0, 5.0f);
+        voltage = constrain_value<float>(voltage, 0, 5.0f);
 
         if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f) {
             voltage = 5.0f;

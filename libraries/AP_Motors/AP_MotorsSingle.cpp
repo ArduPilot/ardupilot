@@ -136,8 +136,8 @@ void AP_MotorsSingle::output_to_motors()
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[1], _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[2], _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[3], _servo4));
-            rc_write(AP_MOTORS_MOT_5, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
-            rc_write(AP_MOTORS_MOT_6, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_5, constrain_value<int16_t>(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_6, constrain_value<int16_t>(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
             hal.rcout->push();
             break;
         case SPOOL_UP:
@@ -209,7 +209,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     if (is_zero(roll_thrust) && is_zero(pitch_thrust)) {
         rpy_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
+        rpy_scale = constrain_value<float>((1.0f - MIN(fabsf(yaw_thrust), (float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
         if (rpy_scale < 1.0f) {
             limit.roll_pitch = true;
         }
@@ -217,7 +217,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
 
     actuator_allowed = 1.0f - rpy_scale * rp_thrust_max;
     if (fabsf(yaw_thrust) > actuator_allowed) {
-        yaw_thrust = constrain_float(yaw_thrust, -actuator_allowed, actuator_allowed);
+        yaw_thrust = constrain_value<float>(yaw_thrust, -actuator_allowed, actuator_allowed);
         limit.yaw = true;
     }
 
@@ -277,7 +277,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
         // therefore the torque of the roll and pitch actuators should be approximately proportional to
         // the angle of attack multiplied by the static thrust.
         for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
-            _actuator_out[i] = constrain_float(rpy_scale*actuator[i]/_thrust_out, -1.0f, 1.0f);
+            _actuator_out[i] = constrain_value<float>(rpy_scale*actuator[i]/_thrust_out, -1.0f, 1.0f);
         }
     }
 }

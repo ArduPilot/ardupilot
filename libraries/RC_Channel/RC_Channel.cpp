@@ -239,7 +239,7 @@ RC_Channel::calc_pwm(void)
         _radio_out       = _pwm_out + _radio_trim;
     }
 
-    _radio_out = constrain_int16(_radio_out, _radio_min.get(), _radio_max.get());
+    _radio_out = constrain_value<int16_t>(_radio_out, _radio_min.get(), _radio_max.get());
 }
 
 
@@ -363,7 +363,7 @@ RC_Channel::angle_to_pwm()
 int16_t
 RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
 {
-    int16_t r_in = constrain_int16(_radio_in, _radio_min.get(), _radio_max.get());
+    int16_t r_in = constrain_value<int16_t>(_radio_in, _radio_min.get(), _radio_max.get());
 
     if (_reverse == -1) {
 	    r_in = _radio_max.get() - (r_in - _radio_min.get());
@@ -417,7 +417,7 @@ RC_Channel::norm_input()
         }
         ret = reverse_mul * (float)(_radio_in - _radio_trim) / (float)(_radio_max  - _radio_trim);
     }
-    return constrain_float(ret, -1.0f, 1.0f);
+    return constrain_value<float>(ret, -1.0f, 1.0f);
 }
 
 float
@@ -434,7 +434,7 @@ RC_Channel::norm_input_dz()
     } else {
         ret = 0;
     }
-    return constrain_float(ret, -1.0f, 1.0f);
+    return constrain_value<float>(ret, -1.0f, 1.0f);
 }
 
 /*

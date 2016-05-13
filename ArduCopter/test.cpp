@@ -119,7 +119,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
                     const Vector3f &mag_ofs = compass.get_offsets();
                     const Vector3f &mag = compass.get_field();
                     cliSerial->printf("Heading: %d, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
-                                      (int)(wrap_360_cd(ToDeg(heading) * 100)) /100,
+                                      (int)(wrap_360_cd(degrees(heading) * 100)) /100,
                                         (double)mag.x,
                                         (double)mag.y,
                                         (double)mag.z,

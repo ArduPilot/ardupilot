@@ -6,8 +6,6 @@
 
 #define TRUE 1
 #define FALSE 0
-#define ToRad(x) radians(x)	// *pi/180
-#define ToDeg(x) degrees(x)	// *180/pi
 
 #define DEBUG 0
 #define LOITER_RANGE 60 // for calculating power outside of loiter radius

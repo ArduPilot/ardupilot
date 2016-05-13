@@ -719,7 +719,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    float heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
+    float heading = constrain_value<float>(atan2f(-headY,headX), -3.15f, 3.15f);
 
     // Declination correction (if supplied)
     if( fabsf(_declination) > 0.0f )
@@ -837,7 +837,7 @@ void Compass::_setup_earth_field(void)
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
     Matrix3f R;
-    R.from_euler(0, ToRad(66), get_declination());
+    R.from_euler(0, degrees(66.0f), get_declination());
     _hil.Bearth = R * _hil.Bearth;
 }
 
@@ -895,8 +895,8 @@ bool Compass::consistent() const
                 return false;
             }
 
-            float xyz_ang_diff = acosf(constrain_float(mag_field_norm * primary_mag_field_norm,-1.0f,1.0f));
-            float xy_ang_diff  = acosf(constrain_float(mag_field_xy_norm*primary_mag_field_xy_norm,-1.0f,1.0f));
+            float xyz_ang_diff = acosf(constrain_value<float>(mag_field_norm * primary_mag_field_norm,-1.0f,1.0f));
+            float xy_ang_diff  = acosf(constrain_value<float>(mag_field_xy_norm*primary_mag_field_xy_norm,-1.0f,1.0f));
             float xy_len_diff  = (primary_mag_field_xy-mag_field_xy).length();
 
             // check for gross misalignment on all axes

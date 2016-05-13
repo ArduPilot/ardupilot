@@ -273,7 +273,7 @@ void Plane::change_target_altitude(int32_t change_cm)
 void Plane::set_target_altitude_proportion(const Location &loc, float proportion)
 {
     set_target_altitude_location(loc);
-    proportion = constrain_float(proportion, 0.0f, 1.0f);
+    proportion = constrain_value<float>(proportion, 0.0f, 1.0f);
     change_target_altitude(-target_altitude.offset_cm*proportion);
     //rebuild the glide slope if we are above it and supposed to be climbing
     if(g.glide_slope_threshold > 0) {
@@ -295,9 +295,9 @@ void Plane::set_target_altitude_proportion(const Location &loc, float proportion
 void Plane::constrain_target_altitude_location(const Location &loc1, const Location &loc2)
 {
     if (loc1.alt > loc2.alt) {
-        target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc2.alt, loc1.alt);
+        target_altitude.amsl_cm = constrain_value<int32_t>(target_altitude.amsl_cm, loc2.alt, loc1.alt);
     } else {
-        target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc1.alt, loc2.alt);
+        target_altitude.amsl_cm = constrain_value<int32_t>(target_altitude.amsl_cm, loc1.alt, loc2.alt);
     }
 }
 
@@ -492,7 +492,7 @@ float Plane::lookahead_adjustment(void)
         distance = g.terrain_lookahead;
     } else if (!reached_loiter_target()) {
         bearing_cd = nav_controller->target_bearing_cd();
-        distance = constrain_float(auto_state.wp_distance, 0, g.terrain_lookahead);
+        distance = constrain_value<float>(auto_state.wp_distance, 0, g.terrain_lookahead);
     } else {
         // no lookahead when loitering
         bearing_cd = 0;
@@ -529,7 +529,7 @@ float Plane::lookahead_adjustment(void)
     }
 
     // constrain lookahead to a reasonable limit
-    return constrain_float(lookahead, 0, 1000.0f);
+    return constrain_value<float>(lookahead, 0, 1000.0f);
 #else
     return 0;
 #endif

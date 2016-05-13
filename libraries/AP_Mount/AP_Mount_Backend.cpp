@@ -96,15 +96,15 @@ void AP_Mount_Backend::update_targets_from_rc()
         // allow pilot speed position input to come directly from an RC_Channel
         if (roll_rc_in && rc_ch(roll_rc_in)) {
             _angle_ef_target_rad.x += rc_ch(roll_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            _angle_ef_target_rad.x = constrain_float(_angle_ef_target_rad.x, radians(_state._roll_angle_min*0.01f), radians(_state._roll_angle_max*0.01f));
+            _angle_ef_target_rad.x = constrain_value<float>(_angle_ef_target_rad.x, radians(_state._roll_angle_min*0.01f), radians(_state._roll_angle_max*0.01f));
         }
         if (tilt_rc_in && (rc_ch(tilt_rc_in))) {
             _angle_ef_target_rad.y += rc_ch(tilt_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y, radians(_state._tilt_angle_min*0.01f), radians(_state._tilt_angle_max*0.01f));
+            _angle_ef_target_rad.y = constrain_value<float>(_angle_ef_target_rad.y, radians(_state._tilt_angle_min*0.01f), radians(_state._tilt_angle_max*0.01f));
         }
         if (pan_rc_in && (rc_ch(pan_rc_in))) {
             _angle_ef_target_rad.z += rc_ch(pan_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            _angle_ef_target_rad.z = constrain_float(_angle_ef_target_rad.z, radians(_state._pan_angle_min*0.01f), radians(_state._pan_angle_max*0.01f));
+            _angle_ef_target_rad.z = constrain_value<float>(_angle_ef_target_rad.z, radians(_state._pan_angle_min*0.01f), radians(_state._pan_angle_max*0.01f));
         }
     } else {
         // allow pilot position input to come directly from an RC_Channel
@@ -136,7 +136,7 @@ float AP_Mount_Backend::angle_input_rad(RC_Channel* rc, int16_t angle_min, int16
 // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
 void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan)
 {
-    float GPS_vector_x = (target.lng-_frontend._current_loc.lng)*cosf(ToRad((_frontend._current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
+    float GPS_vector_x = (target.lng-_frontend._current_loc.lng)*cosf(radians((_frontend._current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
     float GPS_vector_y = (target.lat-_frontend._current_loc.lat)*0.01113195f;
     float GPS_vector_z = (target.alt-_frontend._current_loc.alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
     float target_distance = 100.0f*norm(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.

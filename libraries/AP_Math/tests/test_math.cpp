@@ -113,51 +113,51 @@ TEST(MathTest, Constrain)
 {
     for (int i = 0; i < 1000; i++) {
         if (i < 250) {
-            EXPECT_EQ(250, constrain_float(i, 250, 500));
-            EXPECT_EQ(250, constrain_int16(i, 250, 500));
-            EXPECT_EQ(250, constrain_int32(i, 250, 500));
+            EXPECT_EQ(250, constrain_value<float>(i, 250, 500));
+            EXPECT_EQ(250, constrain_value<int16_t>(i, 250, 500));
+            EXPECT_EQ(250, constrain_value<int32_t>(i, 250, 500));
         } else if (i > 500) {
-            EXPECT_EQ(500, constrain_float(i, 250, 500));
-            EXPECT_EQ(500, constrain_int16(i, 250, 500));
-            EXPECT_EQ(500, constrain_int32(i, 250, 500));
+            EXPECT_EQ(500, constrain_value<float>(i, 250, 500));
+            EXPECT_EQ(500, constrain_value<int16_t>(i, 250, 500));
+            EXPECT_EQ(500, constrain_value<int32_t>(i, 250, 500));
         } else {
-            EXPECT_EQ(i, constrain_float(i, 250, 500));
-            EXPECT_EQ(i, constrain_int16(i, 250, 500));
-            EXPECT_EQ(i, constrain_int32(i, 250, 500));
+            EXPECT_EQ(i, constrain_value<float>(i, 250, 500));
+            EXPECT_EQ(i, constrain_value<int16_t>(i, 250, 500));
+            EXPECT_EQ(i, constrain_value<int32_t>(i, 250, 500));
         }
     }
 
     for (int i = 0; i <= 1000; i++) {
         int c = i - 1000;
         if (c < -250) {
-            EXPECT_EQ(-250, constrain_float(c, -250, -50));
-            EXPECT_EQ(-250, constrain_int16(c, -250, -50));
-            EXPECT_EQ(-250, constrain_int32(c, -250, -50));
+            EXPECT_EQ(-250, constrain_value<float>(c, -250, -50));
+            EXPECT_EQ(-250, constrain_value<int16_t>(c, -250, -50));
+            EXPECT_EQ(-250, constrain_value<int32_t>(c, -250, -50));
         } else if(c > -50) {
-            EXPECT_EQ(-50, constrain_float(c, -250, -50));
-            EXPECT_EQ(-50, constrain_int16(c, -250, -50));
-            EXPECT_EQ(-50, constrain_int32(c, -250, -50));
+            EXPECT_EQ(-50, constrain_value<float>(c, -250, -50));
+            EXPECT_EQ(-50, constrain_value<int16_t>(c, -250, -50));
+            EXPECT_EQ(-50, constrain_value<int32_t>(c, -250, -50));
         } else {
-            EXPECT_EQ(c, constrain_float(c, -250, -50));
-            EXPECT_EQ(c, constrain_int16(c, -250, -50));
-            EXPECT_EQ(c, constrain_int32(c, -250, -50));
+            EXPECT_EQ(c, constrain_value<float>(c, -250, -50));
+            EXPECT_EQ(c, constrain_value<int16_t>(c, -250, -50));
+            EXPECT_EQ(c, constrain_value<int32_t>(c, -250, -50));
         }
     }
 
     for (int i = 0; i <= 2000; i++) {
         int c = i - 1000;
         if (c < -250) {
-            EXPECT_EQ(-250, constrain_float(c, -250, 50));
-            EXPECT_EQ(-250, constrain_int16(c, -250, 50));
-            EXPECT_EQ(-250, constrain_int32(c, -250, 50));
+            EXPECT_EQ(-250, constrain_value<float>(c, -250, 50));
+            EXPECT_EQ(-250, constrain_value<int16_t>(c, -250, 50));
+            EXPECT_EQ(-250, constrain_value<int32_t>(c, -250, 50));
         } else if(c > 50) {
-            EXPECT_EQ(50, constrain_float(c, -250, 50));
-            EXPECT_EQ(50, constrain_int16(c, -250, 50));
-            EXPECT_EQ(50, constrain_int32(c, -250, 50));
+            EXPECT_EQ(50, constrain_value<float>(c, -250, 50));
+            EXPECT_EQ(50, constrain_value<int16_t>(c, -250, 50));
+            EXPECT_EQ(50, constrain_value<int32_t>(c, -250, 50));
         } else {
-            EXPECT_EQ(c, constrain_float(c, -250, 50));
-            EXPECT_EQ(c, constrain_int16(c, -250, 50));
-            EXPECT_EQ(c, constrain_int32(c, -250, 50));
+            EXPECT_EQ(c, constrain_value<float>(c, -250, 50));
+            EXPECT_EQ(c, constrain_value<int16_t>(c, -250, 50));
+            EXPECT_EQ(c, constrain_value<int32_t>(c, -250, 50));
         }
     }
 }

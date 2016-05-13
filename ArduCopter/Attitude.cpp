@@ -14,10 +14,10 @@ float Copter::get_smoothing_gain()
 void Copter::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
 {
     // sanity check angle max parameter
-    aparm.angle_max = constrain_int16(aparm.angle_max,1000,8000);
+    aparm.angle_max = constrain_value<int16_t>(aparm.angle_max,1000,8000);
 
     // limit max lean angle
-    angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
+    angle_max = constrain_value<float>(angle_max, 1000, aparm.angle_max);
 
     // scale roll_in, pitch_in to ANGLE_MAX parameter range
     float scaler = aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
@@ -55,7 +55,7 @@ void Copter::check_ekf_yaw_reset()
     float yaw_angle_change_rad = 0.0f;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+        attitude_control.shift_ef_yaw_target(degrees(yaw_angle_change_rad) * 100.0f);
         ekfYawReset_ms = new_ekfYawReset_ms;
     }
 }
@@ -138,9 +138,9 @@ float Copter::get_pilot_desired_throttle(int16_t throttle_control)
     int16_t mid_stick = channel_throttle->get_control_mid();
 
     // ensure reasonable throttle values
-    throttle_control = constrain_int16(throttle_control,0,1000);
+    throttle_control = constrain_value<int16_t>(throttle_control,0,1000);
     // ensure mid throttle is set within a reasonable range
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    g.throttle_mid = constrain_value<int16_t>(g.throttle_mid,g.throttle_min+50,700);
     float thr_mid = MAX(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
 
     // check throttle is above, below or in the deadband
@@ -173,10 +173,10 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
     float deadband_bottom = mid_stick - g.throttle_deadzone;
 
     // ensure a reasonable throttle value
-    throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
+    throttle_control = constrain_value<float>(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
-    g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
+    g.throttle_deadzone = constrain_value<int16_t>(g.throttle_deadzone, 0, 400);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
@@ -200,7 +200,7 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
 float Copter::get_non_takeoff_throttle()
 {
     // ensure mid throttle is set within a reasonable range
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    g.throttle_mid = constrain_value<int16_t>(g.throttle_mid,g.throttle_min+50,700);
     return MAX(0,g.throttle_mid-g.throttle_min) / ((float)(1000-g.throttle_min) * 2.0f);
 }
 
@@ -219,7 +219,7 @@ float Copter::get_throttle_pre_takeoff(float input_thr)
     }
 
     // ensure reasonable throttle values
-    input_thr = constrain_float(input_thr,0.0f,1000.0f);
+    input_thr = constrain_value<float>(input_thr,0.0f,1000.0f);
 
     float in_min = 0.0f;
     float in_max = get_takeoff_trigger_throttle();
@@ -239,7 +239,7 @@ float Copter::get_throttle_pre_takeoff(float input_thr)
         return 0.0f;
     }
 
-    return constrain_float(out_min + (input_thr-in_min)*output_range/input_range, out_min, out_max);
+    return constrain_value<float>(out_min + (input_thr-in_min)*output_range/input_range, out_min, out_max);
 }
 
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
@@ -266,12 +266,12 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
-    target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-pos_control.get_leash_down_z(),sonar_alt+pos_control.get_leash_up_z());
+    target_sonar_alt = constrain_value<float>(target_sonar_alt,sonar_alt-pos_control.get_leash_down_z(),sonar_alt+pos_control.get_leash_up_z());
 
     // calc desired velocity correction from target sonar alt vs actual sonar alt (remove the error already passed to Altitude controller to avoid oscillations)
     distance_error = (target_sonar_alt - sonar_alt) - (current_alt_target - current_alt);
     velocity_correction = distance_error * g.sonar_gain;
-    velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
+    velocity_correction = constrain_value<float>(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 
     // return combined pilot climb rate + rate to correct sonar alt error
     return (target_rate + velocity_correction);

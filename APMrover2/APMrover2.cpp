@@ -444,7 +444,7 @@ void Rover::update_current_mode(void)
         float max_g_force = ground_speed * ground_speed / steerController.get_turn_radius();
 
         // constrain to user set TURN_MAX_G
-        max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
+        max_g_force = constrain_value<float>(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
 
         lateral_acceleration = max_g_force * (channel_steer->pwm_to_angle()/4500.0f);
         calc_nav_steer();
@@ -454,9 +454,9 @@ void Rover::update_current_mode(void)
         float target_speed = channel_throttle->pwm_to_angle() * 0.01f * 2 * g.speed_cruise;
         set_reverse(target_speed < 0);
         if (in_reverse) {
-            target_speed = constrain_float(target_speed, -g.speed_cruise, 0);
+            target_speed = constrain_value<float>(target_speed, -g.speed_cruise, 0);
         } else {
-            target_speed = constrain_float(target_speed, 0, g.speed_cruise);
+            target_speed = constrain_value<float>(target_speed, 0, g.speed_cruise);
         }
         calc_throttle(target_speed);
         break;

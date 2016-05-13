@@ -252,7 +252,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
         _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
     }
-    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
+    _collective_mid = constrain_value<int16_t>(_collective_mid, _collective_min, _collective_max);
 
     // calculate collective mid point as a number from 0 to 1
     _collective_mid_pct = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min));
@@ -401,7 +401,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         // also not required if we are using external gyro
         if ((_main_rotor.get_control_output() > _main_rotor.get_idle_output()) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
-            _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
+            _collective_yaw_effect = constrain_value<float>(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
             yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_mid_pct);
         }
     } else {

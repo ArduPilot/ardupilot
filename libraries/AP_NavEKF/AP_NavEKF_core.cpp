@@ -901,7 +901,7 @@ void NavEKF_core::UpdateStrapdownEquationsNED()
 
     // LPF the yaw rate using a 1 second time constant yaw rate and determine if we are doing continual
     // fast rotations that can cause problems due to gyro scale factor errors.
-    float alphaLPF = constrain_float(dtDelAng, 0.0f, 1.0f);
+    float alphaLPF = constrain_value<float>(dtDelAng, 0.0f, 1.0f);
     yawRateFilt += (state.omega.z - yawRateFilt)*alphaLPF;
     if (fabsf(yawRateFilt) > 1.0f) {
         highYawRate = true;
@@ -959,15 +959,15 @@ void NavEKF_core::CovariancePrediction() OPT_MATHS
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
     if (!inhibitWindStates) {
-        windVelSigma  = dt * constrain_float(frontend._windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(frontend._wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
+        windVelSigma  = dt * constrain_value<float>(frontend._windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_value<float>(frontend._wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
     } else {
         windVelSigma  = 0.0f;
     }
-    dAngBiasSigma = dt * constrain_float(frontend._gyroBiasProcessNoise, 1e-7f, 1e-5f);
-    dVelBiasSigma = dt * constrain_float(frontend._accelBiasProcessNoise, 1e-5f, 1e-3f);
+    dAngBiasSigma = dt * constrain_value<float>(frontend._gyroBiasProcessNoise, 1e-7f, 1e-5f);
+    dVelBiasSigma = dt * constrain_value<float>(frontend._accelBiasProcessNoise, 1e-5f, 1e-3f);
     if (!inhibitMagStates) {
-        magEarthSigma = dt * constrain_float(frontend._magEarthProcessNoise, 1e-4f, 1e-2f);
-        magBodySigma  = dt * constrain_float(frontend._magBodyProcessNoise, 1e-4f, 1e-2f);
+        magEarthSigma = dt * constrain_value<float>(frontend._magEarthProcessNoise, 1e-4f, 1e-2f);
+        magBodySigma  = dt * constrain_value<float>(frontend._magBodyProcessNoise, 1e-4f, 1e-2f);
     } else {
         magEarthSigma = 0.0f;
         magBodySigma  = 0.0f;
@@ -1015,12 +1015,12 @@ void NavEKF_core::CovariancePrediction() OPT_MATHS
     day_b = state.gyro_bias.y;
     daz_b = state.gyro_bias.z;
     dvz_b = IMU1_weighting * state.accel_zbias1 + (1.0f - IMU1_weighting) * state.accel_zbias2;
-    frontend._gyrNoise = constrain_float(frontend._gyrNoise, 1e-3f, 5e-2f);
+    frontend._gyrNoise = constrain_value<float>(frontend._gyrNoise, 1e-3f, 5e-2f);
     daxCov = sq(dt*frontend._gyrNoise);
     dayCov = sq(dt*frontend._gyrNoise);
     // Account for 3% scale factor error on Z angular rate. This reduces chance of continuous fast rotations causing loss of yaw reference.
     dazCov = sq(dt*frontend._gyrNoise) + sq(dt*0.03f*yawRateFilt);
-    frontend._accNoise = constrain_float(frontend._accNoise, 5e-2f, 1.0f);
+    frontend._accNoise = constrain_value<float>(frontend._accNoise, 5e-2f, 1.0f);
     dvxCov = sq(dt*frontend._accNoise);
     dvyCov = sq(dt*frontend._accNoise);
     dvzCov = sq(dt*frontend._accNoise);
@@ -1662,17 +1662,17 @@ void NavEKF_core::FuseVelPosNED()
         // otherwise we scale it using manoeuvre acceleration
         if (gpsSpdAccuracy > 0.0f) {
             // use GPS receivers reported speed accuracy - floor at value set by gps noise parameter
-            R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, frontend._gpsHorizVelNoise, 50.0f));
-            R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, frontend._gpsVertVelNoise, 50.0f));
+            R_OBS[0] = sq(constrain_value<float>(gpsSpdAccuracy, frontend._gpsHorizVelNoise, 50.0f));
+            R_OBS[2] = sq(constrain_value<float>(gpsSpdAccuracy, frontend._gpsVertVelNoise, 50.0f));
         } else {
             // calculate additional error in GPS velocity caused by manoeuvring
-            R_OBS[0] = sq(constrain_float(frontend._gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
-            R_OBS[2] = sq(constrain_float(frontend._gpsVertVelNoise,  0.05f, 5.0f)) + sq(gpsDVelVarAccScale  * accNavMag);
+            R_OBS[0] = sq(constrain_value<float>(frontend._gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
+            R_OBS[2] = sq(constrain_value<float>(frontend._gpsVertVelNoise,  0.05f, 5.0f)) + sq(gpsDVelVarAccScale  * accNavMag);
         }
         R_OBS[1] = R_OBS[0];
-        R_OBS[3] = sq(constrain_float(frontend._gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+        R_OBS[3] = sq(constrain_value<float>(frontend._gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
         R_OBS[4] = R_OBS[3];
-        R_OBS[5] = sq(constrain_float(frontend._baroAltNoise, 0.1f, 10.0f));
+        R_OBS[5] = sq(constrain_value<float>(frontend._baroAltNoise, 0.1f, 10.0f));
 
         // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
         if ((getTakeoffExpected() || getTouchdownExpected()) && vehicleArmed) {
@@ -1682,7 +1682,7 @@ void NavEKF_core::FuseVelPosNED()
         // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
         // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
         // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
-        for (uint8_t i=0; i<=1; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(frontend._gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
+        for (uint8_t i=0; i<=1; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_value<float>(frontend._gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
         for (uint8_t i=2; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
 
@@ -1767,9 +1767,9 @@ void NavEKF_core::FuseVelPosNED()
                 // observation error to normalise
                 float R_hgt;
                 if (i == 2) {
-                    R_hgt = sq(constrain_float(frontend._gpsVertVelNoise, 0.05f, 5.0f));
+                    R_hgt = sq(constrain_value<float>(frontend._gpsVertVelNoise, 0.05f, 5.0f));
                 } else {
-                    R_hgt = sq(constrain_float(frontend._gpsHorizVelNoise, 0.05f, 5.0f));
+                    R_hgt = sq(constrain_value<float>(frontend._gpsHorizVelNoise, 0.05f, 5.0f));
                 }
                 K1 += R_hgt / (R_hgt + sq(velInnov1[i]));
                 K2 += R_hgt / (R_hgt + sq(velInnov2[i]));
@@ -1829,7 +1829,7 @@ void NavEKF_core::FuseVelPosNED()
                 if (!vehicleArmed) {
                     float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms)*1.0e-3f;
                     const float hgtInnovFiltTC = 2.0f;
-                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
+                    float alpha = constrain_value<float>(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
                     hgtInnovFiltState += (innovVelPos[5]-hgtInnovFiltState)*alpha;
                 }
                 // declare height healthy and able to be fused
@@ -1893,7 +1893,7 @@ void NavEKF_core::FuseVelPosNED()
                             //    ____/|
                             //   /     |
                             //  /      |
-                            innovVelPos[5] += constrain_float(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
+                            innovVelPos[5] += constrain_value<float>(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
                         }
                     }
                 }
@@ -1909,7 +1909,7 @@ void NavEKF_core::FuseVelPosNED()
                 // Don't update Z accel bias if off-level by greater than 60 degrees to avoid scale factor error effects
                 // Don't update if we are taking off with ground effect
                 if ((obsIndex == 5 || obsIndex == 2) && prevTnb.c.z > 0.5f && !getTakeoffExpected()) {
-                    Kfusion[13] = constrain_float(P[13][stateIndex]*SK,-1.0f,0.0f);
+                    Kfusion[13] = constrain_value<float>(P[13][stateIndex]*SK,-1.0f,0.0f);
                 } else {
                     Kfusion[13] = 0.0f;
                 }
@@ -1961,8 +1961,8 @@ void NavEKF_core::FuseVelPosNED()
                     if (vehicleArmed) {
                         // Correct single IMU prediction states using height measurement, limiting rate of change of bias to 0.005 m/s3
                         float correctionLimit = 0.005f * dtIMUavg * dtVelPos;
-                        state.accel_zbias1 -= constrain_float(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
-                        state.accel_zbias2 -= constrain_float(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
+                        state.accel_zbias1 -= constrain_value<float>(Kfusion[13] * hgtInnov1, -correctionLimit, correctionLimit); // IMU1 Z accel bias
+                        state.accel_zbias2 -= constrain_value<float>(Kfusion[22] * hgtInnov2, -correctionLimit, correctionLimit); // IMU2 Z accel bias
                     } else {
                         // When disarmed, do not rate limit accel bias learning
                         state.accel_zbias1 -= Kfusion[13] * hgtInnov1; // IMU1 Z accel bias
@@ -2093,7 +2093,7 @@ void NavEKF_core::FuseMagnetometer()
         MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
         // scale magnetometer observation error with total angular rate
-        R_MAG = sq(constrain_float(frontend._magNoise, 0.01f, 0.5f)) + sq(magVarRateScale*dAngIMU.length() / dtIMUavg);
+        R_MAG = sq(constrain_value<float>(frontend._magNoise, 0.01f, 0.5f)) + sq(magVarRateScale*dAngIMU.length() / dtIMUavg);
 
         // calculate observation jacobians
         SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
@@ -2627,7 +2627,7 @@ void NavEKF_core::FuseOptFlow()
     // Calculate observation jacobians and Kalman gains
     if (obsIndex == 0) {
         // calculate range from ground plain to centre of sensor fov assuming flat earth
-        float range = constrain_float((heightAboveGndEst/Tnb_flow.c.z),rngOnGnd,1000.0f);
+        float range = constrain_value<float>((heightAboveGndEst/Tnb_flow.c.z),rngOnGnd,1000.0f);
 
         // calculate relative velocity in sensor frame
         relVelSensor = Tnb_flow*statesAtFlowTime.velocity;
@@ -2880,7 +2880,7 @@ void NavEKF_core::FuseAirspeed()
     float vwn;
     float vwe;
     float EAS2TAS = _ahrs->get_EAS2TAS();
-    const float R_TAS = sq(constrain_float(frontend._easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
+    const float R_TAS = sq(constrain_value<float>(frontend._easNoise, 0.5f, 5.0f) * constrain_value<float>(EAS2TAS, 0.9f, 10.0f));
     Vector3f SH_TAS;
     float SK_TAS;
     Vector22 H_TAS;
@@ -3753,42 +3753,42 @@ void NavEKF_core::CopyAndFixCovariances()
 // constrain variances (diagonal terms) in the state covariance matrix to  prevent ill-conditioning
 void NavEKF_core::ConstrainVariances()
 {
-    for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f); // quaternions
-    for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // velocities
-    for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f); // positions
-    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtIMUavg)); // delta angle biases
-    P[13][13] = constrain_float(P[13][13],0.0f,sq(10.0f * dtIMUavg)); // delta velocity bias
-    for (uint8_t i=14; i<=15; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // earth magnetic field
-    for (uint8_t i=16; i<=21; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f); // body magnetic field
+    for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0f); // quaternions
+    for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0e3f); // velocities
+    for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0e6f); // positions
+    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,sq(0.175f * dtIMUavg)); // delta angle biases
+    P[13][13] = constrain_value<float>(P[13][13],0.0f,sq(10.0f * dtIMUavg)); // delta velocity bias
+    for (uint8_t i=14; i<=15; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0e3f); // earth magnetic field
+    for (uint8_t i=16; i<=21; i++) P[i][i] = constrain_value<float>(P[i][i],0.0f,1.0f); // body magnetic field
 }
 
 // constrain states to prevent ill-conditioning
 void NavEKF_core::ConstrainStates()
 {
     // quaternions are limited between +-1
-    for (uint8_t i=0; i<=3; i++) states[i] = constrain_float(states[i],-1.0f,1.0f);
+    for (uint8_t i=0; i<=3; i++) states[i] = constrain_value<float>(states[i],-1.0f,1.0f);
     // velocity limit 500 m/sec (could set this based on some multiple of max airspeed * EAS2TAS)
-    for (uint8_t i=4; i<=6; i++) states[i] = constrain_float(states[i],-5.0e2f,5.0e2f);
+    for (uint8_t i=4; i<=6; i++) states[i] = constrain_value<float>(states[i],-5.0e2f,5.0e2f);
     // position limit 1000 km - TODO apply circular limit
-    for (uint8_t i=7; i<=8; i++) states[i] = constrain_float(states[i],-1.0e6f,1.0e6f);
+    for (uint8_t i=7; i<=8; i++) states[i] = constrain_value<float>(states[i],-1.0e6f,1.0e6f);
     // height limit covers home alt on everest through to home alt at SL and ballon drop
-    state.position.z = constrain_float(state.position.z,-4.0e4f,1.0e4f);
+    state.position.z = constrain_value<float>(state.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit ~6 deg/sec (this needs to be set based on manufacturers specs)
-    for (uint8_t i=10; i<=12; i++) states[i] = constrain_float(states[i],-0.1f*dtIMUavg,0.1f*dtIMUavg);
+    for (uint8_t i=10; i<=12; i++) states[i] = constrain_value<float>(states[i],-0.1f*dtIMUavg,0.1f*dtIMUavg);
     // when the vehicle arms we adjust the limits so that in flight the bias can change by the same amount in either direction
     float delAngBiasLim = MAX_GYRO_BIAS*dtIMUavg;
-    state.gyro_bias.x = constrain_float(state.gyro_bias.x, (delAngBiasAtArming.x - delAngBiasLim), (delAngBiasAtArming.x + delAngBiasLim));
-    state.gyro_bias.y = constrain_float(state.gyro_bias.y, (delAngBiasAtArming.y - delAngBiasLim), (delAngBiasAtArming.y + delAngBiasLim));
-    state.gyro_bias.z = constrain_float(state.gyro_bias.z, (delAngBiasAtArming.z - delAngBiasLim), (delAngBiasAtArming.z + delAngBiasLim));
+    state.gyro_bias.x = constrain_value<float>(state.gyro_bias.x, (delAngBiasAtArming.x - delAngBiasLim), (delAngBiasAtArming.x + delAngBiasLim));
+    state.gyro_bias.y = constrain_value<float>(state.gyro_bias.y, (delAngBiasAtArming.y - delAngBiasLim), (delAngBiasAtArming.y + delAngBiasLim));
+    state.gyro_bias.z = constrain_value<float>(state.gyro_bias.z, (delAngBiasAtArming.z - delAngBiasLim), (delAngBiasAtArming.z + delAngBiasLim));
     // Z accel bias limit 1.0 m/s^2	(this needs to be finalised from test data)
-    states[13] = constrain_float(states[13],-1.0f*dtIMUavg,1.0f*dtIMUavg);
-    states[22] = constrain_float(states[22],-1.0f*dtIMUavg,1.0f*dtIMUavg);
+    states[13] = constrain_value<float>(states[13],-1.0f*dtIMUavg,1.0f*dtIMUavg);
+    states[22] = constrain_value<float>(states[22],-1.0f*dtIMUavg,1.0f*dtIMUavg);
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
-    for (uint8_t i=14; i<=15; i++) states[i] = constrain_float(states[i],-100.0f,100.0f);
+    for (uint8_t i=14; i<=15; i++) states[i] = constrain_value<float>(states[i],-100.0f,100.0f);
     // earth magnetic field limit
-    for (uint8_t i=16; i<=18; i++) states[i] = constrain_float(states[i],-1.0f,1.0f);
+    for (uint8_t i=16; i<=18; i++) states[i] = constrain_value<float>(states[i],-1.0f,1.0f);
     // body magnetic field limit
-    for (uint8_t i=19; i<=21; i++) states[i] = constrain_float(states[i],-0.5f,0.5f);
+    for (uint8_t i=19; i<=21; i++) states[i] = constrain_value<float>(states[i],-0.5f,0.5f);
     // constrain the terrain offset state
     terrainState = MAX(terrainState, state.position.z + rngOnGnd);
 }
@@ -3849,7 +3849,7 @@ void NavEKF_core::readIMUData()
 
         // calculate the filtered difference between acceleration vectors from IMU1 and 2
         // apply a LPF filter with a 1.0 second time constant
-        alpha = constrain_float(0.5f*(dtDelVel1 + dtDelVel2),0.0f,1.0f);
+        alpha = constrain_value<float>(0.5f*(dtDelVel1 + dtDelVel2),0.0f,1.0f);
         accelDiffFilt = (ins.get_accel(0) - ins.get_accel(1)) * alpha + accelDiffFilt * (1.0f - alpha);
         float accelDiffLength = accelDiffFilt.length();
 
@@ -3940,15 +3940,15 @@ void NavEKF_core::readGpsData()
 
             // get state vectors that were stored at the time that is closest to when the the GPS measurement
             // time after accounting for measurement delays
-            RecallStates(statesAtVelTime, (imuSampleTime_ms - constrain_int16(frontend._msecVelDelay, 0, 500)));
-            RecallStates(statesAtPosTime, (imuSampleTime_ms - constrain_int16(frontend._msecPosDelay, 0, 500)));
+            RecallStates(statesAtVelTime, (imuSampleTime_ms - constrain_value<int16_t>(frontend._msecVelDelay, 0, 500)));
+            RecallStates(statesAtPosTime, (imuSampleTime_ms - constrain_value<int16_t>(frontend._msecPosDelay, 0, 500)));
 
             // read the NED velocity from the GPS
             velNED = _ahrs->get_gps().velocity();
 
             // Use the speed accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw speed accuracy data
-            float alpha = constrain_float(0.0002f * (lastFixTime_ms - secondLastFixTime_ms),0.0f,1.0f);
+            float alpha = constrain_value<float>(0.0002f * (lastFixTime_ms - secondLastFixTime_ms),0.0f,1.0f);
             gpsSpdAccuracy *= (1.0f - alpha);
             float gpsSpdAccRaw;
             if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
@@ -4060,7 +4060,7 @@ void NavEKF_core::readHgtData()
         if (!getTakeoffExpected()) {
             const float gndHgtFiltTC = 0.5f;
             const float dtBaro = msecHgtAvg*1.0e-3f;
-            float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
+            float alpha = constrain_value<float>(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
             meaHgtAtTakeOff += (hgtMea-meaHgtAtTakeOff)*alpha;
         } else if (vehicleArmed && getTakeoffExpected()) {
             // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
@@ -4147,8 +4147,8 @@ void NavEKF_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRat
     // recall angular rates averaged across flow observation period allowing for processing, transmission and intersample delays
     RecallOmega(omegaAcrossFlowTime, imuSampleTime_ms - flowTimeDeltaAvg_ms - frontend._msecFLowDelay, imuSampleTime_ms - frontend._msecFLowDelay);
     // calculate bias errors on flow sensor gyro rates, but protect against spikes in data
-    flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_float((rawGyroRates.x - omegaAcrossFlowTime.x),-0.1f,0.1f);
-    flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_float((rawGyroRates.y - omegaAcrossFlowTime.y),-0.1f,0.1f);
+    flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_value<float>((rawGyroRates.x - omegaAcrossFlowTime.x),-0.1f,0.1f);
+    flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_value<float>((rawGyroRates.y - omegaAcrossFlowTime.y),-0.1f,0.1f);
     // check for takeoff if relying on optical flow and zero measurements until takeoff detected
     // if we haven't taken off - constrain position and velocity states
     if (frontend._fusionModeGPS == 3) {
@@ -5013,7 +5013,7 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     const struct Location &gpsloc = _ahrs->get_gps().location(); // Current location
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
     // calculate time lapsesd since last GPS fix and limit to prevent numerical errors
-    float deltaTime = constrain_float(float(lastFixTime_ms - secondLastFixTime_ms)*0.001f,0.01f,posFiltTimeConst);
+    float deltaTime = constrain_value<float>(float(lastFixTime_ms - secondLastFixTime_ms)*0.001f,0.01f,posFiltTimeConst);
     // Sum distance moved
     gpsDriftNE += location_diff(gpsloc_prev, gpsloc).length();
     gpsloc_prev = gpsloc;
@@ -5038,7 +5038,7 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     if (_ahrs->get_gps().have_vertical_velocity() && !vehicleArmed) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * velNED.z + 0.9f * gpsVertVelFilt;
-        gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
+        gpsVertVelFilt = constrain_value<float>(gpsVertVelFilt,-10.0f,10.0f);
         gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f) && (frontend._gpsCheck & MASK_GPS_VERT_SPD);
     } else if ((frontend._fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
@@ -5059,7 +5059,7 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     bool gpsHorizVelFail;
     if (!vehicleArmed) {
         gpsHorizVelFilt = 0.1f * norm(velNED.x,velNED.y) + 0.9f * gpsHorizVelFilt;
-        gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
+        gpsHorizVelFilt = constrain_value<float>(gpsHorizVelFilt,-10.0f,10.0f);
         gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f) && (frontend._gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {
         gpsHorizVelFail = false;
@@ -5281,7 +5281,7 @@ void NavEKF_core::calcGpsGoodForFlight(void)
     }
     float dtLPF = (imuSampleTime_ms - lastTime_ms) * 1e-3f;
     lastTime_ms = imuSampleTime_ms;
-    float alpha2 = constrain_float(dtLPF/tau,0.0f,1.0f);
+    float alpha2 = constrain_value<float>(dtLPF/tau,0.0f,1.0f);
 
     // get the receivers reported speed accuracy
     float gpsSpdAccRaw;
@@ -5290,7 +5290,7 @@ void NavEKF_core::calcGpsGoodForFlight(void)
     }
 
     // filter the raw speed accuracy using a LPF
-    lpfFilterState = constrain_float((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * lpfFilterState),0.0f,10.0f);
+    lpfFilterState = constrain_value<float>((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * lpfFilterState),0.0f,10.0f);
 
     // apply a peak hold filter to the LPF output
     peakHoldFilterState = MAX(lpfFilterState,((1.0f - alpha2) * peakHoldFilterState));

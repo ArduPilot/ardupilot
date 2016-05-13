@@ -48,9 +48,9 @@ void AP_Mount_SToRM32_serial::update()
         case MAV_MOUNT_MODE_RETRACT:
             {
             const Vector3f &target = _state._retract_angles.get();
-            _angle_ef_target_rad.x = ToRad(target.x);
-            _angle_ef_target_rad.y = ToRad(target.y);
-            _angle_ef_target_rad.z = ToRad(target.z);
+            _angle_ef_target_rad.x = radians(target.x);
+            _angle_ef_target_rad.y = radians(target.y);
+            _angle_ef_target_rad.z = radians(target.z);
             }
             break;
 
@@ -58,9 +58,9 @@ void AP_Mount_SToRM32_serial::update()
         case MAV_MOUNT_MODE_NEUTRAL:
             {
             const Vector3f &target = _state._neutral_angles.get();
-            _angle_ef_target_rad.x = ToRad(target.x);
-            _angle_ef_target_rad.y = ToRad(target.y);
-            _angle_ef_target_rad.z = ToRad(target.z);
+            _angle_ef_target_rad.x = radians(target.x);
+            _angle_ef_target_rad.y = radians(target.y);
+            _angle_ef_target_rad.z = radians(target.z);
             }
             break;
 
@@ -97,7 +97,7 @@ void AP_Mount_SToRM32_serial::update()
     }
     if (can_send(resend_now)) {
         if (resend_now) {
-            send_target_angles(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z));
+            send_target_angles(degrees(_angle_ef_target_rad.y), degrees(_angle_ef_target_rad.x), degrees(_angle_ef_target_rad.z));
             get_angles();
             _reply_type = ReplyType_ACK;
             _reply_counter = 0;

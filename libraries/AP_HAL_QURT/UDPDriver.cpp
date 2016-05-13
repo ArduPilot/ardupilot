@@ -34,8 +34,8 @@ void UDPDriver::begin(uint32_t b)
 
 void UDPDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
-    rxS = constrain_int32(rxS, 16384, 30000);
-    txS = constrain_int32(txS, 16384, 30000);
+    rxS = constrain_value<int32_t>(rxS, 16384, 30000);
+    txS = constrain_value<int32_t>(txS, 16384, 30000);
 
     /*
       allocate the read buffer

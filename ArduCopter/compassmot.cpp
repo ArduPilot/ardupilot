@@ -167,7 +167,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
         
         // calculate scaling for throttle
         throttle_pct = (float)channel_throttle->get_control_in() / 1000.0f;
-        throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
+        throttle_pct = constrain_value<float>(throttle_pct,0.0f,1.0f);
 
         // if throttle is near zero, update base x,y,z values
         if (throttle_pct <= 0.0f) {

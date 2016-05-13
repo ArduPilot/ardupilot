@@ -245,9 +245,9 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
 
     // convert quaternion to euler angles
     q.to_euler(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd);
-    guided_angle_state.roll_cd = ToDeg(guided_angle_state.roll_cd) * 100.0f;
-    guided_angle_state.pitch_cd = ToDeg(guided_angle_state.pitch_cd) * 100.0f;
-    guided_angle_state.yaw_cd = wrap_180_cd(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
+    guided_angle_state.roll_cd = degrees(guided_angle_state.roll_cd) * 100.0f;
+    guided_angle_state.pitch_cd = degrees(guided_angle_state.pitch_cd) * 100.0f;
+    guided_angle_state.yaw_cd = wrap_180_cd(degrees(guided_angle_state.yaw_cd) * 100.0f);
 
     guided_angle_state.climb_rate_cms = climb_rate_cms;
     guided_angle_state.update_time_ms = millis();
@@ -538,7 +538,7 @@ void Copter::guided_angle_control_run()
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
 
     // constrain climb rate
-    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabs(wp_nav.get_speed_down()), wp_nav.get_speed_up());
+    float climb_rate_cms = constrain_value<float>(guided_angle_state.climb_rate_cms, -fabs(wp_nav.get_speed_down()), wp_nav.get_speed_up());
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = millis();

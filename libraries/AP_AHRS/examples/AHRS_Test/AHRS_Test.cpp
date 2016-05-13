@@ -70,13 +70,13 @@ void loop(void)
         hal.console->printf(
                 "r:%4.1f  p:%4.1f y:%4.1f "
                     "drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n",
-                        ToDeg(ahrs.roll),
-                        ToDeg(ahrs.pitch),
-                        ToDeg(ahrs.yaw),
-                        ToDeg(drift.x),
-                        ToDeg(drift.y),
-                        ToDeg(drift.z),
-                        compass.use_for_yaw() ? ToDeg(heading) : 0.0f,
+                        degrees(ahrs.roll),
+                        degrees(ahrs.pitch),
+                        degrees(ahrs.yaw),
+                        degrees(drift.x),
+                        degrees(drift.y),
+                        degrees(drift.z),
+                        compass.use_for_yaw() ? degrees(heading) : 0.0f,
                         (1.0e6f*counter)/(now-last_print));
         last_print = now;
         counter = 0;

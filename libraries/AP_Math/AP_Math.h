@@ -111,32 +111,17 @@ float wrap_2PI(const T radian);
 template <class T>
 T constrain_value(const T amt, const T low, const T high);
 
-inline float constrain_float(const float amt, const float low, const float high)
-{
-    return constrain_value(amt, low, high);
-}
+/* 
+ * @brief: Converts an euler angle with units 'degree' to an angle with the unit 'radian'
+ */
+template <class T>
+T radians(const T deg);
 
-inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16_t high)
-{
-    return constrain_value(amt, low, high);
-}
-
-inline int32_t constrain_int32(const int32_t amt, const int32_t low, const int32_t high)
-{
-    return constrain_value(amt, low, high);
-}
-
-// degrees -> radians
-static inline float radians(float deg)
-{
-    return deg * DEG_TO_RAD;
-}
-
-// radians -> degrees
-static inline float degrees(float rad)
-{
-    return rad * RAD_TO_DEG;
-}
+/* 
+ * @brief: Converts an euler angle with units 'radian' to an angle with the unit 'degree'
+ */
+template <class T>
+T degrees(const T rad);
 
 template<class T>
 float sq(const T val)
@@ -206,9 +191,24 @@ inline uint32_t usec_to_hz(uint32_t usec)
     return USEC_PER_SEC / usec;
 }
 
-/*
-  linear interpolation based on a variable in a range
- */
-float linear_interpolate(float low_output, float high_output,
-                         float var_value,
-                         float var_low, float var_high);
+template <class T>
+T linear_interpolate(const T low_output, const T high_output,
+                     const T var_value,
+                     const T var_low, const T var_high)
+{
+    if (var_value <= var_low) {
+        return low_output;
+    }
+    if (var_value >= var_high) {
+        return high_output;
+    }
+    // avoid zero divisions or zero like divisions
+    auto var_diff = var_high - var_low;
+    if(is_zero((float)var_diff)) {
+        return low_output;
+    }
+    
+    T p = (var_value - var_low) / var_diff;
+    return low_output + p * (high_output - low_output);
+}
+

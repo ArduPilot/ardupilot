@@ -133,8 +133,8 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[1], _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[2], _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[3], _servo4));
-            rc_write(AP_MOTORS_MOT_5, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
-            rc_write(AP_MOTORS_MOT_6, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_5, constrain_value<int16_t>(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_6, constrain_value<int16_t>(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
             hal.rcout->push();
             break;
         case SPOOL_UP:
@@ -205,7 +205,7 @@ void AP_MotorsCoax::output_armed_stabilizing()
     if (is_zero(roll_thrust) && is_zero(pitch_thrust)) {
         rpy_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), 0.5f*(float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
+        rpy_scale = constrain_value<float>((1.0f - MIN(fabsf(yaw_thrust), 0.5f*(float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
         if (rpy_scale < 1.0f) {
             limit.roll_pitch = true;
         }
@@ -213,7 +213,7 @@ void AP_MotorsCoax::output_armed_stabilizing()
 
     actuator_allowed = 1.0f - rpy_scale * rp_thrust_max;
     if (fabsf(yaw_thrust) > actuator_allowed) {
-        yaw_thrust = constrain_float(yaw_thrust, -2.0f * actuator_allowed, 2.0f * actuator_allowed);
+        yaw_thrust = constrain_value<float>(yaw_thrust, -2.0f * actuator_allowed, 2.0f * actuator_allowed);
         limit.yaw = true;
     }
 
@@ -258,11 +258,11 @@ void AP_MotorsCoax::output_armed_stabilizing()
         _actuator_out[1] = pitch_thrust/thrust_out;
         if (fabsf(_actuator_out[0]) > 1.0f) {
             limit.roll_pitch = true;
-            _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
+            _actuator_out[0] = constrain_value<float>(_actuator_out[0], -1.0f, 1.0f);
         }
         if (fabsf(_actuator_out[1]) > 1.0f) {
             limit.roll_pitch = true;
-            _actuator_out[1] = constrain_float(_actuator_out[1], -1.0f, 1.0f);
+            _actuator_out[1] = constrain_value<float>(_actuator_out[1], -1.0f, 1.0f);
         }
     }
     _actuator_out[2] = -_actuator_out[0];

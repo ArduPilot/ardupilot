@@ -118,7 +118,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	float omega_x = _ahrs.get_gyro().x;
 	
 	// Calculate the roll rate error (deg/sec) and apply gain scaler
-    float achieved_rate = ToDeg(omega_x);
+    float achieved_rate = degrees(omega_x);
 	float rate_error = (desired_rate - achieved_rate) * scaler;
 	
 	// Get an airspeed estimate - default to zero if none available
@@ -152,7 +152,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
-    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
+    _pid_info.I = constrain_value<float>(_pid_info.I, -intLimScaled, intLimScaled);
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
@@ -176,7 +176,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	_last_out += _pid_info.I;
 	
 	// Convert to centi-degrees and constrain
-	return constrain_float(_last_out * 100, -4500, 4500);
+	return constrain_value<float>(_last_out * 100, -4500, 4500);
 }
 
 

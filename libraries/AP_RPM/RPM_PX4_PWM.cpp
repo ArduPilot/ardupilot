@@ -97,7 +97,7 @@ void AP_RPM_PX4_PWM::update(void)
             if (is_zero(filter_value)){
                 quality = 0;
             } else {
-                quality = 1 - constrain_float((fabsf(rpm-filter_value))/filter_value, 0.0, 1.0);
+                quality = 1 - constrain_value<float>((fabsf(rpm-filter_value))/filter_value, 0.0, 1.0);
                 quality = powf(quality, 2.0);
             }
             count++;

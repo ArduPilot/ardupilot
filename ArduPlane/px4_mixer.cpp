@@ -138,8 +138,8 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             const RC_Channel *chan2 = RC_Channel::rc_channel(c1);
             int16_t chan1_trim = (i==rcmap.throttle()-1?1500:chan1->get_radio_trim());
             int16_t chan2_trim = (c1==rcmap.throttle()-1?1500:chan2->get_radio_trim());
-            chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
-            chan2_trim = constrain_int16(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
+            chan1_trim = constrain_value<int16_t>(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
+            chan2_trim = constrain_value<int16_t>(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
             // if the input and output channels are the same then we
             // apply clipping. This allows for direct pass-thru
             int32_t limit = (c1==i?scale_max2:scale_max1);
@@ -177,8 +177,8 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
             const RC_Channel *chan2 = RC_Channel::rc_channel(c2);
             int16_t chan1_trim = (c1==rcmap.throttle()-1?1500:chan1->get_radio_trim());
             int16_t chan2_trim = (c2==rcmap.throttle()-1?1500:chan2->get_radio_trim());
-            chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
-            chan2_trim = constrain_int16(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
+            chan1_trim = constrain_value<int16_t>(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
+            chan2_trim = constrain_value<int16_t>(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
             // mix of two input channels to give an output channel. To
             // make the mixer match the behaviour of APM we need to
             // scale and offset the input channels to undo the affects
@@ -315,7 +315,7 @@ bool Plane::setup_failsafe_mixing(void)
             // by small numbers near RC3_MIN
             config.rc_trim = 1500;
         } else {
-            config.rc_trim = constrain_int16(ch->get_radio_trim(), config.rc_min+1, config.rc_max-1);
+            config.rc_trim = constrain_value<int16_t>(ch->get_radio_trim(), config.rc_min+1, config.rc_max-1);
         }
         config.rc_dz = 0; // zero for the purposes of manual takeover
 

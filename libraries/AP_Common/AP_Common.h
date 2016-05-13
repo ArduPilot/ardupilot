@@ -41,8 +41,8 @@
 #define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 
-#define ToRad(x) radians(x)	// *pi/180
-#define ToDeg(x) degrees(x)	// *180/pi
+#define radians(x) radians(x)	// *pi/180
+#define degrees(x) degrees(x)	// *180/pi
 
 #define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
 

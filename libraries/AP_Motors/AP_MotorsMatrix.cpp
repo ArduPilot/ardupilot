@@ -102,7 +102,7 @@ void AP_MotorsMatrix::output_to_motors()
             // sends output to motors when armed but not flying
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    motor_out[i] = constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle);
+                    motor_out[i] = constrain_value<int16_t>(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle);
                 }
             }
             break;
@@ -219,7 +219,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     yaw_allowed = MAX(yaw_allowed, (float)_yaw_headroom/1000.0f);
 
     if (fabsf(yaw_thrust) > yaw_allowed) {
-        yaw_thrust = constrain_float(yaw_thrust, -yaw_allowed, yaw_allowed);
+        yaw_thrust = constrain_value<float>(yaw_thrust, -yaw_allowed, yaw_allowed);
         limit.yaw = true;
     }
 
@@ -246,7 +246,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     if (is_zero(rpy_low)){
         rpy_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float(-throttle_thrust_best_rpy/rpy_low, 0.0f, 1.0f);
+        rpy_scale = constrain_value<float>(-throttle_thrust_best_rpy/rpy_low, 0.0f, 1.0f);
     }
 
     // calculate how close the motors can come to the desired throttle
@@ -281,7 +281,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // test code should be run with these lines commented out as they should not do anything
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] = constrain_float(_thrust_rpyt_out[i], 0.0f, 1.0f);
+            _thrust_rpyt_out[i] = constrain_value<float>(_thrust_rpyt_out[i], 0.0f, 1.0f);
         }
     }
 }

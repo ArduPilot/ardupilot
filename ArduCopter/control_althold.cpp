@@ -53,7 +53,7 @@ void Copter::althold_run()
 
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    target_climb_rate = constrain_value<float>(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
 #if FRAME_CONFIG == HELI_FRAME
     // helicopters are held on the ground until rotor speed runup has finished
@@ -115,7 +115,7 @@ void Copter::althold_run()
 
         // initiate take-off
         if (!takeoff_state.running) {
-            takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff_timer_start(constrain_value<float>(g.pilot_takeoff_alt,0.0f,1000.0f));
             // indicate we are taking off
             set_land_complete(false);
             // clear i terms

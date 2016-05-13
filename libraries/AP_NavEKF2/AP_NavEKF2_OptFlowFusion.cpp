@@ -313,7 +313,7 @@ void NavEKF2_core::FuseOptFlow()
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
         // calculate range from ground plain to centre of sensor fov assuming flat earth
-        float range = constrain_float((heightAboveGndEst/Tnb_flow.c.z),rngOnGnd,1000.0f);
+        float range = constrain_value<float>((heightAboveGndEst/Tnb_flow.c.z),rngOnGnd,1000.0f);
 
         // calculate relative velocity in sensor frame
         relVelSensor = Tnb_flow*stateStruct.velocity;
