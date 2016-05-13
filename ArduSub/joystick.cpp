@@ -13,6 +13,9 @@ namespace {
 	int16_t lights2 = 1100;
 	int16_t rollTrim = 0;
 	int16_t pitchTrim = 0;
+	int16_t throttleTrim = 0;
+	int16_t forwardTrim = 0;
+	int16_t lateralTrim = 0;
 	float gain = 0.5;
 	float maxGain = 1.0;
 	float minGain = 0.25;
@@ -28,6 +31,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	float throttleScale = 0.8*gain; // Scale 0-1000 to 0-800 with gain
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1500-500*throttleScale;
+
 	bool shift = false;
 	static uint32_t buttonDebounce;
 
@@ -49,14 +53,14 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	}
 
 	// Set channels to override
-	channels[0] = 1500 + pitchTrim;               // pitch
-	channels[1] = 1500 + rollTrim;                // roll
-	channels[2] = z*throttleScale+throttleBase;   // throttle
-	channels[3] = r*rpyScale+rpyCenter;           // yaw
-	channels[4] = mode;                           // for testing only
-	channels[5] = x*rpyScale+rpyCenter;           // forward for ROV
-	channels[6] = y*rpyScale+rpyCenter;           // lateral for ROV
-	channels[7] = camTilt;                        // camera tilt
+	channels[0] = 1500 + pitchTrim;                           // pitch
+	channels[1] = 1500 + rollTrim;                            // roll
+	channels[2] = z*throttleScale+throttleTrim+throttleBase;  // throttle
+	channels[3] = r*rpyScale+rpyCenter;                       // yaw
+	channels[4] = mode;                                       // for testing only
+	channels[5] = x*rpyScale+forwardTrim+rpyCenter;           // forward for ROV
+	channels[6] = y*rpyScale+lateralTrim+rpyCenter;           // lateral for ROV
+	channels[7] = camTilt;                                    // camera tilt
 	channels[8] = lights1;
 	channels[9] = lights2;
 
@@ -180,6 +184,9 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			pitchTrim = constrain_float(pitchTrim-10,-200,200);
 			break;
 		case JSButton::button_function_t::k_input_hold_toggle:
+			throttleTrim = channel_throttle->get_control_in() - 1500;
+			forwardTrim = channel_forward->get_control_in() - 1500;
+			lateralTrim = channel_lateral->get_control_in() - 1500;
 			break;
 	}
 }
