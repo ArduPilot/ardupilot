@@ -8,6 +8,7 @@ import optparse
 import sys
 import atexit
 import os
+import os.path
 import subprocess
 import tempfile
 import getpass
@@ -618,7 +619,12 @@ def start_mavproxy(opts, stuff):
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
 
-    run_cmd_blocking("Run MavProxy", cmd)
+    local_mp_modules_dir = os.path.abspath(
+            os.path.join(__file__, '..', '..', 'mavproxy_modules'))
+    env = dict(os.environ)
+    env['PYTHONPATH'] = local_mp_modules_dir + os.pathsep + env.get('PYTHONPATH', '')
+
+    run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exitted")
 
 frame_options = options_for_frame(opts.frame, opts.vehicle, opts)
