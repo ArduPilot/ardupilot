@@ -272,12 +272,6 @@ void Plane::Log_Write_Control_Tuning()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write a TECS tuning packet
-void Plane::Log_Write_TECS_Tuning(void)
-{
-    SpdHgt_Controller->log_data(DataFlash, LOG_TECS_MSG);
-}
-
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -513,7 +507,6 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
 #endif
-    TECS_LOG_FORMAT(LOG_TECS_MSG)
 };
 
 #if CLI_ENABLED == ENABLED
@@ -586,7 +579,6 @@ void Plane::Log_Write_Attitude(void) {}
 void Plane::Log_Write_Performance() {}
 void Plane::Log_Write_Startup(uint8_t type) {}
 void Plane::Log_Write_Control_Tuning() {}
-void Plane::Log_Write_TECS_Tuning(void) {}
 void Plane::Log_Write_Nav_Tuning() {}
 void Plane::Log_Write_Status() {}
 void Plane::Log_Write_Sonar() {}

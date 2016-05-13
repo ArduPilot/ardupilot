@@ -914,9 +914,6 @@ void Plane::update_alt()
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
                                                  aerodynamic_load_factor);
-        if (should_log(MASK_LOG_TECS)) {
-            Log_Write_TECS_Tuning();
-        }
     }
 }
 
