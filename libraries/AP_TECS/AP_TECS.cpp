@@ -788,7 +788,7 @@ void AP_TECS::_update_pitch(void)
     {
         integSEB_input = MAX(integSEB_input, _PITCHminf - _pitch_dem);
     }
-    _integSEB_state = _integSEB_state + integSEB_input * _DT;
+    float integSEB_delta = integSEB_input * _DT;
 
 #if 0
     if (_flight_stage == FLIGHT_LAND_FINAL && fabsf(_climb_rate) > 0.2f) {
@@ -820,7 +820,17 @@ void AP_TECS::_update_pitch(void)
     if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         temp += _PITCHminf * gainInv;
     }
-    _integSEB_state = constrain_float(_integSEB_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
+    float integSEB_min = (gainInv * (_PITCHminf - 0.0783f)) - temp;
+    float integSEB_max = (gainInv * (_PITCHmaxf + 0.0783f)) - temp;
+    float integSEB_range = integSEB_max - integSEB_min;
+
+    // don't allow the integrator to rise by more than 20% of its full
+    // range in one step. This prevents single value glitches from
+    // causing massive integrator changes. See Issue#4066
+    integSEB_delta = constrain_float(integSEB_delta, -integSEB_range*0.1f, integSEB_range*0.1f);
+
+    // integrate
+    _integSEB_state = constrain_float(_integSEB_state + integSEB_delta, integSEB_min, integSEB_max);
 
     // Calculate pitch demand from specific energy balance signals
     _pitch_dem_unc = (temp + _integSEB_state) / gainInv;
