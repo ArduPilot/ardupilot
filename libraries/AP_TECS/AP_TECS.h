@@ -131,13 +131,13 @@ public:
 
 private:
     // Last time update_50Hz was called
-    uint32_t _update_50hz_last_usec;
+    uint64_t _update_50hz_last_usec;
 
     // Last time update_speed was called
-    uint32_t _update_speed_last_usec;
+    uint64_t _update_speed_last_usec;
 
     // Last time update_pitch_throttle was called
-    uint32_t _update_pitch_throttle_last_usec;
+    uint64_t _update_pitch_throttle_last_usec;
 
     // reference to the AHRS object
     AP_AHRS &_ahrs;
