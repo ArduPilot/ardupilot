@@ -200,16 +200,16 @@ private:
     } _height_filter;
 
     // Integrator state 4 - airspeed filter first derivative
-    float _integ4_state;
+    float _integDTAS_state;
 
     // Integrator state 5 - true airspeed
-    float _integ5_state;
+    float _TAS_state;
 
     // Integrator state 6 - throttle integrator
-    float _integ6_state;
+    float _integTHR_state;
 
     // Integrator state 6 - pitch integrator
-    float _integ7_state;
+    float _integSEB_state;
 
     // throttle demand rate limiter state
     float _last_throttle_dem;
