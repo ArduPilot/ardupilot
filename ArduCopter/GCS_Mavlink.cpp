@@ -1575,6 +1575,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        /* Solo user presses Fly button */
         case MAV_CMD_SOLO_BTN_FLY_CLICK: {
             result = MAV_RESULT_ACCEPTED;
 
@@ -1582,12 +1583,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
-            if (!copter.set_mode(LOITER)) {
-                copter.set_mode(ALT_HOLD);
+            // set mode to Loiter or fall back to AltHold
+            if (!copter.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
+                copter.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
             }
             break;
         }
 
+        /* Solo user holds down Fly button for a couple of seconds */
         case MAV_CMD_SOLO_BTN_FLY_HOLD: {
             result = MAV_RESULT_ACCEPTED;
 
@@ -1596,17 +1599,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
 
             if (!copter.motors.armed()) {
+                // if disarmed, arm motors
                 copter.init_arm_motors(true);
             } else if (copter.ap.land_complete) {
-                if (copter.set_mode(LOITER)) {
+                // if armed and landed, takeoff
+                if (copter.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
                     copter.do_user_takeoff(packet.param1*100, true);
                 }
             } else {
-                copter.set_mode(LAND);
+                // if flying, land
+                copter.set_mode(LAND, MODE_REASON_GCS_COMMAND);
             }
             break;
         }
 
+        /* Solo user presses pause button */
         case MAV_CMD_SOLO_BTN_PAUSE_CLICK: {
             result = MAV_RESULT_ACCEPTED;
 
@@ -1621,13 +1628,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else {
                     // assume that shots modes are all done in guided.
                     // NOTE: this may need to change if we add a non-guided shot mode
-                    bool shot_mode = (packet.param1 != 0.0f && copter.control_mode == GUIDED);
+                    bool shot_mode = (!is_zero(packet.param1) && copter.control_mode == GUIDED);
 
                     if (!shot_mode) {
-                        if (copter.set_mode(BRAKE)) {
+                        if (copter.set_mode(BRAKE, MODE_REASON_GCS_COMMAND)) {
                             copter.brake_timeout_to_loiter_ms(2500);
                         } else {
-                            copter.set_mode(ALT_HOLD);
+                            copter.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
                         }
                     } else {
                         // SoloLink is expected to handle pause in shots
