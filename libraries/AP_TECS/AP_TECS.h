@@ -70,7 +70,7 @@ public:
     }
 
     // log data on internal state of the controller. Called at 10Hz
-    void log_data(DataFlash_Class &dataflash, uint8_t msgid);
+    void log_data(DataFlash_Class &dataflash);
 
     // return current target airspeed
     float get_target_airspeed(void) const {
@@ -357,5 +357,3 @@ private:
     float timeConstant(void) const;
 };
 
-#define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
-							   "TECS", "QfffffffffffffB", "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f" }
