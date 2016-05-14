@@ -510,6 +510,9 @@ private:
         // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - aparm.land_flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
         float land_slope;
 
+        // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
+        float initial_land_slope;
+
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
 
