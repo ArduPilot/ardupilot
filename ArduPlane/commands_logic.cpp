@@ -393,6 +393,8 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         auto_state.takeoff_pitch_cd = 1000;
     }
 
+    auto_state.land_slope = 0;
+
 #if RANGEFINDER_ENABLED == ENABLED
     // zero rangefinder state, start to accumulate good samples now
     memset(&rangefinder_state, 0, sizeof(rangefinder_state));

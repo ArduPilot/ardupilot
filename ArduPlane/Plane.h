@@ -507,6 +507,9 @@ private:
         // time stamp of when we start flying while in auto mode in milliseconds
         uint32_t started_flying_in_auto_ms;
 
+        // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - aparm.land_flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
+        float land_slope;
+
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
 
