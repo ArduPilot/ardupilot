@@ -180,9 +180,12 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
     float top_of_glide_slope_alt_m = total_distance_m * corrected_alt_m / auto_state.wp_distance;
     prev_WP_loc.alt = top_of_glide_slope_alt_m*100 + next_WP_loc.alt;
 
-    // re-calculate with updated prev_WP_loc
+    // re-calculate auto_state.land_slope with updated prev_WP_loc
     setup_landing_glide_slope();
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Slope re-calculated");
+    float new_slope_deg = degrees(atan(auto_state.land_slope));
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing glide slope re-calculated as %.1f degrees", (double)new_slope_deg);
+
 #endif
 }
 
