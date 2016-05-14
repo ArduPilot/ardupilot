@@ -186,6 +186,28 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
 
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing glide slope re-calculated as %.1f degrees", (double)new_slope_deg);
 
+    if (rangefinder_state.correction >= 0) { // we're too low or object is below us
+        // correction positive means we're too low so we should continue on with
+        // the newly computed shallower slope instead of pitching/throttling up
+
+    } else if (g.land_slope_recalc_steep_threshold_to_abort > 0) {
+        // correction negative means we're too high and need to point down (and speed up) to re-align
+        // to land on target. A large negative correction means we would have to dive down a lot and will
+        // generating way too much speed that we can not bleed off in time. It is better to remember
+        // the large baro altitude offset and abort the landing to come around again with the correct altitude
+        // offset and "perfect" slope.
+
+        // calculate projected slope with projected alt
+        float initial_slope_deg = degrees(atan(auto_state.initial_land_slope));
+
+        // is projected slope too steep?
+        if (new_slope_deg - initial_slope_deg > g.land_slope_recalc_steep_threshold_to_abort) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Slope re-calculated too steep, abort landing!");
+            barometer.set_baro_drift_altitude(barometer.get_baro_drift_offset() - rangefinder_state.correction);
+            auto_state.commanded_go_around = 1;
+            g.land_slope_recalc_steep_threshold_to_abort = 0; // disable this feature so we only perform it once
+        }
+    }
 #endif
 }
 
