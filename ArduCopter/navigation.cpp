@@ -42,7 +42,8 @@ static void calc_wp_distance()
     // get target from loiter or wpinav controller
     if (control_mode == LOITER || control_mode == CIRCLE) {
         wp_distance = wp_nav.get_loiter_distance_to_target();
-    }else if (control_mode == AUTO) {
+    //BEV adding guided
+    }else if ((control_mode == AUTO) || (control_mode == GUIDED)) {
         wp_distance = wp_nav.get_wp_distance_to_destination();
     }else{
         wp_distance = 0;

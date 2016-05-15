@@ -25,6 +25,7 @@ static void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
 static void do_circle(const AP_Mission::Mission_Command& cmd);
 static void do_loiter_time(const AP_Mission::Mission_Command& cmd);
 static void do_set_roi(const AP_Mission::Mission_Command& cmd);
+static void do_set_servos(const AP_Mission::Mission_Command& cmd);
 static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 static bool verify_circle(const AP_Mission::Mission_Command& cmd);
 
@@ -68,6 +69,9 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:             //20
         do_RTL();
         break;
+    case MAV_CMD_DO_SET_SERVO:                  //183
+        do_set_servos(cmd);
+        break;
 
     //BEV our do commands
     case MAV_CMD_DO_TRANSITION_TOGGLE:
@@ -82,10 +86,6 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
 
     //camera stuff
 #if CAMERA == ENABLED
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-        do_take_picture();
-        break;
-
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
         break;
@@ -177,6 +177,12 @@ static void do_RTL(void)
 {
     // start rtl in auto flight mode
     auto_rtl_start();
+}
+
+static void do_set_servos(const AP_Mission::Mission_Command& cmd)
+{
+    //to add
+    servos.output(cmd.content.servo.channel, cmd.content.servo.pwm);
 }
 
 /********************************************************************************/
@@ -377,9 +383,7 @@ static void do_loiter_time(const AP_Mission::Mission_Command& cmd)
 //BEV adding ROI command
 static void do_set_roi(const AP_Mission::Mission_Command& cmd)
 {
-#if BEV_GIMBAL == ENABLED
-    camera_gimbal.point_here(cmd.content.location.lat, cmd.content.location.lng, cmd.content.location.alt);
-#endif
+    payload_manager.gimbal.point_here(cmd.content.location.lat, cmd.content.location.lng, cmd.content.location.alt);
 }
 
 /********************************************************************************/
@@ -480,7 +484,7 @@ static bool reached_wp()
             return true;
         }
 
-        //BEV temporarily override altitude arrival check
+        //BEV override altitude arrival check. Just uncomment the below to make plane loiter until reached alt
         pln_nav_altitude_arrived = true;
         //BEV see if arrived at altitude
         //if(!pln_nav_altitude_arrived && (abs(current_loc.alt - next_WP_loc.alt) < 300)) {
@@ -489,7 +493,8 @@ static bool reached_wp()
 
         //BEV see if arrived at lat / lon, or flown past
         if(!pln_nav_position_arrived) {
-            if (wp_distance <= nav_controller->turn_distance(g.plane_loiter_radius, auto_state.next_turn_angle)) {
+            //turn_distance in m. Convert to cm
+            if (wp_distance <= nav_controller->turn_distance(g.plane_loiter_radius, auto_state.next_turn_angle)*100) {
                 gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                                   (unsigned)mission.get_current_nav_cmd().index,
                                   (unsigned)get_distance(current_loc, next_WP_loc));
@@ -631,8 +636,20 @@ static void do_take_picture()
     if(get_key_level() != BEV_Key::KEY_MAPPING) {
         return;
     }
+    //use aux6 to trigger camera
     camera.trigger_pic();
-    //gcs_send_text_P(SEVERITY_HIGH,PSTR("Triggering Camera"));
+    //trigger payload camera
+    payload_manager.cameraTrigger.trigger_camera();
+
+    //BEV if the next call is going to start the log, make sure the message is sent prior to starting the log.
+    //otherwise there can be a log delay
+    if(!DataFlash.logging_started() && !in_log_download) {
+        //make sure the payloadCommunicator is ready to receive
+        hal.scheduler->delay(41);
+        //push the message through
+        payload_manager.update();
+    }
+
     if (can_force_log()) {
         DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }

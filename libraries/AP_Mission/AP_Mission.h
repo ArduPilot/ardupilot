@@ -58,14 +58,10 @@ public:
         int16_t num_times;      // num times to repeat.  -1 = repeat forever
     };
 
-    // digicam control command structure
-    struct PACKED Digicam_Control {
-        uint8_t session;        // 1 = on, 0 = off
-        uint8_t zoom_pos;
-        int8_t zoom_step;       // +1 = zoom in, -1 = zoom out
-        uint8_t focus_lock;
-        uint8_t shooting_cmd;
-        uint8_t cmd_id;
+    // set servo command structure
+    struct PACKED Set_Servo_Command {
+        uint8_t channel;        // servo channel
+        uint16_t pwm;           // pwm value for servo
     };
 
     // set cam trigger distance command structure
@@ -77,8 +73,8 @@ public:
         // jump structure
         Jump_Command jump;
 
-        // camera control
-        Digicam_Control digicam_control;
+        // do-set-servo
+        Set_Servo_Command servo;
 
         // cam trigg distance
         Cam_Trigg_Distance cam_trigg_dist;

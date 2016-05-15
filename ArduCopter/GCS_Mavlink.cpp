@@ -299,7 +299,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
             nav_pitch_cd / 1.0e2f,
             nav_controller->nav_bearing_cd() * 0.01f,
             nav_controller->target_bearing_cd() * 0.01f,
-            wp_distance,
+            wp_distance / 1.0e2f,
             auto_throttle_mode*(SpdHgt_Controller.get_current_alt_setpoint() - inertial_nav.get_altitude()) / 1.0e2f,
             0,
             nav_controller->crosstrack_error());
@@ -320,6 +320,32 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         chan,
         hal.analogin->board_voltage()*1000,
         hal.i2c->lockup_count());
+}
+
+//BEV adding this one
+static void NOINLINE send_bev_status(mavlink_channel_t chan)
+{
+    uint8_t transition_status = 0, gear_status = 0;
+    if(motors.transition_get_direction() == BEV_TransitionState::DIRECTION_TO_COPTER || motors.transition_is_nav_suppressed()) {
+        transition_status = BEV_STATUS_TRANSITION_TO_COPTER;
+    } else if (motors.transition_get_direction() == BEV_TransitionState::DIRECTION_TO_PLANE) {
+        transition_status = BEV_STATUS_TRANSITION_TO_PLANE;
+    } else if (motors.transition_is_full_plane()) {
+        transition_status = BEV_STATUS_TRANSITION_FULL_PLANE;
+    } else {
+        transition_status = BEV_STATUS_TRANSITION_FULL_COPTER;
+    }
+
+    if(motors.gear_is_raised()) {
+        gear_status = BEV_STATUS_GEAR_UP;
+    } else {
+        gear_status = BEV_STATUS_GEAR_DOWN;
+    }
+
+    mavlink_msg_bev_status_send(
+            chan,
+            transition_status,
+            gear_status);
 }
 
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -639,6 +665,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         send_hwstatus(chan);
         break;
 
+        //BEV adding this one
+    case MSG_BEV_STATUS:
+        CHECK_PAYLOAD_SIZE(BEV_STATUS);
+        send_bev_status(chan);
+        break;
+
     case MSG_FENCE_STATUS:
     case MSG_WIND:
         // unused
@@ -820,6 +852,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_GPS_RAW);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_LIMITS_STATUS);
+        send_message(MSG_BEV_STATUS);
     }
 
     if (gcs_out_of_time) return;
@@ -872,11 +905,10 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     do_guided(cmd);
     //BEV point camera to desired target if flying as plane
-#if BEV_GIMBAL == ENABLED
     if(is_plane_nav_active() && get_key_level() >= BEV_Key::KEY_PRO) {
-        camera_gimbal.point_here(cmd.content.location.lat, cmd.content.location.lng, 0); //default to zero alt
+        //BEV decide if this is desirable behavior, and update w/ new camera gimbal
+        //camera_gimbal.point_here(cmd.content.location.lat, cmd.content.location.lng, 0); //default to zero alt
     }
-#endif
 }
 
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
@@ -1045,10 +1077,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         //BEV if all channels are set to zero the override is terminated and set_overrides returns false
         if(!hal.rcin->set_overrides(v, 8)) {
             failsafe.last_rc_override_ms = 0; //prevents the failsafe from triggering
-            //BEV add logic that triggers failsafe if joystick is intentionally disabled
-            //when flying without RC receiver
-            if(failsafe.radio) {
-                failsafe_radio_on_event();
+            //BEV add logic to always trigger rc override failsafe if no RC receiver when ending
+            //joystick control
+            if((failsafe.radio) || (g.failsafe_throttle == FS_THR_DISABLED)) {
+                failsafe_rc_override_on_event();
             }
         } else {
             // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
@@ -1080,16 +1112,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param5 : latitude    (not supported)
             // param6 : longitude   (not supported)
             // param7 : altitude [metres]
-            if (motors.armed() &&  control_mode == GUIDED) {
-                set_auto_armed(true);
-                float takeoff_alt = packet.param7 * 100;      // Convert m to cm
-                takeoff_alt = max(takeoff_alt,current_loc.alt);
-                takeoff_alt = max(takeoff_alt,100.0f);
-                guided_takeoff_start(takeoff_alt);
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
+            //if (motors.armed() &&  control_mode == GUIDED) {
+            //    set_auto_armed(true);
+            //    float takeoff_alt = packet.param7 * 100;      // Convert m to cm
+            //    takeoff_alt = max(takeoff_alt,current_loc.alt);
+            //    takeoff_alt = max(takeoff_alt,100.0f);
+            //    guided_takeoff_start(takeoff_alt);
+            //    result = MAV_RESULT_ACCEPTED;
+            //} else {
+            result = MAV_RESULT_FAILED;
+            //}
             break;
 
         case MAV_CMD_NAV_LOITER_UNLIM:
@@ -1216,6 +1248,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (packet.param1 == 1.0f) {
+                if(motors.armed()) {
+                    //no need to arm if already armed;
+                    result = MAV_RESULT_FAILED;
+                    return;
+                }
                 // run pre_arm_checks and arm_checks and display failures
                 //BEV verify the flight mode supports arming (i.e. not in Auto w/ no GPS)
                 if( mode_requires_GPS(control_mode) && (ahrs.get_gps().status() < AP_GPS::GPS_OK_FIX_3D)) {
@@ -1236,6 +1273,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_UNSUPPORTED;
                 }
             } else if (packet.param1 == 0.0f)  {
+                if(!motors.armed()) {
+                    //no need to disarm if already disarmed;
+                    result = MAV_RESULT_FAILED;
+                    return;
+                }
+                //log that there was a GCS request to disarm
+                if(ap.logging_started) {
+                    DataFlash.Log_Write_Message_P(PSTR("GCS Disarm"));
+                }
                 init_disarm_motors();
                 result = MAV_RESULT_ACCEPTED;
             } else {
@@ -1386,8 +1432,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 #endif // CAMERA == ENABLED
 
-#if BEV_GIMBAL == ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
+    {
         //BEV this is only allowed if pro or mapping key
         if(get_key_level() < BEV_Key::KEY_PRO) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Pro key needed"));
@@ -1397,12 +1443,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_mount_control_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
-        camera_gimbal.point_here(packet.input_a, packet.input_b, packet.input_c);
+        //BEV update w/ new gimbal library
+        payload_manager.gimbal.point_here(packet.input_a, packet.input_b, packet.input_c);
+
+        //BEV not intuitive, but have the center command also toggle servos. This weird
+        //bit comes from the limited number of joystuck buttons we have
+        if(!packet.input_a && !packet.input_b) {
+            //it's a center command. Also toggle the servos
+            servos.toggle();
+        }
         break;
-#endif //BEV_GIMBLE enabled
+    }
 
     //BEV receive our own messages
-    case MAVLINK_MSG_ID_BEV_REQUEST : {
+    case MAVLINK_MSG_ID_BEV_REQUEST :
+    {
         mavlink_bev_request_t packet;
         mavlink_msg_bev_request_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component))
@@ -1417,6 +1472,23 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    //BEV receive gimbal speed messages
+    case MAVLINK_MSG_ID_BEV_GIMBAL_SPEED :
+    {
+        //BEV this is only allowed if pro or mapping key
+        if(get_key_level() < BEV_Key::KEY_PRO) {
+            return;
+        }
+
+        mavlink_bev_gimbal_speed_t packet;
+        mavlink_msg_bev_gimbal_speed_decode(msg, &packet);
+        if(mavlink_check_target(packet.target_system, packet.target_component))
+            break;
+
+        //BEV update w/ new gimbal driver
+        payload_manager.gimbal.set_pitch_yaw_speed(packet.pitch_rate, packet.yaw_rate);
+        break;
+    }
     }     // end switch
 } // end handle mavlink
 

@@ -54,6 +54,12 @@ static bool set_mode(uint8_t mode)
      */
 
         case STABILIZE:
+            //BEV allow stabilize mode as permitted by parameter
+            if(!g.stabilize_allow) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Stabilize Mode Disabled"));
+                return false;
+            }
+
             //copter
             success = stabilize_init(ignore_checks);
 

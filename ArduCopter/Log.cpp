@@ -229,25 +229,6 @@ static void Log_Write_Landing(int16_t climb_rate, float baro_climb_rate, int16_t
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_GyroCheck {
-    LOG_PACKET_HEADER;
-    float gx;
-    float gy;
-    float gz;
-};
-
-static void Log_Write_GyroCheck(float gx, float gy, float gz)
-{
-    struct log_GyroCheck pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_GYROCHECK_MSG),
-            gx : gx,
-            gy : gy,
-            gz : gz
-    };
-
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 #if AUTOTUNE_ENABLED == ENABLED
 struct PACKED log_AutoTune {
     LOG_PACKET_HEADER;
@@ -789,8 +770,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "TRAN", "IcHfBBB",        "TimeMS,Dir,Prog,Angle,NavSP,CptPct,PlnPct" },
     { LOG_LANDING_MSG, sizeof(log_Landing),
       "LAND", "cfcfH",          "Cmb,BaroCmb,Thr,Gyro,LandD"},
-      { LOG_GYROCHECK_MSG, sizeof(log_GyroCheck),
-       "GCHK", "fff",           "gx,gy,gz"} ,
     //BEV end ours
 #if AUTOTUNE_ENABLED == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
@@ -798,45 +777,45 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
       "ATDE", "cf",          "Angle,Rate", },
 #endif
-    { LOG_CURRENT_MSG, sizeof(log_Current),             
+    { LOG_CURRENT_MSG, sizeof(log_Current),
       "CURR", "IhIhhhf",     "TimeMS,ThrOut,ThrInt,Volt,Curr,Vcc,CurrTot" },
-    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
+    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "hhBccee",   "Dx,Dy,SQual,X,Y,Roll,Pitch" },
-    { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
+    { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),
       "NTUN", "Iffffffffff", "TimeMS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Ihhhffecchh", "TimeMS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
-    { LOG_COMPASS_MSG, sizeof(log_Compass),             
+    { LOG_COMPASS_MSG, sizeof(log_Compass),
       "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
 #if COMPASS_MAX_INSTANCES > 1
-    { LOG_COMPASS2_MSG, sizeof(log_Compass),             
+    { LOG_COMPASS2_MSG, sizeof(log_Compass),
       "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
 #endif
 #if COMPASS_MAX_INSTANCES > 2
-    { LOG_COMPASS3_MSG, sizeof(log_Compass),             
+    { LOG_COMPASS3_MSG, sizeof(log_Compass),
       "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
 #endif
-    { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
+    { LOG_PERFORMANCE_MSG, sizeof(log_Performance),
       "PM",  "HHIhBHB",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr,INAVErr" },
-    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
+    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),
       "ATT", "IccccCCCC",    "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" },
     { LOG_MODE_MSG, sizeof(log_Mode),
       "MODE", "Mh",          "Mode,ThrCrs" },
-    { LOG_STARTUP_MSG, sizeof(log_Startup),         
+    { LOG_STARTUP_MSG, sizeof(log_Startup),
       "STRT", "",            "" },
-    { LOG_EVENT_MSG, sizeof(log_Event),         
+    { LOG_EVENT_MSG, sizeof(log_Event),
       "EV",   "B",           "Id" },
-    { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
+    { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),
       "D16",   "Bh",         "Id,Value" },
-    { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
+    { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),
       "DU16",  "BH",         "Id,Value" },
-    { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),         
+    { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),
       "D32",   "Bi",         "Id,Value" },
-    { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),         
+    { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),
       "DU32",  "BI",         "Id,Value" },
-    { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
+    { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),
       "DFLT",  "Bf",         "Id,Value" },
-    { LOG_ERROR_MSG, sizeof(log_Error),         
+    { LOG_ERROR_MSG, sizeof(log_Error),
       "ERR",   "BB",         "Subsys,ECode" },
 };
 
@@ -855,14 +834,14 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
-	DataFlash.LogReadProcess(log_num, start_page, end_page, 
+	DataFlash.LogReadProcess(log_num, start_page, end_page,
                              print_flight_mode,
                              cliSerial);
 }
 #endif // CLI_ENABLED
 
 // start a new log
-static void start_logging() 
+static void start_logging()
 {
     if (g.log_bitmask != 0) {
         if (!ap.logging_started) {

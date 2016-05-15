@@ -141,14 +141,12 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 // Y6 defaults
-#if FRAME_CONFIG == Y6_FRAME
-  # define RATE_ROLL_P                  0.1f
-  # define RATE_ROLL_D                  0.006f
-  # define RATE_PITCH_P                 0.1f
-  # define RATE_PITCH_D                 0.006f
-  # define RATE_YAW_P                   0.150f
-  # define RATE_YAW_I                   0.015f
-#endif
+#define RATE_ROLL_P                  0.18f
+#define RATE_ROLL_D                  0.00f
+#define RATE_PITCH_P                 0.22f
+#define RATE_PITCH_D                 0.00f
+#define RATE_YAW_P                   0.50f
+#define RATE_YAW_I                   0.05f
 
 //////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.
@@ -268,12 +266,12 @@
  # define FS_GCS                        DISABLED
 #endif
 #ifndef FS_GCS_TIMEOUT_MS
- # define FS_GCS_TIMEOUT_MS             7000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
+ # define FS_GCS_TIMEOUT_MS             7000    // gcs failsafe triggers after 7 seconds with no GCS heartbeat
 #endif
 
 // Radio failsafe while using RC_override
 #ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
- # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  3000    // RC Radio failsafe triggers after 2 seconds while using RC_override from ground station
+ # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  3000    // RC Radio failsafe triggers after 3 seconds while using RC_override from ground station
 #endif
 
 // Radio failsafe
@@ -309,7 +307,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  EKF & DCM Checker
 #ifndef EKFCHECK_THRESHOLD_DEFAULT
- # define EKFCHECK_THRESHOLD_DEFAULT    0.8f    // EKF checker's default compass and velocity variance above which the EKF's horizontal position will be considered bad
+ # define EKFCHECK_THRESHOLD_DEFAULT    1.0f    // EKF checker's default compass and velocity variance above which the EKF's horizontal position will be considered bad
 #endif
 #ifndef DCMCHECK_THRESHOLD_DEFAULT
  # define DCMCHECK_THRESHOLD_DEFAULT    0.8f    // DCM checker's default yaw error threshold above which we will abandon horizontal position hold.  The units are sin(angle) so 0.8 = about 60degrees of error
@@ -389,22 +387,22 @@
 //
 
 #if !defined(FLIGHT_MODE_1)
- # define FLIGHT_MODE_1                  STABILIZE
+ # define FLIGHT_MODE_1                  ALT_HOLD
 #endif
 #if !defined(FLIGHT_MODE_2)
- # define FLIGHT_MODE_2                  STABILIZE
+ # define FLIGHT_MODE_2                  ALT_HOLD
 #endif
 #if !defined(FLIGHT_MODE_3)
- # define FLIGHT_MODE_3                  STABILIZE
+ # define FLIGHT_MODE_3                  ALT_HOLD
 #endif
 #if !defined(FLIGHT_MODE_4)
- # define FLIGHT_MODE_4                  STABILIZE
+ # define FLIGHT_MODE_4                  ALT_HOLD
 #endif
 #if !defined(FLIGHT_MODE_5)
- # define FLIGHT_MODE_5                  STABILIZE
+ # define FLIGHT_MODE_5                  ALT_HOLD
 #endif
 #if !defined(FLIGHT_MODE_6)
- # define FLIGHT_MODE_6                  STABILIZE
+ # define FLIGHT_MODE_6                  ALT_HOLD
 #endif
 
 
@@ -416,10 +414,10 @@
 #endif
 
 #ifndef LAND_SPEED
- # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
+ # define LAND_SPEED    75          // the descent speed for the final stage of landing in cm/s
 #endif
 #ifndef LAND_START_ALT
- # define LAND_START_ALT 500        // altitude in cm where land controller switches to slow rate of descent
+ # define LAND_START_ALT 1000        // altitude in cm where land controller switches to slow rate of descent
 #endif
 #ifndef LAND_DETECTOR_TRIGGER
  # define LAND_DETECTOR_TRIGGER 50    // number of 50hz iterations with near zero climb rate and low throttle that triggers landing complete.
@@ -435,7 +433,7 @@
 # define LAND_DETECTOR_BARO_CLIMBRATE_MAX   150  // barometer climb rate must be between -150cm/s ~ +150cm/s
 #endif
 #ifndef LAND_DETECTOR_ROTATION_MAX
- # define LAND_DETECTOR_ROTATION_MAX    0.50f   // vehicle rotation must be below 0.5 rad/sec (=30deg/sec for) vehicle to consider itself landed
+ # define LAND_DETECTOR_ROTATION_MAX    0.58f   //BEV modified based on data logs
 #endif
 #ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM // require pilot to reduce throttle to minimum before vehicle will disarm
  # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM ENABLED
@@ -472,11 +470,11 @@
 
 // Acro Mode
 #ifndef ACRO_RP_P
- # define ACRO_RP_P                 4.5f
+ # define ACRO_RP_P                 2.0f //BEV set to our default
 #endif
 
 #ifndef ACRO_YAW_P
- # define ACRO_YAW_P                4.5f
+ # define ACRO_YAW_P                2.0f //BEV set to our default
 #endif
 
 #ifndef ACRO_LEVEL_MAX_ANGLE
@@ -484,11 +482,11 @@
 #endif
 
 #ifndef ACRO_BALANCE_ROLL
- #define ACRO_BALANCE_ROLL          1.0f
+ #define ACRO_BALANCE_ROLL          2.0f //BEV set to our default
 #endif
 
 #ifndef ACRO_BALANCE_PITCH
- #define ACRO_BALANCE_PITCH         1.0f
+ #define ACRO_BALANCE_PITCH         2.0f //BEV set to our default
 #endif
 
 #ifndef ACRO_EXPO_DEFAULT
@@ -497,15 +495,15 @@
 
 // Stabilize (angle controller) gains
 #ifndef STABILIZE_ROLL_P
- # define STABILIZE_ROLL_P          4.5f
+ # define STABILIZE_ROLL_P          4.0f
 #endif
 
 #ifndef STABILIZE_PITCH_P
- # define STABILIZE_PITCH_P         4.5f
+ # define STABILIZE_PITCH_P         4.0f
 #endif
 
 #ifndef  STABILIZE_YAW_P
- # define STABILIZE_YAW_P           4.5f
+ # define STABILIZE_YAW_P           3.0f
 #endif
 
 // RTL Mode
@@ -514,7 +512,7 @@
 #endif
 
 #ifndef RTL_ALT
- # define RTL_ALT 				    1500    // default alt to return to home in cm, 0 = Maintain current altitude
+ # define RTL_ALT 				    3000    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
 #ifndef RTL_LOITER_TIME
@@ -541,7 +539,7 @@
  # define ROLL_PITCH_INPUT_MAX      4500            // roll, pitch input range
 #endif
 #ifndef DEFAULT_ANGLE_MAX
- # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
+ # define DEFAULT_ANGLE_MAX         2000            //BEV changed default
 #endif
 #ifndef ANGLE_RATE_MAX
  # define ANGLE_RATE_MAX            18000           // default maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
@@ -555,26 +553,26 @@
  # define RATE_ROLL_P        		0.150f
 #endif
 #ifndef RATE_ROLL_I
- # define RATE_ROLL_I        		0.100f
+ # define RATE_ROLL_I        		0.050f
 #endif
 #ifndef RATE_ROLL_D
  # define RATE_ROLL_D        		0.004f
 #endif
 #ifndef RATE_ROLL_IMAX
- # define RATE_ROLL_IMAX         	1000
+ # define RATE_ROLL_IMAX         	250
 #endif
 
 #ifndef RATE_PITCH_P
  # define RATE_PITCH_P       		0.150f
 #endif
 #ifndef RATE_PITCH_I
- # define RATE_PITCH_I       		0.100f
+ # define RATE_PITCH_I       		0.05f
 #endif
 #ifndef RATE_PITCH_D
  # define RATE_PITCH_D       		0.004f
 #endif
 #ifndef RATE_PITCH_IMAX
- # define RATE_PITCH_IMAX        	1000
+ # define RATE_PITCH_IMAX        	500
 #endif
 
 #ifndef RATE_YAW_P
@@ -587,7 +585,7 @@
  # define RATE_YAW_D              	0.000f
 #endif
 #ifndef RATE_YAW_IMAX
- # define RATE_YAW_IMAX            	1000
+ # define RATE_YAW_IMAX            	800
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -601,16 +599,16 @@
 // Loiter rate control gains
 //
 #ifndef LOITER_RATE_P
- # define LOITER_RATE_P          	1.0f
+ # define LOITER_RATE_P          	0.9f
 #endif
 #ifndef LOITER_RATE_I
- # define LOITER_RATE_I          	0.5f
+ # define LOITER_RATE_I          	0.9f
 #endif
 #ifndef LOITER_RATE_D
  # define LOITER_RATE_D          	0.0f
 #endif
 #ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX          1000        // maximum acceleration from I term build-up in cm/s/s
+ # define LOITER_RATE_IMAX          400        // maximum acceleration from I term build-up in cm/s/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -630,7 +628,7 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_CRUISE
- # define THROTTLE_CRUISE       450             // default estimate of throttle required for vehicle to maintain a hover
+ # define THROTTLE_CRUISE       545             // default estimate of throttle required for vehicle to maintain a hover
 #endif
 
 #ifndef THR_MID_DEFAULT
@@ -645,38 +643,38 @@
 #endif
 
 #ifndef THR_DZ_DEFAULT
-# define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
+# define THR_DZ_DEFAULT         165             // the deadzone above and below mid throttle while in althold or loiter
 #endif
 
 #ifndef ALT_HOLD_P
- # define ALT_HOLD_P            1.0f
+ # define ALT_HOLD_P            1.25f
 #endif
 
 // RATE control
 #ifndef THROTTLE_RATE_P
- # define THROTTLE_RATE_P       5.0f
+ # define THROTTLE_RATE_P       6.0f
 #endif
 
 // Throttle Accel control
 #ifndef THROTTLE_ACCEL_P
- # define THROTTLE_ACCEL_P      0.50f
+ # define THROTTLE_ACCEL_P      0.75f
 #endif
 #ifndef THROTTLE_ACCEL_I
- # define THROTTLE_ACCEL_I      1.00f
+ # define THROTTLE_ACCEL_I      1.50f
 #endif
 #ifndef THROTTLE_ACCEL_D
  # define THROTTLE_ACCEL_D      0.0f
 #endif
 #ifndef THROTTLE_ACCEL_IMAX
- # define THROTTLE_ACCEL_IMAX   800
+ # define THROTTLE_ACCEL_IMAX   500
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
 #ifndef PILOT_VELZ_MAX
- # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+ # define PILOT_VELZ_MAX    200     // maximum vertical velocity in cm/s
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
- # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+ # define PILOT_ACCEL_Z_DEFAULT 100 // vertical acceleration in cm/s/s while altitude is under pilot control
 #endif
 
 // max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
@@ -708,6 +706,8 @@
     MASK_LOG_CURRENT
 #else
  // PX4, Pixhawk, FlyMaple default logging
+ # define DEFAULT_LOG_BITMASK (2046) //BEV changed default
+/*
  # define DEFAULT_LOG_BITMASK \
     MASK_LOG_ATTITUDE_MED | \
     MASK_LOG_GPS | \
@@ -721,6 +721,7 @@
     MASK_LOG_RCOUT | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CAMERA
+    */
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -762,8 +763,6 @@
 
 
 //BEV adding arduplane configs
-#define PITCH_MAX_CENTIDEGREE PITCH_MAX * 100
-#define PITCH_MIN_CENTIDEGREE PITCH_MIN * 100
 #define PLANE_THROTTLE_CRUISE 45
 
 #ifndef RUDDER_MIX
@@ -785,7 +784,7 @@
 #endif
 
 #ifndef LOITER_RADIUS_DEFAULT
- # define PLANE_LOITER_RADIUS_DEFAULT 60
+ # define PLANE_LOITER_RADIUS_DEFAULT 65
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -824,7 +823,7 @@
  # define HEAD_MAX                               45
 #endif
 #ifndef PITCH_MAX
- # define PITCH_MAX                              20
+ # define PITCH_MAX                              25
 #endif
 #ifndef PITCH_MIN
  # define PITCH_MIN                              -25

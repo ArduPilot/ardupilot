@@ -17,6 +17,10 @@
  *
  */
 
+//bev necessary for choosing heading controller
+//when false use the roll2yaw ff
+bool rtl_use_auto_heading;
+
 // rtl_init - initialise rtl controller
 static bool rtl_init(bool ignore_checks)
 {
@@ -49,10 +53,6 @@ static void rtl_run()
             rtl_return_start();
             break;
         case ReturnHome:
-            //rtl_loiterathome_start();
-            //break;
-        //case LoiterAtHome:
-            //BEV removed loiter at home option. Causing loads of issues with misconfigured parameters
             rtl_land_start();
             break;
         case Land:
@@ -72,10 +72,6 @@ static void rtl_run()
         rtl_climb_return_run();
         break;
 
-    //case LoiterAtHome:
-        //rtl_loiterathome_run();
-        //break;
-
     case Land:
         rtl_land_run();
         break;
@@ -87,6 +83,7 @@ static void rtl_climb_start()
 {
     rtl_state = InitialClimb;
     rtl_state_complete = false;
+    rtl_use_auto_heading = true;
 
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
@@ -109,8 +106,9 @@ static void rtl_climb_start()
     wp_nav.set_wp_destination(destination);
     wp_nav.set_fast_waypoint(true);
 
-    // hold current yaw during initial climb
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    //BEV hold current yaw during initial climb
+    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
+    yaw_look_at_heading = ahrs.yaw_sensor;
 }
 
 // rtl_return_start - initialise return to home
@@ -118,22 +116,14 @@ static void rtl_return_start()
 {
     rtl_state = ReturnHome;
     rtl_state_complete = false;
+    rtl_use_auto_heading = true;
 
-    // set target to above home/rally point
-#if AC_RALLY == ENABLED
-    // rally_point will be the nearest rally point or home.  uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    Vector3f destination = pv_location_to_vector(rally_point);
-#else
     Vector3f destination = Vector3f(0,0,get_RTL_alt());
-#endif
 
     wp_nav.set_wp_destination(destination);
 
     // initialise yaw to point home (maybe)
-    set_auto_yaw_mode(get_default_auto_yaw_mode(false)); //BEV the false forces it to use wpnav heading
+    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP); //BEV the false forces it to use wpnav heading
 }
 
 // rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
@@ -159,8 +149,17 @@ static void rtl_climb_return_run()
     } else {
         // run waypoint controller
         wp_nav.update_wpnav();
-        // call attitude controller
-        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
+        //decide which heading controller to use. Use roll2yawff if it's ever been necessary. Otherwise, auto_heading.
+        if(rtl_use_auto_heading) {
+            // call attitude controller
+            attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
+            if(get_roll2yaw_ff()) {
+                //need too much roll to maintian position. Use the roll2yaw feed foward
+                rtl_use_auto_heading = false;
+            }
+        } else {
+            attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(wp_nav.get_roll(), wp_nav.get_pitch(), get_roll2yaw_ff(), get_smoothing_gain());
+        }
     }
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
@@ -171,56 +170,6 @@ static void rtl_climb_return_run()
 }
 
 
-//BEV removing loiter at home option. Flights are long enough that winds shifting is commin.
-/*
-// rtl_return_start - initialise return to home
-static void rtl_loiterathome_start()
-{
-    rtl_state = LoiterAtHome;
-    rtl_state_complete = false;
-    rtl_loiter_start_time = millis();
-
-    set_auto_yaw_mode(AUTO_YAW_RESETTOARMEDYAW);
-}
-
-// rtl_climb_return_descent_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
-//      called by rtl_run at 100hz or more
-static void rtl_loiterathome_run()
-{
-    int16_t target_roll = 0, target_pitch = 0;
-
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
-        // reset attitude control targets
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.set_throttle_out(0, false);
-        // To-Do: re-initialise wpnav targets
-        return;
-    }
-
-    //pass target roll and pitch to is_transitioning. Will be set to desired values if indeed transitioning.
-    if(is_transitioning_get_angles(target_roll, target_pitch)) {
-        // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, 0, get_smoothing_gain());
-    } else {
-        // run waypoint controller
-        wp_nav.update_wpnav();
-        // call attitude controller
-        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
-    }
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control.update_z_controller();
-
-    //BEV removed loiter time check and forced to auto yaw reset to armed yaw
-    //don't spend more than 8 seconds trying to get the heading correct
-    // check if heading is within 10 degrees of heading when vehicle was armed
-    if ( (labs(wrap_180_cd(ahrs.yaw_sensor-initial_armed_bearing)) <= 1000) || (millis() - rtl_loiter_start_time > 8e3) ) {
-        rtl_state_complete = true;
-    }
-}
-*/
 // rtl_loiterathome_start - initialise controllers to loiter over home
 static void rtl_land_start()
 {

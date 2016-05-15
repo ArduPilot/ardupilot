@@ -53,16 +53,23 @@ static float get_pilot_desired_yaw_rate(int16_t stick_angle)
     int32_t roll2yawff = 0;
 
     //BEV add in bank angle feed forward which will tend to turn vehicle into the wind
-    // convert pilot input to the desired yaw rate
+    return stick_angle * g.acro_yaw_p + get_roll2yaw_ff();
+}
+
+//BEV returns yaw rate which will turn vehicle into the wind
+static int32_t get_roll2yaw_ff()
+{
+    //default
+    int32_t ret = 0;
 
     //use 40% dead band on nav_roll when applying roll2yaw ff
     if(nav_roll_cd > 480) { // 4.8 degrees
-        roll2yawff = nav_roll_cd - 480;
+        ret = 3*(nav_roll_cd - 480);
     } else if (nav_roll_cd < -480) { //-4.8 degrees
-        roll2yawff = nav_roll_cd + 480;
+        ret = 3*(nav_roll_cd + 480);
     }
 
-    return stick_angle * g.acro_yaw_p + constrain_int32(3*roll2yawff,-2000,2000);
+    return constrain_int32(ret,-2000,2000);
 }
 
 /*************************************************************
@@ -214,8 +221,8 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
 static int16_t get_non_takeoff_throttle()
 {
-    //BEV determined from analysis of many landings that 330 (33%) is a good number to put here.
-    return (330);
+    //BEV determined from analysis of many landings that 355 (35.5%) is a good number to put here.
+    return (355);
 }
 
 // get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off

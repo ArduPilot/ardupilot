@@ -37,7 +37,7 @@ static void failsafe_radio_on_event()
                 init_disarm_motors();
 
             // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
-            }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
+            }else if( (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) || (!ap.home_is_set) ) { //BEV enter land if home is not set yet
                 set_mode_land_with_pause();
 
             // if far from home then RTL

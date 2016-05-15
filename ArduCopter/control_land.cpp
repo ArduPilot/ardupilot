@@ -214,10 +214,7 @@ static bool land_complete_maybe()
 // called at 50hz
 static void update_land_detector()
 {
-    //BEV temporary log when in Alt_Hold or Loiter and below 3 m
-    if( (current_loc.alt < 300) && (control_mode == ALT_HOLD || control_mode == LOITER)) {
-        Log_Write_Landing(fabs(climb_rate), fabs(baro_climbrate), motors.get_throttle_out(), ahrs.get_gyro().length(), land_detector);
-    } else if (land_detector) {
+    if (land_detector) {
         //always log if it thinks it's landed
         Log_Write_Landing(fabs(climb_rate), fabs(baro_climbrate), motors.get_throttle_out(), ahrs.get_gyro().length(), land_detector);
     }

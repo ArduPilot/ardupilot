@@ -131,21 +131,10 @@ enum AutoMode {
     Auto_NavGuided
 };
 
-// Guided modes
-enum GuidedMode {
-    Guided_TakeOff,
-    Guided_WP
-#if NAV_GUIDED == ENABLED
-    ,Guided_Velocity
-#endif
-};
-
 // RTL states
 enum RTLState {
     InitialClimb,
     ReturnHome,
-    //BEV removing
-    //LoiterAtHome,
     Land
 };
 
@@ -190,7 +179,6 @@ enum FlipState {
 //BEV begin custom logging
 #define LOG_TRANSITION_MSG              0x1D
 #define LOG_LANDING_MSG                 0x1E
-#define LOG_GYROCHECK_MSG               0x1F
 //BEV end custom logging
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

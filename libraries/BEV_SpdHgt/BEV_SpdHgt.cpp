@@ -74,10 +74,6 @@ void BEV_SpdHgt::init()
         return;
     }
 
-#if BEV_SPDHGT_DEBUGGING == ENABLED
-    hal.console->println("BEV_SPDHGT: Debugging Enabled");
-#endif //BEV_SPDHGT_DEBUGGING
-
     //uORB specifics
     _perf_bev_spdhgt_regular = perf_alloc(PC_ELAPSED, "BEV_SPDHGT_REGULAR");
 

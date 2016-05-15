@@ -38,7 +38,6 @@ void AP_MotorsY6::setup_motors()
     AP_MotorsMatrix::setup_motors();
 
     //BEV hardcoding in the FireFLY6 motor arrangement
-    //BEV temp CW <-> CCW to account for incorrectly assembled bird
     add_motor_raw(AP_MOTORS_MOT_3,  0.0, -1.000, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1); //aft top (ccw)
     add_motor_raw(AP_MOTORS_MOT_4, -1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2); //front right top (ccw)
     add_motor_raw(AP_MOTORS_MOT_5,  1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3); //front left top (ccw)

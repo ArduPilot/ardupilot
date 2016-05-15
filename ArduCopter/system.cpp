@@ -1,11 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-/*****************************************************************************
-*   The init_ardupilot function processes everything we need for an in - air restart
-*        We will determine later if we are actually on the ground and process a
-*        ground start in that case.
-*
-*****************************************************************************/
-
 /*
  *  Copyright (c) BirdsEyeView Aerobotics, LLC, 2016.
  *
@@ -221,10 +213,6 @@ static void init_ardupilot()
     relay.init();
     //BEV init camera
     camera.init();
-    //BEV init gimbal
-#if BEV_GIMBAL == ENABLED
-    camera_gimbal.init();
-#endif
 
     //BEV init uORB communication objects
     bev_key.init();
@@ -304,9 +292,6 @@ static void init_ardupilot()
     //BEV initialize uORB objects
     bev_uorb_init();
 
-    //BEV camera gimbal
-    camera_gimbal.init();
-
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -317,6 +302,9 @@ static void init_ardupilot()
     if (hal.uartD != NULL) {
         hal.uartD->set_blocking_writes(false);
     }
+
+    //BEV make sure we've entered the desired flight mode. For some reason this wasn't done already.
+    set_mode(ALT_HOLD);
 
     cliSerial->print_P(PSTR("\nReady to FLY "));
 

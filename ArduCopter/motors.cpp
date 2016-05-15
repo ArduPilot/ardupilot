@@ -147,6 +147,12 @@ static void auto_disarm_check()
 //  returns false in the unlikely case that arming fails (because of a gyro calibration failure)
 static bool init_arm_motors()
 {
+    //BEV make sure not in boat mode w/ sport key
+    if(ins.is_boat_mode_enabled() && (get_key_level() < BEV_Key::KEY_PRO) ) {
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Boat Mode needs pro key"));
+        return false;
+    }
+
 	// arming marker
     // Flag used to track if we have armed the motors the first time.
     // This is used to decide if we should run the ground_start routine
@@ -301,6 +307,16 @@ static void pre_arm_checks(bool display_failure)
         if(compass.get_count() < 2) {
             if(display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: No external compass"));
+            }
+            return;
+        }
+    }
+
+    //BEV if the transition axle angles are uninitialized set them as needed
+    if(g.arming_check) {
+        if(g.rc_9.radio_min == 1100 && g.rc_9.radio_max == 1900) {
+            if(display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Transition Axle Angles"));
             }
             return;
         }
@@ -544,12 +560,15 @@ static bool pre_arm_gps_checks(bool display_failure)
         return false;
     }
 
-    // check speed is below 1cm/s
-    if (speed_cms < 1 || speed_cms > PREARM_MAX_VELOCITY_CMS) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad Velocity"));
+    //ignore this chech in boat mode
+    if(!ins.is_boat_mode_enabled()) {
+        // check speed is below 1cm/s
+        if (speed_cms < 1 || speed_cms > PREARM_MAX_VELOCITY_CMS) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad Velocity"));
+            }
+            return false;
         }
-        return false;
     }
 
     // warn about hdop separately - to prevent user confusion with no gps lock

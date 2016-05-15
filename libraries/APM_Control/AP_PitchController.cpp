@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0.1 2.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          0.4f),
+	AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          1.0f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("D",        2, AP_PitchController, gains.D,        0.02f),
+	AP_GROUPINFO("D",        2, AP_PitchController, gains.D,        0.01f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 0.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.0f),
+	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.6f),
 
 	// @Param: RMAX_UP
 	// @DisplayName: Pitch up max rate
@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, gains.rmax,   0.0f),
+	AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, gains.rmax,   50.0f),
 
 	// @Param: RMAX_DN
 	// @DisplayName: Pitch down max rate
@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX_DN",     5, AP_PitchController, _max_rate_neg,   0.0f),
+	AP_GROUPINFO("RMAX_DN",     5, AP_PitchController, _max_rate_neg,   50.0f),
 
 	// @Param: RLL
 	// @DisplayName: Roll compensation
@@ -96,7 +96,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("IMAX",      7, AP_PitchController, gains.imax,     1500),
+	AP_GROUPINFO("IMAX",      7, AP_PitchController, gains.imax,     2500),
 
 	AP_GROUPEND
 };

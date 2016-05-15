@@ -93,6 +93,11 @@ static void auto_takeoff_start(float final_alt)
 
     // tell motors to do a slow start
     motors.slow_start(true);
+
+    // BEV ensure smooth spin up
+    attitude_control.relax_bf_rate_controller();
+    attitude_control.set_yaw_target_to_current_heading();
+    attitude_control.set_throttle_out(0, false);
 }
 
 // auto_takeoff_run - takeoff in auto mode
@@ -146,14 +151,14 @@ static void auto_wp_start(const Vector3f& destination)
     //BEV set the plane controllers waypoint target
     //if we're within 100m of the previous waypoint us it as the starting location
     //otherwise use the present location. This helps get precise cross tracking for mapping missions
-    if( (wp_distance < 100) && (wp_distance != 0) ) { //!=0 is a check for uninitialization
+    if( (wp_distance < 10000) && (wp_distance != 0) ) { //!=0 is a check for uninitialization
         prev_WP_loc = next_WP_loc;
     } else {
         prev_WP_loc = current_loc;
     }
     next_WP_loc = pv_vector_to_location(wp_nav.get_destination());
-    //determine distance to waypoint
-    wp_distance = get_distance(current_loc, next_WP_loc);
+    //determine distance to waypoint (in cm)
+    wp_distance = get_distance(current_loc, next_WP_loc)*100;
     alt_hold_gs_des_alt = next_WP_loc.alt;
     setup_turn_angle();
 }

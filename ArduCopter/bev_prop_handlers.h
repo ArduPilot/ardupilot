@@ -33,6 +33,6 @@ static BEV_Effectors motors(to_copter_callback, to_plane_callback,
         g.rc_6, g.rc_9, //transition switch, transition channel out
         g.rc_7, g.rc_10); //gear switch and output
 
-#define BEV_RTL_TRANSITION_DISTANCE (150) //meters
+#define BEV_RTL_TRANSITION_DISTANCE (15000) //cm
 
 #endif //__BEV_CUSTOM_H__

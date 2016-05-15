@@ -36,9 +36,8 @@ void crash_check()
         return;
     }
 
-    // check angles
-    int32_t lean_max = aparm.angle_max + CRASH_CHECK_ANGLE_DEVIATION_CD;
-    if (labs(ahrs.roll_sensor) > lean_max || labs(ahrs.pitch_sensor) > lean_max) {
+    //BEV defined more reasonable roll and pitch limits for our aircraft
+    if (labs(ahrs.roll_sensor) > 8000 || labs(ahrs.pitch_sensor) > 4000) {
         inverted_count++;
 
         // if we have just become inverted record the baro altitude

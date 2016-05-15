@@ -29,14 +29,14 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
 	// @Units: seconds
 	// @Range: 1-60
 	// @Increment: 1
-    AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 25),
+    AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 18),
 	
     // @Param: DAMPING
     // @DisplayName: L1 control damping ratio
     // @Description: Damping ratio for L1 control. Increase this in increments of 0.05 if you are getting overshoot in path tracking. You should not need a value below 0.7 or above 0.85.
 	// @Range: 0.6-1.0
 	// @Increment: 0.05
-    AP_GROUPINFO("DAMPING",   1, AP_L1_Control, _L1_damping, 0.75f),
+    AP_GROUPINFO("DAMPING",   1, AP_L1_Control, _L1_damping, 0.60f),
 
     AP_GROUPEND
 };
@@ -94,7 +94,7 @@ float AP_L1_Control::turn_distance(float wp_radius) const
     //BEV this adaptive bullshit just isn't working. Hardcode 50m turn radius
     //wp_radius *= sq(_ahrs.get_EAS2TAS());
 	//return min(wp_radius, _L1_dist);
-    return 50;
+    return 60;
 }
 
 /*
@@ -112,7 +112,8 @@ float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
     if (turn_angle >= 90) {
         return distance_90;
     }
-    return distance_90 * turn_angle / 90.0f;
+    //BEV put proper trig function in there instead of linear interpolation
+    return distance_90 * sin(turn_angle/57.30f);
 }
 
 bool AP_L1_Control::reached_loiter_target(void)

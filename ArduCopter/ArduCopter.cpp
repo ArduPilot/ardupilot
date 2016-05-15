@@ -19,18 +19,15 @@
  *  courtesy.
  */
 
-#define THISFIRMWARE   "AvA 1.0.2"
-
+#define THISFIRMWARE   "AvA 1.1"
 
 /*
- /*
- *  ArduCopter Version 3.0
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
  *  Lead Tester:    Marco Robustini 
  *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen, 
-                                                      Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
-                                                      Jean-Louis Naudin, Mike Smith, and more
+ Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
+ Jean-Louis Naudin, Mike Smith, and more
  *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
  *
  *  Special Thanks to contributors (in alphabetical order by first name):
@@ -361,12 +358,15 @@ static AP_L1_Control L1_controller(ahrs);
 #include <BEV_SpdHgt.h>
 #include <BEV_TransitionState.h>
 #include <BEV_Effectors.h>
-#include <BEV_Gimbal.h>
 #include <BEV_Key.h>
 #include "bev_prop_handlers.h"
+#include <BEV_Payloads.h>
+#include <BEV_Servos.h>
 
 //BEV uORB communication objects
 BEV_Key bev_key(g.key_pid, g.key_value);
+BEV_PayloadManager payload_manager;
+BEV_Servos servos;
 
 //Attitude to servo control
 static AP_RollController rollController(ahrs, aparm, DataFlash);
@@ -457,7 +457,7 @@ static union {
 static int8_t control_mode = STABILIZE;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
-static uint8_t oldSwitchPosition;
+static uint8_t oldSwitchPosition = 255;
 //static RCMapper rcmap;
 
 // board specific config
@@ -488,6 +488,8 @@ static struct {
 
 //BEV flag to force copter RTL state to wpnav
 static bool rtl_force_wpnav = false;
+//BEV added to switch to roll2yaw ff once arrived at destination
+bool guided_arrived = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables
@@ -543,11 +545,6 @@ static Location next_WP_loc;
 // Auto
 ////////////////////////////////////////////////////////////////////////////////
 static AutoMode auto_mode;   // controls which auto controller is run
-
-////////////////////////////////////////////////////////////////////////////////
-// Guided
-////////////////////////////////////////////////////////////////////////////////
-static GuidedMode guided_mode;  // controls which controller is run (pos or vel)
 
 ////////////////////////////////////////////////////////////////////////////////
 // RTL
@@ -644,11 +641,6 @@ static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
 //BEV speed height control
 static BEV_SpdHgt SpdHgt_Controller(ahrs, inertial_nav, ins);
 
-#if BEV_GIMBAL == ENABLED
-//camera gimbal
-static BEV_Gimbal camera_gimbal(ahrs, inertial_nav, g.rc_11, g.rc_12); //pitch and yaw out
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 // Attitude, Position and Waypoint navigation objects
 // To-Do: move inertial nav up or other navigation variables down here
@@ -674,8 +666,6 @@ static int16_t pmTest1;
 static uint32_t fast_loopTimer;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
-// Loiter timer - Records how long we have been in loiter
-static uint32_t rtl_loiter_start_time;
 
 // Used to exit the roll and pitch auto trim function
 static uint8_t auto_trim_counter;
@@ -694,6 +684,7 @@ static AP_Relay relay;
 //and will have it write high when the relay is opened
 static AP_Camera camera(&relay, g.rc_13);
 #endif
+
 
 // a pin for reading the receiver RSSI voltage.
 static AP_HAL::AnalogSource* rssi_analog_source;
@@ -962,11 +953,6 @@ static void throttle_loop() {
 // update_mount - update camera mount position
 // should be run at 50hz
 static void update_mount() {
-    //BEV update the camera gimbal at 50 hz
-#if BEV_GIMBAL == ENABLED
-    camera_gimbal.update(failsafe.radio, nav_pitch_cd, nav_roll_cd);
-#endif
-
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
 #endif
@@ -1003,6 +989,8 @@ static void ten_hz_logging_loop() {
     }
     if (should_log(MASK_LOG_RCOUT)) {
         DataFlash.Log_Write_RCOUT();
+        //BEV added
+        DataFlash.Log_Write_RCOUT_AUX();
     }
     if (should_log(MASK_LOG_NTUN)
             && (mode_requires_GPS(control_mode) || landing_with_GPS())) {
@@ -1151,7 +1139,10 @@ static void update_GPS(void) {
                 if (gps.status() >= AP_GPS::GPS_OK_FIX_3D
                         && gps.location().lat != 0) {
                     if (ground_start_count > 0) {
-                        ground_start_count--;
+                        //BEV don't set home location when armed. Otherwise RTL may take you some place interesting...
+                        if(!motors.armed()) {
+                            ground_start_count--;
+                        }
                     } else {
                         // after 10 successful reads store home location
                         // ap.home_is_set will be true so this will only happen once
@@ -1183,7 +1174,8 @@ static void update_GPS(void) {
             }
 
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc) == true) {
+            //BEV only do distance based camera triggering in auto mode
+            if ((control_mode == AUTO) && (camera.update_location(current_loc) == true)) {
                 do_take_picture();
             }
 #endif

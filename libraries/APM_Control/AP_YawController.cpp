@@ -36,21 +36,21 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 	// @Description: This is the gain from measured lateral acceleration to demanded yaw rate. It should be set to zero unless active control of sideslip is desired. This will only work effectively if there is enough fuselage side area to generate a measureable lateral acceleration when the model sideslips. Flying wings and most gliders cannot use this term. This term should only be adjusted after the basic yaw damper gain YAW2SRV_DAMP is tuned and the YAW2SRV_INT integrator gain has been set. Set this gain to zero if only yaw damping is required.
 	// @Range: 0 4
 	// @Increment: 0.25
-	AP_GROUPINFO("SLIP",    0, AP_YawController, _K_A,    0),
+	AP_GROUPINFO("SLIP",    0, AP_YawController, _K_A,    1),
 
 	// @Param: INT
 	// @DisplayName: Sidelsip control integrator
 	// @Description: This is the integral gain from lateral acceleration error. This gain should only be non-zero if active control over sideslip is desired. If active control over sideslip is required then this can be set to 1.0 as a first try.
 	// @Range: 0 2
 	// @Increment: 0.25
-	AP_GROUPINFO("INT",    1, AP_YawController, _K_I,    0),
+	AP_GROUPINFO("INT",    1, AP_YawController, _K_I,    1),
 
 	// @Param: DAMP
 	// @DisplayName: Yaw damping
 	// @Description: This is the gain from yaw rate to rudder. It acts as a damper on yaw motion. If a basic yaw damper is required, this gain term can be incremented, whilst leaving the YAW2SRV_SLIP and YAW2SRV_INT gains at zero. Note that unlike with a standard PID controller, if this damping term is zero then the integrator will also be disabled.
 	// @Range: 0 2
 	// @Increment: 0.25
-	AP_GROUPINFO("DAMP",   2, AP_YawController, _K_D,    0),
+	AP_GROUPINFO("DAMP",   2, AP_YawController, _K_D,    1),
 
 	// @Param: RLL
 	// @DisplayName: Yaw coordination gain

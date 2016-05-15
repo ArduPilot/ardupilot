@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0.1 2.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.4f),
+	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.55f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("D",        2, AP_RollController, gains.D,        0.02f),
+	AP_GROUPINFO("D",        2, AP_RollController, gains.D,        0.01f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 1.0
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.0f),
+	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.30f),
 
 	// @Param: RMAX
 	// @DisplayName: Maximum Roll Rate
@@ -70,7 +70,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX",   4, AP_RollController, gains.rmax,       0),
+	AP_GROUPINFO("RMAX",   4, AP_RollController, gains.rmax,       90),
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit

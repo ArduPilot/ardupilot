@@ -25,12 +25,17 @@ static void bev_uorb_init()
 {
     bev_key.init();
     SpdHgt_Controller.init();
+    payload_manager.init();
+    //set the needed gimbal objects
+    payload_manager.gimbal.set_ahrs_inav(&ahrs, &inertial_nav);
+    servos.init();
 }
 
 //called at 50hz
 static void bev_uorb_update()
 {
     bev_key.update();
+    payload_manager.update();
 }
 
 static void plane_50hz_tasks(void) {
@@ -38,6 +43,11 @@ static void plane_50hz_tasks(void) {
     if (!motors.transition_is_plane_active()) {
         //we're entirely helicopter. No need for the runtime penalty
         return;
+    }
+
+    //verify the user didn't click the 'wingless' button when flying as plane
+    if(g.wingless) {
+        g.wingless.set_and_save(0);
     }
 
     //Update the speed height controller w/ desired altitude
@@ -104,6 +114,13 @@ static void plane_update_flight_mode(void) {
         calc_nav_pitch();
         calc_throttle();
         break;
+
+    case LAND:
+        //transition immediately if not already.
+        if(motors.transition_get_direction() != BEV_TransitionState::DIRECTION_TO_COPTER) {
+            motors.transition_to_copter();
+            nav_roll_cd = nav_pitch_cd = 0;
+        }
 
     case STABILIZE:
     { //bracket needed. See http://stackoverflow.com/questions/5685471/error-jump-to-case-label
@@ -232,7 +249,7 @@ static void plane_navigate()
 
     // waypoint distance from plane
     // ----------------------------
-    wp_distance = get_distance(current_loc, next_WP_loc);
+    wp_distance = get_distance(current_loc, next_WP_loc) * 100; //putting it in cm for compatability w/ copter definitions
 
     // update total loiter angle
     loiter_angle_update();
@@ -362,7 +379,6 @@ void to_copter_callback() {
             stabilize_init(true);
             break;
         case ALT_HOLD:
-           //temp_alt = alt_hold_gs_des_alt; //because althold_init resets this
            althold_init(true);
            break;
        case LOITER:
@@ -420,7 +436,7 @@ void to_plane_callback()
     pitchController.reset_I();
 
     //disarm if on the ground, throttle at minimum, and armed. DOn't waot to have it accidentally 'fly away' when the alt_hold controller kicks in
-    if( is_on_ground_maybe() && (g.rc_3.control_in == 0) &&(control_mode == ALT_HOLD || control_mode == LOITER)) {
+    if( motors.armed() && is_on_ground_maybe() && (g.rc_3.control_in == 0) &&(control_mode == ALT_HOLD || control_mode == LOITER)) {
         init_disarm_motors();
     }
 
@@ -486,6 +502,20 @@ static void override_transitions_to_plane()
 
 static bool handle_bev_request(uint8_t request)
 {
+    //dont allow in wingless ops
+    if(g.wingless) {
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Disabled: Wingless flight"));
+        return false;
+    }
+
+    if(request == BEV_REQUEST_SERVOS_TOGGLE) {
+        servos.toggle();
+        //BEV not intuitive, but have the  also toggle servos. This weird
+        //bit comes from the limited number of joystuck buttons we have
+        payload_manager.gimbal.point_here(0,0,0);
+        return true;
+    }
+
     if( (control_mode == AUTO)) {
         return false;
     } else if (get_key_level() < BEV_Key::KEY_SPORT) {
@@ -522,26 +552,46 @@ static bool handle_bev_request(uint8_t request)
 
 static void transition_toggle()
 {
+    //don't allow in wingless ops
+    if(g.wingless)
+        return;
+
     motors.transition_toggle();
 }
 
 static void gear_toggle()
 {
+    //don't allow in wingless ops
+    if(g.wingless)
+        return;
+
     motors.gear_toggle();
 }
 
 static void gear_raise()
 {
+    //don't allow in wingless ops
+    if(g.wingless)
+        return;
+
     motors.gear_raise();
 }
 
 static void gear_lower()
 {
+    //don't allow in wingless ops
+    if(g.wingless)
+        return;
+
     motors.gear_lower();
 }
 
 static void transition_to_copter()
 {
+    //don't allow in wingless ops
+    if(g.wingless)
+        return;
+
     motors.transition_to_copter();
 }
 
@@ -624,6 +674,9 @@ static void bev_motors_output()
     if(get_key_level() < BEV_Key::KEY_SPORT) {
         //no transitions, gear, or axle ff if no key active
         motors.output(true, 0);
+    } else if (g.wingless) {
+        //don't allow transitions or gear if in wingless flight
+        motors.output(true, get_desired_transition_axle_angle());
     }else if( (control_mode == AUTO) || !transition_gear_input_valid() ) {
         //don't allow gear and transition switches to be read if in auto mode, radio failsafe, or sport key unverified
         motors.output(true, get_desired_transition_axle_angle());

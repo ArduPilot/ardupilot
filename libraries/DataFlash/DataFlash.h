@@ -60,6 +60,7 @@ public:
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
+    void Log_Write_RCOUT_AUX(void); //BEV added this one
     void Log_Write_Baro(AP_Baro &baro);
     void Log_Write_Power(void);
     void Log_Write_AHRS2(AP_AHRS &ahrs);
@@ -243,6 +244,16 @@ struct PACKED log_RCOUT {
     uint16_t chan6;
     uint16_t chan7;
     uint16_t chan8;
+};
+
+//BEV added this one
+struct PACKED log_RCOUT_AUX {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint16_t chan1;
+    uint16_t chan2;
+    uint16_t chan3;
+    uint16_t chan4;
 };
 
 struct PACKED log_BARO {
@@ -431,6 +442,8 @@ struct PACKED log_Ubx2 {
       "RCIN",  "Ihhhhhhhhhhhhhh",     "TimeMS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
+    { LOG_RCOUT_AUX_MSG, sizeof(log_RCOUT_AUX), \
+      "RCAX", "Ihhhh",       "TimeMS,Chan1,Chan2,Chan3,Chan4" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  "Iffcf", "TimeMS,Alt,Press,Temp,CRt" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
@@ -503,6 +516,7 @@ struct PACKED log_Ubx2 {
 #define LOG_TERRAIN_MSG   150
 #define LOG_UBX1_MSG      151
 #define LOG_UBX2_MSG      152
+#define LOG_RCOUT_AUX_MSG 153 //BEV added
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

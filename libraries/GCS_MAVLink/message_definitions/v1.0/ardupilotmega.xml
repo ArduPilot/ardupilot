@@ -106,8 +106,20 @@
        <entry name="BEV_REQUEST_TRANSITION_TO_COPTER"          value="4"> <description>Transition to copter</description></entry>
        <entry name="BEV_REQUEST_TRANSITION_TO_PLANE"           value="5"> <description>Transition to plane</description></entry>
        <entry name="BEV_REQUEST_TRANSITION_TOGGLE"             value="6"> <description>Toggle state</description></entry>
+       <entry name="BEV_REQUEST_SERVOS_TOGGLE"                 value="7"> <description>Toggle servos (on aux3 and 4)</description></entry>
     </enum>
     
+    <enum name="BEV_STATUS_TRANSITION">
+      <entry name="BEV_STATUS_TRANSITION_TO_COPTER"           value="0"> <description>Transitioning to copter</description></entry>
+      <entry name="BEV_STATUS_TRANSITION_TO_PLANE"            value="1"> <description>Transitioning to plane</description></entry>
+      <entry name="BEV_STATUS_TRANSITION_FULL_COPTER"         value="2"> <description>Not transitioning, full copter</description></entry>
+      <entry name="BEV_STATUS_TRANSITION_FULL_PLANE"          value="3"> <description>Not transitioning, full plane</description></entry>
+    </enum>
+    
+    <enum name="BEV_STATUS_GEAR">
+      <entry name="BEV_STATUS_GEAR_UP"                        value="0"> <description>Gear is up</description></entry>
+      <entry name="BEV_STATUS_GEAR_DOWN"                      value="1"> <description>Gear is down</description></entry>
+    </enum>
     </enums>
 
      <messages>
@@ -458,9 +470,9 @@
       <field type="int16_t" name="current_battery">Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current</field>
     </message>
     
-    <!--                            -->
-    <!-- BEV begin our custom enums -->
-    <!--                            -->
+    <!--                                -->
+    <!-- BEV begin our custom messages  -->
+    <!--                                -->
     
     <!-- message requesting gear or transition -->
     <message name="BEV_REQUEST" id="182">
@@ -469,5 +481,22 @@
         <field name="target_component" type="uint8_t">Component ID</field>
         <field type="uint8_t" name="request">request from BEV_REQUEST enum</field>
     </message>
+    
+    <!--message reporting transition and gear status -->
+    <message name="BEV_STATUS" id="183">
+      <description>Report transition and gear status from FireFLY6 to ground station. See BEV_STATUS* enums</description>
+        <field name="transition" type="uint8_t">A value from BEV_STATUS_TRANSITION enum</field>
+        <field name="gear" type="uint8_t">A value from BEV_STATUS_GEAR enum</field>
+    </message>
+    
+    <!--Requests that the gimbal be turned at a given rate -->
+    <message name="BEV_GIMBAL_SPEED" id="184">
+      <description>Request from GCS to AP to adjust camera position</description>
+        <field name="target_system" type="uint8_t">System ID</field>      
+        <field name="target_component" type="uint8_t">Component ID</field>
+        <field name="pitch_rate" type="int16_t">Pitch rate in degx100</field>
+        <field name="yaw_rate" type="int16_t">Yaw rate in degx100</field>
+    </message>
+        
      </messages>
 </mavlink>

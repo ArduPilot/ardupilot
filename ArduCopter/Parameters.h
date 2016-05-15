@@ -125,7 +125,7 @@ public:
         k_param_wp_nav,
         k_param_attitude_control,
         k_param_pos_control,
-        k_param_circle_nav,     // 60
+        k_param_circle_nav,     // 59
 
         // 62: Telemetry control
         //
@@ -135,7 +135,7 @@ public:
         k_param_sysid_my_gcs,
         k_param_telem_delay,
         k_param_gcs2,
-        k_param_serial2_protocol, //68
+        k_param_serial2_protocol, //67
 
         //
         // 70: Sensor parameters
@@ -225,7 +225,8 @@ public:
 		//
 		k_param_hil_servos = 145,
 		k_param_att_controller,
-		k_param_stab_pitch_down, //190
+		k_param_stab_pitch_down,
+		k_param_wingless,
 
 		//BEV keys
 		k_param_key_pid = 150,
@@ -267,7 +268,7 @@ public:
 
 		//BEV our objects
 		k_param_transitionState = 210,
-        k_param_camera_gimbal,
+        k_param_stabilize_allow,
 
         // 254,255: reserved
     };
@@ -394,9 +395,7 @@ public:
     AC_P                    p_alt_hold;
 
     //BEV begin plane parameter additions
-    // Feed-forward gains
-    //
-    //AP_Float stab_pitch_down;
+    AP_Int8 wingless;
 
     // Waypoints
     //
@@ -409,6 +408,8 @@ public:
     // Navigational maneuvering limits
     //
     AP_Int16 roll_limit_cd;
+
+    AP_Int8 stabilize_allow;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

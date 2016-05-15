@@ -17,9 +17,6 @@
 #ifndef __BEV_SPDHGT_H__
 #define __BEV_SPDHGT_H__
 
-//#include <inttypes.h>
-//#include <AP_Common.h>
-//#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Param.h>
 #include <AP_AHRS.h>
 #include <AP_InertialSensor.h>

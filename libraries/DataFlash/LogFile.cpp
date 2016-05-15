@@ -754,6 +754,20 @@ void DataFlash_Class::Log_Write_RCOUT(void)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+//BEV write the aux outputs
+void DataFlash_Class::Log_Write_RCOUT_AUX(void)
+{
+    struct log_RCOUT_AUX pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_RCOUT_AUX_MSG),
+        timestamp       : hal.scheduler->millis(),
+        chan1           : hal.rcout->read(8),
+        chan2           : hal.rcout->read(9),
+        chan3           : hal.rcout->read(10),
+        chan4           : hal.rcout->read(11)
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write a BARO packet
 void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
 {

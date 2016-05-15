@@ -503,13 +503,9 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
         cmd.content.jump.num_times = packet.param2;     // repeat count
         break;
 
-    case MAV_CMD_DO_DIGICAM_CONTROL:                    // MAV ID: 203
-        cmd.content.digicam_control.session = packet.param1;
-        cmd.content.digicam_control.zoom_pos = packet.param2;
-        cmd.content.digicam_control.zoom_step = packet.param3;
-        cmd.content.digicam_control.focus_lock = packet.param4;
-        cmd.content.digicam_control.shooting_cmd = packet.x;
-        cmd.content.digicam_control.cmd_id = packet.y;
+    case MAV_CMD_DO_SET_SERVO:                          // MAV ID: 183
+        cmd.content.servo.channel = packet.param1;      // channel
+        cmd.content.servo.pwm = packet.param2;          // PWM
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
@@ -662,13 +658,9 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
         packet.param2 = cmd.content.jump.num_times;     // repeat count
         break;
 
-    case MAV_CMD_DO_DIGICAM_CONTROL:                    // MAV ID: 203
-        packet.param1 = cmd.content.digicam_control.session;
-        packet.param2 = cmd.content.digicam_control.zoom_pos;
-        packet.param3 = cmd.content.digicam_control.zoom_step;
-        packet.param4 = cmd.content.digicam_control.focus_lock;
-        packet.x = cmd.content.digicam_control.shooting_cmd;
-        packet.y = cmd.content.digicam_control.cmd_id;
+    case MAV_CMD_DO_SET_SERVO:                          // MAV ID: 183
+        packet.param1 = cmd.content.servo.channel;      // channel
+        packet.param2 = cmd.content.servo.pwm;          // PWM
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206

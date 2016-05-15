@@ -9,7 +9,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @Description: Controls enabling monitoring of the battery's voltage and current
     // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
     // @User: Standard
-    AP_GROUPINFO("MONITOR", 0, AP_BattMonitor, _monitoring, AP_BATT_MONITOR_DISABLED),
+    AP_GROUPINFO("MONITOR", 0, AP_BattMonitor, _monitoring, AP_BATT_MONITOR_VOLTAGE_AND_CURRENT),
 
     // @Param: VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @DisplayName: 2nd Battery Voltage sensing pin
     // @Description: This sets the pin for sensing the voltage on a 2nd battery. Set to -1 to disable sensing of a second battery
     // @User: Standard
-    AP_GROUPINFO("VOLT2_PIN", 7, AP_BattMonitor, _volt2_pin, -1),
+    AP_GROUPINFO("VOLT2_PIN", 7, AP_BattMonitor, _volt2_pin, 1),
 
     // @Param: VOLT2_MULT
     // @DisplayName: 2nd battery voltage multiplier

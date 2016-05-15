@@ -321,7 +321,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
     // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B (New)
     // @User: Standard
-    GSCALAR(frame_orientation, "FRAME",             AP_MOTORS_X_FRAME),
+    GSCALAR(frame_orientation, "FRAME",             AP_MOTORS_NEW_PLUS_FRAME),
 
     // @Param: ARMING_CHECK
     // @DisplayName: Arming check
@@ -345,7 +345,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
-    GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_VERY_CRISP),
+    GSCALAR(rc_feel_rp, "RC_FEEL_RP",  45),
 
     // @Param: LAND_REPOSITION
     // @DisplayName: Land repositioning
@@ -480,6 +480,20 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
+    // @Param: WINGLESS
+    // @DisplayName: Wingless
+    // @Description: True to enable wingless flight
+    // @Values: 0:winged flight 1: wingless flight
+    // @User: Advanced
+    GSCALAR(wingless,  "WINGLESS",    0),
+
+    // @Param: STAB_ALLOW
+    // @DisplayName: Stabilise Allow
+    // @Description: True to enable stablize mode
+    // @Values: 0:stabilize not allowed 1: stabilize allowed
+    // @User: Advanced
+    GSCALAR(stabilize_allow,  "STAB_ALLOW",    1),
+
     // PID controller
     //---------------
 
@@ -611,10 +625,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(camera,           "CAM_", AP_Camera),
 #endif
 
-#if BEV_GIMBAL == ENABLED
-    GOBJECT(camera_gimbal, "GBL", BEV_Gimbal),
-#endif
-
     // @Group: SR0_
     // @Path: GCS_Mavlink.pde
     GOBJECTN(gcs[0],  gcs0,       "SR0_",     GCS_MAVLINK),
@@ -726,7 +736,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 100-500
 	// @Increment: 1
     // @User: Standard
-    GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  200),
+    GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  400),
 
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
@@ -737,15 +747,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     ASCALAR(throttle_slewrate,      "PL_THR_SLEW",   100),
 
-    // @Param: TRIM_THROTTLE
-    // @DisplayName: Throttle cruise percentage
-    // @Description: The target percentage of throttle to apply for normal flight
-    // @Units: Percent
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    //ASCALAR(plane_throttle_cruise,        "PL_THR_CRUIS", PLANE_THROTTLE_CRUISE),
-
     // @Param: LIM_ROLL_CD
     // @DisplayName: Maximum Bank Angle
     // @Description: The maximum commanded bank angle in either direction
@@ -753,7 +754,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 9000
     // @Increment: 1
     // @User: Standard
-    GSCALAR(roll_limit_cd,          "PL_LIM_ROLL",    5500),
+    GSCALAR(roll_limit_cd,          "PL_LIM_ROLL",    4000),
 
     // @Param: LIM_PITCH_MAX
     // @DisplayName: Maximum Pitch Angle
@@ -836,6 +837,12 @@ static void load_parameters(void)
         // erase all parameters
         cliSerial->printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
         AP_Param::erase_all();
+
+        //BEV set the left and right elevon positions
+        g.rc_elevon_left.radio_min.set_and_save(900);
+        g.rc_elevon_left.radio_max.set_and_save(2100);
+        g.rc_elevon_right.radio_min.set_and_save(900);
+        g.rc_elevon_right.radio_max.set_and_save(2100);
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
