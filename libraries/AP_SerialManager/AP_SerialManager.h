@@ -71,7 +71,7 @@ public:
 
     enum SerialProtocol {
         SerialProtocol_None = -1,
-        SerialProtocol_Console = 0,
+        SerialProtocol_Console = 0, // unused
         SerialProtocol_MAVLink = 1,
         SerialProtocol_MAVLink2 = 2,    // do not use - use MAVLink and provide instance of 1
         SerialProtocol_FRSky_DPort = 3,
@@ -107,6 +107,10 @@ public:
     //  returns true if a channel is found, false if not
     bool get_mavlink_channel(enum SerialProtocol protocol, uint8_t instance, mavlink_channel_t &mav_chan) const;
 
+    // get_mavlink_protocol - provides the specific MAVLink protocol for a
+    // given channel, or SerialProtocol_None if not found
+    SerialProtocol get_mavlink_protocol(mavlink_channel_t mav_chan) const;
+    
     // set_blocking_writes_all - sets block_writes on or off for all serial channels
     void set_blocking_writes_all(bool blocking);
 
