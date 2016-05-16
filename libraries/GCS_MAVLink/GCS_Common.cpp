@@ -58,8 +58,10 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
 void
 GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance)
 {
-    // search for serial port
+    serialmanager_p = &serial_manager;
 
+    // search for serial port
+    
     AP_HAL::UARTDriver *uart;
     uart = serial_manager.find_serial(protocol, instance);
     if (uart == NULL) {
@@ -101,17 +103,30 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
     // and init the gcs instance
     init(uart, mav_chan);
 
-    // load signing key
-    load_signing_key();
-
+    AP_SerialManager::SerialProtocol mavlink_protocol = serialmanager_p->get_mavlink_protocol(mav_chan);
     mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if ((status && status->signing == NULL) ||
-        chan == MAVLINK_COMM_0) {
-        // if signing is off start by sending MAVLink1.
+    if (status == nullptr) {
+        return;
+    }
+    
+    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2) {
+        // load signing key
+        load_signing_key();
+
+        if (status->signing == NULL) {
+            // if signing is off start by sending MAVLink1.
+            status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+        }
+    } else if (status) {
+        // user has asked to only send MAVLink1
+        status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+    }
+
+    if (chan == MAVLINK_COMM_0) {
         // Always start with MAVLink1 on first port for now, to allow for recovery
         // after experiments with MAVLink2
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-    }    
+    }
 }
 
 /**
@@ -939,7 +954,9 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
                 mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
             }
             if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
-                (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+                (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
+                serialmanager_p &&
+                serialmanager_p->get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2) {
                 // if we receive any MAVLink2 packets on a connection
                 // currently sending MAVLink1 then switch to sending
                 // MAVLink2

@@ -313,7 +313,9 @@ private:
 
     // pointer to static dataflash for logging of text messages
     static DataFlash_Class *dataflash_p;
-    
+
+    static const AP_SerialManager *serialmanager_p;
+
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
 
