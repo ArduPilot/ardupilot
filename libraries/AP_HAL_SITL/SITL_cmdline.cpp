@@ -248,6 +248,10 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         }
     }
+    if (sitl_model == nullptr) {
+        printf("Vehicle model (%s) not found\n", model_str);
+        exit(1);
+    }
 
     fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
 
