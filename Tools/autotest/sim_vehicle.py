@@ -37,9 +37,8 @@ class CompatOptionParser(optparse.OptionParser):
 
         optparse.OptionParser.error(self, error)
 
-    def parse_args(self):
+    def parse_args(self, args=None, values=None):
         """Wrap parse_args so we can catch the exception raised upon discovering the known parameter parsing error"""
-        mavproxy_args = []
         try:
             opts, args = optparse.OptionParser.parse_args(self)
         except CompatError as e:
@@ -53,38 +52,37 @@ class CompatOptionParser(optparse.OptionParser):
 
             args = []
             opts = e.opts
-            mavproxy_args = []
-            mavproxy_args.append(str(e)[16:])  # this trims "no such option" off
+            mavproxy_args = [str(e)[16:]]  # this trims "no such option" off
             mavproxy_args.extend(e.rargs)
             opts.ensure_value("mavproxy_args", " ".join(mavproxy_args))
 
         return opts, args
 
 
-def cygwin_pidof(procName):
+def cygwin_pidof(proc_name):
     """ Thanks to kata198 for this:
     https://github.com/kata198/cygwin-ps-misc/blob/master/pidof
     """
-    pipe = subprocess.Popen("ps -ea | grep " + procName, shell=True, stdout=subprocess.PIPE)
-    outputLines = pipe.stdout.read().replace("\r", "").split("\n")
+    pipe = subprocess.Popen("ps -ea | grep " + proc_name, shell=True, stdout=subprocess.PIPE)
+    output_lines = pipe.stdout.read().replace("\r", "").split("\n")
     ret = pipe.wait()
     pids = []
     if ret != 0:
         # No results
         return []
-    for line in outputLines:
+    for line in output_lines:
         if not line:
             continue
-        lineSplit = [item for item in line.split(' ') if item]
-        cmd = lineSplit[-1].split('/')[-1]
-        if cmd == procName:
+        line_split = [item for item in line.split(' ') if item]
+        cmd = line_split[-1].split('/')[-1]
+        if cmd == proc_name:
             try:
-                pid = int(lineSplit[0].strip())
+                pid = int(line_split[0].strip())
             except:
-                pid = int(lineSplit[1].strip())
-            pid = str(pid)
-            if pid not in pids:
-                pids.append(pid)
+                pid = int(line_split[1].strip())
+            str_pid = str(pid)
+            if str_pid not in pids:
+                pids.append(str_pid)
     return pids
 
 
@@ -104,18 +102,8 @@ def kill_tasks_cygwin(victims):
 
 def kill_tasks():
     """Clean up stray processes by name.  This is a somewhat shotgun approach"""
-    victim_names = set([
-        'JSBSim',
-        'lt-JSBSim',
-        'ArduPlane.elf',
-        'ArduCopter.elf',
-        'APMrover2.elf',
-        'AntennaTracker.elf',
-        'JSBSIm.exe',
-        'MAVProxy.exe',
-        'runsim.py',
-        'AntennaTracker.elf',
-    ])
+    victim_names = {'JSBSim', 'lt-JSBSim', 'ArduPlane.elf', 'ArduCopter.elf', 'APMrover2.elf', 'AntennaTracker.elf',
+                    'JSBSIm.exe', 'MAVProxy.exe', 'runsim.py', 'AntennaTracker.elf'}
 
     if under_cygwin():
         return kill_tasks_cygwin(list(victim_names))
@@ -223,38 +211,38 @@ group.add_option("", "--map", default=False, action='store_true', help="load map
 group.add_option("", "--console", default=False, action='store_true', help="load console module on startup")
 parser.add_option_group(group)
 
-opts, args = parser.parse_args()
+cmd_opts, cmd_args = parser.parse_args()
 
-if opts.sim_vehicle_sh_compatible and opts.jobs is None:
-    opts.jobs = 1
+if cmd_opts.sim_vehicle_sh_compatible and cmd_opts.jobs is None:
+    cmd_opts.jobs = 1
 
 # validate parameters
-if opts.hil:
-    if opts.valgrind:
+if cmd_opts.hil:
+    if cmd_opts.valgrind:
         print("May not use valgrind with hil")
         sys.exit(1)
-    if opts.gdb or opts.gdb_stopped:
+    if cmd_opts.gdb or cmd_opts.gdb_stopped:
         print("May not use gdb with hil")
         sys.exit(1)
-    if opts.strace:
+    if cmd_opts.strace:
         print("May not use strace with hil")
         sys.exit(1)
 
-if opts.valgrind and (opts.gdb or opts.gdb_stopped):
+if cmd_opts.valgrind and (cmd_opts.gdb or cmd_opts.gdb_stopped):
     print("May not use valgrind with gdb")
     sys.exit(1)
 
-if opts.strace and (opts.gdb or opts.gdb_stopped):
+if cmd_opts.strace and (cmd_opts.gdb or cmd_opts.gdb_stopped):
     print("May not use strace with gdb")
     sys.exit(1)
 
-if opts.strace and opts.valgrind:
+if cmd_opts.strace and cmd_opts.valgrind:
     print("valgrind and strace almost certainly not a good idea")
 
 # magically determine vehicle type (if required):
-if opts.vehicle is None:
+if cmd_opts.vehicle is None:
     cwd = os.getcwd()
-    opts.vehicle = os.path.basename(cwd)
+    cmd_opts.vehicle = os.path.basename(cwd)
 
 # determine a frame type if not specified:
 default_frame_for_vehicle = {
@@ -265,16 +253,16 @@ default_frame_for_vehicle = {
 }
 
 # try to validate vehicle
-if not default_frame_for_vehicle.has_key(opts.vehicle):
-    progress("** Is (%s) really your vehicle type?  Try  -v VEHICLETYPE  if not, or be in the e.g. ArduCopter subdirectory" % (opts.vehicle,))
+if cmd_opts.vehicle not in default_frame_for_vehicle:
+    progress("** Is (%s) really your vehicle type?  Try  -v VEHICLETYPE  if not, or be in the e.g. ArduCopter subdirectory" % (cmd_opts.vehicle,))
 
 # determine frame options (e.g. build type might be "sitl")
-if opts.frame is None:
-    opts.frame = default_frame_for_vehicle[opts.vehicle]
+if cmd_opts.frame is None:
+    cmd_opts.frame = default_frame_for_vehicle[cmd_opts.vehicle]
 
 # setup ports for this instance
-mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10*opts.instance)
-simout_port = "127.0.0.1:" + str(5501 + 10*opts.instance)
+mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
+simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
 
 """
 make_target: option passed to make to create binaries.  Usually sitl, and "-debug" may be appended if -D is passed to sim_vehicle.py
@@ -404,13 +392,13 @@ def options_for_frame(frame, vehicle, opts):
     if ret is None:
         ret = {}
 
-    if not ret.has_key("model"):
+    if "model" not in ret:
         ret["model"] = frame
 
-    if not ret.has_key("make_target"):
+    if "make_target" not in ret:
         ret["make_target"] = "sitl"
 
-    if not ret.has_key("waf_target"):
+    if "waf_target" not in ret:
         ret["waf_target"] = default_waf_target(vehicle)
 
     if opts.build_target is not None:
@@ -420,7 +408,7 @@ def options_for_frame(frame, vehicle, opts):
     return ret
 
 
-def do_build_waf(vehicledir, opts, frame_options):
+def do_build_waf(opts, frame_options):
     """build sitl using waf"""
     progress("WAF build")
 
@@ -465,7 +453,7 @@ def do_build(vehicledir, opts, frame_options):
     """Build build target (e.g. sitl) in directory vehicledir"""
 
     if opts.build_system == 'waf':
-        return do_build_waf(vehicledir, opts, frame_options)
+        return do_build_waf(opts, frame_options)
 
     old_dir = os.getcwd()
 
@@ -502,7 +490,7 @@ def find_location_by_name(autotest, locname):
         (name, loc) = line.split("=")
         if name == locname:
             return loc
-    print("Failed to find location (%s)" % (opts.location))
+    print("Failed to find location (%s)" % (cmd_opts.location))
     sys.exit(1)
 
 
@@ -544,7 +532,7 @@ def start_antenna_tracker(autotest, opts):
     run_in_terminal_window(autotest, "AntennaTracker", ["nice", exe, "-I" + str(tracker_instance), "--model=tracker", "--home="+tracker_home])
 
 
-def start_vehicle(vehicle_binary, autotest, opts, stuff, loc):
+def start_vehicle(binary, autotest, opts, stuff, loc):
     """Run the ArduPilot binary"""
 
     cmd_name = opts.vehicle
@@ -567,10 +555,10 @@ def start_vehicle(vehicle_binary, autotest, opts, stuff, loc):
     if opts.strace:
         cmd_name += " (strace)"
         cmd.append("strace")
-        strace_options = ['-o', vehicle_binary + '.strace', '-s', '8000', '-ttt']
+        strace_options = ['-o', binary + '.strace', '-s', '8000', '-ttt']
         cmd.extend(strace_options)
 
-    cmd.append(vehicle_binary)
+    cmd.append(binary)
     cmd.append("-S")
     cmd.append("-I"+str(opts.instance))
     cmd.extend(["--home", loc])
@@ -582,7 +570,7 @@ def start_vehicle(vehicle_binary, autotest, opts, stuff, loc):
         cmd.extend(opts.sitl_instance_args.split(" "))  # this could be a lot better..
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
-    if stuff.has_key("default_params_filename"):
+    if "default_params_filename" in stuff:
         path = os.path.join(autotest, stuff["default_params_filename"])
         progress("Using defaults from (%s)" % (path,))
         cmd.extend(["--defaults", path])
@@ -622,7 +610,7 @@ def start_mavproxy(opts, stuff):
     if opts.mavlink_gimbal:
         cmd.extend(["--load-module", "gimbal"])
 
-    if stuff.has_key("extra_mavlink_cmds"):
+    if "extra_mavlink_cmds" in stuff:
         extra_cmd += " " + stuff["extra_mavlink_cmds"]
 
     if opts.mavproxy_args:
@@ -643,56 +631,56 @@ def start_mavproxy(opts, stuff):
     run_cmd_blocking("Run MavProxy", cmd)
     progress("MAVProxy exitted")
 
-frame_options = options_for_frame(opts.frame, opts.vehicle, opts)
+frame_infos = options_for_frame(cmd_opts.frame, cmd_opts.vehicle, cmd_opts)
 
-if frame_options["model"] == "jsbsim":
+if frame_infos["model"] == "jsbsim":
     check_jsbsim_version()
 
-vehicledir = os.path.realpath(os.path.join(find_root_dir(), opts.vehicle))
-if not os.path.exists(vehicledir):
-    print("vehicle directory (%s) does not exist" % (vehicledir,))
+vehicle_dir = os.path.realpath(os.path.join(find_root_dir(), cmd_opts.vehicle))
+if not os.path.exists(vehicle_dir):
+    print("vehicle directory (%s) does not exist" % (vehicle_dir,))
     sys.exit(1)
 
-if not opts.hil:
-    if opts.instance == 0:
+if not cmd_opts.hil:
+    if cmd_opts.instance == 0:
         kill_tasks()
 
-if opts.tracker:
-    start_antenna_tracker(find_autotest_dir(), opts)
+if cmd_opts.tracker:
+    start_antenna_tracker(find_autotest_dir(), cmd_opts)
 
-if opts.custom_location:
-    loc = opts.custom_location
-    progress("Starting up at %s" % (loc,))
+if cmd_opts.custom_location:
+    location = cmd_opts.custom_location
+    progress("Starting up at %s" % (location,))
 else:
-    loc = find_location_by_name(find_autotest_dir(), opts.location)
-    progress("Starting up at %s (%s)" % (loc, opts.location))
+    location = find_location_by_name(find_autotest_dir(), cmd_opts.location)
+    progress("Starting up at %s (%s)" % (location, cmd_opts.location))
 
-if opts.hil:
+if cmd_opts.hil:
     # (unlikely)
-    run_in_terminal_window(find_autotest_dir(), "JSBSim", [os.path.join(find_autotest_dir(), "jsb_sim/runsim.py"), "--home", loc, "--speedup=" + str(opts.speedup)])
+    run_in_terminal_window(find_autotest_dir(), "JSBSim", [os.path.join(find_autotest_dir(), "jsb_sim/runsim.py"), "--home", location, "--speedup=" + str(cmd_opts.speedup)])
 else:
-    if not opts.no_rebuild:  # i.e. we should rebuild
-        do_build(vehicledir, opts, frame_options)
+    if not cmd_opts.no_rebuild:  # i.e. we should rebuild
+        do_build(vehicle_dir, cmd_opts, frame_infos)
 
-    if opts.build_system == "waf":
-        if opts.debug:
+    if cmd_opts.build_system == "waf":
+        if cmd_opts.debug:
             binary_basedir = "build/sitl-debug"
         else:
             binary_basedir = "build/sitl"
-        vehicle_binary = os.path.join(find_root_dir(), binary_basedir, frame_options["waf_target"])
+        vehicle_binary = os.path.join(find_root_dir(), binary_basedir, frame_infos["waf_target"])
     else:
-        vehicle_binary = os.path.join(vehicledir, opts.vehicle+".elf")
+        vehicle_binary = os.path.join(vehicle_dir, cmd_opts.vehicle + ".elf")
 
     if not os.path.exists(vehicle_binary):
         print("Vehicle binary (%s) does not exist" % (vehicle_binary,))
         sys.exit(1)
 
-    start_vehicle(vehicle_binary, find_autotest_dir(), opts, frame_options, loc)
+    start_vehicle(vehicle_binary, find_autotest_dir(), cmd_opts, frame_infos, location)
 
-if opts.delay_start:
-    progress("Sleeping for %f seconds" % (opts.delay_start,))
-    time.sleep(float(opts.delay_start))
+if cmd_opts.delay_start:
+    progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
+    time.sleep(float(cmd_opts.delay_start))
 
-start_mavproxy(opts, frame_options)
+start_mavproxy(cmd_opts, frame_infos)
 
 sys.exit(0)
