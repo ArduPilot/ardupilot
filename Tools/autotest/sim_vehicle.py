@@ -113,6 +113,8 @@ def kill_tasks():
 
     import psutil
     for proc in psutil.process_iter():
+        if proc.status() == psutil.STATUS_ZOMBIE:
+            continue
         if proc.name() in victim_names:
             proc.kill()
 
