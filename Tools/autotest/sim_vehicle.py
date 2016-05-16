@@ -123,7 +123,12 @@ def check_jsbsim_version():
     '''assert that the JSBSim we will run is the one we expect to run'''
     jsbsim_cmd = ["JSBSim", "--version"]
     progress_cmd("Get JSBSim version", jsbsim_cmd)
-    jsbsim_version = subprocess.Popen(jsbsim_cmd, stdout=subprocess.PIPE).communicate()[0]
+    try:
+        jsbsim_version = subprocess.Popen(jsbsim_cmd, stdout=subprocess.PIPE).communicate()[0]
+    except OSError as e:
+        jsbsim_version = '' # this value will trigger the ".index"
+                            # check below and produce a reasonable
+                            # error message
     try:
         jsbsim_version.index("ArduPilot")
     except ValueError:
