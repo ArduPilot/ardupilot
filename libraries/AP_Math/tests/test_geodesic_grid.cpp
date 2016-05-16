@@ -47,7 +47,7 @@ protected:
      *
      * @param p[in] The test parameter.
      */
-    void test_triangles_indexes(const TestParam& p) {
+    void test_triangles_indexes(const TestParam &p) {
         if (p.section >= 0) {
             int expected_triangle =
                     p.section / AP_GeodesicGrid::NUM_SUBTRIANGLES;
@@ -96,39 +96,39 @@ static const Vector3f triangles[20][3] = {
 };
 
 static bool section_triangle(unsigned int section_index,
-                             Vector3f& a,
-                             Vector3f& b,
-                             Vector3f& c) {
+                             Vector3f &a,
+                             Vector3f &b,
+                             Vector3f &c) {
     if (section_index >= 80) {
         return false;
     }
 
     unsigned int i = section_index / 4;
     unsigned int j = section_index % 4;
-    auto& t = triangles[i];
+    auto &t = triangles[i];
     Vector3f mt[3]{(t[0] + t[1]) / 2, (t[1] + t[2]) / 2, (t[2] + t[0]) / 2};
 
     switch (j) {
-        case 0:
-            a = mt[0];
-            b = mt[1];
-            c = mt[2];
-            break;
-        case 1:
-            a = t[0];
-            b = mt[0];
-            c = mt[2];
-            break;
-        case 2:
-            a = mt[0];
-            b = t[1];
-            c = mt[1];
-            break;
-        case 3:
-            a = mt[2];
-            b = mt[1];
-            c = t[2];
-            break;
+    case 0:
+        a = mt[0];
+        b = mt[1];
+        c = mt[2];
+        break;
+    case 1:
+        a = t[0];
+        b = mt[0];
+        c = mt[2];
+        break;
+    case 2:
+        a = mt[0];
+        b = t[1];
+        c = mt[1];
+        break;
+    case 3:
+        a = mt[2];
+        b = mt[1];
+        c = t[2];
+        break;
     }
 
     return true;

@@ -123,7 +123,7 @@ public:
      * the null vector or the section isn't found, which might happen when \p
      * inclusive is false.
      */
-    static int section(const Vector3f& v, const bool inclusive = false);
+    static int section(const Vector3f &v, bool inclusive = false);
 
 private:
     /*
@@ -235,8 +235,8 @@ private:
      *
      * @return The icosahedron triangle's index of the component.
      */
-    static int _neighbor_umbrella_component(int umbrella_index,
-                                            int component_index);
+    static int _neighbor_umbrella_component(int umbrella_index, int component_idx);
+
     /**
      * Find the icosahedron triangle index of the component of
      * #_neighbor_umbrellas[umbrella_index] that is crossed by \p v.
@@ -257,8 +257,8 @@ private:
      * happen when \p inclusive is false.
      */
     static int _from_neighbor_umbrella(int umbrella_index,
-                                       const Vector3f& v,
-                                       const Vector3f& u,
+                                       const Vector3f &v,
+                                       const Vector3f &u,
                                        bool inclusive);
 
     /**
@@ -272,7 +272,7 @@ private:
      * @return The index of the triangle. The value -1 is returned if the
      * triangle isn't found, which might happen when \p inclusive is false.
      */
-    static int _triangle_index(const Vector3f& v, const bool inclusive);
+    static int _triangle_index(const Vector3f &v, bool inclusive);
 
     /**
      * Find which sub-triangle of the icosahedron's triangle pointed by \p
@@ -293,6 +293,6 @@ private:
      * triangle isn't found, which might happen when \p inclusive is false.
      */
     static int _subtriangle_index(const unsigned int triangle_index,
-                                  const Vector3f& v,
-                                  const bool inclusive);
+                                  const Vector3f &v,
+                                  bool inclusive);
 };
