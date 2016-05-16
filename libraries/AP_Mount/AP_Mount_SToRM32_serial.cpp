@@ -3,11 +3,7 @@
 #include "AP_Mount_SToRM32_serial.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#if MAVLINK_PROTOCOL_VERSION == 2
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#else
-#include <GCS_MAVLink/include/mavlink/v1.0/checksum.h>
-#endif
 #include <AP_HAL/utility/RingBuffer.h>
 
 extern const AP_HAL::HAL& hal;
