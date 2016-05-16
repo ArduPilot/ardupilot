@@ -36,31 +36,21 @@ void Tracker::init_tracker()
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
-    // init the GCS and start snooping for vehicle data
-    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
-    gcs[0].set_snoop(mavlink_snoop_static);
-
-    // Register mavlink_delay_cb, which will run anytime you have
-    // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
     usb_connected = true;
     check_usb_mux();
 
-    // setup serial port for telem1 and start snooping for vehicle data
-    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
-    gcs[1].set_snoop(mavlink_snoop_static);
+    // setup telem slots with serial ports
+    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+        gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
+        gcs[i].set_snoop(mavlink_snoop_static);
+    }
 
-    // setup serial port for telem2 and start snooping for vehicle data
-    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
-    gcs[2].set_snoop(mavlink_snoop_static);
-
-    // setup serial port for fourth telemetry port (not used by default) and start snooping for vehicle data
-    gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
-    gcs[3].set_snoop(mavlink_snoop_static);
-
+    // Register mavlink_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+    
     mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
