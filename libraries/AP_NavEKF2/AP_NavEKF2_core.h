@@ -871,7 +871,7 @@ private:
     uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
-    // flags indicating severw numerical errors in innovation variance calculation for different fusion operations
+    // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
         bool bad_xmag:1;
         bool bad_ymag:1;
@@ -886,6 +886,8 @@ private:
         bool bad_dpos:1;
         bool bad_yaw:1;
         bool bad_decl:1;
+        bool bad_xflow:1;
+        bool bad_yflow:1;
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing
