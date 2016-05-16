@@ -419,7 +419,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        rover.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();        
+        last_heartbeat_time = AP_HAL::millis();        
         rover.send_heartbeat(chan);
         return true;
 
@@ -427,12 +427,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
         rover.send_extended_status1(chan);
         CHECK_PAYLOAD_SIZE(POWER_STATUS);
-        rover.gcs[chan-MAVLINK_COMM_0].send_power_status();
+        send_power_status();
         break;
 
     case MSG_EXTENDED_STATUS2:
         CHECK_PAYLOAD_SIZE(MEMINFO);
-        rover.gcs[chan-MAVLINK_COMM_0].send_meminfo();
+        send_meminfo();
         break;
 
     case MSG_ATTITUDE:
@@ -459,12 +459,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        rover.gcs[chan-MAVLINK_COMM_0].send_gps_raw(rover.gps);
+        send_gps_raw(rover.gps);
         break;
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        rover.gcs[chan-MAVLINK_COMM_0].send_system_time(rover.gps);
+        send_system_time(rover.gps);
         break;
 
     case MSG_SERVO_OUT:
@@ -474,7 +474,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        rover.gcs[chan-MAVLINK_COMM_0].send_radio_in(rover.receiver_rssi);
+        send_radio_in(rover.receiver_rssi);
         break;
 
     case MSG_RADIO_OUT:
@@ -489,12 +489,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        rover.gcs[chan-MAVLINK_COMM_0].send_raw_imu(rover.ins, rover.compass);
+        send_raw_imu(rover.ins, rover.compass);
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        rover.gcs[chan-MAVLINK_COMM_0].send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
+        send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
         break;
 
     case MSG_CURRENT_WAYPOINT:
@@ -504,12 +504,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        rover.gcs[chan-MAVLINK_COMM_0].queued_param_send();
+        queued_param_send();
         break;
 
     case MSG_NEXT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        rover.gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
+        queued_waypoint_send();
         break;
 
     case MSG_STATUSTEXT:
@@ -518,7 +518,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        rover.gcs[chan-MAVLINK_COMM_0].send_ahrs(rover.ahrs);
+        send_ahrs(rover.ahrs);
         break;
 
     case MSG_SIMSTATE:
@@ -557,7 +557,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
-        rover.gcs[chan-MAVLINK_COMM_0].send_battery2(rover.battery);
+        send_battery2(rover.battery);
         break;
 
     case MSG_CAMERA_FEEDBACK:
@@ -1079,7 +1079,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
             if (is_equal(packet.param1,1.0f)) {
-                rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+                send_autopilot_version(FIRMWARE_VERSION);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1374,7 +1374,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+        send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     } // end switch
