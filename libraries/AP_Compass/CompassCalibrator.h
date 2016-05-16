@@ -18,6 +18,8 @@ enum compass_cal_status_t {
 
 class CompassCalibrator {
 public:
+    typedef uint8_t completion_mask_t[10];
+
     CompassCalibrator();
 
     void start(bool retry=false, bool autosave=false, float delay=0.0f);
@@ -35,6 +37,7 @@ public:
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
 
     float get_completion_percent() const;
+    completion_mask_t& get_completion_mask();
     enum compass_cal_status_t get_status() const { return _status; }
     float get_fitness() const { return sqrtf(_fitness); }
     bool get_autosave() const { return _autosave; }
@@ -82,6 +85,8 @@ private:
     float _tolerance;
     uint8_t _attempt;
 
+    completion_mask_t _completion_mask;
+
     //fit state
     class param_t _params;
     uint16_t _fit_step;
@@ -119,6 +124,18 @@ private:
 
     void calc_ellipsoid_jacob(const Vector3f& sample, const param_t& params, float* ret) const;
     void run_ellipsoid_fit();
+
+    /**
+     * Update #_completion_mask for the geodesic section of \p v. Corrections
+     * are applied to \p v with #_params.
+     *
+     * @param v[in] A vector representing one calibration sample.
+     */
+    void update_completion_mask(const Vector3f& v);
+    /**
+     * Reset and update #_completion_mask with the current samples.
+     */
+    void update_completion_mask();
 
     uint16_t get_random();
 };
