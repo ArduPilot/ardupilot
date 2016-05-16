@@ -97,7 +97,7 @@ void Copter::rtl_climb_start()
     wp_nav.wp_and_spline_init();
 
     // RTL_SPEED == 0 means use WPNAV_SPEED
-    if (!is_zero(g.rtl_speed_cms)) {
+    if (g.rtl_speed_cms != 0) {
         wp_nav.set_speed_xy(g.rtl_speed_cms);
     }
 
