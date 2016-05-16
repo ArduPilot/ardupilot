@@ -1580,3 +1580,17 @@ void GCS_MAVLINK::send_home_all(const Location &home)
         }
     }
 }
+
+/*
+  wrapper for sending heartbeat
+ */
+void GCS_MAVLINK::send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status)
+{
+    mavlink_msg_heartbeat_send(
+        chan,
+        type,
+        MAV_AUTOPILOT_ARDUPILOTMEGA,
+        base_mode,
+        custom_mode,
+        system_status);
+}
