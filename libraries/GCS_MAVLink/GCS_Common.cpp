@@ -211,10 +211,7 @@ void GCS_MAVLINK::send_meminfo(void)
 {
     unsigned __brkval = 0;
     uint32_t memory = hal.util->available_memory();
-    if (memory > 0xffff) {
-        memory = 0xffff;
-    }
-    mavlink_msg_meminfo_send(chan, __brkval, memory);
+    mavlink_msg_meminfo_send(chan, __brkval, memory & 0xFFFF, memory);
 }
 
 // report power supply status
