@@ -1381,7 +1381,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
     ahrs.get_NavEKF2().getVariances(0,velVar, posVar, hgtVar, magVar, tasVar, offset);
-    float magLength = magVar.length();
+    float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
     ahrs.get_NavEKF2().getFilterFaults(0,faultStatus);
     ahrs.get_NavEKF2().getFilterTimeouts(0,timeoutStatus);
     ahrs.get_NavEKF2().getFilterStatus(0,solutionStatus);
@@ -1395,7 +1395,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         sqrtvarV : (int16_t)(100*velVar),
         sqrtvarP : (int16_t)(100*posVar),
         sqrtvarH : (int16_t)(100*hgtVar),
-        sqrtvarM : (int16_t)(100*magLength),
+        sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
         tiltErr : (float)tiltError,
         offsetNorth : (int8_t)(offset.x),
@@ -1509,7 +1509,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 
         // Write 9th EKF packet
         ahrs.get_NavEKF2().getVariances(1,velVar, posVar, hgtVar, magVar, tasVar, offset);
-        magLength = magVar.length();
+        tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
         ahrs.get_NavEKF2().getFilterFaults(1,faultStatus);
         ahrs.get_NavEKF2().getFilterTimeouts(1,timeoutStatus);
         ahrs.get_NavEKF2().getFilterStatus(1,solutionStatus);
@@ -1521,7 +1521,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             sqrtvarV : (int16_t)(100*velVar),
             sqrtvarP : (int16_t)(100*posVar),
             sqrtvarH : (int16_t)(100*hgtVar),
-            sqrtvarM : (int16_t)(100*magLength),
+            sqrtvarM : (int16_t)(100*tempVar),
             sqrtvarVT : (int16_t)(100*tasVar),
             tiltErr : (float)tiltError,
             offsetNorth : (int8_t)(offset.x),
