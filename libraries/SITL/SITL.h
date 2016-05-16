@@ -48,7 +48,8 @@ public:
         GPS_TYPE_MTK19 = 4,
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SBP   = 6,
-        GPS_TYPE_FILE  = 7
+        GPS_TYPE_FILE  = 7,
+        GPS_TYPE_NOVA  = 8,
     };
 
     struct sitl_fdm state;

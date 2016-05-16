@@ -70,6 +70,7 @@ public:
 		GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
+		GPS_TYPE_NOVA = 15,
     };
 
     /// GPS status codes
