@@ -29,11 +29,7 @@ This provides some support code and variables for MAVLink enabled sketches
 
 
 #ifdef MAVLINK_SEPARATE_HELPERS
-#if MAVLINK_PROTOCOL_VERSION == 2
 #include "include/mavlink/v2.0/mavlink_helpers.h"
-#else
-#include "include/mavlink/v1.0/mavlink_helpers.h"
-#endif
 #endif
 
 AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];

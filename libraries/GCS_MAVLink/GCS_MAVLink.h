@@ -24,19 +24,11 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
 
-#if MAVLINK_PROTOCOL_VERSION == 2
 #include "include/mavlink/v2.0/ardupilotmega/version.h"
-#else
-#include "include/mavlink/v1.0/ardupilotmega/version.h"
-#endif
 
 #define MAVLINK_MAX_PAYLOAD_LEN 255
 
-#if MAVLINK_PROTOCOL_VERSION == 2
 #include "include/mavlink/v2.0/mavlink_types.h"
-#else
-#include "include/mavlink/v1.0/mavlink_types.h"
-#endif
 
 /// MAVLink stream used for uartA
 extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
@@ -97,11 +89,7 @@ uint16_t comm_get_txspace(mavlink_channel_t chan);
 bool comm_is_idle(mavlink_channel_t chan);
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
-#if MAVLINK_PROTOCOL_VERSION == 2
 #include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
-#else
-#include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
-#endif
 
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t);
