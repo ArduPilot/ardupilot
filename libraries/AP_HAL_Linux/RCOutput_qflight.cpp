@@ -25,11 +25,7 @@
 #include "RCOutput_qflight.h"
 #include <AP_HAL_Linux/qflight/qflight_util.h>
 #include <AP_HAL_Linux/qflight/qflight_dsp.h>
-#if MAVLINK_PROTOCOL_VERSION == 2
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#else
-#include <GCS_MAVLink/include/mavlink/v1.0/checksum.h>
-#endif
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
