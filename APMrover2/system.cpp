@@ -108,22 +108,15 @@ void Rover::init_ardupilot()
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
-    // init the GCS
-    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
-
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
     usb_connected = true;
     check_usb_mux();
 
-    // setup serial port for telem1
-    gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
-
-    // setup serial port for telem2
-    gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
-
-    // setup serial port for fourth telemetry port (not used by default)
-    gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
+    // setup telem slots with serial ports
+    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+        gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
+    }
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
