@@ -3918,10 +3918,6 @@ void NavEKF_core::readIMUData()
         // just read primary gyro
         readDeltaAngle(ins.get_primary_gyro(), dAngIMU);
     }
-    //debug testing
-    if (imuSampleTime_ms > 300E3) {
-        dAngIMU.x += 0.01745f * dtDelAng;
-    }
 
 }
 
