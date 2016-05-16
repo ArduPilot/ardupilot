@@ -53,13 +53,10 @@ void Tracker::send_heartbeat(mavlink_channel_t chan)
         break;
     }
 
-    mavlink_msg_heartbeat_send(
-        chan,
-        MAV_TYPE_ANTENNA_TRACKER,
-        MAV_AUTOPILOT_ARDUPILOTMEGA,
-        base_mode,
-        custom_mode,
-        system_status);
+    gcs[chan-MAVLINK_COMM_0].send_heartbeat(MAV_TYPE_ANTENNA_TRACKER,
+                                            base_mode,
+                                            custom_mode,
+                                            system_status);
 }
 
 void Tracker::send_attitude(mavlink_channel_t chan)
