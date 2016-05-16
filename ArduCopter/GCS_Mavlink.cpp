@@ -2062,11 +2062,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
         break;
 
-#if MAVLINK_PROTOCOL_VERSION >= 2
     case MAVLINK_MSG_ID_SETUP_SIGNING:
         handle_setup_signing(msg);
         break;
-#endif
         
     }     // end switch
 } // end handle mavlink
