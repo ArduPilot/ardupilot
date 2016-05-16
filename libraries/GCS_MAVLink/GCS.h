@@ -163,6 +163,7 @@ public:
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
     static void send_home_all(const Location &home);
+    void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
