@@ -19,6 +19,8 @@
  # define Debug(fmt, args ...)
 #endif
 
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 
@@ -526,7 +528,7 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
     if (!_initialised) {
        return false;
     }
-    if (comm_get_txspace(chan) < MAVLINK_MSG_ID_REMOTE_LOG_DATA_BLOCK_LEN) {
+    if (!HAVE_PAYLOAD_SPACE(chan, REMOTE_LOG_DATA_BLOCK)) {
         return false;
     }
     if (comm_get_txspace(chan) < 500) {
