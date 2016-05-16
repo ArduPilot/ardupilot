@@ -79,3 +79,10 @@ private:
 
     bool save_message_type(const char *name);
 };
+
+// some vars are difficult to get through the layers
+struct globals {
+    bool no_params;
+};
+
+extern struct globals globals;
