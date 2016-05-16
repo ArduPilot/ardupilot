@@ -534,7 +534,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch(id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        copter.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();
+        last_heartbeat_time = AP_HAL::millis();
         copter.send_heartbeat(chan);
         break;
 
@@ -545,13 +545,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
             CHECK_PAYLOAD_SIZE(SYS_STATUS);
             copter.send_extended_status1(chan);
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
-            copter.gcs[chan-MAVLINK_COMM_0].send_power_status();
+            send_power_status();
         }
         break;
 
     case MSG_EXTENDED_STATUS2:
         CHECK_PAYLOAD_SIZE(MEMINFO);
-        copter.gcs[chan-MAVLINK_COMM_0].send_meminfo();
+        send_meminfo();
         break;
 
     case MSG_ATTITUDE:
@@ -575,11 +575,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_GPS_RAW:
-        return copter.gcs[chan-MAVLINK_COMM_0].send_gps_raw(copter.gps);
+        return send_gps_raw(copter.gps);
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        copter.gcs[chan-MAVLINK_COMM_0].send_system_time(copter.gps);
+        send_system_time(copter.gps);
         break;
 
     case MSG_SERVO_OUT:
@@ -589,7 +589,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        copter.gcs[chan-MAVLINK_COMM_0].send_radio_in(copter.receiver_rssi);
+        send_radio_in(copter.receiver_rssi);
         break;
 
     case MSG_RADIO_OUT:
@@ -604,17 +604,17 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
-        copter.gcs[chan-MAVLINK_COMM_0].send_raw_imu(copter.ins, copter.compass);
+        send_raw_imu(copter.ins, copter.compass);
         break;
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        copter.gcs[chan-MAVLINK_COMM_0].send_scaled_pressure(copter.barometer);
+        send_scaled_pressure(copter.barometer);
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        copter.gcs[chan-MAVLINK_COMM_0].send_sensor_offsets(copter.ins, copter.compass, copter.barometer);
+        send_sensor_offsets(copter.ins, copter.compass, copter.barometer);
         break;
 
     case MSG_CURRENT_WAYPOINT:
@@ -624,12 +624,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        copter.gcs[chan-MAVLINK_COMM_0].queued_param_send();
+        queued_param_send();
         break;
 
     case MSG_NEXT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        copter.gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
+        queued_waypoint_send();
         break;
 
     case MSG_RANGEFINDER:
@@ -671,7 +671,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
-        copter.gcs[chan-MAVLINK_COMM_0].send_ahrs(copter.ahrs);
+        send_ahrs(copter.ahrs);
         break;
 
     case MSG_SIMSTATE:
@@ -680,7 +680,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         copter.send_simstate(chan);
 #endif
         CHECK_PAYLOAD_SIZE(AHRS2);
-        copter.gcs[chan-MAVLINK_COMM_0].send_ahrs2(copter.ahrs);
+        send_ahrs2(copter.ahrs);
         break;
 
     case MSG_HWSTATUS:
@@ -697,13 +697,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
-        copter.gcs[chan-MAVLINK_COMM_0].send_battery2(copter.battery);
+        send_battery2(copter.battery);
         break;
 
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        copter.gcs[chan-MAVLINK_COMM_0].send_opticalflow(copter.ahrs, copter.optflow);
+        send_opticalflow(copter.ahrs, copter.optflow);
 #endif
         break;
 
@@ -1542,7 +1542,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
             if (is_equal(packet.param1,1.0f)) {
-                copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+                send_autopilot_version(FIRMWARE_VERSION);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -2017,7 +2017,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
+        send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     case MAVLINK_MSG_ID_LED_CONTROL:
