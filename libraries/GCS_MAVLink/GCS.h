@@ -357,7 +357,6 @@ private:
     // return true if this channel has hardware flow control
     bool have_flow_control(void);
 
-#if MAVLINK_PROTOCOL_VERSION >= 2
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
     static uint32_t last_signing_save_ms;
@@ -370,9 +369,4 @@ private:
     bool signing_enabled(void) const;
     uint8_t packet_overhead(void) const { return packet_overhead_chan(chan); }
     static void save_signing_timestamp(bool force_save_now);
-#else 
-    bool signing_enabled(void) const { return false; }
-    uint8_t packet_overhead(void) const { return MAVLINK_NUM_NON_PAYLOAD_BYTES; }
-    static void save_signing_timestamp(bool force_save_now) {}
-#endif // MAVLINK_PROTOCOL_VERSION
 };

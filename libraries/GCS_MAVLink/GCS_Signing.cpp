@@ -21,8 +21,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if MAVLINK_PROTOCOL_VERSION >= 2
-
 // storage object
 StorageAccess GCS_MAVLINK::_signing_storage(StorageManager::StorageKeys);
 
@@ -243,11 +241,3 @@ uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
     return MAVLINK_NUM_NON_PAYLOAD_BYTES;
 }
 
-#else
-void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec) {}
-
-uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
-{
-    return MAVLINK_NUM_NON_PAYLOAD_BYTES;
-}
-#endif // MAVLINK_PROTOCOL_VERSION
