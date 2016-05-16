@@ -288,7 +288,6 @@ private:
         alexmos_angles angles;
         alexmos_params params;
         alexmos_angles_speed angle_speed;
-        uint8_t bytes[];
     } _buffer,_current_parameters;
 
     AP_HAL::UARTDriver *_port;

@@ -145,7 +145,6 @@ private:
     union PACKED SToRM32_reply {
         SToRM32_reply_data_struct data;
         SToRM32_reply_ack_struct ack;
-        uint8_t bytes[];
     } _buffer;
 
     // keep the last _current_angle values

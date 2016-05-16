@@ -90,7 +90,6 @@ private:
         erb_stat stat;
         erb_dops dops;
         erb_vel vel;
-        uint8_t bytes[];
     } _buffer;
 
     enum erb_protocol_bytes {
