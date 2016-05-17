@@ -14,7 +14,7 @@
 #endif
 
 #ifndef DRIFT_THR_ASSIST_GAIN
- # define DRIFT_THR_ASSIST_GAIN 1.8f    // gain controlling amount of throttle assistance
+ # define DRIFT_THR_ASSIST_GAIN 0.0018f    // gain controlling amount of throttle assistance
 #endif
 
 #ifndef DRIFT_THR_ASSIST_MAX
