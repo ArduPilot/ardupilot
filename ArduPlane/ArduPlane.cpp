@@ -843,7 +843,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted via throttle. Climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
@@ -914,9 +914,6 @@ void Plane::update_alt()
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
                                                  aerodynamic_load_factor);
-        if (should_log(MASK_LOG_TECS)) {
-            Log_Write_TECS_Tuning();
-        }
     }
 }
 
@@ -947,7 +944,8 @@ void Plane::update_flight_stage(void)
                     bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
                     bool on_flight_line = abs(nav_controller->crosstrack_error() < 5) && !nav_controller->data_is_stale();
                     bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
-                    if ((auto_state.wp_proportion >= 0 && heading_lined_up && on_flight_line) ||
+                    if ((mission.get_prev_nav_cmd_id() == MAV_CMD_NAV_LOITER_TO_ALT) ||
+                        (auto_state.wp_proportion >= 0 && heading_lined_up && on_flight_line) ||
                         (auto_state.wp_proportion > 0.15f && heading_lined_up && below_prev_WP) ||
                         (auto_state.wp_proportion > 0.5f)) {
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);

@@ -609,7 +609,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=120):
     mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
 
     # continue with the mission
-    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500, mode='AUTO')
+    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
 
     # wait for arrival back home
     m = mav.recv_match(type='VFR_HUD', blocking=True)
@@ -800,8 +800,12 @@ def fly_auto_test(mavproxy, mav):
     mavproxy.send('rc 3 1500\n')
 
     # fly the mission
-    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500, mode='AUTO')
+    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
 
+    # land if mission failed
+    if ret == False:
+        land(mavproxy, mav)
+    
     # set throttle to minimum
     mavproxy.send('rc 3 1000\n')
 
@@ -834,7 +838,7 @@ def fly_avc_test(mavproxy, mav):
     mavproxy.send('rc 3 1500\n')
 
     # fly the mission
-    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500, mode='AUTO')
+    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
 
     # set throttle to minimum
     mavproxy.send('rc 3 1000\n')
@@ -865,7 +869,7 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     mavproxy.send('wp set 1\n')
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
-    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500, mode='AUTO')
+    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
     expect_msg = "Reached command #%u" % (num_wp-1)
     if (ret):
         mavproxy.expect(expect_msg)

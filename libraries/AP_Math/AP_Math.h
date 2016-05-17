@@ -27,9 +27,15 @@ AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 template <class FloatOne, class FloatTwo>
 bool is_equal(const FloatOne, const FloatTwo);
 
-// is a float is zero
-static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
-
+/* 
+ * @brief: Check whether a float is zero
+ */
+template <class T>
+inline bool is_zero(const T fVal1) {
+    static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
+                  "Template parameter not of type float");
+    return fabsf(fVal1) < std::numeric_limits<T>::epsilon() ? true : false;
+}
 
 /*
  * A variant of asin() that checks the input ranges and ensures a valid angle

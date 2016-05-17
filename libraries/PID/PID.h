@@ -113,7 +113,7 @@ private:
 
     /// Low pass filter cut frequency for derivative calculation.
     ///
-    /// 20 Hz becasue anything over that is probably noise, see
+    /// 20 Hz because anything over that is probably noise, see
     /// http://en.wikipedia.org/wiki/Low-pass_filter.
     ///
     static const uint8_t        _fCut = 20;

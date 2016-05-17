@@ -41,21 +41,8 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
 };
 
 // default constructor
-OpticalFlow::OpticalFlow(AP_AHRS_NavEKF& ahrs) :
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    backend(new AP_OpticalFlow_PX4(*this)),
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    backend(new AP_OpticalFlow_HIL(*this)),
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    backend(new AP_OpticalFlow_Onboard(*this, ahrs)),
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    backend(new AP_OpticalFlow_Linux(*this, hal.i2c_mgr->get_device(HAL_OPTFLOW_PX4FLOW_I2C_BUS, HAL_OPTFLOW_PX4FLOW_I2C_ADDRESS))),
-#else
-    backend(NULL),
-#endif
-    _last_update_ms(0)
+OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
+    : _last_update_ms(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -63,10 +50,26 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF& ahrs) :
 
     // healthy flag will be overwritten on update
     _flags.healthy = false;
-};
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    backend = new AP_OpticalFlow_Onboard(*this, ahrs);
+#endif
+}
 
 void OpticalFlow::init(void)
 {
+    if (!backend) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        backend = new AP_OpticalFlow_PX4(*this);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        backend = new AP_OpticalFlow_HIL(*this);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+        backend = new AP_OpticalFlow_Linux(*this, hal.i2c_mgr->get_device(HAL_OPTFLOW_PX4FLOW_I2C_BUS, HAL_OPTFLOW_PX4FLOW_I2C_ADDRESS));
+#endif
+    }
+
     if (backend != NULL) {
         backend->init();
     } else {

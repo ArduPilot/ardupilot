@@ -145,7 +145,7 @@ public:
     // write optical flow measurements to EKF
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
 
-    // inibit GPS useage
+    // inibit GPS usage
     uint8_t setInhibitGPS(void);
 
     // get speed limit

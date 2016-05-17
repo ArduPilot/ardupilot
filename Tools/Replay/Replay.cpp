@@ -102,6 +102,8 @@ private:
 
 ReplayVehicle replayvehicle;
 
+struct globals globals;
+
 #define GSCALAR(v, name, def) { replayvehicle.g.v.vtype, name, Parameters::k_param_ ## v, &replayvehicle.g.v, {def_value : def} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replayvehicle.v, {group_info : class::var_info} }
@@ -322,6 +324,7 @@ void Replay::usage(void)
     ::printf("\t--nottypes         list of msg types not to output, comma separated\n");
     ::printf("\t--downsample       downsampling rate for output\n");
     ::printf("\t--logmatch         match logging rate to source\n");
+    ::printf("\t--no-params        don't use parameters from the log\n");
 }
 
 
@@ -333,7 +336,8 @@ enum {
     OPT_TOLERANCE_VEL,
     OPT_NOTTYPES,
     OPT_DOWNSAMPLE,
-    OPT_LOGMATCH
+    OPT_LOGMATCH,
+    OPT_NOPARAMS,
 };
 
 void Replay::flush_dataflash(void) {
@@ -386,6 +390,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"nottypes",        true,   0, OPT_NOTTYPES},
         {"downsample",      true,   0, OPT_DOWNSAMPLE},
         {"logmatch",        false,  0, OPT_LOGMATCH},
+        {"no-params",       false,  0, OPT_NOPARAMS},
         {0, false, 0, 0}
     };
 
@@ -458,6 +463,10 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
         case OPT_LOGMATCH:
             logmatch = true;
+            break;
+
+        case OPT_NOPARAMS:
+            globals.no_params = true;
             break;
             
         case 'h':

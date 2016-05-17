@@ -158,7 +158,7 @@ The changes in this release are:
  - improved NavIO2 support
  - added BATT_WATT_MAX parameter
 
-The reverse thrust landing is particulary exciting as that adds a
+The reverse thrust landing is particularly exciting as that adds a
 whole new range of possibilities for landing in restricted areas. Many
 thanks to Tom for the great work on getting this done.
 
@@ -726,7 +726,7 @@ The changes in this release are:
 
 The most important bug fix is the one for short term loss of RC
 control. This is a very long standing bug which didn't have a
-noticible impact for most people, but could cause loss of RC control
+noticeable impact for most people, but could cause loss of RC control
 for around 1 or 2 seconds for some people in certain circumstances.
 
 The bug was in the the AP_HAL RCInput API. Each HAL backend has a flag

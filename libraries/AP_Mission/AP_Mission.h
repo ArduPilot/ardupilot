@@ -7,7 +7,7 @@
  *   The AP_Mission library:
  *   - responsible for managing a list of commands made up of "nav", "do" and "conditional" commands
  *   - reads and writes the mission commands to storage.
- *   - provides easy acces to current, previous and upcoming waypoints
+ *   - provides easy access to current, previous and upcoming waypoints
  *   - calls main program's command execution and verify functions.
  *   - accounts for the DO_JUMP command
  *
@@ -246,6 +246,7 @@ public:
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
+        _prev_nav_cmd_id(AP_MISSION_CMD_ID_NONE),
         _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
         _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
         _last_change_time_ms(0)
@@ -332,6 +333,11 @@ public:
     /// used in MAVLink reporting of the mission command
     uint16_t get_current_nav_index() const { 
         return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
+
+    /// get_prev_nav_cmd_id - returns the previous "navigation" command id
+    ///     if there was no previous nav command it returns AP_MISSION_CMD_ID_NONE
+    ///     we do not return the entire command to save on RAM
+    uint16_t get_prev_nav_cmd_id() const { return _prev_nav_cmd_id; }
 
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
     ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
@@ -469,6 +475,7 @@ private:
     // internal variables
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
+    uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
 

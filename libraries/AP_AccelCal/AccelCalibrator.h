@@ -133,7 +133,7 @@ private:
     // determines if the result is acceptable
     bool accept_result() const;
 
-    // returns number of paramters are required for selected Fit type
+    // returns number of parameters are required for selected Fit type
     uint8_t get_num_params() const;
 
     // Function related to Gauss Newton Least square regression process

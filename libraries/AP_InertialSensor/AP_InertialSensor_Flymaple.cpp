@@ -115,7 +115,7 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     // Power up default is FIFO bypass mode. FIFO is not used by the chip
 
     // Init the Gyro
-    // Expect to read the same as the Gyro I2C adress:
+    // Expect to read the same as the Gyro I2C address:
     hal.i2c->readRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_WHO_AM_I, &data);
     if (data != FLYMAPLE_GYRO_ADDRESS)
         AP_HAL::panic("AP_InertialSensor_Flymaple: could not find ITG-3200 accelerometer sensor");
@@ -181,7 +181,7 @@ void AP_InertialSensor_Flymaple::accumulate(void)
     if ((now - _last_accel_timestamp) >= raw_sample_interval_us
         && hal.i2c->readRegisters(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATAX0, 6, buffer) == 0)
     {
-        // The order is a bit wierd here since the standard we have adopted for Flymaple 
+        // The order is a bit weird here since the standard we have adopted for Flymaple 
         // sensor orientation is different to what the board designers intended
         // Caution, to support alternative chip orientations on other bords, may 
         // need to add a chip orientation rotate

@@ -941,7 +941,7 @@ void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlo
     EKF2.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);
 }
 
-// inhibit GPS useage
+// inhibit GPS usage
 uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
 {
     switch (ekf_type()) {

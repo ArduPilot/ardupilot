@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MID
     // @DisplayName: Collective Pitch Mid-Point
-    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
+    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1

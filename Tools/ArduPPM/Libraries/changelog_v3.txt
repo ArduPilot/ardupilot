@@ -15,7 +15,7 @@
 // V2.2.3 - Implemented 0.5us cut filter to remove servo input capture jitter.
 
 // 04-08-2011
-// V2.2.4 - Implemented PPM passtrough funtion.
+// V2.2.4 - Implemented PPM passtrough function.
 //          Shorting channel 2&3 enabled ppm passtrough on channel 1.
 
 // 04-08-2011

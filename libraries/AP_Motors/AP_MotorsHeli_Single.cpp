@@ -300,7 +300,7 @@ void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
         _collectiveFactor[CH_2] = 1;
         _collectiveFactor[CH_3] = 1;
 
-    }else{              //H1 Swashplate, keep servo outputs seperated
+    }else{              //H1 Swashplate, keep servo outputs separated
 
         // roll factors
         _rollFactor[CH_1] = 1;

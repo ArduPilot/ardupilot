@@ -76,7 +76,7 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 /// bit 2: Direction of loiter command      0: Clockwise	1: Counter-Clockwise
 /// bit 3: Req.to hit WP.alt to continue    0: No,          1: Yes
 /// bit 4: Relative to Home					0: No,          1: Yes
-/// bit 5:
+/// bit 5: Loiter crosstrack reference      0: WP center    1: Tangent exit point
 /// bit 6:
 /// bit 7: Move to next Command             0: YES,         1: Loiter until commanded
 
@@ -88,6 +88,7 @@ struct PACKED Location_Option_Flags {
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
     uint8_t terrain_alt  : 1;           // this altitude is above terrain
     uint8_t origin_alt   : 1;           // this altitude is above ekf origin
+    uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
 };
 
 struct PACKED Location {
@@ -100,7 +101,7 @@ struct PACKED Location {
     // storage cost per mission item at 15 bytes, and allows mission
     // altitudes of up to +/- 83km
     int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100)
-    int32_t lat;                                        ///< param 3 - Lattitude * 10**7
+    int32_t lat;                                        ///< param 3 - Latitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 

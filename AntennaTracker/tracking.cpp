@@ -150,6 +150,9 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
         nav_status.altitude_difference = 0;
         nav_status.need_altitude_calibration = false;
     }
+
+    // log altitude difference
+    Log_Write_Vehicle_Baro(local_pressure, alt_diff);
 }
 
 /**

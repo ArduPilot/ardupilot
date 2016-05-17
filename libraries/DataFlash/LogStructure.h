@@ -188,6 +188,7 @@ struct PACKED log_BARO {
     int16_t temperature;
     float   climbrate;
     uint32_t sample_time_ms;
+    float   drift_offset;
 };
 
 struct PACKED log_AHRS {
@@ -577,6 +578,7 @@ struct PACKED log_AIRSPEED {
     int16_t temperature;
     float   rawpressure;
     float   offset;
+    bool    use;
 };
 
 struct PACKED log_ACCEL {
@@ -735,7 +737,7 @@ Format characters in the format string for binary log messages
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "QffcfI", "TimeUS,Alt,Press,Temp,CRt,SMS" }, \
+      "BARO",  "QffcfIf", "TimeUS,Alt,Press,Temp,CRt,SMS,Offset" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QCCH","TimeUS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -747,7 +749,7 @@ Format characters in the format string for binary log messages
     { LOG_TRIGGER_MSG, sizeof(log_Camera), \
       "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
-      "ARSP",  "Qffcff",   "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset" }, \
+      "ARSP",  "QffcffB",  "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
       "CURR", "QhhhHfh","TimeUS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\

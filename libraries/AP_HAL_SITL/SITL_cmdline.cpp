@@ -129,6 +129,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTE,
         CMDLINE_UARTF,
         CMDLINE_ADSB,
+        CMDLINE_RTSCTS,
         CMDLINE_DEFAULTS
     };
 
@@ -153,6 +154,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"adsb",            false,  0, CMDLINE_ADSB},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
+        {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {0, false, 0, 0}
     };
 
@@ -205,6 +207,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_ADSB:
             enable_ADSB = true;
             break;
+        case CMDLINE_RTSCTS:
+            _use_rtscts = true;
+            break;
         case CMDLINE_AUTOTESTDIR:
             autotest_dir = strdup(gopt.optarg);
             break;
@@ -242,6 +247,10 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             printf("Started model %s at %s at speed %.1f\n", model_str, home_str, speedup);
             break;
         }
+    }
+    if (sitl_model == nullptr) {
+        printf("Vehicle model (%s) not found\n", model_str);
+        exit(1);
     }
 
     fprintf(stdout, "Starting sketch '%s'\n", SKETCH);

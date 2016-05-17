@@ -62,7 +62,9 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
     delayed_time_wind = now - _sitl->wind_delay; // get time corresponding to delay
     // find data corresponding to delayed time in buffer
     for (uint8_t i=0; i<=wind_buffer_length-1; i++) {
-        time_delta_wind = abs(delayed_time_wind - buffer_wind[i].time); // find difference between delayed time and time stamp in buffer
+        // find difference between delayed time and time stamp in buffer
+        time_delta_wind = abs(
+                (int32_t)(delayed_time_wind - buffer_wind[i].time));
         // if this difference is smaller than last delta, store this time
         if (time_delta_wind < best_time_delta_wind) {
             best_index_wind = i;

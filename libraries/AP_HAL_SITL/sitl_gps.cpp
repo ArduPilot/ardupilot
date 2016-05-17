@@ -519,7 +519,7 @@ uint16_t SITL_State::_gps_nmea_checksum(const char *s)
 }
 
 /*
-  formated print of NMEA message, with checksum appended
+  formatted print of NMEA message, with checksum appended
  */
 void SITL_State::_gps_nmea_printf(const char *fmt, ...)
 {

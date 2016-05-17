@@ -50,16 +50,21 @@ public:
 
     // trivial ctor
     // note that the Vector3 ctor will zero the vector elements
-    Matrix3<T>() {
-    }
+    constexpr Matrix3<T>() {}
 
     // setting ctor
-    Matrix3<T>(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0) : a(a0), b(b0), c(c0) {
-    }
+    constexpr Matrix3<T>(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
+        : a(a0)
+        , b(b0)
+        , c(c0) {}
 
     // setting ctor
-    Matrix3<T>(const T ax, const T ay, const T az, const T bx, const T by, const T bz, const T cx, const T cy, const T cz) : a(ax,ay,az), b(bx,by,bz), c(cx,cy,cz) {
-    }
+    constexpr Matrix3<T>(const T ax, const T ay, const T az,
+                         const T bx, const T by, const T bz,
+                         const T cx, const T cy, const T cz)
+        : a(ax,ay,az)
+        , b(bx,by,bz)
+        , c(cx,cy,cz) {}
 
     // function call operator
     void operator        () (const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
@@ -182,6 +187,31 @@ public:
     {
         *this = transposed();
     }
+
+    /**
+     * Calculate the determinant of this matrix.
+     *
+     * @return The value of the determinant.
+     */
+    T det() const;
+
+    /**
+     * Calculate the inverse of this matrix.
+     *
+     * @param inv[in] Where to store the result.
+     *
+     * @return If this matrix is invertible, then true is returned. Otherwise,
+     * \p inv is unmodified and false is returned.
+     */
+    bool inverse(Matrix3<T>& inv) const;
+
+    /**
+     * Invert this matrix if it is invertible.
+     *
+     * @return Return true if this matrix could be successfully inverted and
+     * false otherwise.
+     */
+    bool invert();
 
     // zero the matrix
     void        zero(void);

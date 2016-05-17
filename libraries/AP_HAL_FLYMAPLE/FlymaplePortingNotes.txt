@@ -299,12 +299,12 @@ when on Auto, but will be OK on Manual.
 
 GPS notes
 
-I tested intially with an EM-405A GPS (This is a 5Hz, 5V GPS, and therefore I
+I tested initially with an EM-405A GPS (This is a 5Hz, 5V GPS, and therefore I
 also needed a voltage divider to make the received data compatible with the
 Flymaple 3.3V GPS input on pin D0).  This GPS was unsatisfactory due to long
 time lags in changing ground track and speed, and also due to large random
 ground speeds up to 1.0 m/s when stationary. I was able to get ok behaviour
-with very large values for NAVL1_PERIOD of around 40. Dont use this GPS.
+with very large values for NAVL1_PERIOD of around 40. Don't use this GPS.
 
 I also tested with a Eagle Tree GPS$v, which is a 10Hz, 3.3V GPS board
 containing a GTPA010 GPS. This GPS worked much better with the suggested

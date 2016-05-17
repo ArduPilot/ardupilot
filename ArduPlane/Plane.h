@@ -359,8 +359,8 @@ private:
     // Also used for flap deployment criteria.  Centimeters per second.
     int32_t target_airspeed_cm;
 
-    // The difference between current and desired airspeed.  Used in the pitch controller.  Centimeters per second.
-    float airspeed_error_cm;
+    // The difference between current and desired airspeed.  Used in the pitch controller.  Meters per second.
+    float airspeed_error;
 
     // An amount that the airspeed should be increased in auto modes based on the user positioning the
     // throttle stick in the top half of the range.  Centimeters per second.
@@ -406,6 +406,13 @@ private:
         uint32_t lock_timer_ms;
     } cruise_state;
 
+    struct {
+        uint32_t last_tkoff_arm_time;
+        uint32_t last_check_ms;
+        uint32_t last_report_ms;
+        bool launchTimerStarted;
+    } takeoff_state;
+    
     // ground steering controller state
     struct {
         // Direction held during phases of takeoff and landing centidegrees
@@ -787,7 +794,6 @@ private:
     void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
-    void Log_Write_TECS_Tuning(void);
     void Log_Write_Nav_Tuning();
     void Log_Write_Status();
     void Log_Write_Sonar();

@@ -60,6 +60,8 @@ private:
 
     void _wait_all_threads();
 
+    void     _debug_stack();
+
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
 
@@ -102,6 +104,7 @@ private:
     bool _register_timesliced_proc(AP_HAL::MemberProc, uint8_t);
 
     uint64_t _stopped_clock_usec;
+    uint64_t _last_stack_debug_msec;
 
     Semaphore _timer_semaphore;
     Semaphore _io_semaphore;

@@ -152,7 +152,7 @@ template float wrap_2PI<double>(const double radian);
 template <class T>
 T constrain_value(const T amt, const T low, const T high)
 {
-    // the check for NaN as a float prevents propogation of floating point
+    // the check for NaN as a float prevents propagation of floating point
     // errors through any function that uses constrain_float(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {

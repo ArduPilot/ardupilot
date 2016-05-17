@@ -79,6 +79,7 @@ void Copter::update_land_detector()
     set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*MAIN_LOOP_RATE));
 }
 
+// set land_complete flag and disarm motors if disarm-on-land is configured
 void Copter::set_land_complete(bool b)
 {
     // if no change, exit immediately
@@ -93,6 +94,14 @@ void Copter::set_land_complete(bool b)
         Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
+
+    // trigger disarm-on-land if configured
+    bool disarm_on_land_configured = (g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) != 0;
+    bool mode_disarms_on_land = mode_allows_arming(control_mode,false) && !mode_has_manual_throttle(control_mode);
+
+    if (ap.land_complete && motors.armed() && disarm_on_land_configured && mode_disarms_on_land) {
+        init_disarm_motors();
+    }
 }
 
 // set land complete maybe flag

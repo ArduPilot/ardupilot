@@ -39,7 +39,7 @@ public:
      * Set the speed of future transfers. Depending on the bus the speed may
      * be shared for all devices on the same bus.
      *
-     * Return: true if speed was succesfully set or platform doesn't implement
+     * Return: true if speed was successfully set or platform doesn't implement
      * it; false otherwise.
      */
     virtual bool set_speed(Speed speed)  = 0;

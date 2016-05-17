@@ -115,7 +115,7 @@ public:
         float ground_course;                ///< ground course in degrees
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint16_t vdop;                      ///< vertical dilution of precision in cm
-        uint8_t num_sats;                   ///< Number of visible satelites        
+        uint8_t num_sats;                   ///< Number of visible satellites        
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
         float speed_accuracy;
         float horizontal_accuracy;

@@ -274,7 +274,7 @@ void NavEKF2_core::FuseVelPosNED()
         R_OBS[5] = posDownObsNoise;
         for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
-        // if vertical GPS velocity data and an independant height source is being used, check to see if the GPS vertical velocity and altimeter
+        // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
         if (useGpsVertVel && fuseVelData && (frontend->_altSource != 2)) {
@@ -589,7 +589,7 @@ void NavEKF2_core::selectHeightForFusion()
         hgtMea = gpsDataDelayed.hgt;
         // enable fusion
         fuseHgtData = true;
-        // set the observation noise to the horizontal GPS noise plus a scaler becasue GPS vertical position is usually less accurate
+        // set the observation noise to the horizontal GPS noise plus a scaler because GPS vertical position is usually less accurate
         // TODO use VDOP/HDOP, reported accuracy or a separate parameter
         posDownObsNoise = sq(constrain_float(frontend->_gpsHorizPosNoise * 1.5f, 0.1f, 10.0f));
     } else if (baroDataToFuse && !usingRangeForHgt && !usingGpsForHgt) {

@@ -96,7 +96,32 @@ void Scheduler::init()
         const struct sched_table *t = &sched_table[i];
 
         t->thread->set_rate(t->rate);
+        t->thread->set_stack_size(256 * 1024);
         t->thread->start(t->name, t->policy, t->prio);
+    }
+
+#if defined(DEBUG_STACK) && DEBUG_STACK
+    register_timer_process(FUNCTOR_BIND_MEMBER(&Scheduler::_debug_stack, void));
+#endif
+}
+
+void Scheduler::_debug_stack()
+{
+    uint64_t now = AP_HAL::millis64();
+
+    if (now - _last_stack_debug_msec > 5000) {
+        fprintf(stderr, "Stack Usage:\n"
+                "\ttimer = %zu\n"
+                "\tio    = %zu\n"
+                "\trcin  = %zu\n"
+                "\tuart  = %zu\n"
+                "\ttone  = %zu\n",
+                _timer_thread.get_stack_usage(),
+                _io_thread.get_stack_usage(),
+                _rcin_thread.get_stack_usage(),
+                _uart_thread.get_stack_usage(),
+                _tonealarm_thread.get_stack_usage());
+        _last_stack_debug_msec = now;
     }
 }
 

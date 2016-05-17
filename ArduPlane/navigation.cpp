@@ -99,7 +99,7 @@ void Plane::calc_airspeed_errors()
     }
 
     // Landing airspeed target
-    if (control_mode == AUTO && ahrs.airspeed_sensor_enabled()) {
+    if (control_mode == AUTO) {
         float land_airspeed = SpdHgt_Controller->get_land_airspeed();
         switch (flight_stage) {
         case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
@@ -143,7 +143,7 @@ void Plane::calc_airspeed_errors()
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed
-    airspeed_error_cm = SpdHgt_Controller->get_target_airspeed()*100 - airspeed_measured_cm;
+    airspeed_error = SpdHgt_Controller->get_target_airspeed() - airspeed_measured_cm * 0.01f;
 }
 
 void Plane::calc_gndspeed_undershoot()

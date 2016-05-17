@@ -137,6 +137,12 @@ public:
     // enable HIL mode
     void set_hil_mode(void) { _hil_mode = true; }
 
+    // set baro drift amount
+    void set_baro_drift_altitude(float alt) { _alt_offset = alt; }
+
+    // get baro drift amount
+    float get_baro_drift_offset(void) { return _alt_offset_active; }
+
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;

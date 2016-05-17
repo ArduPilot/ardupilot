@@ -229,7 +229,7 @@ bool DataFlash_Block::check_wrapped(void)
         return 1;
 }
 
-// This funciton finds the last log number
+// This function finds the last log number
 uint16_t DataFlash_Block::find_last_log(void)
 {
     uint16_t last_page = find_last_page();
@@ -731,7 +731,7 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_
     };
     WriteBlock(&pkt, sizeof(pkt));
 
-    /* write auxillary accuracy information as well */
+    /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
     gps.horizontal_accuracy(i, hacc);
     gps.vertical_accuracy(i, vacc);
@@ -826,6 +826,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
     if (time_us == 0) {
         time_us = AP_HAL::micros64();
     }
+    float drift_offset = baro.get_baro_drift_offset();
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         time_us       : time_us,
@@ -833,7 +834,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
         pressure      : baro.get_pressure(0),
         temperature   : (int16_t)(baro.get_temperature(0) * 100 + 0.5f),
         climbrate     : baro.get_climb_rate(),
-        sample_time_ms: baro.get_last_update(0)
+        sample_time_ms: baro.get_last_update(0),
+        drift_offset  : drift_offset,
     };
     WriteBlock(&pkt, sizeof(pkt));
 
@@ -845,7 +847,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
             pressure	  : baro.get_pressure(1),
             temperature   : (int16_t)(baro.get_temperature(1) * 100 + 0.5f),
             climbrate     : baro.get_climb_rate(),
-            sample_time_ms: baro.get_last_update(1)
+            sample_time_ms: baro.get_last_update(1),
+            drift_offset  : drift_offset,
         };
         WriteBlock(&pkt2, sizeof(pkt2));        
     }
@@ -858,7 +861,8 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
             pressure	  : baro.get_pressure(2),
             temperature   : (int16_t)(baro.get_temperature(2) * 100 + 0.5f),
             climbrate     : baro.get_climb_rate(),
-            sample_time_ms: baro.get_last_update(2)
+            sample_time_ms: baro.get_last_update(2),
+            drift_offset  : drift_offset,
         };
         WriteBlock(&pkt3, sizeof(pkt3));        
     }
@@ -1786,7 +1790,8 @@ void DataFlash_Class::Log_Write_Airspeed(AP_Airspeed &airspeed)
         diffpressure  : airspeed.get_differential_pressure(),
         temperature   : (int16_t)(temperature * 100.0f),
         rawpressure   : airspeed.get_raw_pressure(),
-        offset        : airspeed.get_offset()
+        offset        : airspeed.get_offset(),
+        use           : airspeed.use()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

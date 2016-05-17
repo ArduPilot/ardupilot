@@ -26,8 +26,32 @@ void Tracker::Log_Write_Baro(void)
     DataFlash.Log_Write_Baro(barometer);
 }
 
+struct PACKED log_Vehicle_Baro {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    press;
+    float    alt_diff;
+};
+
+// Write a vehicle baro packet
+void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude)
+{
+
+    struct log_Vehicle_Baro pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_V_BAR_MSG),
+        time_us         : AP_HAL::micros64(),
+        press           : pressure,
+        alt_diff        : altitude
+
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+
 const struct LogStructure Tracker::log_structure[] = {
     LOG_COMMON_STRUCTURES,
+    {LOG_V_BAR_MSG, sizeof(log_Vehicle_Baro),
+    	      "VBAR", "Qff", "TimeUS,Press,AltDiff" },
 };
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()

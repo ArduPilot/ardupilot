@@ -207,7 +207,7 @@ bool mat_inverse(float* A, float* inv, uint8_t n)
     memset(U_inv,0,n*n*sizeof(float));
     mat_back_sub(U,U_inv,n);
 
-    // decomposed matrices no loger required
+    // decomposed matrices no longer required
     free(L);
     free(U);
 

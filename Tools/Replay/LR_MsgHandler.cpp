@@ -1,4 +1,5 @@
 #include "LR_MsgHandler.h"
+#include "LogReader.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -435,7 +436,12 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
 
     require_field(msg, "Name", parameter_name, parameter_name_len);
 
-    set_parameter(parameter_name, require_field_float(msg, "Value"));
+    float value = require_field_float(msg, "Value");
+    if (globals.no_params) {
+        printf("Not changing %s to %f\n", parameter_name, value);
+    } else {
+        set_parameter(parameter_name, value);
+    }
 }
 
 

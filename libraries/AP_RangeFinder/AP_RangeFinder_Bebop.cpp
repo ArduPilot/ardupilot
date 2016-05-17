@@ -416,7 +416,7 @@ int AP_RangeFinder_Bebop::_launch()
 /*
  * read the iio buffer
  * iio_buffer_refill is blocking by default, so this function is also
- * blocking untill samples are available
+ * blocking until samples are available
  * disable the capture buffer
  */
 int AP_RangeFinder_Bebop::_capture()
