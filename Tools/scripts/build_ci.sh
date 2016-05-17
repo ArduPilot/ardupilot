@@ -28,6 +28,12 @@ if [ -z "$CI_BUILD_TARGET" ]; then
     CI_BUILD_TARGET="sitl linux px4-v2"
 fi
 
+if [[ "$CI_BUILD_TARGET" == *"px4"* ]]; then
+    export CCACHE_MAXSIZE="1500M"
+else
+    export CCACHE_MAXSIZE="500M"
+fi
+
 # special case for SITL testing in CI
 if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
     echo "Installing pymavlink"
@@ -64,6 +70,7 @@ for t in $CI_BUILD_TARGET; do
             fi
 
             make $t -j2
+            ccache -s && ccache -z
             popd
         done
 
@@ -86,6 +93,8 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board $t --enable-benchmarks --check-c-compiler="$c_compiler" --check-cxx-compiler="$cxx_compiler"
         $waf clean
         $waf -j2 all
+        ccache -s && ccache -z
+
         if [[ $t == linux ]]; then
             $waf check
         fi
