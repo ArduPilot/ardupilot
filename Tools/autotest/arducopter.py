@@ -1258,7 +1258,7 @@ def fly_ArduCopter(viewerip=None, map=False, valgrind=False):
     return True
 
 
-def fly_CopterAVC(viewerip=None, map=False):
+def fly_CopterAVC(viewerip=None, map=False, valgrind=False):
     '''fly ArduCopter in SIL for AVC2013 mission
     '''
     global homeloc
@@ -1279,7 +1279,7 @@ def fly_CopterAVC(viewerip=None, map=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduCopter', model='heli', home=home, speedup=speedup_default)
+    sil = util.start_SIL('ArduCopter', model='heli', home=home, speedup=speedup_default, valgrind=valgrind)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
