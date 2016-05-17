@@ -39,6 +39,7 @@ cache:
 
 before_install:
   - Tools/scripts/configure-ci.sh
+  - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
 
 script:
   - python Tools/autotest/param_metadata/param_parse.py
