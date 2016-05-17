@@ -63,7 +63,6 @@ set(config_extra_builtin_cmds
 )
 
 set(config_extra_libs
-    ${CMAKE_SOURCE_DIR}/src/lib/mathlib/CMSIS/libarm_cortexM4lf_math.a
     ${APM_PROGRAM_LIB}
 )
 
