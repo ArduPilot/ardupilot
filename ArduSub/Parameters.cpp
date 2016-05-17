@@ -105,7 +105,8 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Throttle stick behavior
     // @Description: Bits for: Feedback starts from mid stick
     // @User: Standard
-    // @Values: 0:None,1:FeedbackFromMid
+	// @Values: 0:None,1:Feedback from mid stick,2:High throttle cancels landing,4:Disarm on land detection
+	// @Bitmask: 0:Feedback from mid stick,1:High throttle cancels landing,2:Disarm on land detection
     GSCALAR(throttle_behavior, "PILOT_THR_BHV", 0),
 
     // @Group: SERIAL
