@@ -2,6 +2,22 @@
 
 #include_next <cmath>
 
+#ifdef __CYGWIN__
+// hack to get SITL on windows working
+#ifndef HAVE_CMATH_ISFINITE
+#define HAVE_CMATH_ISFINITE
+#define NEED_CMATH_ISFINITE_STD_NAMESPACE
+#endif
+#ifndef HAVE_CMATH_ISINF
+#define HAVE_CMATH_ISINF
+#define NEED_CMATH_ISINF_STD_NAMESPACE
+#endif
+#ifndef HAVE_CMATH_ISNAN
+#define HAVE_CMATH_ISNAN
+#define NEED_CMATH_ISNAN_STD_NAMESPACE
+#endif
+#endif // __CYGWIN__
+
 #if defined(HAVE_CMATH_ISFINITE) && defined(NEED_CMATH_ISFINITE_STD_NAMESPACE)
 using std::isfinite;
 #endif
