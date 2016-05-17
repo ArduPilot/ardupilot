@@ -1506,6 +1506,10 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     target.y = diff2d.y * 100;
     target.z = plane.next_WP_loc.alt - origin.alt;
     pos_control->set_alt_target(inertial_nav.get_altitude());
+
+    
+    // try to disable the geofence
+    geofence_check_autodisable();
     
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
@@ -1518,6 +1522,8 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
 bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
 {
     if (!available()) {
+        // try to enable the geofence
+        geofence_check_autoenable();
         return true;
     }
     if (plane.current_loc.alt < plane.next_WP_loc.alt) {
@@ -1525,6 +1531,9 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     }
     transition_state = TRANSITION_AIRSPEED_WAIT;
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
+
+    // try to enable the geofence
+    geofence_check_autoenable();
     return true;
 }
 
@@ -1735,4 +1744,48 @@ void QuadPlane::guided_update(void)
 {
     // run VTOL position controller
     vtol_position_controller();
+}
+
+bool QuadPlane::geofence_check_autoenable(void)
+{
+#if GEOFENCE_ENABLED == ENABLED
+    if (plane.g.fence_autoenable > 0) {
+        //Enable the geofence and the floor
+        if (! plane.geofence_set_enabled(true, AUTO_TOGGLED)) {
+            plane.gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
+            return false;
+        } else {
+            plane.gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
+            return true;
+        }
+    } else return false;
+#else
+    return false;
+#endif
+}
+
+bool QuadPlane::geofence_check_autodisable(void){
+#if GEOFENCE_ENABLED == ENABLED
+    if (plane.g.fence_autoenable == 1) {
+        //Disable geofence
+        if (! plane.geofence_set_enabled(false, AUTO_TOGGLED)) {
+            plane.gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
+            return false;
+        } else {
+            plane.gcs_send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
+            return true;
+        }
+    } else if (plane.g.fence_autoenable == 2) {
+        //Disable only floor
+        if (! plane.geofence_set_floor_enabled(false)) {
+            plane.gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
+            return false;
+        } else {
+            plane.gcs_send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+            return true;
+        }
+    } else return false;
+#else
+    return false;
+#endif
 }
