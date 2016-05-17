@@ -45,6 +45,9 @@ script:
   - python Tools/autotest/param_metadata/param_parse.py
   - Tools/scripts/build_ci.sh
 
+before_cache:
+  - ccache -z
+
 notifications:
   webhooks:
     urls:
