@@ -26,7 +26,8 @@ from waflib import Build, ConfigSet, Context, Utils
 def init(ctx):
     env = ConfigSet.ConfigSet()
     try:
-        env.load('build/c4che/_cache.py')
+        p = os.path.join(Context.out_dir, Build.CACHE_DIR, Build.CACHE_SUFFIX)
+        env.load(p)
     except:
         return
 
