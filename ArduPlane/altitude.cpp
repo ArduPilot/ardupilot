@@ -37,6 +37,7 @@ void Plane::adjust_altitude_target()
     } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
             flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
         setup_landing_glide_slope();
+        adjust_landing_slope_for_rangefinder_bump();
     } else if (reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target

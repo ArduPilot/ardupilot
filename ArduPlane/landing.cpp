@@ -160,7 +160,34 @@ void Plane::disarm_if_autoland_complete()
     }
 }
 
+void Plane::adjust_landing_slope_for_rangefinder_bump(void)
+{
+#if RANGEFINDER_ENABLED == ENABLED
+    // check the rangefinder correction for a large change. When found, recalculate the glide slope. This is done by
+    // determining the slope from your current location to the land point then following that back up to the approach
+    // altitude and moving the prev_wp to that location. From there
+    float correction_delta = fabsf(rangefinder_state.last_stable_correction) - fabsf(rangefinder_state.correction);
 
+    if (g.land_slope_recalc_shallow_threshold <= 0 ||
+            fabsf(correction_delta) < g.land_slope_recalc_shallow_threshold) {
+        return;
+    }
+
+    rangefinder_state.last_stable_correction = rangefinder_state.correction;
+
+    float corrected_alt_m = (adjusted_altitude_cm() - next_WP_loc.alt)*0.01f - rangefinder_state.correction;
+    float total_distance_m = get_distance(prev_WP_loc, next_WP_loc);
+    float top_of_glide_slope_alt_m = total_distance_m * corrected_alt_m / auto_state.wp_distance;
+    prev_WP_loc.alt = top_of_glide_slope_alt_m*100 + next_WP_loc.alt;
+
+    // re-calculate auto_state.land_slope with updated prev_WP_loc
+    setup_landing_glide_slope();
+    float new_slope_deg = degrees(atan(auto_state.land_slope));
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing glide slope re-calculated as %.1f degrees", (double)new_slope_deg);
+
+#endif
+}
 
 /*
   a special glide slope calculation for the landing approach
@@ -172,12 +199,6 @@ void Plane::disarm_if_autoland_complete()
  */
 void Plane::setup_landing_glide_slope(void)
 {
-        Location loc = next_WP_loc;
-
-        // project a point 500 meters past the landing point, passing
-        // through the landing point
-        const float land_projection = 500;        
-        int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
         float total_distance = get_distance(prev_WP_loc, next_WP_loc);
 
         // If someone mistakenly puts all 0's in their LAND command then total_distance
@@ -215,6 +236,14 @@ void Plane::setup_landing_glide_slope(void)
             aim_height = g.land_flare_alt*2;
         }
 
+        // calculate slope to landing point
+        bool is_first_calc = is_zero(auto_state.land_slope);
+        auto_state.land_slope = (sink_height - aim_height) / total_distance;
+        if (is_first_calc) {
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(auto_state.land_slope)));
+        }
+
+
         // time before landing that we will flare
         float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
 
@@ -227,17 +256,20 @@ void Plane::setup_landing_glide_slope(void)
             flare_distance = total_distance/2;
         }
 
+        // project a point 500 meters past the landing point, passing
+        // through the landing point
+        const float land_projection = 500;
+        int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+
         // now calculate our aim point, which is before the landing
         // point and above it
+        Location loc = next_WP_loc;
         location_update(loc, land_bearing_cd*0.01f, -flare_distance);
         loc.alt += aim_height*100;
 
-        // calculate slope to landing point
-        float land_slope = (sink_height - aim_height) / total_distance;
-
         // calculate point along that slope 500m ahead
         location_update(loc, land_bearing_cd*0.01f, land_projection);
-        loc.alt -= land_slope * land_projection * 100;
+        loc.alt -= auto_state.land_slope * land_projection * 100;
 
         // setup the offset_cm for set_target_altitude_proportion()
         target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;

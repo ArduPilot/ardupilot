@@ -300,6 +300,7 @@ public:
         k_param_flight_mode5,
         k_param_flight_mode6,
         k_param_initial_mode,
+        k_param_land_slope_recalc_shallow_threshold,
 
         //
         // 220: Waypoint data
@@ -472,6 +473,7 @@ public:
     AP_Int8 land_abort_throttle_enable;
     AP_Float land_pre_flare_alt;
     AP_Float land_pre_flare_sec;
+    AP_Float land_slope_recalc_shallow_threshold;
     AP_Int32 min_gndspeed_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;

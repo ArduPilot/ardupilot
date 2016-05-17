@@ -198,6 +198,7 @@ private:
         float initial_range;
         float correction;
         float initial_correction;
+        float last_stable_correction;
         uint32_t last_correction_time_ms;
         uint8_t in_range_count;
         float height_estimate;
@@ -505,6 +506,9 @@ private:
 
         // time stamp of when we start flying while in auto mode in milliseconds
         uint32_t started_flying_in_auto_ms;
+
+        // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - aparm.land_flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
+        float land_slope;
 
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
@@ -889,6 +893,7 @@ private:
     bool verify_land();
     void disarm_if_autoland_complete();
     void setup_landing_glide_slope(void);
+    void adjust_landing_slope_for_rangefinder_bump(void);
     bool jump_to_landing_sequence(void);
     float tecs_hgt_afe(void);
     void set_nav_controller(void);
