@@ -45,6 +45,14 @@ void Sub::set_land_complete(bool b)
         Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
+
+    // trigger disarm-on-land if configured
+    bool disarm_on_land_configured = (g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) != 0;
+    bool mode_disarms_on_land = mode_allows_arming(control_mode,false) && !mode_has_manual_throttle(control_mode);
+
+    if (ap.land_complete && motors.armed() && disarm_on_land_configured && mode_disarms_on_land) {
+        init_disarm_motors();
+    }
 }
 
 // update_throttle_thr_mix - sets motors throttle_low_comp value depending upon vehicle state
