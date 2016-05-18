@@ -897,7 +897,7 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rally,      "RALLY_",   AP_Rally),
 #endif
 
-//#if (FRAME_CONFIG == VECTORED_FRAME || FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED6DOF_FRAME || FRAME_CONFIG == SIMPLEROV )
+//#if (FRAME_CONFIG == VECTORED_FRAME || FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED6DOF_FRAME || FRAME_CONFIG == SIMPLEROV || FRAME_CONFIG == VECTORED90_FRAME)
 	// @Group: MOT_
 	// @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp
 	GOBJECT(motors, "MOT_",         AP_Motors6DOF),
