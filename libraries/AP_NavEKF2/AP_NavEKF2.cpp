@@ -499,7 +499,7 @@ void NavEKF2::check_log_write(void)
     }
 
     // this is an example of an ad-hoc log in EKF
-    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), 2.4f);
+    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
 }
 
 
