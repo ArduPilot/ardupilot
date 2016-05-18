@@ -17,9 +17,13 @@
 #pragma once
 
 #include "ToshibaLED.h"
+#include <AP_HAL/I2CDevice.h>
 
 class ToshibaLED_I2C : public ToshibaLED
 {
+private:
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+
 public:
     bool hw_init(void);
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);

@@ -12,9 +12,10 @@
 #include <pthread.h>
 #include "RCOutput_Bebop.h"
 #include "Util.h"
+#include <utility>
 
-/* BEBOP BLDC motor controller address and registers description */
-#define BEBOP_BLDC_I2C_ADDR 0x08
+/* BEBOP BLDC registers description */
+
 #define BEBOP_BLDC_STARTPROP 0x40
 
 #define BEBOP_BLDC_SETREFSPEED 0x02
@@ -72,8 +73,8 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-RCOutput_Bebop::RCOutput_Bebop():
-    _i2c_sem(NULL),
+RCOutput_Bebop::RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev):
+    _dev(std::move(dev)),
     _min_pwm(BEBOP_BLDC_MIN_PERIOD_US),
     _max_pwm(BEBOP_BLDC_MAX_PERIOD_US),
     _state(BEBOP_BLDC_STOPPED)
@@ -98,12 +99,12 @@ void RCOutput_Bebop::_start_prop()
 {
     uint8_t data = BEBOP_BLDC_STARTPROP;
 
-    if (!_i2c_sem->take(0))
+    if (!_dev->get_semaphore()->take(0))
         return;
 
-    hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
+    _dev->transfer(&data, sizeof(data), nullptr, 0);
 
-    _i2c_sem->give();
+    _dev->get_semaphore()->give();
     _state = BEBOP_BLDC_STARTED;
 }
 
@@ -120,12 +121,12 @@ void RCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
     data.enable_security = 0;
     data.checksum = _checksum((uint8_t *) &data, sizeof(data) - 1);
 
-    if (!_i2c_sem->take(0))
+    if (!_dev->get_semaphore()->take(0))
         return;
 
-    hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, sizeof(data), (uint8_t *)&data);
+    _dev->transfer((uint8_t *)&data, sizeof(data), nullptr, 0);
 
-    _i2c_sem->give();
+    _dev->get_semaphore()->give();
 }
 
 bool RCOutput_Bebop::_get_info(struct bldc_info *info)
@@ -134,12 +135,11 @@ bool RCOutput_Bebop::_get_info(struct bldc_info *info)
         return false;
     }
     memset(info, 0, sizeof(struct bldc_info));
-    if (!_i2c_sem->take(0)) {
+    if (!_dev->get_semaphore()->take(0)) {
         return false;
     }
-    hal.i2c1->readRegisters(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_GET_INFO,
-                            sizeof(struct bldc_info), (uint8_t *)info);
-    _i2c_sem->give();
+    _dev->read_registers(BEBOP_BLDC_GET_INFO, (uint8_t*)info, sizeof(*info));
+    _dev->get_semaphore()->give();
     return true;
 }
 
@@ -149,13 +149,11 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
     int i;
 
     memset(&data, 0, sizeof(data));
-    if (!_i2c_sem->take(0))
+    if (!_dev->get_semaphore()->take(0))
         return -EBUSY;
 
-    hal.i2c1->readRegisters(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_GETOBSDATA,
-                            sizeof(data), (uint8_t *)&data);
-
-    _i2c_sem->give();
+    _dev->read_registers(BEBOP_BLDC_GETOBSDATA, (uint8_t *)&data, sizeof(data));
+    _dev->get_semaphore()->give();
 
     if (data.checksum != _checksum((uint8_t *)&data, sizeof(data) - 1))
         hal.console->printf("RCOutput_Bebop: bad checksum in obs data");
@@ -181,12 +179,11 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
 
 void RCOutput_Bebop::_toggle_gpio(uint8_t mask)
 {
-    if (!_i2c_sem->take(0))
+    if (!_dev->get_semaphore()->take(0))
         return;
 
-    hal.i2c1->writeRegister(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_TOGGLE_GPIO, mask);
-
-    _i2c_sem->give();
+    _dev->write_register(BEBOP_BLDC_TOGGLE_GPIO, mask);
+    _dev->get_semaphore()->give();
 }
 
 void RCOutput_Bebop::_stop_prop()
@@ -194,34 +191,31 @@ void RCOutput_Bebop::_stop_prop()
     uint8_t data = BEBOP_BLDC_STOP_PROP;
     _state = BEBOP_BLDC_STOPPED;
 
-    if (!_i2c_sem->take(0))
+    if (!_dev->get_semaphore()->take(0))
         return;
 
-    hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
-
-    _i2c_sem->give();
+    _dev->transfer(&data, sizeof(data), nullptr, 0);
+    _dev->get_semaphore()->give();
 }
 
 void RCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
 
-    if (!_i2c_sem->take(0))
+    if (!_dev->get_semaphore()->take(0))
         return;
 
-    hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
-
-    _i2c_sem->give();
+    _dev->transfer(&data, sizeof(data), nullptr, 0);
+    _dev->get_semaphore()->give();
 }
 
 void RCOutput_Bebop::_play_sound(uint8_t sound)
 {
-    if (!_i2c_sem->take(0))
+    if (!_dev->get_semaphore()->take(0))
         return;
 
-    hal.i2c1->writeRegister(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_PLAY_SOUND, sound);
-
-    _i2c_sem->give();
+    _dev->write_register(BEBOP_BLDC_PLAY_SOUND, sound);
+    _dev->get_semaphore()->give();
 }
 
 uint16_t RCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
@@ -240,12 +234,6 @@ void RCOutput_Bebop::init()
     struct sched_param param = { .sched_priority = RCOUT_BEBOP_RTPRIO };
     pthread_attr_t attr;
     pthread_condattr_t cond_attr;
-
-    _i2c_sem = hal.i2c1->get_semaphore();
-    if (_i2c_sem == NULL) {
-        AP_HAL::panic("RCOutput_Bebop: can't get i2c sem");
-        return; /* never reached */
-    }
 
     /* Initialize thread, cond, and mutex */
     ret = pthread_mutex_init(&_mutex, NULL);
