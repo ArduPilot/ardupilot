@@ -1,11 +1,11 @@
-#include <AP_HAL/AP_HAL.h>
-
-#include "AnalogIn_Navio2.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <errno.h>
 #include <unistd.h>
+
+#include <AP_HAL/AP_HAL.h>
+
+#include "AnalogIn_Navio2.h"
 
 static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 

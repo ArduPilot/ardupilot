@@ -8,18 +8,17 @@
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+#include "RCOutput_AioPRU.h"
 
+#include <fcntl.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
-
-#include "RCOutput_AioPRU.h"
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/mman.h>
-#include <signal.h>
 
 #include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_bin.h"
 

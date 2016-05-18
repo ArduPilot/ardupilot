@@ -1,17 +1,16 @@
-#include <AP_HAL/AP_HAL.h>
-
-#include <stdio.h>
-#include <sys/time.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <poll.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <stdint.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 #include "GPIO.h"
 #include "RCInput.h"
@@ -26,7 +25,7 @@ void RCInput_ZYNQ::init()
     if (mem_fd == -1) {
         AP_HAL::panic("Unable to open /dev/mem");
     }
-    pulse_input = (volatile uint32_t*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
+    pulse_input = (volatile uint32_t*) mmap(0, 0x1000, PROT_READ|PROT_WRITE,
                                                       MAP_SHARED, mem_fd, RCIN_ZYNQ_PULSE_INPUT_BASE);
     close(mem_fd);
 

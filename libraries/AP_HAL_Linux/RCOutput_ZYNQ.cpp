@@ -2,18 +2,20 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "RCOutput_ZYNQ.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
+
 #include <dirent.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/ioctl.h>
+#include <fcntl.h>
 #include <linux/spi/spidev.h>
-#include <sys/mman.h>
 #include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 8	// FIXME

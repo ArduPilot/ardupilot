@@ -1,5 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AnalogIn.h"
 
 using namespace Linux;

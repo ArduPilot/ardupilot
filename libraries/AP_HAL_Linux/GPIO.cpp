@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+
 #include "GPIO.h"
 
 using namespace Linux;

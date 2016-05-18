@@ -1,9 +1,10 @@
 #pragma once
 
+#include <pthread.h>
+
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include "AP_HAL_Linux.h"
-#include <pthread.h>
 
 class Linux::Semaphore : public AP_HAL::Semaphore {
 public:

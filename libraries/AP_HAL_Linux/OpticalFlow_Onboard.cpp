@@ -19,14 +19,14 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 #include "OpticalFlow_Onboard.h"
 
-#include <vector>
-#include <stdio.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <linux/v4l2-mediabus.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
 
 #include "CameraSensor_Mt9v117.h"
 #include "GPIO.h"

@@ -1,11 +1,11 @@
-#include <AP_HAL/AP_HAL.h>
-
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdlib.h>
-
 #include "TCPServerDevice.h"
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 

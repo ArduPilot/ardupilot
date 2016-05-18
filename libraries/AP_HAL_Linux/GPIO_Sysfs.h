@@ -1,8 +1,8 @@
 #pragma once
 
+#include "AP_HAL_Linux.h"
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_HAL_Linux.h"
 #include "GPIO.h"
 
 class Linux::DigitalSource_Sysfs : public AP_HAL::DigitalSource {

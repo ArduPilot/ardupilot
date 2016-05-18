@@ -1,13 +1,14 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include <AP_HAL/AP_HAL.h>
 
 #include "ConsoleDevice.h"
 
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
 
-ConsoleDevice::ConsoleDevice() 
+ConsoleDevice::ConsoleDevice()
 {
 }
 
@@ -54,10 +55,10 @@ void ConsoleDevice::set_blocking(bool blocking)
 {
     int rd_flags;
     int wr_flags;
-   
+
     rd_flags  = fcntl(_rd_fd, F_GETFL, 0);
     wr_flags  = fcntl(_wr_fd, F_GETFL, 0);
-    
+
     if (blocking) {
         rd_flags = rd_flags & ~O_NONBLOCK;
         wr_flags = wr_flags & ~O_NONBLOCK;

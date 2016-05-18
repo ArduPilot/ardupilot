@@ -1,5 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "RCInput_UART.h"
 
 #include <errno.h>
@@ -10,6 +8,8 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 #define MAGIC 0x55AA
 

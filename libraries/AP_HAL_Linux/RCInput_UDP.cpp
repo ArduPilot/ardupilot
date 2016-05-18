@@ -1,7 +1,8 @@
+#include <stdio.h>
+
 #include <AP_HAL/AP_HAL.h>
 
 #include "RCInput_UDP.h"
-#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 

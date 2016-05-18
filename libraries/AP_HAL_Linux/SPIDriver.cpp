@@ -1,16 +1,18 @@
+#include "SPIDriver.h"
+
+#include <errno.h>
+#include <fcntl.h>
+#include <linux/spi/spidev.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#include "SPIDriver.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/ioctl.h>
-#include <linux/spi/spidev.h>
 #include "GPIO.h"
 
 using namespace Linux;

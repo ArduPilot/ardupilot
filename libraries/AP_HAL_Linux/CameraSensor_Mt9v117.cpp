@@ -13,11 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <AP_HAL/AP_HAL.h>
-#include "GPIO.h"
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 
 #include "CameraSensor_Mt9v117.h"
+#include "GPIO.h"
 
 /* Cam sensor register definitions */
 #define CHIP_ID                 0x0

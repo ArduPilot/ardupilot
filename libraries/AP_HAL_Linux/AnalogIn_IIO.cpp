@@ -1,9 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include <AP_HAL/AP_HAL.h>
-
 #include "AnalogIn_IIO.h"
 
-extern const AP_HAL::HAL& hal;
+#include <AP_HAL/AP_HAL.h>
+
+extern const AP_HAL::HAL &hal;
 
 const char* AnalogSource_IIO::analog_sources[] = {
     "in_voltage0_raw",

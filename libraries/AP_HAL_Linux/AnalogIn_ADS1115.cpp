@@ -1,5 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AnalogIn_ADS1115.h"
 
 AnalogSource_ADS1115::AnalogSource_ADS1115(int16_t pin):

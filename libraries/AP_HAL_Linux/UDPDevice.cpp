@@ -1,10 +1,10 @@
-#include <AP_HAL/AP_HAL.h>
+#include "UDPDevice.h"
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
-#include <fcntl.h>
 
-#include "UDPDevice.h"
+#include <AP_HAL/AP_HAL.h>
 
 UDPDevice::UDPDevice(const char *ip, uint16_t port, bool bcast):
     _ip(ip),
