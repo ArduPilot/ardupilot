@@ -11,6 +11,7 @@
  *  VECTORED_FRAME
  *  VECTORED6DOF_FRAME
  *  SIMPLEROV_FRAME
+ *  VECTORED90_FRAME
  */
 
 // uncomment the lines below to disable features (flash sizes listed are for APM2 boards and will underestimate savings on Pixhawk and other boards)

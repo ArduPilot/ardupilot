@@ -82,13 +82,32 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-	uint8_t mav_type;
-    mav_type = MAV_TYPE_SUBMARINE;
 
-    gcs[chan-MAVLINK_COMM_0].send_heartbeat(mav_type,
-                                            base_mode,
-                                            custom_mode,
-                                            system_status);
+    mavlink_msg_heartbeat_send(
+        chan,
+#if (FRAME_CONFIG == QUAD_FRAME)
+        MAV_TYPE_QUADROTOR,
+#elif (FRAME_CONFIG == TRI_FRAME)
+        MAV_TYPE_TRICOPTER,
+#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
+        MAV_TYPE_HEXAROTOR,
+#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
+        MAV_TYPE_OCTOROTOR,
+#elif (FRAME_CONFIG == HELI_FRAME)
+        MAV_TYPE_HELICOPTER,
+#elif (FRAME_CONFIG == SINGLE_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
+        MAV_TYPE_ROCKET,
+#elif (FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
+        MAV_TYPE_ROCKET,
+#elif (FRAME_CONFIG == BLUEROV_FRAME || FRAME_CONFIG == VECTORED_FRAME || FRAME_CONFIG == VECTORED6DOF_FRAME || FRAME_CONFIG == SIMPLEROV_FRAME || FRAME_CONFIG == VECTORED90_FRAME)
+        MAV_TYPE_SUBMARINE,
+#else
+  #error Unrecognised frame type
+#endif
+        MAV_AUTOPILOT_ARDUPILOTMEGA,
+        base_mode,
+        custom_mode,
+        system_status);
 }
 
 NOINLINE void Sub::send_attitude(mavlink_channel_t chan)

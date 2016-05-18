@@ -112,7 +112,7 @@ qurt: all
 %-nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
 
 # cope with copter and hil targets
-FRAMES = quad tri hexa y6 octa octa-quad heli single coax bluerov vectored vectored6dof simplerov obc nologging
+FRAMES = quad tri hexa y6 octa octa-quad heli single coax bluerov vectored vectored6dof simplerov vectored90 obc nologging
 BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v4 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52 vrhero-v10 erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
 
 define frame_template
