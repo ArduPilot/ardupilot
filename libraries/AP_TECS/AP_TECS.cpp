@@ -1045,9 +1045,10 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                            (double)_TAS_rate_dem,
                                            (double)logging.SKE_weighting,
                                            _flags_byte);
-    DataFlash_Class::instance()->Log_Write("TEC2", "TimeUS,KErr,PErr,EDelta", "Qfff",
+    DataFlash_Class::instance()->Log_Write("TEC2", "TimeUS,KErr,PErr,EDelta,LF", "Qffff",
                                            now,
                                            (double)logging.SKE_error,
                                            (double)logging.SPE_error,
-                                           (double)logging.SEB_delta);
+                                           (double)logging.SEB_delta,
+                                           (double)load_factor);
 }
