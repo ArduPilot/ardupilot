@@ -22,17 +22,6 @@ NUTTX_ROOT := $(shell cd $(PX4NUTTX_DIRECTORY) && pwd)
 NUTTX_SRC := $(NUTTX_ROOT)/nuttx/
 UAVCAN_DIR=$(shell cd $(UAVCAN_DIRECTORY) && pwd)/
 
-# warn if user has old PX4Firmware or PX4NuttX trees
-ifneq ($(wildcard $(SKETCHBOOK)/../PX4Firmware),)
-$(warning *** You have an old PX4Firmware tree - see http://dev.ardupilot.com/wiki/git-submodules/)
-endif
-ifneq ($(wildcard $(SKETCHBOOK)/../PX4NuttX),)
-$(warning *** You have an old PX4NuttX tree - see http://dev.ardupilot.com/wiki/git-submodules/)
-endif
-ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
-$(warning *** You have an old uavcan tree - see http://dev.ardupilot.com/wiki/git-submodules/)
-endif
-
 NUTTX_GIT_VERSION ?= $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
 PX4_GIT_VERSION   ?= $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
 
