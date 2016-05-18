@@ -383,7 +383,6 @@ class px4(Board):
         env.GIT_SUBMODULES += [
             'PX4Firmware',
             'PX4NuttX',
-            'uavcan',
         ]
 
         env.PX4_VERSION = self.version
