@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
     // @Description: Automatic switchover to GPS reporting best lock
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Use the higher sat count,2:Switch on bad VZ
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
 
@@ -137,6 +137,13 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Values: 0:Disables automatic configuration,1:Enable automatic configuration
     // @User: Advanced
     AP_GROUPINFO("AUTO_CONFIG", 13, AP_GPS, _auto_config, 1),
+
+    // @Param: VZ_SW_THR
+    // @DisplayName: Vert Velocity Switch Threshold
+    // @Description: When GPS_AUTO_SWITCH=2 this value sets the vertical velocity switching threshold. Vertical velocity is indicitive of a GPS signal that is about to lose lock. If the primary GPS's VZ is above this value, and the other GPS is under it, then switch.
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("VZ_SW_THR", 14, AP_GPS, _vz_switch_threshold, 10.0f),
 
     AP_GROUPEND
 };
@@ -414,6 +421,8 @@ AP_GPS::update_instance(uint8_t instance)
 void
 AP_GPS::update(void)
 {
+    uint32_t now = AP_HAL::millis();
+
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         update_instance(i);
     }
@@ -423,38 +432,60 @@ AP_GPS::update(void)
         if (state[i].status != NO_GPS) {
             num_instances = i+1;
         }
-        if (_auto_switch) {            
-            if (i == primary_instance) {
-                continue;
-            }
-            if (state[i].status > state[primary_instance].status) {
-                // we have a higher status lock, change GPS
-                primary_instance = i;
-                continue;
-            }
-
-            bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
-
-            if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
-
-                uint32_t now = AP_HAL::millis();
-                bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
-
-                if ( (another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
-                     (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000 ) ) {
-                // this GPS has more satellites than the
-                // current primary, switch primary. Once we switch we will
-                // then tend to stick to the new GPS as primary. We don't
-                // want to switch too often as it will look like a
-                // position shift to the controllers.
-                primary_instance = i;
-                _last_instance_swap_ms = now;
-                }
-            }
-        } else {
-            primary_instance = 0;
+        if (i == primary_instance) {
+            continue;
         }
+
+        // work out which GPS is the primary
+        if (now - _last_instance_swap_ms < 20000 &&
+                state[primary_instance].status >= GPS_OK_FIX_3D) {
+            // don't allow switches too often except if primary is in trouble
+            continue;
+        }
+
+        switch (_auto_switch) {
+        default:
+        case GPS_AUTO_SWITCH_DISABLED:
+            break;
+
+        case GPS_AUTO_SWITCH_MORE_SATS:
+            if (state[i].status > state[primary_instance].status ||
+                (state[i].num_sats >= state[primary_instance].num_sats + 2)) {
+                // there is a higher status lock or 2+ sats
+                primary_instance_change_request = i;
+            }
+            break;
+
+        case GPS_AUTO_SWITCH_VZ:
+            float pri = fabsf(state[primary_instance].velocity.z);
+            float sec = fabsf(state[i].velocity.z);
+            if (pri > _vz_switch_threshold && // above threshold
+                sec < _vz_switch_threshold && // below threshold
+                fabsf(pri - sec) > 0.1f && // diverged by >10%. A little bit of difference is normal so lets reject that
+                timing[primary_instance].last_fix_time_ms > 0 && // has locked before, keeps us from switching just after bootup
+                state[i].status >= GPS_OK_FIX_3D) { // sec is rdy
+                    primary_instance_change_request = i;
+                }
+            break;
+        } // switch
+    } // for i
+
+    // if primary index changed then note the time to inhibit doing this too often
+    if (primary_instance_change_request != primary_instance) {
+        // to protect against glitches, require the instance change request to persist
+        if (primary_instance_change_debounce_ms == 0) {
+            primary_instance_change_debounce_ms = now;
+        } else if (now - primary_instance_change_debounce_ms >= 500) {
+            // a change request has persisted, do the swap
+            _last_instance_swap_ms = now;
+            primary_instance = primary_instance_change_request;
+            primary_instance_change_debounce_ms = 0;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS auto-switched to %d", primary_instance);
+        }
+    } else {
+        primary_instance_change_debounce_ms = 0;
     }
+
 
 	// update notify with gps status. We always base this on the primary_instance
     AP_Notify::flags.gps_status = state[primary_instance].status;

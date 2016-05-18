@@ -99,6 +99,13 @@ public:
        GPS_ALL_CONFIGURED = 255
    };
 
+   // GPS auto-switching modes
+   enum GPS_Auto_Switch {
+       GPS_AUTO_SWITCH_DISABLED = 0,
+       GPS_AUTO_SWITCH_MORE_SATS = 1,
+       GPS_AUTO_SWITCH_VZ = 2
+   };
+
     /*
       The GPS_State structure is filled in by the backend driver as it
       parses each message from the GPS.
@@ -335,6 +342,7 @@ public:
     AP_Int8 _gnss_mode[2];
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
+    AP_Float _vz_switch_threshold;
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
@@ -373,6 +381,8 @@ private:
 
     /// primary GPS instance
     uint8_t primary_instance:2;
+    uint8_t primary_instance_change_request:2;
+    uint32_t primary_instance_change_debounce_ms;
 
     /// number of GPS instances present
     uint8_t num_instances:2;
