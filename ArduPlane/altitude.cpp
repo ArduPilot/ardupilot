@@ -626,7 +626,8 @@ void Plane::rangefinder_height_update(void)
 
         // remember the last correction. Use a low pass filter unless
         // the old data is more than 5 seconds old
-        if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
+        uint32_t now = millis();
+        if (now - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
             auto_state.initial_land_slope = auto_state.land_slope;
@@ -640,7 +641,7 @@ void Plane::rangefinder_height_update(void)
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }
         }
-        rangefinder_state.last_correction_time_ms = millis();    
+        rangefinder_state.last_correction_time_ms = now;
     }
 }
 #endif
