@@ -337,9 +337,6 @@ struct PACKED log_Sonar {
     uint64_t time_us;
     uint16_t distance;
     float voltage;
-    float baro_alt;
-    float groundspeed;
-    int8_t throttle;
     uint8_t count;
     float correction;
 };
@@ -358,9 +355,6 @@ void Plane::Log_Write_Sonar()
         time_us     : AP_HAL::micros64(),
         distance    : distance,
         voltage     : rangefinder.voltage_mv()*0.001f,
-        baro_alt    : barometer.get_altitude(),
-        groundspeed : gps.ground_speed(),
-        throttle    : (int8_t)(100 * channel_throttle->norm_output()),
         count       : rangefinder_state.in_range_count,
         correction  : rangefinder_state.correction
     };
@@ -490,7 +484,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "Qfcccfff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,XT,XTi,ArspdErr" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
-      "SONR", "QHfffbBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
+      "SONR", "QHfBf",   "TimeUS,DistCM,Volt,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
