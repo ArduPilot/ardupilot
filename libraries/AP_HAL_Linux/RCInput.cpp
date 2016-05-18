@@ -1,6 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <stdio.h>
 #include <sys/time.h>
 #include <stdio.h>
@@ -16,6 +13,7 @@
 
 #include "RCInput.h"
 #include "sbus.h"
+#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/dsm.h>
 
 extern const AP_HAL::HAL& hal;
@@ -406,5 +404,3 @@ void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
         }
     }
 }
-
-#endif // CONFIG_HAL_BOARD

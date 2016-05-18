@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -189,5 +187,3 @@ void Storage::_timer_tick(void)
         }
     }
 }
-
-#endif // CONFIG_HAL_BOARD

@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
@@ -120,5 +118,3 @@ void TCPServerDevice::set_blocking(bool blocking)
 void TCPServerDevice::set_speed(uint32_t speed)
 {
 }
-
-#endif

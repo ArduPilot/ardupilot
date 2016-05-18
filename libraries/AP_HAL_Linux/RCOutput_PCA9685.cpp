@@ -2,8 +2,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "GPIO.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RCOutput_PCA9685.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -248,5 +246,3 @@ void RCOutput_PCA9685::read(uint16_t* period_us, uint8_t len)
     for (int i = 0; i < len; i++)
         period_us[i] = read(0 + i);
 }
-
-#endif

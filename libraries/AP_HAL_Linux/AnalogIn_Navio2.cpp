@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "AnalogIn_Navio2.h"
 
 #include <cstdio>
@@ -124,5 +122,3 @@ void AnalogIn_Navio2::init()
     _board_voltage_pin = channel(0);
     _servorail_pin = channel(1);
 }
-
-#endif

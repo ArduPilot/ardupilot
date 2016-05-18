@@ -12,8 +12,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RCOutput_AioPRU.h"
 #include <fcntl.h>
 #include <unistd.h>
@@ -128,6 +126,3 @@ void RCOutput_AioPRU::read(uint16_t* period_us, uint8_t len)
       period_us[i] = pwm->channel[i].time_high / TICK_PER_US;
    }
 }
-
-#endif
-

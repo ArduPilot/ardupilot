@@ -1,7 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AnalogIn_IIO.h"
 
 extern const AP_HAL::HAL& hal;
@@ -125,5 +124,3 @@ void AnalogIn_IIO::init()
 AP_HAL::AnalogSource* AnalogIn_IIO::channel(int16_t pin) {
     return new AnalogSource_IIO(pin, 0.0f, IIO_VOLTAGE_SCALING);
 }
-
-#endif // CONFIG_HAL_BOARD

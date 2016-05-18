@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RCInput_UART.h"
 
 #include <errno.h>
@@ -92,5 +90,3 @@ void RCInput_UART::_timer_tick()
     _pdata = (uint8_t *)&_data;
     _remain = sizeof(_data);
 }
-
-#endif

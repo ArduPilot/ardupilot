@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <stdio.h>
 #include <stdarg.h>
 #include <sys/stat.h>
@@ -206,5 +205,3 @@ close_end:
 end:
     return ret;
 }
-
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX

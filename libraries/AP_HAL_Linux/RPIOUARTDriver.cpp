@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RPIOUARTDriver.h"
 
 #include <stdlib.h>
@@ -289,5 +287,3 @@ void RPIOUARTDriver::_timer_tick(void)
     
     _last_update_timestamp = AP_HAL::micros();
 }
-
-#endif

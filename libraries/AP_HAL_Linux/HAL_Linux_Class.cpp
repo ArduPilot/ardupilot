@@ -1,11 +1,9 @@
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <assert.h>
 
 #include "HAL_Linux_Class.h"
 #include "AP_HAL_Linux_Private.h"
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -351,5 +349,3 @@ const AP_HAL::HAL& AP_HAL::get_HAL() {
     static const HAL_Linux hal;
     return hal;
 }
-
-#endif

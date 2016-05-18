@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <stdlib.h>
 #include <cstdio>
 #include "SPIUARTDriver.h"
@@ -238,5 +236,3 @@ void SPIUARTDriver::_timer_tick(void)
 
     _last_update_timestamp = AP_HAL::micros();
 }
-
-#endif

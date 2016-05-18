@@ -2,8 +2,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "UARTDriver.h"
 
 #include <stdio.h>
@@ -628,5 +626,3 @@ void UARTDriver::_timer_tick(void)
 
     _in_timer = false;
 }
-
-#endif // CONFIG_HAL_BOARD

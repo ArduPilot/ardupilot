@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -258,5 +257,3 @@ int8_t Storage_FRAM::transaction(uint8_t* tx, uint8_t* rx, uint16_t len){
     _spi_sem->give();
     return 0;
 }
-
-#endif // CONFIG_HAL_BOARD

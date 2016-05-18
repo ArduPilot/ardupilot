@@ -2,8 +2,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "AP_HAL_Linux.h"
 #include "GPIO.h"
 
@@ -78,5 +76,3 @@ protected:
      */
     static bool _export_pin(uint8_t vpin);
 };
-
-#endif

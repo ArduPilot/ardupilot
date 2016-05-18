@@ -1,8 +1,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RCOutput_ZYNQ.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -85,5 +83,3 @@ void RCOutput_ZYNQ::read(uint16_t* period_us, uint8_t len)
         period_us[i] = sharedMem_cmd->periodhi[i].hi/TICK_PER_US;
     }
 }
-
-#endif

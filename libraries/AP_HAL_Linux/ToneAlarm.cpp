@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "ToneAlarm.h"
 
 #include <stdio.h>
@@ -255,6 +253,3 @@ bool ToneAlarm::init_tune(){
     wholenote = (60 * 1000L / bpm) * 4;  // this is the time for whole note (in milliseconds)
     return true;
 }
-
-
-#endif

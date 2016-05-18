@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "ConsoleDevice.h"
 
 #include <stdio.h>
@@ -80,5 +79,3 @@ void ConsoleDevice::set_blocking(bool blocking)
 void ConsoleDevice::set_speed(uint32_t baudrate)
 {
 }
-
-#endif

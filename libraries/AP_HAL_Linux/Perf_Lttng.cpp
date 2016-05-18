@@ -16,7 +16,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #pragma GCC diagnostic ignored "-Wcast-align"
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && defined(PERF_LTTNG)
+#if defined(PERF_LTTNG)
+
 #define TRACEPOINT_CREATE_PROBES
 #define TRACEPOINT_DEFINE
 #include "Perf_Lttng_TracePoints.h"

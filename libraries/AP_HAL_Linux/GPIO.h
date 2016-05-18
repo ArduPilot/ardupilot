@@ -2,8 +2,6 @@
 
 #include "AP_HAL_Linux.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 class Linux::DigitalSource : public AP_HAL::DigitalSource {
 public:
     DigitalSource(uint8_t v);
@@ -30,5 +28,3 @@ private:
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #include "GPIO_Bebop.h"
 #endif
-
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX

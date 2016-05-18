@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <termios.h>
 #include <stdio.h>
 #include <errno.h>
@@ -119,5 +117,3 @@ void UARTDevice::set_speed(uint32_t baudrate)
     cfsetspeed(&t, baudrate);
     tcsetattr(_fd, TCSANOW, &t);
 }
-
-#endif

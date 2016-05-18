@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "I2CDriver.h"
 #include "Util.h"
 
@@ -283,5 +282,3 @@ AP_HAL::Semaphore *I2CDriver::get_semaphore()
 {
     return _fake_dev->get_semaphore();
 }
-
-#endif // CONFIG_HAL_BOARD

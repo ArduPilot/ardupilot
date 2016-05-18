@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -67,5 +65,3 @@ void UDPDevice::set_speed(uint32_t speed)
 {
 
 }
-
-#endif

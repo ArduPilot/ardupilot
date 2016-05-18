@@ -18,8 +18,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RCOutput_Sysfs.h"
 
 #include <AP_Common/AP_Common.h>
@@ -120,5 +118,3 @@ void RCOutput_Sysfs::read(uint16_t *period_us, uint8_t len)
     }
 }
 }
-
-#endif

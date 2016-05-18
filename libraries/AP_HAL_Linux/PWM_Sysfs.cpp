@@ -15,10 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "PWM_Sysfs.h"
 
@@ -283,4 +280,3 @@ PWM_Sysfs_Bebop::PWM_Sysfs_Bebop(uint8_t channel) :
 }
 
 }
-#endif

@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <stdio.h>
 #include <sys/time.h>
 #include <stdio.h>
@@ -50,5 +49,3 @@ void RCInput_ZYNQ::_timer_tick()
             _process_rc_pulse(_s0_time, (v & 0x7fffffff)/TICK_PER_US);
     }
 }
-
-#endif // CONFIG_HAL_BOARD
