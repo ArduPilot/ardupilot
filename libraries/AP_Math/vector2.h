@@ -107,6 +107,14 @@ struct Vector2
     // check if all elements are zero
     bool is_zero(void) const { return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON); }
 
+    const T & operator[](uint8_t i) const {
+        const T *_v = &x;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 2);
+#endif
+        return _v[i];
+    }
+
     // zero the vector
     void zero()
     {
