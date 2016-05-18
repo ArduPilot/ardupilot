@@ -14,7 +14,7 @@
 #endif
 
 #ifndef DRIFT_THR_ASSIST_GAIN
- # define DRIFT_THR_ASSIST_GAIN 1.8f    // gain controlling amount of throttle assistance
+ # define DRIFT_THR_ASSIST_GAIN 0.0018f    // gain controlling amount of throttle assistance
 #endif
 
 #ifndef DRIFT_THR_ASSIST_MAX
@@ -56,10 +56,10 @@ void Copter::drift_run()
     }
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
+    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // Grab inertial velocity
     const Vector3f& vel = inertial_nav.get_velocity();
@@ -75,7 +75,7 @@ void Copter::drift_run()
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     
-    roll_input = roll_input * .96f + (float)channel_yaw->control_in * .04f;
+    roll_input = roll_input * .96f + (float)channel_yaw->get_control_in() * .04f;
 
     //convert user input into desired roll velocity
     float roll_vel_error = roll_vel - (roll_input / DRIFT_SPEEDGAIN);

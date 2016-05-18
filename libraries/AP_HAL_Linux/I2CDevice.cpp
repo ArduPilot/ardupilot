@@ -36,6 +36,7 @@
 #ifndef I2C_SMBUS_BLOCK_MAX
 #include <linux/i2c.h>
 #endif
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>

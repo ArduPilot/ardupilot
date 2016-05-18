@@ -1,13 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#pragma once
-
-#define THISFIRMWARE "ArduPlane V3.5.2"
-#define FIRMWARE_VERSION 3,5,2,FIRMWARE_VERSION_TYPE_OFFICIAL
-
 /*
-   Lead developer: Andrew Tridgell
- 
-   Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger, Tom Pittenger
+   Lead developer: Andrew Tridgell & Tom Pittenger
+
+   Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
 
    Please contribute your ideas! See http://dev.ardupilot.com for details
@@ -25,6 +20,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
 // Header includes
@@ -137,7 +133,7 @@ public:
     friend class Parameters;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
-    friend class Tuning;
+    friend class AP_Tuning_Plane;
 
     Plane(void);
 
@@ -171,7 +167,7 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    DataFlash_Class DataFlash{FIRMWARE_STRING};
+    DataFlash_Class DataFlash;
 
     // has a log download started?
     bool in_log_download;
@@ -202,6 +198,7 @@ private:
         float initial_range;
         float correction;
         float initial_correction;
+        float last_stable_correction;
         uint32_t last_correction_time_ms;
         uint8_t in_range_count;
         float height_estimate;
@@ -363,8 +360,8 @@ private:
     // Also used for flap deployment criteria.  Centimeters per second.
     int32_t target_airspeed_cm;
 
-    // The difference between current and desired airspeed.  Used in the pitch controller.  Centimeters per second.
-    float airspeed_error_cm;
+    // The difference between current and desired airspeed.  Used in the pitch controller.  Meters per second.
+    float airspeed_error;
 
     // An amount that the airspeed should be increased in auto modes based on the user positioning the
     // throttle stick in the top half of the range.  Centimeters per second.
@@ -410,6 +407,13 @@ private:
         uint32_t lock_timer_ms;
     } cruise_state;
 
+    struct {
+        uint32_t last_tkoff_arm_time;
+        uint32_t last_check_ms;
+        uint32_t last_report_ms;
+        bool launchTimerStarted;
+    } takeoff_state;
+    
     // ground steering controller state
     struct {
         // Direction held during phases of takeoff and landing centidegrees
@@ -503,11 +507,20 @@ private:
         // time stamp of when we start flying while in auto mode in milliseconds
         uint32_t started_flying_in_auto_ms;
 
+        // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - aparm.land_flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
+        float land_slope;
+
+        // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
+        float initial_land_slope;
+
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
 
-        // are we in VTOL mode?
+        // are we in VTOL mode in AUTO?
         bool vtol_mode:1;
+
+        // are we doing loiter mode as a VTOL?
+        bool vtol_loiter:1;
     } auto_state;
 
     struct {
@@ -744,7 +757,7 @@ private:
     QuadPlane quadplane{ahrs};
 
     // support for transmitter tuning
-    Tuning tuning;
+    AP_Tuning_Plane tuning;
 
     static const struct LogStructure log_structure[];
     
@@ -762,6 +775,7 @@ private:
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
+    void send_position_target_global_int(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_radio_out(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
@@ -782,11 +796,11 @@ private:
     void gcs_retry_deferred(void);
 
     void do_erase_logs(void);
+    void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
-    void Log_Write_TECS_Tuning(void);
     void Log_Write_Nav_Tuning();
     void Log_Write_Status();
     void Log_Write_Sonar();
@@ -809,6 +823,7 @@ private:
     int32_t get_RTL_altitude();
     float relative_altitude(void);
     int32_t relative_altitude_abs_cm(void);
+    float relative_ground_altitude(void);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
@@ -832,7 +847,7 @@ private:
     void set_guided_WP(void);
     void init_home();
     void update_home();
-    void do_RTL(void);
+    void do_RTL(int32_t alt);
     bool verify_takeoff();
     bool verify_loiter_unlim();
     bool verify_loiter_time();
@@ -841,7 +856,6 @@ private:
     bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
-    bool verify_change_alt();
     bool verify_within_distance();
     bool verify_altitude_wait(const AP_Mission::Mission_Command &cmd);
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
@@ -882,6 +896,7 @@ private:
     bool verify_land();
     void disarm_if_autoland_complete();
     void setup_landing_glide_slope(void);
+    void adjust_landing_slope_for_rangefinder_bump(void);
     bool jump_to_landing_sequence(void);
     float tecs_hgt_afe(void);
     void set_nav_controller(void);
@@ -894,6 +909,7 @@ private:
     void update_cruise();
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
+    bool reached_loiter_target(void);
     bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);
     uint16_t create_mixer(char *buf, uint16_t buf_size, const char *filename);
     bool setup_failsafe_mixing(void);
@@ -997,7 +1013,8 @@ private:
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
     void stabilize_pitch(float speed_scaler);
-    void stick_mix_channel(RC_Channel *channel, int16_t &servo_out);
+    static void stick_mix_channel(RC_Channel *channel);
+    static void stick_mix_channel(RC_Channel *channel, int16_t &servo_out);
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw(float speed_scaler);
@@ -1009,7 +1026,8 @@ private:
     void throttle_slew_limit(int16_t last_throttle);
     void flap_slew_limit(int8_t &last_value, int8_t &new_value);
     bool suppress_throttle(void);
-    void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out);
+    void channel_output_mixer(uint8_t mixing_type, int16_t & chan1, int16_t & chan2)const;
+    void channel_output_mixer(uint8_t mixing_type, RC_Channel* chan1, RC_Channel* chan2)const;
     void flaperon_update(int8_t flap_percent);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -1027,7 +1045,6 @@ private:
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-    void do_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);

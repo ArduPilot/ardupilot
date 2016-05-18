@@ -34,7 +34,7 @@
 
     cblock 0x020
     ; input_value, input_rise and input_mirror
-    ; are at the bank's begining to make easy
+    ; are at the bank's beginning to make easy
     ; the exchange of data between them.
     input_value:(INPUT_NUM * 2)
     input_previous
@@ -364,7 +364,7 @@ ClearBank:
     ; clears the gpr bank pointed by w plus irp,
     ; but preserves the common 16 bytes.
 
-    ; ensure the begining of the bank
+    ; ensure the beginning of the bank
     andlw   b'10100000'
     movwf   FSR
     movlw   .80

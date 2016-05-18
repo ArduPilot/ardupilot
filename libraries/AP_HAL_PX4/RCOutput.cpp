@@ -165,6 +165,16 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
  */
 void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
 {
+    // re-fetch servo count as it might have changed due to a change in BRD_PWM_COUNT
+    if (_pwm_fd != -1 && ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
+        hal.console->printf("RCOutput: Unable to get servo count\n");        
+        return;
+    }
+    if (_alt_fd != -1 && ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
+        hal.console->printf("RCOutput: Unable to get alt servo count\n");        
+        return;
+    }
+    
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
     if (freq_hz > 400) {
@@ -194,7 +204,7 @@ void PX4RCOutput::enable_ch(uint8_t ch)
         return;
     }
     if (ch >= 8 && !(_enabled_channels & (1U<<ch))) {
-        // this is the first enable of an auxillary channel - setup
+        // this is the first enable of an auxiliary channel - setup
         // aux channels now. This delayed setup makes it possible to
         // use BRD_PWM_COUNT to setup the number of PWM channels.
         _init_alt_channels();

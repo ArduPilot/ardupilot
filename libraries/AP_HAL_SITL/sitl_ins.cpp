@@ -62,7 +62,9 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
     delayed_time_wind = now - _sitl->wind_delay; // get time corresponding to delay
     // find data corresponding to delayed time in buffer
     for (uint8_t i=0; i<=wind_buffer_length-1; i++) {
-        time_delta_wind = abs(delayed_time_wind - buffer_wind[i].time); // find difference between delayed time and time stamp in buffer
+        // find difference between delayed time and time stamp in buffer
+        time_delta_wind = abs(
+                (int32_t)(delayed_time_wind - buffer_wind[i].time));
         // if this difference is smaller than last delta, store this time
         if (time_delta_wind < best_time_delta_wind) {
             best_index_wind = i;
@@ -142,8 +144,8 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
     }
 
     sonar_pin_value    = _ground_sonar();
-    float airspeed_simulated = (fabsf(_sitl->aspd_fail) > 1.0e-6f) ? _sitl->aspd_fail : airspeed;
-    airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->aspd_noise * _rand_float()));
+    float airspeed_simulated = (fabsf(_sitl->arspd_fail) > 1.0e-6f) ? _sitl->arspd_fail : airspeed;
+    airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->arspd_noise * _rand_float()));
 }
 
 #endif

@@ -9,7 +9,7 @@
 
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
-// returns true if mode was succesfully set
+// returns true if mode was successfully set
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 {
@@ -255,7 +255,7 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     // smooth throttle transition when switching from manual to automatic flight modes
     if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors.armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
-        set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(channel_throttle->control_in));
+        set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(channel_throttle->get_control_in()));
     }
 
     // cancel any takeoffs in progress

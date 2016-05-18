@@ -382,14 +382,14 @@ void Copter::report_optflow()
 
 void Copter::print_radio_values()
 {
-    cliSerial->printf("CH1: %d | %d\n", (int)channel_roll->radio_min, (int)channel_roll->radio_max);
-    cliSerial->printf("CH2: %d | %d\n", (int)channel_pitch->radio_min, (int)channel_pitch->radio_max);
-    cliSerial->printf("CH3: %d | %d\n", (int)channel_throttle->radio_min, (int)channel_throttle->radio_max);
-    cliSerial->printf("CH4: %d | %d\n", (int)channel_yaw->radio_min, (int)channel_yaw->radio_max);
-    cliSerial->printf("CH5: %d | %d\n", (int)g.rc_5.radio_min, (int)g.rc_5.radio_max);
-    cliSerial->printf("CH6: %d | %d\n", (int)g.rc_6.radio_min, (int)g.rc_6.radio_max);
-    cliSerial->printf("CH7: %d | %d\n", (int)g.rc_7.radio_min, (int)g.rc_7.radio_max);
-    cliSerial->printf("CH8: %d | %d\n", (int)g.rc_8.radio_min, (int)g.rc_8.radio_max);
+    cliSerial->printf("CH1: %d | %d\n", (int)channel_roll->get_radio_min(), (int)channel_roll->get_radio_max());
+    cliSerial->printf("CH2: %d | %d\n", (int)channel_pitch->get_radio_min(), (int)channel_pitch->get_radio_max());
+    cliSerial->printf("CH3: %d | %d\n", (int)channel_throttle->get_radio_min(), (int)channel_throttle->get_radio_max());
+    cliSerial->printf("CH4: %d | %d\n", (int)channel_yaw->get_radio_min(), (int)channel_yaw->get_radio_max());
+    cliSerial->printf("CH5: %d | %d\n", (int)g.rc_5.get_radio_min(), (int)g.rc_5.get_radio_max());
+    cliSerial->printf("CH6: %d | %d\n", (int)g.rc_6.get_radio_min(), (int)g.rc_6.get_radio_max());
+    cliSerial->printf("CH7: %d | %d\n", (int)g.rc_7.get_radio_min(), (int)g.rc_7.get_radio_max());
+    cliSerial->printf("CH8: %d | %d\n", (int)g.rc_8.get_radio_min(), (int)g.rc_8.get_radio_max());
 }
 
 void Copter::print_switch(uint8_t p, uint8_t m, bool b)

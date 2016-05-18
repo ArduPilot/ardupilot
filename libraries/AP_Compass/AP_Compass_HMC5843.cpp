@@ -18,7 +18,7 @@
  *       AP_Compass_HMC5843.cpp - Arduino Library for HMC5843 I2C magnetometer
  *       Code by Jordi Muñoz and Jose Julio. DIYDrones.com
  *
- *       Sensor is conected to I2C port
+ *       Sensor is connected to I2C port
  *       Sensor is initialized in Continuos mode (10Hz)
  *
  */
@@ -88,9 +88,11 @@ extern const AP_HAL::HAL& hal;
 
 #define HMC5843_REG_DATA_OUTPUT_X_MSB 0x03
 
-AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus)
+AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
+                                       bool force_external)
     : AP_Compass_Backend(compass)
     , _bus(bus)
+    , _force_external(force_external)
 {
 }
 
@@ -100,14 +102,15 @@ AP_Compass_HMC5843::~AP_Compass_HMC5843()
 }
 
 AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                              bool force_external)
 {
     AP_HMC5843_BusDriver *bus = new AP_HMC5843_BusDriver_HALDevice(std::move(dev));
     if (!bus) {
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, force_external);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -127,7 +130,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(Compass &compass)
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, false);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -181,10 +184,9 @@ bool AP_Compass_HMC5843::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _product_id);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    // FIXME: wrong way to force external compass
-    set_external(_compass_instance, true);
-#endif
+    if (_force_external) {
+        set_external(_compass_instance, true);
+    }
 
     return true;
 
@@ -239,6 +241,12 @@ void AP_Compass_HMC5843::accumulate()
    Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
    raw_field *= _gain_scale;
 
+   // rotate to the desired orientation
+   if (is_external(_compass_instance) &&
+       _product_id == AP_COMPASS_TYPE_HMC5883L) {
+       raw_field.rotate(ROTATION_YAW_90);
+   }
+
    // rotate raw_field from sensor frame to body frame
    rotate_field(raw_field, _compass_instance);
 
@@ -290,12 +298,6 @@ void AP_Compass_HMC5843::read()
 
     _accum_count = 0;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-
-    // rotate to the desired orientation
-    // FIXME: wrong way to rotate compass
-    if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
-        field.rotate(ROTATION_YAW_90);
-    }
 
     publish_filtered_field(field, _compass_instance);
 }

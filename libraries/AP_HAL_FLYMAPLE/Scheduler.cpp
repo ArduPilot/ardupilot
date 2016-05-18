@@ -3,7 +3,7 @@
 // Flymaple Scheduler.
 // We use systick interrupt for the 1kHz ordinary timers.
 // We use a slightly higher priority HardwareTimer 2 for the failsafe callbacks
-// so a hung timer wont prevent the failsafe timer interrupt running
+// so a hung timer won't prevent the failsafe timer interrupt running
 //
 // Use of noInterrupts()/interrupts() on FLymaple ARM processor.
 // Please see the notes in FlymaplePortingNotes.txt in this directory for 

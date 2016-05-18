@@ -117,7 +117,9 @@ enum mode_reason_t {
     MODE_REASON_GPS_GLITCH,
     MODE_REASON_MISSION_END,
     MODE_REASON_THROTTLE_LAND_ESCAPE,
-    MODE_REASON_FENCE_BREACH
+    MODE_REASON_FENCE_BREACH,
+    MODE_REASON_TERRAIN_FAILSAFE,
+    MODE_REASON_BRAKE_TIMEOUT
 };
 
 // Tuning enumeration
@@ -215,8 +217,8 @@ enum RTLState {
 
 // Alt_Hold states
 enum AltHoldModeState {
-    AltHold_Disarmed,
-    AltHold_MotorStop,
+    AltHold_MotorStopped,
+    AltHold_NotAutoArmed,
     AltHold_Takeoff,
     AltHold_Flying,
     AltHold_Landed
@@ -224,8 +226,8 @@ enum AltHoldModeState {
 
 // Loiter states
 enum LoiterModeState {
-    Loiter_Disarmed,
-    Loiter_MotorStop,
+    Loiter_MotorStopped,
+    Loiter_NotAutoArmed,
     Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
@@ -295,7 +297,6 @@ enum ThrowModeState {
 #define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)
-#define MASK_LOG_WHEN_DISARMED          (1UL<<16)
 #define MASK_LOG_MOTBATT                (1UL<<17)
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
@@ -380,6 +381,9 @@ enum ThrowModeState {
 #define ERROR_SUBSYSTEM_BARO                18
 #define ERROR_SUBSYSTEM_CPU                 19
 #define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20
+#define ERROR_SUBSYSTEM_TERRAIN             21
+#define ERROR_SUBSYSTEM_NAVIGATION          22
+#define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -398,6 +402,12 @@ enum ThrowModeState {
 #define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
+// subsystem specific error codes -- terrain
+#define ERROR_CODE_MISSING_TERRAIN_DATA     2
+// subsystem specific error codes -- navigation
+#define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
+#define ERROR_CODE_RESTARTED_RTL            3
+#define ERROR_CODE_FAILED_CIRCLE_INIT       4
 
 // parachute failed to deploy because of low altitude or landed
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
@@ -451,3 +461,4 @@ enum ThrowModeState {
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
 #define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
+#define THR_BEHAVE_DISARM_ON_LAND_DETECT (1<<2)

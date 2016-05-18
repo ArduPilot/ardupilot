@@ -18,9 +18,15 @@
  */
 #pragma GCC optimize("O3")
 
-#include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
+
 #include <stdio.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <fenv.h>
+#endif
+
+#include <AP_Math/AP_Math.h>
+
 extern const AP_HAL::HAL& hal;
 
 //TODO: use higher precision datatypes to achieve more accuracy for matrix algebra operations
@@ -201,7 +207,7 @@ bool mat_inverse(float* A, float* inv, uint8_t n)
     memset(U_inv,0,n*n*sizeof(float));
     mat_back_sub(U,U_inv,n);
 
-    // decomposed matrices no loger required
+    // decomposed matrices no longer required
     free(L);
     free(U);
 
@@ -242,7 +248,7 @@ bool inverse3x3(float m[], float invOut[])
     float  det = m[0] * (m[4] * m[8] - m[7] * m[5]) -
     m[1] * (m[3] * m[8] - m[5] * m[6]) +
     m[2] * (m[3] * m[7] - m[4] * m[6]);
-    if (is_zero(det)){
+    if (is_zero(det) || isinf(det)) {
         return false;
     }
 
@@ -278,6 +284,13 @@ bool inverse4x4(float m[],float invOut[])
 {
     float inv[16], det;
     uint8_t i;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    int old = fedisableexcept(FE_OVERFLOW);
+    if (old < 0) {
+        hal.console->printf("inverse4x4(): warning: error on disabling FE_OVERFLOW floating point exception\n");
+    }
+#endif
 
     inv[0] = m[5]  * m[10] * m[15] -
     m[5]  * m[11] * m[14] -
@@ -393,7 +406,13 @@ bool inverse4x4(float m[],float invOut[])
 
     det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
 
-    if (is_zero(det)){
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (old >= 0 && feenableexcept(old) < 0) {
+        hal.console->printf("inverse4x4(): warning: error on restoring floating exception mask\n");
+    }
+#endif
+
+    if (is_zero(det) || isinf(det)){
         return false;
     }
 

@@ -220,6 +220,47 @@ Matrix3<T> Matrix3<T>::transposed(void) const
 }
 
 template <typename T>
+T Matrix3<T>::det() const
+{
+    return a.x * (b.y * c.z - b.z * c.y) +
+           a.y * (b.z * c.x - b.x * c.z) +
+           a.z * (b.x * c.y - b.y * c.x);
+}
+
+template <typename T>
+bool Matrix3<T>::inverse(Matrix3<T>& inv) const
+{
+    T d = det();
+
+    if (is_zero(d)) {
+        return false;
+    }
+
+    inv.a.x = (b.y * c.z - c.y * b.z) / d;
+    inv.a.y = (a.z * c.y - a.y * c.z) / d;
+    inv.a.z = (a.y * b.z - a.z * b.y) / d;
+    inv.b.x = (b.z * c.x - b.x * c.z) / d;
+    inv.b.y = (a.x * c.z - a.z * c.x) / d;
+    inv.b.z = (b.x * a.z - a.x * b.z) / d;
+    inv.c.x = (b.x * c.y - c.x * b.y) / d;
+    inv.c.y = (c.x * a.y - a.x * c.y) / d;
+    inv.c.z = (a.x * b.y - b.x * a.y) / d;
+
+    return true;
+}
+
+template <typename T>
+bool Matrix3<T>::invert()
+{
+    Matrix3<T> inv;
+    bool success = inverse(inv);
+    if (success) {
+        *this = inv;
+    }
+    return success;
+}
+
+template <typename T>
 void Matrix3<T>::zero(void)
 {
     a.x = a.y = a.z = 0;
@@ -267,6 +308,9 @@ template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) cons
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
 template Matrix3<float> Matrix3<float>::transposed(void) const;
+template float Matrix3<float>::det() const;
+template bool Matrix3<float>::inverse(Matrix3<float>& inv) const;
+template bool Matrix3<float>::invert();
 template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
 
 template void Matrix3<double>::zero(void);
@@ -279,4 +323,7 @@ template Vector3<double> Matrix3<double>::operator *(const Vector3<double> &v) c
 template Vector3<double> Matrix3<double>::mul_transpose(const Vector3<double> &v) const;
 template Matrix3<double> Matrix3<double>::operator *(const Matrix3<double> &m) const;
 template Matrix3<double> Matrix3<double>::transposed(void) const;
+template double Matrix3<double>::det() const;
+template bool Matrix3<double>::inverse(Matrix3<double>& inv) const;
+template bool Matrix3<double>::invert();
 template Vector2<double> Matrix3<double>::mulXY(const Vector3<double> &v) const;

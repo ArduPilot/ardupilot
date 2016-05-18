@@ -7,7 +7,10 @@
 /********************************************************************************/
 bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 {
-    // log when new commands start
+    // default to non-VTOL loiter
+    auto_state.vtol_loiter = false;
+
+        // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
@@ -101,10 +104,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_CONDITION_DISTANCE:
         do_within_distance(cmd);
-        break;
-
-    case MAV_CMD_CONDITION_CHANGE_ALT:
-        do_change_alt(cmd);
         break;
 
     // Do commands
@@ -277,9 +276,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
-    case MAV_CMD_CONDITION_CHANGE_ALT:
-        return verify_change_alt();
-
 #if PARACHUTE == ENABLED
     case MAV_CMD_DO_PARACHUTE:
         // assume parachute was released successfully
@@ -291,7 +287,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return quadplane.verify_vtol_takeoff(cmd);
 
     case MAV_CMD_NAV_VTOL_LAND:
-        return quadplane.verify_vtol_land(cmd);
+        return quadplane.verify_vtol_land();
         
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -328,12 +324,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 //  Nav (Must) commands
 /********************************************************************************/
 
-void Plane::do_RTL(void)
+void Plane::do_RTL(int32_t rtl_altitude)
 {
     auto_state.next_wp_no_crosstrack = true;
     auto_state.no_crosstrack = true;
     prev_WP_loc = current_loc;
-    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude);
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
@@ -396,6 +392,8 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         // If no takeoff command has ever been used, default to a conservative 10deg
         auto_state.takeoff_pitch_cd = 1000;
     }
+
+    auto_state.land_slope = 0;
 
 #if RANGEFINDER_ENABLED == ENABLED
     // zero rangefinder state, start to accumulate good samples now
@@ -510,7 +508,7 @@ bool Plane::verify_takeoff()
             // estimation we save our current GPS ground course
             // corrected for summed yaw to set the take off
             // course. This keeps wings level until we are ready to
-            // rotate, and also allows us to cope with arbitary
+            // rotate, and also allows us to cope with arbitrary
             // compass errors for auto takeoff
             float takeoff_course = wrap_PI(radians(gps.ground_course_cd()*0.01f)) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);
@@ -625,7 +623,7 @@ bool Plane::verify_loiter_time()
     update_loiter(0);
 
     if (loiter.start_time_ms == 0) {
-        if (nav_controller->reached_loiter_target() && loiter.sum_cd > 1) {
+        if (reached_loiter_target() && loiter.sum_cd > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
         }
@@ -643,6 +641,7 @@ bool Plane::verify_loiter_time()
 
     if (result) {
         gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER time complete");
+        auto_state.vtol_loiter = false;
     }
     return result;
 }
@@ -652,6 +651,9 @@ bool Plane::verify_loiter_turns()
     bool result = false;
     uint16_t radius = HIGHBYTE(mission.get_current_nav_cmd().p1);
     update_loiter(radius);
+
+    // LOITER_TURNS makes no sense as VTOL
+    auto_state.vtol_loiter = false;
 
     if (condition_value != 0) {
         // primary goal, loiter time
@@ -709,7 +711,7 @@ bool Plane::verify_RTL()
     }
     update_loiter(abs(g.rtl_radius));
 	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
-        nav_controller->reached_loiter_target()) {
+        reached_loiter_target()) {
 			gcs_send_text(MAV_SEVERITY_INFO,"Reached HOME");
 			return true;
     } else {
@@ -792,23 +794,6 @@ void Plane::do_wait_delay(const AP_Mission::Mission_Command& cmd)
     condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
-/*
-  process a DO_CHANGE_ALT request
- */
-void Plane::do_change_alt(const AP_Mission::Mission_Command& cmd)
-{
-    condition_rate = labs((int)cmd.content.location.lat);   // climb rate in cm/s
-    condition_value = cmd.content.location.alt;             // To-Do: ensure this altitude is an absolute altitude?
-    if (condition_value < adjusted_altitude_cm()) {
-        condition_rate = -condition_rate;
-    }
-    set_target_altitude_current_adjusted();
-    change_target_altitude(condition_rate/10);
-    next_WP_loc.alt = condition_value;                                      // For future nav calculations
-    reset_offset_altitude();
-    setup_glide_slope();
-}
-
 void Plane::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
     condition_value  = cmd.content.distance.meters;
@@ -824,19 +809,6 @@ bool Plane::verify_wait_delay()
         condition_value         = 0;
         return true;
     }
-    return false;
-}
-
-bool Plane::verify_change_alt()
-{
-    if( (condition_rate>=0 && adjusted_altitude_cm() >= condition_value) || 
-        (condition_rate<=0 && adjusted_altitude_cm() <= condition_value)) {
-        condition_value = 0;
-        return true;
-    }
-    // condition_rate is climb rate in cm/s.  
-    // We divide by 10 because this function is called at 10hz
-    change_target_altitude(condition_rate/10);
     return false;
 }
 
@@ -1012,6 +984,11 @@ void Plane::exit_mission_callback()
 
 bool Plane::verify_loiter_heading(bool init)
 {
+    if (quadplane.in_vtol_auto()) {
+        // skip heading verify if in VTOL auto
+        return true;
+    }
+
     //Get the lat/lon of next Nav waypoint after this one:
     AP_Mission::Mission_Command next_nav_cmd;
     if (! mission.get_next_nav_cmd(mission.get_current_nav_index() + 1,
@@ -1052,7 +1029,11 @@ bool Plane::verify_loiter_heading(bool init)
     if (labs(heading_err_cd) <= 1000  ||
             loiter.sum_cd > loiter.total_cd) {
         // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
-        next_WP_loc = current_loc;
+
+        // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        if (next_WP_loc.flags.loiter_xtrack) {
+            next_WP_loc = current_loc;
+        }
         return true;
     }
     return false;

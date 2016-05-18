@@ -23,6 +23,8 @@ struct sitl_fdm {
     double battery_current; // Amps
     double rpm1;            // main prop RPM
     double rpm2;            // secondary RPM
+    uint8_t rcin_chan_count;
+    float  rcin[8];         // RC input 0..1
 };
 
 // number of rc output channels
@@ -67,8 +69,8 @@ public:
     AP_Float accel_noise; // in m/s/s
     AP_Float accel2_noise; // in m/s/s
     AP_Vector3f accel_bias; // in m/s/s
-    AP_Float aspd_noise;  // in m/s
-    AP_Float aspd_fail;   // pitot tube failure
+    AP_Float arspd_noise;  // in m/s
+    AP_Float arspd_fail;   // pitot tube failure
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees

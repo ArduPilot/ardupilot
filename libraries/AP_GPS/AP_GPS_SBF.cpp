@@ -215,7 +215,7 @@ AP_GPS_SBF::process_message(void)
 
         state.hdop = last_hdop;
 
-        // Update velocity state (dont use −2·10^10)
+        // Update velocity state (don't use −2·10^10)
         if (temp.Vn > -200000) {
             state.velocity.x = (float)(temp.Vn);
             state.velocity.y = (float)(temp.Ve);
@@ -226,8 +226,7 @@ AP_GPS_SBF::process_message(void)
             float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
-            state.ground_course_cd = (int32_t)(100 * ToDeg(atan2f(state.velocity[1], state.velocity[0])));
-            state.ground_course_cd = wrap_360_cd(state.ground_course_cd);
+            state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
 
             state.horizontal_accuracy = (float)temp.HAccuracy * 0.01f;
             state.vertical_accuracy = (float)temp.VAccuracy * 0.01f;
@@ -235,7 +234,7 @@ AP_GPS_SBF::process_message(void)
             state.have_vertical_accuracy = true;
         }
 
-        // Update position state (dont use −2·10^10)
+        // Update position state (don't use −2·10^10)
         if (temp.Latitude > -200000) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * 1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * 1e7);

@@ -24,11 +24,11 @@ void Copter::read_control_switch()
 
     // calculate position of flight mode switch
     int8_t switch_position;
-    if      (g.rc_5.radio_in < 1231) switch_position = 0;
-    else if (g.rc_5.radio_in < 1361) switch_position = 1;
-    else if (g.rc_5.radio_in < 1491) switch_position = 2;
-    else if (g.rc_5.radio_in < 1621) switch_position = 3;
-    else if (g.rc_5.radio_in < 1750) switch_position = 4;
+    if      (g.rc_5.get_radio_in() < 1231) switch_position = 0;
+    else if (g.rc_5.get_radio_in() < 1361) switch_position = 1;
+    else if (g.rc_5.get_radio_in() < 1491) switch_position = 2;
+    else if (g.rc_5.get_radio_in() < 1621) switch_position = 3;
+    else if (g.rc_5.get_radio_in() < 1750) switch_position = 4;
     else switch_position = 5;
 
     // store time that switch last moved
@@ -130,7 +130,7 @@ void Copter::read_aux_switches()
     }
 
     // check if ch7 switch has changed position
-    switch_position = read_3pos_switch(g.rc_7.radio_in);
+    switch_position = read_3pos_switch(g.rc_7.get_radio_in());
     if (aux_con.CH7_flag != switch_position) {
         // set the CH7 flag
         aux_con.CH7_flag = switch_position;
@@ -140,7 +140,7 @@ void Copter::read_aux_switches()
     }
 
     // check if Ch8 switch has changed position
-    switch_position = read_3pos_switch(g.rc_8.radio_in);
+    switch_position = read_3pos_switch(g.rc_8.get_radio_in());
     if (aux_con.CH8_flag != switch_position) {
         // set the CH8 flag
         aux_con.CH8_flag = switch_position;
@@ -150,7 +150,7 @@ void Copter::read_aux_switches()
     }
 
     // check if Ch9 switch has changed position
-    switch_position = read_3pos_switch(g.rc_9.radio_in);
+    switch_position = read_3pos_switch(g.rc_9.get_radio_in());
     if (aux_con.CH9_flag != switch_position) {
         // set the CH9 flag
         aux_con.CH9_flag = switch_position;
@@ -160,7 +160,7 @@ void Copter::read_aux_switches()
     }
 
     // check if Ch10 switch has changed position
-    switch_position = read_3pos_switch(g.rc_10.radio_in);
+    switch_position = read_3pos_switch(g.rc_10.get_radio_in());
     if (aux_con.CH10_flag != switch_position) {
         // set the CH10 flag
         aux_con.CH10_flag = switch_position;
@@ -170,7 +170,7 @@ void Copter::read_aux_switches()
     }
 
     // check if Ch11 switch has changed position
-    switch_position = read_3pos_switch(g.rc_11.radio_in);
+    switch_position = read_3pos_switch(g.rc_11.get_radio_in());
     if (aux_con.CH11_flag != switch_position) {
         // set the CH11 flag
         aux_con.CH11_flag = switch_position;
@@ -181,7 +181,7 @@ void Copter::read_aux_switches()
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // check if Ch12 switch has changed position
-    switch_position = read_3pos_switch(g.rc_12.radio_in);
+    switch_position = read_3pos_switch(g.rc_12.get_radio_in());
     if (aux_con.CH12_flag != switch_position) {
         // set the CH12 flag
         aux_con.CH12_flag = switch_position;
@@ -196,14 +196,14 @@ void Copter::read_aux_switches()
 void Copter::init_aux_switches()
 {
     // set the CH7 ~ CH12 flags
-    aux_con.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
-    aux_con.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
-    aux_con.CH10_flag = read_3pos_switch(g.rc_10.radio_in);
-    aux_con.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
+    aux_con.CH7_flag = read_3pos_switch(g.rc_7.get_radio_in());
+    aux_con.CH8_flag = read_3pos_switch(g.rc_8.get_radio_in());
+    aux_con.CH10_flag = read_3pos_switch(g.rc_10.get_radio_in());
+    aux_con.CH11_flag = read_3pos_switch(g.rc_11.get_radio_in());
 
     // ch9, ch12 only supported on some boards
-    aux_con.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
-    aux_con.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
+    aux_con.CH9_flag = read_3pos_switch(g.rc_9.get_radio_in());
+    aux_con.CH12_flag = read_3pos_switch(g.rc_12.get_radio_in());
 
     // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
@@ -278,7 +278,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_SAVE_TRIM:
-            if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->control_in == 0)) {
+            if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->get_control_in() == 0)) {
                 save_trim();
             }
             break;
@@ -293,7 +293,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if((mission.num_commands() == 0) && (channel_throttle->control_in == 0)){
+                if((mission.num_commands() == 0) && (channel_throttle->get_control_in() == 0)){
                     return;
                 }
 
@@ -322,7 +322,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 cmd.content.location = current_loc;
 
                 // if throttle is above zero, create waypoint command
-                if(channel_throttle->control_in > 0) {
+                if(channel_throttle->get_control_in() > 0) {
                     cmd.id = MAV_CMD_NAV_WAYPOINT;
                 }else{
                     // with zero throttle, create LAND command
@@ -608,8 +608,8 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 void Copter::save_trim()
 {
     // save roll and pitch trim
-    float roll_trim = ToRad((float)channel_roll->control_in/100.0f);
-    float pitch_trim = ToRad((float)channel_pitch->control_in/100.0f);
+    float roll_trim = ToRad((float)channel_roll->get_control_in()/100.0f);
+    float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
     Log_Write_Event(DATA_SAVE_TRIM);
     gcs_send_text(MAV_SEVERITY_INFO, "Trim saved");
@@ -626,10 +626,10 @@ void Copter::auto_trim()
         AP_Notify::flags.save_trim = true;
 
         // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)channel_roll->control_in / 4000.0f);
+        float roll_trim_adjustment = ToRad((float)channel_roll->get_control_in() / 4000.0f);
 
         // calculate pitch trim adjustment
-        float pitch_trim_adjustment = ToRad((float)channel_pitch->control_in / 4000.0f);
+        float pitch_trim_adjustment = ToRad((float)channel_pitch->get_control_in() / 4000.0f);
 
         // add trim to ahrs object
         // save to eeprom on last iteration

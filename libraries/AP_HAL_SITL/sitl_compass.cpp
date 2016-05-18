@@ -73,7 +73,8 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     delayed_time_mag = now - _sitl->mag_delay; // get time corresponding to delay
     // find data corresponding to delayed time in buffer
     for (uint8_t i=0; i<=mag_buffer_length-1; i++) {
-        time_delta_mag = abs(delayed_time_mag - buffer_mag[i].time); // find difference between delayed time and time stamp in buffer
+        // find difference between delayed time and time stamp in buffer
+        time_delta_mag = abs((int32_t)(delayed_time_mag - buffer_mag[i].time));
         // if this difference is smaller than last delta, store this time
         if (time_delta_mag < best_time_delta_mag) {
             best_index_mag = i;
@@ -86,8 +87,8 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 
     new_mag_data -= _sitl->mag_ofs.get();
 
-    _compass->setHIL(0, new_mag_data);
-    _compass->setHIL(1, new_mag_data);
+    _compass->setHIL(0, new_mag_data, AP_HAL::micros());
+    _compass->setHIL(1, new_mag_data, AP_HAL::micros());
 }
 
 #endif

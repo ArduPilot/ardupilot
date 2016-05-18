@@ -38,13 +38,13 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @DisplayName: Maximum RPM
     // @Description: Maximum RPM to report
     // @Increment: 1
-    AP_GROUPINFO("_MAX", 2, AP_RPM, _maximum[0], 0),
+    AP_GROUPINFO("_MAX", 2, AP_RPM, _maximum[0], 100000),
 
     // @Param: _MIN
     // @DisplayName: Minimum RPM
     // @Description: Minimum RPM to report
     // @Increment: 1
-    AP_GROUPINFO("_MIN", 3, AP_RPM, _minimum[0], 0),
+    AP_GROUPINFO("_MIN", 3, AP_RPM, _minimum[0], 10),
 
     // @Param: _MIN_QUAL
     // @DisplayName: Minimum Quality

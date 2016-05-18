@@ -69,7 +69,7 @@ uint8_t PX4I2CDriver::writeRegister(uint8_t addr, uint8_t reg, uint8_t val)
     return do_transfer(addr, d, sizeof(d), nullptr, 0) ? 0:1;
 }
 
-/* writeRegisters: write bytes to contigious registers */
+/* writeRegisters: write bytes to contiguous registers */
 uint8_t PX4I2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
                                      uint8_t len, uint8_t* data)
 {
@@ -89,7 +89,7 @@ uint8_t PX4I2CDriver::readRegister(uint8_t addr, uint8_t reg, uint8_t* data)
     return do_transfer(addr, &reg, 1, data, 1) ? 0:1;
 }
 
-/* readRegister: read contigious device registers - writes the first 
+/* readRegister: read contiguous device registers - writes the first 
  * register, then reads back multiple bytes */
 uint8_t PX4I2CDriver::readRegisters(uint8_t addr, uint8_t reg,
                                     uint8_t len, uint8_t* data)

@@ -100,6 +100,17 @@ public:
     // return true if spool up is complete
     bool spool_up_complete() const { return _multicopter_flags.spool_mode == THROTTLE_UNLIMITED; }
 
+    // output a thrust to all motors that match a given motor
+    // mask. This is used to control tiltrotor motors in forward
+    // flight. Thrust is in the range 0 to 1
+    void                output_motor_mask(float thrust, uint8_t mask);
+
+    // set thrust compensation callback
+    FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
+    void                set_thrust_compensation_callback(thrust_compensation_fn_t callback) {
+        _thrust_compensation_callback = callback;
+    }
+    
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -132,6 +143,9 @@ protected:
     // convert thrust (0~1) range back to pwm range
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
 
+    // apply any thrust compensation for the frame
+    virtual void        thrust_compensation(void) {}
+    
     // flag bitmask
     struct {
         spool_up_down_mode     spool_mode       : 3;    // motor's current spool mode
@@ -170,4 +184,7 @@ protected:
     int16_t             _batt_timer;            // timer used in battery resistance calcs
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
+
+    // vehicle supplied callback for thrust compensation. Used for tiltrotors and tiltwings
+    thrust_compensation_fn_t _thrust_compensation_callback;
 };

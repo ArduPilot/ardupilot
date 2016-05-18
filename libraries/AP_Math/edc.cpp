@@ -13,7 +13,7 @@
 
 #include <inttypes.h>
 
-/* CRC16 implementation acording to CCITT standards */
+/* CRC16 implementation according to CCITT standards */
 static const uint16_t crc16tab[256] = {
   0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7,
   0x8108, 0x9129, 0xA14A, 0xB16B, 0xC18C, 0xD1AD, 0xE1CE, 0xF1EF,

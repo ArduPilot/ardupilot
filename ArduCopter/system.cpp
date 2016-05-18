@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Copter.h"
+#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -200,7 +201,13 @@ void Copter::init_ardupilot()
     ahrs.set_optflow(&optflow);
 #endif
 
-    // initialise position controllers
+    // init Location class
+    Location_Class::set_ahrs(&ahrs);
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+    Location_Class::set_terrain(&terrain);
+    wp_nav.set_terrain(&terrain);
+#endif
+
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
@@ -305,7 +312,7 @@ void Copter::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if succesfully calibrated
+// calibrate gyros - returns true if successfully calibrated
 bool Copter::calibrate_gyros()
 {
     // gyro offset calibration
@@ -443,7 +450,7 @@ bool Copter::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = motors.armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = motors.armed() || DataFlash.log_while_disarmed();
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         start_logging();
     }

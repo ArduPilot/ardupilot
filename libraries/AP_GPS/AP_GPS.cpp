@@ -467,7 +467,7 @@ AP_GPS::update(void)
 void 
 AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms, 
                const Location &_location, const Vector3f &_velocity, uint8_t _num_sats, 
-               uint16_t hdop, bool _have_vertical_velocity)
+               uint16_t hdop)
 {
     if (instance >= GPS_MAX_INSTANCES) {
         return;
@@ -478,11 +478,10 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     istate.location = _location;
     istate.location.options = 0;
     istate.velocity = _velocity;
-    istate.ground_speed = pythagorous2(istate.velocity.x, istate.velocity.y);
-    istate.ground_course_cd = wrap_360_cd(degrees(atan2f(istate.velocity.y, istate.velocity.x)) * 100UL);
+    istate.ground_speed = norm(istate.velocity.x, istate.velocity.y);
+    istate.ground_course = wrap_360(degrees(atan2f(istate.velocity.y, istate.velocity.x)));
     istate.hdop = hdop;
     istate.num_sats = _num_sats;
-    istate.have_vertical_velocity |= _have_vertical_velocity;
     istate.last_gps_time_ms = tnow;
     uint64_t gps_time_ms = time_epoch_ms - (17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL);
     istate.time_week     = gps_time_ms / (86400*7*(uint64_t)1000);
@@ -490,6 +489,24 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     timing[instance].last_message_time_ms = tnow;
     timing[instance].last_fix_time_ms = tnow;
     _type[instance].set(GPS_TYPE_HIL);
+}
+
+// set accuracy for HIL
+void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms)
+{
+    GPS_State &istate = state[instance];
+    istate.vdop = vdop * 100;
+    istate.horizontal_accuracy = hacc;
+    istate.vertical_accuracy = vacc;
+    istate.speed_accuracy = sacc;
+    istate.have_horizontal_accuracy = true;
+    istate.have_vertical_accuracy = true;
+    istate.have_speed_accuracy = true;
+    istate.have_vertical_velocity |= _have_vertical_velocity;
+    if (sample_ms != 0) {
+        timing[instance].last_message_time_ms = sample_ms;
+        timing[instance].last_fix_time_ms = sample_ms;
+    }
 }
 
 /**
@@ -561,7 +578,7 @@ AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         get_hdop(0),
         get_vdop(0),
         ground_speed(0)*100,  // cm/s
-        ground_course_cd(0), // 1/100 degrees,
+        ground_course(0)*100, // 1/100 degrees,
         num_sats(0));
 }
 
@@ -589,7 +606,7 @@ AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         get_hdop(1),
         get_vdop(1),
         ground_speed(1)*100,  // cm/s
-        ground_course_cd(1), // 1/100 degrees,
+        ground_course(1)*100, // 1/100 degrees,
         num_sats(1),
         0,
         0);

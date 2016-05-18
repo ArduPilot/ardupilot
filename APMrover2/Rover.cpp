@@ -18,12 +18,14 @@
 */
 
 #include "Rover.h"
+#include "version.h"
 
 Rover::Rover(void) :
     param_loader(var_info),
     channel_steer(NULL),
     channel_throttle(NULL),
     channel_learn(NULL),
+    DataFlash{FIRMWARE_STRING},
     in_log_download(false),
     modes(&g.mode1),
     L1_controller(ahrs),

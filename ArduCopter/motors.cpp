@@ -16,12 +16,12 @@ void Copter::arm_motors_check()
     static int16_t arming_counter;
 
     // ensure throttle is down
-    if (channel_throttle->control_in > 0) {
+    if (channel_throttle->get_control_in() > 0) {
         arming_counter = 0;
         return;
     }
 
-    int16_t tmp = channel_yaw->control_in;
+    int16_t tmp = channel_yaw->get_control_in();
 
     // full right
     if (tmp > 4000) {
@@ -104,7 +104,7 @@ void Copter::auto_disarm_check()
             thr_low = ap.throttle_zero;
         } else {
             float deadband_top = g.rc_3.get_control_mid() + g.throttle_deadzone;
-            thr_low = g.rc_3.control_in <= deadband_top;
+            thr_low = g.rc_3.get_control_in() <= deadband_top;
         }
 
         if (!thr_low || !ap.land_complete) {
@@ -221,8 +221,8 @@ void Copter::init_disarm_motors()
     gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
-    // save compass offsets learned by the EKF
-    if (ahrs.use_compass()) {
+    // save compass offsets learned by the EKF if enabled
+    if (ahrs.use_compass() && compass.get_learn_type() == Compass::LEARN_EKF) {
         for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             Vector3f magOffsets;
             if (ahrs.getMagOffsets(i, magOffsets)) {
@@ -250,7 +250,7 @@ void Copter::init_disarm_motors()
     mission.reset();
 
     // suspend logging
-    if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
+    if (!DataFlash.log_while_disarmed()) {
         DataFlash.EnableWrites(false);
     }
 
@@ -288,7 +288,7 @@ void Copter::lost_vehicle_check()
     }
 
     // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (channel_roll->control_in > 4000) && (channel_pitch->control_in > 4000)) {
+    if (ap.throttle_zero && !motors.armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;

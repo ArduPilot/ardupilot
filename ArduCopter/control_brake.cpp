@@ -25,6 +25,8 @@ bool Copter::brake_init(bool ignore_checks)
         pos_control.set_alt_target(inertial_nav.get_altitude());
         pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
+        brake_timeout_ms = 0;
+
         return true;
     }else{
         return false;
@@ -75,4 +77,16 @@ void Copter::brake_run()
     // update altitude target and call position controller
     pos_control.set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
     pos_control.update_z_controller();
+
+    if (brake_timeout_ms != 0 && millis()-brake_timeout_start >= brake_timeout_ms) {
+        if (!set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
+            set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
+        }
+    }
+}
+
+void Copter::brake_timeout_to_loiter_ms(uint32_t timeout_ms)
+{
+    brake_timeout_start = millis();
+    brake_timeout_ms = timeout_ms;
 }

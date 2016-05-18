@@ -145,7 +145,7 @@ public:
     // write optical flow measurements to EKF
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
 
-    // inibit GPS useage
+    // inibit GPS usage
     uint8_t setInhibitGPS(void);
 
     // get speed limit
@@ -217,6 +217,12 @@ public:
 
     bool getGpsGlitchStatus();
 
+    // used by Replay to force start at right timestamp
+    void force_ekf_start(void) { force_ekf = true; }
+
+    // is the EKF backend doing its own sensor logging?
+    bool have_ekf_logging(void) const override;
+    
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
 #if AP_AHRS_WITH_EKF1
@@ -235,8 +241,9 @@ private:
 
     NavEKF &EKF1;
     NavEKF2 &EKF2;
-    bool ekf1_started = false;
-    bool ekf2_started = false;
+    bool ekf1_started:1;
+    bool ekf2_started:1;
+    bool force_ekf:1;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
     Vector3f _gyro_bias;

@@ -246,6 +246,9 @@ float AP_Baro::get_air_density_ratio(void)
 // note that this relies on read() being called regularly to get new data
 float AP_Baro::get_climb_rate(void)
 {
+    if (_hil.have_alt) {
+        return _hil.climb_rate;
+    }
     // we use a 7 point derivative filter on the climb rate. This seems
     // to produce somewhat reasonable results on real hardware
     return _climb_rate_filter.slope() * 1.0e3f;
@@ -343,10 +346,10 @@ void AP_Baro::init(void)
  */
 void AP_Baro::update(void)
 {
-    if (fabsf(_alt_offset - _alt_offset_active) > 0.1f) {
-        // if there's more than 10cm difference then slowly slew to it via LPF.
-        // The EKF does not like step inputs so this keeps it happy
-        _alt_offset_active = (0.9f*_alt_offset_active) + (0.1f*_alt_offset);
+    if (fabsf(_alt_offset - _alt_offset_active) > 0.01f) {
+        // If there's more than 1cm difference then slowly slew to it via LPF.
+        // The EKF does not like step inputs so this keeps it happy.
+        _alt_offset_active = (0.95f*_alt_offset_active) + (0.05f*_alt_offset);
     } else {
         _alt_offset_active = _alt_offset;
     }
@@ -377,6 +380,12 @@ void AP_Baro::update(void)
             if (sensors[i].alt_ok) {
                 sensors[i].altitude = altitude + _alt_offset_active;
             }
+        }
+        if (_hil.have_alt) {
+            sensors[0].altitude = _hil.altitude;
+        }
+        if (_hil.have_last_update) {
+            sensors[0].last_update_ms = _hil.last_update_ms;
         }
     }
 

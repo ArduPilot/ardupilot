@@ -142,7 +142,7 @@ void SoloGimbal_Parameters::update()
         }
     }
 
-    // check for nonexistant parameters
+    // check for nonexistent parameters
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
         if (!_params[i].seen && _params[i].fetch_attempts > _max_fetch_attempts) {
             _params[i].state = GMB_PARAMSTATE_NONEXISTANT;
@@ -190,7 +190,7 @@ void SoloGimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavli
                     break;
                 case GMB_PARAMSTATE_ATTEMPTING_TO_SET:
                     if (i == GMB_PARAM_GMB_FLASH) {
-                        if (_flashing_step == GMB_PARAM_FLASHING_WAITING_FOR_ACK && is_equal(packet.param_value,1)) {
+                        if (_flashing_step == GMB_PARAM_FLASHING_WAITING_FOR_ACK && (int)packet.param_value == 1) {
                             _flashing_step = GMB_PARAM_NOT_FLASHING;
                         }
                         _params[i].value = 0;

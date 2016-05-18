@@ -210,6 +210,10 @@ bool AP_Arming::ins_checks(bool report)
                      */
                     threshold *= 3;
                 }
+
+                // EKF is less sensitive to Z-axis error
+                vec_diff.z *= 0.5f;
+
                 if (vec_diff.length() <= threshold) {
                     last_accel_pass_ms[i] = AP_HAL::millis();
                 }
@@ -454,7 +458,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     return ret;
 }
 
-//returns true if arming occured successfully
+//returns true if arming occurred successfully
 bool AP_Arming::arm(uint8_t method)
 {
     if (armed) { //already armed

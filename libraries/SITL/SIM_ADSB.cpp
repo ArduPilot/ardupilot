@@ -180,7 +180,7 @@ void ADSB::send_report(void)
             adsb_vehicle.altitude_type = ADSB_ALTITUDE_TYPE_PRESSURE_QNH;
             adsb_vehicle.altitude = -vehicle.position.z * 1000;
             adsb_vehicle.heading = wrap_360_cd(100*degrees(atan2f(vehicle.velocity_ef.y, vehicle.velocity_ef.x)));
-            adsb_vehicle.hor_velocity = pythagorous2(vehicle.velocity_ef.x, vehicle.velocity_ef.y) * 100;
+            adsb_vehicle.hor_velocity = norm(vehicle.velocity_ef.x, vehicle.velocity_ef.y) * 100;
             adsb_vehicle.ver_velocity = -vehicle.velocity_ef.z * 100;
             memcpy(adsb_vehicle.callsign, vehicle.callsign, sizeof(adsb_vehicle.callsign));
             adsb_vehicle.emitter_type = ADSB_EMITTER_TYPE_LARGE;

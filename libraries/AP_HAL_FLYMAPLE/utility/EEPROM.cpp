@@ -242,7 +242,7 @@ uint16 EEPROMClass::EE_VerifyPageFullWriteVariable(uint16 Address, uint16 Data)
 		}
 	}
 
-	// Check each active page address starting from begining
+	// Check each active page address starting from beginning
 	for (idx = pageBase + 4; idx < pageEnd; idx += 4)
 		if ((*(__io uint32*)idx) == 0xFFFFFFFF)				// Verify if element 
 		{													//  contents are 0xFFFFFFFF

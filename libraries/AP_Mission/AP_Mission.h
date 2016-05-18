@@ -7,7 +7,7 @@
  *   The AP_Mission library:
  *   - responsible for managing a list of commands made up of "nav", "do" and "conditional" commands
  *   - reads and writes the mission commands to storage.
- *   - provides easy acces to current, previous and upcoming waypoints
+ *   - provides easy access to current, previous and upcoming waypoints
  *   - calls main program's command execution and verify functions.
  *   - accounts for the DO_JUMP command
  *
@@ -246,6 +246,7 @@ public:
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
+        _prev_nav_cmd_id(AP_MISSION_CMD_ID_NONE),
         _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
         _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
         _last_change_time_ms(0)
@@ -333,6 +334,11 @@ public:
     uint16_t get_current_nav_index() const { 
         return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
 
+    /// get_prev_nav_cmd_id - returns the previous "navigation" command id
+    ///     if there was no previous nav command it returns AP_MISSION_CMD_ID_NONE
+    ///     we do not return the entire command to save on RAM
+    uint16_t get_prev_nav_cmd_id() const { return _prev_nav_cmd_id; }
+
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
     ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
     ///     we do not return the entire command to save on RAM
@@ -375,10 +381,16 @@ public:
     // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
     //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
     static MAV_MISSION_RESULT mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd);
+    static MAV_MISSION_RESULT mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd);
+
+    // mavlink_cmd_long_to_mission_cmd - converts a mavlink cmd long to an AP_Mission::Mission_Command object which can be stored to eeprom
+    // return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
+    static MAV_MISSION_RESULT mavlink_cmd_long_to_mission_cmd(const mavlink_command_long_t& packet, AP_Mission::Mission_Command& cmd);
 
     // mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
     //  return true on success, false on failure
     static bool mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet);
+    static bool mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet);
 
     // return the last time the mission changed in milliseconds
     uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
@@ -463,6 +475,7 @@ private:
     // internal variables
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
+    uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
 

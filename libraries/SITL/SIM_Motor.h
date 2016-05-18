@@ -21,7 +21,7 @@
 
 #include "SIM_Aircraft.h"
 
-using namespace SITL;
+namespace SITL {
 
 /*
   class to describe a motor position
@@ -70,3 +70,4 @@ public:
                           Vector3f &rot_accel, // rad/sec
                           Vector3f &body_thrust) const; // Z is down
 };
+}

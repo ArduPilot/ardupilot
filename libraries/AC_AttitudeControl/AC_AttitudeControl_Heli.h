@@ -26,7 +26,6 @@
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER          10.0f
-#define AC_ATTITUDE_HELI_RATE_Y_AFF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
@@ -42,8 +41,7 @@ public:
         _pid_rate_yaw(AC_ATC_HELI_RATE_YAW_P, AC_ATC_HELI_RATE_YAW_I, AC_ATC_HELI_RATE_YAW_D, AC_ATC_HELI_RATE_YAW_IMAX, AC_ATC_HELI_RATE_YAW_FILT_HZ, dt, AC_ATC_HELI_RATE_YAW_FF),
         pitch_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
         roll_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
-        yaw_velocity_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER),
-        yaw_acceleration_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_AFF_FILTER)
+        yaw_velocity_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER)
         {
             AP_Param::setup_object_defaults(this, var_info);
 

@@ -61,6 +61,7 @@ protected:
     void publish_raw_field(const Vector3f &mag, uint32_t time_us, uint8_t instance);
     void correct_field(Vector3f &mag, uint8_t i);
     void publish_filtered_field(const Vector3f &mag, uint8_t instance);
+    void set_last_update_usec(uint32_t last_update, uint8_t instance);
 
     // register a new compass instance with the frontend
     uint8_t register_compass(void) const;
@@ -70,6 +71,9 @@ protected:
 
     // set external state for an instance
     void set_external(uint8_t instance, bool external);
+
+    // tell if instance is an external compass
+    bool is_external(uint8_t instance);
 
     // access to frontend
     Compass &_compass;

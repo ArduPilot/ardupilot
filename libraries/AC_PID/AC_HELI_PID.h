@@ -10,7 +10,7 @@
 #include <cmath>
 #include "AC_PID.h"
 
-#define AC_PID_LEAK_MIN     500.0  // Default I-term Leak Minimum
+#define AC_PID_LEAK_MIN     0.1  // Default I-term Leak Minimum
 
 /// @class	AC_HELI_PID
 /// @brief	Heli PID control class
@@ -22,9 +22,6 @@ public:
 
     /// get_vff - return Velocity FeedForward Term 
     float       get_vff(float requested_rate);
-
-    /// get_avff - return Acceleration FeedForward Term 
-    float       get_aff(float requested_rate);
 
     /// get_leaky_i - replacement for get_i but output is leaded at leak_rate
     float       get_leaky_i(float leak_rate);
@@ -38,7 +35,6 @@ public:
 private:
     AP_Float        _vff;
     AP_Float        _leak_min;
-    AP_Float        _aff;
 
     float           _last_requested_rate;       // Requested rate from last iteration, used to calculate rate change of requested rate
 };

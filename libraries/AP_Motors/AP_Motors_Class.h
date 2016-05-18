@@ -65,8 +65,6 @@ public:
     void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
-    void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
-
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
     float               get_pitch() const { return _pitch_in; }

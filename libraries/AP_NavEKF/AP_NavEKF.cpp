@@ -127,7 +127,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
 
     // @Param: VELNE_NOISE
     // @DisplayName: GPS horizontal velocity measurement noise scaler
-    // @Description: This is the scaler that is applied to the speed accuracy reported by the receiver to estimate the horizontal velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then a speed acuracy of 1 is assumed. Increasing it reduces the weighting on these measurements.
+    // @Description: This is the scaler that is applied to the speed accuracy reported by the receiver to estimate the horizontal velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then a speed accuracy of 1 is assumed. Increasing it reduces the weighting on these measurements.
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
@@ -135,7 +135,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
 
     // @Param: VELD_NOISE
     // @DisplayName: GPS vertical velocity measurement noise scaler
-    // @Description: This is the scaler that is applied to the speed accuracy reported by the receiver to estimate the vertical velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then a speed acuracy of 1 is assumed. Increasing it reduces the weighting on this measurement.
+    // @Description: This is the scaler that is applied to the speed accuracy reported by the receiver to estimate the vertical velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then a speed accuracy of 1 is assumed. Increasing it reduces the weighting on this measurement.
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
@@ -333,7 +333,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
 
     // @Param: GND_GRADIENT
     // @DisplayName: Terrain Gradient % RMS
-    // @Description: This parameter sets the RMS terrain gradient percentage assumed by the terrain height estimation. Terrain height can be estimated using optical flow and/or range finder sensor data if fitted. Smaller values cause the terrain height estimate to be slower to respond to changes in measurement. Larger values casue the terrain height estimate to be faster to respond, but also more noisy. Generally this value can be reduced if operating over very flat terrain and increased if operating over uneven terrain.
+    // @Description: This parameter sets the RMS terrain gradient percentage assumed by the terrain height estimation. Terrain height can be estimated using optical flow and/or range finder sensor data if fitted. Smaller values cause the terrain height estimate to be slower to respond to changes in measurement. Larger values cause the terrain height estimate to be faster to respond, but also more noisy. Generally this value can be reduced if operating over very flat terrain and increased if operating over uneven terrain.
     // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
@@ -390,7 +390,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary height source
-    // @Description: This parameter controls which height sensor is used by the EKF during optical flow navigation (when EKF_GPS_TYPE = 3). A value of will 0 cause it to always use baro altitude. A value of 1 will casue it to use range finder if available.
+    // @Description: This parameter controls which height sensor is used by the EKF during optical flow navigation (when EKF_GPS_TYPE = 3). A value of will 0 cause it to always use baro altitude. A value of 1 will cause it to use range finder if available.
     // @Values: 0:Use Baro, 1:Use Range Finder
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE",    32, NavEKF, _altSource, 1),

@@ -36,6 +36,7 @@ private:
     int _fd = -1;
     int _logfd = -1;
     uint64_t _last_timestamp = 0;
+    uint32_t _resolution_usec = 1;
 
     ModeFilterFloat_Size5 signal_quality_filter {3};
 };

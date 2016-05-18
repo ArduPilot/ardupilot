@@ -74,8 +74,8 @@ void setup()
     motors.output_min();
 
     // setup radio
-	rc3.radio_min = 1000;
-    rc3.radio_max = 2000;
+	 rc3.set_radio_min(1000);
+    rc3.set_radio_max(2000);
 
     // set rc channel ranges
     rc1.set_angle(4500);
@@ -139,7 +139,7 @@ void stability_test()
     int16_t rpy_tests[] = {0, 1000, 2000, 3000, 4500, -1000, -2000, -3000, -4500};
     uint8_t rpy_tests_num = sizeof(rpy_tests) / sizeof(int16_t);
 
-    hal.console->printf("\nTesting stability patch\nThrottle Min:%d Max:%d\n",(int)rc3.radio_min,(int)rc3.radio_max);
+    hal.console->printf("\nTesting stability patch\nThrottle Min:%d Max:%d\n",(int)rc3.get_radio_min(),(int)rc3.get_radio_max());
 
     // arm motors
     motors.armed(true);

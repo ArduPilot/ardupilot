@@ -11,9 +11,8 @@ void Tracker::Log_Write_Attitude()
 {
     Vector3f targets;
     targets.y = nav_status.pitch * 100.0f;
-    targets.z = wrap_360_cd_float(nav_status.bearing * 100.0f);
+    targets.z = wrap_360_cd(nav_status.bearing * 100.0f);
     DataFlash.Log_Write_Attitude(ahrs, targets);
-
     DataFlash.Log_Write_EKF(ahrs,false);
     DataFlash.Log_Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -27,8 +26,32 @@ void Tracker::Log_Write_Baro(void)
     DataFlash.Log_Write_Baro(barometer);
 }
 
+struct PACKED log_Vehicle_Baro {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    press;
+    float    alt_diff;
+};
+
+// Write a vehicle baro packet
+void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude)
+{
+
+    struct log_Vehicle_Baro pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_V_BAR_MSG),
+        time_us         : AP_HAL::micros64(),
+        press           : pressure,
+        alt_diff        : altitude
+
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+
 const struct LogStructure Tracker::log_structure[] = {
     LOG_COMMON_STRUCTURES,
+    {LOG_V_BAR_MSG, sizeof(log_Vehicle_Baro),
+    	      "VBAR", "Qff", "TimeUS,Press,AltDiff" },
 };
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()

@@ -271,7 +271,7 @@ void Copter::autotune_run()
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-throttle_average);
         return;
     }
 
@@ -279,13 +279,13 @@ void Copter::autotune_run()
     update_simple_mode();
 
     // get pilot desired lean angles
-    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot desired climb rate
-    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
+    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 
     // check for pilot requested take-off - this should not actually be possible because of autotune_init() checks
     if (ap.land_complete && target_climb_rate > 0) {
@@ -303,11 +303,11 @@ void Copter::autotune_run()
             motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-throttle_average);
     }else{
         // check if pilot is overriding the controls
-        if (!is_zero(target_roll) || !is_zero(target_pitch) || !is_zero(target_yaw_rate) || !is_zero(target_climb_rate)) {
+        if (!is_zero(target_roll) || !is_zero(target_pitch) || !is_zero(target_yaw_rate) || target_climb_rate != 0) {
             if (!autotune_state.pilot_override) {
                 autotune_state.pilot_override = true;
                 // set gains to their original values
@@ -447,7 +447,7 @@ void Copter::autotune_attitude_control()
                 break;
             case AUTOTUNE_AXIS_YAW:
                 // request pitch to 20deg
-                attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, wrap_180_cd_float(direction_sign * autotune_target_angle + autotune_start_angle), false);
+                attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, wrap_180_cd(direction_sign * autotune_target_angle + autotune_start_angle), false);
                 break;
             }
         } else {

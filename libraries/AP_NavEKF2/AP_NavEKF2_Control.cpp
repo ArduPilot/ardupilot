@@ -94,7 +94,7 @@ void NavEKF2_core::setAidingMode()
     prevIsAiding = isAiding;
     // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
     bool filterIsStable = tiltAlignComplete && yawAlignComplete;
-    // If GPS useage has been prohiited then we use flow aiding provided optical flow data is present
+    // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
     bool useFlowAiding = (frontend->_fusionModeGPS == 3) && optFlowDataPresent();
     // Start aiding if we have a source of aiding data and the filter attitude algnment is complete
     // Latch to on
@@ -105,7 +105,7 @@ void NavEKF2_core::setAidingMode()
         // We have transitioned either into or out of aiding
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
-        // set various  useage modes based on the condition when we start aiding. These are then held until aiding is stopped.
+        // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         if (!isAiding) {
             // We have ceased aiding
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
@@ -121,7 +121,7 @@ void NavEKF2_core::setAidingMode()
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             stateStruct.position.z = -meaHgtAtTakeOff;
         } else if (frontend->_fusionModeGPS == 3) {
-            // We have commenced aiding, but GPS useage has been prohibited so use optical flow only
+            // We have commenced aiding, but GPS usage has been prohibited so use optical flow only
             hal.console->printf("EKF2 IMU%u is using optical flow\n",(unsigned)imu_index);
             PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
             posTimeout = true;
@@ -131,13 +131,13 @@ void NavEKF2_core::setAidingMode()
             // Reset the last valid flow fusion time
             prevFlowFuseTime_ms = imuSampleTime_ms;
         } else {
-            // We have commenced aiding and GPS useage is allowed
+            // We have commenced aiding and GPS usage is allowed
             hal.console->printf("EKF2 IMU%u is using GPS\n",(unsigned)imu_index);
             PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
             posTimeout = false;
             velTimeout = false;
             // we need to reset the GPS timers to prevent GPS timeout logic being invoked on entry into GPS aiding
-            // this is becasue the EKF can be interrupted for an arbitrary amount of time during vehicle arming checks
+            // this is because the EKF can be interrupted for an arbitrary amount of time during vehicle arming checks
             lastTimeGpsReceived_ms = imuSampleTime_ms;
             secondLastGpsTime_ms = imuSampleTime_ms;
             // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic

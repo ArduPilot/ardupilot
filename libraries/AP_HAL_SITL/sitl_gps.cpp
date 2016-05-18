@@ -126,6 +126,25 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
 }
 
 /*
+  get timeval using simulation time
+ */
+static void simulation_timeval(struct timeval *tv)
+{
+    uint64_t now = AP_HAL::micros64();
+    static uint64_t first_usec;
+    static struct timeval first_tv;
+    if (first_usec == 0) {
+        first_usec = now;
+        gettimeofday(&first_tv, NULL);
+    }
+    *tv = first_tv;
+    tv->tv_sec += now / 1000000ULL;
+    uint64_t new_usec = tv->tv_usec + (now % 1000000ULL);
+    tv->tv_sec += new_usec / 1000000ULL;
+    tv->tv_usec = new_usec % 1000000ULL;
+}
+
+/*
   send a UBLOX GPS message
  */
 void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
@@ -158,7 +177,7 @@ void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
 static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
 {
     struct timeval tv;
-    gettimeofday(&tv, NULL);
+    simulation_timeval(&tv);
     const uint32_t epoch = 86400*(10*365 + (1980-1969)/4 + 1 + 6 - 2) - 15;
     uint32_t epoch_seconds = tv.tv_sec - epoch;
     *time_week = epoch_seconds / (86400*7UL);
@@ -260,8 +279,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     velned.ned_north = 100.0f * d->speedN;
     velned.ned_east  = 100.0f * d->speedE;
     velned.ned_down  = 100.0f * d->speedD;
-    velned.speed_2d = pythagorous2(d->speedN, d->speedE) * 100;
-    velned.speed_3d = pythagorous3(d->speedN, d->speedE, d->speedD) * 100;
+    velned.speed_2d = norm(d->speedN, d->speedE) * 100;
+    velned.speed_3d = norm(d->speedN, d->speedE, d->speedD) * 100;
     velned.heading_2d = ToDeg(atan2f(d->speedE, d->speedN)) * 100000.0f;
     if (velned.heading_2d < 0.0f) {
         velned.heading_2d += 360.0f * 100000.0f;
@@ -342,7 +361,7 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d)
     p.latitude      = d->latitude  * 1.0e6;
     p.longitude     = d->longitude * 1.0e6;
     p.altitude      = d->altitude * 100;
-    p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
+    p.ground_speed  = norm(d->speedN, d->speedE) * 100;
     p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0f;
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 1000000.0f;
@@ -357,7 +376,7 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d)
     struct tm tm;
     struct timeval tv;
 
-    gettimeofday(&tv, NULL);
+    simulation_timeval(&tv);
     tm = *gmtime(&tv.tv_sec);
     uint32_t hsec = (tv.tv_usec / (10000*20)) * 20; // always multiple of 20
 
@@ -399,7 +418,7 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
     p.latitude      = d->latitude  * 1.0e6;
     p.longitude     = d->longitude * 1.0e6;
     p.altitude      = d->altitude * 100;
-    p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
+    p.ground_speed  = norm(d->speedN, d->speedE) * 100;
     p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0f;
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 100.0f;
@@ -414,7 +433,7 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
     struct tm tm;
     struct timeval tv;
 
-    gettimeofday(&tv, NULL);
+    simulation_timeval(&tv);
     tm = *gmtime(&tv.tv_sec);
     uint32_t millisec = (tv.tv_usec / (1000*200)) * 200; // always multiple of 200
 
@@ -457,7 +476,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
     p.latitude      = d->latitude  * 1.0e7;
     p.longitude     = d->longitude * 1.0e7;
     p.altitude      = d->altitude * 100;
-    p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
+    p.ground_speed  = norm(d->speedN, d->speedE) * 100;
     p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0f;
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 100.0f;
@@ -472,7 +491,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
     struct tm tm;
     struct timeval tv;
 
-    gettimeofday(&tv, NULL);
+    simulation_timeval(&tv);
     tm = *gmtime(&tv.tv_sec);
     uint32_t millisec = (tv.tv_usec / (1000*200)) * 200; // always multiple of 200
 
@@ -500,7 +519,7 @@ uint16_t SITL_State::_gps_nmea_checksum(const char *s)
 }
 
 /*
-  formated print of NMEA message, with checksum appended
+  formatted print of NMEA message, with checksum appended
  */
 void SITL_State::_gps_nmea_printf(const char *fmt, ...)
 {
@@ -533,7 +552,7 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d)
     char lat_string[20];
     char lng_string[20];
 
-    gettimeofday(&tv, NULL);
+    simulation_timeval(&tv);
 
     tm = gmtime(&tv.tv_sec);
 
@@ -565,7 +584,7 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d)
                      d->have_lock?_sitl->gps_numsats:3,
                      2.0,
                      d->altitude);
-    float speed_knots = pythagorous2(d->speedN, d->speedE)*1.94384449f;
+    float speed_knots = norm(d->speedN, d->speedE)*1.94384449f;
     float heading = ToDeg(atan2f(d->speedE, d->speedN));
     if (heading < 0) {
         heading += 360.0f;

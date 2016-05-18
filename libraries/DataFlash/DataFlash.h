@@ -53,8 +53,17 @@ public:
         _firmware_string(firmware_string)
         {
             AP_Param::setup_object_defaults(this, var_info);
+            if (_instance != nullptr) {
+                AP_HAL::panic("DataFlash must be singleton");
+            }
+            _instance = this;
         }
 
+    // get singleton instance
+    static DataFlash_Class *instance(void) {
+        return _instance;
+    }
+    
     void set_mission(const AP_Mission *mission);
 
     // initialisation
@@ -93,16 +102,18 @@ public:
     void StartNewLog(void);
     void EnableWrites(bool enable);
 
+    void StopLogging();
+
     void Log_Write_Parameter(const char *name, float value);
-    void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
+    void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, uint64_t time_us=0);
     void Log_Write_RFND(const RangeFinder &rangefinder);
     void Log_Write_IMU(const AP_InertialSensor &ins);
-    void Log_Write_IMUDT(const AP_InertialSensor &ins);
+    void Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us, uint8_t imu_mask);
     void Log_Write_Vibration(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
     void Log_Write_RSSI(AP_RSSI &rssi);
-    void Log_Write_Baro(AP_Baro &baro);
+    void Log_Write_Baro(AP_Baro &baro, uint64_t time_us=0);
     void Log_Write_Power(void);
     void Log_Write_AHRS2(AP_AHRS &ahrs);
     void Log_Write_POS(AP_AHRS &ahrs);
@@ -120,7 +131,7 @@ public:
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
     void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
-    void Log_Write_Compass(const Compass &compass);
+    void Log_Write_Compass(const Compass &compass, uint64_t time_us=0);
     void Log_Write_Mode(uint8_t mode, uint8_t reason = 0);
 
     void Log_Write_EntireMission(const AP_Mission &mission);
@@ -132,6 +143,8 @@ public:
                         const AP_Motors &motors,
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
+
+    void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
@@ -161,6 +174,10 @@ public:
 
     // number of blocks that have been dropped
     uint32_t num_dropped(void) const;
+
+    // accesss to public parameters
+    bool log_while_disarmed(void) const { return _params.log_disarmed != 0; }
+    uint8_t log_replay(void) const { return _params.log_replay; }
     
     vehicle_startup_message_Log_Writer _vehicle_messages;
 
@@ -169,6 +186,8 @@ public:
     struct {
         AP_Int8 backend_types;
         AP_Int8 file_bufsize; // in kilobytes
+        AP_Int8 log_disarmed;
+        AP_Int8 log_replay;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
@@ -189,4 +208,43 @@ private:
     uint8_t _next_backend;
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const char *_firmware_string;
+
+    void internal_error() const;
+
+    /*
+     * support for dynamic Log_Write; user-supplies name, format,
+     * labels and values in a single function call.
+     */
+
+    // this structure looks much like struct LogStructure in
+    // LogStructure.h, however we need to remember a pointer value for
+    // efficiency of finding message types
+    struct log_write_fmt {
+        struct log_write_fmt *next;
+        uint8_t msg_type;
+        uint8_t msg_len;
+        uint8_t sent_mask; // bitmask of backends sent to
+        const char *name;
+        const char *fmt;
+        const char *labels;
+    } *log_write_fmts;
+
+    // return (possibly allocating) a log_write_fmt for a name
+    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *fmt);
+    
+    // returns true if msg_type is associated with a message
+    bool msg_type_in_use(uint8_t msg_type) const;
+
+    // return a msg_type which is not currently in use (or -1 if none available)
+    int16_t find_free_msg_type() const;
+
+    // fill LogStructure with information about msg_type
+    bool fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const;
+
+    // calculate the length of a message using fields specified in
+    // fmt; includes the message header
+    int16_t Log_Write_calc_msg_len(const char *fmt) const;
+
+private:
+    static DataFlash_Class *_instance;
 };

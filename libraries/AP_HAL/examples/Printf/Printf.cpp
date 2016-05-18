@@ -53,27 +53,27 @@ static void test_printf(void)
     for (i=0; i < ARRAY_SIZE(float_tests); i++) {
         int ret = hal.util->snprintf(buf, sizeof(buf), float_tests[i].fmt, float_tests[i].v);
         if (strcmp(buf, float_tests[i].result) != 0) {
-            hal.console->printf("Failed float_tests[%u] '%s' -> '%s' should be '%s'\n", 
-                                (unsigned)i, 
+            hal.console->printf("Failed float_tests[%u] '%s' -> '%s' should be '%s'\n",
+                                (unsigned)i,
                                 float_tests[i].fmt,
                                 buf,
                                 float_tests[i].result);
             failures++;
         }
-        if (ret != strlen(float_tests[i].result)) {
-            hal.console->printf("Failed float_tests[%u] ret=%d/%d '%s' should be '%s'\n", 
-                                (unsigned)i, 
+        if (ret != (int)strlen(float_tests[i].result)) {
+            hal.console->printf("Failed float_tests[%u] ret=%d/%d '%s' should be '%s'\n",
+                                (unsigned)i,
                                 ret, (int)strlen(float_tests[i].result),
                                 float_tests[i].fmt,
                                 float_tests[i].result);
-            failures++;            
+            failures++;
         }
     }
     hal.console->printf("%u failures\n", (unsigned)failures);
 }
 
-void loop(void) 
-{	
+void loop(void)
+{
     test_printf();
     hal.scheduler->delay(1000);
 }

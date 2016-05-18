@@ -123,7 +123,7 @@ static void set_normal_priority(void *sem)
 }
 
 /*
-  a varient of delay_microseconds that boosts priority to
+  a variant of delay_microseconds that boosts priority to
   APM_MAIN_PRIORITY_BOOST for APM_MAIN_PRIORITY_BOOST_USEC
   microseconds when the time completes. This significantly improves
   the regularity of timing of the main loop as it takes 

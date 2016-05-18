@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "Storage.h"
 
 using namespace Linux;
@@ -22,6 +23,8 @@ using namespace Linux;
 // card for ArduCopter and ArduPlane
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #define STORAGE_DIR "/data/ftp/internal_000/APM"
+#elif APM_BUILD_TYPE(APM_BUILD_Replay)
+#define STORAGE_DIR "."
 #else
 #define STORAGE_DIR "/var/APM"
 #endif

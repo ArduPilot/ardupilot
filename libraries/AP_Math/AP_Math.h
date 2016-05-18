@@ -1,132 +1,184 @@
 #pragma once
 
-#include "definitions.h"
-
+#include <cmath>
 #include <limits>
+#include <stdint.h>
 #include <type_traits>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <cmath>
-#include <stdint.h>
 
+#include "definitions.h"
+#include "edc.h"
+#include "location.h"
+#include "matrix3.h"
+#include "polygon.h"
+#include "quaternion.h"
 #include "rotations.h"
 #include "vector2.h"
 #include "vector3.h"
-#include "matrix3.h"
-#include "quaternion.h"
-#include "polygon.h"
-#include "edc.h"
-#include <AP_Param/AP_Param.h>
-#include "location.h"
-
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
-// are two floats equal
-static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+/*
+ * Check whether two floats are equal
+ */
+template <class FloatOne, class FloatTwo>
+bool is_equal(const FloatOne, const FloatTwo);
 
-// is a float is zero
-static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
+/* 
+ * @brief: Check whether a float is zero
+ */
+template <class T>
+inline bool is_zero(const T fVal1) {
+    static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
+                  "Template parameter not of type float");
+    return fabsf(static_cast<float>(fVal1)) < FLT_EPSILON ? true : false;
+}
 
-// a varient of asin() that always gives a valid answer.
-float           safe_asin(float v);
+/*
+ * A variant of asin() that checks the input ranges and ensures a valid angle
+ * as output. If nan is given as input then zero is returned.
+ */
+template <class T>
+float safe_asin(const T v);
 
-// a varient of sqrt() that always gives a valid answer.
-float           safe_sqrt(float v);
+/*
+ * A variant of sqrt() that checks the input ranges and ensures a valid value
+ * as output. If a negative number is given then 0 is returned.  The reasoning
+ * is that a negative number for sqrt() in our code is usually caused by small
+ * numerical rounding errors, so the real input should have been zero
+ */
+template <class T>
+float safe_sqrt(const T v);
 
 // return determinant of square matrix
-float                   detnxn(const float C[], const uint8_t n);
+float detnxn(const float C[], const uint8_t n);
 
 // Output inverted nxn matrix when returns true, otherwise matrix is Singular
-bool                    inversenxn(const float x[], float y[], const uint8_t n);
+bool inversenxn(const float x[], float y[], const uint8_t n);
 
 // invOut is an inverted 4x4 matrix when returns true, otherwise matrix is Singular
-bool                    inverse3x3(float m[], float invOut[]);
+bool inverse3x3(float m[], float invOut[]);
 
 // invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
-bool                    inverse4x4(float m[],float invOut[]);
+bool inverse4x4(float m[],float invOut[]);
 
 // matrix multiplication of two NxN matrices
-float* mat_mul(float *A, float *B, uint8_t n);
+float *mat_mul(float *A, float *B, uint8_t n);
 
-/*
-  wrap an angle in centi-degrees
- */
-int32_t wrap_360_cd(int32_t error);
-int32_t wrap_180_cd(int32_t error);
-float wrap_360_cd_float(float angle);
-float wrap_180_cd_float(float angle);
-
-/*
-  wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
- */
-float wrap_PI(float angle_in_radians);
-
-/*
-  wrap an angle defined in radians to the interval [0,2*PI)
- */
-float wrap_2PI(float angle);
-
-// constrain a value
-// constrain a value
-static inline float constrain_float(float amt, float low, float high)
-{
-	// the check for NaN as a float prevents propogation of
-	// floating point errors through any function that uses
-	// constrain_float(). The normal float semantics already handle -Inf
-	// and +Inf
-	if (isnan(amt)) {
-		return (low+high)*0.5f;
-	}
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
-}
-// constrain a int16_t value
-static inline int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
-}
-
-// constrain a int32_t value
-static inline int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
-	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
-}
-
-//matrix algebra
+// matrix algebra
 bool inverse(float x[], float y[], uint16_t dim);
 
+/*
+ * Constrain an angle to be within the range: -180 to 180 degrees. The second
+ * parameter changes the units. Default: 1 == degrees, 10 == dezi,
+ * 100 == centi.
+ */
+template <class T>
+float wrap_180(const T angle, float unit_mod = 1);
+
+/*
+ * Wrap an angle in centi-degrees. See wrap_180().
+ */
+template <class T>
+auto wrap_180_cd(const T angle) -> decltype(wrap_180(angle, 100.f));
+
+/*
+ * Constrain an euler angle to be within the range: 0 to 360 degrees. The
+ * second parameter changes the units. Default: 1 == degrees, 10 == dezi,
+ * 100 == centi.
+ */
+template <class T>
+float wrap_360(const T angle, float unit_mod = 1);
+
+/*
+ * Wrap an angle in centi-degrees. See wrap_360().
+ */
+template <class T>
+auto wrap_360_cd(const T angle) -> decltype(wrap_360(angle, 100.f));
+
+/*
+  wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
+ */
+template <class T>
+float wrap_PI(const T radian);
+
+/*
+ * wrap an angle in radians to 0..2PI
+ */
+template <class T>
+float wrap_2PI(const T radian);
+
+/*
+ * Constrain a value to be within the range: low and high
+ */
+template <class T>
+T constrain_value(const T amt, const T low, const T high);
+
+inline float constrain_float(const float amt, const float low, const float high)
+{
+    return constrain_value(amt, low, high);
+}
+
+inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
+inline int32_t constrain_int32(const int32_t amt, const int32_t low, const int32_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
 // degrees -> radians
-static inline float radians(float deg) {
-	return deg * DEG_TO_RAD;
+static inline float radians(float deg)
+{
+    return deg * DEG_TO_RAD;
 }
 
 // radians -> degrees
-static inline float degrees(float rad) {
-	return rad * RAD_TO_DEG;
+static inline float degrees(float rad)
+{
+    return rad * RAD_TO_DEG;
 }
 
-// square
-static inline float sq(float v) {
-	return v*v;
+template<class T>
+float sq(const T val)
+{
+    return powf(static_cast<float>(val), 2);
 }
 
-// 2D vector length
-static inline float pythagorous2(float a, float b) {
-	return sqrtf(sq(a)+sq(b));
+/*
+ * Variadic template for calculating the square norm of a vector of any
+ * dimension.
+ */
+template<class T, class... Params>
+float sq(const T first, const Params... parameters)
+{
+    return sq(first) + sq(parameters...);
 }
 
-// 3D vector length
-static inline float pythagorous3(float a, float b, float c) {
-	return sqrtf(sq(a)+sq(b)+sq(c));
+/*
+ * Variadic template for calculating the norm (pythagoras) of a vector of any
+ * dimension.
+ */
+template<class T, class... Params>
+float norm(const T first, const Params... parameters)
+{
+    return sqrt(static_cast<float>(sq(first, parameters...)));
 }
 
 template<typename A, typename B>
-static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two) {
+static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two)
+{
     return one < two ? one : two;
 }
 
 template<typename A, typename B>
-static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one : two) {
+static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one : two)
+{
     return one > two ? one : two;
 }
 
@@ -166,4 +218,3 @@ inline uint32_t usec_to_hz(uint32_t usec)
 float linear_interpolate(float low_output, float high_output,
                          float var_value,
                          float var_low, float var_high);
-

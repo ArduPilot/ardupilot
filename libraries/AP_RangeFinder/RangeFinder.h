@@ -46,7 +46,9 @@ public:
         RangeFinder_TYPE_PX4_PWM= 5,
         RangeFinder_TYPE_BBB_PRU= 6,
         RangeFinder_TYPE_LWI2C  = 7,
-        RangeFinder_TYPE_LWSER  = 8
+        RangeFinder_TYPE_LWSER  = 8,
+        RangeFinder_TYPE_BEBOP  = 9,
+        RangeFinder_TYPE_MAVLink = 10
     };
 
     enum RangeFinder_Function {
@@ -104,7 +106,10 @@ public:
     // update state of all rangefinders. Should be called at around
     // 10Hz from main loop
     void update(void);
-    
+
+    // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
+    void handle_msg(mavlink_message_t *msg);
+
 #define _RangeFinder_STATE(instance) state[instance]
 
     uint16_t distance_cm(uint8_t instance) const {

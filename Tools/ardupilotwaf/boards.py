@@ -92,6 +92,12 @@ class Board:
                 '-Wno-c++11-narrowing'
             ]
 
+        if cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-g',
+                '-O0',
+            ]
+
         env.CXXFLAGS += [
             '-std=gnu++11',
 
@@ -134,12 +140,18 @@ class Board:
                 '-Werror=unused-but-set-variable'
             ]
 
+        if cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-g',
+                '-O0',
+            ]
+
         env.LINKFLAGS += [
             '-Wl,--gc-sections',
         ]
 
     def build(self, bld):
-        pass
+        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
@@ -165,9 +177,12 @@ class sitl(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
         )
-        env.CXXFLAGS += [
-            '-O3',
-        ]
+
+        if not cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-O3',
+            ]
+
         env.LIB += [
             'm',
         ]
@@ -190,9 +205,12 @@ class linux(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NONE',
         )
-        env.CXXFLAGS += [
-            '-O3',
-        ]
+
+        if not cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-O3',
+            ]
+
         env.LIB += [
             'm',
             'rt',
@@ -276,6 +294,11 @@ class bebop(linux):
 
     def configure_env(self, cfg, env):
         super(bebop, self).configure_env(cfg, env)
+
+        cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
+                args = ['--libs', '--cflags'])
+
+        env.LIB += cfg.env.LIB_LIBIIO
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
@@ -370,6 +393,8 @@ class px4(Board):
 
     def build(self, bld):
         super(px4, self).build(bld)
+        bld.ap_version_append_str('NUTTX_GIT_VERSION', bld.git_submodule_head_hash('PX4NuttX', short=True))
+        bld.ap_version_append_str('PX4_GIT_VERSION', bld.git_submodule_head_hash('PX4Firmware', short=True))
         bld.load('px4')
 
 class px4_v1(px4):

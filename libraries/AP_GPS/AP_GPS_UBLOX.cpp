@@ -17,7 +17,7 @@
 //
 //  u-blox GPS driver for ArduPilot
 //	Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
-//  Substantially rewitten for new GPS driver structure by Andrew Tridgell
+//  Substantially rewritten for new GPS driver structure by Andrew Tridgell
 //
 #include "AP_GPS.h"
 #include "AP_GPS_UBLOX.h"
@@ -923,11 +923,13 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_VELNED");
         _last_vel_time         = _buffer.velned.time;
         state.ground_speed     = _buffer.velned.speed_2d*0.01f;          // m/s
-        state.ground_course_cd = wrap_360_cd(_buffer.velned.heading_2d / 1000);       // Heading 2D deg * 100000 rescaled to deg * 100
+        state.ground_course    = wrap_360(_buffer.velned.heading_2d * 1.0e-5f);       // Heading 2D deg * 100000
         state.have_vertical_velocity = true;
         state.velocity.x = _buffer.velned.ned_north * 0.01f;
         state.velocity.y = _buffer.velned.ned_east * 0.01f;
         state.velocity.z = _buffer.velned.ned_down * 0.01f;
+        state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
+        state.ground_speed = norm(state.velocity.y, state.velocity.x);
         state.have_speed_accuracy = true;
         state.speed_accuracy = _buffer.velned.speed_accuracy*0.01f;
 #if UBLOX_FAKE_3DLOCK

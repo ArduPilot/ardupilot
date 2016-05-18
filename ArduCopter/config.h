@@ -205,6 +205,11 @@
  #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
 #endif
 
+// missing terrain data failsafe
+#ifndef FS_TERRAIN_TIMEOUT_MS
+ #define FS_TERRAIN_TIMEOUT_MS          5000     // 5 seconds of missing terrain data will trigger failsafe (RTL)
+#endif
+
 #ifndef PREARM_DISPLAY_PERIOD
 # define PREARM_DISPLAY_PERIOD 30
 #endif
@@ -464,7 +469,7 @@
 #endif
 
 #ifndef RTL_LOITER_TIME
- # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before begining final descent
+ # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
 #endif
 
 // AUTO Mode
@@ -665,14 +670,4 @@
 //use this to completely disable FRSKY TELEM
 #ifndef FRSKY_TELEM_ENABLED
   #  define FRSKY_TELEM_ENABLED          ENABLED
-#endif
-
-/*
-  build a firmware version string.
-  GIT_VERSION comes from Makefile builds
-*/
-#ifndef GIT_VERSION
-#define FIRMWARE_STRING THISFIRMWARE
-#else
-#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
 #endif

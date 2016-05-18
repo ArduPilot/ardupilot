@@ -60,6 +60,7 @@
 
 #include "CompassCalibrator.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_GeodesicGrid.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -119,6 +120,34 @@ float CompassCalibrator::get_completion_percent() const {
     };
 }
 
+void CompassCalibrator::update_completion_mask(const Vector3f& v)
+{
+    Matrix3f softiron{
+        _params.diag.x,    _params.offdiag.x, _params.offdiag.y,
+        _params.offdiag.x, _params.diag.y,    _params.offdiag.z,
+        _params.offdiag.y, _params.offdiag.z, _params.diag.z
+    };
+    Vector3f corrected = softiron * (v + _params.offset);
+    int section = AP_GeodesicGrid::section(corrected, true);
+    if (section < 0) {
+        return;
+    }
+    _completion_mask[section / 8] |= 1 << (section % 8);
+}
+
+void CompassCalibrator::update_completion_mask()
+{
+    memset(_completion_mask, 0, sizeof(_completion_mask));
+    for (int i = 0; i < _samples_collected; i++) {
+        update_completion_mask(_sample_buffer[i].get());
+    }
+}
+
+CompassCalibrator::completion_mask_t& CompassCalibrator::get_completion_mask()
+{
+    return _completion_mask;
+}
+
 bool CompassCalibrator::check_for_timeout() {
     uint32_t tnow = AP_HAL::millis();
     if(running() && tnow - _last_sample_ms > 1000) {
@@ -137,6 +166,7 @@ void CompassCalibrator::new_sample(const Vector3f& sample) {
     }
 
     if(running() && _samples_collected < COMPASS_CAL_NUM_SAMPLES && accept_sample(sample)) {
+        update_completion_mask(sample);
         _sample_buffer[_samples_collected].set(sample);
         _samples_collected++;
     }
@@ -210,6 +240,7 @@ void CompassCalibrator::reset_state() {
     _params.diag = Vector3f(1.0f,1.0f,1.0f);
     _params.offdiag.zero();
 
+    memset(_completion_mask, 0, sizeof(_completion_mask));
     initialize_fit();
 }
 
@@ -344,6 +375,8 @@ void CompassCalibrator::thin_samples() {
             _samples_thinned ++;
         }
     }
+
+    update_completion_mask();
 }
 
 /*
@@ -518,6 +551,7 @@ void CompassCalibrator::run_sphere_fit()
     if(!isnan(fitness) && fitness < _fitness) {
         _fitness = fitness;
         _params = fit1_params;
+        update_completion_mask();
     }
 }
 
@@ -634,6 +668,7 @@ void CompassCalibrator::run_ellipsoid_fit()
     if(fitness < _fitness) {
         _fitness = fitness;
         _params = fit1_params;
+        update_completion_mask();
     }
 }
 

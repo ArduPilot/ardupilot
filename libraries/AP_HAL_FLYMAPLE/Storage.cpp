@@ -39,7 +39,7 @@ extern const AP_HAL::HAL& hal;
 // This is the number of 1k EEPROM blocks we need
 const uint8_t num_eeprom_blocks = 4;
 
-// This is the addres of the LAST 2k FLASH ROM page to be used to implement the EEPROM
+// This is the address of the LAST 2k FLASH ROM page to be used to implement the EEPROM
 // FLASH ROM page use grows downwards from here
 // It is in fact the lat page in the available FLASH ROM
 const uint32_t last_flash_page = 0x0807F800;

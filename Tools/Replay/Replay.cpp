@@ -102,6 +102,8 @@ private:
 
 ReplayVehicle replayvehicle;
 
+struct globals globals;
+
 #define GSCALAR(v, name, def) { replayvehicle.g.v.vtype, name, Parameters::k_param_ ## v, &replayvehicle.g.v, {def_value : def} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replayvehicle.v, {group_info : class::var_info} }
@@ -139,15 +141,25 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass, "COMPASS_", Compass),
 
+    // @Group: LOG
+    // @Path: ../libraries/DataFlash/DataFlash.cpp
+    GOBJECT(dataflash, "LOG", DataFlash_Class),
+    
     AP_VAREND
 };
 
 
 void ReplayVehicle::load_parameters(void)
 {
+    unlink("Replay.stg");
     if (!AP_Param::check_var_info()) {
         AP_HAL::panic("Bad parameter table");
     }
+    AP_Param::set_default_by_name("EKF_ENABLE", 1);
+    AP_Param::set_default_by_name("EK2_ENABLE", 1);
+    AP_Param::set_default_by_name("LOG_REPLAY", 1);
+    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 2);
+    AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
 }
 
 /*
@@ -192,6 +204,7 @@ void ReplayVehicle::setup(void)
     ahrs.set_wind_estimation(true);
     ahrs.set_correct_centrifugal(true);
     ahrs.set_ekf_use(true);
+
     EKF2.set_enable(true);
                         
     printf("Starting disarmed\n");
@@ -224,7 +237,9 @@ public:
      */
     struct log_information {
         uint16_t update_rate;
-        bool have_imu2;
+        bool have_imu2:1;
+        bool have_imt:1;
+        bool have_imt2:1;
     } log_info {};
 
 private:
@@ -249,9 +264,6 @@ private:
     bool done_home_init;
     int32_t arm_time_ms = -1;
     bool ahrs_healthy;
-    bool have_imt = false;
-    bool have_imt2 = false;
-    bool have_fram = false;
     bool use_imt = true;
     bool check_generate = false;
     float tolerance_euler = 3;
@@ -259,6 +271,7 @@ private:
     float tolerance_vel = 2;
     const char **nottypes = NULL;
     uint16_t downsample = 0;
+    bool logmatch = false;
     uint32_t output_counter = 0;
 
     struct {
@@ -284,6 +297,7 @@ private:
     void usage(void);
     void set_user_parameters(void);
     void read_sensors(const char *type);
+    void write_ekf_logs(void);
     void log_check_generate();
     void log_check_solution();
     bool show_error(const char *text, float max_error, float tolerance);
@@ -309,6 +323,8 @@ void Replay::usage(void)
     ::printf("\t--tolerance-vel    tolerance for velocity in meters/second\n");
     ::printf("\t--nottypes         list of msg types not to output, comma separated\n");
     ::printf("\t--downsample       downsampling rate for output\n");
+    ::printf("\t--logmatch         match logging rate to source\n");
+    ::printf("\t--no-params        don't use parameters from the log\n");
 }
 
 
@@ -319,7 +335,9 @@ enum {
     OPT_TOLERANCE_POS,
     OPT_TOLERANCE_VEL,
     OPT_NOTTYPES,
-    OPT_DOWNSAMPLE
+    OPT_DOWNSAMPLE,
+    OPT_LOGMATCH,
+    OPT_NOPARAMS,
 };
 
 void Replay::flush_dataflash(void) {
@@ -371,6 +389,8 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"tolerance-vel",   true,   0, OPT_TOLERANCE_VEL},
         {"nottypes",        true,   0, OPT_NOTTYPES},
         {"downsample",      true,   0, OPT_DOWNSAMPLE},
+        {"logmatch",        false,  0, OPT_LOGMATCH},
+        {"no-params",       false,  0, OPT_NOPARAMS},
         {0, false, 0, 0}
     };
 
@@ -441,6 +461,14 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             downsample = atoi(gopt.optarg);
             break;
 
+        case OPT_LOGMATCH:
+            logmatch = true;
+            break;
+
+        case OPT_NOPARAMS:
+            globals.no_params = true;
+            break;
+            
         case 'h':
         default:
             usage();
@@ -507,6 +535,7 @@ bool Replay::find_log_info(struct log_information &info)
     int samplecount = 0;
     uint64_t prev = 0;
     uint64_t smallest_delta = 0;
+    uint64_t total_delta = 0;
     prev = 0;
     const uint16_t samples_required = 1000;
     while (samplecount < samples_required) {
@@ -523,27 +552,47 @@ bool Replay::find_log_info(struct log_information &info)
             // using IMU as your clock source will lead to incorrect
             // behaviour.
             if (streq(type, "IMT")) {
-                memcpy(clock_source, "IMT", 3);
+                strcpy(clock_source, "IMT");
             } else if (streq(type, "IMU")) {
-                memcpy(clock_source, "IMU", 3);
+                strcpy(clock_source, "IMU");
             } else {
                 continue;
             }
+            hal.console->printf("Using clock source %s\n", clock_source);
+        }
+        // IMT if available always overrides
+        if (streq(type, "IMT") && strcmp(clock_source, "IMT") != 0) {
+            strcpy(clock_source, "IMT");
+            hal.console->printf("Changing clock source to %s\n", clock_source);
+            samplecount = 0;
+            prev = 0;
+            smallest_delta = 0;
+            total_delta = 0;
         }
         if (streq(type, clock_source)) {
             if (prev == 0) {
                 prev = reader.last_clock_timestamp;
             } else {
                 uint64_t delta = reader.last_clock_timestamp - prev;
-                if (smallest_delta == 0 || delta < smallest_delta) {
-                    smallest_delta = delta;
+                if (delta < 40000 && delta > 1000) {
+                    if (smallest_delta == 0 || delta < smallest_delta) {
+                        smallest_delta = delta;
+                    }
+                    samplecount++;
+                    total_delta += delta;
                 }
-                samplecount++;
             }
+            prev = reader.last_clock_timestamp;
         }
 
-        if (streq(type, "IMU2") && !info.have_imu2) {
+        if (streq(type, "IMU2")) {
             info.have_imu2 = true;
+        }
+        if (streq(type, "IMT")) {
+            info.have_imt = true;
+        }
+        if (streq(type, "IMT2")) {
+            info.have_imt2 = true;
         }
     }
     if (smallest_delta == 0) {
@@ -551,7 +600,10 @@ bool Replay::find_log_info(struct log_information &info)
         return false;
     }
 
-    float rate = 1.0e6f/smallest_delta;
+    float average_delta = total_delta / samplecount;
+    float rate = 1.0e6f/average_delta;
+    printf("average_delta=%.2f smallest_delta=%lu samplecount=%lu\n",
+           average_delta, (unsigned long)smallest_delta, (unsigned long)samplecount);
     if (rate < 100) {
         info.update_rate = 50;
     } else {
@@ -613,6 +665,17 @@ void Replay::setup()
     _vehicle.setup();
 
     inhibit_gyro_cal();
+
+    if (log_info.update_rate == 400) {
+        // assume copter for 400Hz
+        _vehicle.ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
+        _vehicle.ahrs.set_fly_forward(false);
+    } else if (log_info.update_rate == 50) {
+        // assume copter for 400Hz
+        _vehicle.ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
+        _vehicle.ahrs.set_fly_forward(true);
+    }
+    
     set_ins_update_rate(log_info.update_rate);
 
     feenableexcept(FE_INVALID | FE_OVERFLOW);
@@ -625,7 +688,7 @@ void Replay::setup()
     ekf3f = fopen("EKF3.dat", "w");
     ekf4f = fopen("EKF4.dat", "w");
 
-    fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw BAR.Alt FLIGHT.Roll FLIGHT.Pitch FLIGHT.Yaw FLIGHT.dN FLIGHT.dE FLIGHT.Alt AHR2.Roll AHR2.Pitch AHR2.Yaw DCM.Roll DCM.Pitch DCM.Yaw EKF.Roll EKF.Pitch EKF.Yaw INAV.dN INAV.dE INAV.Alt EKF.dN EKF.dE EKF.Alt\n");
+    fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw BAR.Alt FLIGHT.Roll FLIGHT.Pitch FLIGHT.Yaw FLIGHT.dN FLIGHT.dE AHR2.Roll AHR2.Pitch AHR2.Yaw DCM.Roll DCM.Pitch DCM.Yaw EKF.Roll EKF.Pitch EKF.Yaw INAV.dN INAV.dE INAV.Alt EKF.dN EKF.dE EKF.Alt\n");
     fprintf(plotf2, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ WN WE MN ME MD MX MY MZ E1ref E2ref E3ref\n");
     fprintf(ekf1f, "timestamp TimeMS Roll Pitch Yaw VN VE VD PN PE PD GX GY GZ\n");
     fprintf(ekf2f, "timestamp TimeMS AX AY AZ VWN VWE MN ME MD MX MY MZ\n");
@@ -664,19 +727,33 @@ void Replay::set_user_parameters(void)
     }
 }
 
+/*
+  write out EKF log messages
+ */
+void Replay::write_ekf_logs(void)
+{
+    if (!LogReader::in_list("EKF", nottypes)) {
+        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
+    }
+    if (!LogReader::in_list("AHRS2", nottypes)) {
+        _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
+    }
+    if (!LogReader::in_list("POS", nottypes)) {
+        _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
+    }
+}
+
 void Replay::read_sensors(const char *type)
 {
     if (!done_parameters && !streq(type,"FMT") && !streq(type,"PARM")) {
         done_parameters = true;
         set_user_parameters();
     }
-    if (use_imt && streq(type,"IMT")) {
-        have_imt = true;
-    }
-    if (use_imt && streq(type,"IMT2")) {
-        have_imt2 = true;
-    }
 
+    if (done_parameters && streq(type, "PARM")) {
+        set_user_parameters();
+    }
+    
     if (!done_home_init) {
         if (streq(type, "GPS") &&
             (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) && done_baro_init) {
@@ -711,26 +788,16 @@ void Replay::read_sensors(const char *type)
     } 
 
     bool run_ahrs = false;
-    if (streq(type,"FRAM")) {
-        if (!have_fram) {
-            have_fram = true;
-            printf("Have FRAM framing\n");
-        }
-        run_ahrs = true;
-    }
-
-    if (have_imt) {
-        if ((streq(type,"IMT") && !have_imt2) ||
-            (streq(type,"IMT2") && have_imt2)) {
-            run_ahrs = true;
-        }
-    }
-
-    // special handling of IMU messages as these trigger an ahrs.update()
-    if (!have_fram && 
-        !have_imt &&
-        ((streq(type,"IMU") && !log_info.have_imu2) || (streq(type, "IMU2") && log_info.have_imu2))) {
-        run_ahrs = true;
+    if (log_info.have_imt2) {
+        run_ahrs = streq(type, "IMT2");
+        _vehicle.ahrs.force_ekf_start();
+    } else if (log_info.have_imt) {
+        run_ahrs = streq(type, "IMT");
+        _vehicle.ahrs.force_ekf_start();
+    } else if (log_info.have_imu2) {
+        run_ahrs = streq(type, "IMU2");
+    } else {
+        run_ahrs = streq(type, "IMU");
     }
 
     /*
@@ -745,16 +812,8 @@ void Replay::read_sensors(const char *type)
         if (_vehicle.ahrs.get_home().lat != 0) {
             _vehicle.inertial_nav.update(_vehicle.ins.get_delta_time());
         }
-        if (downsample == 0 || ++output_counter % downsample == 0) {
-            if (!LogReader::in_list("EKF", nottypes)) {
-                _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
-            }
-            if (!LogReader::in_list("AHRS2", nottypes)) {
-                _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
-            }
-            if (!LogReader::in_list("POS", nottypes)) {
-                _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
-            }
+        if ((downsample == 0 || ++output_counter % downsample == 0) && !logmatch) {
+            write_ekf_logs();
         }
         if (_vehicle.ahrs.healthy() != ahrs_healthy) {
             ahrs_healthy = _vehicle.ahrs.healthy();
@@ -767,6 +826,10 @@ void Replay::read_sensors(const char *type)
         } else if (check_solution) {
             log_check_solution();
         }
+    }
+    
+    if (logmatch && streq(type, "NKF1")) {
+        write_ekf_logs();
     }
 }
 
@@ -818,7 +881,7 @@ void Replay::log_check_solution(void)
 
     float roll_error  = degrees(fabsf(euler.x - check_state.euler.x));
     float pitch_error = degrees(fabsf(euler.y - check_state.euler.y));
-    float yaw_error = wrap_180_cd_float(100*degrees(fabsf(euler.z - check_state.euler.z)))*0.01f;
+    float yaw_error = wrap_180_cd(100*degrees(fabsf(euler.z - check_state.euler.z)))*0.01f;
     float vel_error = (velocity - check_state.velocity).length();
     float pos_error = get_distance(check_state.pos, loc);
 
@@ -893,7 +956,7 @@ void Replay::loop()
             float temp = degrees(ekf_euler.z);
 
             if (temp < 0.0f) temp = temp + 360.0f;
-            fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
+            fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
                     AP_HAL::millis() * 0.001f,
                     logreader.get_sim_attitude().x,
                     logreader.get_sim_attitude().y,
@@ -904,7 +967,6 @@ void Replay::loop()
                     wrap_180_cd(logreader.get_attitude().z*100)*0.01f,
                     logreader.get_inavpos().x,
                     logreader.get_inavpos().y,
-                    logreader.get_relalt(),
                     logreader.get_ahr2_attitude().x,
                     logreader.get_ahr2_attitude().y,
                     wrap_180_cd(logreader.get_ahr2_attitude().z*100)*0.01f,

@@ -23,7 +23,7 @@
 #include "SIM_Motor.h"
 #include "SIM_Frame.h"
 
-using namespace SITL;
+namespace SITL {
 
 /*
   a multicopter simulator
@@ -46,3 +46,4 @@ protected:
     Frame *frame;
 };
 
+}

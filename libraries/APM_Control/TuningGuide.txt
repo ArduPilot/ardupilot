@@ -163,7 +163,7 @@ additional values that anbe set by more advanced users.
 2) If you get porposising and the response is still too sluggish, increase 
    the CTL_RLL_K_D gain in small increments of 0.01 until the overshoot or 
    porpoise goes away. If it hasn't worked by the time you have reached a 
-   value of 0.1 for CTL_PTCH_K_D, DONT go any further until you have checked 
+   value of 0.1 for CTL_PTCH_K_D, DON'T go any further until you have checked 
    your servo temperatures immediately after landing as in extreme 
    cases turning up this gain can cause rapid servo movement and overheat 
    the servos leading to premature failure. 

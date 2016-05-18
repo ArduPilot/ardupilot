@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Copter.h"
+#include "version.h"
 
 #if LOGGING_ENABLED == ENABLED
 
@@ -306,6 +307,7 @@ struct PACKED log_Control_Tuning {
     int32_t  baro_alt;
     int16_t  desired_sonar_alt;
     int16_t  sonar_alt;
+    float    terr_alt;
     int16_t  desired_climb_rate;
     int16_t  climb_rate;
 };
@@ -313,6 +315,12 @@ struct PACKED log_Control_Tuning {
 // Write a control tuning packet
 void Copter::Log_Write_Control_Tuning()
 {
+    // get terrain altitude
+    float terr_alt = 0.0f;
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+    terrain.height_above_terrain(terr_alt, true);
+#endif
+
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_us             : AP_HAL::micros64(),
@@ -324,6 +332,7 @@ void Copter::Log_Write_Control_Tuning()
         baro_alt            : baro_alt,
         desired_sonar_alt   : (int16_t)target_sonar_alt,
         sonar_alt           : sonar_alt,
+        terr_alt            : terr_alt,
         desired_climb_rate  : (int16_t)pos_control.get_vel_target_z(),
         climb_rate          : climb_rate
     };
@@ -363,7 +372,7 @@ void Copter::Log_Write_Performance()
 void Copter::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control.get_att_target_euler_cd();
-    targets.z = wrap_360_cd_float(targets.z);
+    targets.z = wrap_360_cd(targets.z);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
  #if OPTFLOW == ENABLED
@@ -551,7 +560,9 @@ void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 
 void Copter::Log_Write_Baro(void)
 {
-    DataFlash.Log_Write_Baro(barometer);
+    if (!ahrs.have_ekf_logging()) {
+        DataFlash.Log_Write_Baro(barometer);
+    }
 }
 
 struct PACKED log_ParameterTuning {
@@ -716,7 +727,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qfffffecchh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
+      "CTUN", "Qfffffeccfhh", "TimeUS,ThrIn,ABst,ThrOut,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "QHHIhBHI",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),

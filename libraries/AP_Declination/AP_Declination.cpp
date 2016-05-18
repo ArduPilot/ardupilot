@@ -144,11 +144,11 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
     // return value
     int16_t val = 0;
 
-    // These are exception indicies
+    // These are exception indices
     if(x <= 6 || x >= 34)
     {
         // If the x index is in the upper range we need to translate it
-        // to match the 10 indicies in the exceptions lookup table
+        // to match the 10 indices in the exceptions lookup table
         if(x >= 34) x -= 27;
 
         // Read the unsigned value from the array
@@ -165,7 +165,7 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
     }
 
     // Because the values were removed from the start of the
-    // original array (0-6) to the exception array, all the indicies
+    // original array (0-6) to the exception array, all the indices
     // in this main lookup need to be shifted left 7
     // EX: User enters 7 -> 7 is the first row in this array so it needs to be zero
     if(x >= 7) x -= 7;

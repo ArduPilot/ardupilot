@@ -79,7 +79,7 @@ void loop()
 static void print_pwm(void)
 {
     for (int i=0; i<NUM_CHANNELS; i++) {
-	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc[i]->control_in);
+	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc[i]->get_control_in());
     }
     hal.console->printf("\n");
 }
@@ -90,8 +90,8 @@ static void print_radio_values()
     for (int i=0; i<NUM_CHANNELS; i++) {
 	     hal.console->printf("CH%u: %u|%u\n",
 			  (unsigned)i+1, 
-			  (unsigned)rc[i]->radio_min, 
-			  (unsigned)rc[i]->radio_max); 
+			  (unsigned)rc[i]->get_radio_min(), 
+			  (unsigned)rc[i]->get_radio_max()); 
     }
 }
 
@@ -102,7 +102,7 @@ static void print_radio_values()
 static void copy_input_output(void)
 {
     for (int i=0; i<NUM_CHANNELS; i++) {
-        rc[i]->servo_out = rc[i]->control_in;
+        rc[i]->set_servo_out(rc[i]->get_control_in());
         rc[i]->calc_pwm();
         rc[i]->output();
     }

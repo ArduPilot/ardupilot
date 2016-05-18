@@ -1,5 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <AP_HAL_Linux/I2CDevice.h>
+#endif
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #include "AP_Compass_AK8963.h"
@@ -7,6 +10,7 @@
 #include "AP_Compass_HIL.h"
 #include "AP_Compass_HMC5843.h"
 #include "AP_Compass_LSM303D.h"
+#include "AP_Compass_LSM9DS1.h"
 #include "AP_Compass_PX4.h"
 #include "AP_Compass_QURT.h"
 #include "AP_Compass_qflight.h"
@@ -15,9 +19,9 @@
 extern AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-#define COMPASS_LEARN_DEFAULT 0
+#define COMPASS_LEARN_DEFAULT Compass::LEARN_NONE
 #else
-#define COMPASS_LEARN_DEFAULT 1
+#define COMPASS_LEARN_DEFAULT Compass::LEARN_INTERNAL
 #endif
 
 const AP_Param::GroupInfo Compass::var_info[] = {
@@ -56,8 +60,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
-    // @Description: Enable or disable the automatic learning of compass offsets
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle.
+    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning
     // @User: Advanced
     AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 
@@ -113,8 +117,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERNAL
     // @DisplayName: Compass is attached via an external cable
-    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option
-    // @Values: 0:Internal,1:External
+    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state[0].external, 0),
 
@@ -244,8 +248,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERN2
     // @DisplayName: Compass2 is attached via an external cable
-    // @Description: Configure second compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
-    // @Values: 0:Internal,1:External
+    // @Description: Configure second compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN2",20, Compass, _state[1].external, 0),
 
@@ -265,8 +269,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERN3
     // @DisplayName: Compass3 is attached via an external cable
-    // @Description: Configure third compass so it is attached externally. This is auto-detected on PX4 and Pixhawk.
-    // @Values: 0:Internal,1:External
+    // @Description: Configure third compass so it is attached externally. This is auto-detected on PX4 and Pixhawk. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN3",23, Compass, _state[2].external, 0),
 
@@ -440,7 +444,7 @@ void Compass::_detect_backends(void)
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
     _add_backend(AP_Compass_QURT::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_RASPILOT
-    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
+    _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true));
     _add_backend(AP_Compass_LSM303D::probe(*this, hal.spi->get_device("lsm9ds0_am")));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BH
     // detect_mpu9250() failed will cause panic if no actual mpu9250 backend,
@@ -477,6 +481,56 @@ void Compass::_detect_backends(void)
     } else {
         hal.console->printf("AK8953: External compass not detected\n");
     }
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+    _add_backend(AP_Compass_HMC5843::probe_mpu6000(*this));
+    _add_backend(AP_Compass_HMC5843::probe(*this,
+        Linux::I2CDeviceManager::from(hal.i2c_mgr)->get_device(
+            { /* UEFI with lpss set to ACPI */
+              "platform/80860F41:05",
+              /* UEFI with lpss set to PCI */
+              "pci0000:00/0000:00:18.6" },
+            HAL_COMPASS_HMC5843_I2C_ADDR),
+        true));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO2
+    AP_Compass_Backend *backend = AP_Compass_AK8963::probe_mpu9250(*this, 0);
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("AK8953: Compass detected\n");
+    } else {
+        hal.console->printf("AK8953: Compass not detected\n");
+    }
+
+    backend = AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m"));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("LSM9DS1: Compass detected\n");
+    } else {
+        hal.console->printf("LSM9DS1: Compass not detected\n");
+    }
+
+    backend = AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("HMC5843: External compass detected\n");
+    } else {
+        hal.console->printf("HMC5843: External compass not detected\n");
+    }
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO
+    AP_Compass_Backend *backend = AP_Compass_AK8963::probe_mpu9250(*this, 0);
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("AK8953: Compass detected\n");
+    } else {
+        hal.console->printf("AK8953: Compass not detected\n");
+    }
+
+    backend = AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR));
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("HMC5843: External compass detected\n");
+    } else {
+        hal.console->printf("HMC5843: External compass not detected\n");
+    }
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
     _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
@@ -490,6 +544,7 @@ void Compass::_detect_backends(void)
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     _add_backend(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
     _add_backend(AP_Compass_AK8963::probe_mpu9250(*this, 0));
+    _add_backend(AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")));
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
@@ -761,11 +816,11 @@ void Compass::setHIL(uint8_t instance, float roll, float pitch, float yaw)
 
 // Update raw magnetometer values from HIL mag vector
 //
-void Compass::setHIL(uint8_t instance, const Vector3f &mag)
+void Compass::setHIL(uint8_t instance, const Vector3f &mag, uint32_t update_usec)
 {
     _hil.field[instance] = mag;
     _hil.healthy[instance] = true;
-    _state[instance].last_update_usec = AP_HAL::micros();
+    _state[instance].last_update_usec = update_usec;
 }
 
 const Vector3f& Compass::getHIL(uint8_t instance) const

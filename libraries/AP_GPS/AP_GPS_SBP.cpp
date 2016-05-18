@@ -214,7 +214,7 @@ AP_GPS_SBP::_sbp_process_message() {
 
         case SBP_TRACKING_STATE_MSGTYPE:
             //INTENTIONALLY BLANK
-            //Currenly unhandled, but logged after switch statement.
+            //Currently unhandled, but logged after switch statement.
             break;
 
         case SBP_IAR_STATE_MSGTYPE: {
@@ -272,7 +272,7 @@ AP_GPS_SBP::_attempt_state_update()
         float ground_vector_sq = state.velocity[0]*state.velocity[0] + state.velocity[1]*state.velocity[1];
         state.ground_speed = safe_sqrt(ground_vector_sq);
 
-        state.ground_course_cd = wrap_360_cd((int32_t) 100*ToDeg(atan2f(state.velocity[1], state.velocity[0])));
+        state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
 
         // Update position state
 

@@ -17,13 +17,18 @@
  */
 #include "Thread.h"
 
+#include <alloca.h>
 #include <sys/types.h>
+#include <stdio.h>
 #include <unistd.h>
+#include <utility>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
 #include "Scheduler.h"
+
+#define STACK_POISON 0xBEBACAFE
 
 extern const AP_HAL::HAL &hal;
 
@@ -33,6 +38,7 @@ namespace Linux {
 void *Thread::_run_trampoline(void *arg)
 {
     Thread *thread = static_cast<Thread *>(arg);
+    thread->_poison_stack();
     thread->_run();
 
     return nullptr;
@@ -47,6 +53,79 @@ bool Thread::_run()
     _task();
 
     return true;
+}
+
+void Thread::_poison_stack()
+{
+    pthread_attr_t attr;
+    size_t stack_size, guard_size;
+    void *stackp;
+    uint8_t *end, *start, *curr;
+    uint32_t *p;
+
+    if (pthread_getattr_np(_ctx, &attr) != 0 ||
+        pthread_attr_getstack(&attr, &stackp, &stack_size) != 0 ||
+        pthread_attr_getguardsize(&attr, &guard_size) != 0) {
+        return;
+    }
+
+    /* The stack either grows upward or downard. The guard part always
+     * protects the end */
+    end = (uint8_t *) stackp;
+    start = end + stack_size;
+    curr = (uint8_t *) alloca(sizeof(uint32_t));
+
+    /* if curr is closer to @end, the stack actually grows from low to high
+     * virtual address: this is because this function should be executing very
+     * early in the thread's life and close to the thread creation, assuming
+     * the actual stack size is greater than the guard size and the stack
+     * until now is resonably small */
+    if (abs(curr - start) > abs(curr - end)) {
+        std::swap(end, start);
+        end -= guard_size;
+
+        for (p = (uint32_t *) end; p > (uint32_t *) curr; p--) {
+            *p = STACK_POISON;
+        }
+    } else {
+        end += guard_size;
+
+        for (p = (uint32_t *) end; p < (uint32_t *) curr; p++) {
+            *p = STACK_POISON;
+        }
+    }
+
+    _stack_debug.start = (uint32_t *) start;
+    _stack_debug.end = (uint32_t *) end;
+}
+
+size_t Thread::get_stack_usage()
+{
+    uint32_t *p;
+    size_t result = 0;
+
+    /* Make sure we are tracking usage for this thread */
+    if (_stack_debug.start == 0 || _stack_debug.end == 0) {
+        return 0;
+    }
+
+    if (_stack_debug.start < _stack_debug.end) {
+        for (p = _stack_debug.end; p > _stack_debug.start; p--) {
+            if (*p != STACK_POISON) {
+                break;
+            }
+        }
+        result = p - _stack_debug.start;
+    } else {
+        for (p = _stack_debug.end; p < _stack_debug.start; p++) {
+            if (*p != STACK_POISON) {
+                break;
+            }
+        }
+        result = _stack_debug.start - p;
+    }
+
+    return result;
 }
 
 bool Thread::start(const char *name, int policy, int prio)
@@ -72,6 +151,12 @@ bool Thread::start(const char *name, int policy, int prio)
             (r = pthread_attr_setschedparam(&attr, &param) != 0)) {
             AP_HAL::panic("Failed to set attributes for thread '%s': %s",
                           name, strerror(r));
+        }
+    }
+
+    if (_stack_size) {
+        if (pthread_attr_setstacksize(&attr, _stack_size) != 0) {
+            return false;
         }
     }
 
@@ -103,6 +188,17 @@ bool PeriodicThread::set_rate(uint32_t rate_hz)
     }
 
     _period_usec = hz_to_usec(rate_hz);
+
+    return true;
+}
+
+bool Thread::set_stack_size(size_t stack_size)
+{
+    if (_started) {
+        return false;
+    }
+
+    _stack_size = stack_size;
 
     return true;
 }

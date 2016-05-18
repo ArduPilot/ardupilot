@@ -60,7 +60,7 @@ float get_distance(const struct Location &loc1, const struct Location &loc2)
 {
     float dlat              = (float)(loc2.lat - loc1.lat);
     float dlong             = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
-    return pythagorous2(dlat, dlong) * LOCATION_SCALING_FACTOR;
+    return norm(dlat, dlong) * LOCATION_SCALING_FACTOR;
 }
 
 // return distance in centimeters to between two locations
@@ -150,90 +150,6 @@ Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
 }
 
 /*
-  wrap an angle in centi-degrees to 0..35999
- */
-int32_t wrap_360_cd(int32_t error)
-{
-    if (error > 360000 || error < -360000) {
-        // for very large numbers use modulus
-        error = error % 36000;
-    }
-    while (error >= 36000) error -= 36000;
-    while (error < 0) error += 36000;
-    return error;
-}
-
-/*
-  wrap an angle in centi-degrees to -18000..18000
- */
-int32_t wrap_180_cd(int32_t error)
-{
-    if (error > 360000 || error < -360000) {
-        // for very large numbers use modulus
-        error = error % 36000;
-    }
-    while (error > 18000) { error -= 36000; }
-    while (error < -18000) { error += 36000; }
-    return error;
-}
-
-/*
-  wrap an angle in centi-degrees to 0..35999
- */
-float wrap_360_cd_float(float angle)
-{
-    if (angle >= 72000.0f || angle < -36000.0f) {
-        // for larger number use fmodulus
-        angle = fmod(angle, 36000.0f);
-    }
-    if (angle >= 36000.0f) angle -= 36000.0f;
-    if (angle < 0.0f) angle += 36000.0f;
-    return angle;
-}
-
-/*
-  wrap an angle in centi-degrees to -18000..18000
- */
-float wrap_180_cd_float(float angle)
-{
-    if (angle > 54000.0f || angle < -54000.0f) {
-        // for large numbers use modulus
-        angle = fmod(angle,36000.0f);
-    }
-    if (angle > 18000.0f) { angle -= 36000.0f; }
-    if (angle < -18000.0f) { angle += 36000.0f; }
-    return angle;
-}
-
-/*
-  wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
- */
-float wrap_PI(float angle_in_radians)
-{
-    if (angle_in_radians > 10*M_PI || angle_in_radians < -10*M_PI) {
-        // for very large numbers use modulus
-        angle_in_radians = fmodf(angle_in_radians, 2*M_PI);
-    }
-    while (angle_in_radians > M_PI) angle_in_radians -= 2*M_PI;
-    while (angle_in_radians < -M_PI) angle_in_radians += 2*M_PI;
-    return angle_in_radians;
-}
-
-/*
- * wrap an angle in radians to 0..2PI
- */
-float wrap_2PI(float angle)
-{
-    if (angle > 10*M_PI || angle < -10*M_PI) {
-        // for very large numbers use modulus
-        angle = fmodf(angle, 2*M_PI);
-    }
-    while (angle > 2*M_PI) angle -= 2*M_PI;
-    while (angle < 0) angle += 2*M_PI;
-    return angle;
-}
-
-/*
   return true if lat and lng match. Ignores altitude and options
  */
 bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {
@@ -319,7 +235,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
     return;
   }
 
-  /* Caluclate some other constants as defined in the Fukushima paper. */
+  /* Calculate some other constants as defined in the Fukushima paper. */
   const double P = p / WGS84_A;
   const double e_c = sqrt(1. - WGS84_E*WGS84_E);
   const double Z = fabs(ecef[2]) * e_c / WGS84_A;

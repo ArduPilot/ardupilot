@@ -118,8 +118,11 @@ void AP_AHRS_NavEKF::update_EKF1(void)
             start_time_ms = AP_HAL::millis();
         }
         // slight extra delay on EKF1 to prioritise EKF2 for memory
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms + 100U) {
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms + 100U || force_ekf) {
             ekf1_started = EKF1.InitialiseFilterDynamic();
+            if (force_ekf) {
+                return;
+            }
         }
     }
     if (ekf1_started) {
@@ -143,7 +146,7 @@ void AP_AHRS_NavEKF::update_EKF1(void)
             _gyro_estimate.zero();
             uint8_t healthy_count = 0;
             for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-                if (_ins.get_gyro_health(i) && healthy_count < 2) {
+                if (_ins.get_gyro_health(i) && healthy_count < 2 && _ins.use_gyro(i)) {
                     _gyro_estimate += _ins.get_gyro(i);
                     healthy_count++;
                 }
@@ -189,8 +192,11 @@ void AP_AHRS_NavEKF::update_EKF2(void)
         if (start_time_ms == 0) {
             start_time_ms = AP_HAL::millis();
         }
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms || force_ekf) {
             ekf2_started = EKF2.InitialiseFilter();
+            if (force_ekf) {
+                return;
+            }
         }
     }
     if (ekf2_started) {
@@ -214,7 +220,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             _gyro_estimate.zero();
             uint8_t healthy_count = 0;
             for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-                if (_ins.get_gyro_health(i) && healthy_count < 2) {
+                if (_ins.get_gyro_health(i) && healthy_count < 2 && _ins.use_gyro(i)) {
                     _gyro_estimate += _ins.get_gyro(i);
                     healthy_count++;
                 }
@@ -935,7 +941,7 @@ void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlo
     EKF2.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);
 }
 
-// inhibit GPS useage
+// inhibit GPS usage
 uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
 {
     switch (ekf_type()) {
@@ -1265,6 +1271,18 @@ bool AP_AHRS_NavEKF::getGpsGlitchStatus()
     return ekf_status.flags.gps_glitching;
 }
 
+
+// is the EKF backend doing its own sensor logging?
+bool AP_AHRS_NavEKF::have_ekf_logging(void) const
+{
+    switch (ekf_type()) {
+    case 2:
+        return EKF2.have_ekf_logging();
+    default:
+        break;
+    }
+    return false;
+}
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 

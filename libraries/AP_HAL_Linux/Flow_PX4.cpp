@@ -281,7 +281,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
                 }
             }
 
-            /* acceptance SAD distance threshhold */
+            /* acceptance SAD distance threshold */
             if (dist < _bottom_flow_value_threshold) {
                 meanflowx += (float)sumx;
                 meanflowy += (float) sumy;

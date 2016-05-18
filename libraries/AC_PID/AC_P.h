@@ -57,7 +57,7 @@ public:
     void operator() (const float p) { _kp = p; }
 
     // accessors
-    float       kP() const { return _kp.get(); }
+    AP_Float    &kP() { return _kp; }
     void        kP(const float v) { _kp.set(v); }
 
     static const struct AP_Param::GroupInfo        var_info[];

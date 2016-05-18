@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MID
     // @DisplayName: Collective Pitch Mid-Point
-    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
+    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -348,8 +348,8 @@ void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
     servo.set_range_out(0, 1000);
 
     // swash servos always use full endpoints as restricting them would lead to scaling errors
-    servo.radio_min = 1000;
-    servo.radio_max = 2000;
+    servo.set_radio_min(1000);
+    servo.set_radio_max(2000);
 }
 
 // update the throttle input filter

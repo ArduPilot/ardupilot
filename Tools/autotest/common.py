@@ -172,12 +172,13 @@ def wait_location(mav, loc, accuracy=5, timeout=30, target_altitude=None, height
     print("Failed to attain location")
     return False
 
-def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, timeout=400, mode=None):
+def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, timeout=400):
     '''wait for waypoint ranges'''
     tstart = get_sim_time(mav)
     # this message arrives after we set the current WP
     start_wp = mav.waypoint_current()
     current_wp = start_wp
+    mode = mav.flightmode
 
     print("\ntest: wait for waypoint ranges start=%u end=%u\n\n" % (wpnum_start, wpnum_end))
     # if start_wp != wpnum_start:
@@ -190,10 +191,10 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
         wp_dist = m.wp_dist
         m = mav.recv_match(type='VFR_HUD', blocking=True)
 
-        # if we exited the required mode, finish
-        if mode is not None and mav.flightmode != mode:
+        # if we changed mode, fail
+        if mav.flightmode != mode:
             print('Exited %s mode' % mode)
-            return True
+            return False
 
         print("test: WP %u (wp_dist=%u Alt=%d), current_wp: %u, wpnum_end: %u" % (seq, wp_dist, m.alt, current_wp, wpnum_end))
         if seq == current_wp+1 or (seq > current_wp+1 and allow_skip):
