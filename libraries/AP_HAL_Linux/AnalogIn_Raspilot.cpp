@@ -76,14 +76,7 @@ void AnalogIn_Raspilot::init()
 {
     _vcc_pin_analog_source = channel(4);
 
-    _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
-    _spi_sem = _spi->get_semaphore();
-
-    if (_spi_sem == NULL) {
-        AP_HAL::panic("PANIC: RCIutput_Raspilot did not get "
-                                  "valid SPI semaphore!");
-        return; // never reached
-    }
+    _dev = hal.spi->get_device("raspio");
 
     hal.scheduler->suspend_timer_procs();
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AnalogIn_Raspilot::_update, void));
@@ -96,7 +89,7 @@ void AnalogIn_Raspilot::_update()
         return;
     }
 
-    if (!_spi_sem->take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
@@ -108,8 +101,7 @@ void AnalogIn_Raspilot::_update()
     tx.crc = 0;
     tx.crc = crc_packet(&tx);
     /* set raspilotio to read reg4 */
-    _spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, sizeof(tx));
-
+    _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
     hal.scheduler->delay_microseconds(200);
 
     count = 0;
@@ -119,9 +111,9 @@ void AnalogIn_Raspilot::_update()
     tx.crc = 0;
     tx.crc = crc_packet(&tx);
     /* get reg4 data from raspilotio */
-    _spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, sizeof(tx));
+    _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
 
-    _spi_sem->give();
+    _dev->get_semaphore()->give();
 
     for (int16_t i = 0; i < RASPILOT_ADC_MAX_CHANNELS; i++) {
         for (int16_t j=0; j < RASPILOT_ADC_MAX_CHANNELS; j++) {

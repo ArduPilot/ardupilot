@@ -23,8 +23,7 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 Storage_FRAM::Storage_FRAM():
-_spi(NULL),
-_spi_sem(NULL)
+_dev(nullptr)
 {}
 
 void Storage_FRAM::_storage_create(void)
@@ -137,7 +136,7 @@ int8_t Storage_FRAM::open()
         return 0;
     }
     uint8_t manufacturerID;
-    _spi = hal.spi->device(AP_HAL::SPIDevice_Dataflash);
+    _dev = hal.spi->get_device("dataflash");
     uint8_t signature[4] = {0x00,0xaf,0xf0,0x0f};
     uint8_t j = 0;
     for(int i=0;true;i++){
@@ -211,7 +210,7 @@ int8_t Storage_FRAM::_register_write( uint8_t* src, uint16_t addr, uint16_t len 
     for(i=0;i<len;i++){
         tx[i+3] = src[i];
     }
-    if(transaction(tx, rx, len+3) == -1){
+    if(transaction(tx, rx) == -1){
         return -1;
     }
     if(_write_enable(false) == -1){
@@ -227,12 +226,12 @@ int8_t Storage_FRAM::_write_enable(bool enable)
     if(enable){
         tx[0] = OPCODE_WREN;
         tx[1] = 0;
-        return transaction(tx, rx, 2);
+        return transaction(tx, rx);
     }
     else{
         tx[0] = OPCODE_WRDI;
         tx[1] = 0;
-        return transaction(tx, rx, 2);
+        return transaction(tx, rx);
     }
     
 }
@@ -242,20 +241,20 @@ int8_t Storage_FRAM::_register_read( uint16_t addr, uint8_t opcode )
     uint8_t tx[4] = {opcode, (uint8_t)((addr >> 8U)), (uint8_t)(addr & 0xFF), 0};
     uint8_t rx[4];
     
-    if(transaction(tx, rx, 4) == -1){
+    if(transaction(tx, rx) == -1){
         return -1;
     }
     return rx[3];
 }
 
-int8_t Storage_FRAM::transaction(uint8_t* tx, uint8_t* rx, uint16_t len){
-    _spi_sem = _spi->get_semaphore();
-    if (!_spi_sem->take(100)) {
+int8_t Storage_FRAM::transaction(uint8_t* tx, uint8_t* rx){
+
+    if (!_dev->get_semaphore()->take(100)) {
        // FRAM: Unable to get semaphore
         return -1;
     }
-    _spi->transaction(tx, rx, len);
-    _spi_sem->give();
+    _dev->transfer(tx, sizeof(*tx), rx, sizeof(*rx));
+    _dev->get_semaphore()->give();
     return 0;
 }
 
