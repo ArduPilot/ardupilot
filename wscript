@@ -133,6 +133,9 @@ def configure(cfg):
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
 
+    # Allow to differentiate our build from the make build
+    cfg.define('WAF_BUILD', 1)
+
     cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'))
 
 def collect_dirs_to_recurse(bld, globs, **kw):
