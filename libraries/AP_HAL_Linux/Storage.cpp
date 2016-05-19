@@ -67,11 +67,11 @@ void Storage::_storage_open(void)
     }
     memset(_buffer, 0, sizeof(_buffer));
     /*
-      we allow a read of size 4096 to cope with the old storage size
+      we allow a read of size 4096 or 16384 to cope with the old storage size
       without forcing users to reset all parameters
      */
     ssize_t ret = read(fd, _buffer, sizeof(_buffer));
-    if (ret == 4096 && ret != sizeof(_buffer)) {
+    if ((ret == 4096 || ret == 16384) && ret != sizeof(_buffer)) {
         if (ftruncate(fd, sizeof(_buffer)) != 0) {
             AP_HAL::panic("Failed to expand " STORAGE_FILE);
         }
