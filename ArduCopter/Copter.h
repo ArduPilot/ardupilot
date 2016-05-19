@@ -783,8 +783,8 @@ private:
     void guided_vel_control_start();
     void guided_posvel_control_start();
     void guided_angle_control_start();
-    void guided_set_destination(const Vector3f& destination);
     bool guided_set_destination(const Location_Class& dest_loc);
+    bool guided_set_destination(const Vector3f& destination);
     void guided_set_velocity(const Vector3f& velocity);
     void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms);
@@ -935,6 +935,7 @@ private:
     float pv_alt_above_home(float alt_above_origin_cm);
     float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
     float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
+    float pv_get_home_destination_distance_cm(const Vector3f &destination);
     void default_dead_zones();
     void init_rc_in();
     void init_rc_out();
