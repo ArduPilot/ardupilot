@@ -3,7 +3,6 @@
  */
 
 #include "AP_Time.h"
-#include <time.h>
 
 // get system time in UTC hours, minutes, seconds and milliseconds
 void get_time_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms)
