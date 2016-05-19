@@ -24,7 +24,10 @@ Example::
         cfg.load('cxx_checks')
 """
 
-def configure(cfg):
+from waflib.Configure import conf
+
+@conf
+def ap_common_checks(cfg):
     cfg.check(
         compiler='cxx',
         fragment='''

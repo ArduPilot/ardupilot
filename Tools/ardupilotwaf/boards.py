@@ -31,6 +31,7 @@ class Board:
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = self.toolchain
         cfg.load('toolchain')
+        cfg.load('cxx_checks')
 
         env = waflib.ConfigSet.ConfigSet()
         self.configure_env(cfg, env)
@@ -52,7 +53,7 @@ class Board:
             else:
                 cfg.env[k] = val
 
-        cfg.load('cxx_checks')
+        cfg.ap_common_checks()
 
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
