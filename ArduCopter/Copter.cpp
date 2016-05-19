@@ -30,7 +30,6 @@ Copter::Copter(void) :
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
-    control_mode(STABILIZE),
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
     motors(g.rc_7, MAIN_LOOP_RATE),
 #else
@@ -120,6 +119,7 @@ Copter::Copter(void) :
     gcs_out_of_time(false),
     param_loader(var_info)
 {
+    set_mode(STABILIZE, MODE_REASON_SYSTEM_STARTUP);
     memset(&current_loc, 0, sizeof(current_loc));
 
     // init sensor error logging flags
