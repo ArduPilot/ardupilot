@@ -185,20 +185,22 @@ int16_t AP_GPS_NMEA::_from_hex(char a)
         return a - '0';
 }
 
-int32_t AP_GPS_NMEA::_parse_decimal_100()
+int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
 {
-    char *p = _term;
     int32_t ret = 100UL * atol(p);
     int32_t sign = 1;
+
     if (*p == '+') {
         ++p;
     } else if (*p == '-') {
         ++p;
         sign = -1;
     }
+
     while (isdigit(*p)) {
         ++p;
     }
+
     if (*p == '.') {
         if (isdigit(p[1])) {
             ret += sign * 10 * DIGIT_TO_VAL(p[1]);
@@ -210,6 +212,7 @@ int32_t AP_GPS_NMEA::_parse_decimal_100()
             }
         }
     }
+
     return ret;
 }
 
@@ -390,14 +393,14 @@ bool AP_GPS_NMEA::_term_complete()
             _new_satellite_count = atol(_term);
             break;
         case _GPS_SENTENCE_GGA + 8: // HDOP (GGA)
-            _new_hdop = _parse_decimal_100();
+            _new_hdop = (uint16_t)_parse_decimal_100(_term);
             break;
 
         // time and date
         //
         case _GPS_SENTENCE_RMC + 1: // Time (RMC)
         case _GPS_SENTENCE_GGA + 1: // Time (GGA)
-            _new_time = _parse_decimal_100();
+            _new_time = _parse_decimal_100(_term);
             break;
         case _GPS_SENTENCE_RMC + 9: // Date (GPRMC)
             _new_date = atol(_term);
@@ -424,18 +427,18 @@ bool AP_GPS_NMEA::_term_complete()
                 _new_longitude = -_new_longitude;
             break;
         case _GPS_SENTENCE_GGA + 9: // Altitude (GPGGA)
-            _new_altitude = _parse_decimal_100();
+            _new_altitude = _parse_decimal_100(_term);
             break;
 
         // course and speed
         //
         case _GPS_SENTENCE_RMC + 7: // Speed (GPRMC)
         case _GPS_SENTENCE_VTG + 5: // Speed (VTG)
-            _new_speed = (_parse_decimal_100() * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
+            _new_speed = (_parse_decimal_100(_term) * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
             break;
         case _GPS_SENTENCE_RMC + 8: // Course (GPRMC)
         case _GPS_SENTENCE_VTG + 1: // Course (VTG)
-            _new_course = _parse_decimal_100();
+            _new_course = _parse_decimal_100(_term);
             break;
         }
     }

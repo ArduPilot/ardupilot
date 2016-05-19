@@ -85,13 +85,13 @@ private:
     ///
     int16_t                     _from_hex(char a);
 
-    /// Parses the current term as a NMEA-style decimal number with
-    /// up to two decimal digits.
+    /// Parses the @p as a NMEA-style decimal number with
+    /// up to 3 decimal digits.
     ///
-    /// @returns		The value expressed by the string in _term,
+    /// @returns		The value expressed by the string in @p,
     ///					multiplied by 100.
     ///
-    int32_t    _parse_decimal_100();
+    static int32_t _parse_decimal_100(const char *p);
 
     /// Parses the current term as a NMEA-style degrees + minutes
     /// value with up to four decimal digits.
