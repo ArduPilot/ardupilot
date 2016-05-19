@@ -187,32 +187,29 @@ int16_t AP_GPS_NMEA::_from_hex(char a)
 
 int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
 {
-    int32_t ret = 100UL * atol(p);
-    int32_t sign = 1;
+    char *endptr = nullptr;
+    long ret = 100 * strtol(p, &endptr, 10);
+    int sign = ret < 0 ? -1 : 1;
 
-    if (*p == '+') {
-        ++p;
-    } else if (*p == '-') {
-        ++p;
-        sign = -1;
+    if (ret >= (long)INT32_MAX) {
+        return INT32_MAX;
+    }
+    if (ret <= (long)INT32_MIN) {
+        return INT32_MIN;
+    }
+    if (endptr == nullptr || *endptr != '.') {
+        return ret;
     }
 
-    while (isdigit(*p)) {
-        ++p;
-    }
-
-    if (*p == '.') {
-        if (isdigit(p[1])) {
-            ret += sign * 10 * DIGIT_TO_VAL(p[1]);
-            if (isdigit(p[2])) {
-                ret += sign * DIGIT_TO_VAL(p[2]);
-                if (isdigit(p[3])) {
-                    ret += sign * (DIGIT_TO_VAL(p[3]) >= 5);
-                }
+    if (isdigit(endptr[1])) {
+        ret += sign * 10 * DIGIT_TO_VAL(endptr[1]);
+        if (isdigit(endptr[2])) {
+            ret += sign * DIGIT_TO_VAL(endptr[2]);
+            if (isdigit(endptr[3])) {
+                ret += sign * (DIGIT_TO_VAL(endptr[3]) >= 5);
             }
         }
     }
-
     return ret;
 }
 
