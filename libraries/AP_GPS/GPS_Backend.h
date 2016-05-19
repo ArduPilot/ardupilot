@@ -51,6 +51,8 @@ public:
 
     virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
+    virtual void handle_msg(mavlink_message_t *msg) { return ; }
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)

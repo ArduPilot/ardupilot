@@ -69,6 +69,7 @@ public:
 		GPS_TYPE_GSOF  = 11,
 		GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
+        GPS_TYPE_MAV = 14,
     };
 
     /// GPS status codes
@@ -126,6 +127,9 @@ public:
         bool have_vertical_accuracy:1;
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
     };
+
+    // Pass mavlink data to message handlers (for MAV type)
+    void handle_msg(mavlink_message_t *msg);
 
     // Accessor functions
 
