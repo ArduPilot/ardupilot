@@ -585,6 +585,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // on/off. >0.5 means "on", hand-over control to external controller
         break;
 
+    case MAV_CMD_NAV_DELAY:                            // MAV ID: 94
+        cmd.content.nav_delay.seconds = packet.param1; // delay in seconds
+        cmd.content.nav_delay.hour_utc = packet.param2;// absolute time's hour (utc)
+        cmd.content.nav_delay.min_utc = packet.param3;// absolute time's min (utc)
+        cmd.content.nav_delay.sec_utc = packet.param4; // absolute time's second (utc)
+        break;
+
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
         cmd.content.delay.seconds = packet.param1;      // delay in seconds
         break;
@@ -1005,6 +1012,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_NAV_GUIDED_ENABLE:                     // MAV ID: 92
         packet.param1 = cmd.p1;                         // on/off. >0.5 means "on", hand-over control to external controller
+        break;
+
+    case MAV_CMD_NAV_DELAY:                            // MAV ID: 94
+        packet.param1 = cmd.content.nav_delay.seconds; // delay in seconds
+        packet.param2 = cmd.content.nav_delay.hour_utc; // absolute time's day of week (utc)
+        packet.param3 = cmd.content.nav_delay.min_utc; // absolute time's hour (utc)
+        packet.param4 = cmd.content.nav_delay.sec_utc; // absolute time's min (utc)
         break;
 
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
