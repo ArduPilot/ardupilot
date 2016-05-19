@@ -197,17 +197,16 @@ uint8_t AC_Fence::check_fence(float curr_alt)
     //outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
 }
 
-/// check_fence_guided - returns false if the destination waypoint is outside the fence
-// returns true if the guided waypoint is within the fence
-bool AC_Fence::check_fence_location(float destination_alt, float home_destination_distance)
+// returns true if the destination is within fence (used to reject waypoints outside the fence)
+bool AC_Fence::check_destination_within_fence(float dest_alt, float dest_distance_to_home)
 {
     // Altitude fence check
-    if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) && (round(destination_alt*0.01f) >= _alt_max)) {
+    if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) && (dest_alt >= _alt_max)) {
         return false;
     }
 
     // Circular fence check
-    if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) && (home_destination_distance*0.01f >= _circle_radius)) {
+    if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) && (dest_distance_to_home >= _circle_radius)) {
         return false;
     }
 
