@@ -60,8 +60,7 @@ void Thread::_poison_stack()
     pthread_attr_t attr;
     size_t stack_size, guard_size;
     void *stackp;
-    uint8_t *end, *begin, *curr;
-    uint32_t *p;
+    uint32_t *p, *curr, *begin, *end;
 
     if (pthread_getattr_np(_ctx, &attr) != 0 ||
         pthread_attr_getstack(&attr, &stackp, &stack_size) != 0 ||
@@ -69,11 +68,14 @@ void Thread::_poison_stack()
         return;
     }
 
+    stack_size /= sizeof(uint32_t);
+    guard_size /= sizeof(uint32_t);
+
     /* The stack either grows upward or downard. The guard part always
      * protects the end */
-    end = (uint8_t *) stackp;
+    end = (uint32_t *)stackp;
     begin = end + stack_size;
-    curr = (uint8_t *) alloca(sizeof(uint32_t));
+    curr = (uint32_t *)alloca(sizeof(uint32_t));
 
     /* if curr is closer to @end, the stack actually grows from low to high
      * virtual address: this is because this function should be executing very
@@ -84,19 +86,19 @@ void Thread::_poison_stack()
         std::swap(end, begin);
         end -= guard_size;
 
-        for (p = (uint32_t *) end; p > (uint32_t *) curr; p--) {
+        for (p = end; p > curr; p--) {
             *p = STACK_POISON;
         }
     } else {
         end += guard_size;
 
-        for (p = (uint32_t *) end; p < (uint32_t *) curr; p++) {
+        for (p = end; p < curr; p++) {
             *p = STACK_POISON;
         }
     }
 
-    _stack_debug.start = (uint32_t *) begin;
-    _stack_debug.end = (uint32_t *) end;
+    _stack_debug.start = begin;
+    _stack_debug.end = end;
 }
 
 size_t Thread::get_stack_usage()
