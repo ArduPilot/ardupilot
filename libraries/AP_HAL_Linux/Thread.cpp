@@ -55,6 +55,12 @@ bool Thread::_run()
     return true;
 }
 
+/* Round up to the specified alignment */
+static inline void *align_to(void *p, size_t align)
+{
+    return (void *)(((uintptr_t)p + align - 1) & ~(align - 1));
+}
+
 void Thread::_poison_stack()
 {
     pthread_attr_t attr;
@@ -75,7 +81,7 @@ void Thread::_poison_stack()
      * protects the end */
     end = (uint32_t *)stackp;
     begin = end + stack_size;
-    curr = (uint32_t *)alloca(sizeof(uint32_t));
+    curr = (uint32_t *)align_to(alloca(sizeof(uint32_t)), alignof(uint32_t));
 
     /* if curr is closer to @end, the stack actually grows from low to high
      * virtual address: this is because this function should be executing very
@@ -91,6 +97,10 @@ void Thread::_poison_stack()
         }
     } else {
         end += guard_size;
+
+        /* we aligned curr to the up boundary, make sure this didn't cause us
+         * to lose some bytes */
+        curr--;
 
         for (p = end; p < curr; p++) {
             *p = STACK_POISON;
