@@ -113,8 +113,8 @@ void AP_Mission::resume()
     }
 }
 
-// return false if next command in the mission is not takeoff
-bool AP_Mission::check_takeoff_cmd()
+/// check mission starts with a takeoff command
+bool AP_Mission::starts_with_takeoff_cmd()
 {
     Mission_Command cmd = {};
     uint16_t cmd_index;

@@ -304,7 +304,9 @@ public:
 
     /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
     void start_or_resume();
-    bool check_takeoff_cmd();
+
+    /// check mission starts with a takeoff command
+    bool starts_with_takeoff_cmd();
 
     /// reset - reset mission to the first command
     void reset();
