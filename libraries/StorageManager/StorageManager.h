@@ -27,7 +27,9 @@
   use just one area per storage type for boards with 4k of
   storage. Use larger areas for other boards
  */
-#if HAL_STORAGE_SIZE >= 16384
+#if HAL_STORAGE_SIZE >= 131072
+#define STORAGE_NUM_AREAS 16
+#elif HAL_STORAGE_SIZE >= 16384
 #define STORAGE_NUM_AREAS 12
 #elif HAL_STORAGE_SIZE >= 8192
 #define STORAGE_NUM_AREAS 8
