@@ -1,5 +1,4 @@
 #include "RingBuffer.h"
-#include <algorithm>
 #include <stdlib.h>
 #include <string.h>
 
@@ -50,33 +49,16 @@ bool ByteBuffer::empty(void) const
 
 uint32_t ByteBuffer::write(const uint8_t *data, uint32_t len)
 {
-    if (len > space()) {
-        len = space();
-    }
-    if (len == 0) {
-        return 0;
-    }
-    if (tail+len <= size) {
-        // perform as single memcpy
-        memcpy(&buf[tail], data, len);
-        tail = (tail + len) % size;
-        return len;
+    ByteBuffer::IoVec vec[2];
+    const auto n_vec = reserve(vec, len);
+    uint32_t ret = 0;
+
+    for (int i = 0; i < n_vec; i++) {
+        memcpy(vec[i].data, data + ret, vec[i].len);
+        ret += vec[i].len;
     }
 
-    // perform as two memcpy calls
-    uint32_t n = size - tail;
-    if (n > len) {
-        n = len;
-    }
-    memcpy(&buf[tail], data, n);
-    tail = (tail + n) % size;
-    data += n;
-    n = len - n;
-    if (n > 0) {
-        memcpy(&buf[tail], data, n);
-        tail = (tail + n) % size;
-    }
-    return len;
+    return ret;
 }
 
 /*
@@ -154,6 +136,37 @@ uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
     return ret;
 }
 
+int ByteBuffer::reserve(ByteBuffer::IoVec iovec[2], uint32_t len)
+{
+    if (len > space()) {
+        len = space();
+    }
+    if (!len) {
+        return 0;
+    }
+
+    iovec[0].data = &buf[tail];
+    if (tail+len <= size) {
+        iovec[0].len = len;
+    } else {
+        auto n = size - tail;
+        if (n > len) {
+            n = len;
+        }
+
+        iovec[0].len = n;
+
+        tail = (tail + n) % size;
+        n = len - n;
+        if (n > 0) {
+            iovec[1].data = &buf[tail];
+            iovec[1].len = n;
+            return 2;
+        }
+    }
+
+    return 1;
+}
 
 uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
 {
