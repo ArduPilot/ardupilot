@@ -145,6 +145,10 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
+    if (!_ahrs->get_compass()) {
+        allMagSensorsFailed = true;
+        return;        
+    }
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
     uint8_t maxCount = _ahrs->get_compass()->get_count();
