@@ -16,7 +16,7 @@ class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
     // constructor
-    Airspeed_Calibration(const AP_Vehicle::FixedWing &parms);
+    Airspeed_Calibration(void);
 
     // initialise the calibration
     void init(float initial_ratio);
@@ -32,16 +32,15 @@ private:
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
     const float DT; // time delta
-    const AP_Vehicle::FixedWing &aparm;
 };
 
 class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed(const AP_Vehicle::FixedWing &parms)
+    AP_Airspeed()
         : _EAS2TAS(1.0f)
-        , _calibration(parms)
+        , _calibration()
         , analog(_pin)
     {
 		AP_Param::setup_object_defaults(this, var_info);
@@ -151,6 +150,9 @@ public:
     enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE = 0,
                             PITOT_TUBE_ORDER_NEGATIVE = 1,
                             PITOT_TUBE_ORDER_AUTO     = 2 };
+
+    AP_Int16       _airspeed_min;
+    AP_Int16       _airspeed_max;
 
 private:
     AP_Float        _offset;

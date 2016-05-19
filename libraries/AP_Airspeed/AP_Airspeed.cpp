@@ -119,6 +119,24 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SKIP_CAL",  7, AP_Airspeed, _skip_cal, 0),
 
+    // @Param: MIN (previously ARSPD_FBW_MIN)
+    // @DisplayName: Minimum Airspeed
+    // @Description: This is the minimum airspeed you want to fly at in modes where the autopilot controls the airspeed. This should be set to a value around 20% higher than the level flight stall speed for the airframe. This value is also used in the STALL_PREVENTION code.
+    // @Units: m/s
+    // @Range: 5 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MIN", 8, AP_Airspeed, _airspeed_min, 5),
+
+    // @Param: MAX (previously ARSPD_FBW_MAX)
+    // @DisplayName: Maximum Airspeed
+    // @Description: This is the maximum airspeed that you want to allow for your airframe in auto-throttle modes. You should ensure that this value is sufficiently above the ARSPD_FBW_MIN value to allow for a sufficient flight envelope to accurately control altitude using airspeed. A value at least 50% above ARSPD_FBW_MIN is recommended.
+    // @Units: m/s
+    // @Range: 5 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MAX", 9, AP_Airspeed, _airspeed_max, 20),
+
     AP_GROUPEND
 };
 
