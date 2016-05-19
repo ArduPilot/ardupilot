@@ -476,24 +476,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     ASCALAR(stall_prevention, "STALL_PREVENTION",  1),
 
-    // @Param: ARSPD_FBW_MIN
-    // @DisplayName: Minimum Airspeed
-    // @Description: This is the minimum airspeed you want to fly at in modes where the autopilot controls the airspeed. This should be set to a value around 20% higher than the level flight stall speed for the airframe. This value is also used in the STALL_PREVENTION code.
-    // @Units: m/s
-    // @Range: 5 100
-    // @Increment: 1
-    // @User: Standard
-    ASCALAR(airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
-
-    // @Param: ARSPD_FBW_MAX
-    // @DisplayName: Maximum Airspeed
-    // @Description: This is the maximum airspeed that you want to allow for your airframe in auto-throttle modes. You should ensure that this value is sufficiently above the ARSPD_FBW_MIN value to allow for a sufficient flight envelope to accurately control altitude using airspeed. A value at least 50% above ARSPD_FBW_MIN is recommended.
-    // @Units: m/s
-    // @Range: 5 100
-    // @Increment: 1
-    // @User: Standard
-    ASCALAR(airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
-
     // @Param: FBWB_ELEV_REV
     // @DisplayName: Fly By Wire elevator reverse
     // @Description: Reverse sense of elevator in FBWB and CRUISE modes. When set to 0 up elevator (pulling back on the stick) means to lower altitude. When set to 1, up elevator means to raise altitude.
