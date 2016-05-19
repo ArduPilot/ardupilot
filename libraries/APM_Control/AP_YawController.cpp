@@ -80,7 +80,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	_last_t = tnow;
 	
 
-    int16_t aspd_min = aparm.airspeed_min;
+    int16_t aspd_min = airspeed._airspeed_min;
     if (aspd_min < 1) {
         aspd_min = 1;
     }
@@ -97,7 +97,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	}
 	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f*(float(aspd_min) + float(airspeed._airspeed_max));
 	}
     rate_offset = (GRAVITY_MSS / MAX(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
