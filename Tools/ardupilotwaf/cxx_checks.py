@@ -123,3 +123,27 @@ def ap_common_checks(cfg):
         msg="Checking for NEED_CMATH_ISNAN_STD_NAMESPACE",
         mandatory=False,
     )
+
+@conf
+def check_librt(cfg):
+    success = cfg.check(
+        compiler='cxx',
+        fragment='''
+        #include <time.h>
+
+        int main() {
+            clock_gettime(CLOCK_REALTIME, NULL);
+        }''',
+        msg='Checking for need to link with librt',
+        okmsg='not necessary',
+        errmsg='necessary',
+        mandatory=False,
+    )
+
+    if success:
+        return success
+
+    return cfg.check(
+        compiler='cxx',
+        lib='rt',
+    )
