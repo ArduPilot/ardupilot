@@ -184,9 +184,13 @@ class sitl(Board):
                 '-O3',
             ]
 
+        cfg.check_librt()
+
         env.LIB += [
             'm',
         ]
+        env.LIB += cfg.env.LIB_RT
+
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
@@ -212,10 +216,13 @@ class linux(Board):
                 '-O3',
             ]
 
+        cfg.check_librt()
+
         env.LIB += [
             'm',
-            'rt',
         ]
+        env.LIB += cfg.env.LIB_RT
+
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [
             'AP_HAL_Linux',
