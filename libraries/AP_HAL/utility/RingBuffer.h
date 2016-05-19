@@ -81,6 +81,12 @@ public:
         uint32_t len;
     };
     int peekiovec(IoVec vec[2], uint32_t len);
+
+    // Reserve `len` bytes and fills out `vec` with both parts of the
+    // ring buffer (if wraparound is happening), or just one contiguous
+    // part. Returns the number of `vec` elements filled out. Can be used
+    // with system calls such as `readv()`.
+    int reserve(IoVec vec[2], uint32_t len);
     
 private:
     uint8_t *buf = nullptr;
