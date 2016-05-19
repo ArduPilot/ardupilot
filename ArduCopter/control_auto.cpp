@@ -25,6 +25,12 @@ bool Copter::auto_init(bool ignore_checks)
     if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
 
+        // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce change of flips)
+        if (motors.armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
+            return false;
+        }
+
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
         if (auto_yaw_mode == AUTO_YAW_ROI) {

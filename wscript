@@ -88,6 +88,9 @@ def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
 
+    # Allow to differentiate our build from the make build
+    cfg.define('WAF_BUILD', 1)
+
     cfg.msg('Setting board to', cfg.options.board)
     boards.get_board(cfg.env.BOARD).configure(cfg)
 
@@ -129,9 +132,6 @@ def configure(cfg):
 
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
-
-    # Allow to differentiate our build from the make build
-    cfg.define('WAF_BUILD', 1)
 
     cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'))
 

@@ -113,6 +113,30 @@ void AP_Mission::resume()
     }
 }
 
+/// check mission starts with a takeoff command
+bool AP_Mission::starts_with_takeoff_cmd()
+{
+    Mission_Command cmd = {};
+    uint16_t cmd_index;
+
+    // get starting point for search or Reset cmd_index, if _restart is set
+    cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        // start from beginning of the mission command list
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+        get_next_cmd(cmd_index, cmd, true);
+
+    } else {
+        read_cmd_from_storage(cmd_index, cmd);
+    }
+
+    if (cmd.id != MAV_CMD_NAV_TAKEOFF) {
+        return false;
+    }
+    return true;
+}
+
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {
@@ -585,6 +609,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // on/off. >0.5 means "on", hand-over control to external controller
         break;
 
+    case MAV_CMD_NAV_DELAY:                            // MAV ID: 94
+        cmd.content.nav_delay.seconds = packet.param1; // delay in seconds
+        cmd.content.nav_delay.hour_utc = packet.param2;// absolute time's hour (utc)
+        cmd.content.nav_delay.min_utc = packet.param3;// absolute time's min (utc)
+        cmd.content.nav_delay.sec_utc = packet.param4; // absolute time's second (utc)
+        break;
+
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
         cmd.content.delay.seconds = packet.param1;      // delay in seconds
         break;
@@ -1005,6 +1036,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_NAV_GUIDED_ENABLE:                     // MAV ID: 92
         packet.param1 = cmd.p1;                         // on/off. >0.5 means "on", hand-over control to external controller
+        break;
+
+    case MAV_CMD_NAV_DELAY:                            // MAV ID: 94
+        packet.param1 = cmd.content.nav_delay.seconds; // delay in seconds
+        packet.param2 = cmd.content.nav_delay.hour_utc; // absolute time's day of week (utc)
+        packet.param3 = cmd.content.nav_delay.min_utc; // absolute time's hour (utc)
+        packet.param4 = cmd.content.nav_delay.sec_utc; // absolute time's min (utc)
         break;
 
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
