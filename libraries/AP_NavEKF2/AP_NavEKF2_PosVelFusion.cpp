@@ -47,6 +47,31 @@ void NavEKF2_core::ResetVelocity(void)
 
     // store the time of the reset
     lastVelReset_ms = imuSampleTime_ms;
+
+    // reset the covariance matrix values
+    zeroRows(P,3,4);
+    zeroCols(P,3,4);
+
+    // calculate velocity variance
+    float R_OBS;
+    if (PV_AidingMode == AID_NONE) {
+        if (tiltAlignComplete && motorsArmed) {
+        // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
+            R_OBS = sq(constrain_float(frontend->_noaidHorizNoise, 0.5f, 50.0f));
+        } else {
+            // Use a smaller value to give faster initial alignment
+            R_OBS = sq(0.5f);
+        }
+    } else {
+        if (gpsSpdAccuracy > 0.0f) {
+            // use GPS receivers reported speed accuracy if available and floor at value set by gps noise parameter
+            R_OBS = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
+        } else {
+            // calculate additional error in GPS velocity caused by manoeuvring
+            R_OBS = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+        }
+    }
+    P[4][4] = P[3][3] = R_OBS;
 }
 
 // resets position states to last GPS measurement or to zero if in constant position mode
@@ -80,6 +105,28 @@ void NavEKF2_core::ResetPosition(void)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+
+    // reset the covariance matrix values
+    zeroRows(P,6,7);
+    zeroCols(P,6,7);
+
+    // calculate the initial position variance
+    float R_OBS;
+    if (PV_AidingMode == AID_NONE) {
+        if (tiltAlignComplete && motorsArmed) {
+        // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
+            R_OBS = sq(constrain_float(frontend->_noaidHorizNoise, 0.5f, 50.0f));
+        } else {
+            // Use a smaller value to give faster initial alignment
+            R_OBS = sq(0.5f);
+        }
+    } else {
+        // Use GPS reported accuracy with adjustment for maneouvre g's
+        float posErr = frontend->gpsPosVarAccScale * accNavMag;
+        R_OBS = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+    }
+    P[7][7] = P[6][6] = R_OBS;
+
 }
 
 // reset the vertical position state using the last height measurement

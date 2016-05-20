@@ -774,7 +774,11 @@ private:
     uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction
     bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
-    float posDownObsNoise;          // observationn noise on the vertical position used by the state and covariance update step (m)
+    float posDownObsNoise;          // observation noise on the vertical position used by the state and covariance update step (m)
+    float magDecAng;                // Magnetic declination angle used by the filter (rad)
+    float filtYawRate;              // filtered yaw rate used to activate rapid yaw protection (rad/sec)
+    float lastLearnedDecl;          // last value of declination learned (rad)
+    float declObsVar;               // variance of the magentic declination observation (rad)^2
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
