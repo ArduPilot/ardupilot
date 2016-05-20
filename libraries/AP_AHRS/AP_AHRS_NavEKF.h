@@ -38,9 +38,11 @@
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
 /*
-  we are too close to running out of flash on px4 with plane firmware, so disable it
+  we are too close to running out of flash on px4, so disable
+  it. Leave it enabled on V4 for now as that has sufficient flash
+  space
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) && CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && (defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2))
 #define AP_AHRS_WITH_EKF1 0
 #else
 #define AP_AHRS_WITH_EKF1 1
