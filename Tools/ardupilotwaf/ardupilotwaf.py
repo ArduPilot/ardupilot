@@ -198,6 +198,13 @@ def ap_create_program_dir(self):
     self.bld.bldnode.make_node(self.program_dir).mkdir()
     _created_program_dirs.add(self.program_dir)
 
+@feature('cxxstlib')
+@before_method('process_rule')
+def ap_stlib_target(self):
+    if self.target.startswith('#'):
+        self.target = self.target[1:]
+    self.target = '#%s' % os.path.join('lib', self.target)
+
 @conf
 def ap_find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
