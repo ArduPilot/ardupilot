@@ -597,7 +597,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_FS_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle failsafe triggers
-    // @Range: 925 1100
+    // @Range: 925 2200
     // @Increment: 1
     // @User: Standard
     GSCALAR(throttle_fs_value,      "THR_FS_VALUE",   THROTTLE_FS_VALUE),
