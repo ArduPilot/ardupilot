@@ -272,6 +272,7 @@ def configure(cfg):
             '-DCMAKE_BUILD',
             '-DARDUPILOT_BUILD',
             '-I%s' % bldpath('libraries/GCS_MAVLink'),
+            '-I%s' % bldpath('libraries/GCS_MAVLink/include/mavlink'),
             '-Wl,--gc-sections',
         )),
         EXTRA_C_FLAGS=' '.join((
