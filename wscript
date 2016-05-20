@@ -247,10 +247,9 @@ def _write_version_header(tsk):
 
 
 def build(bld):
-    config_header = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
-
-    bld.env.CCDEPS = config_header
-    bld.env.CXXDEPS = config_header
+    config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
+    bld.env.CCDEPS = config_hash
+    bld.env.CXXDEPS = config_hash
 
     bld.post_mode = Build.POST_LAZY
 
