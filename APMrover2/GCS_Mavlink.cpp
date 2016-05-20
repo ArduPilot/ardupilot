@@ -1263,6 +1263,12 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+    case MAVLINK_MSG_ID_MAV_GPS:
+        {
+            rover.gps.handle_msg(msg);
+            break;
+        }
+
 #if HIL_MODE != HIL_MODE_DISABLED
 	case MAVLINK_MSG_ID_HIL_STATE:
 		{
