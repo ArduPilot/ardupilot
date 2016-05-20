@@ -4,8 +4,7 @@
 import boards
 
 def build(bld):
-    board = boards.get_board(bld.env.BOARD)
-    if not isinstance(board, boards.linux):
+    if not isinstance(bld.get_board(), boards.linux):
         return
 
     bld.ap_program(

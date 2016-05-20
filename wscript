@@ -92,7 +92,7 @@ def configure(cfg):
     cfg.define('WAF_BUILD', 1)
 
     cfg.msg('Setting board to', cfg.options.board)
-    boards.get_board(cfg.env.BOARD).configure(cfg)
+    cfg.get_board().configure(cfg)
 
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
@@ -266,7 +266,7 @@ def build(bld):
     _build_dynamic_sources(bld)
 
     bld.add_group('build')
-    boards.get_board(bld.env.BOARD).build(bld)
+    bld.get_board().build(bld)
     _build_common_taskgens(bld)
 
     _build_recursion(bld)

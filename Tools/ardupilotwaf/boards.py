@@ -5,6 +5,7 @@ from collections import OrderedDict
 import sys
 
 import waflib
+from waflib.Configure import conf
 
 _board_classes = {}
 
@@ -160,10 +161,13 @@ def get_boards_names():
     return sorted(list(_board_classes.keys()))
 
 _board = None
-def get_board(name):
+@conf
+def get_board(ctx):
     global _board
     if not _board:
-        _board = _board_classes[name]()
+        if not ctx.env.BOARD:
+            ctx.fatal('BOARD environment variable must be set before first call to get_board()')
+        _board = _board_classes[ctx.env.BOARD]()
     return _board
 
 # NOTE: Keeping all the board definitions together so we can easily
