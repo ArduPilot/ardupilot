@@ -14,10 +14,10 @@ parser = OptionParser("print_version.py [options] ArduCopter|ArduPlane|APMrover2
 (opts, args) = parser.parse_args()
 
 includefiles = {
-    "ArduCopter": "Copter.h",
-    "ArduPlane": "Plane.h",
-    "APMrover2": "Rover.h",
-    "AntennaTracker": "Tracker.h",
+    "ArduCopter": "version.h",
+    "ArduPlane": "version.h",
+    "APMrover2": "version.h",
+    "AntennaTracker": "version.h",
 }
 
 if len(args) > 0:
