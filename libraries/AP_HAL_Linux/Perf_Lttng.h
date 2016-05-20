@@ -12,10 +12,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include "AP_HAL_Linux.h"
+
 #include <AP_HAL/Util.h>
+
+#include "AP_HAL_Linux.h"
 
 #define MAX_TRACEPOINT_NAME_LEN 128
 
