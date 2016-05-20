@@ -55,7 +55,20 @@ bool Thread::_run()
     return true;
 }
 
-/* Round up to the specified alignment */
+/* Round up to the specified alignment.
+ *
+ * Let u be the address p rounded up to the alignment a. Then:
+ *    u = p + a - 1 - r, where r = (p + a - 1) % a
+ *
+ * If p % a = 0, i.e. if p is already aligned, then:
+ *     r = a - 1 ==> u = p
+ *
+ * Otherwise:
+ *     r = p % a -1 ==> u = p + a - p % a
+ *
+ *     p can be written p = q + p % a, where q is rounded down to the
+ *     alignment a. Then u = q + a.
+ */
 static inline void *align_to(void *p, size_t align)
 {
     return (void *)(((uintptr_t)p + align - 1) & ~(align - 1));
