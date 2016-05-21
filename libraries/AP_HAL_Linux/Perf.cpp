@@ -75,7 +75,7 @@ struct perf_counter_elapsed : public perf_counter {
     double m2;
 };
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 static inline uint64_t now_nsec()
 {
@@ -260,12 +260,15 @@ PerfManager::PerfManager()
 
 PerfManager::~PerfManager()
 {
+    // FIXME: can't access _run_thread anymore if the object has being
+    // destroyed.
     _run_thread = false;
     sd_bus_slot_unref(_slot);
     sd_bus_unref(_bus);
     _perf_hashmap.clear();
 }
 
+// FIXME: migrate to event-driven poller
 void PerfManager::dbus_process_callback()
 {
     while (_run_thread) {
@@ -329,6 +332,8 @@ int PerfManager::dbus_list_perf_callback(sd_bus_message *m, void *userdata, sd_b
         return sd_bus_error_set_errno(ret_error, r);
     }
 
+    // FIXME: useless copy: it's not protecting the data itself, only the
+    // pointers
     std::unordered_map<std::string, Util::perf_counter_t> hashmap;
     _event_add_sem.take(0);
     hashmap = _perf_hashmap;
@@ -410,6 +415,8 @@ static int append_perf_specific_data(perf_counter *perf, sd_bus_message *reply)
     }
 
     temp = round(sqrt(variance));
+
+    // FIXME: append only stddev or variance, not both
     return sd_bus_message_append(reply, "{st}", "std-deviation", temp);
 }
 
@@ -463,6 +470,8 @@ int PerfManager::dbus_get_perf_callback(sd_bus_message *m, void *userdata, sd_bu
         return sd_bus_error_set_errno(ret_error, r);
     }
 
+    // FIXME: useless copy: it's not protecting the data itself, only the
+    // pointers
     std::unordered_map<std::string, Util::perf_counter_t> hashmap;
     _event_add_sem.take(0);
     hashmap = _perf_hashmap;
