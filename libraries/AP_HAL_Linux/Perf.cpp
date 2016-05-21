@@ -52,6 +52,13 @@ struct perf_counter_elapsed_t {
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+static inline uint64_t now_nsec()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_nsec + (ts.tv_sec * NSEC_PER_SEC);
+}
+
 Util::perf_counter_t Util::perf_alloc(perf_counter_type type, const char *name)
 {
     struct perf_counter_base_t *base;
@@ -95,11 +102,6 @@ Util::perf_counter_t Util::perf_alloc(perf_counter_type type, const char *name)
     return (perf_counter_t)base;
 }
 
-static inline uint64_t timespec_to_nsec(const struct timespec *ts)
-{
-    return ts->tv_nsec + (ts->tv_sec * NSEC_PER_SEC);
-}
-
 void Util::perf_begin(perf_counter_t perf)
 {
     struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
@@ -114,9 +116,7 @@ void Util::perf_begin(perf_counter_t perf)
         return;
     }
 
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    perf_elapsed->start = timespec_to_nsec(&ts);
+    perf_elapsed->start = now_nsec();
 }
 
 void Util::perf_end(perf_counter_t perf)
@@ -139,10 +139,7 @@ void Util::perf_end(perf_counter_t perf)
         return;
     }
 
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    const uint64_t elapsed = timespec_to_nsec(&ts) - perf_elapsed->start;
-
+    const uint64_t elapsed = now_nsec() - perf_elapsed->start;
     perf_elapsed->count++;
     perf_elapsed->total += elapsed;
 
