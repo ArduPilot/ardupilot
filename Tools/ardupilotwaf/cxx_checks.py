@@ -148,3 +148,10 @@ def check_librt(cfg, env):
         env.LIB += cfg.env['LIB_RT']
 
     return ret
+
+@conf
+def check_lttng(cfg, env):
+    cfg.check_cfg(package='lttng-ust', mandatory=False, global_define=True,
+                  args = ['--libs', '--cflags'])
+    env.LIB += cfg.env['LIB_LTTNG-UST']
+    return True
