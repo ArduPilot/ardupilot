@@ -101,6 +101,7 @@ void NavEKF2_core::realignYawGPS()
         if (!yawAlignComplete && !use_compass()) {
             // calculate new filter quaternion states from Euler angles
             stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
+            yawAlignComplete = true;
 
         }
 
