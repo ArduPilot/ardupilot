@@ -221,6 +221,7 @@ class linux(Board):
 
         cfg.check_librt(env)
         cfg.check_lttng(env)
+        cfg.check_libiio(env)
 
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [
@@ -301,11 +302,6 @@ class bebop(linux):
 
     def configure_env(self, cfg, env):
         super(bebop, self).configure_env(cfg, env)
-
-        cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
-                args = ['--libs', '--cflags'])
-
-        env.LIB += cfg.env.LIB_LIBIIO
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
