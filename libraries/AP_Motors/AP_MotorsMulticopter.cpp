@@ -54,36 +54,36 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_EXPO", 8, AP_MotorsMulticopter, _thrust_curve_expo, AP_MOTORS_THST_EXPO_DEFAULT),
 
-    // @Param: THST_MAX
-    // @DisplayName: Thrust Curve Max
-    // @Description: Point at which the thrust saturates
-    // @Values: 0.9:Low, 1.0:High
+    // @Param: SPIN_MAX
+    // @DisplayName: Motor Spin maximum
+    // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
+    // @Values: 0.9:Low, 0.95:Default, 1.0:High
     // @User: Advanced
-    AP_GROUPINFO("THST_MAX", 9, AP_MotorsMulticopter, _thrust_curve_max, AP_MOTORS_THST_MAX_DEFAULT),
+    AP_GROUPINFO("SPIN_MAX", 9, AP_MotorsMulticopter, _thrust_curve_max, AP_MOTORS_SPIN_MAX_DEFAULT),
 
-    // @Param: THST_BAT_MAX
+    // @Param: BAT_VOLT_MAX
     // @DisplayName: Battery voltage compensation maximum voltage
     // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.4 * cell count, 0 = Disabled
     // @Range: 6 35
     // @Units: Volts
     // @User: Advanced
-    AP_GROUPINFO("THST_BAT_MAX", 10, AP_MotorsMulticopter, _batt_voltage_max, AP_MOTORS_THST_BAT_MAX_DEFAULT),
+    AP_GROUPINFO("BAT_VOLT_MAX", 10, AP_MotorsMulticopter, _batt_voltage_max, AP_MOTORS_BAT_VOLT_MAX_DEFAULT),
 
-    // @Param: THST_BAT_MIN
+    // @Param: BAT_VOLT_MIN
     // @DisplayName: Battery voltage compensation minimum voltage
     // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled
     // @Range: 6 35
     // @Units: Volts
     // @User: Advanced
-    AP_GROUPINFO("THST_BAT_MIN", 11, AP_MotorsMulticopter, _batt_voltage_min, AP_MOTORS_THST_BAT_MIN_DEFAULT),
+    AP_GROUPINFO("BAT_VOLT_MIN", 11, AP_MotorsMulticopter, _batt_voltage_min, AP_MOTORS_BAT_VOLT_MIN_DEFAULT),
 
-    // @Param: CURR_MAX
+    // @Param: BAT_CURR_MAX
     // @DisplayName: Motor Current Max
     // @Description: Maximum current over which maximum throttle is limited (0 = Disabled)
     // @Range: 0 200
     // @Units: Amps
     // @User: Advanced
-    AP_GROUPINFO("CURR_MAX", 12, AP_MotorsMulticopter, _batt_current_max, AP_MOTORS_CURR_MAX_DEFAULT),
+    AP_GROUPINFO("BAT_CURR_MAX", 12, AP_MotorsMulticopter, _batt_current_max, AP_MOTORS_BAT_CURR_MAX_DEFAULT),
 
     // @Param: THR_MIX_MIN
     // @DisplayName: Throttle Mix Minimum
