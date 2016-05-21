@@ -155,3 +155,13 @@ def check_lttng(cfg, env):
                   args=['--libs', '--cflags'])
     env.LIB += cfg.env['LIB_LTTNG-UST']
     return True
+
+@conf
+def check_libiio(cfg, env):
+    cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
+                  args=['--libs', '--cflags'])
+    env.LIB += cfg.env['LIB_LIBIIO']
+    # workaround bug in libiio 0.6 not including -ldl
+    if cfg.env['LIB_LIBIIO']:
+        env.LIB += ['dl']
+    return True
