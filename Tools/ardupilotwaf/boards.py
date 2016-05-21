@@ -184,11 +184,11 @@ class sitl(Board):
                 '-O3',
             ]
 
-        cfg.check_librt()
-
         env.LIB += [
             'm',
         ]
+
+        cfg.check_librt()
         env.LIB += cfg.env.LIB_RT
 
         env.LINKFLAGS += ['-pthread',]
@@ -216,11 +216,11 @@ class linux(Board):
                 '-O3',
             ]
 
-        cfg.check_librt()
-
         env.LIB += [
             'm',
         ]
+
+        cfg.check_librt()
         env.LIB += cfg.env.LIB_RT
 
         cfg.check_cfg(package='libsystemd', mandatory=False, global_define=True,
