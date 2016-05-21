@@ -34,16 +34,20 @@ def reltopdir(path):
     return os.path.normpath(os.path.join(topdir(), path))
 
 
-def run_cmd(cmd, dir=".", show=False, output=False, checkfail=True):
+def run_cmd(cmd, dir=".", show=True, output=False, checkfail=True):
     '''run a shell command'''
+    shell = False
+    if not isinstance(cmd, list):
+        cmd = [cmd]
+        shell = True
     if show:
-        print("Running: '%s' in '%s'" % (cmd, dir))
+        print("Running: (%s) in (%s)" % (cmd_as_shell(cmd), dir,))
     if output:
-        return Popen([cmd], shell=True, stdout=PIPE, cwd=dir).communicate()[0]
+        return Popen(cmd, shell=shell, stdout=PIPE, cwd=dir).communicate()[0]
     elif checkfail:
-        return check_call(cmd, shell=True, cwd=dir)
+        return check_call(cmd, shell=shell, cwd=dir)
     else:
-        return call(cmd, shell=True, cwd=dir)
+        return call(cmd, shell=shell, cwd=dir)
 
 def rmfile(path):
     '''remove a file if it exists'''
@@ -57,15 +61,26 @@ def deltree(path):
     run_cmd('rm -rf %s' % path)
 
 
+def relwaf():
+    return "./modules/waf/waf-light"
 
-def build_SIL(atype, target='sitl', j=1):
+def build_SIL(build_target, j=None, debug=False):
     '''build desktop SIL'''
-    run_cmd("make clean",
-            dir=reltopdir(atype),
-            checkfail=True)
-    run_cmd("make -j%u %s" % (j, target),
-            dir=reltopdir(atype),
-            checkfail=True)
+
+    # first configure
+    cmd_configure = [relwaf(), "configure", "--board", 'sitl']
+    if debug:
+        cmd_configure.append('--debug')
+    if j is not None:
+        cmd_configure.extend(['-j', str(j)])
+    run_cmd(cmd_configure, dir=topdir(), checkfail=True)
+
+    # then clean
+    run_cmd([relwaf(), "clean"], dir=topdir(), checkfail=True)
+
+    # then build
+    cmd_make = [relwaf(), "build", "--target", build_target]
+    run_cmd(cmd_make, dir=topdir(), checkfail=True, show=True)
     return True
 
 # list of pexpect children to close on exit
@@ -105,35 +120,38 @@ def pexpect_drain(p):
     except pexpect.TIMEOUT:
         pass
 
-def start_SIL(atype, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
+def cmd_as_shell(cmd):
+    return (" ".join([ '"%s"' % x for x in cmd ]))
+
+def start_SIL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
     '''launch a SIL instance'''
     import pexpect
-    cmd=""
+    cmd=[]
     if valgrind and os.path.exists('/usr/bin/valgrind'):
-        cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
+        cmd.extend(['valgrind', '-q', '--log-file', '%s-valgrind.log' % atype])
     if gdb:
         f = open("/tmp/x.gdb", "w")
         f.write("r\n");
         f.close()
-        cmd += 'xterm -e gdb -x /tmp/x.gdb --args '
-    executable = reltopdir('tmp/%s.build/%s.elf' % (atype, atype))
-    if not os.path.exists(executable):
-        executable = '/tmp/%s.build/%s.elf' % (atype, atype)
-    cmd += executable
+        cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+
+    cmd.append(binary)
     if wipe:
-        cmd += ' -w'
+        cmd.append('-w')
     if synthetic_clock:
-        cmd += ' -S'
+        cmd.append('-S')
     if home is not None:
-        cmd += ' --home=%s' % home
+        cmd.extend(['--home', home])
     if model is not None:
-        cmd += ' --model=%s' % model
+        cmd.extend(['--model', model])
     if speedup != 1:
-        cmd += ' --speedup=%f' % speedup
+        cmd.extend(['--speedup', str(speedup)])
     if defaults_file is not None:
-        cmd += ' --defaults=%s' % defaults_file
-    print("Running: %s" % cmd)
-    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
+        cmd.extend(['--defaults', defaults_file])
+    print("Running: %s" % cmd_as_shell(cmd))
+    first = cmd[0]
+    rest = cmd[1:]
+    ret = pexpect.spawn(first, rest, logfile=sys.stdout, timeout=5)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     # give time for parameters to properly setup

@@ -40,7 +40,7 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     return True
 
 
-def fly_QuadPlane(viewerip=None, map=False, valgrind=False):
+def fly_QuadPlane(binary, viewerip=None, map=False, valgrind=False):
     '''fly QuadPlane in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -54,7 +54,7 @@ def fly_QuadPlane(viewerip=None, map=False, valgrind=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL('ArduPlane', model='quadplane', wipe=True, home=HOME_LOCATION, speedup=10,
+    sil = util.start_SIL(binary, model='quadplane', wipe=True, home=HOME_LOCATION, speedup=10,
                          defaults_file=os.path.join(testdir, 'quadplane.parm'), valgrind=valgrind)
     mavproxy = util.start_MAVProxy_SIL('QuadPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
