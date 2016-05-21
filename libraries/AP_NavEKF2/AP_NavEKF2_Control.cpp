@@ -143,10 +143,9 @@ void NavEKF2_core::setAidingMode()
             // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
             lastPosPassTime_ms = imuSampleTime_ms;
         }
-        // Reset all position, velocity and covariance
+        // Reset the position and velocity
         ResetVelocity();
         ResetPosition();
-        CovarianceInit();
 
     }
 
