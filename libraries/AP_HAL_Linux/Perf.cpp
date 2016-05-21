@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#if !defined(PERF_LTTNG)
+#ifndef HAVE_LTTNG_UST
 
 #ifdef HAVE_LIBSYSTEMD
 #include "Perf.h"
