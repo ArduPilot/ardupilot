@@ -10,7 +10,6 @@
 #define AP_MOTORS_DENSITY_COMP 1
 #endif
 
-#define AP_MOTORS_DEFAULT_MIN_THROTTLE  130
 #define AP_MOTORS_DEFAULT_MID_THROTTLE  500
 
 #define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
@@ -78,9 +77,9 @@ public:
 
     void                output_logic();
 
-    // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs
-    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    void                throttle_pass_through(int16_t pwm);
+    // passes throttle directly to all motors for ESC calibration.
+    //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_min() and 1 will send get_pwm_max()
+    void                set_throttle_passthrough_for_esc_calibration(float throttle_input);
 
     // get_lift_max - get maximum lift ratio - for logging purposes only
     float               get_lift_max() { return _lift_max; }
@@ -143,6 +142,10 @@ protected:
     // convert thrust (0~1) range back to pwm range
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
 
+    // get minimum or maximum pwm value that can be output to motors
+    int16_t             get_pwm_min() const;
+    int16_t             get_pwm_max() const;
+
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
     
@@ -162,6 +165,8 @@ protected:
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
     AP_Float            _thr_mix_min;           // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float            _thr_mix_max;           // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
+    AP_Int16            _pwm_min;               // minimum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's min pwm used)
+    AP_Int16            _pwm_max;               // maximum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's max pwm used)
 
     // internal variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
