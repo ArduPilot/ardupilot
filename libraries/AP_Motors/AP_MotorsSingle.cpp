@@ -125,8 +125,8 @@ void AP_MotorsSingle::output_to_motors()
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_pitch_radio_passthrough+_yaw_radio_passthrough, _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(-_roll_radio_passthrough+_yaw_radio_passthrough, _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-_pitch_radio_passthrough+_yaw_radio_passthrough, _servo4));
-            rc_write(AP_MOTORS_MOT_5, _throttle_radio_min);
-            rc_write(AP_MOTORS_MOT_6, _throttle_radio_min);
+            rc_write(AP_MOTORS_MOT_5, get_pwm_min());
+            rc_write(AP_MOTORS_MOT_6, get_pwm_min());
             hal.rcout->push();
             break;
         case SPIN_WHEN_ARMED:
@@ -136,8 +136,8 @@ void AP_MotorsSingle::output_to_motors()
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[1], _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[2], _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[3], _servo4));
-            rc_write(AP_MOTORS_MOT_5, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
-            rc_write(AP_MOTORS_MOT_6, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_5, constrain_int16(get_pwm_min() + _throttle_low_end_pct * _min_throttle, get_pwm_min(), get_pwm_min() + _min_throttle));
+            rc_write(AP_MOTORS_MOT_6, constrain_int16(get_pwm_min() + _throttle_low_end_pct * _min_throttle, get_pwm_min(), get_pwm_min() + _min_throttle));
             hal.rcout->push();
             break;
         case SPOOL_UP:
