@@ -62,4 +62,3 @@ TRACEPOINT_EVENT(
 #endif
 
 #include <lttng/tracepoint-event.h>
-
