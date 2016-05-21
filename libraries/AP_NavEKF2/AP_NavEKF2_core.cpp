@@ -511,6 +511,14 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     accNavMag = velDotNEDfilt.length();
     accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
 
+    // if we are not aiding, then limit the horizontal magnitude of acceleration
+    // to prevent large manoeuvre transients disturbing the attitude
+    if ((PV_AidingMode == AID_NONE) && (accNavMagHoriz > 5.0f)) {
+        float gain = 5.0f/accNavMagHoriz;
+        delVelNav.x *= gain;
+        delVelNav.y *= gain;
+    }
+
     // save velocity for use in trapezoidal integration for position calcuation
     Vector3f lastVelocity = stateStruct.velocity;
 
