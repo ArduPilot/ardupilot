@@ -60,7 +60,7 @@ void NavEKF2_core::controlMagYawReset()
     // In-Flight reset for vehicles that can use a zero sideslip assumption (Planes)
     // this is done to protect against unrecoverable heading alignment errors due to compass faults
     if (!firstMagYawInit && assume_zero_sideslip() && inFlight) {
-        alignYawGPS();
+        realignYawGPS();
         firstMagYawInit = true;
     }
 
@@ -74,9 +74,9 @@ void NavEKF2_core::controlMagYawReset()
 
 }
 
-// this function is used to do a forced alignment of the yaw angle to align with the horizontal velocity
+// this function is used to do a forced re-alignment of the yaw angle to align with the horizontal velocity
 // vector from GPS. It is used to align the yaw angle after launch or takeoff.
-void NavEKF2_core::alignYawGPS()
+void NavEKF2_core::realignYawGPS()
 {
     // get quaternion from existing filter states and calculate roll, pitch and yaw angles
     Vector3f eulerAngles;
