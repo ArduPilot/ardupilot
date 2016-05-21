@@ -437,15 +437,8 @@ void NavEKF2_core::readGpsData()
                 gpsNotAvailable = false;
             }
 
-            // Commence GPS aiding when able to
-            if (readyToUseGPS() && PV_AidingMode != AID_ABSOLUTE) {
-                PV_AidingMode = AID_ABSOLUTE;
-                // Initialise EKF position and velocity states to last GPS measurement
-                ResetPosition();
-                ResetVelocity();
-            }
-
             frontend->logging.log_gps = true;
+
         } else {
             // report GPS fix status
             gpsCheckStatus.bad_fix = true;
