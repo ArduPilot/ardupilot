@@ -97,11 +97,18 @@ void NavEKF2_core::realignYawGPS()
         // calculate course yaw angle from GPS velocity
         float gpsYaw = atan2f(gpsDataNew.vel.y,gpsDataNew.vel.x);
 
+        // check if this is our first alignment and we are not using the compass
+        if (!yawAlignComplete && !use_compass()) {
+            // calculate new filter quaternion states from Euler angles
+            stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
+
+        }
+
         // Check the yaw angles for consistency
         float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),MAX(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
 
         // If the angles disagree by more than 45 degrees and GPS innovations are large or no compass, we declare the magnetic yaw as bad
-        badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f)) || !use_compass();
+        badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && !(PV_AidingMode == AID_NONE)) || !use_compass();
 
         // correct yaw angle using GPS ground course if compass yaw bad
         if (badMagYaw) {
@@ -110,7 +117,7 @@ void NavEKF2_core::realignYawGPS()
             stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
 
             // The correlations between attitude errors and position and velocity errors in the covariance matrix
-            // are invalid because og the changed yaw angle, so reset the corresponding row and columns
+            // are invalid because of the changed yaw angle, so reset the corresponding row and columns
             zeroCols(P,0,2);
             zeroRows(P,0,2);
 
@@ -121,13 +128,16 @@ void NavEKF2_core::realignYawGPS()
             lastPosPassTime_ms = 0;
         }
     }
-    // reset the magnetometer field states - we could have got bad external interference when initialising on-ground
-    calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
 
+    // fix magnetic field states and clear any compass fault conditions
+    if (use_compass()) {
+        // reset the magnetometer field states - we could have got bad external interference when initialising on-ground
+        calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
 
-    // We shoud retry the primary magnetometer if previously switched or failed
-    magSelectIndex = 0;
-    allMagSensorsFailed = false;
+        // We shoud retry the primary magnetometer if previously switched or failed
+        magSelectIndex = 0;
+        allMagSensorsFailed = false;
+    }
 }
 
 /********************************************************
