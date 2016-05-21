@@ -60,7 +60,7 @@ void Copter::read_rangefinder(void)
             // reset filter if we haven't used it within the last second
             rangefinder_state.alt_cm_filt.reset(rangefinder_state.alt_cm);
         } else {
-            rangefinder_state.alt_cm_filt.apply(rangefinder_state.alt_cm, 0.1f);
+            rangefinder_state.alt_cm_filt.apply(rangefinder_state.alt_cm, 0.05f);
         }
         rangefinder_state.last_healthy_ms = now;
     }
