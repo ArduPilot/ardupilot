@@ -251,12 +251,11 @@ def configure(cfg):
     env.PX4_APM_ROOT = srcpath('')
     env.PX4_ROOT = srcpath('modules/PX4Firmware')
     env.PX4_NUTTX_ROOT = srcpath('modules/PX4NuttX')
-    env.PX4_UAVCAN_ROOT = srcpath('modules/uavcan')
+    env.PX4_UAVCAN_ROOT = srcpath('modules/PX4Firmware/src/modules/uavcan/libuavcan')
 
     env.PX4_CMAKE_VARS = dict(
         CONFIG='nuttx_px4fmu-v%s_apm' % env.get_flat('PX4_VERSION'),
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
-        UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
         NUTTX_SRC=env.PX4_NUTTX_ROOT,
         PX4_NUTTX_ROMFS=bldpath(env.PX4_ROMFS_BLD),
         APM_PROGRAM_LIB=bldpath(env.PX4_AP_PROGRAM_LIB),

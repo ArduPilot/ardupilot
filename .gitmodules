@@ -4,9 +4,6 @@
 [submodule "modules/PX4NuttX"]
 	path = modules/PX4NuttX
 	url = git://github.com/ArduPilot/PX4NuttX.git
-[submodule "modules/uavcan"]
-	path = modules/uavcan
-	url = git://github.com/ArduPilot/uavcan.git
 [submodule "modules/waf"]
 	path = modules/waf
 	url = git://github.com/ArduPilot/waf.git
