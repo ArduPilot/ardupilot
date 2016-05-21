@@ -59,7 +59,7 @@ public:
     bool                is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
     // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
-    // also sets throttle channel minimum and maximum pwm
+    // also sets minimum and maximum pwm values that will be sent to the motors
     void                set_throttle_range(uint16_t min_throttle, int16_t radio_min, int16_t radio_max);
 
     // set_hover_throttle - sets the mid throttle which is close to the hover throttle of the copter
@@ -174,8 +174,8 @@ protected:
     float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
-    int16_t             _throttle_radio_min;        // minimum radio channel pwm
-    int16_t             _throttle_radio_max;        // maximum radio channel pwm
+    int16_t             _throttle_radio_min;        // minimum PWM from RC input's throttle channel (i.e. minimum PWM input from receiver, RC3_MIN)
+    int16_t             _throttle_radio_max;        // maximum PWM from RC input's throttle channel (i.e. maximum PWM input from receiver, RC3_MAX)
     float               _throttle_thrust_max;       // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
 
     // spool variables
