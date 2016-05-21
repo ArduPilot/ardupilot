@@ -124,11 +124,6 @@ void NavEKF2_core::realignYawGPS()
     // reset the magnetometer field states - we could have got bad external interference when initialising on-ground
     calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
 
-    // if we are not using a magnetometer, then the yaw gyro bias value will be invalid at this point and the
-    // state variance should be reset
-    if (!use_compass()) {
-        P[11][11] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
-    }
 
     // We shoud retry the primary magnetometer if previously switched or failed
     magSelectIndex = 0;
