@@ -220,6 +220,7 @@ class linux(Board):
         ]
 
         cfg.check_librt(env)
+        cfg.check_lttng(env)
 
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [
