@@ -16,10 +16,10 @@
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
 #define AP_MOTORS_THR_LOW_CMP_DEFAULT   0.5f    // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 #define AP_MOTORS_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
-#define AP_MOTORS_THST_MAX_DEFAULT      0.95f   // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
-#define AP_MOTORS_THST_BAT_MAX_DEFAULT  0.0f
-#define AP_MOTORS_THST_BAT_MIN_DEFAULT  0.0f
-#define AP_MOTORS_CURR_MAX_DEFAULT      0.0f    // current limiting max default
+#define AP_MOTORS_SPIN_MAX_DEFAULT      0.95f   // throttle which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+#define AP_MOTORS_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
+#define AP_MOTORS_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
+#define AP_MOTORS_BAT_CURR_MAX_DEFAULT  0.0f    // current limiting max default
 #define AP_MOTORS_CURRENT_LIMIT_P       0.2f    // replace with parameter - Sets the current limit P term
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 #define AP_MOTORS_THR_MIX_MIN_DEFAULT   0.1f    // minimum throttle mix
