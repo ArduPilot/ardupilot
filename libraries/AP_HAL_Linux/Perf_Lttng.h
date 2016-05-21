@@ -22,12 +22,11 @@
 
 class Linux::Perf_Lttng {
 public:
-    Perf_Lttng(enum AP_HAL::Util::perf_counter_type type, const char *name);
+    Perf_Lttng(const char *name);
     void begin();
     void end();
     void count();
 private:
     char _name[MAX_TRACEPOINT_NAME_LEN];
     uint64_t _count;
-    enum AP_HAL::Util::perf_counter_type _type;
 };

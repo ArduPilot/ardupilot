@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
- * Copyright (C) 2015  Intel Corporation. All rights reserved.
+ * Copyright (C) 2016  Intel Corporation. All rights reserved.
  *
  * This file is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,14 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef HAVE_LTTNG_UST
-
-#ifdef HAVE_LIBSYSTEMD
-#include "Perf.h"
-#endif
-
 #include <limits.h>
-#include <math.h>
 #include <time.h>
 #include <vector>
 
@@ -31,27 +24,53 @@
 
 #include "AP_HAL_Linux.h"
 #include "Util.h"
+#ifdef HAVE_LIBSYSTEMD
+#include "Perf.h"
+#endif
+#include "Perf_Lttng.h"
 
 using namespace Linux;
 
-struct perf_counter_base_t {
+struct perf_counter {
+    perf_counter(const char *name_, enum Util::perf_counter_type type_)
+        : name{name_}
+        , type{type_}
+#ifdef HAVE_LTTNG_UST
+        , lttng{name_}
+#endif
+    {
+    }
+
     const char *name;
     enum Util::perf_counter_type type;
+#ifdef HAVE_LTTNG_UST
+    Perf_Lttng lttng;
+#endif
 };
 
-struct perf_counter_count_t {
-    struct perf_counter_base_t base;
+struct perf_counter_count : public perf_counter {
+    perf_counter_count(const char *name_, Util::perf_counter_type type_)
+        : perf_counter(name_, type_)
+    {
+    }
     uint64_t count;
 };
 
-struct perf_counter_elapsed_t {
-    struct perf_counter_base_t base;
+struct perf_counter_elapsed : public perf_counter {
+    perf_counter_elapsed(const char *name_, enum Util::perf_counter_type type_)
+        : perf_counter(name_, type_)
+        , least{ULONG_MAX}
+    {
+    }
+
     uint64_t count;
+
     /* Everything below is in nanoseconds */
     uint64_t start;
     uint64_t total;
     uint64_t least;
     uint64_t most;
+
     double mean;
     double m2;
 };
@@ -60,29 +79,15 @@ static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Util::perf_counter_t Util::perf_alloc(perf_counter_type type, const char *name)
 {
-    struct perf_counter_base_t *base;
+    perf_counter *perf = nullptr;
 
     switch(type) {
     case PC_COUNT: {
-        struct perf_counter_count_t *count;
-        count = (struct perf_counter_count_t *)calloc(1, sizeof(struct perf_counter_count_t));
-        if (!count) {
-            return nullptr;
-        }
-
-        base = &count->base;
+        perf = new perf_counter_count(name, type);
         break;
     }
     case PC_ELAPSED: {
-        struct perf_counter_elapsed_t *elapsed;
-        elapsed = (struct perf_counter_elapsed_t *)calloc(1, sizeof(struct perf_counter_elapsed_t));
-        if (!elapsed) {
-            return nullptr;
-        }
-
-        elapsed->least = ULONG_MAX;
-
-        base = &elapsed->base;
+        perf = new perf_counter_elapsed(name, type);
         break;
     }
     default:
@@ -96,12 +101,11 @@ Util::perf_counter_t Util::perf_alloc(perf_counter_type type, const char *name)
     }
     }
 
-    base->name = name;
-    base->type = type;
 #ifdef HAVE_LIBSYSTEMD
-    PerfManager::getInstance()->add((perf_counter_t)base);
+    PerfManager::getInstance()->add((Util::perf_counter_t)perf);
 #endif
-    return (perf_counter_t)base;
+
+    return (Util::perf_counter_t)perf;
 }
 
 static inline uint64_t timespec_to_nsec(const struct timespec *ts)
@@ -111,40 +115,45 @@ static inline uint64_t timespec_to_nsec(const struct timespec *ts)
 
 void Util::perf_begin(perf_counter_t perf)
 {
-    struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
+    struct perf_counter_elapsed *perf_elapsed = (struct perf_counter_elapsed *)perf;
 
-    if (perf_elapsed == NULL) {
+    if (perf_elapsed == nullptr) {
         return;
     }
-    if (perf_elapsed->base.type != PC_ELAPSED) {
+
+    if (perf_elapsed->type != PC_ELAPSED) {
         hal.console->printf("perf_begin() called over a perf_counter_t(%s) that"
                             " is not of the PC_ELAPSED type.\n",
-                            perf_elapsed->base.name);
+                            perf_elapsed->name);
         return;
     }
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     perf_elapsed->start = timespec_to_nsec(&ts);
+
+#ifdef HAVE_LTTNG_UST
+    perf_elapsed->lttng.begin();
+#endif
 }
 
 void Util::perf_end(perf_counter_t perf)
 {
-    struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
+    struct perf_counter_elapsed *perf_elapsed = (struct perf_counter_elapsed *)perf;
 
-    if (perf_elapsed == NULL) {
+    if (perf_elapsed == nullptr) {
         return;
     }
 
-    if (perf_elapsed->base.type != PC_ELAPSED) {
+    if (perf_elapsed->type != PC_ELAPSED) {
         hal.console->printf("perf_end() called over a perf_counter_t(%s) "
                             "that is not of the PC_ELAPSED type.\n",
-                            perf_elapsed->base.name);
+                            perf_elapsed->name);
         return;
     }
     if (perf_elapsed->start == 0) {
-        hal.console->printf("perf_end() called before an perf_begin() on %s.\n",
-                            perf_elapsed->base.name);
+        hal.console->printf("perf_end() called before perf_begin() on %s.\n",
+                            perf_elapsed->name);
         return;
     }
 
@@ -171,26 +180,32 @@ void Util::perf_end(perf_counter_t perf)
     const double delta_intvl = elapsed - perf_elapsed->mean;
     perf_elapsed->mean += (delta_intvl / perf_elapsed->count);
     perf_elapsed->m2 += (delta_intvl * (elapsed - perf_elapsed->mean));
-
     perf_elapsed->start = 0;
+
+#ifdef HAVE_LTTNG_UST
+    perf_elapsed->lttng.end();
+#endif
 }
 
 void Util::perf_count(perf_counter_t perf)
 {
-    struct perf_counter_count_t *perf_counter = (struct perf_counter_count_t *)perf;
-
-    if (perf_counter == NULL) {
+    struct perf_counter_count *perf_counter = (struct perf_counter_count *)perf;
+    if (perf_counter == nullptr) {
         return;
     }
 
-    if (perf_counter->base.type != PC_COUNT) {
+    if (perf_counter->type != PC_COUNT) {
         hal.console->printf("perf_count() called over a perf_counter_t(%s) "
                             "that is not of the PC_COUNT type.\n",
-                            perf_counter->base.name);
+                            perf_counter->name);
         return;
     }
 
     perf_counter->count++;
+
+#ifdef HAVE_LTTNG_UST
+    perf_counter->lttng.count();
+#endif
 }
 
 #ifdef HAVE_LIBSYSTEMD
@@ -272,7 +287,7 @@ void PerfManager::dbus_process_callback()
 
 void PerfManager::add(Util::perf_counter_t perf)
 {
-    perf_counter_base_t *base = (perf_counter_base_t *)perf;
+    perf_counter *base = (perf_counter *)perf;
     _event_add_sem.take(0);
     /* not checking if hash already have an perf with the same name */
     _perf_hashmap[base->name] = perf;
@@ -289,7 +304,7 @@ PerfManager* PerfManager::getInstance()
     return _instance;
 }
 
-static const char* get_perf_type(perf_counter_base_t *perf)
+static const char* get_perf_type(perf_counter *perf)
 {
     switch (perf->type) {
     case Util::PC_COUNT:
@@ -323,7 +338,7 @@ int PerfManager::dbus_list_perf_callback(sd_bus_message *m, void *userdata, sd_b
     _event_add_sem.give();
 
     for (auto it = hashmap.begin(); it != hashmap.end(); it++) {
-        perf_counter_base_t *perf = (perf_counter_base_t *)it->second;
+        perf_counter *perf = (perf_counter *)it->second;
         r = sd_bus_message_append(reply, "(ss)", perf->name,
                                   get_perf_type(perf));
         if (r < 0) {
@@ -339,22 +354,20 @@ int PerfManager::dbus_list_perf_callback(sd_bus_message *m, void *userdata, sd_b
     return sd_bus_send(nullptr, reply, nullptr);
 }
 
-static int append_perf_specific_data(perf_counter_base_t *perf, sd_bus_message *reply)
+static int append_perf_specific_data(perf_counter *perf, sd_bus_message *reply)
 {
-    perf_counter_base_t *perf_base = (perf_counter_base_t *)perf;
-
-    if (perf_base->type == Util::PC_INTERVAL) {
+    if (perf->type == Util::PC_INTERVAL) {
         hal.console->printf("Missing implementation of append_perf_data() "
                             "for PC_INTERVAL type.\n");
         return 0;
     }
 
-    if (perf_base->type == Util::PC_COUNT) {
-        perf_counter_count_t *perf_count = (perf_counter_count_t *)perf;
+    if (perf->type == Util::PC_COUNT) {
+        perf_counter_count *perf_count = (perf_counter_count *)perf;
         return sd_bus_message_append(reply, "{st}", "count", perf_count->count);
     }
 
-    perf_counter_elapsed_t *perf_elapsed = (perf_counter_elapsed_t *)perf;
+    perf_counter_elapsed *perf_elapsed = (perf_counter_elapsed *)perf;
 
     int ret = sd_bus_message_append(reply, "{st}", "count",
                                     perf_elapsed->count);
@@ -403,7 +416,7 @@ static int append_perf_specific_data(perf_counter_base_t *perf, sd_bus_message *
     return sd_bus_message_append(reply, "{st}", "std-deviation", temp);
 }
 
-static int append_perf(perf_counter_base_t *perf, sd_bus_message *reply)
+static int append_perf(perf_counter *perf, sd_bus_message *reply)
 {
     int r = sd_bus_message_open_container(reply, SD_BUS_TYPE_STRUCT, "ssa{st}");
     if (r < 0) {
@@ -467,7 +480,7 @@ int PerfManager::dbus_get_perf_callback(sd_bus_message *m, void *userdata, sd_bu
             break;
         }
 
-        perf_counter_base_t *perf = (perf_counter_base_t *)hashmap[name];
+        perf_counter *perf = (perf_counter *)hashmap[name];
         if (!perf) {
             continue;
         }
@@ -486,5 +499,4 @@ int PerfManager::dbus_get_perf_callback(sd_bus_message *m, void *userdata, sd_bu
     return sd_bus_send(nullptr, reply, nullptr);
 }
 
-#endif // HAVE_LIBSYSTEMD
-#endif // HAL_BOARD_LINUX
+#endif
