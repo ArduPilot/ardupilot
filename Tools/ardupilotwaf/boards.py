@@ -231,6 +231,13 @@ class linux(Board):
                       args = ['--libs', '--cflags'])
         env.LIB += cfg.env['LIB_LTTNG-UST']
 
+        cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
+                      args = ['--libs', '--cflags'])
+        env.LIB += cfg.env.LIB_LIBIIO
+        # workaround bug in libiio 0.6 not including -ldl
+        if cfg.env.LIB_LIBIIO:
+            env.LIB += [ 'dl' ]
+
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [
             'AP_HAL_Linux',
@@ -310,11 +317,6 @@ class bebop(linux):
 
     def configure_env(self, cfg, env):
         super(bebop, self).configure_env(cfg, env)
-
-        cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
-                args = ['--libs', '--cflags'])
-
-        env.LIB += cfg.env.LIB_LIBIIO
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
