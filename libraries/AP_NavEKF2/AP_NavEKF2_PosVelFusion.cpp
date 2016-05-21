@@ -47,6 +47,14 @@ void NavEKF2_core::ResetVelocity(void)
 
     // store the time of the reset
     lastVelReset_ms = imuSampleTime_ms;
+
+    // reset the corresponding covariances
+    zeroRows(P,3,4);
+    zeroCols(P,3,4);
+
+    // set the variances to the measurement variance
+    P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
+
 }
 
 // resets position states to last GPS measurement or to zero if in constant position mode
@@ -80,6 +88,14 @@ void NavEKF2_core::ResetPosition(void)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+
+    // reset the corresponding covariances
+    zeroRows(P,6,7);
+    zeroCols(P,6,7);
+
+    // set the variances to the measurement variance
+    P[6][6] = P[7][7] = sq(frontend->_gpsHorizPosNoise);
+
 }
 
 // reset the vertical position state using the last height measurement
@@ -94,6 +110,13 @@ void NavEKF2_core::ResetHeight(void)
     outputDataNew.position.z = stateStruct.position.z;
     outputDataDelayed.position.z = stateStruct.position.z;
 
+    // reset the corresponding covariances
+    zeroRows(P,8,8);
+    zeroCols(P,8,8);
+
+    // set the variances to the measurement variance
+    P[8][8] = posDownObsNoise;
+
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
     if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0) {
@@ -106,6 +129,14 @@ void NavEKF2_core::ResetHeight(void)
     }
     outputDataNew.velocity.z = stateStruct.velocity.z;
     outputDataDelayed.velocity.z = stateStruct.velocity.z;
+
+    // reset the corresponding covariances
+    zeroRows(P,5,5);
+    zeroCols(P,5,5);
+
+    // set the variances to the measurement variance
+    P[5][5] = sq(frontend->_gpsVertVelNoise);
+
 }
 
 // Reset the baro so that it reads zero at the current height
@@ -175,6 +206,7 @@ void NavEKF2_core::SelectVelPosFusion()
         gpsDataDelayed.vel.zero();
         gpsDataDelayed.pos.x = lastKnownPositionNE.x;
         gpsDataDelayed.pos.y = lastKnownPositionNE.y;
+
         fusePosData = true;
         fuseVelData = false;
     }
