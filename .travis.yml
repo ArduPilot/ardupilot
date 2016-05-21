@@ -74,6 +74,24 @@ before_script:
 script:
   - Tools/scripts/build_all_travis.sh
 
+before_deploy:
+  - mkdir deploy_files
+  - cp ArduCopter/ArduCopter-v2.px4 deploy_files
+  - cp ../PX4Firmware/Build/px4fmu-v2_APM.build/firmware.elf deploy_files/fmu.elf
+  - cp ../PX4Firmware/Build/px4io-v2_default.build/firmware.elf deploy_files/io.elf
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "B9aAYLsU04FvqfYXH9VL+mv8LwWJc/jLGEvPMYoE042iFmUvZ8M8pBzHVjPKrO3jFg3poPyzdIbyKbT8N2W4BKdBQyubUH2fZr2z98mr0v4gu8xnu+NsRS/M3+Dhp46g3REAqmVJNKr6y9D2jfXlqnZ/WnS7bTN6INLdkEuvO08="
+  file:
+  - "deploy_files/ArduCopter-v2.px4"
+  - "deploy_files/fmu.elf"
+  - "deploy_files/io.elf"
+  skip_cleanup: true
+  on:
+    tags: true
+    all_branches: true
 notifications:
   webhooks:
     urls:
