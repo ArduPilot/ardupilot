@@ -45,8 +45,8 @@ AP_GPS_MAV::read(void)
 void
 AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
 {
-    mavlink_mav_gps_t packet;
-    mavlink_msg_mav_gps_decode(msg, &packet);
+    mavlink_gps_mav_t packet;
+    mavlink_msg_gps_mav_decode(msg, &packet);
 
     bool have_alt  = ((packet.ignore & (1<<0)) == 0);
     bool have_hdop = ((packet.ignore & (1<<1)) == 0);
