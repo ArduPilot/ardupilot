@@ -125,8 +125,8 @@ def ap_common_checks(cfg):
     )
 
 @conf
-def check_librt(cfg):
-    success = cfg.check(
+def check_librt(cfg, env):
+    ret = cfg.check(
         compiler='cxx',
         fragment='''
         #include <time.h>
@@ -140,10 +140,11 @@ def check_librt(cfg):
         mandatory=False,
     )
 
-    if success:
-        return success
+    if ret:
+        return ret
 
-    return cfg.check(
-        compiler='cxx',
-        lib='rt',
-    )
+    ret = cfg.check(compiler='cxx', lib='rt', mandatory=True)
+    if ret:
+        env.LIB += cfg.env['LIB_RT']
+
+    return ret
