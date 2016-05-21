@@ -94,7 +94,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(arm_motors_check,      10,     50),
     SCHED_TASK(auto_disarm_check,     10,     50),
     SCHED_TASK(auto_trim,             10,     75),
-    SCHED_TASK(update_altitude,       10,    140),
+    SCHED_TASK(read_rangefinder,      20,    100),
+    SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(update_thr_average,   100,     90),
     SCHED_TASK(three_hz_loop,          3,     75),
@@ -612,9 +613,6 @@ void Copter::update_altitude()
 {
     // read in baro altitude
     read_barometer();
-
-    // read in rangefinder altitude
-    read_rangefinder();
 
     // write altitude info to dataflash logs
     if (should_log(MASK_LOG_CTUN)) {
