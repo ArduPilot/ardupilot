@@ -227,6 +227,10 @@ class linux(Board):
                       args = ['--libs', '--cflags'])
         env.LIB += cfg.env.LIB_LIBSYSTEMD
 
+        cfg.check_cfg(package='lttng-ust', mandatory=False, global_define=True,
+                      args = ['--libs', '--cflags'])
+        env.LIB += cfg.env['LIB_LTTNG-UST']
+
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [
             'AP_HAL_Linux',
