@@ -108,8 +108,7 @@ void NavEKF2_core::realignYawGPS()
             zeroRows(P,0,2);
 
             // Set the initial attitude error covariances
-            P[1][1] = P[0][0] = sq(radians(5.0f));
-            P[2][2] = sq(radians(45.0f));
+            P[2][2] = P[1][1] = P[0][0] = sq(radians(5.0f));
 
             // reset tposition fusion timer to cause the states to be reset to the GPS on the next GPS fusion cycle
             lastPosPassTime_ms = 0;
