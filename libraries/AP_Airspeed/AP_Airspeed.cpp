@@ -126,7 +126,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Range: 5 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("MIN", 8, AP_Airspeed, _airspeed_min, 5),
+    AP_GROUPINFO("MIN", 8, AP_Airspeed, _airspeed_min, 9),
 
     // @Param: MAX (previously ARSPD_FBW_MAX)
     // @DisplayName: Maximum Airspeed
@@ -135,7 +135,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Range: 5 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("MAX", 9, AP_Airspeed, _airspeed_max, 20),
+    AP_GROUPINFO("MAX", 9, AP_Airspeed, _airspeed_max, 22),
 
     AP_GROUPEND
 };
