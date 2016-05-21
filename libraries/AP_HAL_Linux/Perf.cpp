@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
- * Copyright (C) 2015  Intel Corporation. All rights reserved.
+ * Copyright (C) 2016  Intel Corporation. All rights reserved.
  *
  * This file is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,42 +15,22 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef HAVE_LTTNG_UST
-
-#include <limits.h>
 #include <time.h>
+#include <vector>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
 #include "AP_HAL_Linux.h"
 #include "Util.h"
+#include "Perf.h"
+#include "Perf_Lttng.h"
 
 using namespace Linux;
 
-struct perf_counter_base_t {
-    const char *name;
-    enum Util::perf_counter_type type;
-};
+static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
-struct perf_counter_count_t {
-    struct perf_counter_base_t base;
-    uint64_t count;
-};
-
-struct perf_counter_elapsed_t {
-    struct perf_counter_base_t base;
-    uint64_t count;
-    /* Everything below is in nanoseconds */
-    uint64_t start;
-    uint64_t total;
-    uint64_t least;
-    uint64_t most;
-    double mean;
-    double m2;
-};
-
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+Perf *Perf::_instance;
 
 static inline uint64_t now_nsec()
 {
@@ -59,96 +39,92 @@ static inline uint64_t now_nsec()
     return ts.tv_nsec + (ts.tv_sec * NSEC_PER_SEC);
 }
 
-Util::perf_counter_t Util::perf_alloc(perf_counter_type type, const char *name)
+Perf *Perf::get_instance()
 {
-    struct perf_counter_base_t *base;
-
-    switch(type) {
-    case PC_COUNT: {
-        struct perf_counter_count_t *count;
-        count = (struct perf_counter_count_t *)calloc(1, sizeof(struct perf_counter_count_t));
-        if (!count) {
-            return nullptr;
-        }
-
-        base = &count->base;
-        break;
-    }
-    case PC_ELAPSED: {
-        struct perf_counter_elapsed_t *elapsed;
-        elapsed = (struct perf_counter_elapsed_t *)calloc(1, sizeof(struct perf_counter_elapsed_t));
-        if (!elapsed) {
-            return nullptr;
-        }
-
-        elapsed->least = ULONG_MAX;
-
-        base = &elapsed->base;
-        break;
-    }
-    default:
-    case PC_INTERVAL: {
-        /*
-         * Not implemented now because it is not used even on PX4 specific
-         * code and by looking at PX4 implementation without perf_reset()
-         * the average is broken.
-         */
-        return nullptr;
-    }
+    if (!_instance) {
+        _instance = new Perf();
     }
 
-    base->name = name;
-    base->type = type;
-    return (perf_counter_t)base;
+    return _instance;
 }
 
-void Util::perf_begin(perf_counter_t perf)
+Perf::Perf()
 {
-    struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
-
-    if (perf_elapsed == NULL) {
-        return;
-    }
-    if (perf_elapsed->base.type != PC_ELAPSED) {
-        hal.console->printf("perf_begin() called over a perf_counter_t(%s) that"
-                            " is not of the PC_ELAPSED type.\n",
-                            perf_elapsed->base.name);
-        return;
+    if (pthread_rwlock_init(&_perf_counters_lock, nullptr) != 0) {
+        AP_HAL::panic("Perf: fail to initialize rw lock");
     }
 
-    perf_elapsed->start = now_nsec();
+    /* TODO: this number should come from vehicle code - just estimate the
+     * number of perf counters for now; if we grow more, it will just
+     * reallocate the memory pool */
+    _perf_counters.reserve(50);
 }
 
-void Util::perf_end(perf_counter_t perf)
+void Perf::begin(Util::perf_counter_t pc)
 {
-    struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
+    uintptr_t idx = (uintptr_t)pc;
 
-    if (perf_elapsed == NULL) {
+    if (idx >= _perf_counters.size()) {
         return;
     }
 
-    if (perf_elapsed->base.type != PC_ELAPSED) {
-        hal.console->printf("perf_end() called over a perf_counter_t(%s) "
-                            "that is not of the PC_ELAPSED type.\n",
-                            perf_elapsed->base.name);
-        return;
-    }
-    if (perf_elapsed->start == 0) {
-        hal.console->printf("perf_end() called before an perf_begin() on %s.\n",
-                            perf_elapsed->base.name);
+    Perf_Counter &perf = _perf_counters[idx];
+    if (perf.type != Util::PC_ELAPSED) {
+        hal.console->printf("perf_begin() called on perf_counter_t(%s) that"
+                            " is not of PC_ELAPSED type.\n",
+                            perf.name);
         return;
     }
 
-    const uint64_t elapsed = now_nsec() - perf_elapsed->start;
-    perf_elapsed->count++;
-    perf_elapsed->total += elapsed;
-
-    if (perf_elapsed->least > elapsed) {
-        perf_elapsed->least =  elapsed;
+    if (perf.start != 0) {
+        hal.console->printf("perf_begin() called twice on perf_counter_t(%s)\n",
+                            perf.name);
+        return;
     }
 
-    if (perf_elapsed->most < elapsed) {
-        perf_elapsed->most = elapsed;
+    _update_count++;
+
+    perf.start = now_nsec();
+
+#ifdef HAVE_LTTNG_UST
+    perf.lttng.begin();
+#endif
+}
+
+void Perf::end(Util::perf_counter_t pc)
+{
+    uintptr_t idx = (uintptr_t)pc;
+
+    if (idx >= _perf_counters.size()) {
+        return;
+    }
+
+    Perf_Counter &perf = _perf_counters[idx];
+    if (perf.type != Util::PC_ELAPSED) {
+        hal.console->printf("perf_begin() called on perf_counter_t(%s) that"
+                            " is not of PC_ELAPSED type.\n",
+                            perf.name);
+        return;
+    }
+
+    if (perf.start == 0) {
+        hal.console->printf("perf_begin() called before begin() on perf_counter_t(%s)\n",
+                            perf.name);
+        return;
+    }
+
+    _update_count++;
+
+    const uint64_t elapsed = now_nsec() - perf.start;
+    perf.count++;
+    perf.total += elapsed;
+
+    if (perf.least > elapsed) {
+        perf.least = elapsed;
+    }
+
+    if (perf.most < elapsed) {
+        perf.most = elapsed;
     }
 
     /*
@@ -156,29 +132,55 @@ void Util::perf_end(perf_counter_t perf)
      * Knuth/Welford recursive mean and variance of update intervals (via Wikipedia)
      * Same implementation of PX4.
      */
-    const double delta_intvl = elapsed - perf_elapsed->mean;
-    perf_elapsed->mean += (delta_intvl / perf_elapsed->count);
-    perf_elapsed->m2 += (delta_intvl * (elapsed - perf_elapsed->mean));
+    const double delta_intvl = elapsed - perf.mean;
+    perf.mean += (delta_intvl / perf.count);
+    perf.m2 += (delta_intvl * (elapsed - perf.mean));
+    perf.start = 0;
 
-    perf_elapsed->start = 0;
-}
-
-void Util::perf_count(perf_counter_t perf)
-{
-    struct perf_counter_count_t *perf_counter = (struct perf_counter_count_t *)perf;
-
-    if (perf_counter == NULL) {
-        return;
-    }
-
-    if (perf_counter->base.type != PC_COUNT) {
-        hal.console->printf("perf_count() called over a perf_counter_t(%s) "
-                            "that is not of the PC_COUNT type.\n",
-                            perf_counter->base.name);
-        return;
-    }
-
-    perf_counter->count++;
-}
-
+#ifdef HAVE_LTTNG_UST
+    perf.lttng.end();
 #endif
+}
+
+void Perf::count(Util::perf_counter_t pc)
+{
+    uintptr_t idx = (uintptr_t)pc;
+
+    if (idx >= _perf_counters.size()) {
+        return;
+    }
+
+    Perf_Counter &perf = _perf_counters[idx];
+    if (perf.type != Util::PC_COUNT) {
+        hal.console->printf("perf_begin() called on perf_counter_t(%s) that"
+                            " is not of PC_COUNT type.\n",
+                            perf.name);
+        return;
+    }
+
+    _update_count++;
+    perf.count++;
+
+#ifdef HAVE_LTTNG_UST
+    perf.lttng.count();
+#endif
+
+}
+
+Util::perf_counter_t Perf::add(Util::perf_counter_type type, const char *name)
+{
+    if (type != Util::PC_COUNT && type != Util::PC_ELAPSED) {
+        /*
+         * Other perf counters not implemented for now since they are not
+         * used anywhere.
+         */
+        return (Util::perf_counter_t)(uintptr_t) -1;
+    }
+
+    pthread_rwlock_wrlock(&_perf_counters_lock);
+    Util::perf_counter_t pc = (Util::perf_counter_t) _perf_counters.size();
+    _perf_counters.emplace_back(type, name);
+    pthread_rwlock_unlock(&_perf_counters_lock);
+
+    return pc;
+}
