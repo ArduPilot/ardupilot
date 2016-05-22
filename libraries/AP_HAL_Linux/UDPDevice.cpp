@@ -1,12 +1,10 @@
-#include <AP_HAL/AP_HAL.h>
+#include "UDPDevice.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
+#include <fcntl.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
-#include <fcntl.h>
 
-#include "UDPDevice.h"
+#include <AP_HAL/AP_HAL.h>
 
 UDPDevice::UDPDevice(const char *ip, uint16_t port, bool bcast):
     _ip(ip),
@@ -67,5 +65,3 @@ void UDPDevice::set_speed(uint32_t speed)
 {
 
 }
-
-#endif

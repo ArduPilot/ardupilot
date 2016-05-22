@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "AnalogIn_Raspilot.h"
 #include "px4io_protocol.h"
 
@@ -135,5 +133,3 @@ void AnalogIn_Raspilot::_update()
 
     _last_update_timestamp = AP_HAL::micros();
 }
-
-#endif

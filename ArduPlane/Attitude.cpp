@@ -1013,7 +1013,8 @@ void Plane::set_servos(void)
                     control_mode == TRAINING ||
                     control_mode == ACRO ||
                     control_mode == FLY_BY_WIRE_A ||
-                    control_mode == AUTOTUNE)) {
+                    control_mode == AUTOTUNE) &&
+                   !failsafe.ch3_counter) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             channel_throttle->set_radio_out(channel_throttle->get_radio_in());

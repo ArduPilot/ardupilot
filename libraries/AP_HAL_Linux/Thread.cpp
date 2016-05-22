@@ -55,13 +55,31 @@ bool Thread::_run()
     return true;
 }
 
+/* Round up to the specified alignment.
+ *
+ * Let u be the address p rounded up to the alignment a. Then:
+ *    u = p + a - 1 - r, where r = (p + a - 1) % a
+ *
+ * If p % a = 0, i.e. if p is already aligned, then:
+ *     r = a - 1 ==> u = p
+ *
+ * Otherwise:
+ *     r = p % a -1 ==> u = p + a - p % a
+ *
+ *     p can be written p = q + p % a, where q is rounded down to the
+ *     alignment a. Then u = q + a.
+ */
+static inline void *align_to(void *p, size_t align)
+{
+    return (void *)(((uintptr_t)p + align - 1) & ~(align - 1));
+}
+
 void Thread::_poison_stack()
 {
     pthread_attr_t attr;
     size_t stack_size, guard_size;
     void *stackp;
-    uint8_t *end, *start, *curr;
-    uint32_t *p;
+    uint32_t *p, *curr, *begin, *end;
 
     if (pthread_getattr_np(_ctx, &attr) != 0 ||
         pthread_attr_getstack(&attr, &stackp, &stack_size) != 0 ||
@@ -69,34 +87,41 @@ void Thread::_poison_stack()
         return;
     }
 
+    stack_size /= sizeof(uint32_t);
+    guard_size /= sizeof(uint32_t);
+
     /* The stack either grows upward or downard. The guard part always
      * protects the end */
-    end = (uint8_t *) stackp;
-    start = end + stack_size;
-    curr = (uint8_t *) alloca(sizeof(uint32_t));
+    end = (uint32_t *)stackp;
+    begin = end + stack_size;
+    curr = (uint32_t *)align_to(alloca(sizeof(uint32_t)), alignof(uint32_t));
 
     /* if curr is closer to @end, the stack actually grows from low to high
      * virtual address: this is because this function should be executing very
      * early in the thread's life and close to the thread creation, assuming
      * the actual stack size is greater than the guard size and the stack
      * until now is resonably small */
-    if (abs(curr - start) > abs(curr - end)) {
-        std::swap(end, start);
+    if (abs(curr - begin) > abs(curr - end)) {
+        std::swap(end, begin);
         end -= guard_size;
 
-        for (p = (uint32_t *) end; p > (uint32_t *) curr; p--) {
+        for (p = end; p > curr; p--) {
             *p = STACK_POISON;
         }
     } else {
         end += guard_size;
 
-        for (p = (uint32_t *) end; p < (uint32_t *) curr; p++) {
+        /* we aligned curr to the up boundary, make sure this didn't cause us
+         * to lose some bytes */
+        curr--;
+
+        for (p = end; p < curr; p++) {
             *p = STACK_POISON;
         }
     }
 
-    _stack_debug.start = (uint32_t *) start;
-    _stack_debug.end = (uint32_t *) end;
+    _stack_debug.start = begin;
+    _stack_debug.end = end;
 }
 
 size_t Thread::get_stack_usage()

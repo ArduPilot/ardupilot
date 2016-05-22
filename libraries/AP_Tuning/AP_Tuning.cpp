@@ -214,8 +214,8 @@ void AP_Tuning::Log_Write_Parameter_Tuning(float value)
                                            AP_HAL::micros64(),
                                            parmset,
                                            current_parm,
-                                           value,
-                                           center_value);
+                                           (double)value,
+                                           (double)center_value);
 }
 
 /*

@@ -1,34 +1,31 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: -*- nil -*-
-
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "UARTDriver.h"
 
-#include <stdio.h>
-#include <errno.h>
-#include <termios.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <poll.h>
+#include <arpa/inet.h>
 #include <assert.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <poll.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <termios.h>
+#include <unistd.h>
+
+#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
-#include "UARTDevice.h"
-#include "UDPDevice.h"
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
+#include "UARTDevice.h"
 #include "UARTQFlight.h"
+#include "UDPDevice.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -57,12 +54,12 @@ void UARTDriver::set_device_path(const char *path)
 /*
   open the tty
  */
-void UARTDriver::begin(uint32_t b) 
+void UARTDriver::begin(uint32_t b)
 {
     begin(b, 0, 0);
 }
 
-void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
+void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (device_path == NULL && _console) {
         _device = new ConsoleDevice();
@@ -96,7 +93,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             break;
         }
 #endif
-        
+
         case DEVICE_SERIAL:
         {
             if (!_serial_start_connection()) {
@@ -206,7 +203,7 @@ UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
     } else if (strncmp(arg, "qflight:", 8) == 0) {
         return DEVICE_QFLIGHT;
 #endif
-    } else if (strncmp(arg, "tcp:", 4) != 0 && 
+    } else if (strncmp(arg, "tcp:", 4) != 0 &&
                strncmp(arg, "udp:", 4) != 0) {
         return DEVICE_UNKNOWN;
     }
@@ -309,7 +306,7 @@ void UARTDriver::_tcp_start_connection(void)
 /*
   shutdown a UART
  */
-void UARTDriver::end() 
+void UARTDriver::end()
 {
     _initialised = false;
     _connected = false;
@@ -323,7 +320,7 @@ void UARTDriver::end()
 }
 
 
-void UARTDriver::flush() 
+void UARTDriver::flush()
 {
     // we are not doing any buffering, so flush is a no-op
 }
@@ -332,7 +329,7 @@ void UARTDriver::flush()
 /*
   return true if the UART is initialised
  */
-bool UARTDriver::is_initialized() 
+bool UARTDriver::is_initialized()
 {
     return _initialised;
 }
@@ -341,7 +338,7 @@ bool UARTDriver::is_initialized()
 /*
   enable or disable blocking writes
  */
-void UARTDriver::set_blocking_writes(bool blocking) 
+void UARTDriver::set_blocking_writes(bool blocking)
 {
     _nonblocking_writes = !blocking;
 }
@@ -350,16 +347,16 @@ void UARTDriver::set_blocking_writes(bool blocking)
 /*
   do we have any bytes pending transmission?
  */
-bool UARTDriver::tx_pending() 
-{ 
+bool UARTDriver::tx_pending()
+{
     return !BUF_EMPTY(_writebuf);
 }
 
 /*
   return the number of bytes available to be read
  */
-int16_t UARTDriver::available() 
-{ 
+int16_t UARTDriver::available()
+{
     if (!_initialised) {
         return 0;
     }
@@ -370,8 +367,8 @@ int16_t UARTDriver::available()
 /*
   how many bytes are available in the output buffer?
  */
-int16_t UARTDriver::txspace() 
-{ 
+int16_t UARTDriver::txspace()
+{
     if (!_initialised) {
         return 0;
     }
@@ -379,8 +376,8 @@ int16_t UARTDriver::txspace()
     return BUF_SPACE(_writebuf);
 }
 
-int16_t UARTDriver::read() 
-{ 
+int16_t UARTDriver::read()
+{
     uint8_t c;
     if (!_initialised || _readbuf == NULL) {
         return -1;
@@ -394,8 +391,8 @@ int16_t UARTDriver::read()
 }
 
 /* Linux implementations of Print virtual methods */
-size_t UARTDriver::write(uint8_t c) 
-{ 
+size_t UARTDriver::write(uint8_t c)
+{
     if (!_initialised) {
         return 0;
     }
@@ -460,7 +457,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         assert(_writebuf_tail+n <= _writebuf_size);
         memcpy(&_writebuf[_writebuf_tail], buffer, n);
         BUF_ADVANCETAIL(_writebuf, n);
-    }        
+    }
     return size;
 }
 
@@ -481,7 +478,7 @@ int UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     if (!_connected) {
         return 0;
     }
-    
+
     ret = _device->write(buf, n);
 
     if (ret > 0) {
@@ -503,7 +500,7 @@ int UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 
     if (ret > 0) {
         BUF_ADVANCETAIL(_readbuf, ret);
-    } 
+    }
 
     return ret;
 }
@@ -559,7 +556,7 @@ bool UARTDriver::_write_pending_bytes(void)
                 // are aligned on UDP boundaries)
                 n = len+8;
             }
-        }        
+        }
     }
 
     if (n > 0) {
@@ -580,7 +577,7 @@ bool UARTDriver::_write_pending_bytes(void)
             } else {
                 int ret = _write_fd(&_writebuf[_writebuf_head], n1);
                 if (ret == n1 && n > n1) {
-                    _write_fd(&_writebuf[_writebuf_head], n - n1);                
+                    _write_fd(&_writebuf[_writebuf_head], n - n1);
                 }
             }
         }
@@ -592,7 +589,7 @@ bool UARTDriver::_write_pending_bytes(void)
 /*
   push any pending bytes to/from the serial port. This is called at
   1kHz in the timer thread. Doing it this way reduces the system call
-  overhead in the main task enormously. 
+  overhead in the main task enormously.
  */
 void UARTDriver::_timer_tick(void)
 {
@@ -621,12 +618,10 @@ void UARTDriver::_timer_tick(void)
             int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
             if (ret == n1 && n > n1) {
                 assert(_readbuf_tail+(n-n1) <= _readbuf_size);
-                _read_fd(&_readbuf[_readbuf_tail], n - n1);                
+                _read_fd(&_readbuf[_readbuf_tail], n - n1);
             }
         }
     }
 
     _in_timer = false;
 }
-
-#endif // CONFIG_HAL_BOARD

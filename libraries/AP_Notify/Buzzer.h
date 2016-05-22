@@ -22,7 +22,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
  # define BUZZER_PIN    32
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
- # define BUZZER_PIN     10 // GPIO P8_31
+ # define BUZZER_PIN     11 // GPIO P8_32
 #else
  # define BUZZER_PIN     0 // pin undefined on other boards
 #endif

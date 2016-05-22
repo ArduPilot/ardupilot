@@ -1,15 +1,17 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#include <endian.h>
-#include <stdio.h>
-#include <sys/time.h>
-#include <poll.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <sys/mman.h>
+#include <poll.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+#include <AP_HAL/utility/sparse-endian.h>
+
 #include "RCOutput_Bebop.h"
 #include "Util.h"
 

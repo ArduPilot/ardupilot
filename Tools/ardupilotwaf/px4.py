@@ -260,6 +260,7 @@ def configure(cfg):
         NUTTX_SRC=env.PX4_NUTTX_ROOT,
         PX4_NUTTX_ROMFS=bldpath(env.PX4_ROMFS_BLD),
         APM_PROGRAM_LIB=bldpath(env.PX4_AP_PROGRAM_LIB),
+        ARDUPILOT_BUILD='YES',
         EXTRA_CXX_FLAGS=' '.join((
             # NOTE: these "-Wno-error=*" flags should be removed as we update
             # the submodule

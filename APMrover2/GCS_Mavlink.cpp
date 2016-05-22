@@ -981,18 +981,22 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 }
                 break;
 
-            case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
-                if (is_equal(packet.param1,2.0f)) {
-                    // save first compass's offsets
-                    rover.compass.set_and_save_offsets(0, packet.param2, packet.param3, packet.param4);
-                    result = MAV_RESULT_ACCEPTED;
+        case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
+            {
+                uint8_t compassNumber = -1;
+                if (is_equal(packet.param1, 2.0f)) {
+                    compassNumber = 0;
+                } else if (is_equal(packet.param1, 5.0f)) {
+                    compassNumber = 1;
+                } else if (is_equal(packet.param1, 6.0f)) {
+                    compassNumber = 2;
                 }
-                if (is_equal(packet.param1,5.0f)) {
-                    // save secondary compass's offsets
-                    rover.compass.set_and_save_offsets(1, packet.param2, packet.param3, packet.param4);
+                if (compassNumber != (uint8_t) -1) {
+                    rover.compass.set_and_save_offsets(compassNumber, packet.param2, packet.param3, packet.param4);
                     result = MAV_RESULT_ACCEPTED;
                 }
                 break;
+            }
 
         case MAV_CMD_DO_SET_MODE:
             switch ((uint16_t)packet.param1) {
@@ -1367,6 +1371,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         handle_gps_inject(msg, rover.gps);
+        break;
+
+    case MAVLINK_MSG_ID_DISTANCE_SENSOR:
+        rover.sonar.handle_msg(msg);
         break;
 
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:

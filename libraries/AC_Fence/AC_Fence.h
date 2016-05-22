@@ -58,6 +58,9 @@ public:
     ///     curr_alt is the altitude above home in meters
     uint8_t check_fence(float curr_alt);
 
+    // returns true if the destination is within fence (used to reject waypoints outside the fence)
+    bool check_destination_within_fence(float dest_alt, float dest_distance_to_home);
+
     /// get_breaches - returns bit mask of the fence types that have been breached
     uint8_t get_breaches() const { return _breached_fences; }
 

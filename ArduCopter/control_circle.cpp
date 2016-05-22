@@ -90,9 +90,9 @@ void Copter::circle_run()
         attitude_control.input_euler_angle_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
     }
 
-    // run altitude controller
-    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-        // if sonar is ok, use surface tracking
+    // adjust climb rate using rangefinder
+    if (rangefinder_alt_ok()) {
+        // if rangefinder is ok, use surface tracking
         target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
     }
     // update altitude target and call position controller

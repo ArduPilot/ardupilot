@@ -8,20 +8,17 @@
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+#include "RCOutput_AioPRU.h"
 
+#include <fcntl.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include "RCOutput_AioPRU.h"
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/mman.h>
-#include <signal.h>
 
 #include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_bin.h"
 
@@ -128,6 +125,3 @@ void RCOutput_AioPRU::read(uint16_t* period_us, uint8_t len)
       period_us[i] = pwm->channel[i].time_high / TICK_PER_US;
    }
 }
-
-#endif
-

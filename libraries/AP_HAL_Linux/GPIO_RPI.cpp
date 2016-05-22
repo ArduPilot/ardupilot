@@ -7,19 +7,18 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 
-#include "GPIO.h"
-#include "Util_RPI.h"
-
+#include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <poll.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
+#include "GPIO.h"
+#include "Util_RPI.h"
 
 using namespace Linux;
 

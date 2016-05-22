@@ -1,19 +1,18 @@
+#include "RCOutput_PCA9685.h"
+
+#include <cmath>
+#include <dirent.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
+
 #include "GPIO.h"
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include "RCOutput_PCA9685.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <cmath>
 
 #define PCA9685_RA_MODE1           0x00
 #define PCA9685_RA_MODE2           0x01
@@ -245,8 +244,7 @@ uint16_t RCOutput_PCA9685::read(uint8_t ch)
 
 void RCOutput_PCA9685::read(uint16_t* period_us, uint8_t len)
 {
-    for (int i = 0; i < len; i++)
+    for (int i = 0; i < len; i++) {
         period_us[i] = read(0 + i);
+    }
 }
-
-#endif

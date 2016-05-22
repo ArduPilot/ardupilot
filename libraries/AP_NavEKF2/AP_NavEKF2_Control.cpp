@@ -143,10 +143,9 @@ void NavEKF2_core::setAidingMode()
             // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
             lastPosPassTime_ms = imuSampleTime_ms;
         }
-        // Reset all position, velocity and covariance
+        // Reset the position and velocity
         ResetVelocity();
         ResetPosition();
-        CovarianceInit();
 
     }
 
@@ -172,7 +171,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
     }
 
     // Once tilt has converged, align yaw using magnetic field measurements
-    if (tiltAlignComplete && !yawAlignComplete) {
+    if (tiltAlignComplete && !yawAlignComplete && use_compass()) {
         Vector3f eulerAngles;
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
         stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);

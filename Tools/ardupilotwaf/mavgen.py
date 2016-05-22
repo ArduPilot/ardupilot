@@ -9,11 +9,46 @@ The **mavgen.py** program is a code generator which creates mavlink header files
 from waflib import Logs, Task, Utils, Node
 from waflib.TaskGen import feature, before_method, extension
 import os
+import os.path
+from xml.etree import ElementTree as et
 
 class mavgen(Task.Task):
     """generate mavlink header files"""
     color   = 'BLUE'
     before  = 'cxx c'
+
+    def scan(self):
+        nodes = []
+        names = []
+
+        entry_point = self.inputs[0]
+        queue = [entry_point]
+        head = 0
+
+        while head < len(queue):
+            node = queue[head]
+            head += 1
+
+            tree = et.parse(node.abspath())
+            root = tree.getroot()
+            includes = root.findall('include')
+            for i in includes:
+                path = i.text.strip()
+                n = node.parent.find_node(path)
+                if n:
+                    nodes.append(n)
+                    if n not in queue:
+                        queue.append(n)
+                    continue
+
+                path = os.path.join(
+                    node.parent.path_from(entry_point.parent),
+                    path
+                )
+                if not path in names:
+                    names.append(path)
+
+        return nodes, names
 
     def run(self):
         python = self.env.get_flat('PYTHON')

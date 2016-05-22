@@ -1,23 +1,21 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
+
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <stdio.h>
-#include <stdarg.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <time.h>
-#include <fcntl.h>
-
-extern const AP_HAL::HAL& hal;
-
+#include "Heat_Pwm.h"
 #include "ToneAlarm_Raspilot.h"
 #include "Util.h"
-#include "Heat_Pwm.h"
 
 using namespace Linux;
 
+extern const AP_HAL::HAL& hal;
 
 static int state;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
@@ -206,5 +204,3 @@ close_end:
 end:
     return ret;
 }
-
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX

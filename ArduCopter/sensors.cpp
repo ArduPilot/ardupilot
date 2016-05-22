@@ -26,47 +26,59 @@ void Copter::read_barometer(void)
     motors.set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
-#if CONFIG_SONAR == ENABLED
-void Copter::init_sonar(void)
+void Copter::init_rangefinder(void)
 {
-   sonar.init();
-}
+#if RANGEFINDER_ENABLED == ENABLED
+   rangefinder.init();
+   rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+   rangefinder_state.enabled = (rangefinder.num_sensors() >= 1);
 #endif
+}
 
-// return sonar altitude in centimeters
-int16_t Copter::read_sonar(void)
+// return rangefinder altitude in centimeters
+void Copter::read_rangefinder(void)
 {
-#if CONFIG_SONAR == ENABLED
-    sonar.update();
+#if RANGEFINDER_ENABLED == ENABLED
+    rangefinder.update();
 
-    // exit immediately if sonar is disabled
-    if (sonar.status() != RangeFinder::RangeFinder_Good) {
-        sonar_alt_health = 0;
-        return 0;
-    }
+    rangefinder_state.alt_healthy = ((rangefinder.status() == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count() >= RANGEFINDER_HEALTH_MAX));
 
-    int16_t temp_alt = sonar.distance_cm();
+    int16_t temp_alt = rangefinder.distance_cm();
 
-    if (temp_alt >= sonar.min_distance_cm() && 
-        temp_alt <= sonar.max_distance_cm() * SONAR_RELIABLE_DISTANCE_PCT) {
-        if ( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
-            sonar_alt_health++;
-        }
-    }else{
-        sonar_alt_health = 0;
-    }
-
- #if SONAR_TILT_CORRECTION == 1
-    // correct alt for angle of the sonar
-    float temp = ahrs.cos_pitch() * ahrs.cos_roll();
-    temp = MAX(temp, 0.707f);
-    temp_alt = (float)temp_alt * temp;
+ #if RANGEFINDER_TILT_CORRECTION == ENABLED
+    // correct alt for angle of the rangefinder
+    temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
  #endif
 
-    return temp_alt;
+    rangefinder_state.alt_cm = temp_alt;
+
+    // filter rangefinder for use by AC_WPNav
+    uint32_t now = AP_HAL::millis();
+
+    if (rangefinder_state.alt_healthy) {
+        if (now - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS) {
+            // reset filter if we haven't used it within the last second
+            rangefinder_state.alt_cm_filt.reset(rangefinder_state.alt_cm);
+        } else {
+            rangefinder_state.alt_cm_filt.apply(rangefinder_state.alt_cm, 0.05f);
+        }
+        rangefinder_state.last_healthy_ms = now;
+    }
+
+    // send rangefinder altitude and health to waypoint navigation library
+    wp_nav.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+
 #else
-    return 0;
+    rangefinder_state.enabled = false;
+    rangefinder_state.alt_healthy = false;
+    rangefinder_state.alt_cm = 0;
 #endif
+}
+
+// return true if rangefinder_alt can be used
+bool Copter::rangefinder_alt_ok()
+{
+    return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
 }
 
 /*

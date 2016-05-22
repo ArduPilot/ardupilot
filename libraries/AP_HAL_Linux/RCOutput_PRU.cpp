@@ -1,23 +1,21 @@
+#include "RCOutput_PRU.h"
+
+#include <dirent.h>
+#include <fcntl.h>
+#include <linux/spi/spidev.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include "RCOutput_PRU.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/ioctl.h>
-#include <linux/spi/spidev.h>
-#include <sys/mman.h>
-#include <signal.h>
 using namespace Linux;
-
 
 #define PWM_CHAN_COUNT 12
 
@@ -32,7 +30,7 @@ void RCOutput_PRU::init()
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);
     mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
-    sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
+    sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE,
                                             MAP_SHARED, mem_fd, RCOUT_PRUSS_SHAREDRAM_BASE);
     close(mem_fd);
 
@@ -88,5 +86,3 @@ void RCOutput_PRU::read(uint16_t* period_us, uint8_t len)
         period_us[i] = sharedMem_cmd->hilo_read[chan_pru_map[i]][1]/TICK_PER_US;
     }
 }
-
-#endif

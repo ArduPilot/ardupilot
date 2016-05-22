@@ -202,7 +202,7 @@ public:
      7 = badly conditioned synthetic sideslip fusion
      7 = filter is not initialised
     */
-    void  getFilterFaults(uint8_t &faults) const;
+    void  getFilterFaults(uint16_t &faults) const;
 
     /*
     return filter timeout status as a bitmasked integer
@@ -502,7 +502,7 @@ private:
     void SelectBetaFusion();
 
     // force alignment of the yaw angle using GPS velocity data
-    void alignYawGPS();
+    void realignYawGPS();
 
     // initialise the earth magnetic field states using declination and current attitude and magnetometer meaasurements
     // and return attitude quaternion
@@ -708,7 +708,8 @@ private:
     bool prevIsAiding;              // isAiding from previous frame
     struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
     bool validOrigin;               // true when the EKF origin is valid
-    float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the UBlox GPS receiver
+    float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
+    float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
     uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
     float posDownAtTakeoff;         // flight vehicle vertical position at arming used as a reference point
@@ -774,7 +775,7 @@ private:
     uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction
     bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
-    float posDownObsNoise;          // observationn noise on the vertical position used by the state and covariance update step (m)
+    float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
@@ -870,13 +871,23 @@ private:
     uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
-    // flags indicating severw numerical errors in innovation variance calculation for different fusion operations
+    // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
         bool bad_xmag:1;
         bool bad_ymag:1;
         bool bad_zmag:1;
         bool bad_airspeed:1;
         bool bad_sideslip:1;
+        bool bad_nvel:1;
+        bool bad_evel:1;
+        bool bad_dvel:1;
+        bool bad_npos:1;
+        bool bad_epos:1;
+        bool bad_dpos:1;
+        bool bad_yaw:1;
+        bool bad_decl:1;
+        bool bad_xflow:1;
+        bool bad_yflow:1;
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing

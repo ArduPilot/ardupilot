@@ -6,6 +6,7 @@ list(APPEND config_module_list
     drivers/pwm_input
     modules/uavcan
     lib/mathlib
+    lib/rc
 )
 
 list(APPEND config_extra_libs

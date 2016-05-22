@@ -222,7 +222,7 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
     // init channel options
     switch(ch_option) {
         case AUXSW_SIMPLE_MODE:
-        case AUXSW_SONAR:
+        case AUXSW_RANGEFINDER:
         case AUXSW_FENCE:
         case AUXSW_RESETTOARMEDYAW:
         case AUXSW_SUPERSIMPLE_MODE:
@@ -345,13 +345,13 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 #endif
 
-        case AUXSW_SONAR:
-            // enable or disable the sonar
-#if CONFIG_SONAR == ENABLED
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                sonar_enabled = true;
+        case AUXSW_RANGEFINDER:
+            // enable or disable the rangefinder
+#if RANGEFINDER_ENABLED == ENABLED
+            if ((ch_flag == AUX_SWITCH_HIGH) && (rangefinder.num_sensors() >= 1)) {
+                rangefinder_state.enabled = true;
             }else{
-                sonar_enabled = false;
+                rangefinder_state.enabled = false;
             }
 #endif
             break;

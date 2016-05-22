@@ -1,18 +1,15 @@
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <assert.h>
-
-#include "HAL_Linux_Class.h"
-#include "AP_HAL_Linux_Private.h"
-
-#include <AP_HAL/utility/getopt_cpp.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+
+#include "AP_HAL_Linux_Private.h"
+#include "HAL_Linux_Class.h"
 
 using namespace Linux;
 
@@ -232,11 +229,11 @@ void _usage(void)
     printf("Usage: -A uartAPath -B uartBPath -C uartCPath -D uartDPath -E uartEPath -F uartFPath\n");
     printf("Options:\n");
     printf("\t-serial:          -A /dev/ttyO4\n");
-    printf("\t                  -B /dev/ttyS1\n");    
+    printf("\t                  -B /dev/ttyS1\n");
     printf("\t-tcp:             -C tcp:192.168.2.15:1243:wait\n");
-    printf("\t                  -A tcp:11.0.0.2:5678\n");    
-    printf("\t                  -A udp:11.0.0.2:5678\n");    
-    printf("\t-custom log path:\n");        
+    printf("\t                  -A tcp:11.0.0.2:5678\n");
+    printf("\t                  -A udp:11.0.0.2:5678\n");
+    printf("\t-custom log path:\n");
     printf("\t                  --log-directory /var/APM/logs\n");
     printf("\t                  -l /var/APM/logs\n");
     printf("\t-custom terrain path:\n");
@@ -300,7 +297,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
             rcinDriver.set_device_path(gopt.optarg);
             break;
 #endif // CONFIG_HAL_BOARD_SUBTYPE
-        case 'l':            
+        case 'l':
             utilInstance.set_custom_log_directory(gopt.optarg);
             break;
         case 't':
@@ -317,22 +314,19 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 
     scheduler->init();
     gpio->init();
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     i2c->begin();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     i2c1->begin();
     i2c2->begin();
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-    i2c->begin();
     i2c1->begin();
-#else
-    i2c->begin();
 #endif
     spi->init();
     rcout->init();
     rcin->init();
-    uartA->begin(115200);    
-    uartE->begin(115200);    
-    uartF->begin(115200);    
+    uartA->begin(115200);
+    uartE->begin(115200);
+    uartF->begin(115200);
     analogin->init();
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 
@@ -351,5 +345,3 @@ const AP_HAL::HAL& AP_HAL::get_HAL() {
     static const HAL_Linux hal;
     return hal;
 }
-
-#endif

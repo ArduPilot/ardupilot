@@ -38,8 +38,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "sbus.h"
 
+#include "sbus.h"
 
 #define SBUS_FRAME_SIZE		25
 #define SBUS_INPUT_CHANNELS	16
@@ -96,7 +96,7 @@ static const struct sbus_bit_pick sbus_decoder[SBUS_INPUT_CHANNELS][3] = {
 
 
 bool
-sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values, 
+sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
             bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values)
 {
 	/* check frame boundary markers to avoid out-of-sync cases */
@@ -172,9 +172,9 @@ sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
 	}
 	else if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FRAMELOST_BIT)) { /* a frame was lost */
 		/* set a special warning flag
-		 * 
-		 * Attention! This flag indicates a skipped frame only, not a total link loss! Handling this 
-		 * condition as fail-safe greatly reduces the reliability and range of the radio link, 
+		 *
+		 * Attention! This flag indicates a skipped frame only, not a total link loss! Handling this
+		 * condition as fail-safe greatly reduces the reliability and range of the radio link,
 		 * e.g. by prematurely issuing return-to-launch!!! */
 
 		*sbus_failsafe = false;

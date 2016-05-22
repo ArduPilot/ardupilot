@@ -15,14 +15,10 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RCOutput_Sysfs.h"
 
 #include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
 namespace Linux {
@@ -120,5 +116,3 @@ void RCOutput_Sysfs::read(uint16_t *period_us, uint8_t len)
     }
 }
 }
-
-#endif

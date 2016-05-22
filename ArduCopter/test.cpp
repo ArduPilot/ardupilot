@@ -20,7 +20,7 @@ static const struct Menu::command test_menu_commands[] = {
     {"shell", 				MENU_FUNC(test_shell)},
 #endif
 #if HIL_MODE == HIL_MODE_DISABLED
-    {"rangefinder",         MENU_FUNC(test_sonar)},
+    {"rangefinder",         MENU_FUNC(test_rangefinder)},
 #endif
 };
 
@@ -243,21 +243,21 @@ int8_t Copter::test_shell(uint8_t argc, const Menu::arg *argv)
 /*
  *  test the rangefinders
  */
-int8_t Copter::test_sonar(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_rangefinder(uint8_t argc, const Menu::arg *argv)
 {
-#if CONFIG_SONAR == ENABLED
-	sonar.init();
+#if RANGEFINDER_ENABLED == ENABLED
+	rangefinder.init();
 
-    cliSerial->printf("RangeFinder: %d devices detected\n", sonar.num_sensors());
+    cliSerial->printf("RangeFinder: %d devices detected\n", rangefinder.num_sensors());
 
     print_hit_enter();
     while(1) {
         delay(100);
-        sonar.update();
+        rangefinder.update();
 
-        cliSerial->printf("Primary: status %d distance_cm %d \n", (int)sonar.status(), sonar.distance_cm());
+        cliSerial->printf("Primary: status %d distance_cm %d \n", (int)rangefinder.status(), rangefinder.distance_cm());
         cliSerial->printf("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n",
-        (int)sonar._type[0], (int)sonar.status(0), sonar.distance_cm(0), (int)sonar._type[1], (int)sonar.status(1), sonar.distance_cm(1));
+        (int)rangefinder._type[0], (int)rangefinder.status(0), rangefinder.distance_cm(0), (int)rangefinder._type[1], (int)rangefinder.status(1), rangefinder.distance_cm(1));
 
         if(cliSerial->available() > 0) {
             return (0);

@@ -161,6 +161,14 @@ public:
         uint8_t target_state;
     };
 
+     // navigation delay command structure
+    struct PACKED Navigation_Delay_Command {
+        float seconds; // period of delay in seconds
+        int8_t hour_utc; // absolute time's hour (utc)
+        int8_t min_utc; // absolute time's min (utc)
+        int8_t sec_utc; // absolute time's sec (utc)
+    };
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -215,6 +223,9 @@ public:
         
         // location
         Location location;      // Waypoint location
+
+        // navigation delay
+        Navigation_Delay_Command nav_delay;
 
         // raw bytes, for reading/writing to eeprom. Note that only 10 bytes are available
         // if a 16 bit command ID is used
@@ -293,6 +304,9 @@ public:
 
     /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
     void start_or_resume();
+
+    /// check mission starts with a takeoff command
+    bool starts_with_takeoff_cmd();
 
     /// reset - reset mission to the first command
     void reset();

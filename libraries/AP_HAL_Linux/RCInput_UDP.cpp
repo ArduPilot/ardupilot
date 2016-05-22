@@ -1,8 +1,8 @@
+#include <stdio.h>
+
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "RCInput_UDP.h"
-#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -51,4 +51,3 @@ void RCInput_UDP::_timer_tick(void)
         _update_periods(_buf.pwms, RCINPUT_UDP_NUM_CHANNELS);
     }
 }
-#endif

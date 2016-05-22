@@ -771,7 +771,7 @@ void NavEKF::setTouchdownExpected(bool val)
   7 = badly conditioned synthetic sideslip fusion
   7 = filter is not initialised
 */
-void NavEKF::getFilterFaults(uint8_t &faults) const
+void NavEKF::getFilterFaults(uint16_t &faults) const
 {
     if (core) {
         core->getFilterFaults(faults);

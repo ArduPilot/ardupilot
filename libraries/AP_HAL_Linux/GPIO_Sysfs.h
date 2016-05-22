@@ -1,10 +1,8 @@
 #pragma once
 
+#include "AP_HAL_Linux.h"
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include "AP_HAL_Linux.h"
 #include "GPIO.h"
 
 class Linux::DigitalSource_Sysfs : public AP_HAL::DigitalSource {
@@ -78,5 +76,3 @@ protected:
      */
     static bool _export_pin(uint8_t vpin);
 };
-
-#endif

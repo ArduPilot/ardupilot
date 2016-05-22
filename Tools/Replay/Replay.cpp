@@ -935,7 +935,7 @@ void Replay::loop()
             Vector3f magVar;
             float tasVar;
             Vector2f offset;
-            uint8_t faultStatus;
+            uint16_t faultStatus;
 
             const Matrix3f &dcm_matrix = _vehicle.ahrs.AP_AHRS_DCM::get_rotation_body_to_ned();
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);

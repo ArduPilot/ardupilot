@@ -8,6 +8,7 @@ import optparse
 import sys
 import atexit
 import os
+import os.path
 import subprocess
 import tempfile
 import getpass
@@ -271,6 +272,9 @@ default_params_filename: filename of default parameters file.  Taken to be relat
 extra_mavlink_cmds: extra parameters that will be passed to mavproxy
 '''
 _options_for_frame = {
+    "calibration": {
+        "extra_mavlink_cmds": "module load sitl_calibration;",
+    },
     "+": {
         "waf_target": "bin/arducopter-quad",
         "default_params_filename": "copter_params.parm"
@@ -496,9 +500,9 @@ def progress_cmd(what, cmd):
     shell_text = "%s" % (" ".join([ '"%s"' % x for x in cmd ]))
     progress(shell_text)
 
-def run_cmd_blocking(what, cmd):
+def run_cmd_blocking(what, cmd, **kw):
     progress_cmd(what, cmd)
-    p = subprocess.Popen(cmd)
+    p = subprocess.Popen(cmd, **kw)
     return os.waitpid(p.pid,0)
 
 def run_in_terminal_window(autotest, name, cmd):
@@ -618,7 +622,12 @@ def start_mavproxy(opts, stuff):
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
 
-    run_cmd_blocking("Run MavProxy", cmd)
+    local_mp_modules_dir = os.path.abspath(
+            os.path.join(__file__, '..', '..', 'mavproxy_modules'))
+    env = dict(os.environ)
+    env['PYTHONPATH'] = local_mp_modules_dir + os.pathsep + env.get('PYTHONPATH', '')
+
+    run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exitted")
 
 frame_options = options_for_frame(opts.frame, opts.vehicle, opts)

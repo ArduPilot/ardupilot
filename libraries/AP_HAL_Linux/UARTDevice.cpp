@@ -1,31 +1,21 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include <termios.h>
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <poll.h>
-
 #include "UARTDevice.h"
 
-#include <termios.h>
-#include <stdio.h>
 #include <errno.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <stdio.h>
+#include <termios.h>
+#include <unistd.h>
 
-UARTDevice::UARTDevice(const char *device_path): 
+#include <AP_HAL/AP_HAL.h>
+
+UARTDevice::UARTDevice(const char *device_path):
     _device_path(device_path)
 {
 }
 
 UARTDevice::~UARTDevice()
 {
-
 }
 
 bool UARTDevice::close()
@@ -80,7 +70,7 @@ ssize_t UARTDevice::write(const uint8_t *buf, uint16_t n)
 void UARTDevice::set_blocking(bool blocking)
 {
     int flags = fcntl(_fd, F_GETFL, 0);
-    
+
     if (blocking) {
         flags = flags & ~O_NONBLOCK;
     } else {
@@ -119,5 +109,3 @@ void UARTDevice::set_speed(uint32_t baudrate)
     cfsetspeed(&t, baudrate);
     tcsetattr(_fd, TCSANOW, &t);
 }
-
-#endif

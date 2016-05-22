@@ -23,6 +23,8 @@ public:
 
     static AP_Compass_Backend *probe_mpu6000(Compass &compass);
 
+    static constexpr const char *name = "HMC5843";
+
     virtual ~AP_Compass_HMC5843();
 
     bool init() override;

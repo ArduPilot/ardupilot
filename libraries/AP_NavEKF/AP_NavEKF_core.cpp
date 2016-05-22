@@ -83,7 +83,7 @@ NavEKF_core::NavEKF_core(NavEKF &_frontend, const AP_AHRS *ahrs, AP_Baro &baro, 
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF_core::healthy(void) const
 {
-    uint8_t faultInt;
+    uint16_t faultInt;
     getFilterFaults(faultInt);
     if (faultInt > 0) {
         return false;
@@ -3918,6 +3918,7 @@ void NavEKF_core::readIMUData()
         // just read primary gyro
         readDeltaAngle(ins.get_primary_gyro(), dAngIMU);
     }
+
 }
 
 // check for new valid GPS data and update stored measurement if available
@@ -4583,7 +4584,7 @@ return the filter fault status as a bitmasked integer
  6 = badly conditioned synthetic sideslip fusion
  7 = filter is not initialised
 */
-void  NavEKF_core::getFilterFaults(uint8_t &faults) const
+void  NavEKF_core::getFilterFaults(uint16_t &faults) const
 {
     faults = (state.quat.is_nan()<<0 |
               state.velocity.is_nan()<<1 |

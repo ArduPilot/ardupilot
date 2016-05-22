@@ -15,14 +15,12 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && !defined(PERF_LTTNG)
+#if !defined(PERF_LTTNG)
 
 #include <limits.h>
 #include <time.h>
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
 #include "AP_HAL_Linux.h"

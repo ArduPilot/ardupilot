@@ -1,6 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AnalogIn.h"
 
 using namespace Linux;
@@ -43,5 +40,3 @@ void AnalogIn::init()
 AP_HAL::AnalogSource* AnalogIn::channel(int16_t n) {
     return new AnalogSource(1.11);
 }
-
-#endif // CONFIG_HAL_BOARD

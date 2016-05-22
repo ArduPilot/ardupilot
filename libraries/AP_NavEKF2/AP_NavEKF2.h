@@ -214,7 +214,7 @@ public:
      7 = badly conditioned synthetic sideslip fusion
      7 = filter is not initialised
     */
-    void  getFilterFaults(int8_t instance, uint8_t &faults);
+    void  getFilterFaults(int8_t instance, uint16_t &faults);
 
     /*
     return filter timeout status as a bitmasked integer for the specified instance

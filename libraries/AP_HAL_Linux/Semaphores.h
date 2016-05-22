@@ -1,10 +1,10 @@
 #pragma once
 
+#include <pthread.h>
+
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_HAL_Linux.h"
-#include <pthread.h>
 
 class Linux::Semaphore : public AP_HAL::Semaphore {
 public:
@@ -17,4 +17,3 @@ public:
 private:
     pthread_mutex_t _lock;
 };
-#endif // CONFIG_HAL_BOARD

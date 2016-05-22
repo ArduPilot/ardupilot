@@ -1,7 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "AnalogIn_ADS1115.h"
 
 AnalogSource_ADS1115::AnalogSource_ADS1115(int16_t pin):
@@ -95,5 +91,3 @@ void AnalogIn_ADS1115::_update()
 
     _last_update_timestamp = AP_HAL::micros();
 }
-
-#endif

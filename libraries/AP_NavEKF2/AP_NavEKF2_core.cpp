@@ -197,6 +197,7 @@ void NavEKF2_core::InitialiseVariables()
     touchdownExpectedSet_ms = 0;
     expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
+    gpsPosAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
@@ -243,7 +244,9 @@ void NavEKF2_core::InitialiseVariables()
     posResetNE.zero();
     velResetNE.zero();
     hgtInnovFiltState = 0.0f;
-    magSelectIndex = _ahrs->get_compass()->get_primary();
+    if (_ahrs->get_compass()) {
+        magSelectIndex = _ahrs->get_compass()->get_primary();
+    }
     imuDataDownSampledNew.delAng.zero();
     imuDataDownSampledNew.delVel.zero();
     imuDataDownSampledNew.delAngDT = 0.0f;
@@ -508,6 +511,14 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     accNavMag = velDotNEDfilt.length();
     accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
 
+    // if we are not aiding, then limit the horizontal magnitude of acceleration
+    // to prevent large manoeuvre transients disturbing the attitude
+    if ((PV_AidingMode == AID_NONE) && (accNavMagHoriz > 5.0f)) {
+        float gain = 5.0f/accNavMagHoriz;
+        delVelNav.x *= gain;
+        delVelNav.y *= gain;
+    }
+
     // save velocity for use in trapezoidal integration for position calcuation
     Vector3f lastVelocity = stateStruct.velocity;
 
@@ -631,12 +642,12 @@ void NavEKF2_core::CovariancePrediction()
     float dAngScaleSigma;// delta angle scale factor 1-Sigma process noise
     float magEarthSigma;// earth magnetic field 1-sigma process noise
     float magBodySigma; // body magnetic field 1-sigma process noise
-    float daxNoise;     // X axis delta angle noise (rad)
-    float dayNoise;     // Y axis delta angle noise (rad)
-    float dazNoise;     // Z axis delta angle noise (rad)
-    float dvxNoise;     // X axis delta velocity noise (m/s)
-    float dvyNoise;     // Y axis delta velocity noise (m/s)
-    float dvzNoise;     // Z axis delta velocity noise (m/s)
+    float daxNoise;     // X axis delta angle noise variance rad^2
+    float dayNoise;     // Y axis delta angle noise variance rad^2
+    float dazNoise;     // Z axis delta angle noise variance rad^2
+    float dvxNoise;     // X axis delta velocity variance noise (m/s)^2
+    float dvyNoise;     // Y axis delta velocity variance noise (m/s)^2
+    float dvzNoise;     // Z axis delta velocity variance noise (m/s)^2
     float dvx;          // X axis delta velocity (m/s)
     float dvy;          // Y axis delta velocity (m/s)
     float dvz;          // Z axis delta velocity (m/s)
@@ -665,12 +676,12 @@ void NavEKF2_core::CovariancePrediction()
 
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
-    windVelSigma  = dt * constrain_float(frontend->_windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
-    dAngBiasSigma = dt * constrain_float(frontend->_gyroBiasProcessNoise, 0.0f, 1e-4f);
-    dVelBiasSigma = dt * constrain_float(frontend->_accelBiasProcessNoise, 1e-6f, 1e-2f);
-    dAngScaleSigma = dt * constrain_float(frontend->_gyroScaleProcessNoise,1e-6f,1e-2f);
-    magEarthSigma = dt * constrain_float(frontend->_magProcessNoise, 1e-4f, 1e-1f);
-    magBodySigma  = dt * constrain_float(frontend->_magProcessNoise, 1e-4f, 1e-1f);
+    windVelSigma  = dt * constrain_float(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
+    dAngBiasSigma = sq(dt) * constrain_float(frontend->_gyroBiasProcessNoise, 0.0f, 1.0f);
+    dVelBiasSigma = sq(dt) * constrain_float(frontend->_accelBiasProcessNoise, 0.0f, 1.0f);
+    dAngScaleSigma = dt * constrain_float(frontend->_gyroScaleProcessNoise, 0.0f, 1.0f);
+    magEarthSigma = dt * constrain_float(frontend->_magProcessNoise, 0.0f, 1.0f);
+    magBodySigma  = dt * constrain_float(frontend->_magProcessNoise, 0.0f, 1.0f);
     for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 0.0f;
     for (uint8_t i=9; i<=11; i++) processNoise[i] = dAngBiasSigma;
     for (uint8_t i=12; i<=14; i++) processNoise[i] = dAngScaleSigma;
@@ -703,16 +714,16 @@ void NavEKF2_core::CovariancePrediction()
     day_s = stateStruct.gyro_scale.y;
     daz_s = stateStruct.gyro_scale.z;
     dvz_b = stateStruct.accel_zbias;
-    float _gyrNoise = constrain_float(frontend->_gyrNoise, 1e-4f, 1e-2f);
-    daxNoise = dayNoise = dazNoise = dt*_gyrNoise;
-    float _accNoise = constrain_float(frontend->_accNoise, 1e-2f, 1.0f);
-    dvxNoise = dvyNoise = dvzNoise = dt*_accNoise;
+    float _gyrNoise = constrain_float(frontend->_gyrNoise, 0.0f, 1.0f);
+    daxNoise = dayNoise = dazNoise = sq(dt*_gyrNoise);
+    float _accNoise = constrain_float(frontend->_accNoise, 0.0f, 10.0f);
+    dvxNoise = dvyNoise = dvzNoise = sq(dt*_accNoise);
 
     // calculate the predicted covariance due to inertial sensor error propagation
     // we calculate the upper diagonal and copy to take advantage of symmetry
-    SF[0] = daz_b/2 + dazNoise/2 - (daz*daz_s)/2;
-    SF[1] = day_b/2 + dayNoise/2 - (day*day_s)/2;
-    SF[2] = dax_b/2 + daxNoise/2 - (dax*dax_s)/2;
+    SF[0] = daz_b/2 - (daz*daz_s)/2;
+    SF[1] = day_b/2 - (day*day_s)/2;
+    SF[2] = dax_b/2 - (dax*dax_s)/2;
     SF[3] = q3/2 - (q0*SF[0])/2 + (q1*SF[1])/2 - (q2*SF[2])/2;
     SF[4] = q0/2 - (q1*SF[2])/2 - (q2*SF[1])/2 + (q3*SF[0])/2;
     SF[5] = q1/2 + (q0*SF[2])/2 - (q2*SF[0])/2 - (q3*SF[1])/2;
@@ -726,9 +737,9 @@ void NavEKF2_core::CovariancePrediction()
     SF[13] = q1/2 - (q0*SF[2])/2 + (q2*SF[0])/2 - (q3*SF[1])/2;
     SF[14] = q3/2 + (q0*SF[0])/2 + (q1*SF[1])/2 + (q2*SF[2])/2;
     SF[15] = - sq(q0) - sq(q1) - sq(q2) - sq(q3);
-    SF[16] = dvz_b - dvz + dvzNoise;
-    SF[17] = dvx - dvxNoise;
-    SF[18] = dvy - dvyNoise;
+    SF[16] = dvz_b - dvz;
+    SF[17] = dvx;
+    SF[18] = dvy;
     SF[19] = sq(q2);
     SF[20] = SF[19] - sq(q0) + sq(q1) - sq(q3);
     SF[21] = SF[19] + sq(q0) - sq(q1) - sq(q3);

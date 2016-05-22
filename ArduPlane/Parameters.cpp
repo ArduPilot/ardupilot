@@ -240,6 +240,24 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: User
     GSCALAR(level_roll_limit,              "LEVEL_ROLL_LIMIT",   5),
 
+    // @Param: LAND_SLOPE_RCALC
+    // @DisplayName: Landing slope re-calc threshold
+    // @Description: This parameter is used when using a rangefinder during landing for altitude correction from baro drift (RNGFND_LANDING=1) and the altitude correction indicates your altitude is lower than the intended slope path. This value is the threshold of the correction to re-calculate the landing approach slope. Set to zero to keep the original slope all the way down and any detected baro drift will be corrected by pitching/throttling up to snap back to resume the original slope path. Otherwise, when a rangefinder altitude correction exceeds this threshold it will trigger a slope re-calculate to give a shallower slope. This also smoothes out the approach when flying over objects such as trees. Recommend a value of 2m.
+    // @Range: 0 5
+    // @Units: meters
+    // @Increment: 0.5
+    // @User: Advanced
+    GSCALAR(land_slope_recalc_shallow_threshold,          "LAND_SLOPE_RCALC",  2.0f),
+
+    // @Param: LAND_ABORT_DEG
+    // @DisplayName: Landing auto-abort slope threshold
+    // @Description: This parameter is used when using a rangefinder during landing for altitude correction from baro drift (RNGFND_LANDING=1) and the altitude correction indicates your actual altitude is higher than the intended slope path. Normally it would pitch down steeply but that can result in a crash with high airspeed so this allows remembering the baro offset and self-abort the landing and come around for another landing with the correct baro offset applied for a perfect slope. An auto-abort go-around will only happen once, next attempt will not auto-abort again. This operation happens entirely automatically in AUTO mode. This value is the delta degrees threshold to trigger the go-around compared to the origional slope. Example: if set to 5 deg and the mission planned slope is 15 deg then if the new slope is 21 then it will go-around. Set to 0 to disable. Requires LAND_SLOPE_RCALC > 0.
+    // @Range: 0 90
+    // @Units: degrees
+    // @Increment: 0.1
+    // @User: Advanced
+    GSCALAR(land_slope_recalc_steep_threshold_to_abort,          "LAND_ABORT_DEG", 0),
+
     // @Param: LAND_PITCH_CD
     // @DisplayName: Landing Pitch
     // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
@@ -579,7 +597,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: THR_FS_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle failsafe triggers
-    // @Range: 925 1100
+    // @Range: 925 2200
     // @Increment: 1
     // @User: Standard
     GSCALAR(throttle_fs_value,      "THR_FS_VALUE",   THROTTLE_FS_VALUE),

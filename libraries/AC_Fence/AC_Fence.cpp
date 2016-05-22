@@ -207,6 +207,22 @@ uint8_t AC_Fence::check_fence(float curr_alt)
     //outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
 }
 
+// returns true if the destination is within fence (used to reject waypoints outside the fence)
+bool AC_Fence::check_destination_within_fence(float dest_alt, float dest_distance_to_home)
+{
+    // Altitude fence check
+    if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) && (dest_alt >= _alt_max)) {
+        return false;
+    }
+
+    // Circular fence check
+    if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) && (dest_distance_to_home >= _circle_radius)) {
+        return false;
+    }
+
+    return true;
+}
+
 /// record_breach - update breach bitmask, time and count
 void AC_Fence::record_breach(uint8_t fence_type)
 {

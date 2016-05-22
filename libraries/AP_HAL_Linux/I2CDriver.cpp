@@ -1,25 +1,24 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include "I2CDriver.h"
-#include "Util.h"
-
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <limits.h>
-#include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 #ifndef I2C_SMBUS_BLOCK_MAX
 #include <linux/i2c.h>
 #endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-extern const AP_HAL::HAL& hal;
+#include <AP_HAL/AP_HAL.h>
+
+#include "I2CDriver.h"
+#include "Util.h"
+
+extern const AP_HAL::HAL &hal;
 
 using namespace Linux;
 
@@ -69,14 +68,14 @@ bool I2CDriver::set_address(uint8_t addr)
     return true;
 }
 
-void I2CDriver::setTimeout(uint16_t ms) 
+void I2CDriver::setTimeout(uint16_t ms)
 {
     // unimplemented
 }
 
-void I2CDriver::setHighSpeed(bool active) 
+void I2CDriver::setHighSpeed(bool active)
 {
-    // unimplemented    
+    // unimplemented
 }
 
 uint8_t I2CDriver::write(uint8_t addr, uint8_t len, uint8_t* data)
@@ -106,7 +105,7 @@ uint8_t I2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
   this is a copy of i2c_smbus_access() from i2c-dev.h. We need it for
   platforms with older headers
  */
-static inline __s32 _i2c_smbus_access(int file, char read_write, __u8 command, 
+static inline __s32 _i2c_smbus_access(int file, char read_write, __u8 command,
                                       int size, union i2c_smbus_data *data)
 {
     struct i2c_smbus_ioctl_data args;
@@ -179,7 +178,7 @@ uint8_t I2CDriver::readRegisters(uint8_t addr, uint8_t reg,
 
 
 uint8_t I2CDriver::readRegistersMultiple(uint8_t addr, uint8_t reg,
-                                              uint8_t len, 
+                                              uint8_t len,
                                               uint8_t count, uint8_t* data)
 {
 #ifdef I2C_RDRW_IOCTL_MAX_MSGS
@@ -259,16 +258,13 @@ bool I2CDriver::do_transfer(uint8_t addr, const uint8_t *send,
     if (send_len == 0 && recv_len) {
         msg_rdwr.msgs = &i2cmsg[1];
         msg_rdwr.nmsgs = 1;
-    }
-    else if (send_len && recv_len == 0) {
+    } else if (send_len && recv_len == 0) {
         msg_rdwr.msgs = &i2cmsg[0];
         msg_rdwr.nmsgs = 1;
-    }
-    else if (send_len && recv_len) {
+    }else if (send_len && recv_len) {
         msg_rdwr.msgs = &i2cmsg[0];
         msg_rdwr.nmsgs = 2;
-    }
-    else {
+    } else {
         return false;
     }
     return ioctl(_fake_dev->get_fd(), I2C_RDWR, &msg_rdwr) == (int)msg_rdwr.nmsgs;
@@ -283,5 +279,3 @@ AP_HAL::Semaphore *I2CDriver::get_semaphore()
 {
     return _fake_dev->get_semaphore();
 }
-
-#endif // CONFIG_HAL_BOARD

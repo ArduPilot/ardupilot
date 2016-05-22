@@ -317,9 +317,9 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 
-        #if CONFIG_SONAR == ENABLED && OPTFLOW == ENABLED
+        #if RANGEFINDER_ENABLED == ENABLED && OPTFLOW == ENABLED
         // check range finder if optflow enabled
-        if (optflow.enabled() && !sonar.pre_arm_check()) {
+        if (optflow.enabled() && !rangefinder.pre_arm_check()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check range finder");
             }
@@ -334,8 +334,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         #endif // HELI_FRAME
 
         // check for missing terrain data
-        if (!pre_arm_terrain_check()) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Terrain data");
+        if (!pre_arm_terrain_check(display_failure)) {
             return false;
         }
     }
@@ -493,7 +492,7 @@ bool Copter::pre_arm_ekf_attitude_check()
 }
 
 // check we have required terrain data
-bool Copter::pre_arm_terrain_check()
+bool Copter::pre_arm_terrain_check(bool display_failure)
 {
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // succeed if not using terrain data
@@ -501,10 +500,21 @@ bool Copter::pre_arm_terrain_check()
         return true;
     }
 
+    // check if terrain following is enabled, using a range finder but RTL_ALT is higher than rangefinder's max range
+    // To-Do: modify RTL return path to fly at or above the RTL_ALT and remove this check
+    if ((rangefinder.num_sensors() > 0) && (g.rtl_altitude > rangefinder.max_distance_cm())) {
+        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: RTL_ALT above rangefinder max range");
+        return false;
+    }
+
     // show terrain statistics
     uint16_t terr_pending, terr_loaded;
     terrain.get_statistics(terr_pending, terr_loaded);
-    return (terr_pending <= 0);
+    bool have_all_data = (terr_pending <= 0);
+    if (!have_all_data && display_failure) {
+        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Terrain data");
+    }
+    return have_all_data;
 #else
     return true;
 #endif
@@ -662,8 +672,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // check for missing terrain data
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
-        if (!pre_arm_terrain_check()) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Terrain data");
+        if (!pre_arm_terrain_check(display_failure)) {
             return false;
         }
     }

@@ -34,7 +34,7 @@ template <class T>
 inline bool is_zero(const T fVal1) {
     static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
                   "Template parameter not of type float");
-    return fabsf(fVal1) < std::numeric_limits<T>::epsilon() ? true : false;
+    return fabsf(static_cast<float>(fVal1)) < FLT_EPSILON ? true : false;
 }
 
 /*

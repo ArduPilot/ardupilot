@@ -12,19 +12,21 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(PERF_LTTNG)
+
+#define TRACEPOINT_CREATE_PROBES
+#define TRACEPOINT_DEFINE
+
+#include <string.h>
 
 #include <AP_HAL/AP_HAL.h>
 
-#pragma GCC diagnostic ignored "-Wcast-align"
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && defined(PERF_LTTNG)
-#define TRACEPOINT_CREATE_PROBES
-#define TRACEPOINT_DEFINE
-#include "Perf_Lttng_TracePoints.h"
-
-#include <string.h>
-#include "Perf_Lttng.h"
 #include "AP_HAL_Linux.h"
+#include "Perf_Lttng_TracePoints.h"
+#include "Perf_Lttng.h"
 #include "Util.h"
+
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 using namespace Linux;
 

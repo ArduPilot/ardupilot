@@ -166,28 +166,54 @@ void Copter::guided_angle_control_start()
 }
 
 // guided_set_destination - sets guided mode's target destination
-void Copter::guided_set_destination(const Vector3f& destination)
+// Returns true if the fence is enabled and guided waypoint is within the fence
+// else return false if the waypoint is outside the fence
+bool Copter::guided_set_destination(const Vector3f& destination)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
         guided_pos_control_start();
     }
+
+#if AC_FENCE == ENABLED
+    // reject destination if outside the fence
+    if (!fence.check_destination_within_fence(pv_alt_above_home(destination.z)*0.01f, pv_distance_to_home_cm(destination)*0.01f)) {
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
+        // failure is propagated to GCS with NAK
+        return false;
+    }
+#endif
 
     // no need to check return status because terrain data is not used
     wp_nav.set_wp_destination(destination, false);
 
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+    return true;
 }
 
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
+// or if the fence is enabled and guided waypoint is outside the fence
 bool Copter::guided_set_destination(const Location_Class& dest_loc)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
         guided_pos_control_start();
     }
+
+#if AC_FENCE == ENABLED
+    // reject destination outside the fence.
+    // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
+    int32_t alt_target_cm;
+    if (dest_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_target_cm)) {
+        if (!fence.check_destination_within_fence(alt_target_cm*0.01f, get_distance_cm(ahrs.get_home(), dest_loc)*0.01f)) {
+            Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
+            // failure is propagated to GCS with NAK
+            return false;
+        }
+    }
+#endif
 
     if (!wp_nav.set_wp_destination(dest_loc)) {
         // failure to set destination can only be because of missing terrain data

@@ -1,10 +1,9 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include "SPIUARTDriver.h"
 
 #include <stdlib.h>
 #include <cstdio>
-#include "SPIUARTDriver.h"
+
+#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
 extern const AP_HAL::HAL& hal;
@@ -17,8 +16,8 @@ extern const AP_HAL::HAL& hal;
 #define debug(fmt, args ...)  do {hal.console->printf("[SPIUARTDriver]: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #define error(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
-#define debug(fmt, args ...)  
-#define error(fmt, args ...)  
+#define debug(fmt, args ...)
+#define error(fmt, args ...)
 #endif
 
 using namespace Linux;
@@ -125,7 +124,7 @@ void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
            debug("%s: wrong baudrate (%u) for SPI-driven device. setting default speed", __func__, b);
            break;
    }
-   
+
    _initialised = true;
 }
 
@@ -133,7 +132,7 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 {
     if (_external) {
         return UARTDriver::_write_fd(buf,size);
-    } 
+    }
 
     if (!sem_take_nonblocking()) {
         return 0;
@@ -148,9 +147,9 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     uint16_t ret = size;
 
     /* Since all SPI-transactions are transfers we need update
-     * the _readbuf. I do believe there is a way to encapsulate 
+     * the _readbuf. I do believe there is a way to encapsulate
      * this operation since it's the same as in the
-     * UARTDriver::write().  
+     * UARTDriver::write().
      */
 
     uint8_t *buffer = _buffer;
@@ -190,7 +189,7 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 
 
     return ret;
-    
+
 }
 
 static const uint8_t ff_stub[300] = {0xff};
@@ -205,10 +204,10 @@ int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
     }
 
     /* Make SPI transactions shorter. It can save SPI bus from keeping too
-     * long. It's essential for NavIO as MPU9250 is on the same bus and 
+     * long. It's essential for NavIO as MPU9250 is on the same bus and
      * doesn't like to be waiting. Making transactions more frequent but shorter
      * is a win.
-     */  
+     */
 
     if (n > 100) {
         n = 100;
@@ -238,5 +237,3 @@ void SPIUARTDriver::_timer_tick(void)
 
     _last_update_timestamp = AP_HAL::micros();
 }
-
-#endif

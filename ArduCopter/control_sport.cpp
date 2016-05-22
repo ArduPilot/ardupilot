@@ -107,9 +107,9 @@ void Copter::sport_run()
         // call attitude controller
         attitude_control.input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
 
-        // call throttle controller
-        if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-            // if sonar is ok, use surface tracking
+        // adjust climb rate using rangefinder
+        if (rangefinder_alt_ok()) {
+            // if rangefinder is ok, use surface tracking
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
         }
 

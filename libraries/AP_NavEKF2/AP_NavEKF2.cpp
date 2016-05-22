@@ -18,23 +18,23 @@
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
+#define ALT_NOISE_DEFAULT       3.0f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define GYRO_PNOISE_DEFAULT     3.0E-02f
+#define ACC_PNOISE_DEFAULT      6.0E-01f
+#define GBIAS_PNOISE_DEFAULT    1.0E-04f
+#define GSCALE_PNOISE_DEFAULT   1.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-03f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
+#define VEL_GATE_DEFAULT        500
+#define POS_GATE_DEFAULT        500
+#define HGT_GATE_DEFAULT        500
 #define MAG_GATE_DEFAULT        300
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
 #define CHECK_SCALER_DEFAULT    100
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
@@ -42,23 +42,23 @@
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       2.0f
+#define ALT_NOISE_DEFAULT       3.0f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define GYRO_PNOISE_DEFAULT     3.0E-02f
+#define ACC_PNOISE_DEFAULT      6.0E-01f
+#define GBIAS_PNOISE_DEFAULT    1.0E-04f
+#define GSCALE_PNOISE_DEFAULT   1.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-03f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
+#define VEL_GATE_DEFAULT        500
+#define POS_GATE_DEFAULT        500
+#define HGT_GATE_DEFAULT        500
 #define MAG_GATE_DEFAULT        300
 #define MAG_CAL_DEFAULT         2
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
 #define CHECK_SCALER_DEFAULT    100
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -66,23 +66,23 @@
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
+#define ALT_NOISE_DEFAULT       3.0f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define GYRO_PNOISE_DEFAULT     3.0E-02f
+#define ACC_PNOISE_DEFAULT      6.0E-01f
+#define GBIAS_PNOISE_DEFAULT    1.0E-04f
+#define GSCALE_PNOISE_DEFAULT   1.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-03f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        400
-#define MAG_GATE_DEFAULT        200
+#define VEL_GATE_DEFAULT        500
+#define POS_GATE_DEFAULT        500
+#define HGT_GATE_DEFAULT        500
+#define MAG_GATE_DEFAULT        300
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
 #define CHECK_SCALER_DEFAULT    150
 
 #else
@@ -90,23 +90,23 @@
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
+#define ALT_NOISE_DEFAULT       3.0f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    3.5E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define GYRO_PNOISE_DEFAULT     3.0E-02f
+#define ACC_PNOISE_DEFAULT      6.0E-01f
+#define GBIAS_PNOISE_DEFAULT    1.0E-04f
+#define GSCALE_PNOISE_DEFAULT   1.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-03f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
+#define VEL_GATE_DEFAULT        500
+#define POS_GATE_DEFAULT        500
+#define HGT_GATE_DEFAULT        500
 #define MAG_GATE_DEFAULT        300
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
 #define CHECK_SCALER_DEFAULT    100
 
 #endif // APM_BUILD_DIRECTORY
@@ -334,7 +334,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: GYRO_PNOISE
     // @DisplayName: Rate gyro noise (rad/s)
     // @Description: This control disturbance noise controls the growth of estimated error due to gyro measurement errors excluding bias. Increasing it makes the flter trust the gyro measurements less and other measurements more.
-    // @Range: 0.0001 0.01
+    // @Range: 0.0001 0.1
     // @Increment: 0.0001
     // @User: Advanced
     // @Units: rad/s
@@ -350,27 +350,27 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     AP_GROUPINFO("ACC_PNOISE", 25, NavEKF2, _accNoise, ACC_PNOISE_DEFAULT),
 
     // @Param: GBIAS_PNOISE
-    // @DisplayName: Rate gyro bias process noise (rad/s)
+    // @DisplayName: Rate gyro bias stability (rad/s/s)
     // @Description: This state  process noise controls growth of the gyro delta angle bias state error estimate. Increasing it makes rate gyro bias estimation faster and noisier.
-    // @Range: 0.0000001 0.00001
+    // @Range: 0.00001 0.001
     // @User: Advanced
-    // @Units: rad/s
+    // @Units: rad/s/s
     AP_GROUPINFO("GBIAS_PNOISE", 26, NavEKF2, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
 
     // @Param: GSCL_PNOISE
-    // @DisplayName: Rate gyro scale factor process noise (1/s)
+    // @DisplayName: Rate gyro scale factor stability (1/s)
     // @Description: This noise controls the rate of gyro scale factor learning. Increasing it makes rate gyro scale factor estimation faster and noisier.
-    // @Range: 0.0000001 0.00001
+    // @Range: 0.000001 0.001
     // @User: Advanced
     // @Units: 1/s
     AP_GROUPINFO("GSCL_PNOISE", 27, NavEKF2, _gyroScaleProcessNoise, GSCALE_PNOISE_DEFAULT),
 
     // @Param: ABIAS_PNOISE
-    // @DisplayName: Accelerometer bias process noise (m/s^2)
+    // @DisplayName: Accelerometer bias stability (m/s^3)
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
-    // @Units: m/s/s
+    // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_PNOISE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
     // @Param: MAG_PNOISE
@@ -499,7 +499,7 @@ void NavEKF2::check_log_write(void)
     }
 
     // this is an example of an ad-hoc log in EKF
-    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), 2.4f);
+    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
 }
 
 
@@ -962,7 +962,7 @@ void NavEKF2::setTouchdownExpected(bool val)
   7 = badly conditioned synthetic sideslip fusion
   7 = filter is not initialised
 */
-void NavEKF2::getFilterFaults(int8_t instance, uint8_t &faults)
+void NavEKF2::getFilterFaults(int8_t instance, uint16_t &faults)
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
