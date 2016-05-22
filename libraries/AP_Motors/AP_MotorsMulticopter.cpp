@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
     // @Values: 0.9:Low, 0.95:Default, 1.0:High
     // @User: Advanced
-    AP_GROUPINFO("SPIN_MAX", 9, AP_MotorsMulticopter, _thrust_curve_max, AP_MOTORS_SPIN_MAX_DEFAULT),
+    AP_GROUPINFO("SPIN_MAX", 9, AP_MotorsMulticopter, _spin_max, AP_MOTORS_SPIN_MAX_DEFAULT),
 
     // @Param: BAT_VOLT_MAX
     // @DisplayName: Battery voltage compensation maximum voltage
@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range
     // @Values: 0.0:Low, 0.15:Default, 0.3:High
     // @User: Advanced
-    AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, _thrust_curve_min, AP_MOTORS_SPIN_MIN_DEFAULT),
+    AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, _spin_min, AP_MOTORS_SPIN_MIN_DEFAULT),
 
 
     // @Param: SPIN_ARM
@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range
     // @Values: 0.0:Low, 0.1:Default, 0.2:High
     // @User: Advanced
-    AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _thrust_curve_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
+    AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _spin_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
 
     AP_GROUPEND
 };
@@ -248,9 +248,9 @@ float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) co
     }
 
     // scale to maximum thrust point
-    throttle_ratio *= _thrust_curve_max;
+    throttle_ratio *= _spin_max;
 
-    return constrain_float(throttle_ratio, 0.0f, _thrust_curve_max);
+    return constrain_float(throttle_ratio, 0.0f, _spin_max);
 }
 
 // update_lift_max from battery voltage - used for voltage compensation
@@ -321,12 +321,12 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 {
     thrust_in = constrain_float(thrust_in, 0, 1);
-    return get_pwm_output_min() + (get_pwm_output_max()-get_pwm_output_min()) * (_thrust_curve_min + (_thrust_curve_max-_thrust_curve_min)*apply_thrust_curve_and_volt_scaling(thrust_in));
+    return get_pwm_output_min() + (get_pwm_output_max()-get_pwm_output_min()) * (_spin_min + (_spin_max-_spin_min)*apply_thrust_curve_and_volt_scaling(thrust_in));
 }
 
 int16_t AP_MotorsMulticopter::calc_spin_up_to_pwm() const
 {
-    return get_pwm_min() + constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _thrust_curve_min * (get_pwm_max()-get_pwm_min());
+    return get_pwm_min() + constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min * (get_pwm_max()-get_pwm_min());
 }
 
 // get minimum or maximum pwm value that can be output to motors
@@ -420,8 +420,8 @@ void AP_MotorsMulticopter::output_logic()
                 }
             } else {    // _spool_desired == SPIN_WHEN_ARMED
                 float spin_up_armed_ratio = 0.0f;
-                if (_thrust_curve_min > 0.0f) {
-                    spin_up_armed_ratio = _thrust_curve_arm / _thrust_curve_min;
+                if (_spin_min > 0.0f) {
+                    spin_up_armed_ratio = _spin_arm / _spin_min;
                 }
                 _spin_up_ratio += constrain_float(spin_up_armed_ratio-_spin_up_ratio, -spool_step, spool_step);
             }
