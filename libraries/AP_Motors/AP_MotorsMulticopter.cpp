@@ -328,12 +328,12 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 
 int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 {
-    return constrain_int16((get_pwm_min() + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
-            ( get_pwm_max() - (get_pwm_min() + _min_throttle))), get_pwm_min() + _min_throttle, get_pwm_max());
+    return constrain_int16((get_pwm_output_min() + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
+            (get_pwm_output_max() - (get_pwm_output_min() + _min_throttle))), get_pwm_output_min() + _min_throttle, get_pwm_output_max());
 }
 
 // get minimum or maximum pwm value that can be output to motors
-int16_t AP_MotorsMulticopter::get_pwm_min() const
+int16_t AP_MotorsMulticopter::get_pwm_output_min() const
 {
     // return _pwm_min if both PWM_MIN and PWM_MAX parameters are defined and valid
     if ((_pwm_min > 0) && (_pwm_max > 0) && (_pwm_max > _pwm_min)) {
@@ -343,7 +343,7 @@ int16_t AP_MotorsMulticopter::get_pwm_min() const
 }
 
 // get maximum pwm value that can be output to motors
-int16_t AP_MotorsMulticopter::get_pwm_max() const
+int16_t AP_MotorsMulticopter::get_pwm_output_max() const
 {
     // return _pwm_max if both PWM_MIN and PWM_MAX parameters are defined and valid
     if ((_pwm_min > 0) && (_pwm_max > 0) && (_pwm_max > _pwm_min)) {
@@ -362,7 +362,7 @@ void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t rad
         _throttle_radio_max = radio_max;
     }
     // update _min_throttle
-    _min_throttle = (float)min_throttle * ((get_pwm_max() - get_pwm_min()) / 1000.0f);
+    _min_throttle = (float)min_throttle * ((get_pwm_output_max() - get_pwm_output_min()) / 1000.0f);
 }
 
 void AP_MotorsMulticopter::output_logic()
@@ -527,11 +527,11 @@ void AP_MotorsMulticopter::output_logic()
 }
 
 // passes throttle directly to all motors for ESC calibration.
-//   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_min() and 1 will send get_pwm_max()
+//   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
 void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float throttle_input)
 {
     if (armed()) {
-        uint16_t pwm_out = get_pwm_min() + constrain_float(throttle_input, 0.0f, 1.0f) * (get_pwm_max() - get_pwm_min());
+        uint16_t pwm_out = get_pwm_output_min() + constrain_float(throttle_input, 0.0f, 1.0f) * (get_pwm_output_max() - get_pwm_output_min());
         // send the pilot's input directly to each enabled motor
         hal.rcout->cork();
         for (uint16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -555,7 +555,7 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask)
             if (mask & (1U<<i)) {
                 motor_out = calc_thrust_to_pwm(thrust);
             } else {
-                motor_out = get_pwm_min();
+                motor_out = get_pwm_output_min();
             }
             rc_write(i, motor_out);
         }
