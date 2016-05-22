@@ -111,14 +111,29 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: This sets the min PWM output value that will ever be output to the motors, 0 = use input RC3_MIN
     // @Range: 0 2000
     // @User: Advanced
-    AP_GROUPINFO("PWM_MIN", 16, AP_MotorsMulticopter, _pwm_min, 0),
+    AP_GROUPINFO("PWM_MIN", 16, AP_MotorsMulticopter, _pwm_min, AP_MOTORS_PWM_MIN_DEFAULT),
 
     // @Param: PWM_MAX
     // @DisplayName: PWM output maximum
     // @Description: This sets the max PWM value that will ever be output to the motors, 0 = use input RC3_MAX
     // @Range: 0 2000
     // @User: Advanced
-    AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 0),
+    AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, AP_MOTORS_PWM_MAX_DEFAULT),
+
+    // @Param: SPIN_MIN
+    // @DisplayName: Motor Spin minimum
+    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range
+    // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @User: Advanced
+    AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, _thrust_curve_min, AP_MOTORS_SPIN_MIN_DEFAULT),
+
+
+    // @Param: SPIN_ARM
+    // @DisplayName: Motor Spin armed
+    // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range
+    // @Values: 0.0:Low, 0.1:Default, 0.2:High
+    // @User: Advanced
+    AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _thrust_curve_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
 
     AP_GROUPEND
 };
@@ -126,7 +141,6 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 // Constructor
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
-    _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
@@ -143,8 +157,8 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
 
-    // default throttle ranges (i.e. _min_throttle, _throttle_radio_min, _throttle_radio_max)
-    set_throttle_range(130, 1100, 1900);
+    // default throttle ranges (i.e. _throttle_radio_min, _throttle_radio_max)
+    set_throttle_range(1100, 1900);
 };
 
 // output - sends commands to the motors
@@ -221,8 +235,7 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
     _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
 
     // limit max throttle
-    float throttle_thrust_hover = get_hover_throttle_as_high_end_pct();
-    return throttle_thrust_hover + ((1.0-throttle_thrust_hover)*_throttle_limit);
+    return get_throttle_hover() + ((1.0-get_throttle_hover())*_throttle_limit);
 }
 
 // apply_thrust_curve_and_volt_scaling - returns throttle in the range 0 ~ 1
@@ -275,7 +288,7 @@ void AP_MotorsMulticopter::update_battery_resistance()
     } else {
         // update battery resistance when throttle is over hover throttle
         if ((_batt_timer < 400) && ((_batt_current_resting*2.0f) < _batt_current)) {
-            if (get_throttle() >= _hover_out) {
+            if (get_throttle() >= get_throttle_hover()) {
                 // filter reaches 90% in 1/4 the test time
                 _batt_resistance += 0.05f*(( (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting) ) - _batt_resistance);
                 _batt_timer += 1;
@@ -285,11 +298,6 @@ void AP_MotorsMulticopter::update_battery_resistance()
             }
         }
     }
-}
-
-float AP_MotorsMulticopter::get_hover_throttle_as_high_end_pct() const
-{
-    return (MAX(0,(float)_hover_out-_min_throttle) / (float)(1000-_min_throttle));
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const
@@ -313,8 +321,12 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 {
     thrust_in = constrain_float(thrust_in, 0, 1);
-    return constrain_int16((get_pwm_output_min() + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
-            (get_pwm_output_max() - (get_pwm_output_min() + _min_throttle))), get_pwm_output_min() + _min_throttle, get_pwm_output_max());
+    return get_pwm_output_min() + (get_pwm_output_max()-get_pwm_output_min()) * (_thrust_curve_min + (_thrust_curve_max-_thrust_curve_min)*apply_thrust_curve_and_volt_scaling(thrust_in));
+}
+
+int16_t AP_MotorsMulticopter::calc_spin_up_to_pwm() const
+{
+    return get_pwm_min() + constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _thrust_curve_min * (get_pwm_max()-get_pwm_min());
 }
 
 // get minimum or maximum pwm value that can be output to motors
@@ -339,10 +351,10 @@ int16_t AP_MotorsMulticopter::get_pwm_output_max() const
 
 // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 // also sets throttle channel minimum and maximum pwm
-void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t radio_min, int16_t radio_max)
+void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_max)
 {
     // sanity check
-    if ((radio_max > radio_min) && (min_throttle < (radio_max - radio_min))) {
+    if ((radio_max > radio_min)) {
         _throttle_radio_min = radio_min;
         _throttle_radio_max = radio_max;
     }
@@ -376,7 +388,7 @@ void AP_MotorsMulticopter::output_logic()
             }
 
             // set and increment ramp variables
-            _throttle_low_end_pct = 0.0f;
+            _spin_up_ratio = 0.0f;
             _throttle_thrust_max = 0.0f;
             break;
 
@@ -393,25 +405,25 @@ void AP_MotorsMulticopter::output_logic()
             // set and increment ramp variables
             float spool_step = 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
             if (_spool_desired == DESIRED_SHUT_DOWN){
-                _throttle_low_end_pct -= spool_step;
+                _spin_up_ratio -= spool_step;
                 // constrain ramp value and update mode
-                if (_throttle_low_end_pct <= 0.0f) {
-                    _throttle_low_end_pct = 0.0f;
+                if (_spin_up_ratio <= 0.0f) {
+                    _spin_up_ratio = 0.0f;
                     _multicopter_flags.spool_mode = SHUT_DOWN;
                 }
             } else if(_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
-                _throttle_low_end_pct += spool_step;
+                _spin_up_ratio += spool_step;
                 // constrain ramp value and update mode
-                if (_throttle_low_end_pct >= 1.0f) {
-                    _throttle_low_end_pct = 1.0f;
+                if (_spin_up_ratio >= 1.0f) {
+                    _spin_up_ratio = 1.0f;
                     _multicopter_flags.spool_mode = SPOOL_UP;
                 }
             } else {    // _spool_desired == SPIN_WHEN_ARMED
-                float spin_when_armed_low_end_pct = 0.0f;
-                if (_min_throttle > 0) {
-                    spin_when_armed_low_end_pct = (float)_spin_when_armed / _min_throttle;
+                float spin_up_armed_ratio = 0.0f;
+                if (_thrust_curve_min > 0.0f) {
+                    spin_up_armed_ratio = _thrust_curve_arm / _thrust_curve_min;
                 }
-                _throttle_low_end_pct += constrain_float(spin_when_armed_low_end_pct-_throttle_low_end_pct, -spool_step, spool_step);
+                _spin_up_ratio += constrain_float(spin_up_armed_ratio-_spin_up_ratio, -spool_step, spool_step);
             }
             _throttle_thrust_max = 0.0f;
             break;
@@ -433,7 +445,7 @@ void AP_MotorsMulticopter::output_logic()
             }
 
             // set and increment ramp variables
-            _throttle_low_end_pct = 1.0f;
+            _spin_up_ratio = 1.0f;
             _throttle_thrust_max += 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
 
             // constrain ramp value and update mode
@@ -462,7 +474,7 @@ void AP_MotorsMulticopter::output_logic()
             }
 
             // set and increment ramp variables
-            _throttle_low_end_pct = 1.0f;
+            _spin_up_ratio = 1.0f;
             _throttle_thrust_max = get_current_limit_max_throttle();
             break;
 
@@ -483,7 +495,7 @@ void AP_MotorsMulticopter::output_logic()
             }
 
             // set and increment ramp variables
-            _throttle_low_end_pct = 1.0f;
+            _spin_up_ratio = 1.0f;
             _throttle_thrust_max -= 1.0f/(AP_MOTORS_SPOOL_UP_TIME*_loop_rate);
 
             // constrain ramp value and update mode
