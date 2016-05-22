@@ -78,7 +78,7 @@ public:
     void                output_logic();
 
     // passes throttle directly to all motors for ESC calibration.
-    //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_min() and 1 will send get_pwm_max()
+    //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
     void                set_throttle_passthrough_for_esc_calibration(float throttle_input);
 
     // get_lift_max - get maximum lift ratio - for logging purposes only
@@ -143,8 +143,8 @@ protected:
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
 
     // get minimum or maximum pwm value that can be output to motors
-    int16_t             get_pwm_min() const;
-    int16_t             get_pwm_max() const;
+    int16_t             get_pwm_output_min() const;
+    int16_t             get_pwm_output_max() const;
 
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
