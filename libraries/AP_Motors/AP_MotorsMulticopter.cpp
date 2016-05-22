@@ -335,7 +335,7 @@ int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 // get minimum or maximum pwm value that can be output to motors
 int16_t AP_MotorsMulticopter::get_pwm_min() const
 {
-    // return _pwm_min if both PWM_MIN and PWM_MAX parmeters are defined and valid
+    // return _pwm_min if both PWM_MIN and PWM_MAX parameters are defined and valid
     if ((_pwm_min > 0) && (_pwm_max > 0) && (_pwm_max > _pwm_min)) {
         return _pwm_min;
     }
@@ -345,7 +345,7 @@ int16_t AP_MotorsMulticopter::get_pwm_min() const
 // get maximum pwm value that can be output to motors
 int16_t AP_MotorsMulticopter::get_pwm_max() const
 {
-    // return _pwm_max if both PWM_MIN and PWM_MAX parmeters are defined and valid
+    // return _pwm_max if both PWM_MIN and PWM_MAX parameters are defined and valid
     if ((_pwm_min > 0) && (_pwm_max > 0) && (_pwm_max > _pwm_min)) {
         return _pwm_max;
     }
