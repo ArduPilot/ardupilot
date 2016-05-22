@@ -233,7 +233,10 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
         return 1.0f;
     }
 
-    float batt_current_ratio = _batt_current/_batt_current_max;
+    // calculate the maximum current to prevent voltage sag below _batt_voltage_min
+    float batt_current_max = MIN(_batt_current_max, _batt_current + (_batt_voltage-_batt_voltage_min)/_batt_resistance);
+
+    float batt_current_ratio = _batt_current/batt_current_max;
 
     float loop_interval = 1.0f/_loop_rate;
     _throttle_limit += (loop_interval/(loop_interval+_batt_current_time_constant))*(1.0f - batt_current_ratio);
