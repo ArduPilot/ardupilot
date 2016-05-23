@@ -255,9 +255,9 @@ void Sub::init_ardupilot()
     //-----------------------------
     init_barometer(true);
 
-    // initialise sonar
-#if CONFIG_SONAR == ENABLED
-    init_sonar();
+    // initialise rangefinder
+#if RANGEFINDER_ENABLED == ENABLED
+    init_rangefinder();
 #endif
 
     // initialise AP_RPM library
