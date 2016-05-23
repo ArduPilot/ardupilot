@@ -55,6 +55,9 @@ public:
     // get lean angle max for pilot input that prioritizes altitude hold over lean angle
     float get_althold_lean_angle_max() const;
 
+    // Update Alt_Hold angle maximum
+    void update_althold_lean_angle_max(float throttle_in) override;
+
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 

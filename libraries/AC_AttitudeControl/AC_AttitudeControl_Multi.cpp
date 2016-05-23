@@ -150,21 +150,29 @@ AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehic
 // get lean angle max for pilot input that prioritises altitude hold over lean angle
 float AC_AttitudeControl_Multi::get_althold_lean_angle_max() const
 {
+    return ToDeg(_althold_lean_angle_max) * 100.0f;
+}
+
+// Update Alt_Hold angle maximum
+void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
+{
     // calc maximum tilt angle based on throttle
     float thr_max = _motors_multi.get_throttle_thrust_max();
 
     // divide by zero check
     if (is_zero(thr_max)) {
-        return 0.0f;
+        _althold_lean_angle_max = 0.0f;
+        return;
     }
 
-    return ToDeg(acos(constrain_float(_throttle_in_filt.get()/(0.9f * thr_max), 0.0f, 1.0f))) * 100.0f;
+    float althold_lean_angle_max = acos(constrain_float(_throttle_in/(AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
+    _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_TC_DEFAULT))*(_throttle_in-_althold_lean_angle_max);
 }
 
 void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
 {
     _throttle_in = throttle_in;
-    _throttle_in_filt.apply(throttle_in, _dt);
+    update_althold_lean_angle_max(throttle_in);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     if (apply_angle_boost) {
         // Apply angle boost
