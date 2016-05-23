@@ -46,7 +46,7 @@
 #define AC_ATTITUDE_CONTROL_MID_DEFAULT   0.5f    // manual throttle mix
 #define AC_ATTITUDE_CONTROL_MAX_DEFAULT   0.5f    // maximum throttle mix default
 
-#define AC_ATTITUDE_CONTROL_THR_LOW_CMP_DEFAULT   0.5f    // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
+#define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT 0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 
 class AC_AttitudeControl {
 public:
@@ -61,8 +61,8 @@ public:
         _angle_boost(0),
         _att_ctrl_use_accel_limit(true),
         _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ),
-    _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_LOW_CMP_DEFAULT),
-    _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_LOW_CMP_DEFAULT),
+        _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+        _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
         _aparm(aparm),
         _motors(motors)
