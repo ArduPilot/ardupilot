@@ -190,7 +190,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 void aux_servos_update_fn()
 {
 // Quads can use RC5 and higher as auxiliary channels
-#if (FRAME_CONFIG == QUAD_FRAME)
+#if (FRAME_CONFIG == QUAD_FRAME||FRAME_CONFIG == COAX_FRAME)
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
  #else // APM1, APM2, SITL

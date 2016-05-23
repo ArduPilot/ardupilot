@@ -16,6 +16,7 @@
  *  OCTA_QUAD_FRAME
  *  HELI_FRAME
  *  SINGLE_FRAME
+ *  COAX_FRAME
  */
 
 // uncomment the lines below to save on flash space if compiling for the APM using Arduino IDE.  Top items save the most flash space
