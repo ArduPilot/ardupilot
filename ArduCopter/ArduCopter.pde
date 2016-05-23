@@ -1828,20 +1828,32 @@ void update_throttle_mode(void)
     if(ap.do_flip)     // this is pretty bad but needed to flip in AP modes.
         return;
 
-    // do not run throttle controllers if motors disarmed
+#if FRAME_CONFIG == HELI_FRAME
+
+	if (control_mode == STABILIZE){
+		motors.stab_throttle = true;
+	} else {
+		motors.stab_throttle = false;
+	}
+    
+    // allow swash collective to move if we are in manual throttle modes, even if disarmed
+    if( !motors.armed() ) {
+        if ( !(throttle_mode == THROTTLE_MANUAL) && !(throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED)){
+            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
+            return;
+        }
+    }
+
+#else // HELI_FRAME
+
+// do not run throttle controllers if motors disarmed
     if( !motors.armed() ) {
         set_throttle_out(0, false);
         throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         set_target_alt_for_reporting(0);
         return;
     }
-
-#if FRAME_CONFIG == HELI_FRAME
-	if (control_mode == STABILIZE){
-		motors.stab_throttle = true;
-	} else {
-		motors.stab_throttle = false;
-	}
+    
 #endif // HELI_FRAME
 
     switch(throttle_mode) {
