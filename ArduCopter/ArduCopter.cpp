@@ -477,8 +477,6 @@ void Copter::one_hz_loop()
 
         // set all throttle channel settings
         motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
-        // set hover throttle
-        motors.set_throttle_hover((float)g.throttle_mid/1000.0f);
 #endif
     }
 
