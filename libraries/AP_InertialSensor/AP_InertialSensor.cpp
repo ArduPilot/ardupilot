@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @DisplayName: IMU Product ID
     // @Description: Which type of IMU is installed (read-only).
     // @User: Advanced
-    // @Values: 0:Unknown,1:APM1-1280,2:APM1-2560,88:APM2,3:SITL,4:PX4v1,5:PX4v2,256:Flymaple,257:Linux
+    // @Values: 0:Unknown,1:unused,2:unused,88:unused,3:SITL,4:PX4v1,5:PX4v2,256:unused,257:Linux
     AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _product_id,   0),
 
     /*
