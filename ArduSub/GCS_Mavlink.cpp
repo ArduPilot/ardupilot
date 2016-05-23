@@ -244,14 +244,14 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     }
 #endif
 
-#if CONFIG_SONAR == ENABLED
-    if (sonar.num_sensors() > 0) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (sonar.has_data()) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        }
-    }
+#if RANGEFINDER_ENABLED == ENABLED
+    if (rangefinder.num_sensors() > 0) {
+		 control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+		 control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+		 if (rangefinder.has_data()) {
+			 control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+		 }
+	 }
 #endif
 
     if (!ap.initialised || ins.calibrating()) {
@@ -388,17 +388,17 @@ void NOINLINE Sub::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
 void NOINLINE Sub::send_rangefinder(mavlink_channel_t chan)
 {
-    // exit immediately if sonar is disabled
-    if (!sonar.has_data()) {
+	// exit immediately if rangefinder is disabled
+	if (!rangefinder.has_data()) {
         return;
     }
     mavlink_msg_rangefinder_send(
             chan,
-            sonar.distance_cm() * 0.01f,
-            sonar.voltage_mv() * 0.001f);
+            rangefinder.distance_cm() * 0.01f,
+			rangefinder.voltage_mv() * 0.001f);
 }
 #endif
 
@@ -612,7 +612,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_RANGEFINDER:
-#if CONFIG_SONAR == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         sub.send_rangefinder(chan);
 #endif
@@ -1391,17 +1391,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
-            if (is_equal(packet.param1,2.0f)) {
-                // save first compass's offsets
-                sub.compass.set_and_save_offsets(0, packet.param2, packet.param3, packet.param4);
-                result = MAV_RESULT_ACCEPTED;
+        	{
+                uint8_t compassNumber = -1;
+                if (is_equal(packet.param1, 2.0f)) {
+                    compassNumber = 0;
+                } else if (is_equal(packet.param1, 5.0f)) {
+                    compassNumber = 1;
+                } else if (is_equal(packet.param1, 6.0f)) {
+                    compassNumber = 2;
+                }
+                if (compassNumber != (uint8_t) -1) {
+                    sub.compass.set_and_save_offsets(compassNumber, packet.param2, packet.param3, packet.param4);
+                    result = MAV_RESULT_ACCEPTED;
+                }
+                break;
             }
-            if (is_equal(packet.param1,5.0f)) {
-                // save secondary compass's offsets
-                sub.compass.set_and_save_offsets(1, packet.param2, packet.param3, packet.param4);
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (is_equal(packet.param1,1.0f)) {
@@ -1753,7 +1757,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             sub.guided_set_velocity(vel_vector);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            sub.guided_set_destination(pos_vector);
+        	if (!sub.guided_set_destination(pos_vector)) {
+        		result = MAV_RESULT_FAILED;
+            }
         } else {
             result = MAV_RESULT_FAILED;
         }
@@ -1822,7 +1828,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             sub.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            sub.guided_set_destination(pos_ned);
+        	if (!sub.guided_set_destination(pos_ned)) {
+                result = MAV_RESULT_FAILED;
+            }
         } else {
             result = MAV_RESULT_FAILED;
         }
@@ -1833,7 +1841,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
     {
         result = MAV_RESULT_ACCEPTED;
-        sub.sonar.handle_msg(msg);
+        sub.rangefinder.handle_msg(msg);
         break;
     }
 
@@ -1915,7 +1923,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_LANDING_TARGET:
         // configure or release parachute
         result = MAV_RESULT_ACCEPTED;
-        copter.precland.handle_msg(msg);
+        sub.precland.handle_msg(msg);
         break;
 #endif
 
