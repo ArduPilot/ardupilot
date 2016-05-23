@@ -67,7 +67,7 @@ void setup()
     motors.set_frame_orientation(AP_MOTORS_X_FRAME);
     motors.Init();
 #if HELI_TEST == 0
-    motors.set_throttle_range(130,1000,2000);
+    motors.set_throttle_range(1000,2000);
     motors.set_hover_throttle(500);
 #endif
     motors.enable();
