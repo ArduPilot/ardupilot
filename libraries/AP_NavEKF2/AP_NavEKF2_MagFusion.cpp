@@ -43,8 +43,6 @@ void NavEKF2_core::controlMagYawReset()
 
         if (hgtCheckPassed || toiletBowling) {
             firstMagYawInit = true;
-            // reset the timer used to prevent magnetometer fusion from affecting attitude until initial field learning is complete
-            magFuseTiltInhibit_ms =  imuSampleTime_ms;
             // Update the yaw  angle and earth field states using the magnetic field measurements
             Quaternion tempQuat;
             Vector3f eulerAngles;
@@ -62,14 +60,6 @@ void NavEKF2_core::controlMagYawReset()
     if (!firstMagYawInit && assume_zero_sideslip() && inFlight) {
         realignYawGPS();
         firstMagYawInit = true;
-    }
-
-    // inhibit the 3-axis mag fusion from modifying the tilt states for the first few seconds after a mag field reset
-    // to allow the mag states to converge and prevent disturbances in roll and pitch.
-    if (imuSampleTime_ms - magFuseTiltInhibit_ms < 5000) {
-        magFuseTiltInhibit = true;
-    } else {
-        magFuseTiltInhibit = false;
     }
 
 }
@@ -625,12 +615,6 @@ void NavEKF2_core::FuseMagnetometer()
         // correct the state vector
         for (uint8_t j= 0; j<=stateIndexLim; j++) {
             statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
-        }
-
-        // Inhibit corrections to tilt if requested. This enables mag states to settle after a reset without causing sudden changes in roll and pitch
-        if (magFuseTiltInhibit) {
-            stateStruct.angErr.x = 0.0f;
-            stateStruct.angErr.y = 0.0f;
         }
 
         // the first 3 states represent the angular misalignment vector. This is
