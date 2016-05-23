@@ -168,7 +168,6 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
     // do not let target alt get above limit
     if (_alt_max > 0 && _pos_target.z > _alt_max) {
         _pos_target.z = _alt_max;
-        _limit.pos_up = true;
     }
 
     // do not use z-axis desired velocity feed forward
