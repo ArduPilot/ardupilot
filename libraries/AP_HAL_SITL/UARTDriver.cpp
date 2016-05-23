@@ -307,6 +307,9 @@ void UARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
     if (!_connected) {
         ::printf("Opening %s\n", path);
         _fd = ::open(path, O_RDWR | O_CLOEXEC);
+        // use much smaller buffer sizes on real UARTs
+        _writebuffer.set_size(1024);
+        _readbuffer.set_size(512);
     }
 
     if (_fd == -1) {
