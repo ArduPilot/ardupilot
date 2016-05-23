@@ -7,6 +7,7 @@
 # To enable mkblctrl_+ startup add a /fs/microsd/APM/mkblctrl_+ file
 # To enable mkblctrl_x startup add a /fs/microsd/APM/mkblctrl_x file
 # To enable PWM on FMUv1 on ttyS1 add a /fs/microsd/APM/AUXPWM.en file
+# To enable SBUS1 output on px4io add a /fs/microsd/APM/sbus1_out file
 
 set deviceA /dev/ttyACM0
 
@@ -193,6 +194,11 @@ then
             echo "PX4IO update failed" >> $logfile
             tone_alarm MNGGG
         fi
+    fi
+    if [ -f /fs/microsd/APM/sbus1_out ]
+    then
+        echo "Setting up sbus1 output
+        px4io sbus1_out
     fi
 else
     echo "No PX4IO board found"
