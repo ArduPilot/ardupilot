@@ -426,7 +426,6 @@ bool QuadPlane::setup(void)
     motors->set_frame_orientation(frame_type);
     motors->Init();
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
-    motors->set_throttle_hover((float)g.throttle_mid/1000.0f);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     pid_accel_z.set_dt(loop_delta_t);
