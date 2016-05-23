@@ -125,14 +125,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     // @Range: 0.1 0.25
     // @User: Advanced
-    AP_GROUPINFO("THR_MIX_MIN", 16, AC_AttitudeControl_Multi, _thr_mix_min, AC_ATTITUDE_CONTROL_MIN_DEFAULT),
+    AP_GROUPINFO("THR_MIX_MIN", 4, AC_AttitudeControl_Multi, _thr_mix_min, AC_ATTITUDE_CONTROL_MIN_DEFAULT),
 
     // @Param: THR_MIX_MAX
     // @DisplayName: Throttle Mix Maximum
     // @Description: Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
     // @Range: 0.5 0.9
     // @User: Advanced
-    AP_GROUPINFO("THR_MIX_MAX", 17, AC_AttitudeControl_Multi, _thr_mix_max, AC_ATTITUDE_CONTROL_MAX_DEFAULT),
+    AP_GROUPINFO("THR_MIX_MAX", 5, AC_AttitudeControl_Multi, _thr_mix_max, AC_ATTITUDE_CONTROL_MAX_DEFAULT),
 
     AP_GROUPEND
 };
