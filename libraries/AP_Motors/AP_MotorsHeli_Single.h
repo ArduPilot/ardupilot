@@ -30,7 +30,7 @@
 #define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
 
 // default direct-drive variable pitch tail defaults
-#define AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT              500
+#define AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT              0.5
 #define AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME                  2
 #define AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME                 3
 
@@ -85,7 +85,7 @@ public:
 
     // calculate_armed_scalars - recalculates scalars that can change while armed
     void calculate_armed_scalars();
-    
+
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t get_motor_mask();
@@ -103,7 +103,7 @@ public:
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const;
-    
+
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -146,7 +146,7 @@ protected:
     // parameters
     AP_Int16        _servo1_pos;                // Angular location of swash servo #1
     AP_Int16        _servo2_pos;                // Angular location of swash servo #2
-    AP_Int16        _servo3_pos;                // Angular location of swash servo #3    
+    AP_Int16        _servo3_pos;                // Angular location of swash servo #3
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int8         _swash_type;                // Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
     AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
@@ -154,7 +154,7 @@ protected:
     AP_Int16        _phase_angle;               // Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
-    AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    AP_Float        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed
     RC_Channel      _swash_servo_1;             // swash plate servo #1
     RC_Channel      _swash_servo_2;             // swash plate servo #2
     RC_Channel      _swash_servo_3;             // swash plate servo #3

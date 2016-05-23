@@ -68,10 +68,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: RSC_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
-    // @Description: PWM passed to the external motor governor when external governor is enabled
-    // @Range: 0 1000
-    // @Units: PWM
-    // @Increment: 10
+    // @Description: Value passed to the external motor governor when external governor is enabled
+    // @Range: 0 1
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("RSC_SETPOINT", 7, AP_MotorsHeli, _rsc_setpoint, AP_MOTORS_HELI_RSC_SETPOINT),
 
@@ -110,32 +109,32 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Param: RSC_CRITICAL
     // @DisplayName: Critical Rotor Speed
     // @Description: Rotor speed below which flight is not possible
-    // @Range: 0 1000
-    // @Increment: 10
+    // @Range: 0 1
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("RSC_CRITICAL", 12, AP_MotorsHeli, _rsc_critical, AP_MOTORS_HELI_RSC_CRITICAL),
 
     // @Param: RSC_IDLE
     // @DisplayName: Rotor Speed Output at Idle
     // @Description: Rotor speed output while armed but rotor control speed is not engaged
-    // @Range: 0 500
-    // @Increment: 10
+    // @Range: 0 0.5
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
 
     // @Param: RSC_POWER_LOW
     // @DisplayName: Throttle Servo Low Power Position
     // @Description: Throttle output at zero collective pitch.
-    // @Range: 0 1000
-    // @Increment: 10
+    // @Range: 0 1
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("RSC_POWER_LOW", 14, AP_MotorsHeli, _rsc_power_low, AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT),
-    
+
     // @Param: RSC_POWER_HIGH
     // @DisplayName: Throttle Servo High Power Position
     // @Description: Throttle output at max collective pitch.
-    // @Range: 0 1000
-    // @Increment: 10
+    // @Range: 0 1
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("RSC_POWER_HIGH", 15, AP_MotorsHeli, _rsc_power_high, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
 
