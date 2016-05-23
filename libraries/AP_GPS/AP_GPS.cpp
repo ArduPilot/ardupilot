@@ -32,6 +32,7 @@
 #include "AP_GPS_SBP.h"
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
+#include "AP_GPS_MAV.h"
 #include "GPS_Backend.h"
 
 extern const AP_HAL::HAL &hal;
@@ -313,6 +314,12 @@ AP_GPS::detect_instance(uint8_t instance)
             _broadcast_gps_type("ERB", instance, dstate->last_baud);
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
         }
+        // user has to explicitly set the MAV type, do not use AUTO
+        // Do not try to detect the MAV type, assume its there
+        else if (_type[instance] == GPS_TYPE_MAV) {
+            _broadcast_gps_type("MAV", instance, dstate->last_baud);
+            new_gps = new AP_GPS_MAV(*this, state[instance], NULL);
+        }
 		else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
 			// prevent false detection of NMEA mode in
 			// a MTK or UBLOX which has booted in NMEA mode
@@ -459,6 +466,20 @@ AP_GPS::update(void)
 	// update notify with gps status. We always base this on the primary_instance
     AP_Notify::flags.gps_status = state[primary_instance].status;
     AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
+}
+
+/*
+  pass along a mavlink message (for MAV type)
+ */
+void
+AP_GPS::handle_msg(mavlink_message_t *msg)
+{
+    uint8_t i;
+    for (i=0; i<num_instances; i++) {
+        if ((drivers[i] != NULL) && (_type[i] != GPS_TYPE_NONE)) {
+            drivers[i]->handle_msg(msg);
+        }
+    }
 }
 
 /*
