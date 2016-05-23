@@ -92,8 +92,6 @@
 >>   - ***Board***: NavIO
 >> - [Emile Castelnuovo](https://github.com/emilecastelnuovo)
 >>   - ***Board***: VRBrain
->> - [Mike McCauley](#)
->>   - ***Board***: Flymaple
 >> - [Julien BERAUD](https://github.com/jberaud)
 >>   - ***Board***: Bebop & Bebop 2
 >> - [Pritam Ghanghas](https://github.com/pritamghanghas)
