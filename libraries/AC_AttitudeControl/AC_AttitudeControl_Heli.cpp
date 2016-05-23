@@ -235,11 +235,15 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 // get lean angle max for pilot input that prioritises altitude hold over lean angle
 float AC_AttitudeControl_Heli::get_althold_lean_angle_max() const
 {
-    // calc maximum tilt angle based on throttle
-    float ret = acosf(constrain_float(_throttle_in_filt.get()/0.9f, 0.0f, 1.0f));
-
     // TEMP: convert to centi-degrees for public interface
-    return degrees(ret) * 100.0f;
+    return degrees(_althold_lean_angle_max) * 100.0f;
+}
+
+// Update Alt_Hold angle maximum
+void AC_AttitudeControl_Heli::update_althold_lean_angle_max(float throttle_in)
+{
+    float althold_lean_angle_max = acos(constrain_float(_throttle_in/AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_THROTTLE_MAX, 0.0f, 1.0f));
+    _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_TC_DEFAULT))*(_throttle_in-_althold_lean_angle_max);
 }
 
 //
@@ -407,7 +411,6 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_rads)
 void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
 {
     _throttle_in = throttle_in;
-    _throttle_in_filt.apply(throttle_in, _dt);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     _motors.set_throttle(throttle_in);
     // Clear angle_boost for logging purposes

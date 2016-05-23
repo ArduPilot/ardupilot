@@ -40,7 +40,8 @@
 
 #define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
 
-#define AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ   1.0f    // filter (in hz) of throttle filter used to limit lean angle so that vehicle does not lose altitude
+#define AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_TC_DEFAULT   1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
+#define AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_THROTTLE_MAX 0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
 
 #define AC_ATTITUDE_CONTROL_MIN_DEFAULT   0.1f    // minimum throttle mix
 #define AC_ATTITUDE_CONTROL_MID_DEFAULT   0.5f    // manual throttle mix
@@ -60,7 +61,6 @@ public:
         _dt(dt),
         _angle_boost(0),
         _att_ctrl_use_accel_limit(true),
-        _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ),
         _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
@@ -197,6 +197,9 @@ public:
 
     // Enable or disable body-frame feed forward
     void accel_limiting(bool enable_or_disable);
+
+    // Update Alt_Hold angle maximum
+    virtual void update_althold_lean_angle_max(float throttle_in) = 0;
 
     // Set output throttle
     virtual void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) = 0;
@@ -341,7 +344,6 @@ protected:
     Vector3f            _ang_vel_target_rads;
 
     // throttle provided as input to attitude controller.  This does not include angle boost.
-    // Used only for logging.
     float               _throttle_in = 0.0f;
 
     // This represents the throttle increase applied for tilt compensation.
@@ -351,8 +353,8 @@ protected:
     // Specifies whether the attitude controller should use the acceleration limit
     bool                _att_ctrl_use_accel_limit;
 
-    // Filtered throttle input - used to limit lean angle when throttle is saturated
-    LowPassFilterFloat  _throttle_in_filt;
+    // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
+    float               _althold_lean_angle_max;
 
     float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
     float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
