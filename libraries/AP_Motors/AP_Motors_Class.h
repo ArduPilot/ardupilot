@@ -67,8 +67,8 @@ public:
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
     void                set_throttle_hover(float throttle_hover) { _throttle_hover = throttle_hover; }
 
-    // update the throttle input filter
-    void                update_throttle_hover() { _throttle_hover = _throttle_hover * 0.99f + get_throttle() * 0.01f; }
+    // update the throttle input filter.  should be called at 100hz
+    void                update_throttle_hover() { _throttle_hover = _throttle_hover * 0.999f + get_throttle() * 0.001f; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
