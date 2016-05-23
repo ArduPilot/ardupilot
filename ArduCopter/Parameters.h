@@ -280,7 +280,7 @@ public:
         k_param_rc_8,
         k_param_rc_10,
         k_param_rc_11,
-        k_param_throttle_min,
+        k_param_throttle_min,           // remove
         k_param_throttle_max,           // remove
         k_param_failsafe_throttle,
         k_param_throttle_fs_action,     // remove
@@ -414,7 +414,6 @@ public:
 
     // Throttle
     //
-    AP_Int16        throttle_min;
     AP_Int8         failsafe_throttle;
     AP_Int16        failsafe_throttle_value;
     AP_Int16        throttle_mid;
