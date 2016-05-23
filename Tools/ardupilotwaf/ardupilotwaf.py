@@ -366,25 +366,29 @@ def _select_programs_from_group(bld):
 
 def options(opt):
     g = opt.ap_groups['build']
+
     g.add_option('--program-group',
         action='append',
         default=[],
-        help='Select all programs that go in <PROGRAM_GROUP>/ for the ' +
-             'build. Example: `waf --program-group examples` builds all ' +
-             'examples. The special group "all" selects all programs.',
-    )
+        help='''
+Select all programs that go in <PROGRAM_GROUP>/ for the build. Example: `waf
+--program-group examples` builds all examples. The special group "all" selects
+all programs.
+''')
 
     g.add_option('--upload',
         action='store_true',
-        help='Upload applicable targets to a connected device. Not all ' +
-             'platforms may support this. Example: `waf copter --upload` ' +
-             'means "build arducopter and upload it to my board".',
-    )
+        help='''
+Upload applicable targets to a connected device. Not all platforms may support
+this. Example: `waf copter --upload` means "build arducopter and upload it to
+my board".
+''')
 
     g = opt.ap_groups['check']
+
     g.add_option('--check-verbose',
-                 action='store_true',
-                 help='Output all test programs')
+        action='store_true',
+        help='Output all test programs.')
 
 
 def build(bld):

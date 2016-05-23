@@ -52,29 +52,32 @@ def options(opt):
     opt.load('ardupilotwaf')
 
     g = opt.ap_groups['configure']
+
     boards_names = boards.get_boards_names()
     g.add_option('--board',
-                   action='store',
-                   choices=boards_names,
-                   default='sitl',
-                   help='Target board to build, choices are %s' % boards_names)
+        action='store',
+        choices=boards_names,
+        default='sitl',
+        help='Target board to build, choices are %s.' % boards_names)
 
     g.add_option('--no-submodule-update',
-                 dest='submodule_update',
-                 action='store_false',
-                 default=True,
-                 help='Don\'t update git submodules. Useful for building ' +
-                      'with submodules at specific revisions.')
+        dest='submodule_update',
+        action='store_false',
+        default=True,
+        help='''
+Don't update git submodules. Useful for building with submodules at specific
+revisions.
+''')
 
     g.add_option('--enable-benchmarks',
-                 action='store_true',
-                 default=False,
-                 help='Enable benchmarks')
+        action='store_true',
+        default=False,
+        help='Enable benchmarks.')
 
     g.add_option('--debug',
-                 action='store_true',
-                 default=False,
-                 help='Configure as debug variant')
+        action='store_true',
+        default=False,
+        help='Configure as debug variant.')
 
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
