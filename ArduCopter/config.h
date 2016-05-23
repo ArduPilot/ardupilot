@@ -253,7 +253,7 @@
  #ifndef COMPASS_OFFSETS_MAX
   # define COMPASS_OFFSETS_MAX          600         // PX4 onboard compass has high offsets
  #endif
-#else   // SITL, FLYMAPLE, etc
+#else   // SITL, etc
  #ifndef COMPASS_OFFSETS_MAX
   # define COMPASS_OFFSETS_MAX          500
  #endif
