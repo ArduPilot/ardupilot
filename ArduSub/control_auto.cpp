@@ -25,6 +25,12 @@ bool Sub::auto_init(bool ignore_checks)
     if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
 
+        // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce change of flips)
+        if (motors.armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
+            return false;
+        }
+
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
         if (auto_yaw_mode == AUTO_YAW_ROI) {
@@ -195,6 +201,7 @@ void Sub::auto_wp_start(const Location_Class& dest_loc)
 	if (!wp_nav.set_wp_destination(dest_loc)) {
 		// failure to set destination can only be because of missing terrain data
 		failsafe_terrain_on_event();
+		return;
 	}
 
     // initialise yaw
@@ -261,9 +268,9 @@ void Sub::auto_spline_start(const Location_Class& destination, bool stopped_at_s
 
     // initialise wpnav
     if (!wp_nav.set_spline_destination(destination, stopped_at_start, seg_end_type, next_destination)) {
-        // failure to set destination (likely because of missing terrain data)
-        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-        // To-Do: handle failure
+    	// failure to set destination can only be because of missing terrain data
+        failsafe_terrain_on_event();
+        return;
     }
 
     // initialise yaw

@@ -23,7 +23,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Sub::Sub(void) :
     flight_modes(&g.flight_mode1),
-    sonar_enabled(true),
     mission(ahrs, 
             FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
@@ -54,9 +53,7 @@ Sub::Sub(void) :
     frsky_telemetry(ahrs, battery),
 #endif
     climb_rate(0),
-    sonar_alt(0),
-    sonar_alt_health(0),
-    target_sonar_alt(0.0f),
+    target_rangefinder_alt(0.0f),
     baro_alt(0),
     baro_climbrate(0.0f),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
