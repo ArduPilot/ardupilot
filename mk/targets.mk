@@ -12,11 +12,8 @@ sitl-arm: all
 apm1 apm1-1280 apm2 apm2beta:
 	$(error $@ is deprecated on master branch; use master-AVR)
 
-flymaple: HAL_BOARD = HAL_BOARD_FLYMAPLE
-flymaple: TOOLCHAIN = ARM
-flymaple: all
-flymaple-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-flymaple-hil: flymaple
+flymaple flymaple-hil:
+	$(error $@ is deprecated on master branch; use master-AVR)
 
 linux: HAL_BOARD = HAL_BOARD_LINUX
 linux: TOOLCHAIN = NATIVE
