@@ -15,6 +15,7 @@
 #define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
 #define AP_MOTORS_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
+#define AP_MOTORS_THST_HOVER_DEFAULT    0.5f    // the estimated hover throttle, 0 ~ 1
 #define AP_MOTORS_SPIN_MIN_DEFAULT      0.15f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
 #define AP_MOTORS_SPIN_MAX_DEFAULT      0.95f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
 #define AP_MOTORS_SPIN_ARM_DEFAULT      0.10f   // throttle out ratio which produces the armed spin rate.  (i.e. 0 ~ 1 ) of the full throttle range

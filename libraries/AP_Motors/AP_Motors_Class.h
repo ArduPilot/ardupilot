@@ -168,7 +168,7 @@ protected:
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
-    float               _throttle_hover;            // the estimated hover throttle, 0 ~ +1
+    AP_Float            _throttle_hover;            // the estimated hover throttle, 0 ~ 1
     float               _throttle_ave_max;          // last throttle input from set_throttle_ave_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state

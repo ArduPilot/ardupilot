@@ -130,6 +130,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BAT_CURR_TC", 20, AP_MotorsMulticopter, _batt_current_time_constant, AP_MOTORS_BAT_CURR_TC_DEFAULT),
 
+    // @Param: THST_HOVER
+    // @DisplayName: Thrust Hover Value
+    // @Description: Motor thrust needed to hover (from 0 for linear to 1.0 for second order curve)
+    // @Range: 0.25 0.8
+    // @User: Advanced
+    AP_GROUPINFO("THST_HOVER", 21, AP_MotorsMulticopter, _throttle_hover, AP_MOTORS_THST_HOVER_DEFAULT),
+
     AP_GROUPEND
 };
 
