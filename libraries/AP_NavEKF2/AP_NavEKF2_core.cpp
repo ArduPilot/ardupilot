@@ -240,7 +240,6 @@ void NavEKF2_core::InitialiseVariables()
     optFlowFusionDelayed = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
-    magFuseTiltInhibit = false;
     posResetNE.zero();
     velResetNE.zero();
     hgtInnovFiltState = 0.0f;
