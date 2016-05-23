@@ -334,14 +334,14 @@ bool Plane::setup_failsafe_mixing(void)
             /*
               This is an OVERRIDE_CHAN channel. We want IO to trigger
               override with a channel input of over 1750. The px4io
-              code is setup for triggering below 10% of full range. To
-              map this to values above 1750 we need to reverse the
-              direction and set the rc range for this channel to 1000
-              to 1833 (1833 = 1000 + 750/0.9)
+              code is setup for triggering below 80% of the range below
+              trim. To  map this to values above 1750 we need to reverse
+              the direction and set the rc range for this channel to 1000
+              to 1813 (1812.5 = 1500 + 250/0.8)
              */
             config.rc_assignment = PX4IO_P_RC_CONFIG_ASSIGNMENT_MODESWITCH;
             config.rc_reverse = true;
-            config.rc_max = 1833;
+            config.rc_max = 1813; // round 1812.5 up to grant > 1750
             config.rc_min = 1000;
             config.rc_trim = 1500;
         } else {
