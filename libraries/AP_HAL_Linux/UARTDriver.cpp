@@ -27,6 +27,8 @@
 #include "UARTQFlight.h"
 #include "UDPDevice.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
@@ -518,7 +520,9 @@ bool UARTDriver::_write_pending_bytes(void)
     uint16_t _tail;
     uint16_t available_bytes = BUF_AVAILABLE(_writebuf);
     n = available_bytes;
-    if (_packetise && n > 0 && _writebuf[_writebuf_head] != 254) {
+    if (_packetise && n > 0 &&
+        (_writebuf[_writebuf_head] != MAVLINK_STX_MAVLINK1 &&
+         _writebuf[_writebuf_head] != MAVLINK_STX)) {
         /*
           we have a non-mavlink packet at the start of the
           buffer. Look ahead for a MAVLink start byte, up to 256 bytes
@@ -527,7 +531,8 @@ bool UARTDriver::_write_pending_bytes(void)
         uint16_t limit = n>256?256:n;
         uint16_t i;
         for (i=0; i<limit; i++) {
-            if (_writebuf[(_writebuf_head + i) % _writebuf_size] == 254) {
+            uint8_t b = _writebuf[(_writebuf_head + i) % _writebuf_size];
+            if (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX) {
                 n = i;
                 break;
             }
@@ -537,24 +542,34 @@ bool UARTDriver::_write_pending_bytes(void)
             n = limit;
         }
     }
-    if (_packetise && n > 0 && _writebuf[_writebuf_head] == 254) {
+    const uint8_t b = _writebuf[_writebuf_head];
+    if (_packetise && n > 0 &&
+        (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX)) {
+        uint8_t min_length = (b == MAVLINK_STX_MAVLINK1)?8:12;
         // this looks like a MAVLink packet - try to write on
         // packet boundaries when possible
-        if (n < 8) {
+        if (n < min_length) {
+            // we need to wait for more data to arrive
             n = 0;
         } else {
             // the length of the packet is the 2nd byte, and mavlink
             // packets have a 6 byte header plus 2 byte checksum,
             // giving len+8 bytes
-            uint16_t ofs = (_writebuf_head + 1) % _writebuf_size;
-            uint8_t len = _writebuf[ofs];
-            if (n < len+8) {
+            uint8_t len = _writebuf[(_writebuf_head + 1) % _writebuf_size];
+            if (b == MAVLINK_STX) {
+                // check for signed packet with extra 13 bytes
+                uint8_t incompat_flags = _writebuf[(_writebuf_head + 2) % _writebuf_size];
+                if (incompat_flags & MAVLINK_IFLAG_SIGNED) {
+                    min_length += MAVLINK_SIGNATURE_BLOCK_LEN;
+                }
+            }
+            if (n < len+min_length) {
                 // we don't have a full packet yet
                 n = 0;
-            } else if (n > len+8) {
+            } else if (n > len+min_length) {
                 // send just 1 packet at a time (so MAVLink packets
                 // are aligned on UDP boundaries)
-                n = len+8;
+                n = len+min_length;
             }
         }
     }
