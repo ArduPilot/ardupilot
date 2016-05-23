@@ -26,7 +26,6 @@ help:
 	@echo "  pxf - the Beagle Bone Black (BBB) + PXF cape combination"
 	@echo "  navio - the RaspberryPi + NavIO cape combination"
 	@echo "  linux - a generic Linux build"
-	@echo "  flymaple - the FlyMaple board"
 	@echo "  vrbrain - the VRBrain boards"
 	@echo "  sitl - the SITL Software In The Loop simulation"
 	@echo "  bbbmini - the Beagle Bone Black mini"
