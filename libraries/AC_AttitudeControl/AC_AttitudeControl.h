@@ -284,9 +284,6 @@ protected:
     // Run the yaw angular velocity PID controller and return the output
     virtual float rate_bf_to_motor_yaw(float rate_target_rads);
 
-    // Compute a throttle value that is adjusted for the tilt angle of the vehicle
-    virtual float get_throttle_ave_max(float throttle_in) = 0;
-
     // Return angle in radians to be added to roll angle. Used by heli to counteract
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
     virtual float get_roll_trim_rad() { return 0;}
