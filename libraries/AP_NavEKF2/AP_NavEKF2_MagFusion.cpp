@@ -57,13 +57,6 @@ void NavEKF2_core::controlMagYawReset()
         }
     }
 
-    // In-Flight yaw alignment for vehicles that can use a zero sideslip assumption (Planes)
-    // and are not using a compass
-    if (!yawAlignComplete && assume_zero_sideslip() && inFlight) {
-        realignYawGPS();
-        firstMagYawInit = yawAlignComplete;
-    }
-
     // In-Flight reset for vehicles that can use a zero sideslip assumption (Planes)
     // this is done to protect against unrecoverable heading alignment errors due to compass faults
     if (!firstMagYawInit && assume_zero_sideslip() && inFlight) {
@@ -212,9 +205,12 @@ void NavEKF2_core::SelectMagFusion()
             magTestRatio.zero();
             yawTestRatio = 0.0f;
             lastSynthYawTime_ms = imuSampleTime_ms;
-        } else {
-            // Control reset of yaw and magnetic field states
-            controlMagYawReset();
+        }
+        // In-Flight yaw alignment for vehicles that can use a zero sideslip assumption (Planes)
+        // and are not using a compass
+        if (!yawAlignComplete && assume_zero_sideslip() && inFlight) {
+            realignYawGPS();
+            firstMagYawInit = yawAlignComplete;
         }
     }
 
