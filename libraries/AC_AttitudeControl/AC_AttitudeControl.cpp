@@ -393,17 +393,6 @@ void AC_AttitudeControl::attitude_controller_run_quat(const Quaternion& att_targ
     _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
-void AC_AttitudeControl::rate_controller_run()
-{
-    // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
-    update_throttle_rpy_mix();
-
-    _motors.set_roll(rate_bf_to_motor_roll(_ang_vel_target_rads.x));
-    _motors.set_pitch(rate_bf_to_motor_pitch(_ang_vel_target_rads.y));
-    _motors.set_yaw(rate_bf_to_motor_yaw(_ang_vel_target_rads.z));
-    control_monitor_update();
-}
-
 void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads)
 {
     float sin_theta = sinf(euler_rad.y);
