@@ -6,16 +6,7 @@
 #include "AP_BattMonitor_Backend.h"
 
 // default pins and dividers
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-// Flymaple board pin 20 is connected to the external battery supply
-// via a 24k/5.1k voltage divider. The schematic claims the divider is 25k/5k,
-// but the actual installed resistors are not so.
-// So the divider ratio is 5.70588 = (24000+5100)/5100
- # define AP_BATT_VOLT_PIN                  20
- # define AP_BATT_CURR_PIN                  19
- # define AP_BATT_VOLTDIVIDER_DEFAULT       5.70588f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
  // px4
  # define AP_BATT_VOLT_PIN                  100
  # define AP_BATT_CURR_PIN                  101
