@@ -59,7 +59,7 @@ TRACEPOINT_EVENT(
     )
 )
 
-#endif /* _HELLO_TP_H */
+#endif
 
 #include <lttng/tracepoint-event.h>
 
