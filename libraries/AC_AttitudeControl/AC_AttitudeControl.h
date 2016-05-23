@@ -285,9 +285,6 @@ protected:
     virtual float rate_bf_to_motor_yaw(float rate_target_rads);
 
     // Compute a throttle value that is adjusted for the tilt angle of the vehicle
-    virtual float get_throttle_boosted(float throttle_in) = 0;
-
-    // Compute a throttle value that is adjusted for the tilt angle of the vehicle
     virtual float get_throttle_ave_max(float throttle_in) = 0;
 
     // Return angle in radians to be added to roll angle. Used by heli to counteract
