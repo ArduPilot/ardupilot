@@ -74,6 +74,8 @@ public:
     // get_throttle_rpy_mix - get low throttle compensation value
     bool is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
+    // run lowest level body-frame rate controller and send outputs to the motors
+    void rate_controller_run();
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
