@@ -67,7 +67,7 @@ void setup()
     motors.set_frame_orientation(AP_MOTORS_X_FRAME);
     motors.Init();
 #if HELI_TEST == 0
-    motors.set_throttle_range(130,1000,2000);
+    motors.set_throttle_range(1000,2000);
     motors.set_hover_throttle(500);
 #endif
     motors.enable();
@@ -167,9 +167,6 @@ void stability_test()
                     motors.set_yaw(yaw_in/4500.0f);
                     motors.set_throttle(throttle_in);
                     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-#if HELI_TEST == 0
-                    motors.set_throttle_mix_mid();
-#endif
                     update_motors();
                     avg_out = ((hal.rcout->read(0) + hal.rcout->read(1) + hal.rcout->read(2) + hal.rcout->read(3))/4);
                     // display input and output
