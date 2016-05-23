@@ -275,6 +275,7 @@ _options_for_frame = {
     "calibration": {
         "extra_mavlink_cmds": "module load sitl_calibration;",
     },
+    # COPTER
     "+": {
         "waf_target": "bin/arducopter-quad",
         "default_params_filename": "copter_params.parm"
@@ -288,24 +289,8 @@ _options_for_frame = {
         "waf_target": "bin/arducopter-quad",
         # this param set FRAME doesn't actually work because mavproxy
         # won't set a parameter unless it knows of it, and the param fetch happens asynchronously
-        "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
-        "default_params_filename": "copter_params.parm"
-    },
-    "heli-dual": {
-        "make_target": "sitl-heli-dual",
-        "waf_target": "bin/arducopter-coax", # is this correct? -pb201604301447
-    },
-    "heli-compound": {
-        "make_target": "sitl-heli-compound",
-        "waf_target": "bin/arducopter-coax", # is this correct? -pb201604301447
-    },
-    "IrisRos": {
         "default_params_filename": "copter_params.parm",
-        "waf_target": "bin/arducopter-quad",
-    },
-    "Gazebo": {
-        "default_params_filename": "copter_params.parm",
-        "waf_target": "bin/arducopter-quad",
+        "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;"
     },
     "hexa": {
 	"make_target": "sitl-hexa",
@@ -327,25 +312,30 @@ _options_for_frame = {
         "waf_target": "bin/arducopter-y6",
         "default_params_filename": "y6_params.parm",
     },
-    "firefly": {
-        "default_params_filename": "firefly.parm",
-        "waf_target": "bin/arducopter-firefly",
+    # COPTER TYPES
+    "IrisRos": {
+        "waf_target": "bin/arducopter-quad",
+        "default_params_filename": "copter_params.parm",
     },
+    "firefly": {
+        "waf_target": "bin/arducopter-firefly",
+        "default_params_filename": "firefly.parm",
+    },
+    # HELICOPTER
     "heli": {
-	"make_target": "sitl-heli",
+	    "make_target": "sitl-heli",
         "waf_target": "bin/arducopter-heli",
         "default_params_filename": "Helicopter.parm",
     },
-    "last_letter": {
-        "waf_target": "bin/arduplane",
+    "heli-dual": {
+        "make_target": "sitl-heli-dual",
+        "waf_target": "bin/arducopter-coax", # is this correct? -pb201604301447
     },
-    "CRRCSim": {
-        "waf_target": "bin/arduplane",
+    "heli-compound": {
+        "make_target": "sitl-heli-compound",
+        "waf_target": "bin/arducopter-coax", # is this correct? -pb201604301447
     },
-    "jsbsim": {
-        "waf_target": "bin/arduplane",
-        "default_params_filename": "ArduPlane.parm",
-    },
+    # PLANE
     "quadplane-tilttri" : {
         "build_target" : "sitl-tri",
         "default_params_filename": "quadplane-tilttri.parm",
@@ -366,9 +356,25 @@ _options_for_frame = {
         "waf_target": "bin/arduplane",
         "default_params_filename": "plane.parm",
     },
+    # ROVER
     "rover": {
         "waf_target": "bin/ardurover",
         "default_params_filename": "Rover.parm",
+    },
+    # SIM
+    "Gazebo": {
+        "waf_target": "bin/arducopter-quad",
+        "default_params_filename": "copter_params.parm",
+    },
+    "last_letter": {
+        "waf_target": "bin/arduplane",
+    },
+    "CRRCSim": {
+        "waf_target": "bin/arduplane",
+    },
+    "jsbsim": {
+        "waf_target": "bin/arduplane",
+        "default_params_filename": "ArduPlane.parm",
     },
 }
 
