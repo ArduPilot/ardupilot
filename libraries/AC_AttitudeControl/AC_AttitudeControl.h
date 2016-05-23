@@ -204,19 +204,6 @@ public:
     // Set output throttle and disable stabilization
     void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
 
-    // set_throttle_rpy_mix - set desired throttle_thr_mix (actual throttle_thr_mix is slewed towards this value over 1~2 seconds)
-    //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
-    //  has no effect when throttle is above hover throttle
-    void                set_throttle_mix_min() { _throttle_rpy_mix_desired = _thr_mix_min; }
-    void                set_throttle_mix_mid() { _throttle_rpy_mix_desired = AC_ATTITUDE_CONTROL_MID_DEFAULT; }
-    void                set_throttle_mix_max() { _throttle_rpy_mix_desired = _thr_mix_max; }
-
-    // get_throttle_rpy_mix - get low throttle compensation value
-    bool                is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
-
-    // update_throttle_rpy_mix - updates thr_low_comp value towards the target
-    virtual void update_throttle_rpy_mix() = 0;
-
     // get throttle passed into attitude controller (i.e. throttle_in provided to set_throttle_out)
     float get_throttle_in() const { return _throttle_in; }
 
@@ -320,9 +307,6 @@ protected:
 
     // Enable/Disable angle boost
     AP_Int8             _angle_boost_enabled;
-
-    AP_Float            _thr_mix_min;           // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
-    AP_Float            _thr_mix_max;           // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
 
     // angle controller P objects
     AC_P                _p_angle_roll;
