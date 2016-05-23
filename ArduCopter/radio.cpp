@@ -32,7 +32,7 @@ void Copter::init_rc_in()
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_yaw->set_angle(4500);
-    channel_throttle->set_range(0, THR_MAX);
+    channel_throttle->set_range(0, 1000);
 
     channel_roll->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     channel_pitch->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
@@ -59,7 +59,6 @@ void Copter::init_rc_out()
     motors.Init();                                              // motor initialisation
 #if FRAME_CONFIG != HELI_FRAME
     motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
-    motors.set_throttle_hover((float)g.throttle_mid/1000.0f);
 #endif
 
     for(uint8_t i = 0; i < 5; i++) {

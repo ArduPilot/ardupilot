@@ -98,7 +98,7 @@ float Copter::get_look_ahead_yaw()
 //  should be called at 100hz
 void Copter::update_thr_average()
 {
-    // ensure throttle_average has been initialized
+    // ensure throttle_hover has been initialized
     if( is_zero(motors.get_throttle_hover()) ) {
         motors.set_throttle_hover(0.5f);
     }
@@ -279,7 +279,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 void Copter::set_accel_throttle_I_from_pilot_throttle(float pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_accel_z.set_integrator((pilot_throttle-throttle_average) * 1000.0f);
+    g.pid_accel_z.set_integrator((pilot_throttle-motors.get_throttle_hover()) * 1000.0f);
 }
 
 // updates position controller's maximum altitude using fence and EKF limits
