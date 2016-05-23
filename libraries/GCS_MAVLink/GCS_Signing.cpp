@@ -131,7 +131,7 @@ void GCS_MAVLINK::load_signing_key(void)
     signing.accept_unsigned_callback = accept_unsigned_callback;
 
     // if timestamp and key are all zero then we disable signing
-    bool all_zero = (signing.timestamp == 0);
+    bool all_zero = (key.timestamp == 0);
     for (uint8_t i=0; i<sizeof(key.secret_key); i++) {
         if (signing.secret_key[i] != 0) {
             all_zero = false;
