@@ -515,6 +515,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(single_servo_4,    "SS4_", RC_Channel),
 #endif
 
+#if FRAME_CONFIG ==     COAX_FRAME
+    // @Group: SS1_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    GGROUP(single_servo_1,    "SS1_", RC_Channel),
+    // @Group: SS2_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    GGROUP(single_servo_2,    "SS2_", RC_Channel),
+#endif
 
     // RC channel
     //-----------
@@ -1109,6 +1117,17 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_MotorsSingle.cpp
     GOBJECT(motors, "MOT_",           AP_MotorsSingle),
+
+#elif FRAME_CONFIG == COAX_FRAME
+    // @Group: SS1_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    GGROUP(single_servo_1,    "SS1_", RC_Channel),
+    // @Group: SS2_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    GGROUP(single_servo_2,    "SS2_", RC_Channel),
+    // @Group: MOT_
+    // @Path: ../libraries/AP_Motors/AP_MotorsCoax.cpp
+    GOBJECT(motors, "MOT_",           AP_MotorsCoax),
 
 #else
     // @Group: MOT_

@@ -198,7 +198,7 @@ void aux_servos_update_fn()
  #endif
 
 // Tri's and Singles can use RC5, RC6, RC8 and higher
-#elif (FRAME_CONFIG == TRI_FRAME || FRAME_CONFIG == SINGLE_FRAME)
+#elif (FRAME_CONFIG == TRI_FRAME || FRAME_CONFIG == SINGLE_FRAME ||FRAME_CONFIG == COAX_FRAME)
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
  #else // APM1, APM2, SITL

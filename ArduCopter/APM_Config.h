@@ -5,7 +5,7 @@
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
-//#define FRAME_CONFIG QUAD_FRAME
+//#define FRAME_CONFIG COAX_FRAME
 /*
  *  options:
  *  QUAD_FRAME
@@ -16,6 +16,7 @@
  *  OCTA_QUAD_FRAME
  *  HELI_FRAME
  *  SINGLE_FRAME
+ *  COAX_FRAME
  */
 
 // uncomment the lines below to save on flash space if compiling for the APM using Arduino IDE.  Top items save the most flash space
