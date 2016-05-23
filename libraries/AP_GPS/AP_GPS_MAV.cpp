@@ -66,29 +66,28 @@ AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
     loc.lat = packet.lat;
     loc.lng = packet.lon;
     if (have_alt)
-        loc.alt = packet.alt/10;
+        loc.alt = packet.alt;
     state.location = loc;
     state.location.options = 0;
 
     if (have_hdop)
-        state.hdop = packet.hdop; //In centimeters
+        state.hdop = packet.hdop * 10; //In centimeters
 
     if (have_vdop)
-        state.vdop = packet.vdop; //In centimeters
+        state.vdop = packet.vdop * 10; //In centimeters
 
     if (have_vel) {
         Vector3f vel(packet.vn, packet.ve, packet.vd);
-        vel *= 0.01;
         state.velocity = vel;
     }
 
     if (have_cog)
-        state.ground_course = packet.cog * 0.01;
+        state.ground_course = packet.cog;
     else if (have_vel)
         state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
 
     if (have_sog)
-        state.ground_speed = packet.sog * 0.01;
+        state.ground_speed = packet.sog;
     else if (have_vel)
         state.ground_speed = norm(state.velocity.x, state.velocity.y);
 
