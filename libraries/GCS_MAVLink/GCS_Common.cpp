@@ -239,7 +239,8 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
                                loc.lng);
     }
     AP_AHRS_NavEKF &_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
-    if (_ahrs.get_NavEKF2().activeCores() > 0) {
+    if (_ahrs.get_NavEKF2().activeCores() > 0 &&
+        HAVE_PAYLOAD_SPACE(chan, AHRS3)) {
         _ahrs.get_NavEKF2().getLLH(loc);
         _ahrs.get_NavEKF2().getEulerAngles(-1,euler);
         mavlink_msg_ahrs3_send(chan,
@@ -578,6 +579,10 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(msg, &packet);
 
+    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+        return;
+    }
+    
     enum ap_var_type p_type;
     AP_Param *vp;
     char param_name[AP_MAX_NAME_SIZE+1];
@@ -1124,6 +1129,9 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         compass.get_count() <= 1) {
         return;
     }
+    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU2)) {
+        return;
+    }
     const Vector3f &accel2 = ins.get_accel(1);
     const Vector3f &gyro2 = ins.get_gyro(1);
     if (compass.get_count() >= 2) {
@@ -1147,6 +1155,9 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     if (ins.get_gyro_count() <= 2 &&
         ins.get_accel_count() <= 2 &&
         compass.get_count() <= 2) {
+        return;
+    }
+    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU3)) {
         return;
     }
     const Vector3f &accel3 = ins.get_accel(2);
@@ -1181,7 +1192,8 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
         (pressure - barometer.get_ground_pressure(0))*0.01f, // hectopascal
         barometer.get_temperature(0)*100); // 0.01 degrees C
 
-    if (barometer.num_instances() > 1) {
+    if (barometer.num_instances() > 1 &&
+        HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE2)) {
         pressure = barometer.get_pressure(1);
         mavlink_msg_scaled_pressure2_send(
             chan,
@@ -1191,7 +1203,8 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
             barometer.get_temperature(1)*100); // 0.01 degrees C        
     }
 
-    if (barometer.num_instances() > 2) {
+    if (barometer.num_instances() > 2 &&
+        HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE3)) {
         pressure = barometer.get_pressure(2);
         mavlink_msg_scaled_pressure3_send(
             chan,
