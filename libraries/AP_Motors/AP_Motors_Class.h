@@ -35,6 +35,9 @@
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
+// hover throttle
+#define AP_MOTORS_THST_HOVER_TC_DEFAULT 10.0f   // Time constant used to update estimated hover throttle, 0 ~ 1
+
 /// @class      AP_Motors
 class AP_Motors {
 public:
@@ -65,10 +68,9 @@ public:
     void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
     void                set_throttle_ave_max(float throttle_ave_max) { _throttle_ave_max = constrain_float(throttle_ave_max,0.0f,1.0f); };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
-    void                set_throttle_hover(float throttle_hover) { _throttle_hover = throttle_hover; }
 
     // update the throttle input filter.  should be called at 100hz
-    void                update_throttle_hover() { _throttle_hover = _throttle_hover * 0.999f + get_throttle() * 0.001f; }
+    void                update_throttle_hover(float loop_interval) { _throttle_hover = _throttle_hover + (loop_interval/(loop_interval+AP_MOTORS_THST_HOVER_TC_DEFAULT))*(_throttle_in-_throttle_hover); }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
