@@ -99,7 +99,7 @@ public:
         k_param_acro_trainer,
         k_param_pilot_velocity_z_max,
         k_param_circle_rate,                // deprecated - remove
-        k_param_sonar_gain,
+        k_param_rangefinder_gain,
         k_param_ch8_option,
         k_param_arming_check,
         k_param_sprayer,
@@ -122,7 +122,7 @@ public:
         k_param_serial1_baud,           // deprecated - remove
         k_param_serial2_baud,           // deprecated - remove
         k_param_land_repositioning,
-        k_param_sonar, // sonar object
+        k_param_rangefinder, // rangefinder object
         k_param_fs_ekf_thresh,
         k_param_terrain,
         k_param_acro_expo,
@@ -232,13 +232,13 @@ public:
         k_param_pack_capacity,  // deprecated - can be deleted
         k_param_compass_enabled,
         k_param_compass,
-        k_param_sonar_enabled_old, // deprecated
+        k_param_rangefinder_enabled_old, // deprecated
         k_param_frame_orientation,
         k_param_optflow_enabled,    // deprecated
         k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_auto_slew_rate,     // deprecated - can be deleted
-        k_param_sonar_type_old,     // deprecated
+        k_param_rangefinder_type_old,     // deprecated
         k_param_super_simple = 155,
         k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,   // deprecated - remove with next eeprom number change
@@ -406,7 +406,7 @@ public:
     AP_Int16        rtl_altitude;
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
-    AP_Float        sonar_gain;
+    AP_Float        rangefinder_gain;
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered

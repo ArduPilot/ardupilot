@@ -18,8 +18,8 @@ void Copter::update_precland()
     float final_alt = current_loc.alt;
 
     // use range finder altitude if it is valid
-    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-        final_alt = sonar_alt;
+    if (rangefinder_alt_ok()) {
+        final_alt = rangefinder_state.alt_cm;
     }
 
     copter.precland.update(final_alt);
