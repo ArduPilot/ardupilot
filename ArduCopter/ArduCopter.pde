@@ -415,6 +415,7 @@ static struct AP_System{
     uint8_t run_50hz_loop           : 1; // 7   // toggles the 100hz loop for 50hz
     uint8_t alt_sensor_flag         : 1; // 8   // used to track when to read sensors vs estimate alt
     uint8_t yaw_stopped             : 1; // 9   // Used to manage the Yaw hold capabilities
+    uint8_t critical_battery        : 1; // 10  // Used to track critical battery status
 
 } ap_system;
 
@@ -656,7 +657,8 @@ static int8_t CH7_wp_index;
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Voltage of battery, initialized above threshold for filter
-static float battery_voltage1 = LOW_VOLTAGE * 1.05;
+static float battery_voltage1 = LOW_VOLTAGE1 * 1.05;
+static float battery_voltage2 = LOW_VOLTAGE1 * 1.05;
 // refers to the instant amp draw – based on an Attopilot Current sensor
 static float current_amps1;
 // refers to the total amps drawn – based on an Attopilot Current sensor
@@ -1166,6 +1168,8 @@ static void medium_loop()
         if (g.battery_monitoring != 0) {
             read_battery();
         }
+        
+        check_Vcc();
 
         // Accel trims      = hold > 2 seconds
         // Throttle cruise  = switch less than 1 second
@@ -1593,7 +1597,6 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
         case ROLL_PITCH_AUTO:
         case ROLL_PITCH_STABLE_OF:
         case ROLL_PITCH_TOY:
-        case ROLL_PITCH_LOITER_PR:
             roll_pitch_initialised = true;
             break;
     }
@@ -1701,16 +1704,6 @@ void update_roll_pitch_mode(void)
         roll_pitch_toy();
         break;
         
-    case ROLL_PITCH_LOITER_PR:
-    
-        // LOITER does not get SIMPLE mode ability
-        
-        nav_roll                += constrain(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
-        nav_pitch               += constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
-
-        get_stabilize_roll(nav_roll);
-        get_stabilize_pitch(nav_pitch);
-        break;
     }
 	
 	#if FRAME_CONFIG != HELI_FRAME
@@ -1862,8 +1855,7 @@ void update_throttle_mode(void)
 
     switch(throttle_mode) {
 
-    case THROTTLE_MANUAL:
-        // completely manual throttle
+    case THROTTLE_MANUAL:                                                   // completely manual throttle
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
         }else{
@@ -1871,45 +1863,63 @@ void update_throttle_mode(void)
             pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
             set_throttle_out(pilot_throttle_scaled, false);
 
-            // update estimate of throttle cruise
-			#if FRAME_CONFIG == HELI_FRAME
-            update_throttle_cruise(motors.coll_out);
-			#else
-			update_throttle_cruise(pilot_throttle_scaled);
-			#endif  //HELI_FRAME
-			
-
-            // check if we've taken off yet
-            if (!ap.takeoff_complete && motors.armed()) {
+#if FRAME_CONFIG == HELI_FRAME
+            update_throttle_cruise(motors.coll_out);                        // update estimate of throttle cruise
+            if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
+                if (motors.rsc_mode > 0){
+                    if (motors.motor_runup_complete == true) {
+                        if (g.rc_3.control_in > g.throttle_cruise) {
+                            set_takeoff_complete(true);                     // we must be in the air by now
+                        }   
+                    }
+                } else {                                                    // If RSC is not routed through APM, there is no way
+                    if (g.rc_3.control_in > g.throttle_cruise) {            // to know if the motor is running or not.  What can   
+                        set_takeoff_complete(true);                         // we do? <shrug> R.L.
+                    } 
+                } 
+            }
+#else
+			update_throttle_cruise(g.rc_3.control_in);                      // update estimate of throttle cruise
+            if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
                 if (pilot_throttle_scaled > g.throttle_cruise) {
-                    // we must be in the air by now
-                    set_takeoff_complete(true);
+                    set_takeoff_complete(true);                             // we must be in the air by now
                 }
             }
+#endif  //HELI_FRAME 
+
         }
         break;
 
-    case THROTTLE_MANUAL_TILT_COMPENSATED:
-        // manual throttle but with angle boost
+    case THROTTLE_MANUAL_TILT_COMPENSATED:                                  // manual throttle but with angle boost
         if (g.rc_3.control_in <= 0) {
-            set_throttle_out(0, false); // no need for angle boost with zero throttle
+            set_throttle_out(0, false);                                     // no need for angle boost with zero throttle
         }else{
             pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
             set_throttle_out(pilot_throttle_scaled, true);
 
-            // update estimate of throttle cruise
-            #if FRAME_CONFIG == HELI_FRAME
-            update_throttle_cruise(motors.coll_out);
-			#else
-			update_throttle_cruise(pilot_throttle_scaled);
-			#endif  //HELI_FRAME
-
-            if (!ap.takeoff_complete && motors.armed()) {
+#if FRAME_CONFIG == HELI_FRAME
+            update_throttle_cruise(motors.coll_out);                        // update estimate of throttle cruise
+            if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
+                if (motors.rsc_mode > 0){
+                    if (motors.motor_runup_complete == true) {
+                        if (g.rc_3.control_in > g.throttle_cruise) {
+                            set_takeoff_complete(true);                     // we must be in the air by now
+                        }   
+                    }
+                } else {                                                    // If RSC is not routed through APM, there is no way
+                    if (g.rc_3.control_in > g.throttle_cruise) {            // to know if the motor is running or not.  What can   
+                        set_takeoff_complete(true);                         // we do? <shrug> R.L.
+                    } 
+                } 
+            }
+#else
+			update_throttle_cruise(g.rc_3.control_in);                      // update estimate of throttle cruise
+            if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
                 if (pilot_throttle_scaled > g.throttle_cruise) {
-                    // we must be in the air by now
-                    set_takeoff_complete(true);
+                    set_takeoff_complete(true);                             // we must be in the air by now
                 }
             }
+#endif  //HELI_FRAME 
         }
         break;
 
@@ -1973,9 +1983,20 @@ void update_throttle_mode(void)
 
     case THROTTLE_AUTO:
         // auto pilot altitude controller with target altitude held in next_WP.alt
+        
+#if FRAME_CONFIG == HELI_FRAME
+        if (motors.auto_armed() == true) {                   
+            get_throttle_althold_with_slew(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max); 
+        } else {
+            set_throttle_out(motors.stab_col_min*10, false);                                                    // Avoid harshing the mechanics pushing into the ground
+        }                                                                                                       // stab_col_min should gently push down on the ground
+        
+#else       
         if(motors.auto_armed() == true) {
             get_throttle_althold_with_slew(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
+#endif // HELI_FRAME        
+
         break;
 
     case THROTTLE_LAND:

@@ -15,7 +15,8 @@
 //#define DMP_ENABLED ENABLED
 //#define SECONDARY_DMP_ENABLED ENABLED       // allows running DMP in parallel with DCM for testing purposes
 
-//#define FRAME_CONFIG QUAD_FRAME
+#define CONFIG_APM_HARDWARE     APM_HARDWARE_APM2
+#define FRAME_CONFIG HELI_FRAME
 /*
  *  options:
  *  QUAD_FRAME
@@ -68,6 +69,3 @@
 #define USERHOOK_VARIABLES "UserVariables.h"
 
 //#define LOGGING_ENABLED		DISABLED
-
-// #define LOITER_REPOSITIONING    ENABLED                         // Experimental Do Not Use
-// #define LOITER_RP               ROLL_PITCH_LOITER_PR

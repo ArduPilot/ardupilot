@@ -254,7 +254,8 @@ public:
                                       // 2 = XLL (XL with 10m range)
                                       // 3 = HRLV
     AP_Int8         battery_monitoring;         // 0=disabled, 3=voltage only,
-                                                // 4=voltage and current
+                                                // 4=voltage and current,
+                                                // 5=dual voltage
     AP_Float        volt_div_ratio;
     AP_Float        curr_amp_per_volt;
     AP_Float        input_voltage;

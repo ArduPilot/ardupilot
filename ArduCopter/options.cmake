@@ -107,11 +107,11 @@ apm_option("BATTERY_EVENT" TYPE BOOL ADVANCED
     DESCRIPTION "Enable low voltage/ high discharge warnings?"
     DEFAULT OFF)
 
-apm_option("LOW_VOLTAGE" TYPE STRING ADVANCED
+apm_option("LOW_VOLTAGE1" TYPE STRING ADVANCED
     DESCRIPTION "Voltage to consider low (volts)?"
     DEFAULT "9.6")
 
-apm_option("VOLT_DIV_RATIO" TYPE STRING ADVANCED
+apm_option("VOLT1_DIV_RATIO" TYPE STRING ADVANCED
     DESCRIPTION "Voltage division ratio?"
     DEFAULT "3.56")
 

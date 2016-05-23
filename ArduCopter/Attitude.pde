@@ -288,8 +288,8 @@ void init_rate_controllers()
 {
    // initalise low pass filters on rate controller inputs
    // 1st parameter is time_step, 2nd parameter is time_constant
-   rate_roll_filter.set_cutoff_frequency(0.01, 2.0);
-   rate_pitch_filter.set_cutoff_frequency(0.01, 2.0);
+   rate_roll_filter.set_cutoff_frequency(0.01, 0.1);
+   rate_pitch_filter.set_cutoff_frequency(0.01, 0.1);
    // rate_yaw_filter.set_cutoff_frequency(0.01, 2.0);
    // other option for initialisation is rate_roll_filter.set_cutoff_frequency(<time_step>,<cutoff_freq>);
 }
@@ -319,7 +319,11 @@ get_heli_rate_roll(int32_t target_rate)
 			i		= g.pid_rate_roll.get_integrator();
 		}
 	} else {
-		i			= g.pid_rate_roll.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);		// Flybarless Helis get huge I-terms. I-term controls much of the rate
+		if ((ap.takeoff_complete == true) && (motors.motor_runup_complete == true)){
+            i = g.pid_rate_roll.get_i(rate_error, G_Dt);	                                // Flybarless Helis get huge I-terms. I-term controls much of the rate
+        } else {
+            i = g.pid_rate_roll.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// If we are still on the ground, use leaky I-term to avoid excessive build-up
+        }
 	}
 	
 	d = g.pid_rate_roll.get_d(rate_error, G_Dt);
@@ -371,7 +375,11 @@ get_heli_rate_pitch(int32_t target_rate)
 			i		= g.pid_rate_pitch.get_integrator();
 		}
 	} else {
-		i			= g.pid_rate_pitch.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// Flybarless Helis get huge I-terms. I-term controls much of the rate
+		if ((ap.takeoff_complete == true) && (motors.motor_runup_complete == true)){
+            i = g.pid_rate_pitch.get_i(rate_error, G_Dt);	                                // Flybarless Helis get huge I-terms. I-term controls much of the rate
+        } else {
+            i = g.pid_rate_pitch.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// If we are still on the ground, use leaky I-term to avoid excessive build-up
+        }
 	}
 	
 	d = g.pid_rate_pitch.get_d(rate_error, G_Dt);
@@ -843,8 +851,12 @@ get_throttle_accel(int16_t z_target_accel)
 #define THROTTLE_IN_MIDDLE 500          // the throttle mid point
 static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 {
-    int16_t throttle_out;
 
+#if FRAME_CONFIG == HELI_FRAME                                      // Don't use this for Trad_Helis, we already use Stab_Col
+    return throttle_control;
+#else
+    
+    int16_t throttle_out;
     // exit immediately in the simple cases
     if( throttle_control == 0 || g.throttle_mid == 500) {
         return throttle_control;
@@ -867,6 +879,7 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
     }
 
     return throttle_out;
+#endif // FRAME_CONFIG TRADHELI
 }
 
 // get_pilot_desired_climb_rate - transform pilot's throttle input to

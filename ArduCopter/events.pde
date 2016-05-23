@@ -62,31 +62,16 @@ static void failsafe_off_event()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_ERROR_RESOLVED);
 }
 
-static void low_battery_event(void)
+static void low_battery_event(uint8_t failure_type)
 {
     // failsafe check
     if (g.failsafe_battery_enabled && !ap.low_battery && motors.armed()) {
-        switch(control_mode) {
-            case STABILIZE:
-            case ACRO:
-                // if throttle is zero disarm motors
-                if (g.rc_3.control_in == 0) {
-                    init_disarm_motors();
-                }else{
-                    set_mode(LAND);
-                }
-                break;
-            case AUTO:
-                if(ap.home_is_set == true && home_distance > g.waypoint_radius) {
-                    set_mode(RTL);
-                }else{
-                    // We have no GPS or are very close to home so we will land
-                    set_mode(LAND);
-                }
-                break;
-            default:
-                set_mode(LAND);
-                break;
+        if ((g.rc_3.control_in == 0) && (control_mode <= ACRO)) {                   // if throttle is zero disarm motors
+            init_disarm_motors();
+        } else if(ap.home_is_set == true && home_distance > g.waypoint_radius) {
+            set_mode(RTL);
+        } else{                                                                     // We have no GPS or are very close to home so we will land
+            set_mode(LAND);
         }
     }
 
@@ -95,13 +80,26 @@ static void low_battery_event(void)
 
     // warn the ground station and log to dataflash
     gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_FAILSAFE_BATTERY);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, failure_type);
+}
 
-#if COPTER_LEDS == ENABLED
-    if ( bitRead(g.copter_leds_mode, 3) ) {         // Only Activate if a battery is connected to avoid alarm on USB only
-        piezo_on();
+static void critical_battery_event()
+{
+    if (g.failsafe_battery_enabled && !ap_system.critical_battery && motors.armed()) {
+        if ((g.rc_3.control_in == 0) && (control_mode <= ACRO)) {                   // if throttle is zero disarm motors
+            init_disarm_motors();
+        } else{                                                                     // Land immediately because we are about to crash anyway
+            set_mode(LAND);
+        }
     }
-#endif // COPTER_LEDS
+
+    // set the low battery flag
+    ap_system.critical_battery = true;
+
+    // warn the ground station and log to dataflash
+    // ToDo
+    // gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
+    // Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, failure_type);
 }
 
 

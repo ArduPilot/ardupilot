@@ -110,13 +110,13 @@ static void init_optflow()
 static void read_battery(void)
 {
     static uint8_t low_battery_counter = 0;
-
+    
     if(g.battery_monitoring == 0) {
         battery_voltage1 = 0;
         return;
     }
 
-    if(g.battery_monitoring == 3 || g.battery_monitoring == 4) {
+    if(g.battery_monitoring == 3 || g.battery_monitoring == 4 || g.battery_monitoring == 5) {
         static AP_AnalogSource_Arduino batt_volt_pin(g.battery_volt_pin);
         batt_volt_pin.set_pin(g.battery_volt_pin);
         battery_voltage1 = BATTERY_VOLTAGE(batt_volt_pin.read_average());
@@ -127,17 +127,53 @@ static void read_battery(void)
         current_amps1    = CURRENT_AMPS(batt_curr_pin.read_average());
         current_total1   += current_amps1 * 0.02778;            // called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
     }
+    if(g.battery_monitoring == 5) {
+        static AP_AnalogSource_Arduino batt_curr_pin(g.battery_curr_pin);
+        batt_curr_pin.set_pin(g.battery_curr_pin);
+        battery_voltage2 = BATTERY_VOLTAGE(batt_curr_pin.read_average());
+    }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
-    if (!ap.low_battery && ( battery_voltage1 < g.low_voltage || (g.battery_monitoring == 4 && current_total1 > g.pack_capacity))) {
+    if (!ap.low_battery && ( battery_voltage1 < g.low_voltage
+                            || (g.battery_monitoring == 4 && current_total1 > g.pack_capacity)
+                            || (g.battery_monitoring == 5 && battery_voltage2 < LOW_VOLTAGE2)
+                            )) {
         low_battery_counter++;
         if( low_battery_counter >= BATTERY_FS_COUNTER ) {
             low_battery_counter = BATTERY_FS_COUNTER;   // ensure counter does not overflow
-            low_battery_event();
+            low_battery_event(ERROR_CODE_FAILSAFE_BATTERY);
         }
     }else{
         // reset low_battery_counter in case it was a temporary voltage dip
         low_battery_counter = 0;
+    }    
+}
+
+// check_Vcc - check board voltage and invoke failsafe if necessary
+// called at 10hz
+#define Vcc_FS_COUNTER     20      // 20 iterations at 10hz is 2 seconds
+static void check_Vcc(void){
+    static uint8_t low_Vcc_counter = 0;
+    static uint8_t critical_Vcc_counter =0;
+    if  ( !ap.low_battery && (board_voltage() < Vcc_LOW )){
+        low_Vcc_counter++;
+        if (low_Vcc_counter >= Vcc_FS_COUNTER){
+            low_Vcc_counter = Vcc_FS_COUNTER;
+            low_battery_event(ERROR_CODE_FAILSAFE_Vcc);
+        }
+    } else {
+        // reset low_Vcc_counter in case it was a temporary voltage dip
+        low_Vcc_counter = 0;
+    }
+    if ( !ap_system.critical_battery && (board_voltage() < Vcc_CRITICAL)){
+        critical_Vcc_counter;
+        if (critical_Vcc_counter >= Vcc_FS_COUNTER){
+            critical_Vcc_counter = Vcc_FS_COUNTER;
+            critical_battery_event();
+        }
+    } else {
+        // reset low_Vcc_counter in case it was a temporary voltage dip
+        critical_Vcc_counter = 0;
     }
 }
 

@@ -242,10 +242,15 @@ void AP_MotorsHeli::output_armed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    if(_rc_throttle->control_in > 0) {
-        // we have pushed up the throttle
-        // remove safety
-        _auto_armed = true;
+
+    if (rsc_mode > 0){
+        if (motor_runup_complete == true && _rc_throttle->control_in > 0){      // If motor is running, we are cleared for auto
+            _auto_armed = true;                                                 // take-off
+        }
+    } else {   
+        if(_rc_throttle->control_in > 0) {                                      // We have pushed up the throttle. There is no good way
+            _auto_armed = true;                                                 // to know if the motor is running if RSC_Mode = 0
+        }
     }
 
     // for helis - armed or disarmed we allow servos to move
@@ -524,6 +529,17 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 void AP_MotorsHeli::rsc_control()
 
 {
+    if (armed() && (rsc_ramp >= rsc_ramp_up_rate)){                     // rsc_ramp will never increase if rsc_mode = 0
+        if (motor_runup_timer < MOTOR_RUNUP_TIME){                      // therefore motor_runup_complete can never be true
+            motor_runup_timer++;
+        } else {
+            motor_runup_complete = true;
+        }
+    } else {
+        motor_runup_complete = false;                                   // motor_runup_complete will go to false if we
+        motor_runup_timer = 0;                                          // disarm or wind down the motor
+    }
+
     switch ( rsc_mode ) {
 
     case AP_MOTORSHELI_RSC_MODE_CH8_PASSTHROUGH:
@@ -558,7 +574,7 @@ void AP_MotorsHeli::rsc_control()
             if (rsc_ramp < 0) {
                 rsc_ramp = 0;
             }
-            rsc_output = 1000;                                  //Just to be sure RSC output is 0
+            rsc_output = 1000;                                          //Just to be sure RSC output is 0
         }
         _rc->OutputCh(AP_MOTORS_HELI_EXT_RSC, rsc_output);
         break;
