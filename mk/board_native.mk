@@ -41,6 +41,13 @@ DEFINES        += -DPERF_LTTNG=1
 LIBS           += -llttng-ust -ldl
 endif
 
+HAVE_SYSTEMD=0
+
+ifeq ($(HAVE_SYSTEMD),1)
+DEFINES        += -DHAVE_SYSTEMD=1
+LIBS           += -lsystemd
+endif
+
 # disable as this breaks distcc
 #ifneq ($(SYSTYPE),Darwin)
 #LISTOPTS        =   -adhlns=$(@:.o=.lst)
