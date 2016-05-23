@@ -14,7 +14,7 @@ targets="navio"
 
 export PATH=/usr/lib/ccache:$PATH
 
-TESTS=$(find libraries -name 'Makefile' | grep -v FLYMAPLE | xargs -i dirname '{}')
+TESTS=$(find libraries -name 'Makefile' | xargs -i dirname '{}')
 
 export BUILDROOT="/tmp/examples.build"
 rm -rf $BUILDROOT
