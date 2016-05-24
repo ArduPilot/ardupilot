@@ -335,6 +335,11 @@ case $FRAME in
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/plane.parm"
 	;;
+    rover-skid)
+	BUILD_TARGET="sitl"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/Rover-skid.parm"
+	;;
     flightaxis*)
         MODEL="$FRAME"
         SITLRCIN=0
