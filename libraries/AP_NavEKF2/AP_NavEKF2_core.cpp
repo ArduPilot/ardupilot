@@ -1350,11 +1350,11 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         zeroRows(P,16,21);
         zeroCols(P,16,21);
         // set initial earth magnetic field variances
-        P[16][16] = sq(0.05f);
+        P[16][16] = sq(frontend->_magNoise);
         P[17][17] = P[16][16];
         P[18][18] = P[16][16];
         // set initial body magnetic field variances
-        P[19][19] = sq(0.05f);
+        P[19][19] = sq(frontend->_magNoise);
         P[20][20] = P[19][19];
         P[21][21] = P[19][19];
 
