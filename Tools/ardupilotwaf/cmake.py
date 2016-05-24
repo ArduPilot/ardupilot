@@ -142,6 +142,7 @@ class cmake_configure_task(Task.Task):
             u(self.__class__.__name__)
             u(self.env.get_flat('CMAKE_SRC_DIR'))
             u(self.env.get_flat('CMAKE_BLD_DIR'))
+            u(self.env.get_flat('CMAKE_VARS'))
             self.uid_ = m.digest()
 
         return self.uid_
