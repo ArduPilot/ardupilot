@@ -1333,6 +1333,8 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
             lastYawReset_ms = imuSampleTime_ms;
             // calculate an initial quaternion using the new yaw value
             initQuat.from_euler(roll, pitch, yaw);
+            // zero the attitude covariances becasue the corelations will now be invalid
+            zeroAttCovOnly();
         } else {
             initQuat = stateStruct.quat;
         }
