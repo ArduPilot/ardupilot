@@ -29,6 +29,8 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
+#define APM_LINUX_MAX_POLL_TIMEOUT_MS   100
+
 #define APM_LINUX_TIMER_PRIORITY        15
 #define APM_LINUX_UART_PRIORITY         14
 #define APM_LINUX_RCIN_PRIORITY         13
@@ -88,8 +90,8 @@ void Scheduler::init()
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
     sched_setscheduler(0, SCHED_FIFO, &param);
 
-    /* set barrier to N + 1 threads: worker threads + main */
-    unsigned n_threads = ARRAY_SIZE(sched_table) + 1;
+    /* set barrier to N + 2 threads: worker threads + main + poller */
+    unsigned n_threads = ARRAY_SIZE(sched_table) + 2;
     pthread_barrier_init(&_initialized_barrier, nullptr, n_threads);
 
     for (size_t i = 0; i < ARRAY_SIZE(sched_table); i++) {
@@ -103,6 +105,8 @@ void Scheduler::init()
 #if defined(DEBUG_STACK) && DEBUG_STACK
     register_timer_process(FUNCTOR_BIND_MEMBER(&Scheduler::_debug_stack, void));
 #endif
+
+    _poll_thread.start("sched-poller", SCHED_FIFO, APM_LINUX_MAIN_PRIORITY);
 }
 
 void Scheduler::_debug_stack()
@@ -453,4 +457,23 @@ bool Scheduler::SchedulerThread::_run()
     _sched._wait_all_threads();
 
     return PeriodicThread::_run();
+}
+
+void Scheduler::PollerThread::task()
+{
+    _sched._wait_all_threads();
+
+    while (true) {
+        _poller.poll(APM_LINUX_MAX_POLL_TIMEOUT_MS);
+    }
+}
+
+bool Scheduler::register_pollable(Linux::Pollable *p, const Linux::Poller::Event ev)
+{
+    return _poll_thread.register_pollable(p, ev);
+}
+
+void Scheduler::unregister_pollable(const Linux::Pollable *p)
+{
+    _poll_thread.unregister_pollable(p);
 }

@@ -114,6 +114,9 @@ int Poller::poll(int timeout_ms) const {
 }
 
 Pollable::~Pollable() {
+    auto scheduler = Linux::Scheduler::from(hal.scheduler);
+    scheduler->unregister_pollable(this);
+
     close(_fd);
 }
 
