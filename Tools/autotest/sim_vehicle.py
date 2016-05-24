@@ -366,6 +366,10 @@ _options_for_frame = {
         "waf_target": "bin/ardurover",
         "default_params_filename": "Rover.parm",
     },
+    "rover-skid": {
+        "waf_target": "bin/ardurover",
+        "default_params_filename": "Rover-skid.parm",
+    },
 }
 
 _default_waf_target = {
