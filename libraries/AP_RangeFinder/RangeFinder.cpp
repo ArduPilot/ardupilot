@@ -502,10 +502,9 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
     }
     if (type == RangeFinder_TYPE_LWI2C) {
-        if (AP_RangeFinder_LightWareI2C::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareI2C(*this, instance, state[instance]);
-            return;
+        if (_address[instance]) {
+            add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
+                hal.i2c_mgr->get_device(0, _address[instance])));
         }
     } 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
