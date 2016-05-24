@@ -90,6 +90,16 @@ public:
         return transfer(buf, sizeof(buf), nullptr, 0);
     }
 
+    /**
+     * Wrapper function over #transfer() to read a sequence of bytes from
+     * device. No value is written, differently from the #read_registers()
+     * method and hence doesn't include the read flag set by #set_read_flag()
+     */
+    bool read(uint8_t *recv, uint32_t recv_len)
+    {
+        return transfer(nullptr, 0, recv, recv_len);
+    }
+
     /*
      * Get the semaphore for the bus this device is in.  This is intended for
      * drivers to use during initialization phase only.
