@@ -149,7 +149,7 @@ void Rover::init_ardupilot()
     init_sonar();
 
     // and baro for EKF
-    init_barometer();
+    init_barometer(true);
 
     // Do GPS init
     gps.init(&DataFlash, serial_manager);

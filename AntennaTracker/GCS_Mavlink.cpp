@@ -592,7 +592,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } 
                 if (is_equal(packet.param3,1.0f)) {
-                    tracker.init_barometer();
+                    tracker.init_barometer(false);
                     // zero the altitude difference on next baro update
                     tracker.nav_status.need_altitude_calibration = true;
                 }

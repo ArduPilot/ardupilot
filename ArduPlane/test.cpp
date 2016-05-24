@@ -497,7 +497,7 @@ int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
     cliSerial->printf("Uncalibrated relative airpressure\n");
     print_hit_enter();
 
-    init_barometer();
+    init_barometer(true);
 
     while(1) {
         hal.scheduler->delay(100);

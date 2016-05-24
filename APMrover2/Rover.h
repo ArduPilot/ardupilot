@@ -464,7 +464,7 @@ private:
     bool throttle_failsafe_active();
     void trim_control_surfaces();
     void trim_radio();
-    void init_barometer(void);
+    void init_barometer(bool full_calibration);
     void init_sonar(void);
     void read_battery(void);
     void read_receiver_rssi(void);

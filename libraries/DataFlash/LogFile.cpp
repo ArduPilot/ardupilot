@@ -1792,7 +1792,7 @@ void DataFlash_Class::Log_Write_Airspeed(AP_Airspeed &airspeed)
         airspeed      : airspeed.get_raw_airspeed(),
         diffpressure  : airspeed.get_differential_pressure(),
         temperature   : (int16_t)(temperature * 100.0f),
-        rawpressure   : airspeed.get_raw_pressure(),
+        rawpressure   : airspeed.get_corrected_pressure(),
         offset        : airspeed.get_offset(),
         use           : airspeed.use()
     };

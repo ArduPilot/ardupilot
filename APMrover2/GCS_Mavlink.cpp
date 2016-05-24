@@ -942,7 +942,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                         result = MAV_RESULT_FAILED;
                     }
                 } else if (is_equal(packet.param3,1.0f)) {
-                    rover.init_barometer();
+                    rover.init_barometer(false);
                     result = MAV_RESULT_ACCEPTED;
                 } else if (is_equal(packet.param4,1.0f)) {
                     rover.trim_radio();
