@@ -116,7 +116,7 @@ void Plane::zero_airspeed(bool in_startup)
     read_airspeed();
     // update barometric calibration with new airspeed supplied temperature
     barometer.update_calibration();
-    gcs_send_text(MAV_SEVERITY_INFO,"Zero airspeed calibrated");
+    gcs_send_text(MAV_SEVERITY_INFO,"Airspeed calibration started");
 }
 
 // read_battery - reads battery voltage and current and invokes failsafe
