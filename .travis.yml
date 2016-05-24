@@ -35,7 +35,6 @@ addons:
 cache:
   ccache: true
   directories:
-    - $HOME/.cache/pip
     - $HOME/opt
 
 before_install:
