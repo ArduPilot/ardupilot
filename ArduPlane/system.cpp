@@ -617,7 +617,7 @@ void Plane::startup_INS_ground(void)
 
     // read Baro pressure at ground
     //-----------------------------
-    init_barometer();
+    init_barometer(true);
 
     if (airspeed.enabled()) {
         // initialize airspeed sensor
