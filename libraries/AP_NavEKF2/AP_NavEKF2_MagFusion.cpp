@@ -900,6 +900,9 @@ void NavEKF2_core::FuseDeclination()
     float t10 = t9-t14;
     float t15 = t23*t10;
     float t11 = R_DECL+t8-t15; // innovation variance
+    if (t11 < R_DECL) {
+        return;
+    }
     float t12 = 1.0f/t11;
 
     float H_MAG[24];
