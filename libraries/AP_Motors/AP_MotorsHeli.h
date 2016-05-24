@@ -27,16 +27,16 @@
 // swash min while landed or landing (as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_LAND_COLLECTIVE_MIN      0
 
-// default main rotor speed (ch8 out) as a number from 0 ~ 1000
-#define AP_MOTORS_HELI_RSC_SETPOINT             700
+// default main rotor speed (ch8 out) as a number from 0 ~ 1
+#define AP_MOTORS_HELI_RSC_SETPOINT             0.7f
 
 // default main rotor critical speed
-#define AP_MOTORS_HELI_RSC_CRITICAL             500
+#define AP_MOTORS_HELI_RSC_CRITICAL             0.5f
 
 // RSC output defaults
-#define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
-#define AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT    200
-#define AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT   700
+#define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0.0f
+#define AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT    0.2f
+#define AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT   0.7f
 
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
@@ -187,16 +187,16 @@ protected:
     AP_Int16        _collective_min;            // Lowest possible servo position for the swashplate
     AP_Int16        _collective_max;            // Highest possible servo position for the swashplate
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
-    AP_Int8         _servo_mode;              // Pass radio inputs directly to servos during set-up through mission planner
-    AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
+    AP_Int8         _servo_mode;                // Pass radio inputs directly to servos during set-up through mission planner
+    AP_Float        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
     AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach full speed
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
-    AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible
-    AP_Int16        _rsc_idle_output;           // Rotor control output while at idle
-    AP_Int16        _rsc_power_low;             // throttle value sent to throttle servo at zero collective pitch
-    AP_Int16        _rsc_power_high;            // throttle value sent to throttle servo at maximum collective pitch
+    AP_Float        _rsc_critical;              // Rotor speed below which flight is not possible
+    AP_Float        _rsc_idle_output;           // Rotor control output while at idle
+    AP_Float        _rsc_power_low;             // throttle value sent to throttle servo at zero collective pitch
+    AP_Float        _rsc_power_high;            // throttle value sent to throttle servo at maximum collective pitch
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
 
     // internal variables
