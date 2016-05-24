@@ -14,23 +14,17 @@
  */
 #pragma once
 
-#include <AP_HAL/Util.h>
+#include <inttypes.h>
 
 #include "AP_HAL_Linux.h"
-
-#define MAX_TRACEPOINT_NAME_LEN 128
 
 namespace Linux {
 
 class Perf_Lttng {
 public:
-    Perf_Lttng(const char *name);
-    void begin();
-    void end();
-    void count();
-private:
-    char _name[MAX_TRACEPOINT_NAME_LEN];
-    uint64_t _count;
+    void begin(const char *name);
+    void end(const char *name);
+    void count(const char *name, uint64_t val);
 };
 
 }
