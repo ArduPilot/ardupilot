@@ -132,7 +132,7 @@ def px4_firmware(self):
 
     if self.env.PX4_USE_PX4IO and not _cp_px4io:
         px4io_task = self.create_cmake_build_task('px4', 'fw_io')
-        px4io = px4io_task.config_taskgen.get_cmake_bldnode().make_node(
+        px4io = px4io_task.cmake.bldnode.make_node(
             'src/modules/px4iofirmware/px4io-v%s.bin' % version,
         )
         px4io_task.set_outputs(px4io)
@@ -159,7 +159,7 @@ def px4_firmware(self):
     if self.env.PX4_USE_PX4IO and _cp_px4io.generator is self:
         fw_task.set_run_after(_cp_px4io)
 
-    firmware = fw_task.config_taskgen.cmake_bld.make_node(
+    firmware = fw_task.cmake.bldnode.make_node(
         'src/firmware/nuttx/nuttx-px4fmu-v%s-apm.px4' % version,
     )
     _update_firmware_sig(fw_task, firmware)
@@ -285,20 +285,18 @@ def configure(cfg):
 
 def build(bld):
     version = bld.env.get_flat('PX4_VERSION')
-    px4 = bld(
-        features='cmake_configure',
+    px4 = bld.cmake(
         name='px4',
         cmake_src=bld.srcnode.find_dir('modules/PX4Firmware'),
         cmake_vars=bld.env.PX4_CMAKE_VARS,
-        group='dynamic_sources',
     )
 
-    px4.cmake_build(
+    px4.build(
         'msg_gen',
         group='dynamic_sources',
         cmake_output_patterns='src/modules/uORB/topics/*.h',
     )
-    px4.cmake_build(
+    px4.build(
         'prebuild_targets',
         group='dynamic_sources',
         cmake_output_patterns='px4fmu-v%s/NuttX/nuttx-export/**/*.h' % version,
