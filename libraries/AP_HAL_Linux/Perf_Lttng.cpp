@@ -19,32 +19,35 @@
 
 #include <string.h>
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_HAL_Linux.h"
 #include "Perf_Lttng_TracePoints.h"
 #include "Perf_Lttng.h"
 
 using namespace Linux;
 
-Perf_Lttng::Perf_Lttng(const char *name)
+void Perf_Lttng::begin(const char *name)
 {
-    strncpy(_name, name, MAX_TRACEPOINT_NAME_LEN);
+    tracepoint(ardupilot, begin, name);
 }
 
-void Perf_Lttng::begin()
+void Perf_Lttng::end(const char *name)
 {
-    tracepoint(ardupilot, begin, _name);
+    tracepoint(ardupilot, end, name);
 }
 
-void Perf_Lttng::end()
+void Perf_Lttng::count(const char *name, uint64_t val)
 {
-    tracepoint(ardupilot, end, _name);
+    tracepoint(ardupilot, count, name, val);
 }
 
-void Perf_Lttng::count()
-{
-    tracepoint(ardupilot, count, _name, ++_count);
-}
+#else
+
+#include "Perf_Lttng.h"
+
+using namespace Linux;
+
+void Perf_Lttng::begin(const char *name) { }
+void Perf_Lttng::end(const char *name) { }
+void Perf_Lttng::count(const char *name, uint64_t val) { }
 
 #endif

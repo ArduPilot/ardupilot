@@ -37,17 +37,12 @@ public:
     Perf_Counter(perf_counter_type type_, const char *name_)
         : name{name_}
         , type{type_}
-#ifdef HAVE_LTTNG_UST
-        , lttng{name_}
-#endif
         , least{ULONG_MAX}
     {
     }
 
     const char *name;
-#ifdef HAVE_LTTNG_UST
     Perf_Lttng lttng;
-#endif
 
     perf_counter_type type;
 
