@@ -1333,12 +1333,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
-            if(hal.util->get_soft_armed()) {
-                result = MAV_RESULT_FAILED;
-                break;
-            }
             plane.in_calibration = true;
             if (is_equal(packet.param1,1.0f)) {
+                /*
+                  gyro calibration
+                 */
+                if (hal.util->get_soft_armed()) {
+                    send_text(MAV_SEVERITY_WARNING, "No calibration while armed");
+                    result = MAV_RESULT_FAILED;
+                    break;
+                }
                 plane.ins.init_gyro();
                 if (plane.ins.gyro_calibrated_ok_all()) {
                     plane.ahrs.reset_gyro_drift();
@@ -1347,15 +1351,39 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_FAILED;
                 }
             } else if (is_equal(packet.param3,1.0f)) {
+                /*
+                  baro and airspeed calibration
+                 */
+                if (hal.util->get_soft_armed() && plane.is_flying()) {
+                    send_text(MAV_SEVERITY_WARNING, "No calibration while flying");
+                    result = MAV_RESULT_FAILED;
+                    break;
+                }
                 plane.init_barometer(false);
                 if (plane.airspeed.enabled()) {
                     plane.zero_airspeed(false);
                 }
                 result = MAV_RESULT_ACCEPTED;
             } else if (is_equal(packet.param4,1.0f)) {
+                /*
+                  radio trim
+                 */
+                if (hal.util->get_soft_armed()) {
+                    send_text(MAV_SEVERITY_WARNING, "No calibration while armed");
+                    result = MAV_RESULT_FAILED;
+                    break;
+                }
                 plane.trim_radio();
                 result = MAV_RESULT_ACCEPTED;
             } else if (is_equal(packet.param5,1.0f)) {
+                /*
+                  accel calibration
+                 */
+                if (hal.util->get_soft_armed()) {
+                    send_text(MAV_SEVERITY_WARNING, "No calibration while armed");
+                    result = MAV_RESULT_FAILED;
+                    break;
+                }
                 result = MAV_RESULT_ACCEPTED;
                 // start with gyro calibration
                 plane.ins.init_gyro();
@@ -1369,6 +1397,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.ins.get_acal()->start(this);
 
             } else if (is_equal(packet.param5,2.0f)) {
+                /*
+                  ahrs trim
+                 */
+                if (hal.util->get_soft_armed()) {
+                    send_text(MAV_SEVERITY_WARNING, "No calibration while armed");
+                    result = MAV_RESULT_FAILED;
+                    break;
+                }
                 // start with gyro calibration
                 plane.ins.init_gyro();
                 // accel trim
