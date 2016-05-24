@@ -1291,7 +1291,6 @@ void NavEKF2_core::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
 
 // initialise the earth magnetic field states using declination, suppled roll/pitch
 // and magnetometer measurements and return initial attitude quaternion
-// if no magnetometer data, do not update magnetic field states and assume zero yaw angle
 Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 {
     // declare local variables required to calculate initial orientation and magnetic field
@@ -1362,8 +1361,8 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         // clear bad magnetic yaw status
         badMagYaw = false;
     } else {
-        initQuat.from_euler(roll, pitch, 0.0f);
-        yawAlignComplete = false;
+        // no magnetoemter data so there is nothing we can do
+        initQuat = stateStruct.quat;
     }
 
     // return attitude quaternion
