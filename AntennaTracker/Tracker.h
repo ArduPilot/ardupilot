@@ -159,7 +159,7 @@ private:
         float bearing;                  // bearing to vehicle in centi-degrees
         float distance;                 // distance to vehicle in meters
         float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
-        float altitude_difference;      // altitude difference between tracker and vehicle in meters.  positive value means vehicle is above tracker
+        float alt_difference_baro;      // altitude difference between tracker and vehicle in meters.  positive value means vehicle is above tracker
         float altitude_offset;          // offset in meters which is added to tracker altitude to align altitude measurements with vehicle's barometer
         bool manual_control_yaw         : 1;// true if tracker yaw is under manual control
         bool manual_control_pitch       : 1;// true if tracker pitch is manually controlled

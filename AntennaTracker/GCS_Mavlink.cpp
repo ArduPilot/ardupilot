@@ -134,7 +134,7 @@ void Tracker::send_nav_controller_output(mavlink_channel_t chan)
         nav_status.bearing,
         nav_status.bearing,
         nav_status.distance,
-        nav_status.altitude_difference,
+        nav_status.alt_difference_baro,
         0,
         0);
 }
