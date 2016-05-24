@@ -17,17 +17,14 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Waf tool for external builds with cmake. This tool defines two features:
-    - cmake_configure: for defining task generators that do cmake build
-      configuration, i.e., build system generation.
-    - cmake_build: for actual build through the cmake interface.
+Waf tool for external builds with cmake. This tool defines the feature
+'cmake_build', for building through the cmake interface.
 
 Example::
 
     def build(bld):
         # cmake configuration
-        foo = bld(
-            features='cmake_configure',
+        foo = bld.cmake(
             name='foo',
             cmake_src='path/to/foosrc', # where is the source tree
             cmake_bld='path/to/foobld', # where to generate the build system
@@ -37,7 +34,7 @@ Example::
             ),
         )
 
-        # cmake build for target (cmake target) 'bar'
+        # cmake build for external target 'bar'
         bld(
             features='cmake_build',
             cmake_config='foo', # this build depends on the cmake generation above defined
@@ -45,7 +42,7 @@ Example::
         )
 
         # cmake build for target 'baz' (syntactic sugar)
-        foo.cmake_build('baz')
+        foo.build('baz')
 
 The keys of cmake_vars are sorted so that unnecessary execution is avoided. If
 you want to ensure an order in which the variables are passed to cmake, use an
@@ -58,8 +55,7 @@ OrderedDict. Example::
         foo_vars['BAR'] = 'value_of_bar'
 
         # cmake configuration
-        foo = bld(
-            features='cmake_configure',
+        foo =  bld.cmake(
             cmake_vars=foo_vars,
             ...
         )
@@ -73,14 +69,14 @@ cmake_build task generator. Example::
         ...
 
         # declaring on target only what I'm interested in
-        foo.cmake_build('baz', target='path/to/foobld/include/baz.h')
+        foo.build('baz', target='path/to/foobld/include/baz.h')
 
         # myprogram.c includes baz.h, so the dependency is (implicitly)
         # established
         bld.program(target='myprogram', source='myprogram.c')
 
         # another example
-        foo.cmake_build('another', target='another.txt')
+        foo.build('another', target='another.txt')
 
         bld(
             rule='${CP} ${SRC} ${TGT}',
@@ -116,12 +112,13 @@ build task, so that they get a signature. Example::
     def build(bld):
         ...
 
-        foo.cmake_build('baz', cmake_output_patterns='include/*.h')
+        foo.build('baz', cmake_output_patterns='include/*.h')
 
         ...
 """
 
 from waflib import Node, Task, Utils
+from waflib.Configure import conf
 from waflib.TaskGen import feature, taskgen_method
 
 from collections import OrderedDict
@@ -150,7 +147,7 @@ class cmake_configure_task(Task.Task):
         return self.uid_
 
     def __str__(self):
-        return self.generator.name
+        return self.cmake.name
 
     def keyword(self):
         return 'CMake Configure'
@@ -185,9 +182,7 @@ class cmake_build_task(Task.Task):
         return self.uid_
 
     def __str__(self):
-        config_name = self.config_taskgen.name
-        target = self.cmake_target
-        return '%s %s' % (config_name, target)
+        return '%s %s' % (self.cmake.name, self.cmake_target)
 
     def keyword(self):
         return 'CMake Build'
@@ -201,7 +196,7 @@ def _cmake_build_task_post_run(self):
     self.output_patterns = Utils.to_list(self.output_patterns)
     if not self.output_patterns:
         return self.original_post_run()
-    bldnode = self.config_taskgen.cmake_bld
+    bldnode = self.cmake.bldnode
     for node in bldnode.ant_glob(self.output_patterns, remove=False):
         self.set_outputs(node)
     return self.original_post_run()
@@ -211,35 +206,82 @@ cmake_build_task.post_run = _cmake_build_task_post_run
 # dependencies
 cmake_build_task = Task.always_run(cmake_build_task)
 
-@feature('cmake_configure')
-def process_cmake_configure(self):
-    if not hasattr(self, 'name'):
-        self.bld.fatal('cmake_configure: taskgen is missing name')
-    if not hasattr(self, 'cmake_src'):
-        self.bld.fatal('cmake_configure: taskgen is missing cmake_src')
+class CMakeConfig(object):
+    '''
+    CMake configuration. This object shouldn't be instantiated directly. Use
+    bld.cmake().
+    '''
+    def __init__(self, bld, name, srcnode, bldnode, cmake_vars):
+        self.bld = bld
+        self.name = name
+        self.srcnode = srcnode
+        self.bldnode = bldnode
+        self.vars = cmake_vars
 
-    if not isinstance(self.cmake_src, Node.Node):
-        self.cmake_src = self.bld.path.find_dir(self.cmake_src)
+        self._config_task = None
+        self.last_build_task = None
 
-    self.get_cmake_bldnode()
-    self.cmake_bld.mkdir()
+    def config_task(self, taskgen):
+        if self._config_task:
+            return self._config_task
 
-    self.last_build_task = None
+        # NOTE: we'll probably need to use the full class name in waf 1.9
+        self._config_task = taskgen.create_task('cmake_configure')
+        self._config_task.cwd = self.bldnode.abspath()
+        self._config_task.cmake = self
 
-    self.cmake_vars = getattr(self, 'cmake_vars', {})
+        env = self._config_task.env
+        env.CMAKE_BLD_DIR = self.bldnode.abspath()
+        env.CMAKE_SRC_DIR = self.srcnode.abspath()
 
-    # NOTE: we'll probably need to use the full class name in waf 1.9
-    tsk = self.cmake_config_task = self.create_task('cmake_configure')
-    tsk.cwd = self.cmake_bld.abspath()
-    tsk.env.CMAKE_BLD_DIR = self.cmake_bld.abspath()
-    tsk.env.CMAKE_SRC_DIR = self.cmake_src.abspath()
+        keys = list(self.vars.keys())
+        if not isinstance(self.vars, OrderedDict):
+            keys.sort()
+        env.CMAKE_VARS = ["-D%s='%s'" % (k, self.vars[k]) for k in keys]
 
-    keys = list(self.cmake_vars.keys())
-    if not isinstance(self.cmake_vars, OrderedDict):
-        keys.sort()
-    tsk.env.CMAKE_VARS = ["-D%s='%s'" % (k, self.cmake_vars[k]) for k in keys]
+        self._config_task.set_outputs(
+            self.bldnode.find_or_declare('CMakeCache.txt'),
+        )
 
-    tsk.set_outputs(self.cmake_bld.find_or_declare('CMakeCache.txt'))
+        self.bldnode.mkdir()
+
+        return self._config_task
+
+    def build(self, cmake_target, **kw):
+        return self.bld.cmake_build(self.name, cmake_target, **kw)
+
+_cmake_instances = {}
+def get_cmake(name):
+    if name not in _cmake_instances:
+        raise Exception('cmake: configuration named "%s" not found' % name)
+    return _cmake_instances[name]
+
+@conf
+def cmake(bld, name, cmake_src=None, cmake_bld=None, cmake_vars={}):
+    '''
+    This function has two signatures:
+     - bld.cmake(name, cmake_src, cmake_bld, cmake_vars):
+        Create a cmake configuration.
+     - bld.cmake(name):
+        Get the cmake configuration with name.
+    '''
+    if not cmake_src and not cmake_bld and not cmake_vars:
+        return get_cmake(name)
+
+    if name in _cmake_instances:
+        bld.fatal('cmake: configuration named "%s" already exists' % name)
+
+    if not isinstance(cmake_src, Node.Node):
+        cmake_src = bld.path.find_dir(cmake_src)
+
+    if not cmake_bld:
+        cmake_bld = cmake_src.get_bld()
+    elif not isinstance(cmake_bld, Node.Node):
+        cmake_bld = bld.bldnode.make_node(cmake_bld)
+
+    c = CMakeConfig(bld, name, cmake_src, cmake_bld, cmake_vars)
+    _cmake_instances[name] = c
+    return c
 
 @feature('cmake_build')
 def process_cmake_build(self):
@@ -247,11 +289,6 @@ def process_cmake_build(self):
         self.bld.fatal('cmake_build: taskgen is missing cmake_target')
     if not hasattr(self, 'cmake_config'):
         self.bld.fatal('cmake_build: taskgen is missing cmake_config')
-
-    self.config_taskgen = self.bld.get_tgen_by_name(self.cmake_config)
-
-    if not getattr(self.config_taskgen, 'posted', False):
-        self.config_taskgen.post()
 
     tsk = self.create_cmake_build_task(self.cmake_config, self.cmake_target)
     self.cmake_build_task = tsk
@@ -267,59 +304,35 @@ def process_cmake_build(self):
 
     tsk.output_patterns = getattr(self, 'cmake_output_patterns', [])
 
-def _get_config_tg(self, cmake_config):
-    if not cmake_config:
-        if 'cmake_configure' in self.features:
-            cmake_config = self.name
-        elif 'cmake_build' in self.features:
-            if hasattr(self, 'cmake_config'):
-                cmake_config = self.cmake_config
-    if not cmake_config:
-        self.bld.fatal('cmake: cmake_config is missing or invalid')
-
-    return self.bld.get_tgen_by_name(cmake_config)
-
-@taskgen_method
-def cmake_build(self, cmake_target, cmake_config=None, **kw):
-    tg = _get_config_tg(self, cmake_config)
-
-    kw['cmake_config'] = tg.name
+@conf
+def cmake_build(bld, cmake_config, cmake_target, **kw):
+    kw['cmake_config'] = cmake_config
     kw['cmake_target'] = cmake_target
+    kw['features'] = Utils.to_list(kw.get('features', [])) + ['cmake_build']
 
     if 'name' not in kw:
-        kw['name'] = '%s_%s' % (tg.name, cmake_target)
+        kw['name'] = '%s_%s' % (cmake_config, cmake_target)
 
-    kw['features'] = Utils.to_list(kw.get('features', []))
-    kw['features'].append('cmake_build')
-
-    return self.bld(**kw)
-
-@taskgen_method
-def get_cmake_bldnode(self, cmake_config=None):
-    tg = _get_config_tg(self, cmake_config)
-
-    if not hasattr(tg, 'cmake_bld'):
-        tg.cmake_bld = tg.cmake_src.get_bld()
-    elif not isinstance(tg.cmake_bld, Node.Node):
-        tg.cmake_bld = tg.bld.bldnode.make_node(tg.cmake_bld)
-
-    return tg.cmake_bld
+    return bld(**kw)
 
 @taskgen_method
 def create_cmake_build_task(self, cmake_config, cmake_target):
+    cmake = get_cmake(cmake_config)
+
     # NOTE: we'll probably need to use the full class name in waf 1.9
     tsk = self.create_task('cmake_build')
-    config_tg = self.bld.get_tgen_by_name(cmake_config)
-    tsk.config_taskgen = config_tg
+    tsk.cmake = cmake
     tsk.cmake_target = cmake_target
     tsk.output_patterns = []
-    tsk.env.CMAKE_BLD_DIR = config_tg.cmake_bld.abspath()
+    tsk.env.CMAKE_BLD_DIR = cmake.bldnode.abspath()
     tsk.env.CMAKE_TARGET = cmake_target
-    tsk.set_run_after(config_tg.cmake_config_task)
 
-    if config_tg.last_build_task:
-        tsk.set_run_after(config_tg.last_build_task)
-    config_tg.last_build_task = tsk
+    self.cmake_config_task = cmake.config_task(self)
+    tsk.set_run_after(self.cmake_config_task)
+
+    if cmake.last_build_task:
+        tsk.set_run_after(cmake.last_build_task)
+    cmake.last_build_task = tsk
 
     return tsk
 
