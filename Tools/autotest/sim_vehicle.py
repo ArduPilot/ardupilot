@@ -364,6 +364,7 @@ _options_for_frame = {
     "rover-skid": {
         "waf_target": "bin/ardurover",
         "default_params_filename": "Rover-skid.parm",
+    },
     # SIM
     "Gazebo": {
         "waf_target": "bin/arducopter-quad",
