@@ -1,4 +1,5 @@
 #include "RingBuffer.h"
+#include <algorithm>
 #include <stdlib.h>
 #include <string.h>
 
@@ -109,10 +110,7 @@ bool ByteBuffer::advance(uint32_t n)
     return true;
 }
 
-/*
-  read len bytes without advancing the read pointer
- */
-uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
+int ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
 {
     if (len > available()) {
         len = available();
@@ -121,21 +119,41 @@ uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
         return 0;
     }
     uint32_t n;
-    const uint8_t *b = readptr(n);
+    auto b = readptr(n);
     if (n > len) {
         n = len;
     }
 
-    // perform first memcpy
-    memcpy(data, b, n);
-    data += n;
+    iovec[0].data = const_cast<uint8_t *>(b);
+    iovec[0].len = n;
 
     if (len > n) {
-        // possible second memcpy, must be from front of buffer
-        memcpy(data, buf, len-n);
+        iovec[1].data = buf;
+        iovec[1].len = len - n;
+
+        return 2;
     }
-    return len;
+
+    return 1;
 }
+
+/*
+  read len bytes without advancing the read pointer
+ */
+uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
+{
+    ByteBuffer::IoVec vec[2];
+    const auto n_vec = peekiovec(vec, len);
+    uint32_t ret = 0;
+
+    for (int i = 0; i < n_vec; i++) {
+        memcpy(data + ret, vec[i].data, vec[i].len);
+        ret += vec[i].len;
+    }
+
+    return ret;
+}
+
 
 uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
 {
