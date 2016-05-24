@@ -86,9 +86,7 @@ void Perf::begin(Util::perf_counter_t pc)
 
     perf.start = now_nsec();
 
-#ifdef HAVE_LTTNG_UST
-    perf.lttng.begin();
-#endif
+    perf.lttng.begin(perf.name);
 }
 
 void Perf::end(Util::perf_counter_t pc)
@@ -137,9 +135,7 @@ void Perf::end(Util::perf_counter_t pc)
     perf.m2 += (delta_intvl * (elapsed - perf.mean));
     perf.start = 0;
 
-#ifdef HAVE_LTTNG_UST
-    perf.lttng.end();
-#endif
+    perf.lttng.end(perf.name);
 }
 
 void Perf::count(Util::perf_counter_t pc)
@@ -161,10 +157,7 @@ void Perf::count(Util::perf_counter_t pc)
     _update_count++;
     perf.count++;
 
-#ifdef HAVE_LTTNG_UST
-    perf.lttng.count();
-#endif
-
+    perf.lttng.count(perf.name, perf.count);
 }
 
 Util::perf_counter_t Perf::add(Util::perf_counter_type type, const char *name)
