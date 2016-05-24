@@ -181,9 +181,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     sprayer.test_pump(false);
 #endif
 
-    // short delay to allow reading of rc inputs
-    delay(30);
-
     // enable output to motors
     enable_motor_output();
 
