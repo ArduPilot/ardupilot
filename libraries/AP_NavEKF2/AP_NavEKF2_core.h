@@ -608,6 +608,9 @@ private:
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
 
+    // zero attitude state covariances, but preserve variances
+    void zeroAttCovOnly();
+
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
     static const uint32_t OBS_BUFFER_LENGTH = 5;

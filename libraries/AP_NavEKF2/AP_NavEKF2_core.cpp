@@ -1368,4 +1368,18 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
     return initQuat;
 }
 
+// zero the attitude covariances, but preserve the variances
+void NavEKF2_core::zeroAttCovOnly()
+{
+    float varTemp[3];
+    for (uint8_t index=0; index<=2; index++) {
+        varTemp[index] = P[index][index];
+    }
+    zeroCols(P,0,2);
+    zeroRows(P,0,2);
+    for (uint8_t index=0; index<=2; index++) {
+        P[index][index] = varTemp[index];
+    }
+}
+
 #endif // HAL_CPU_CLASS
