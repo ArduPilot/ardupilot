@@ -214,6 +214,13 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(distance_min,           "DISTANCE_MIN", DISTANCE_MIN_DEFAULT),
 
+    // @Param: ALT_SOURCE
+    // @DisplayName: Altitude Source
+    // @Description: What provides altitude information for vehicle
+    // @Values: 0:Barometer,1:GPS
+    // @User: Standard
+    GSCALAR(alt_source,				"ALT_SOURCE",	0),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
