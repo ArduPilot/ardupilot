@@ -72,6 +72,15 @@ public:
       read len bytes without advancing the read pointer
     */
     uint32_t peekbytes(uint8_t *data, uint32_t len);
+
+    // Similar to peekbytes(), but will fill out IoVec struct with
+    // both parts of the ring buffer if wraparound is happpening, or
+    // just one part. Returns the number of parts written to.
+    struct IoVec {
+        uint8_t *data;
+        uint32_t len;
+    };
+    int peekiovec(IoVec vec[2], uint32_t len);
     
 private:
     uint8_t *buf = nullptr;
