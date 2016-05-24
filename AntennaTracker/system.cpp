@@ -77,7 +77,7 @@ void Tracker::init_tracker()
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
-    init_barometer();
+    init_barometer(true);
 
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
