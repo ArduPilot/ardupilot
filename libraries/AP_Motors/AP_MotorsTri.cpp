@@ -128,18 +128,18 @@ void AP_MotorsTri::output_to_motors()
         case SHUT_DOWN:
             // sends minimum values out to the motors
             hal.rcout->cork();
-            rc_write(AP_MOTORS_MOT_1, _throttle_radio_min);
-            rc_write(AP_MOTORS_MOT_2, _throttle_radio_min);
-            rc_write(AP_MOTORS_MOT_4, _throttle_radio_min);
+            rc_write(AP_MOTORS_MOT_1, get_pwm_output_min());
+            rc_write(AP_MOTORS_MOT_2, get_pwm_output_min());
+            rc_write(AP_MOTORS_MOT_4, get_pwm_output_min());
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
             hal.rcout->push();
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             hal.rcout->cork();
-            rc_write(AP_MOTORS_MOT_1, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
-            rc_write(AP_MOTORS_MOT_2, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
-            rc_write(AP_MOTORS_MOT_4, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_1, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
+            rc_write(AP_MOTORS_MOT_2, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
+            rc_write(AP_MOTORS_MOT_4, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
             hal.rcout->push();
             break;
