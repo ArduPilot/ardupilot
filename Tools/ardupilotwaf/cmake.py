@@ -222,27 +222,48 @@ class CMakeConfig(object):
         self._config_task = None
         self.last_build_task = None
 
+    def vars_keys(self):
+        keys = list(self.vars.keys())
+        if not isinstance(self.vars, OrderedDict):
+            keys.sort()
+        return keys
+
+    def config_sig(self):
+        m = Utils.md5()
+        def u(s):
+            m.update(s.encode('utf-8'))
+        u(self.srcnode.abspath())
+        u(self.bldnode.abspath())
+        keys = self.vars_keys()
+        for k in keys:
+            u(k)
+            u(self.vars[k])
+        return m.digest()
+
     def config_task(self, taskgen):
-        if self._config_task:
+        sig = self.config_sig()
+        if self._config_task and self._config_task.cmake_config_sig == sig:
             return self._config_task
 
         # NOTE: we'll probably need to use the full class name in waf 1.9
         self._config_task = taskgen.create_task('cmake_configure')
         self._config_task.cwd = self.bldnode.abspath()
         self._config_task.cmake = self
+        self._config_task.cmake_config_sig = sig
 
         env = self._config_task.env
         env.CMAKE_BLD_DIR = self.bldnode.abspath()
         env.CMAKE_SRC_DIR = self.srcnode.abspath()
 
-        keys = list(self.vars.keys())
-        if not isinstance(self.vars, OrderedDict):
-            keys.sort()
+        keys = self.vars_keys()
         env.CMAKE_VARS = ["-D%s='%s'" % (k, self.vars[k]) for k in keys]
 
         self._config_task.set_outputs(
             self.bldnode.find_or_declare('CMakeCache.txt'),
         )
+
+        if self.last_build_task:
+            self._config_task.set_run_after(self.last_build_task)
 
         self.bldnode.mkdir()
 
