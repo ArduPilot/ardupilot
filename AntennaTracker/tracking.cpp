@@ -58,15 +58,14 @@ void Tracker::update_bearing_and_distance()
     nav_status.distance = get_distance(current_loc, vehicle.location_estimate);
 
     // calculate altitude difference to vehicle using gps
-    nav_status.alt_difference_gps = vehicle.location.alt - current_loc.alt;
+    nav_status.alt_difference_gps = (vehicle.location.alt - current_loc.alt) / 100.0f;
 
     // calculate pitch to vehicle
     // To-Do: remove need for check of control_mode
     if (control_mode != SCAN && !nav_status.manual_control_pitch) {
-    	if(g.alt_source == 0){
-        nav_status.pitch    = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
-    	}
-        else{
+    	if (g.alt_source == 0) {
+    	    nav_status.pitch = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
+    	} else {
             nav_status.pitch = degrees(atan2f(nav_status.alt_difference_gps, nav_status.distance));
     	}
     }
