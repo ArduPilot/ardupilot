@@ -52,6 +52,7 @@ public:
         k_param_software_type,
         k_param_ins_old,                        // *** Deprecated, remove with next eeprom number change
         k_param_ins,                            // libraries/AP_InertialSensor variables
+        k_param_NavEKF2_old, // deprecated
         k_param_NavEKF2,
 
         // simulation
