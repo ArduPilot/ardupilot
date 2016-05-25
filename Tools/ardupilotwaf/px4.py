@@ -155,6 +155,11 @@ def px4_firmware(self):
     cp_elf.set_run_after(fw_task)
     _firmware_semaphorish_tasks.append(cp_elf)
 
+    self.build_summary = dict(
+        target=self.name,
+        binary=fw_elf_dest.path_from(self.bld.bldnode),
+    )
+
     if self.bld.options.upload:
         if _upload_task:
             Logs.warn('PX4: upload for %s ignored' % self.name)
@@ -290,3 +295,31 @@ def build(bld):
         group='dynamic_sources',
         features='_px4_romfs',
     )
+
+    bld.extra_build_summary = _extra_build_summary
+
+def _extra_build_summary(bld, build_summary):
+    build_summary.text('')
+    build_summary.text('PX4')
+    build_summary.text('', '''
+The ELF files are pointed by the path in the "%s" column. The .px4 files are in
+the same directory of their corresponding ELF files.
+''' % build_summary.header_text['target'])
+
+    if not bld.options.upload:
+        build_summary.text('')
+        build_summary.text('', '''
+You can use the option --upload to upload the firmware to the PX4 board if you
+have one connected.''')
+
+    if bld.env.PX4_USE_PX4IO:
+        build_summary.text('')
+        build_summary.text('PX4IO')
+        summary_data_list = bld.size_summary([bld.env.PX4IO_ELF_DEST])
+        header = bld.env.BUILD_SUMMARY_HEADER[:]
+        try:
+            header.remove('target')
+        except ValueError:
+            pass
+        header.insert(0, 'binary_path')
+        build_summary.print_table(summary_data_list, header)
