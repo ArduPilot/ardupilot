@@ -5,6 +5,7 @@ from __future__ import print_function
 from waflib import Logs, Options, Utils
 from waflib.Build import BuildContext
 from waflib.Configure import conf
+from waflib.TaskGen import before_method, feature
 import os.path, os
 from collections import OrderedDict
 
@@ -185,6 +186,17 @@ def ap_stlib(bld, **kw):
     kw['idx'] = _get_next_idx()
 
     bld.stlib(**kw)
+
+_created_program_dirs = set()
+@feature('cxxstlib', 'cxxprogram')
+@before_method('process_rule')
+def ap_create_program_dir(self):
+    if not hasattr(self, 'program_dir'):
+        return
+    if self.program_dir in _created_program_dirs:
+        return
+    self.bld.bldnode.make_node(self.program_dir).mkdir()
+    _created_program_dirs.add(self.program_dir)
 
 @conf
 def ap_find_tests(bld, use=[]):
