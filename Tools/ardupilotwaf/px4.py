@@ -79,11 +79,12 @@ class px4_add_git_hashes(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.outputs[0].ctx.launch_node())
 
-def _update_firmware_sig(fw_task, firmware):
+def _update_firmware_sig(fw_task, firmware, elf):
     original_post_run = fw_task.post_run
     def post_run():
         original_post_run()
         firmware.sig = firmware.cache_sig = Utils.h_file(firmware.abspath())
+        elf.sig = elf.cache_sig = Utils.h_file(elf.abspath())
     fw_task.post_run = post_run
 
 _cp_px4io = None
@@ -96,12 +97,18 @@ def px4_firmware(self):
     global _cp_px4io, _firmware_semaphorish_tasks, _upload_task
     version = self.env.get_flat('PX4_VERSION')
 
+    px4 = self.bld.cmake('px4')
+    px4.vars['APM_PROGRAM_LIB'] = self.link_task.outputs[0].abspath()
+
     if self.env.PX4_USE_PX4IO and not _cp_px4io:
         px4io_task = self.create_cmake_build_task('px4', 'fw_io')
         px4io = px4io_task.cmake.bldnode.make_node(
             'src/modules/px4iofirmware/px4io-v%s.bin' % version,
         )
-        px4io_task.set_outputs(px4io)
+        px4io_elf = px4.bldnode.make_node(
+            'src/modules/px4iofirmware/px4io-v%s' % version
+        )
+        px4io_task.set_outputs([px4io, px4io_elf])
 
         romfs = self.bld.bldnode.make_node(self.env.PX4_ROMFS_BLD)
         romfs_px4io = romfs.make_node('px4io/px4io.bin')
@@ -109,8 +116,8 @@ def px4_firmware(self):
         _cp_px4io = self.create_task('px4_copy', px4io, romfs_px4io)
         _cp_px4io.keyword = lambda: 'PX4: Copying PX4IO to ROMFS'
 
-    px4 = self.bld.cmake('px4')
-    px4.vars['APM_PROGRAM_LIB'] = self.link_task.outputs[0].abspath()
+        px4io_elf_dest = self.bld.bldnode.make_node(self.env.PX4IO_ELF_DEST)
+        cp_px4io_elf = self.create_task('px4_copy', px4io_elf, px4io_elf_dest)
 
     fw_task = self.create_cmake_build_task(
         'px4',
@@ -129,7 +136,10 @@ def px4_firmware(self):
     firmware = px4.bldnode.make_node(
         'src/firmware/nuttx/nuttx-px4fmu-v%s-apm.px4' % version,
     )
-    _update_firmware_sig(fw_task, firmware)
+    fw_elf = px4.bldnode.make_node(
+        'src/firmware/nuttx/firmware_nuttx',
+    )
+    _update_firmware_sig(fw_task, firmware, fw_elf)
 
     fw_dest = self.bld.bldnode.make_node(
         os.path.join(self.program_dir, '%s.px4' % self.program_name)
@@ -137,6 +147,13 @@ def px4_firmware(self):
     git_hashes = self.create_task('px4_add_git_hashes', firmware, fw_dest)
     git_hashes.set_run_after(fw_task)
     _firmware_semaphorish_tasks.append(git_hashes)
+
+    fw_elf_dest = self.bld.bldnode.make_node(
+        os.path.join(self.program_dir, self.program_name)
+    )
+    cp_elf = self.create_task('px4_copy', fw_elf, fw_elf_dest)
+    cp_elf.set_run_after(fw_task)
+    _firmware_semaphorish_tasks.append(cp_elf)
 
     if self.bld.options.upload:
         if _upload_task:
@@ -216,6 +233,9 @@ def configure(cfg):
     env.PX4_ROOT = srcpath('modules/PX4Firmware')
     env.PX4_NUTTX_ROOT = srcpath('modules/PX4NuttX')
     env.PX4_UAVCAN_ROOT = srcpath('modules/uavcan')
+
+    if env.PX4_USE_PX4IO:
+        env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
 
     env.PX4_CMAKE_VARS = dict(
         CONFIG='nuttx_px4fmu-v%s_apm' % env.get_flat('PX4_VERSION'),
