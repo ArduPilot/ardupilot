@@ -49,6 +49,7 @@ public:
         k_param_format_version = 0,
         k_param_software_type,
         k_param_num_resets,
+        k_param_NavEKF2,
 
         // Misc
         //
@@ -202,7 +203,7 @@ public:
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
         k_param_mission, // mission library
         k_param_serial_manager, // serial manager library
-        k_param_NavEKF2,  // EKF2
+        k_param_NavEKF2_old,  // deprecated
         k_param_land_pre_flare_alt,
         k_param_land_pre_flare_airspeed = 149,
 
