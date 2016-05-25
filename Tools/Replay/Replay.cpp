@@ -98,41 +98,13 @@ void ReplayVehicle::load_parameters(void)
     AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
 }
 
-/*
-  Replay specific log structures
- */
-struct PACKED log_Chek {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-    int32_t lat;
-    int32_t lng;
-    float alt;
-    float vnorth;
-    float veast;
-    float vdown;
-};
-
-
-enum {
-    LOG_CHEK_MSG=100
-};
-
-static const struct LogStructure log_structure[] = {
-    LOG_COMMON_STRUCTURES,
-    { LOG_CHEK_MSG, sizeof(log_Chek),
-      "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
-};
-
 void ReplayVehicle::setup(void) 
 {
     load_parameters();
     
     // we pass zero log structures, as we will be outputting the log
     // structures we need manually, to prevent FMT duplicates
-    dataflash.Init(log_structure, 0);
+    dataflash.Init(nullptr, 0);
     dataflash.StartNewLog();
 
     ahrs.set_compass(&compass);

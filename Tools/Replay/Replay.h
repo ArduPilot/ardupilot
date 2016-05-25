@@ -177,4 +177,26 @@ private:
     void load_param_file(const char *filename);
 };
 
+enum {
+    LOG_CHEK_MSG=100
+};
+
+/*
+  Replay specific log structures
+ */
+struct PACKED log_Chek {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+    int32_t lat;
+    int32_t lng;
+    float alt;
+    float vnorth;
+    float veast;
+    float vdown;
+};
+
+
 extern Replay replay;

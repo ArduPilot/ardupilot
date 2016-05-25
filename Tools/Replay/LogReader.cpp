@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 
 #include "MsgHandler.h"
+#include "Replay.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -27,6 +28,12 @@
 #define streq(x, y) (!strcmp(x, y))
 
 extern const AP_HAL::HAL& hal;
+
+static const struct LogStructure log_structure[] = {
+    LOG_COMMON_STRUCTURES,
+    { LOG_CHEK_MSG, sizeof(log_Chek),
+      "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
+};
 
 LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
                      AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const char **&_nottypes):
@@ -118,11 +125,9 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
         return mapped_msgid[intype];
     }
     // see if it is in our structure list
-    uint8_t num_types;
-    const struct LogStructure *structure = dataflash.get_structures(num_types);
-    for (uint8_t i=0; i<num_types; i++) {
-        if (strcmp(name, structure[i].name) == 0) {
-            mapped_msgid[intype] = structure[i].msg_type;
+    for (uint8_t i=0; i<ARRAY_SIZE(log_structure); i++) {
+        if (strcmp(name, log_structure[i].name) == 0) {
+            mapped_msgid[intype] = log_structure[i].msg_type;
             return mapped_msgid[intype];
         }
     }
@@ -329,13 +334,11 @@ bool LogReader::set_parameter(const char *name, float value)
  */
 void LogReader::end_format_msgs(void)
 {
-    uint8_t num_types;
-    const struct LogStructure *structure = dataflash.get_structures(num_types);
     // write out any formats we will be producing
     for (uint8_t i=0; generated_names[i]; i++) {
-        for (uint8_t n=0; n<num_types; n++) {
-            if (strcmp(generated_names[i], structure[n].name) == 0) {
-                const struct LogStructure *s = &structure[n];
+        for (uint8_t n=0; n<ARRAY_SIZE(log_structure); n++) {
+            if (strcmp(generated_names[i], log_structure[n].name) == 0) {
+                const struct LogStructure *s = &log_structure[n];
                 struct log_Format pkt {};
                 pkt.head1 = HEAD_BYTE1;
                 pkt.head2 = HEAD_BYTE2;
