@@ -15,98 +15,98 @@
  */
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Replay)
 // copter defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       3.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     3.0E-02f
-#define ACC_PNOISE_DEFAULT      6.0E-01f
-#define GBIAS_PNOISE_DEFAULT    1.0E-04f
-#define GSCALE_PNOISE_DEFAULT   1.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-03f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        500
-#define POS_GATE_DEFAULT        500
-#define HGT_GATE_DEFAULT        500
-#define MAG_GATE_DEFAULT        300
+#define VELNE_M_NSE_DEFAULT     0.5f
+#define VELD_M_NSE_DEFAULT      0.7f
+#define POSNE_M_NSE_DEFAULT     1.0f
+#define ALT_M_NSE_DEFAULT       3.0f
+#define MAG_M_NSE_DEFAULT       0.05f
+#define GYRO_P_NSE_DEFAULT      3.0E-02f
+#define ACC_P_NSE_DEFAULT       6.0E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-04f
+#define GSCALE_P_NSE_DEFAULT    1.0E-05f
+#define ABIAS_P_NSE_DEFAULT     1.0E-03f
+#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define VEL_I_GATE_DEFAULT      500
+#define POS_I_GATE_DEFAULT      500
+#define HGT_I_GATE_DEFAULT      500
+#define MAG_I_GATE_DEFAULT      300
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
+#define FLOW_M_NSE_DEFAULT      0.25f
+#define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       3.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     3.0E-02f
-#define ACC_PNOISE_DEFAULT      6.0E-01f
-#define GBIAS_PNOISE_DEFAULT    1.0E-04f
-#define GSCALE_PNOISE_DEFAULT   1.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-03f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        500
-#define POS_GATE_DEFAULT        500
-#define HGT_GATE_DEFAULT        500
-#define MAG_GATE_DEFAULT        300
+#define VELNE_M_NSE_DEFAULT     0.5f
+#define VELD_M_NSE_DEFAULT      0.7f
+#define POSNE_M_NSE_DEFAULT     1.0f
+#define ALT_M_NSE_DEFAULT       3.0f
+#define MAG_M_NSE_DEFAULT       0.05f
+#define GYRO_P_NSE_DEFAULT      3.0E-02f
+#define ACC_P_NSE_DEFAULT       6.0E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-04f
+#define GSCALE_P_NSE_DEFAULT    1.0E-05f
+#define ABIAS_P_NSE_DEFAULT     1.0E-03f
+#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define VEL_I_GATE_DEFAULT      500
+#define POS_I_GATE_DEFAULT      500
+#define HGT_I_GATE_DEFAULT      500
+#define MAG_I_GATE_DEFAULT      300
 #define MAG_CAL_DEFAULT         2
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
+#define FLOW_M_NSE_DEFAULT      0.25f
+#define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       3.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     3.0E-02f
-#define ACC_PNOISE_DEFAULT      6.0E-01f
-#define GBIAS_PNOISE_DEFAULT    1.0E-04f
-#define GSCALE_PNOISE_DEFAULT   1.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-03f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        500
-#define POS_GATE_DEFAULT        500
-#define HGT_GATE_DEFAULT        500
-#define MAG_GATE_DEFAULT        300
+#define VELNE_M_NSE_DEFAULT     0.5f
+#define VELD_M_NSE_DEFAULT      0.7f
+#define POSNE_M_NSE_DEFAULT     1.0f
+#define ALT_M_NSE_DEFAULT       3.0f
+#define MAG_M_NSE_DEFAULT       0.05f
+#define GYRO_P_NSE_DEFAULT      3.0E-02f
+#define ACC_P_NSE_DEFAULT       6.0E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-04f
+#define GSCALE_P_NSE_DEFAULT    1.0E-05f
+#define ABIAS_P_NSE_DEFAULT     1.0E-03f
+#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define VEL_I_GATE_DEFAULT      500
+#define POS_I_GATE_DEFAULT      500
+#define HGT_I_GATE_DEFAULT      500
+#define MAG_I_GATE_DEFAULT      300
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
+#define FLOW_M_NSE_DEFAULT      0.25f
+#define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    150
 
 #else
 // build type not specified, use copter defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       3.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     3.0E-02f
-#define ACC_PNOISE_DEFAULT      6.0E-01f
-#define GBIAS_PNOISE_DEFAULT    1.0E-04f
-#define GSCALE_PNOISE_DEFAULT   1.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-03f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        500
-#define POS_GATE_DEFAULT        500
-#define HGT_GATE_DEFAULT        500
-#define MAG_GATE_DEFAULT        300
+#define VELNE_M_NSE_DEFAULT     0.5f
+#define VELD_M_NSE_DEFAULT      0.7f
+#define POSNE_M_NSE_DEFAULT     1.0f
+#define ALT_M_NSE_DEFAULT       3.0f
+#define MAG_M_NSE_DEFAULT       0.05f
+#define GYRO_P_NSE_DEFAULT      3.0E-02f
+#define ACC_P_NSE_DEFAULT       6.0E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-04f
+#define GSCALE_P_NSE_DEFAULT    1.0E-05f
+#define ABIAS_P_NSE_DEFAULT     1.0E-03f
+#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define VEL_I_GATE_DEFAULT      500
+#define POS_I_GATE_DEFAULT      500
+#define HGT_I_GATE_DEFAULT      500
+#define MAG_I_GATE_DEFAULT      300
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
+#define FLOW_M_NSE_DEFAULT      0.25f
+#define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 
 #endif // APM_BUILD_DIRECTORY
@@ -132,48 +132,48 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE", 1, NavEKF2, _fusionModeGPS, 0),
 
-    // @Param: VELNE_NOISE
+    // @Param: VELNE_M_NSE
     // @DisplayName: GPS horizontal velocity measurement noise (m/s)
     // @Description: This sets a lower limit on the speed accuracy reported by the GPS receiver that is used to set horizontal velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then the parameter value will be used. Increasing it reduces the weighting of the GPS horizontal velocity measurements.
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
     // @Units: m/s
-    AP_GROUPINFO("VELNE_NOISE", 2, NavEKF2, _gpsHorizVelNoise, VELNE_NOISE_DEFAULT),
+    AP_GROUPINFO("VELNE_M_NSE", 2, NavEKF2, _gpsHorizVelNoise, VELNE_M_NSE_DEFAULT),
 
-    // @Param: VELD_NOISE
+    // @Param: VELD_M_NSE
     // @DisplayName: GPS vertical velocity measurement noise (m/s)
     // @Description: This sets a lower limit on the speed accuracy reported by the GPS receiver that is used to set vertical velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then the parameter value will be used. Increasing it reduces the weighting of the GPS vertical velocity measurements.
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
     // @Units: m/s
-    AP_GROUPINFO("VELD_NOISE", 3, NavEKF2, _gpsVertVelNoise, VELD_NOISE_DEFAULT),
+    AP_GROUPINFO("VELD_M_NSE", 3, NavEKF2, _gpsVertVelNoise, VELD_M_NSE_DEFAULT),
 
-    // @Param: VEL_GATE
+    // @Param: VEL_I_GATE
     // @DisplayName: GPS velocity innovation gate size
     // @Description: This sets the percentage number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements willbe rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("VEL_GATE", 4, NavEKF2, _gpsVelInnovGate, VEL_GATE_DEFAULT),
+    AP_GROUPINFO("VEL_I_GATE", 4, NavEKF2, _gpsVelInnovGate, VEL_I_GATE_DEFAULT),
 
-    // @Param: POSNE_NOISE
+    // @Param: POSNE_M_NSE
     // @DisplayName: GPS horizontal position measurement noise (m)
     // @Description: This sets the GPS horizontal position observation noise. Increasing it reduces the weighting of GPS horizontal position measurements.
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m
-    AP_GROUPINFO("POSNE_NOISE", 5, NavEKF2, _gpsHorizPosNoise, POSNE_NOISE_DEFAULT),
+    AP_GROUPINFO("POSNE_M_NSE", 5, NavEKF2, _gpsHorizPosNoise, POSNE_M_NSE_DEFAULT),
 
-    // @Param: POS_GATE
+    // @Param: POS_I_GATE
     // @DisplayName: GPS position measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the GPS position measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("POS_GATE", 6, NavEKF2, _gpsPosInnovGate, POS_GATE_DEFAULT),
+    AP_GROUPINFO("POS_I_GATE", 6, NavEKF2, _gpsPosInnovGate, POS_I_GATE_DEFAULT),
 
     // @Param: GLITCH_RAD
     // @DisplayName: GPS glitch radius gate size (m)
@@ -202,22 +202,22 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF2, _altSource, 0),
 
-    // @Param: ALT_NOISE
+    // @Param: ALT_M_NSE
     // @DisplayName: Altitude measurement noise (m)
     // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting of the baro measurement and will make the filter respond more slowly to baro measurement errors, but will make it more sensitive to GPS and accelerometer errors.
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m
-    AP_GROUPINFO("ALT_NOISE", 10, NavEKF2, _baroAltNoise, ALT_NOISE_DEFAULT),
+    AP_GROUPINFO("ALT_M_NSE", 10, NavEKF2, _baroAltNoise, ALT_M_NSE_DEFAULT),
 
-    // @Param: HGT_GATE
+    // @Param: HGT_I_GATE
     // @DisplayName: Height measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the height measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("HGT_GATE", 11, NavEKF2, _hgtInnovGate, HGT_GATE_DEFAULT),
+    AP_GROUPINFO("HGT_I_GATE", 11, NavEKF2, _hgtInnovGate, HGT_I_GATE_DEFAULT),
 
     // @Param: HGT_DELAY
     // @DisplayName: Height measurement delay (msec)
@@ -230,14 +230,14 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // Magnetometer measurement parameters
 
-    // @Param: MAG_NOISE
+    // @Param: MAG_M_NSE
     // @DisplayName: Magnetometer measurement noise (Gauss)
     // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
     // @Range: 0.01 0.5
     // @Increment: 0.01
     // @User: Advanced
     // @Units: gauss
-    AP_GROUPINFO("MAG_NOISE", 13, NavEKF2, _magNoise, MAG_NOISE_DEFAULT),
+    AP_GROUPINFO("MAG_M_NSE", 13, NavEKF2, _magNoise, MAG_M_NSE_DEFAULT),
 
     // @Param: MAG_CAL
     // @DisplayName: Magnetometer calibration mode
@@ -246,51 +246,51 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAG_CAL", 14, NavEKF2, _magCal, MAG_CAL_DEFAULT),
 
-    // @Param: MAG_GATE
+    // @Param: MAG_I_GATE
     // @DisplayName: Magnetometer measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the magnetometer measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("MAG_GATE", 15, NavEKF2, _magInnovGate, MAG_GATE_DEFAULT),
+    AP_GROUPINFO("MAG_I_GATE", 15, NavEKF2, _magInnovGate, MAG_I_GATE_DEFAULT),
 
     // Airspeed measurement parameters
 
-    // @Param: EAS_NOISE
+    // @Param: EAS_M_NSE
     // @DisplayName: Equivalent airspeed measurement noise (m/s)
     // @Description: This is the RMS value of noise in equivalent airspeed measurements used by planes. Increasing it reduces the weighting of airspeed measurements and will make wind speed estimates less noisy and slower to converge. Increasing also increases navigation errors when dead-reckoning without GPS measurements.
     // @Range: 0.5 5.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m/s
-    AP_GROUPINFO("EAS_NOISE", 16, NavEKF2, _easNoise, 1.4f),
+    AP_GROUPINFO("EAS_M_NSE", 16, NavEKF2, _easNoise, 1.4f),
 
-    // @Param: EAS_GATE
+    // @Param: EAS_I_GATE
     // @DisplayName: Airspeed measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the airspeed measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("EAS_GATE", 17, NavEKF2, _tasInnovGate, 400),
+    AP_GROUPINFO("EAS_I_GATE", 17, NavEKF2, _tasInnovGate, 400),
 
     // Rangefinder measurement parameters
 
-    // @Param: RNG_NOISE
+    // @Param: RNG_M_NSE
     // @DisplayName: Range finder measurement noise (m)
     // @Description: This is the RMS value of noise in the range finder measurement. Increasing it reduces the weighting on this measurement.
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m
-    AP_GROUPINFO("RNG_NOISE", 18, NavEKF2, _rngNoise, 0.5f),
+    AP_GROUPINFO("RNG_M_NSE", 18, NavEKF2, _rngNoise, 0.5f),
 
-    // @Param: RNG_GATE
+    // @Param: RNG_I_GATE
     // @DisplayName: Range finder measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the range finder innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("RNG_GATE", 19, NavEKF2, _rngInnovGate, 500),
+    AP_GROUPINFO("RNG_I_GATE", 19, NavEKF2, _rngInnovGate, 500),
 
     // Optical flow measurement parameters
 
@@ -303,22 +303,22 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: rad/s
     AP_GROUPINFO("MAX_FLOW", 20, NavEKF2, _maxFlowRate, 2.5f),
 
-    // @Param: FLOW_NOISE
+    // @Param: FLOW_M_NSE
     // @DisplayName: Optical flow measurement noise (rad/s)
     // @Description: This is the RMS value of noise and errors in optical flow measurements. Increasing it reduces the weighting on these measurements.
     // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
     // @Units: rad/s
-    AP_GROUPINFO("FLOW_NOISE", 21, NavEKF2, _flowNoise, FLOW_NOISE_DEFAULT),
+    AP_GROUPINFO("FLOW_M_NSE", 21, NavEKF2, _flowNoise, FLOW_M_NSE_DEFAULT),
 
-    // @Param: FLOW_GATE
+    // @Param: FLOW_I_GATE
     // @DisplayName: Optical Flow measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the optical flow innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("FLOW_GATE", 22, NavEKF2, _flowInnovGate, FLOW_GATE_DEFAULT),
+    AP_GROUPINFO("FLOW_I_GATE", 22, NavEKF2, _flowInnovGate, FLOW_I_GATE_DEFAULT),
 
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
@@ -331,64 +331,64 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // State and Covariance Predition Parameters
 
-    // @Param: GYRO_PNOISE
+    // @Param: GYRO_P_NSE
     // @DisplayName: Rate gyro noise (rad/s)
     // @Description: This control disturbance noise controls the growth of estimated error due to gyro measurement errors excluding bias. Increasing it makes the flter trust the gyro measurements less and other measurements more.
     // @Range: 0.0001 0.1
     // @Increment: 0.0001
     // @User: Advanced
     // @Units: rad/s
-    AP_GROUPINFO("GYRO_PNOISE", 24, NavEKF2, _gyrNoise, GYRO_PNOISE_DEFAULT),
+    AP_GROUPINFO("GYRO_P_NSE", 24, NavEKF2, _gyrNoise, GYRO_P_NSE_DEFAULT),
 
-    // @Param: ACC_PNOISE
+    // @Param: ACC_P_NSE
     // @DisplayName: Accelerometer noise (m/s^2)
     // @Description: This control disturbance noise controls the growth of estimated error due to accelerometer measurement errors excluding bias. Increasing it makes the flter trust the accelerometer measurements less and other measurements more.
     // @Range: 0.01 1.0
     // @Increment: 0.01
     // @User: Advanced
     // @Units: m/s/s
-    AP_GROUPINFO("ACC_PNOISE", 25, NavEKF2, _accNoise, ACC_PNOISE_DEFAULT),
+    AP_GROUPINFO("ACC_P_NSE", 25, NavEKF2, _accNoise, ACC_P_NSE_DEFAULT),
 
-    // @Param: GBIAS_PNOISE
+    // @Param: GBIAS_P_NSE
     // @DisplayName: Rate gyro bias stability (rad/s/s)
     // @Description: This state  process noise controls growth of the gyro delta angle bias state error estimate. Increasing it makes rate gyro bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
     // @Units: rad/s/s
-    AP_GROUPINFO("GBIAS_PNOISE", 26, NavEKF2, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
+    AP_GROUPINFO("GBIAS_P_NSE", 26, NavEKF2, _gyroBiasProcessNoise, GBIAS_P_NSE_DEFAULT),
 
-    // @Param: GSCL_PNOISE
+    // @Param: GSCL_P_NSE
     // @DisplayName: Rate gyro scale factor stability (1/s)
     // @Description: This noise controls the rate of gyro scale factor learning. Increasing it makes rate gyro scale factor estimation faster and noisier.
     // @Range: 0.000001 0.001
     // @User: Advanced
     // @Units: 1/s
-    AP_GROUPINFO("GSCL_PNOISE", 27, NavEKF2, _gyroScaleProcessNoise, GSCALE_PNOISE_DEFAULT),
+    AP_GROUPINFO("GSCL_P_NSE", 27, NavEKF2, _gyroScaleProcessNoise, GSCALE_P_NSE_DEFAULT),
 
-    // @Param: ABIAS_PNOISE
+    // @Param: ABIAS_P_NSE
     // @DisplayName: Accelerometer bias stability (m/s^3)
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
     // @Range: 0.00001 0.001
     // @User: Advanced
     // @Units: m/s/s/s
-    AP_GROUPINFO("ABIAS_PNOISE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
+    AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
-    // @Param: MAG_PNOISE
+    // @Param: MAG_P_NSE
     // @DisplayName: Magnetic field process noise (gauss/s)
     // @Description: This state process noise controls the growth of magnetic field state error estimates. Increasing it makes magnetic field bias estimation faster and noisier.
     // @Range: 0.0001 0.01
     // @User: Advanced
     // @Units: gauss/s
-    AP_GROUPINFO("MAG_PNOISE", 29, NavEKF2, _magProcessNoise, MAG_PNOISE_DEFAULT),
+    AP_GROUPINFO("MAG_P_NSE", 29, NavEKF2, _magProcessNoise, MAG_P_NSE_DEFAULT),
 
-    // @Param: WIND_PNOISE
+    // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
     // @Description: This state process noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
     // @Range: 0.01 1.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m/s/s
-    AP_GROUPINFO("WIND_PNOISE", 30, NavEKF2, _windVelProcessNoise, 0.1f),
+    AP_GROUPINFO("WIND_P_NSE", 30, NavEKF2, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
     // @DisplayName: Height rate to wind procss noise scaler
@@ -420,13 +420,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: %
     AP_GROUPINFO("CHECK_SCALE", 34, NavEKF2, _gpsCheckScaler, CHECK_SCALER_DEFAULT),
 
-    // @Param: NOAID_NOISE
+    // @Param: NOAID_M_NSE
     // @DisplayName: Non-GPS operation position uncertainty (m)
     // @Description: This sets the amount of position variation that the EKF allows for when operating without external measurements (eg GPS or optical flow). Increasing this parameter makes the EKF attitude estimate less sensitive to vehicle manoeuvres but more sensitive to IMU errors.
     // @Range: 0.5 50.0
     // @User: Advanced
     // @Units: m/s
-    AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizNoise, 10.0f),
+    AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF2, _noaidHorizNoise, 10.0f),
 
     // @Param: LOG_MASK
     // @DisplayName: EKF sensor logging IMU mask
