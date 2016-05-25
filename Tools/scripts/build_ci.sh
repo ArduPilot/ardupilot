@@ -30,8 +30,10 @@ fi
 
 if [[ "$CI_BUILD_TARGET" == *"px4"* ]]; then
     export CCACHE_MAXSIZE="1500M"
+elif [[ "$CI_BUILD_TARGET" == "sitltest" ]]; then
+    export CCACHE_MAXSIZE="300M"
 else
-    export CCACHE_MAXSIZE="500M"
+    export CCACHE_MAXSIZE="1000M"
 fi
 
 # special case for SITL testing in CI
