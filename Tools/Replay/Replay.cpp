@@ -14,44 +14,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <fenv.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_AccelCal/AP_AccelCal.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_Declination/AP_Declination.h>
-#include <Filter/Filter.h>
-#include <AP_Buffer/AP_Buffer.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Notify/AP_Notify.h>
-#include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_InertialNav/AP_InertialNav.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_Mission/AP_Mission.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <RC_Channel/RC_Channel.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <stdio.h>
-#include <errno.h>
-#include <signal.h>
-#include <unistd.h>
-#include <AP_HAL/utility/getopt_cpp.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include "Parameters.h"
 #include "VehicleType.h"
 #include "MsgHandler.h"
@@ -63,6 +26,7 @@
 
 #include "LogReader.h"
 #include "DataFlashFileReader.h"
+#include "Replay.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -71,34 +35,6 @@
 #define streq(x, y) (!strcmp(x, y))
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
-class ReplayVehicle {
-public:
-    void setup();
-    void load_parameters(void);
-
-    AP_InertialSensor ins;
-    AP_Baro barometer;
-    AP_GPS gps;
-    Compass compass;
-    AP_SerialManager serial_manager;
-    RangeFinder rng {serial_manager};
-    NavEKF EKF{&ahrs, barometer, rng};
-    NavEKF2 EKF2{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF, EKF2};
-    AP_InertialNav_NavEKF inertial_nav{ahrs};
-    AP_Vehicle::FixedWing aparm;
-    AP_Airspeed airspeed{aparm};
-    DataFlash_Class dataflash{"Replay v0.1"};
-
-private:
-    Parameters g;
-
-    // setup the var_info table
-    AP_Param param_loader{var_info};
-
-    static const AP_Param::Info var_info[];
-};
 
 ReplayVehicle replayvehicle;
 
@@ -217,94 +153,6 @@ void ReplayVehicle::setup(void)
     ins.set_hil_mode();
 }
 
-class Replay : public AP_HAL::HAL::Callbacks {
-public:
-    Replay(ReplayVehicle &vehicle) :
-        filename("log.bin"),
-        _vehicle(vehicle) { }
-
-    // HAL::Callbacks implementation.
-    void setup() override;
-    void loop() override;
-
-    void flush_dataflash(void);
-
-    bool check_solution = false;
-    const char *log_filename = NULL;
-
-    /*
-      information about a log from find_log_info
-     */
-    struct log_information {
-        uint16_t update_rate;
-        bool have_imu2:1;
-        bool have_imt:1;
-        bool have_imt2:1;
-    } log_info {};
-
-private:
-    const char *filename;
-    ReplayVehicle &_vehicle;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
-#endif
-
-    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, log_structure, ARRAY_SIZE(log_structure), nottypes};
-
-    FILE *plotf;
-    FILE *plotf2;
-    FILE *ekf1f;
-    FILE *ekf2f;
-    FILE *ekf3f;
-    FILE *ekf4f;
-
-    bool done_parameters;
-    bool done_baro_init;
-    bool done_home_init;
-    int32_t arm_time_ms = -1;
-    bool ahrs_healthy;
-    bool use_imt = true;
-    bool check_generate = false;
-    float tolerance_euler = 3;
-    float tolerance_pos = 2;
-    float tolerance_vel = 2;
-    const char **nottypes = NULL;
-    uint16_t downsample = 0;
-    bool logmatch = false;
-    uint32_t output_counter = 0;
-
-    struct {
-        float max_roll_error;
-        float max_pitch_error;
-        float max_yaw_error;
-        float max_pos_error;
-        float max_alt_error;
-        float max_vel_error;
-    } check_result {};
-
-    void _parse_command_line(uint8_t argc, char * const argv[]);
-
-    uint8_t num_user_parameters;
-    struct {
-        char name[17];
-        float value;
-    } user_parameters[100];
-
-    void set_ins_update_rate(uint16_t update_rate);
-    void inhibit_gyro_cal();
-
-    void usage(void);
-    void set_user_parameters(void);
-    void read_sensors(const char *type);
-    void write_ekf_logs(void);
-    void log_check_generate();
-    void log_check_solution();
-    bool show_error(const char *text, float max_error, float tolerance);
-    void report_checks();
-    bool find_log_info(struct log_information &info);
-    const char **parse_list_from_string(const char *str);
-};
 
 Replay replay(replayvehicle);
 
@@ -338,6 +186,7 @@ enum {
     OPT_DOWNSAMPLE,
     OPT_LOGMATCH,
     OPT_NOPARAMS,
+    OPT_PARAM_FILE
 };
 
 void Replay::flush_dataflash(void) {
@@ -377,6 +226,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     const struct GetOptLong::option options[] = {
         {"parm",            true,   0, 'p'},
         {"param",           true,   0, 'p'},
+        {"param-file",      true,   0, OPT_PARAM_FILE},
         {"help",            false,  0, 'h'},
         {"accel-mask",      true,   0, 'a'},
         {"gyro-mask",       true,   0, 'g'},
@@ -422,14 +272,11 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
                 ::printf("Usage: -p NAME=VALUE\n");
                 exit(1);
             }
-            memset(user_parameters[num_user_parameters].name, '\0', 16);
-            strncpy(user_parameters[num_user_parameters].name, gopt.optarg, eq-gopt.optarg);
-            user_parameters[num_user_parameters].value = atof(eq+1);
-            num_user_parameters++;
-            if (num_user_parameters >= ARRAY_SIZE(user_parameters)) {
-                ::printf("Too many user parameters\n");
-                exit(1);
-            }
+            struct user_parameter *u = new user_parameter;
+            strncpy(u->name, gopt.optarg, eq-gopt.optarg);
+            u->value = atof(eq+1);
+            u->next = user_parameters;
+            user_parameters = u;
             break;
         }
 
@@ -467,6 +314,10 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
         case OPT_NOPARAMS:
             globals.no_params = true;
+            break;
+
+        case OPT_PARAM_FILE:
+            load_param_file(gopt.optarg);
             break;
             
         case 'h':
@@ -738,9 +589,9 @@ void Replay::inhibit_gyro_cal() {
  */
 void Replay::set_user_parameters(void)
 {
-    for (uint8_t i=0; i<num_user_parameters; i++) {
-        if (!logreader.set_parameter(user_parameters[i].name, user_parameters[i].value)) {
-            ::printf("Failed to set parameter %s to %f\n", user_parameters[i].name, user_parameters[i].value);
+    for (struct user_parameter *u=user_parameters; u; u=u->next) {
+        if (!logreader.set_parameter(u->name, u->value)) {
+            ::printf("Failed to set parameter %s to %f\n", u->name, u->value);
             exit(1);
         }
     }
@@ -1193,6 +1044,72 @@ void Replay::report_checks(void)
     } else {
         printf("Checks passed\n");
     }
+}
+
+/*
+  parse a parameter file line
+ */
+bool Replay::parse_param_line(char *line, char **vname, float &value)
+{
+    if (line[0] == '#') {
+        return false;
+    }
+    char *saveptr = NULL;
+    char *pname = strtok_r(line, ", =\t", &saveptr);
+    if (pname == NULL) {
+        return false;
+    }
+    if (strlen(pname) > AP_MAX_NAME_SIZE) {
+        return false;
+    }
+    const char *value_s = strtok_r(NULL, ", =\t", &saveptr);
+    if (value_s == NULL) {
+        return false;
+    }
+    value = atof(value_s);
+    *vname = pname;
+    return true;
+}
+
+
+/*
+  load a default set of parameters from a file
+ */
+void Replay::load_param_file(const char *pfilename)
+{
+    FILE *f = fopen(pfilename, "r");
+    if (f == NULL) {
+        printf("Failed to open parameter file: %s\n", pfilename);
+        exit(1);
+    }
+    char line[100];
+
+    while (fgets(line, sizeof(line)-1, f)) {
+        char *pname;
+        float value;
+        if (!parse_param_line(line, &pname, value)) {
+            continue;
+        }
+        struct user_parameter *u = new user_parameter;
+        strncpy(u->name, pname, sizeof(u->name));
+        u->value = value;
+        u->next = user_parameters;
+        user_parameters = u;
+    }
+    fclose(f);
+}
+
+/*
+  see if a user parameter is set
+ */
+bool Replay::check_user_param(const char *name)
+{
+    for (struct user_parameter *u=user_parameters; u; u=u->next) {
+        if (strcmp(name, u->name) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 AP_HAL_MAIN_CALLBACKS(&replay);

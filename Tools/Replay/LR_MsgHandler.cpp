@@ -1,5 +1,6 @@
 #include "LR_MsgHandler.h"
 #include "LogReader.h"
+#include "Replay.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -437,7 +438,7 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
     require_field(msg, "Name", parameter_name, parameter_name_len);
 
     float value = require_field_float(msg, "Value");
-    if (globals.no_params) {
+    if (globals.no_params || replay.check_user_param(parameter_name)) {
         printf("Not changing %s to %f\n", parameter_name, value);
     } else {
         set_parameter(parameter_name, value);

@@ -29,8 +29,7 @@
 extern const AP_HAL::HAL& hal;
 
 LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
-                     AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *_structure, 
-                     uint8_t _num_types, const char **&_nottypes):
+                     AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const char **&_nottypes):
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
@@ -39,8 +38,6 @@ LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Co
     gps(_gps),
     airspeed(_airspeed),
     dataflash(_dataflash),
-    structure(_structure),
-    num_types(_num_types),
     accel_mask(7),
     gyro_mask(7),
     last_timestamp_usec(0),
@@ -121,6 +118,8 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
         return mapped_msgid[intype];
     }
     // see if it is in our structure list
+    uint8_t num_types;
+    const struct LogStructure *structure = dataflash.get_structures(num_types);
     for (uint8_t i=0; i<num_types; i++) {
         if (strcmp(name, structure[i].name) == 0) {
             mapped_msgid[intype] = structure[i].msg_type;
@@ -330,6 +329,8 @@ bool LogReader::set_parameter(const char *name, float value)
  */
 void LogReader::end_format_msgs(void)
 {
+    uint8_t num_types;
+    const struct LogStructure *structure = dataflash.get_structures(num_types);
     // write out any formats we will be producing
     for (uint8_t i=0; generated_names[i]; i++) {
         for (uint8_t n=0; n<num_types; n++) {
