@@ -55,6 +55,10 @@ waf=modules/waf/waf-light
 # get list of boards supported by the waf build
 for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
 
+function get_time {
+    date -u "+%s"
+}
+
 echo "Targets: $CI_BUILD_TARGET"
 for t in $CI_BUILD_TARGET; do
     # skip make-based build for clang
@@ -69,7 +73,10 @@ for t in $CI_BUILD_TARGET; do
                 make px4-cleandep
             fi
 
+            start_time=$(get_time)
             make $t -j2
+            diff_time=$(($(get_time)-$start_time))
+            echo -e "\033[32m'make' finished successfully (${diff_time}s)\033[0m"
             ccache -s && ccache -z
             popd
         done
