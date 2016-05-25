@@ -78,6 +78,12 @@ public:
     bool NeedPrep();
     void Prep();
 
+    // get a pointer to structures
+    const struct LogStructure *get_structures(uint8_t &num_types) {
+        num_types = _num_types;
+        return _structures;
+    }
+    
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
     /* Write an *important* block of data at current offset */
