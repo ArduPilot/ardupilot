@@ -59,40 +59,6 @@ def px4_import_objects_from_use(self):
 
         queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
-class px4_copy_lib(Task.Task):
-    run_str = '${CP} ${SRC} ${PX4_AP_PROGRAM_LIB}'
-    color = 'CYAN'
-
-    def runnable_status(self):
-        status = super(px4_copy_lib, self).runnable_status()
-        if status != Task.SKIP_ME:
-            return status
-
-        pseudo_target = self.get_pseudo_target()
-        try:
-            if pseudo_target.sig != self.inputs[0].sig:
-                status = Task.RUN_ME
-        except AttributeError:
-            status = Task.RUN_ME
-
-        return status
-
-    def get_pseudo_target(self):
-        if hasattr(self, 'pseudo_target'):
-            return self.pseudo_target
-
-        bldnode = self.generator.bld.bldnode
-        self.pseudo_target = bldnode.make_node(self.env.PX4_AP_PROGRAM_LIB)
-        return self.pseudo_target
-
-    def keyword(self):
-        return 'PX4: Copying program library'
-
-    def post_run(self):
-        super(px4_copy_lib, self).post_run()
-        pseudo_target = self.get_pseudo_target()
-        pseudo_target.sig = pseudo_target.cache_sig = self.inputs[0].sig
-
 class px4_copy(Task.Task):
     run_str = '${CP} ${SRC} ${TGT}'
     color = 'CYAN'
@@ -143,23 +109,24 @@ def px4_firmware(self):
         _cp_px4io = self.create_task('px4_copy', px4io, romfs_px4io)
         _cp_px4io.keyword = lambda: 'PX4: Copying PX4IO to ROMFS'
 
-    cp_lib = self.create_task('px4_copy_lib', self.link_task.outputs)
-    # we need to synchronize because the path PX4_AP_PROGRAM_LIB is used by all
-    # ap_programs
-    if _firmware_semaphorish_tasks:
-        for t in _firmware_semaphorish_tasks:
-            cp_lib.set_run_after(t)
-    _firmware_semaphorish_tasks = []
+    px4 = self.bld.cmake('px4')
+    px4.vars['APM_PROGRAM_LIB'] = self.link_task.outputs[0].abspath()
 
     fw_task = self.create_cmake_build_task(
         'px4',
         'build_firmware_px4fmu-v%s' % version,
     )
-    fw_task.set_run_after(cp_lib)
+
+    # we need to synchronize in order to avoid the output expected by the
+    # previous ap_program being overwritten before used
+    for t in _firmware_semaphorish_tasks:
+        fw_task.set_run_after(t)
+    _firmware_semaphorish_tasks = []
+
     if self.env.PX4_USE_PX4IO and _cp_px4io.generator is self:
         fw_task.set_run_after(_cp_px4io)
 
-    firmware = fw_task.cmake.bldnode.make_node(
+    firmware = px4.bldnode.make_node(
         'src/firmware/nuttx/nuttx-px4fmu-v%s-apm.px4' % version,
     )
     _update_firmware_sig(fw_task, firmware)
@@ -244,9 +211,6 @@ def configure(cfg):
     env.PX4_ROMFS_BLD = 'px4-extra-files/ROMFS'
     env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % bootloader_name
 
-    program_lib_name = cfg.env.cxxstlib_PATTERN % 'ap_program'
-    env.PX4_AP_PROGRAM_LIB = os.path.join('px4-extra-files', program_lib_name)
-
     env.PX4_ADD_GIT_HASHES = srcpath('Tools/scripts/add_git_hashes.py')
     env.PX4_APM_ROOT = srcpath('')
     env.PX4_ROOT = srcpath('modules/PX4Firmware')
@@ -259,7 +223,6 @@ def configure(cfg):
         UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
         NUTTX_SRC=env.PX4_NUTTX_ROOT,
         PX4_NUTTX_ROMFS=bldpath(env.PX4_ROMFS_BLD),
-        APM_PROGRAM_LIB=bldpath(env.PX4_AP_PROGRAM_LIB),
         ARDUPILOT_BUILD='YES',
         EXTRA_CXX_FLAGS=' '.join((
             # NOTE: these "-Wno-error=*" flags should be removed as we update
