@@ -490,22 +490,35 @@ public:
     bool handle_log_format_msg(const struct log_Format &f);
     bool handle_msg(const struct log_Format &f, uint8_t *msg);
 
-    uint64_t last_clock_timestamp;
+    uint64_t last_clock_timestamp = 0;
+    float last_parm_value = 0;
+    char last_parm_name[17] {};
 private:
-    MsgHandler *handler;
+    MsgHandler *handler = nullptr;
+    MsgHandler *parm_handler = nullptr;
 };
 
 bool IMUCounter::handle_log_format_msg(const struct log_Format &f) {
     if (!strncmp(f.name,"IMU",4) ||
         !strncmp(f.name,"IMT",4)) {
-        // an IMU or IMT message message
+        // an IMU or IMT message message format
         handler = new MsgHandler(f);
+    }
+    if (strncmp(f.name,"PARM",4) == 0) {
+        // PARM message message format
+        parm_handler = new MsgHandler(f);
     }
 
     return true;
 };
 
 bool IMUCounter::handle_msg(const struct log_Format &f, uint8_t *msg) {
+    if (strncmp(f.name,"PARM",4) == 0) {
+        // gather parameter values to check for SCHED_LOOP_RATE
+        parm_handler->field_value(msg, "Name", last_parm_name, sizeof(last_parm_name));
+        parm_handler->field_value(msg, "Value", last_parm_value);
+        return true;
+    }
     if (strncmp(f.name,"IMU",4) &&
         strncmp(f.name,"IMT",4)) {
         // not an IMU message
@@ -544,6 +557,12 @@ bool Replay::find_log_info(struct log_information &info)
             break;
         }
 
+        if (streq(type, "PARM") && streq(reader.last_parm_name, "SCHED_LOOP_RATE")) {
+            // get rate directly from parameters
+            info.update_rate = reader.last_parm_value;
+            return true;
+        }
+        
         if (strlen(clock_source) == 0) {
             // If you want to add a clock source, also add it to
             // handle_msg and handle_log_format_msg, above.  Note that
