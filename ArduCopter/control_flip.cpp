@@ -34,7 +34,6 @@
 
 FlipState flip_state;               // current state of flip
 control_mode_t   flip_orig_control_mode;   // flight mode when flip was initated
-mode_reason_t    flip_orig_control_mode_reason;
 uint32_t  flip_start_time;          // time since flip began
 int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
 int8_t    flip_pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
@@ -64,7 +63,6 @@ bool Copter::flip_init(bool ignore_checks)
 
     // capture original flight mode so that we can return to it after completion
     flip_orig_control_mode = control_mode;
-    flip_orig_control_mode_reason = control_mode_reason;
 
     // initialise state
     flip_state = Flip_Start;
@@ -195,7 +193,7 @@ void Copter::flip_run()
         // check for successful recovery
         if (fabsf(recovery_angle) <= FLIP_RECOVERY_ANGLE) {
             // restore original flight mode
-            if (!set_mode(flip_orig_control_mode, flip_orig_control_mode_reason)) {
+            if (!set_mode(flip_orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
                 // this should never happen but just in case
                 set_mode(STABILIZE, MODE_REASON_UNKNOWN);
             }
@@ -206,7 +204,7 @@ void Copter::flip_run()
 
     case Flip_Abandon:
         // restore original flight mode
-        if (!set_mode(flip_orig_control_mode, flip_orig_control_mode_reason)) {
+        if (!set_mode(flip_orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
             // this should never happen but just in case
             set_mode(STABILIZE, MODE_REASON_UNKNOWN);
         }
