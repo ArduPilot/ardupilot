@@ -48,15 +48,14 @@ AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
     mavlink_gps_mav_t packet;
     mavlink_msg_gps_mav_decode(msg, &packet);
 
-    bool have_alt  = ((packet.ignore & (1<<0)) == 0);
-    bool have_hdop = ((packet.ignore & (1<<1)) == 0);
-    bool have_vdop = ((packet.ignore & (1<<2)) == 0);
-    bool have_vel  = ((packet.ignore & (1<<3)) == 0);
-    bool have_cog  = ((packet.ignore & (1<<4)) == 0);
-    bool have_sog  = ((packet.ignore & (1<<5)) == 0);
-    bool have_sa   = ((packet.ignore & (1<<6)) == 0);
-    bool have_ha   = ((packet.ignore & (1<<7)) == 0);
-    bool have_va   = ((packet.ignore & (1<<8)) == 0);
+    bool have_alt    = ((packet.ignore & (1<<0)) == 0);
+    bool have_hdop   = ((packet.ignore & (1<<1)) == 0);
+    bool have_vdop   = ((packet.ignore & (1<<2)) == 0);
+    bool have_vel_h  = ((packet.ignore & (1<<3)) == 0);
+    bool have_vel_v  = ((packet.ignore & (1<<4)) == 0);
+    bool have_sa     = ((packet.ignore & (1<<5)) == 0);
+    bool have_ha     = ((packet.ignore & (1<<6)) == 0);
+    bool have_va     = ((packet.ignore & (1<<7)) == 0);
 
     state.time_week     = packet.time_week;
     state.time_week_ms  = packet.time_week_ms;
@@ -76,20 +75,15 @@ AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
     if (have_vdop)
         state.vdop = packet.vdop * 10; //In centimeters
 
-    if (have_vel) {
-        Vector3f vel(packet.vn, packet.ve, packet.vd);
+    if (have_vel_h) {
+        Vector3f vel(packet.vn, packet.ve, 0);
+        if (have_vel_v)
+            vel.z = packet.vd;
+
         state.velocity = vel;
+        state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
+        state.ground_speed = norm(vel.x, vel.y);
     }
-
-    if (have_cog)
-        state.ground_course = packet.cog;
-    else if (have_vel)
-        state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-
-    if (have_sog)
-        state.ground_speed = packet.sog;
-    else if (have_vel)
-        state.ground_speed = norm(state.velocity.x, state.velocity.y);
 
     if (have_sa) {
         state.speed_accuracy = packet.speed_accuracy;
