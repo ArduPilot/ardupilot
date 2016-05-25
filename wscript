@@ -50,6 +50,7 @@ def options(opt):
     }
 
     opt.load('ardupilotwaf')
+    opt.load('build_summary')
 
     g = opt.ap_groups['configure']
 
@@ -105,6 +106,7 @@ def configure(cfg):
         cfg.load('gbenchmark')
     cfg.load('gtest')
     cfg.load('static_linking')
+    cfg.load('build_summary')
 
     cfg.start_msg('Benchmarks')
     if cfg.env.HAS_GBENCHMARK:
@@ -282,6 +284,7 @@ def build(bld):
         group='dynamic_sources',
     )
 
+    bld.load('build_summary')
 
 ardupilotwaf.build_command('check',
     program_group_list='all',
