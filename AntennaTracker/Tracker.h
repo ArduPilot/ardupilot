@@ -159,14 +159,15 @@ private:
         float bearing;                  // bearing to vehicle in centi-degrees
         float distance;                 // distance to vehicle in meters
         float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
-        float altitude_difference;      // altitude difference between tracker and vehicle in meters.  positive value means vehicle is above tracker
+        float alt_difference_baro;      // altitude difference between tracker and vehicle in meters according to the barometer.  positive value means vehicle is above tracker
+        float alt_difference_gps;       // altitude difference between tracker and vehicle in meters according to the gps.  positive value means vehicle is above tracker
         float altitude_offset;          // offset in meters which is added to tracker altitude to align altitude measurements with vehicle's barometer
         bool manual_control_yaw         : 1;// true if tracker yaw is under manual control
         bool manual_control_pitch       : 1;// true if tracker pitch is manually controlled
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
-    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
+    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
     // Servo state
     struct {

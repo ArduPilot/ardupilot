@@ -127,6 +127,8 @@ void Tracker::send_waypoint_request(mavlink_channel_t chan)
 
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 {
+	float alt_diff = (g.alt_source == 0) ? nav_status.alt_difference_baro : nav_status.alt_difference_gps;
+
     mavlink_msg_nav_controller_output_send(
         chan,
         0,
@@ -134,7 +136,7 @@ void Tracker::send_nav_controller_output(mavlink_channel_t chan)
         nav_status.bearing,
         nav_status.bearing,
         nav_status.distance,
-        nav_status.altitude_difference,
+        alt_diff,
         0,
         0);
 }
