@@ -931,7 +931,6 @@ private:
     uint16_t perf_info_get_num_long_running();
     uint32_t perf_info_get_num_dropped();
     Vector3f pv_location_to_vector(const Location& loc);
-    Vector3f pv_location_to_vector_with_default(const Location& loc, const Vector3f& default_posvec);
     float pv_alt_above_origin(float alt_above_home_cm);
     float pv_alt_above_home(float alt_above_origin_cm);
     float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
