@@ -340,8 +340,8 @@ void AP_TECS::_update_speed(float load_factor)
 
     float EAS2TAS = _ahrs.get_EAS2TAS();
     _TAS_dem = _EAS_dem * EAS2TAS;
-    _TASmax   = aparm.airspeed_max * EAS2TAS;
-    _TASmin   = aparm.airspeed_min * EAS2TAS;
+    _TASmax   = airspeed._airspeed_max * EAS2TAS;
+    _TASmin   = airspeed._airspeed_min * EAS2TAS;
 
     if (aparm.stall_prevention) {
         // when stall prevention is active we raise the mimimum
@@ -368,7 +368,7 @@ void AP_TECS::_update_speed(float load_factor)
     // airspeed is not being used and set speed rate to zero
     if (!_ahrs.airspeed_sensor_enabled() || !_ahrs.airspeed_estimate(&_EAS)) {
         // If no airspeed available use average of min and max
-        _EAS = 0.5f * (aparm.airspeed_min.get() + (float)aparm.airspeed_max.get());
+        _EAS = 0.5f * ((float)airspeed._airspeed_min + (float)airspeed._airspeed_max);
     }
 
     // Implement a second order complementary filter to obtain a

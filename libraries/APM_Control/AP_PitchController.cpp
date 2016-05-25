@@ -152,7 +152,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
         }
         float ki_rate = k_I * gains.tau;
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if (dt > 0 && aspeed > 0.5f*float(aparm.airspeed_min)) {
+		if (dt > 0 && aspeed > 0.5f*float(airspeed._airspeed_min)) {
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit
@@ -189,7 +189,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	_last_out = _pid_info.D + _pid_info.FF + _pid_info.P;
     _pid_info.desired = desired_rate;
 
-    if (autotune.running && aspeed > aparm.airspeed_min) {
+    if (autotune.running && aspeed > airspeed._airspeed_min) {
         // let autotune have a go at the values 
         // Note that we don't pass the integrator component so we get
         // a better idea of how much the base PD controller
@@ -221,7 +221,7 @@ int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
     float aspeed;
 	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f*(float(airspeed._airspeed_min) + float(airspeed._airspeed_max));
 	}
     return _get_rate_out(desired_rate, scaler, false, aspeed);
 }
@@ -252,13 +252,13 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 	}
 	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f*(float(airspeed._airspeed_min) + float(airspeed._airspeed_max));
 	}
     if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(airspeed._airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
 	if (inverted) {
 		rate_offset = -rate_offset;

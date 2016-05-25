@@ -33,8 +33,6 @@ public:
         AP_Int8 throttle_slewrate;
         AP_Int8 throttle_cruise;
         AP_Int8 takeoff_throttle_max;
-        AP_Int16 airspeed_min;
-        AP_Int16 airspeed_max;
         AP_Int16 pitch_limit_max_cd;
         AP_Int16 pitch_limit_min_cd;        
         AP_Int8  autotune_level;

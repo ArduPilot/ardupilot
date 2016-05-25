@@ -1316,7 +1316,7 @@ void Plane::update_load_factor(void)
         return;
     }
 
-    float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
+    float max_load_factor = smoothed_airspeed / airspeed._airspeed_min;
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
