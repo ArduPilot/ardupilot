@@ -39,9 +39,9 @@ void Copter::motor_test_output()
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
                 if (motor_test_throttle_value <= 100) {
-                    pwm = channel_throttle->get_radio_min()
-                        + (channel_throttle->get_radio_max() - channel_throttle->get_radio_min()) 
-                           * (float)motor_test_throttle_value/100.0f;
+                    int16_t pwm_min = motors.get_pwm_output_min();
+                    int16_t pwm_max = motors.get_pwm_output_max();
+                    pwm = pwm_min + (pwm_max - pwm_min) * (float)motor_test_throttle_value/100.0f;
                 }
                 break;
 
