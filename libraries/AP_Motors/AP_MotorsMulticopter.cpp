@@ -330,7 +330,7 @@ int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 
 int16_t AP_MotorsMulticopter::calc_spin_up_to_pwm() const
 {
-    return get_pwm_min() + constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min * (get_pwm_max()-get_pwm_min());
+    return get_pwm_output_min() + constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min * (get_pwm_output_max()-get_pwm_output_min());
 }
 
 // get minimum or maximum pwm value that can be output to motors
@@ -362,8 +362,6 @@ void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_m
         _throttle_radio_min = radio_min;
         _throttle_radio_max = radio_max;
     }
-    // update _min_throttle
-    _min_throttle = (float)min_throttle * ((get_pwm_output_max() - get_pwm_output_min()) / 1000.0f);
 }
 
 void AP_MotorsMulticopter::output_logic()
