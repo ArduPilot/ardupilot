@@ -98,13 +98,22 @@ void ReplayVehicle::load_parameters(void)
     AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
 }
 
+static const struct LogStructure min_log_structure[] = {
+    { LOG_FORMAT_MSG, sizeof(log_Format),
+      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },
+    { LOG_PARAMETER_MSG, sizeof(log_Parameter),
+      "PARM", "QNf",        "TimeUS,Name,Value" }, 
+    { LOG_MESSAGE_MSG, sizeof(log_Message),
+      "MSG",  "QZ",     "TimeUS,Message"},
+};
+
 void ReplayVehicle::setup(void) 
 {
     load_parameters();
     
-    // we pass zero log structures, as we will be outputting the log
-    // structures we need manually, to prevent FMT duplicates
-    dataflash.Init(nullptr, 0);
+    // we pass a minimal log structure, as we will be outputting the
+    // log structures we need manually, to prevent FMT duplicates
+    dataflash.Init(min_log_structure, ARRAY_SIZE(min_log_structure));
     dataflash.StartNewLog();
 
     ahrs.set_compass(&compass);

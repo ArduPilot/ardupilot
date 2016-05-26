@@ -29,7 +29,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-static const struct LogStructure log_structure[] = {
+const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CHEK_MSG, sizeof(log_Chek),
       "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
