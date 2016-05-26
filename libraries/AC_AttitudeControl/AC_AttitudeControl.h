@@ -214,7 +214,7 @@ public:
     float angle_boost() const { return _angle_boost; }
 
     // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
-    virtual float get_althold_lean_angle_max() const = 0;
+    float get_althold_lean_angle_max() const;
 
     // Return configured tilt angle limit in centidegrees
     float lean_angle_max() const { return _aparm.angle_max; }
@@ -354,7 +354,7 @@ protected:
     bool                _att_ctrl_use_accel_limit;
 
     // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
-    float               _althold_lean_angle_max;
+    float               _althold_lean_angle_max = 0.0f;
 
     float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
     float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
