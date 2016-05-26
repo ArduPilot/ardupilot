@@ -28,6 +28,12 @@ SingleCopter::SingleCopter(const char *home_str, const char *frame_str) :
 {
     mass = 2.0f;
 
+    if (strstr(frame_str, "coax")) {
+        frame_type = FRAME_COAX;
+    } else {
+        frame_type = FRAME_SINGLE;
+    }
+    
     /*
        scaling from motor power to Newtons. Allows the copter
        to hover against gravity when the motor is at hover_throttle
@@ -48,17 +54,34 @@ void SingleCopter::update(const struct sitl_input &input)
     for (uint8_t i=0; i<4; i++) {
         actuator[i] = constrain_float((input.servos[i]-1500) / 500.0f, -1, 1);
     }
-    float thrust = constrain_float((input.servos[4]-1000) / 1000.0f, 0, 1);
-    float yaw_thrust   = (actuator[0] + actuator[1] + actuator[2] + actuator[3]) * 0.25f * thrust;
-    float roll_thrust  = (actuator[0] - actuator[2]) * 0.5f * thrust;
-    float pitch_thrust = (actuator[1] - actuator[3]) * 0.5f * thrust;
+    float thrust;
+    float yaw_thrust;
+    float roll_thrust;
+    float pitch_thrust;
 
-    float torque_effect_accel = thrust * rotor_rot_accel;
+    switch (frame_type) {
+    case FRAME_SINGLE:
+        thrust = constrain_float((input.servos[4]-1000) / 1000.0f, 0, 1);
+        yaw_thrust   = (actuator[0] + actuator[1] + actuator[2] + actuator[3]) * 0.25f * thrust + thrust * rotor_rot_accel;
+        roll_thrust  = (actuator[0] - actuator[2]) * 0.5f * thrust;
+        pitch_thrust = (actuator[1] - actuator[3]) * 0.5f * thrust;
+        break;
+
+    case FRAME_COAX: {
+        float motor1 = constrain_float((input.servos[4]-1000) / 1000.0f, 0, 1);
+        float motor2 = constrain_float((input.servos[5]-1000) / 1000.0f, 0, 1);
+        thrust = 0.5f*(motor1 + motor2);
+        yaw_thrust   = (actuator[0] + actuator[1] + actuator[2] + actuator[3]) * 0.25f * thrust + (motor2 - motor1) * rotor_rot_accel;
+        roll_thrust  = (actuator[0] - actuator[2]) * 0.5f * thrust;
+        pitch_thrust = (actuator[1] - actuator[3]) * 0.5f * thrust;
+        break;
+    }
+    }        
     
     // rotational acceleration, in rad/s/s, in body frame
     Vector3f rot_accel(roll_thrust * roll_rate_max,
                        pitch_thrust * pitch_rate_max,
-                       yaw_thrust * yaw_rate_max + torque_effect_accel);
+                       yaw_thrust * yaw_rate_max);
 
     // rotational air resistance
     rot_accel.x -= gyro.x * radians(5000.0) / terminal_rotation_rate;

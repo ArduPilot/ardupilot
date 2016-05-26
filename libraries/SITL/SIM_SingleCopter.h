@@ -48,6 +48,11 @@ private:
     float pitch_rate_max = radians(700);
     float yaw_rate_max = radians(700);
     float thrust_scale;
+
+    enum {
+        FRAME_SINGLE,
+        FRAME_COAX,
+    } frame_type;
 };
 
 } // namespace SITL
