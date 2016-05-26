@@ -75,10 +75,6 @@ public:
 	// should be called at 100hz or more
 	virtual void rate_controller_run();
 
-    // get lean angle max for pilot input that prioritises altitude hold over lean angle
-    // NOTE: returns centi-degrees
-    float get_althold_lean_angle_max() const;
-
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
 
