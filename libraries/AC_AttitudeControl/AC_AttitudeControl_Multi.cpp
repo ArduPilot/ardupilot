@@ -162,6 +162,7 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
     // divide by zero check
     if (is_zero(thr_max)) {
         _althold_lean_angle_max = 0.0f;
+        return;
     }
 
     float althold_lean_angle_max = acos(constrain_float(_throttle_in/(AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
