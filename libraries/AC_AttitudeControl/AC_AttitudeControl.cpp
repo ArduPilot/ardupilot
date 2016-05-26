@@ -87,6 +87,13 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_yaw, "ANG_YAW_", 15, AC_AttitudeControl, AC_P),
 
+    // @Param: ANG_LIM_TC
+    // @DisplayName: Angle Limit (to maintain altitude) Time Constant
+    // @Description: Angle Limit (to maintain altitude) Time Constant
+    // @Range: 0.5 10.0
+    // @User: Advanced
+    AP_GROUPINFO("ANG_LIM_TC", 16, AC_AttitudeControl, _angle_limit_tc, AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT),
+
     AP_GROUPEND
 };
 
