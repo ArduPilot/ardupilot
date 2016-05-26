@@ -165,6 +165,11 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
  */
 void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
 {
+    if (freq_hz > 50 && _output_mode == MODE_PWM_ONESHOT) {
+        // rate is irrelevent in oneshot
+        return;
+    }
+
     // re-fetch servo count as it might have changed due to a change in BRD_PWM_COUNT
     if (_pwm_fd != -1 && ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
         hal.console->printf("RCOutput: Unable to get servo count\n");        
