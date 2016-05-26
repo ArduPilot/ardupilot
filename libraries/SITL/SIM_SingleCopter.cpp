@@ -67,7 +67,8 @@ void SingleCopter::update(const struct sitl_input &input)
         pitch_thrust = (actuator[1] - actuator[3]) * 0.5f * thrust;
         break;
 
-    case FRAME_COAX: {
+    case FRAME_COAX:
+    default: {
         float motor1 = constrain_float((input.servos[4]-1000) / 1000.0f, 0, 1);
         float motor2 = constrain_float((input.servos[5]-1000) / 1000.0f, 0, 1);
         thrust = 0.5f*(motor1 + motor2);
