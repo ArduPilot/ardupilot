@@ -80,6 +80,10 @@ revisions.
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--disable-lttng', action='store_true',
+        default=False,
+        help="Don't use lttng even if supported by board and dependencies available")
+
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
