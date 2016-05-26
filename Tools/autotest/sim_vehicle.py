@@ -335,6 +335,11 @@ _options_for_frame = {
         "make_target": "sitl-heli-compound",
         "waf_target": "bin/arducopter-coax", # is this correct? -pb201604301447
     },
+    "singlecopter": {
+	    "make_target": "sitl-single",
+            "waf_target": "bin/arducopter-single",
+            "default_params_filename": "SingleCopter.parm",
+    },
     # PLANE
     "quadplane-tilttri" : {
         "build_target" : "sitl-tri",
