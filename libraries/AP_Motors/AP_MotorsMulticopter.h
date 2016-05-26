@@ -104,6 +104,10 @@ public:
     // flight. Thrust is in the range 0 to 1
     void                output_motor_mask(float thrust, uint8_t mask);
 
+    // get minimum or maximum pwm value that can be output to motors
+    int16_t             get_pwm_output_min() const;
+    int16_t             get_pwm_output_max() const;
+    
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
     void                set_thrust_compensation_callback(thrust_compensation_fn_t callback) {
@@ -141,10 +145,6 @@ protected:
 
     // convert thrust (0~1) range back to pwm range
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
-
-    // get minimum or maximum pwm value that can be output to motors
-    int16_t             get_pwm_output_min() const;
-    int16_t             get_pwm_output_max() const;
 
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
