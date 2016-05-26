@@ -40,8 +40,8 @@
 
 #define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
 
-#define AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_TC_DEFAULT   1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
-#define AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_THROTTLE_MAX 0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
+#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT      1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
+#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX    0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
 
 #define AC_ATTITUDE_CONTROL_MIN_DEFAULT   0.1f    // minimum throttle mix
 #define AC_ATTITUDE_CONTROL_MID_DEFAULT   0.5f    // manual throttle mix
@@ -315,6 +315,9 @@ protected:
     AC_P                _p_angle_roll;
     AC_P                _p_angle_pitch;
     AC_P                _p_angle_yaw;
+
+    // Angle limit time constant (to maintain altitude)
+    AP_Float            _angle_limit_tc;
 
     // Intersampling period in seconds
     float               _dt;

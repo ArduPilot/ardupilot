@@ -159,8 +159,8 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
         return;
     }
 
-    float althold_lean_angle_max = acos(constrain_float(_throttle_in/(AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
-    _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+AC_ATTITUDE_CONTROL_ALTHOLD_LEAN_ANGLE_TC_DEFAULT))*(althold_lean_angle_max-_althold_lean_angle_max);
+    float althold_lean_angle_max = acos(constrain_float(_throttle_in/(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
+    _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max);
 }
 
 void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
