@@ -6,8 +6,6 @@
 
 #define TRUE 1
 #define FALSE 0
-#define ToRad(x) radians(x)	// *pi/180
-#define ToDeg(x) degrees(x)	// *180/pi
 
 #define DEBUG 0
 #define SERVO_MAX 4500	// This value represents 45 degrees and is just an arbitrary representation of servo max travel.
@@ -15,7 +13,6 @@
 // active altitude sensor
 // ----------------------
 #define SONAR 0
-#define BARO 1
 
 // CH 7 control
 enum ch7_option {
