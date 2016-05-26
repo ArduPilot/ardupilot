@@ -296,6 +296,11 @@ case $FRAME in
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/SingleCopter.parm"
 	;;
+    coaxcopter*)
+	BUILD_TARGET="sitl-coax"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/CoaxCopter.parm"
+	;;
     IrisRos)
 	BUILD_TARGET="sitl"
         DEFAULTS_PATH="$autotest/copter_params.parm"

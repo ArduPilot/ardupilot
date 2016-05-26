@@ -340,6 +340,11 @@ _options_for_frame = {
             "waf_target": "bin/arducopter-single",
             "default_params_filename": "SingleCopter.parm",
     },
+    "coaxcopter": {
+	    "make_target": "sitl-coax",
+            "waf_target": "bin/arducopter-coax",
+            "default_params_filename": "CoaxCopter.parm",
+    },
     # PLANE
     "quadplane-tilttri" : {
         "build_target" : "sitl-tri",
