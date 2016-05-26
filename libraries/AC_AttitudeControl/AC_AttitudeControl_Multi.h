@@ -52,9 +52,6 @@ public:
     AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
 
-    // get lean angle max for pilot input that prioritizes altitude hold over lean angle
-    float get_althold_lean_angle_max() const;
-
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
 

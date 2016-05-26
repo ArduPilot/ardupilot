@@ -232,13 +232,6 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     }
 }
 
-// get lean angle max for pilot input that prioritises altitude hold over lean angle
-float AC_AttitudeControl_Heli::get_althold_lean_angle_max() const
-{
-    // TEMP: convert to centi-degrees for public interface
-    return degrees(_althold_lean_angle_max) * 100.0f;
-}
-
 // Update Alt_Hold angle maximum
 void AC_AttitudeControl_Heli::update_althold_lean_angle_max(float throttle_in)
 {

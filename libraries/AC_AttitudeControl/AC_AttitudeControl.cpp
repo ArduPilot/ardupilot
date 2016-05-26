@@ -604,6 +604,13 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
     _angle_boost = 0.0f;
 }
 
+// Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
+float AC_AttitudeControl::get_althold_lean_angle_max() const
+{
+    // convert to centi-degrees for public interface
+    return ToDeg(_althold_lean_angle_max) * 100.0f;
+}
+
 float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord_lim)
 {
     if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
