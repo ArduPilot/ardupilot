@@ -328,6 +328,7 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 
 int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 {
+    thrust_in = constrain_float(thrust_in, 0, 1);
     return constrain_int16((get_pwm_output_min() + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
             (get_pwm_output_max() - (get_pwm_output_min() + _min_throttle))), get_pwm_output_min() + _min_throttle, get_pwm_output_max());
 }
