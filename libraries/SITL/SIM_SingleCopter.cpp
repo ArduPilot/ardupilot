@@ -96,7 +96,7 @@ void SingleCopter::update(const struct sitl_input &input)
     thrust *= thrust_scale;
 
     accel_body = Vector3f(0, 0, -thrust / mass);
-    accel_body += dcm * air_resistance;
+    accel_body += dcm.transposed() * air_resistance;
 
     bool was_on_ground = on_ground(position);
     
