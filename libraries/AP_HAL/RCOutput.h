@@ -25,6 +25,7 @@
 #define CH_16 15
 #define CH_17 16
 #define CH_18 17
+#define CH_NONE 255
 #endif
 
 
