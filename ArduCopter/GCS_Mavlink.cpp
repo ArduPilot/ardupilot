@@ -3,6 +3,8 @@
 #include "Copter.h"
 #include "version.h"
 
+#include "GCS_Mavlink.h"
+
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
 
@@ -515,7 +517,7 @@ bool Copter::telemetry_delayed(mavlink_channel_t chan)
 
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
     if (copter.telemetry_delayed(chan)) {
         return false;
@@ -840,7 +842,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
+float GCS_MAVLINK_Copter::adjust_rate_for_stream_trigger(enum streams stream_num)
 {
     if ((stream_num != STREAM_PARAMS) &&
         (waypoint_receiving || _queued_parameter != NULL)) {
@@ -850,7 +852,7 @@ float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
 }
 
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_MAVLINK_Copter::data_stream_send(void)
 {
     if (waypoint_receiving) {
         // don't interfere with mission transfer
@@ -955,12 +957,12 @@ GCS_MAVLINK::data_stream_send(void)
 }
 
 
-bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     return copter.do_guided(cmd);
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // add home alt if needed
     if (cmd.content.location.flags.relative_alt) {
@@ -970,7 +972,7 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
 
