@@ -833,6 +833,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
     switch (fs) {
     case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
+        auto_state.land_in_progress = true;
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
@@ -852,13 +853,18 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 
     case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
+        auto_state.land_in_progress = false;
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
     case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+        auto_state.land_in_progress = true;
+        break;
+
     case AP_SpdHgtControl::FLIGHT_NORMAL:
     case AP_SpdHgtControl::FLIGHT_VTOL:
     case AP_SpdHgtControl::FLIGHT_TAKEOFF:
+        auto_state.land_in_progress = false;
         break;
     }
     

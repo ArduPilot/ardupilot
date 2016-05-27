@@ -439,6 +439,9 @@ private:
         // Flag to indicate if we have triggered pre-flare. This occurs when we have reached LAND_PF_ALT
         bool land_pre_flare:1;
 
+        // are we in auto and flight mode is approach || pre-flare || final (flare)
+        bool land_in_progress:1;
+
         // should we fly inverted?
         bool inverted_flight:1;
 
