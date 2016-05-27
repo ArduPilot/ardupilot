@@ -207,7 +207,8 @@ def binary_path(step, debug=False):
     elif step.find("QuadPlane") != -1:
         binary_name = "arduplane"
     else:
-        raise(ValueError("Unable to determine binary name for step %s" % (step,)))
+        # cope with builds that don't have a specific binary
+        return None
 
     if debug:
         binary_basedir = "sitl-debug"
