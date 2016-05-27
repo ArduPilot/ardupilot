@@ -83,6 +83,3 @@ matrix:
       before_install: true
       install: true
       script: true
-      addons:
-        coverity_scan: false
-        apt: false
