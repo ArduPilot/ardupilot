@@ -451,6 +451,9 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False):
     # setup test parameters
     mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
+    mavproxy.send("param set LOG_REPLAY 1\n")
+    mavproxy.send("param set LOG_DISARMED 1\n")
+    time.sleep(3)
 
     mavproxy.send("param fetch\n")
 
