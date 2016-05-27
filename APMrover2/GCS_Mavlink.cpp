@@ -3,6 +3,8 @@
 #include "Rover.h"
 #include "version.h"
 
+#include "GCS_Mavlink.h"
+
 // default sensors are present and healthy: gyro, accelerometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
 
@@ -399,7 +401,7 @@ bool Rover::telemetry_delayed(mavlink_channel_t chan)
 
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 {
     if (rover.telemetry_delayed(chan)) {
         return false;
@@ -692,7 +694,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
+float GCS_MAVLINK_Rover::adjust_rate_for_stream_trigger(enum streams stream_num)
 {
     if ((stream_num != STREAM_PARAMS) && 
         (waypoint_receiving || _queued_parameter != NULL)) {
@@ -703,7 +705,7 @@ float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
 }
 
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_MAVLINK_Rover::data_stream_send(void)
 {
     rover.gcs_out_of_time = false;
 
@@ -810,7 +812,7 @@ GCS_MAVLINK::data_stream_send(void)
 
 
 
-bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (rover.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
@@ -825,12 +827,12 @@ bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     return true;
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // nothing to do
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
