@@ -77,7 +77,7 @@ void Perf::_debug_counters()
                     "max: %llu\t"
                     "avg: %.4f\t"
                     "stddev: %.4f\n",
-                    c.name, c.count, c.least, c.most, c.mean, sqrt(c.m2));
+                    c.name, c.count, c.min, c.max, c.avg, sqrt(c.m2));
         } else {
             fprintf(stderr, "%-30s\t"
                     "count: %llu\n",
@@ -161,22 +161,22 @@ void Perf::end(Util::perf_counter_t pc)
     perf.count++;
     perf.total += elapsed;
 
-    if (perf.least > elapsed) {
-        perf.least = elapsed;
+    if (perf.min > elapsed) {
+        perf.min = elapsed;
     }
 
-    if (perf.most < elapsed) {
-        perf.most = elapsed;
+    if (perf.max < elapsed) {
+        perf.max = elapsed;
     }
 
     /*
-     * Maintain mean and variance of interval in nanoseconds
-     * Knuth/Welford recursive mean and variance of update intervals (via Wikipedia)
+     * Maintain avg and variance of interval in nanoseconds
+     * Knuth/Welford recursive avg and variance of update intervals (via Wikipedia)
      * Same implementation of PX4.
      */
-    const double delta_intvl = elapsed - perf.mean;
-    perf.mean += (delta_intvl / perf.count);
-    perf.m2 += (delta_intvl * (elapsed - perf.mean));
+    const double delta_intvl = elapsed - perf.avg;
+    perf.avg += (delta_intvl / perf.count);
+    perf.m2 += (delta_intvl * (elapsed - perf.avg));
     perf.start = 0;
 
     perf.lttng.end(perf.name);
