@@ -83,3 +83,5 @@ matrix:
       before_install: true
       install: true
       script: true
+      addons:
+        apt: true
