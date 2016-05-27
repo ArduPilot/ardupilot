@@ -56,7 +56,6 @@
 #include <APM_OBC/APM_OBC.h>
 #include <APM_Control/APM_Control.h>
 #include <APM_Control/AP_AutoTune.h>
-#include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
@@ -90,6 +89,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
 
+#include "GCS_Mavlink.h"
 #include "quadplane.h"
 #include "tuning.h"
 
@@ -129,7 +129,7 @@ protected:
  */
 class Plane : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Plane;
     friend class Parameters;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
@@ -254,7 +254,7 @@ private:
     // GCS selection
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Plane gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
