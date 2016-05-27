@@ -126,47 +126,57 @@ def cmd_as_shell(cmd):
 import re
 def make_safe_filename(text):
     '''return a version of text safe for use as a filename'''
-    r = re.compile("([^a-zA-Z0-9_.-])")
+    r = re.compile("([^a-zA-Z0-9_.+-])")
     text.replace('/','-')
     filename = r.sub(lambda m : "%" + str(hex(ord(str(m.group(1))))).upper(), text)
     return filename
 
-def start_SIL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
-    '''launch a SIL instance'''
-    import pexpect
-    cmd=[]
-    if valgrind and os.path.exists('/usr/bin/valgrind'):
-        safe_filename = make_safe_filename(os.path.basename(binary))
-        cmd.extend(['valgrind', '-q', '--log-file=%s-valgrind.log' % safe_filename])
-    if gdb:
-        f = open("/tmp/x.gdb", "w")
-        f.write("r\n");
-        f.close()
-        cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+import pexpect
+class SIL(pexpect.spawn):
 
-    cmd.append(binary)
-    if wipe:
-        cmd.append('-w')
-    if synthetic_clock:
-        cmd.append('-S')
-    if home is not None:
-        cmd.extend(['--home', home])
-    if model is not None:
-        cmd.extend(['--model', model])
-    if speedup != 1:
-        cmd.extend(['--speedup', str(speedup)])
-    if defaults_file is not None:
-        cmd.extend(['--defaults', defaults_file])
-    print("Running: %s" % cmd_as_shell(cmd))
-    first = cmd[0]
-    rest = cmd[1:]
-    ret = pexpect.spawn(first, rest, logfile=sys.stdout, timeout=5)
-    ret.delaybeforesend = 0
-    pexpect_autoclose(ret)
-    # give time for parameters to properly setup
-    time.sleep(3)
-    ret.expect('Waiting for connection',timeout=300)
-    return ret
+    def __init__(self, binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
+        self.binary = binary
+        self.model = model
+
+        cmd=[]
+        if valgrind and os.path.exists('/usr/bin/valgrind'):
+            cmd.extend(['valgrind', '-q', '--log-file=%s' % self.valgrind_log_filepath()])
+        if gdb:
+            f = open("/tmp/x.gdb", "w")
+            f.write("r\n");
+            f.close()
+            cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+
+        cmd.append(binary)
+        if wipe:
+            cmd.append('-w')
+        if synthetic_clock:
+            cmd.append('-S')
+        if home is not None:
+            cmd.extend(['--home', home])
+        if model is not None:
+            cmd.extend(['--model', model])
+        if speedup != 1:
+            cmd.extend(['--speedup', str(speedup)])
+        if defaults_file is not None:
+            cmd.extend(['--defaults', defaults_file])
+        print("Running: %s" % cmd_as_shell(cmd))
+        first = cmd[0]
+        rest = cmd[1:]
+        super(SIL,self).__init__(first, rest, logfile=sys.stdout, timeout=5)
+        delaybeforesend = 0
+        pexpect_autoclose(self)
+        # give time for parameters to properly setup
+        time.sleep(3)
+        self.expect('Waiting for connection',timeout=300)
+
+
+    def valgrind_log_filepath(self):
+        return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(self.binary),self.model,))
+
+def start_SIL(binary, **kwargs):
+    '''launch a SIL instance'''
+    return SIL(binary, **kwargs)
 
 def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
                        options=None, logfile=sys.stdout):

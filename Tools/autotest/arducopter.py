@@ -1243,9 +1243,10 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    if os.path.exists('ArduCopter-valgrind.log'):
-        os.chmod('ArduCopter-valgrind.log', 0644)
-        shutil.copy("ArduCopter-valgrind.log", util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
+    valgrind_log = sil.valgrind_log_filepath()
+    if os.path.exists(valgrind_log):
+        os.chmod(valgrind_log, 0644)
+        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
 
     # [2014/05/07] FC Because I'm doing a cross machine build (source is on host, build is on guest VM) I cannot hard link
     # This flag tells me that I need to copy the data out
@@ -1367,6 +1368,11 @@ def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False):
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
+
+    valgrind_log = sil.valgrind_log_filepath()
+    if os.path.exists(valgrind_log):
+        os.chmod(valgrind_log, 0644)
+        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/Helicopter-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % failed_test_msg)

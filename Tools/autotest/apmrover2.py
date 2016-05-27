@@ -175,9 +175,10 @@ def drive_APMrover2(binary, viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    if os.path.exists('APMrover2-valgrind.log'):
-        os.chmod('APMrover2-valgrind.log', 0644)
-        shutil.copy("APMrover2-valgrind.log", util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
+    valgrind_log = sil.valgrind_log_filepath()
+    if os.path.exists(valgrind_log):
+        os.chmod(valgrind_log, 0644)
+        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % e)
