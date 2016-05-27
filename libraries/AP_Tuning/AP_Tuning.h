@@ -45,6 +45,7 @@ private:
     AP_Int16 channel_max;
     AP_Int8 selector;
     AP_Float range;
+    AP_Int8 mode_revert;
 
     // when selector was triggered
     uint32_t selector_start_ms;
