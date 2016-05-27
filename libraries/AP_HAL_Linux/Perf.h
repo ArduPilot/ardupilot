@@ -80,6 +80,10 @@ private:
 
     Perf();
 
+    void _debug_counters();
+
+    uint64_t _last_debug_msec;
+
     std::vector<Perf_Counter> _perf_counters;
 
     /* synchronize addition of new perf counters */
