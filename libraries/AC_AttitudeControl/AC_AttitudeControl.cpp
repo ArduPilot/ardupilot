@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
@@ -398,6 +398,7 @@ void AC_AttitudeControl::rate_controller_run()
     _motors.set_roll(rate_bf_to_motor_roll(_ang_vel_target_rads.x));
     _motors.set_pitch(rate_bf_to_motor_pitch(_ang_vel_target_rads.y));
     _motors.set_yaw(rate_bf_to_motor_yaw(_ang_vel_target_rads.z));
+    control_monitor_update();
 }
 
 void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads)
