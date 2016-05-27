@@ -71,7 +71,6 @@ env:
 
 matrix:
   fast_finish: true
-  matrix:
   allow_failures:
     - env: CI_BUILD_TARGET="noop"
   include:
