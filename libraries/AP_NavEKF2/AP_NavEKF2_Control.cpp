@@ -115,8 +115,6 @@ void NavEKF2_core::setWindMagStateLearningMode()
         for (uint8_t index=16; index<=21; index++) {
             P[index][index] = sq(frontend->_magNoise);
         }
-        // let the magnetometer fusion know it needs to reset the yaw and field states
-        firstMagYawInit = false;
     }
 
     // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
