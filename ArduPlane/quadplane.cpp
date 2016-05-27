@@ -590,7 +590,7 @@ bool QuadPlane::is_flying(void)
     if (!available()) {
         return false;
     }
-    if (motors->get_throttle() > 0.2 && !motors->limit.throttle_lower) {
+    if (motors->get_throttle() > 0.1 && !motors->limit.throttle_lower) {
         return true;
     }
     return false;
