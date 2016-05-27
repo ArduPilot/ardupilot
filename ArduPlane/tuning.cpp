@@ -264,3 +264,33 @@ void AP_Tuning_Plane::reload_value(uint8_t parm)
         break;
     }
 }
+
+/*
+  return current controller error
+ */
+float AP_Tuning_Plane::controller_error(uint8_t parm)
+{
+    switch(parm) {
+    // special handling of dual-parameters
+    case TUNING_RATE_ROLL_PI:
+    case TUNING_RATE_ROLL_P:
+    case TUNING_RATE_ROLL_I:
+    case TUNING_RATE_ROLL_D:
+    case TUNING_RATE_PITCH_PI:
+    case TUNING_RATE_PITCH_P:
+    case TUNING_RATE_PITCH_I:
+    case TUNING_RATE_PITCH_D:
+    case TUNING_RATE_YAW_PI:
+    case TUNING_RATE_YAW_P:
+    case TUNING_RATE_YAW_I:
+    case TUNING_RATE_YAW_D:
+        if (!plane.quadplane.available()) {
+            return 0;
+        }
+        return plane.quadplane.attitude_control->control_monitor_rms_output();
+
+    default:
+        // no special handler
+        return 0;
+    }
+}
