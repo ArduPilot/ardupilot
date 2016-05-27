@@ -169,6 +169,12 @@ void Perf::end(Util::perf_counter_t pc)
         perf.max = elapsed;
     }
 
+    if (!perf.count) {
+        /* when count wraps, just start treating new events with the higher
+         * weight instead of reseting the counter */
+        perf.count = 1;
+    }
+
     /*
      * Maintain avg and variance of interval in nanoseconds
      * Knuth/Welford recursive avg and variance of update intervals (via Wikipedia)
