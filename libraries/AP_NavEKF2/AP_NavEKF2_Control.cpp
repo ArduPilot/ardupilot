@@ -46,7 +46,32 @@ void NavEKF2_core::controlFilterModes()
 void NavEKF2_core::setWindMagStateLearningMode()
 {
     // If we are on ground, or in constant position mode, or don't have the right vehicle and sensing to estimate wind, inhibit wind states
-    inhibitWindStates = ((!useAirspeed() && !assume_zero_sideslip()) || onGround || (PV_AidingMode == AID_NONE));
+    bool setWindInhibit = (!useAirspeed() && !assume_zero_sideslip()) || onGround || (PV_AidingMode == AID_NONE);
+    if (!inhibitWindStates && setWindInhibit) {
+        inhibitWindStates = true;
+    } else if (inhibitWindStates && !setWindInhibit) {
+        inhibitWindStates = false;
+        // set states and variances
+        if (yawAlignComplete && useAirspeed()) {
+            // if we have airspeed and a valid heading, set the wind states to the reciprocal of the vehicle heading
+            // which assumes the vehicle has launched into the wind
+             Vector3f tempEuler;
+            stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
+            float windSpeed =  sqrtf(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
+            stateStruct.wind_vel.x = windSpeed * cosf(tempEuler.z);
+            stateStruct.wind_vel.y = windSpeed * sinf(tempEuler.z);
+
+            // set the wind sate variances to the measurement uncertainty
+            for (uint8_t index=22; index<=23; index++) {
+                P[index][index] = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(_ahrs->get_EAS2TAS(), 0.9f, 10.0f));
+            }
+        } else {
+            // set the variances using a typical wind speed
+            for (uint8_t index=22; index<=23; index++) {
+                P[index][index] = sq(5.0f);
+            }
+        }
+    }
 
     // determine if the vehicle is manoevring
     if (accNavMagHoriz > 0.5f) {
@@ -67,7 +92,18 @@ void NavEKF2_core::setWindMagStateLearningMode()
     bool magCalDenied = !use_compass() || (frontend->_magCal == 2) ||(onGround && frontend->_magCal != 4);
 
     // Inhibit the magnetic field calibration if not requested or denied
-    inhibitMagStates = (!magCalRequested || magCalDenied);
+    bool setMagInhibit = !magCalRequested || magCalDenied;
+    if (!inhibitMagStates && setMagInhibit) {
+        inhibitMagStates = true;
+    } else if (inhibitMagStates && !setMagInhibit) {
+        inhibitMagStates = false;
+        // when commencing use of magnetic field states, set the variances equal to the observation uncertainty
+        for (uint8_t index=16; index<=21; index++) {
+            P[index][index] = sq(frontend->_magNoise);
+        }
+        // let the magnetometer fusion know it needs to reset the yaw and field states
+        firstMagYawInit = false;
+    }
 
     // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
     // because we want it re-done for each takeoff

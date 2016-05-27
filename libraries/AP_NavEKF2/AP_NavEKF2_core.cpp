@@ -240,7 +240,6 @@ void NavEKF2_core::InitialiseVariables()
     optFlowFusionDelayed = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
-    magFuseTiltInhibit = false;
     posResetNE.zero();
     velResetNE.zero();
     hgtInnovFiltState = 0.0f;
@@ -1292,7 +1291,6 @@ void NavEKF2_core::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
 
 // initialise the earth magnetic field states using declination, suppled roll/pitch
 // and magnetometer measurements and return initial attitude quaternion
-// if no magnetometer data, do not update magnetic field states and assume zero yaw angle
 Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 {
     // declare local variables required to calculate initial orientation and magnetic field
@@ -1334,6 +1332,8 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
             lastYawReset_ms = imuSampleTime_ms;
             // calculate an initial quaternion using the new yaw value
             initQuat.from_euler(roll, pitch, yaw);
+            // zero the attitude covariances becasue the corelations will now be invalid
+            zeroAttCovOnly();
         } else {
             initQuat = stateStruct.quat;
         }
@@ -1350,23 +1350,37 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         zeroRows(P,16,21);
         zeroCols(P,16,21);
         // set initial earth magnetic field variances
-        P[16][16] = sq(0.05f);
+        P[16][16] = sq(frontend->_magNoise);
         P[17][17] = P[16][16];
         P[18][18] = P[16][16];
         // set initial body magnetic field variances
-        P[19][19] = sq(0.05f);
+        P[19][19] = sq(frontend->_magNoise);
         P[20][20] = P[19][19];
         P[21][21] = P[19][19];
 
         // clear bad magnetic yaw status
         badMagYaw = false;
     } else {
-        initQuat.from_euler(roll, pitch, 0.0f);
-        yawAlignComplete = false;
+        // no magnetoemter data so there is nothing we can do
+        initQuat = stateStruct.quat;
     }
 
     // return attitude quaternion
     return initQuat;
+}
+
+// zero the attitude covariances, but preserve the variances
+void NavEKF2_core::zeroAttCovOnly()
+{
+    float varTemp[3];
+    for (uint8_t index=0; index<=2; index++) {
+        varTemp[index] = P[index][index];
+    }
+    zeroCols(P,0,2);
+    zeroRows(P,0,2);
+    for (uint8_t index=0; index<=2; index++) {
+        P[index][index] = varTemp[index];
+    }
 }
 
 #endif // HAL_CPU_CLASS
