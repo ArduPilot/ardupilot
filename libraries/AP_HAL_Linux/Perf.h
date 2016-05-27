@@ -37,7 +37,7 @@ public:
     Perf_Counter(perf_counter_type type_, const char *name_)
         : name{name_}
         , type{type_}
-        , least{ULONG_MAX}
+        , min{ULONG_MAX}
     {
     }
 
@@ -51,10 +51,10 @@ public:
     /* Everything below is in nanoseconds */
     uint64_t start;
     uint64_t total;
-    uint64_t least;
-    uint64_t most;
+    uint64_t min;
+    uint64_t max;
 
-    double mean;
+    double avg;
     double m2;
 };
 
