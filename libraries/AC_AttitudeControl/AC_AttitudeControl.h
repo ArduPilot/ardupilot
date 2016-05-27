@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /// @file    AC_AttitudeControl.h
@@ -353,6 +353,27 @@ protected:
     const AP_AHRS&      _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
+
+private:
+    /*
+      state of control monitoring
+    */
+    struct {
+        float rms_roll;
+        float rms_pitch;
+        float rms_yaw;
+    } _control_monitor;
+
+    // update state in ControlMonitor
+    void control_monitor_filter_pid(const DataFlash_Class::PID_Info &pid_info, float &rms);
+    void control_monitor_update(void);
+
+public:
+    // log a CTRL message
+    void control_monitor_log(void);
+
+    // return current worst RMS controller filter
+    float control_monitor_rms_output(void) const;
 };
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\
