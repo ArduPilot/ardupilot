@@ -265,14 +265,14 @@ void PX4RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
 bool PX4RCOutput::force_safety_on(void)
 {
     _safety_state_request = AP_HAL::Util::SAFETY_DISARMED;
-    _safety_state_request_last_ms = AP_HAL::millis();
+    _safety_state_request_last_ms = 1;
     return true;
 }
 
 void PX4RCOutput::force_safety_off(void)
 {
     _safety_state_request = AP_HAL::Util::SAFETY_ARMED;
-    _safety_state_request_last_ms = AP_HAL::millis();
+    _safety_state_request_last_ms = 1;
 }
 
 void PX4RCOutput::force_safety_pending_requests(void)
