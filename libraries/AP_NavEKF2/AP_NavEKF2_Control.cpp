@@ -41,6 +41,19 @@ void NavEKF2_core::controlFilterModes()
 
 }
 
+/*
+  return effective value for _magCal for this core
+ */
+uint8_t NavEKF2_core::effective_magCal(void) const
+{
+    // if we are on the 2nd core and _magCal is 3 then treat it as
+    // 2. This is a workaround for a mag fusion problem
+    if (frontend->_magCal ==3 && imu_index == 1) {
+        return 2;
+    }
+    return frontend->_magCal;
+}
+
 // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
 // avoid unnecessary operations
 void NavEKF2_core::setWindMagStateLearningMode()
@@ -81,15 +94,16 @@ void NavEKF2_core::setWindMagStateLearningMode()
     }
 
     // Determine if learning of magnetic field states has been requested by the user
+    uint8_t magCal = effective_magCal();
     bool magCalRequested =
-            ((frontend->_magCal == 0) && inFlight) || // when flying
-            ((frontend->_magCal == 1) && manoeuvring)  || // when manoeuvring
-            ((frontend->_magCal == 3) && firstMagYawInit) || // when initial in-air yaw and field reset has completed
-            (frontend->_magCal == 4); // all the time
+            ((magCal == 0) && inFlight) || // when flying
+            ((magCal == 1) && manoeuvring)  || // when manoeuvring
+            ((magCal == 3) && firstMagYawInit) || // when initial in-air yaw and field reset has completed
+            (magCal == 4); // all the time
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
     // we do not have an absolute position reference or are on the ground (unless explicitly requested by the user)
-    bool magCalDenied = !use_compass() || (frontend->_magCal == 2) ||(onGround && frontend->_magCal != 4);
+    bool magCalDenied = !use_compass() || (magCal == 2) ||(onGround && magCal != 4);
 
     // Inhibit the magnetic field calibration if not requested or denied
     bool setMagInhibit = !magCalRequested || magCalDenied;
