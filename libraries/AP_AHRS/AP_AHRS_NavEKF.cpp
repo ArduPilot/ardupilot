@@ -807,10 +807,26 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             return EKF_TYPE_NONE;
         }
         if (!filt_state.flags.attitude ||
-                !filt_state.flags.horiz_vel ||
-                !filt_state.flags.vert_vel ||
-                !filt_state.flags.horiz_pos_abs ||
-                !filt_state.flags.vert_pos) {
+            !filt_state.flags.vert_vel ||
+            !filt_state.flags.vert_pos) {
+            return EKF_TYPE_NONE;
+        }
+        if (!filt_state.flags.horiz_vel ||
+            !filt_state.flags.horiz_pos_abs) {
+            if ((!_compass || !_compass->use_for_yaw()) &&
+                _gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
+                _gps.ground_speed() < 2) {
+                /*
+                  special handling for non-compass mode when sitting
+                  still. The EKF may not yet have aligned its yaw. We
+                  accept EKF as healthy to allow arming. Once we reach
+                  speed the EKF should get yaw alignment
+                */
+                if (filt_state.flags.pred_horiz_pos_abs &&
+                    filt_state.flags.pred_horiz_pos_rel) {
+                    return ret;
+                }
+            }
             return EKF_TYPE_NONE;
         }
     }
