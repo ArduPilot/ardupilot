@@ -553,9 +553,10 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    if os.path.exists('ArduPlane-valgrind.log'):
-        os.chmod('ArduPlane-valgrind.log', 0644)
-        shutil.copy("ArduPlane-valgrind.log", util.reltopdir("../buildlogs/ArduPlane-valgrind.log"))
+    valgrind_log = sil.valgrind_log_filepath()
+    if os.path.exists(valgrind_log):
+        os.chmod(valgrind_log, 0644)
+        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduPlane-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % e)
