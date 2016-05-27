@@ -123,12 +123,21 @@ def pexpect_drain(p):
 def cmd_as_shell(cmd):
     return (" ".join([ '"%s"' % x for x in cmd ]))
 
+import re
+def make_safe_filename(text):
+    '''return a version of text safe for use as a filename'''
+    r = re.compile("([^a-zA-Z0-9_.-])")
+    text.replace('/','-')
+    filename = r.sub(lambda m : "%" + str(hex(ord(str(m.group(1))))).upper(), text)
+    return filename
+
 def start_SIL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
     '''launch a SIL instance'''
     import pexpect
     cmd=[]
     if valgrind and os.path.exists('/usr/bin/valgrind'):
-        cmd.extend(['valgrind', '-q', '--log-file', '%s-valgrind.log' % atype])
+        safe_filename = make_safe_filename(os.path.basename(binary))
+        cmd.extend(['valgrind', '-q', '--log-file=%s-valgrind.log' % safe_filename])
     if gdb:
         f = open("/tmp/x.gdb", "w")
         f.write("r\n");
