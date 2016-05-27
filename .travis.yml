@@ -85,4 +85,3 @@ matrix:
       script: true
       addons:
         apt: true
-        coverity_scan: true
