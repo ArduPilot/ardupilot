@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdio.h>
 #include <time.h>
 #include <vector>
 
@@ -48,6 +49,45 @@ Perf *Perf::get_instance()
     return _instance;
 }
 
+void Perf::_debug_counters()
+{
+    uint64_t now = AP_HAL::millis64();
+
+    if (now - _last_debug_msec < 5000) {
+        return;
+    }
+
+    pthread_rwlock_rdlock(&_perf_counters_lock);
+    unsigned int uc = _update_count;
+    auto v = _perf_counters;
+    pthread_rwlock_unlock(&_perf_counters_lock);
+
+    if (uc != _update_count) {
+        fprintf(stderr, "WARNING!! potentially wrong counters!!!");
+    }
+
+    for (auto &c : v) {
+        if (!c.count) {
+            fprintf(stderr, "%-30s\t"
+                    "(no events)\n", c.name);
+        } else if (c.type == Util::PC_ELAPSED) {
+            fprintf(stderr, "%-30s\t"
+                    "count: %llu\t"
+                    "min: %llu\t"
+                    "max: %llu\t"
+                    "avg: %.4f\t"
+                    "stddev: %.4f\n",
+                    c.name, c.count, c.least, c.most, c.mean, sqrt(c.m2));
+        } else {
+            fprintf(stderr, "%-30s\t"
+                    "count: %llu\n",
+                    c.name, c.count);
+        }
+    }
+
+    _last_debug_msec = now;
+}
+
 Perf::Perf()
 {
     if (pthread_rwlock_init(&_perf_counters_lock, nullptr) != 0) {
@@ -58,6 +98,10 @@ Perf::Perf()
      * number of perf counters for now; if we grow more, it will just
      * reallocate the memory pool */
     _perf_counters.reserve(50);
+
+#ifdef DEBUG_PERF
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&Perf::_debug_counters, void));
+#endif
 }
 
 void Perf::begin(Util::perf_counter_t pc)
