@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "GCS_Mavlink.h"
+
 #include "Tracker.h"
 #include "version.h"
 
@@ -150,19 +152,19 @@ void Tracker::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
+bool GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
     return false;
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command&)
+void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&)
 {
     // do nothing
 }
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 {
     switch (id) {
     case MSG_HEARTBEAT:
@@ -375,7 +377,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
+float GCS_MAVLINK_Tracker::adjust_rate_for_stream_trigger(enum streams stream_num)
 {
     if (_queued_parameter != nullptr) {
         return 0.25f;
@@ -385,7 +387,7 @@ float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
 }
 
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_MAVLINK_Tracker::data_stream_send(void)
 {
     if (_queued_parameter != NULL) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
@@ -535,7 +537,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     target_set = true;
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 

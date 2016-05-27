@@ -43,7 +43,6 @@
 #include <Filter/Filter.h>                     // Filter library
 #include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
 
-#include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
@@ -69,7 +68,7 @@
 #include "defines.h"
 
 #include "Parameters.h"
-#include <GCS_MAVLink/GCS.h>
+#include "GCS_Mavlink.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -77,7 +76,7 @@
 
 class Tracker : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Tracker;
     friend class Parameters;
 
     Tracker(void);
@@ -135,7 +134,7 @@ private:
 
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Tracker gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     AP_BoardConfig BoardConfig;
 
