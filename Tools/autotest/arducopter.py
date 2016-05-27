@@ -16,7 +16,6 @@ import random
 testdir=os.path.dirname(os.path.realpath(__file__))
 
 FRAME='+'
-TARGET='sitl'
 HOME=mavutil.location(-35.362938,149.165085,584,270)
 AVCHOME=mavutil.location(40.072842,-105.230575,1586,0)
 
@@ -915,9 +914,6 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False):
     mavproxy packets too for local viewing of the flight in real time
     '''
     global homeloc
-
-    if TARGET != 'sitl':
-        util.build_SIL('bin/arducopter-quad', target=TARGET)
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     sil = util.start_SIL(binary, wipe=True, model='+', home=home, speedup=speedup_default)
