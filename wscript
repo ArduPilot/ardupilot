@@ -86,6 +86,10 @@ revisions.
         default=False,
         help="Don't use lttng even if supported by board and dependencies available")
 
+    g.add_option('--disable-libiio', action='store_true',
+        default=False,
+        help="Don't use libiio even if supported by board and dependencies available")
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
