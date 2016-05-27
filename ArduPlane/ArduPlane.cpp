@@ -903,26 +903,15 @@ void Plane::update_alt()
 
     if (auto_throttle_mode && !throttle_suppressed) {        
 
-        bool is_doing_auto_land = false;
         float distance_beyond_land_wp = 0;
-
-        switch (flight_stage) {
-        case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-        case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-        case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-            is_doing_auto_land = true;
-            if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-                distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
-            }
-            break;
-        default:
-            break;
+        if (auto_state.land_in_progress && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+            distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
         }
 
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
-                                                 is_doing_auto_land,
+                                                 auto_state.land_in_progress,
                                                  distance_beyond_land_wp,
                                                  get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
