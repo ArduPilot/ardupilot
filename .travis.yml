@@ -83,5 +83,8 @@ matrix:
       before_install: true
       install: true
       script: true
+      before_cache: true
+      cache: true
       addons:
         apt: true
+        coverity_scan: true
