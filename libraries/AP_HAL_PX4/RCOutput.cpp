@@ -264,15 +264,42 @@ void PX4RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
 
 bool PX4RCOutput::force_safety_on(void)
 {
-    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
-    return (ret == OK);
+    _safety_state_request = AP_HAL::Util::SAFETY_DISARMED;
+    _safety_state_request_last_ms = AP_HAL::millis();
+    return true;
 }
 
 void PX4RCOutput::force_safety_off(void)
 {
-    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
-    if (ret != OK) {
-        hal.console->printf("Failed to force safety off\n");
+    _safety_state_request = AP_HAL::Util::SAFETY_ARMED;
+    _safety_state_request_last_ms = AP_HAL::millis();
+}
+
+void PX4RCOutput::force_safety_pending_requests(void)
+{
+    // check if there is a pending saftey_state change. If so (timer != 0) then set it.
+    if (_safety_state_request_last_ms != 0 &&
+            AP_HAL::millis() - _safety_state_request_last_ms >= 100) {
+        if (hal.util->safety_switch_state() == _safety_state_request) {
+            // current switch state matches request, stop attempting
+            _safety_state_request_last_ms = 0;
+        } else if (_safety_state_request == AP_HAL::Util::SAFETY_DISARMED) {
+            // current != requested, set it
+            ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
+            _safety_state_request_last_ms = AP_HAL::millis();
+        } else if (_safety_state_request == AP_HAL::Util::SAFETY_ARMED) {
+            // current != requested, set it
+            ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
+            _safety_state_request_last_ms = AP_HAL::millis();
+        }
+    }
+}
+
+void PX4RCOutput::force_safety_no_wait(void)
+{
+    if (_safety_state_request_last_ms != 0) {
+        _safety_state_request_last_ms = 1;
+        force_safety_pending_requests();
     }
 }
 
@@ -516,6 +543,8 @@ void PX4RCOutput::_timer_tick(void)
          * sent from push() */
         _send_outputs();
     }
+
+    force_safety_pending_requests();
 }
 
 /*
