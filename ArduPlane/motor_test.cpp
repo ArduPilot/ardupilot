@@ -48,7 +48,7 @@ void QuadPlane::motor_test_output()
     case MOTOR_TEST_THROTTLE_PERCENT:
         // sanity check motor_test.throttle value
         if (motor_test.throttle_value <= 100) {
-            pwm = plane.channel_throttle->get_radio_min() + (plane.channel_throttle->get_radio_max()  - plane.channel_throttle->get_radio_min()) * (float)motor_test.throttle_value/100.0f;
+            pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * (float)motor_test.throttle_value*0.01f;
         }
         break;
 
