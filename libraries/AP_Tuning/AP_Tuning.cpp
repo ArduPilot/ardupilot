@@ -40,6 +40,13 @@ const AP_Param::GroupInfo AP_Tuning::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RANGE", 5, AP_Tuning, range, 2.0f),
 
+    // @Param: MODE_REVERT
+    // @DisplayName: Revert on mode change
+    // @Description: This controls whether tuning values will revert on a flight mode change.
+    // @Values: 0:Disable,1:Enable
+    // @User: Standard
+    AP_GROUPINFO("MODE_REVERT", 6, AP_Tuning, mode_revert, 1),
+    
     AP_GROUPEND
 };
 
@@ -113,7 +120,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
 
     // check for revert on changed flightmode
     if (flightmode != last_flightmode) {
-        if (need_revert != 0) {
+        if (need_revert != 0 && mode_revert != 0) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Tuning: reverted");
             revert_parameters();
             re_center();
