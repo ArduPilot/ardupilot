@@ -276,7 +276,6 @@ bool Plane::setup_failsafe_mixing(void)
     // it twice as there have been reports that this call can fail
     // with a small probability
     hal.rcout->force_safety_on();
-    hal.rcout->force_safety_on();
 
     /* reset any existing mixer in px4io. This shouldn't be needed,
      * but is good practice */
@@ -391,7 +390,6 @@ failed:
     }
     // restore safety state if it was previously armed
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
-        hal.rcout->force_safety_off();
         hal.rcout->force_safety_off();
     }
     return ret;
