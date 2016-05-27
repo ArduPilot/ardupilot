@@ -46,6 +46,13 @@ const AP_Param::GroupInfo AP_Tuning::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Standard
     AP_GROUPINFO("MODE_REVERT", 6, AP_Tuning, mode_revert, 1),
+
+    // @Param: ERR_THRESH
+    // @DisplayName: Controller error threshold
+    // @Description: This sets the controller error threshold above which an alarm will sound and a message will be sent to the GCS to warn of controller instability
+    // @Range: 0 1
+    // @User: Standard
+    AP_GROUPINFO("ERR_THRESH", 7, AP_Tuning, error_threshold, 0.15f),
     
     AP_GROUPEND
 };
@@ -176,6 +183,9 @@ void AP_Tuning::check_input(uint8_t flightmode)
         last_channel_value = chan_value;
     }
 
+    // check for controller error
+    check_controller_error();
+    
     if (fabsf(chan_value - last_channel_value) < 0.01) {
         // ignore changes of less than 1%
         return;
@@ -313,3 +323,18 @@ const char *AP_Tuning::get_tuning_name(uint8_t parm)
     return "UNKNOWN";
 }
 
+/*
+  check for controller error
+ */
+void AP_Tuning::check_controller_error(void)
+{
+    float err = controller_error(current_parm);
+    if (err > error_threshold) {
+        uint32_t now = AP_HAL::millis();
+        if (now - last_controller_error_ms > 2000) {
+            AP_Notify::events.tune_error = 1;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Tuning: error %.2f", err);
+            last_controller_error_ms = now;
+        }
+    }
+}
