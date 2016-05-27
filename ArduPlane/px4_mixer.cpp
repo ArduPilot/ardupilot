@@ -276,6 +276,7 @@ bool Plane::setup_failsafe_mixing(void)
     // it twice as there have been reports that this call can fail
     // with a small probability
     hal.rcout->force_safety_on();
+    hal.rcout->force_safety_no_wait();
 
     /* reset any existing mixer in px4io. This shouldn't be needed,
      * but is good practice */
