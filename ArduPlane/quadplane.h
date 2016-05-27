@@ -299,6 +299,9 @@ private:
         uint8_t motor_count;          // number of motors to cycle
     } motor_test;
 
+    // time of last control log message
+    uint32_t last_ctrl_log_ms;
+    
     // tiltrotor control variables
     struct {
         AP_Int16 tilt_mask;
