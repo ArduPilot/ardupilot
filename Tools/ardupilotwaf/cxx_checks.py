@@ -162,6 +162,10 @@ def check_lttng(cfg, env):
 
 @conf
 def check_libiio(cfg, env):
+    if cfg.options.disable_libiio:
+        cfg.msg("Checking for 'libiio':", 'disabled', color='YELLOW')
+        return False
+
     cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
                   args=['--libs', '--cflags'])
     env.LIB += cfg.env['LIB_LIBIIO']
