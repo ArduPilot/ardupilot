@@ -842,15 +842,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-float GCS_MAVLINK_Copter::adjust_rate_for_stream_trigger(enum streams stream_num)
-{
-    if ((stream_num != STREAM_PARAMS) &&
-        (waypoint_receiving || _queued_parameter != NULL)) {
-        return 0.25f;
-    }
-    return 1.0f;
-}
-
 void
 GCS_MAVLINK_Copter::data_stream_send(void)
 {
