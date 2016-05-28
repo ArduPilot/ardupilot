@@ -306,6 +306,9 @@ private:
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
 
+    // time when we missed sending a parameter for GCS
+    static uint32_t reserve_param_space_start_ms;
+    
     // bitmask of what mavlink channels are active
     static uint8_t mavlink_active;
 

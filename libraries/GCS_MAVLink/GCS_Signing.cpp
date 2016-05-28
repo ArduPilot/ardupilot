@@ -234,10 +234,23 @@ bool GCS_MAVLINK::signing_enabled(void) const
  */
 uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
 {
+    /*
+      reserve 100 bytes for parameters when a GCS fails to fetch a
+      parameter due to lack of buffer space. The reservation lasts 2
+      seconds
+     */
+    uint8_t reserved_space = 0;
+    if (reserve_param_space_start_ms != 0 &&
+        AP_HAL::millis() - reserve_param_space_start_ms < 2000) {
+        reserved_space = 100;
+    } else {
+        reserve_param_space_start_ms = 0;
+    }
+    
     const mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
-        return MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_SIGNATURE_BLOCK_LEN;
+        return MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_SIGNATURE_BLOCK_LEN + reserved_space;
     }
-    return MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    return MAVLINK_NUM_NON_PAYLOAD_BYTES + reserved_space;
 }
 

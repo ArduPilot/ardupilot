@@ -29,6 +29,7 @@ extern const AP_HAL::HAL& hal;
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
 ObjectArray<GCS_MAVLINK::statustext_t> GCS_MAVLINK::_statustext_queue(GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY);
+uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 
 GCS_MAVLINK::GCS_MAVLINK()
 {
@@ -579,9 +580,17 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(msg, &packet);
 
+    /*
+      we reserve some space for sending parameters if the client ever
+      fails to get a parameter due to lack of space
+     */
+    uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
+    reserve_param_space_start_ms = 0;
     if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+        reserve_param_space_start_ms = AP_HAL::millis();
         return;
     }
+    reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
     
     enum ap_var_type p_type;
     AP_Param *vp;
