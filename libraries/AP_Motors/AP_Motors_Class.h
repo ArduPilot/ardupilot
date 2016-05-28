@@ -151,7 +151,6 @@ protected:
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
-        uint8_t stabilizing        : 1;    // 0 if not controlling attitude, 1 if controlling attitude
         uint8_t frame_orientation  : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
         uint8_t interlock          : 1;    // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
     } _flags;
