@@ -62,7 +62,7 @@ void SingleCopter::update(const struct sitl_input &input)
     switch (frame_type) {
     case FRAME_SINGLE:
         thrust = constrain_float((input.servos[4]-1000) / 1000.0f, 0, 1);
-        yaw_thrust   = (actuator[0] + actuator[1] + actuator[2] + actuator[3]) * 0.25f * thrust + thrust * rotor_rot_accel;
+        yaw_thrust   = -(actuator[0] + actuator[1] + actuator[2] + actuator[3]) * 0.25f * thrust + thrust * rotor_rot_accel;
         roll_thrust  = (actuator[0] - actuator[2]) * 0.5f * thrust;
         pitch_thrust = (actuator[1] - actuator[3]) * 0.5f * thrust;
         break;
@@ -72,7 +72,7 @@ void SingleCopter::update(const struct sitl_input &input)
         float motor1 = constrain_float((input.servos[4]-1000) / 1000.0f, 0, 1);
         float motor2 = constrain_float((input.servos[5]-1000) / 1000.0f, 0, 1);
         thrust = 0.5f*(motor1 + motor2);
-        yaw_thrust   = (actuator[0] + actuator[1] + actuator[2] + actuator[3]) * 0.25f * thrust + (motor2 - motor1) * rotor_rot_accel;
+        yaw_thrust   = -(actuator[0] + actuator[1] + actuator[2] + actuator[3]) * 0.25f * thrust + (motor2 - motor1) * rotor_rot_accel;
         roll_thrust  = (actuator[0] - actuator[2]) * 0.5f * thrust;
         pitch_thrust = (actuator[1] - actuator[3]) * 0.5f * thrust;
         break;
