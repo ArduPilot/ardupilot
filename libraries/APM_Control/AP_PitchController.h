@@ -37,6 +37,7 @@ public:
     
 private:
 	const AP_Vehicle::FixedWing &aparm;
+	AP_Airspeed airspeed;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
 	AP_Int16 _max_rate_neg;
