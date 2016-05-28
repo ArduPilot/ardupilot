@@ -1,0 +1,232 @@
+AntennaTracker
+
+Mike McCauley
+2014-03-05
+
+This is the ardupilot AntennaTracker
+
+This software, combined with appropriate hardware, can be used to cause a
+high-gain antenna to track a mavlink equipped air or ground vehicle in real
+time, providing higher quality radio links over longer distances than a
+stationary or omnidirectional antenna.
+
+AntennaTracker can be a stationary installation on the ground, or can be
+mobile, mounted on a vehicle, and moving at the same time as the vehicle it is
+tracking, such as on a pursuit vehicle etc.
+
+Antenna Tracker Hardware
+
+The software works with:
+
+- Alt-Azimuth mounted antenna tracker, equipped with 2 servos: one for Azimuth
+(also called bearing or yaw) -180 to 180 degreees and one for Altitude (also
+called elevation, or pitch) -90 degrees (straight down) to 90 degrees
+(straight up). I used an Eagle Tree Antenna Pan-Tilt.
+
+- Ardupilot compatible processor such as 
+-- Flymaple
+-- others tested?
+and with a radio or wired link to a source of mavlink messages with the
+tracked vehicle's position data. 
+
+A suitable power supply is also needed, possibly battery powered. In the case
+of Flymaple, the onboard 5V regulator is not able to drive large servos
+without causing large amounts of electrical noise in the processor, so you
+would probably need an external 5V regulated supply
+
+Theory of Operation
+
+AntennaTracker receives real-time GPS position reports from the vehicle being
+tracked (in the form of GLOBAL_POSITION_INT messages sent by mavlink radio
+connection or possibly by hardwired serial connection). AntennaTracker also
+knows it own current position. Based on these 2 sets of coordinates, it
+calculates the magnetic bearing and elevation to the vehicle. It then moves
+the tracker servos until the antenna (and the AntennaTracker processor) are
+aligned with the desired bearing and elevation. At this stage the antenna is
+pointed straight at the tracked vehicle. As the vehicle (and possibly the
+antenna mount itself) move around, the servos are continually move to track
+the vehicle.
+
+AntennaTracker currently only supports closed loop feedback to position the
+antenna. This requires that AntennaTracker processor (including
+accelerometers and compass) be mounted on the moving part of the antenna
+tracker hardware. The servos are moved until the yaw and pitch of the processor
+(and therfore of the antenna itself) matches the bearing and elevation to the
+tracked vehicle.
+
+How does AntennaTracker know where it is on the earth?
+
+- If the tracker is equipped with a GPS and it has had a good 3D fix, the most
+recent good GPS fix is used.
+
+- If the tracker is equipped with a GPS and it has lost its fix, the most
+recent good GPS fix is used.
+
+- If there is no good GPS fix since startup (either because there is no GPS
+equipped or because the GPS has not yet got a fix), the most resently set HOME
+location is used.
+
+- If no HOME location has ever been set in the tracker, 0.0 Latitude, 0.0
+Longitude, 0 Altitude are used (which is probably not very helpful)
+
+How does AntennaTracker get GLOBAL_POSITION_INT messages from the tracked
+vehicle?
+
+mavproxy, when it runs the tracker module, intercepts all GLOBAL_POSITION_INT
+messages received from its master vehicle, and sends them to the tracker. It
+knows how to connect to the tracker with the set port and set baudrate
+commands, for example to connect by a USB-Serial  radio, such as the 3DR Radio
+on port /dev/ttyUSB0:
+
+(after starting mavproxy)
+module load tracker
+tracker set port /dev/ttyUSB0
+tracker set baudrate 57600
+tracker start
+
+Mounting
+
+The AntennaTracker processor must be mounted on the moving (ie the rotating,
+tilting) part of the antenna tracker hardware. Just how you do this will
+depend on your exact hardware, but if the processor is mounted in anything
+other than the default orientation (ie with the processor default 'forward'
+direction pointing in the direction the antenna points, you will have to
+configure AHRS_ORIENTATION in the AntennaTracker configuration to suit your
+mechanical mounting arrangements.
+
+In my case, I used a Flymaple with AHRS_ORIENTATION set to 1 (Yaw45). The
+Flymaple was mounted on the antenna tracker with component side up and the
+green pin headers horizontal and perpendicular to the antenna beam (See
+pictures???).
+
+Configuration
+
+It is vitally important that your AntennaTracker be properly configured for the
+mounting, servos and other hardware in your tracker. Unless you do this IT
+WILL PROBABLY NOT WORK AS EXPECTED. CAUTION: It might even oscillate or flap
+around. It might even damage itself.
+
+AntennaTracker (like other ardupilot software such as ArduPlane, APMRover2
+etc) has configuration values that control and tailor its operation, and which
+are stored in EEPROM on the processor. The configuration is restored from
+EEPROM every time the processsor starts.
+
+You can use MissionPlanner, mavproxy or apm_planner or other mavlink compatible
+software to check and change the configuration of your AntennaTracker.
+
+You will almost certainly have to change the following configuration items to
+suit, and possibly others besides:
+
+AHRS_ORIENTATION
+RC1_MIN
+RC1_MAX
+RC1_REV
+RC2_MIN
+RC2_MAX
+RC2_REV
+PITCH2SRV_P
+PITCH2SRV_I
+PITCH2SRV_D
+YAW2SRV_P
+YAW2SRV_I
+YAW2SRV_D
+
+(more info here about how to find the right values when the setup commands are
+available)
+
+You can find the complete set of configuration items I used for my Flymaple
+tracker mounted on an Eagle Tree tracker WHERE?????
+
+Compass Calibration
+
+AntennaTracker uses its internal magnetic compass to determine where North is
+and therefore where to point for each bearing to the target vehicle. (On other
+ardupilot vehicles, the yaw is also calibrated by the current GPS track. This
+is not possible for AntennaTracker, so the compass is the only possible source
+for absolute bearing)
+
+The compass magnetometer is exquisitely sensitive to nearby magnetic fields from
+wires, metal fittings, servos, radios etc. Therefore is it VITALLY ESSENTIAL that you
+calibrate the compass. Further, it must be calibrated outdoors, while installed
+in situ in the tracker, with all other equipment installed, fastened down and
+ready to operate.
+
+Failure to calibrate correctly will result in the tracker pointing in the
+wrong direction, or the azimuth/yaw and elevation/pitch drifting.
+
+Use Mission Planner to calibrate the tracker:
+- Assemble the completed tracker, complete and ready to operate.
+- Power up the tracker
+- Connect to it with Mission Planner
+- On Mission Planner->INITIAL SETUP->Compass, click on Live Calibration
+- click on OK
+- rotate the complete antenna tracker assembly around, in 3 dimensions, making sure to
+rotate the tracker to every possible orientation in the 1 minute you have
+available. DONT just move the yaw and pitch motors around. You will probably have to
+pick the whole thing up.
+- At the end of the minute, Mission Planner will update AntennaTrackers compass offsets.
+
+Levelling
+
+Since AntennaTracker uses its internal accelerometers (amongst other things)
+to determine the current elevation/pitch of the antenna, it is also important
+to 'level' the AntennaTracker before use so the accelerometers are
+calibrated. Failure to do this will result in the antenna constantly pointing
+a bit high or a bit low compared to the tracked vehicle.
+
+You can do this by connecting to the AntennaTracker with mavproxy and issuing
+these commands:
+
+disarm
+  - manually move the antenna so the antenna is level and pointing at 0 degrees elevation
+    i.e. at the horizon
+level
+  - wait a minute without disturbing the antenna position
+arm throttle
+  - this rearms the servos, allowing the antenna to move
+
+Operation
+
+<more here>
+
+After powering up AntennaTracker, it may take up to 1 minute while it
+automatially calibrates the compass before it points in the expected
+direction. Moving the tracker around will speed up this process.
+
+How to set the HOME location
+
+If your AntennaTracker is not equipped with a GPS, you can still use it to
+track vehicles. First you will have to tell AntennaTracker where it is on the
+ground by setting its HOME position.
+
+Connect to AntennaTracker with mavproxy
+
+module load map
+ - the map will appear.
+ - Zoom and drag the map until you can see the location where
+   your AntennaTracker is located
+ - Click the mouse on the location of the antenna
+wp sethome
+
+AntennaTracker will now remember this as its HOME location whenever it is
+started.
+
+Simulating an antenna tracker
+-----------------------------
+
+To run a full antenna tracker simulation with a simulated APM:Plane as
+the vehicle, cd to the ArduPlane directory and run this:
+
+  ../Tools/autotest/sim_arduplane.sh -T --aircraft test
+
+The -T flag tells sim_arduplane.sh to start an entenna tracker
+simulator and also start a virtual antenna tracker in a window.
+
+To start the antenna tracker running run "tracker start" in the
+mavproxy window.
+
+To then connect to your antenna tracker with mavproxy you would run:
+
+  mavproxy.py --master tcp:127.0.0.1:5770
+
+then you can configure it as needed.

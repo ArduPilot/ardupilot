@@ -7,6 +7,7 @@
 #include <AP_Common.h>
 #include <AP_Progmem.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_Math.h>
 #include <PID.h> // ArduPilot Mega RC Library
 
@@ -52,7 +53,7 @@ void loop()
     long control= pid.get_pid(error, 1);
 
     hal.console->print("control: ");
-    hal.console->println(control,DEC);
+    hal.console->println(control,BASE_DEC);
 }
 
 AP_HAL_MAIN();

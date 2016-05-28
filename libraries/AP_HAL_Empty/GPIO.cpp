@@ -25,6 +25,9 @@ uint8_t EmptyGPIO::read(uint8_t pin) {
 void EmptyGPIO::write(uint8_t pin, uint8_t value)
 {}
 
+void EmptyGPIO::toggle(uint8_t pin)
+{}
+
 /* Alternative interface: */
 AP_HAL::DigitalSource* EmptyGPIO::channel(uint16_t n) {
     return new EmptyDigitalSource(0);
@@ -36,6 +39,10 @@ bool EmptyGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
     return true;
 }
 
+bool EmptyGPIO::usb_connected(void)
+{
+    return false;
+}
 
 EmptyDigitalSource::EmptyDigitalSource(uint8_t v) :
     _v(v)
@@ -52,3 +59,6 @@ void EmptyDigitalSource::write(uint8_t value) {
     _v = value;
 }
 
+void EmptyDigitalSource::toggle() {
+    _v = !_v;
+}

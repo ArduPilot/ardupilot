@@ -14,13 +14,14 @@ public:
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);
-    void     enable_mask(uint32_t chmask);
     void     disable_ch(uint8_t ch);
-    void     disable_mask(uint32_t chmask);
     void     write(uint8_t ch, uint16_t period_us);
     void     write(uint8_t ch, uint16_t* period_us, uint8_t len);
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
+    void     set_safety_pwm(uint32_t chmask, uint16_t period_us);
+    void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us);
+    void     force_safety_off(void);
 
     void _timer_tick(void);
 
@@ -36,6 +37,9 @@ private:
     unsigned _servo_count;
     unsigned _alt_servo_count;
     uint32_t _rate_mask;
+    uint16_t _enabled_channels;
+
+    void _init_alt_channels(void);
 };
 
 #endif // __AP_HAL_PX4_RCOUTPUT_H__

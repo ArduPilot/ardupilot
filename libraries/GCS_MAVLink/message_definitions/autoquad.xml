@@ -1,0 +1,113 @@
+<?xml version='1.0'?>
+<mavlink>
+	<include>common.xml</include>
+	<version>3</version>
+	<enums>
+		<enum name="AUTOQUAD_NAV_STATUS">
+			<description>Available operating modes/statuses for AutoQuad flight controller. 
+				Bitmask up to 32 bits. Low side bits for base modes, high side for 
+				additional active features/modifiers/constraints.</description>
+			<entry value="0" name="AQ_NAV_STATUS_INIT">
+				<description>System is initializing</description>
+			</entry>
+			<!-- low side basic mode bits -->
+			<entry value="0x1" name="AQ_NAV_STATUS_STANDBY">
+				<description>System is standing by, not active</description>
+			</entry>
+			<entry value="0x2" name="AQ_NAV_STATUS_MANUAL">
+				<description>Stabilized, under full manual control</description>
+			</entry>
+			<entry value="0x4" name="AQ_NAV_STATUS_ALTHOLD">
+				<description>Altitude hold engaged</description>
+			</entry>
+			<entry value="0x8" name="AQ_NAV_STATUS_POSHOLD">
+				<description>Position hold engaged</description>
+			</entry>
+			<entry value="0x10" name="AQ_NAV_STATUS_DVH">
+				<description>Dynamic Velocity Hold is active</description>
+			</entry>
+			<entry value="0x20" name="AQ_NAV_STATUS_MISSION">
+				<description>Autonomous mission execution mode</description>
+			</entry>
+			
+			<!-- high side feature/modifier/constraint bits (0x8000 0000 = bit 32) -->
+			<entry value="0x80000000" name="AQ_NAV_STATUS_FAILSAFE">
+				<description>System is in failsafe recovery mode</description>
+			</entry>
+			<entry value="0x40000000" name="AQ_NAV_STATUS_RTH">
+				<description>Automatic Return to Home is active</description>
+			</entry>
+			<entry value="0x20000000" name="AQ_NAV_STATUS_HF_LOCKED">
+				<description>Heading-Free locked mode active</description>
+			</entry>
+			<entry value="0x10000000" name="AQ_NAV_STATUS_HF_DYNAMIC">
+				<description>Heading-Free dynamic mode active</description>
+			</entry>
+			<entry value="0x8000000" name="AQ_NAV_STATUS_CEILING">
+				<description>Ceiling altitude is set</description>
+			</entry>
+			<entry value="0x4000000" name="AQ_NAV_STATUS_CEILING_REACHED">
+				<description>Craft is at ceiling altitude</description>
+			</entry>
+		</enum>
+		<enum name="MAV_CMD">
+			<!-- TODO: value 1 reserved for now due to legacy code -->
+			<entry value="2" name="MAV_CMD_AQ_TELEMETRY">
+			    <description>Start/stop AutoQuad telemetry values stream.</description>
+			    <param index="1">Start or stop (1 or 0)</param>
+			    <param index="2">Stream frequency in us</param>
+			    <param index="3">Empty</param>
+			    <param index="4">Empty</param>
+			    <param index="5">Empty</param>
+			    <param index="6">Empty</param>
+			    <param index="7">Empty</param>
+			</entry>
+			<entry value="3" name="MAV_CMD_AQ_FOLLOW">
+			    <description>Command AutoQuad to go to a particular place at a set speed.</description>
+			    <param index="1">Latitude</param>
+			    <param index="2">Lontitude</param>
+			    <param index="3">Altitude</param>
+			    <param index="4">Speed</param>
+			    <param index="5">Empty</param>
+			    <param index="6">Empty</param>
+			    <param index="7">Empty</param>
+			</entry>
+			<entry value="4" name="MAV_CMD_AQ_REQUEST_VERSION">
+			    <description>Request AutoQuad firmware version number.</description>
+			    <param index="1">Empty</param>
+			    <param index="2">Empty</param>
+			    <param index="3">Empty</param>
+			    <param index="4">Empty</param>
+			    <param index="5">Empty</param>
+			    <param index="6">Empty</param>
+			    <param index="7">Empty</param>
+			</entry>
+		</enum>
+	</enums>
+	<messages>
+		<message id="150" name="AQ_TELEMETRY_F">
+			<description>Sends up to 20 raw float values.</description>
+			<field type="uint16_t" name="Index">Index of message</field>
+			<field type="float" name="value1">value1</field>
+			<field type="float" name="value2">value2</field>
+			<field type="float" name="value3">value3</field>
+			<field type="float" name="value4">value4</field>
+			<field type="float" name="value5">value5</field>
+			<field type="float" name="value6">value6</field>
+			<field type="float" name="value7">value7</field>
+			<field type="float" name="value8">value8</field>
+			<field type="float" name="value9">value9</field>
+			<field type="float" name="value10">value10</field>
+			<field type="float" name="value11">value11</field>
+			<field type="float" name="value12">value12</field>
+			<field type="float" name="value13">value13</field>
+			<field type="float" name="value14">value14</field>
+			<field type="float" name="value15">value15</field>
+			<field type="float" name="value16">value16</field>
+			<field type="float" name="value17">value17</field>
+			<field type="float" name="value18">value18</field>
+			<field type="float" name="value19">value19</field>
+			<field type="float" name="value20">value20</field>
+		</message>
+	</messages>
+</mavlink>

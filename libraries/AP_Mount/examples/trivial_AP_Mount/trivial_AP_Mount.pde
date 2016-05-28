@@ -12,11 +12,19 @@
 #include <AP_Declination.h>
 #include <AP_Airspeed.h>
 #include <AP_ADC.h>
+#include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>
 #include <AP_Buffer.h>
 #include <Filter.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
+#include <StorageManager.h>
+#include <AP_Terrain.h>
 #include <RC_Channel.h>
+#include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
+#include <DataFlash.h>
+#include <AP_Notify.h>
 
 #include <AP_Mount.h>
 

@@ -5,7 +5,11 @@
 #define AP_PERFMON_REGISTER static uint8_t myFunc = AP_PerfMon::recordFunctionName(__func__); AP_PerfMon perfMon(myFunc);
 #define AP_PERFMON_REGISTER_NAME(functionName) static uint8_t myFunc = AP_PerfMon::recordFunctionName(functionName); AP_PerfMon perfMon(myFunc);
 
-#define PERFMON_MAX_FUNCTIONS 11
+#define AP_PERFMON_REGISTER_FN(func_name) static uint8_t func_name ## _num = AP_PerfMon::recordFunctionName(#func_name);
+#define AP_PERFMON_FUNCTION(func_name) AP_PerfMon perfMon(func_name ## _num);
+
+
+#define PERFMON_MAX_FUNCTIONS 12
 #define PERFMON_FUNCTION_NAME_LENGTH 10
 
 #include <AP_HAL.h>

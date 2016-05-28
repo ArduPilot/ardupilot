@@ -8,9 +8,7 @@
 
 uint8_t eeprom[0x1000];
 
-#pragma pack(1)
-
-struct EEPROM_header {
+struct PACKED EEPROM_header {
     uint8_t magic[2];
     uint8_t revision;
     uint8_t spare;
@@ -68,7 +66,7 @@ static uint8_t type_size(enum ap_var_type type)
     case AP_PARAM_MATRIX3F:
         return 3*3*4;
     }
-    printf("unknown type %u\n", type);
+    printf("unknown type %u\n", (unsigned int)type);
     return 0;
 }
 

@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	GCS_MAVLink.h
 /// @brief	One size fits all header for MAVLink integration.
@@ -8,6 +8,7 @@
 
 #include <AP_HAL.h>
 #include <AP_Param.h>
+#include <AP_Math.h>
 
 // we have separate helpers disabled to make it possible
 // to select MAVLink 1.0 in the arduino GUI build
@@ -22,23 +23,43 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #include <util/crc16.h>
 #define HAVE_CRC_ACCUMULATE
+// only two telemetry ports on APM1/APM2
+#define MAVLINK_COMM_NUM_BUFFERS 2
+#else
+// allow three telemetry ports on other boards
+#define MAVLINK_COMM_NUM_BUFFERS 3
 #endif
+
+/*
+  The MAVLink protocol code generator does its own alignment, so
+  alignment cast warnings can be ignored
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 // this allows us to make mavlink_message_t much smaller. It means we
 // can't support the largest messages in common.xml, but we don't need
-// those for APM
-#define MAVLINK_MAX_PAYLOAD_LEN 96
+// those for APM1/APM2
+#define MAVLINK_MAX_PAYLOAD_LEN 104
+#else
+#define MAVLINK_MAX_PAYLOAD_LEN 255
+#endif
 
-#define MAVLINK_COMM_NUM_BUFFERS 2
 #include "include/mavlink/v1.0/mavlink_types.h"
 
-/// MAVLink stream used for HIL interaction
+/// MAVLink stream used for uartA
 extern AP_HAL::BetterStream	*mavlink_comm_0_port;
 
-/// MAVLink stream used for ground control communication
+/// MAVLink stream used for uartC
 extern AP_HAL::BetterStream	*mavlink_comm_1_port;
+
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+/// MAVLink stream used for uartD
+extern AP_HAL::BetterStream	*mavlink_comm_2_port;
+#endif
 
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
@@ -57,6 +78,11 @@ static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 	case MAVLINK_COMM_1:
 		mavlink_comm_1_port->write(ch);
 		break;
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+	case MAVLINK_COMM_2:
+		mavlink_comm_2_port->write(ch);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -69,69 +95,20 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 /// @param chan		Channel to receive on
 /// @returns		Byte read
 ///
-static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
-{
-    uint8_t data = 0;
-
-    switch(chan) {
-	case MAVLINK_COMM_0:
-		data = mavlink_comm_0_port->read();
-		break;
-	case MAVLINK_COMM_1:
-		data = mavlink_comm_1_port->read();
-		break;
-	default:
-		break;
-	}
-    return data;
-}
+uint8_t comm_receive_ch(mavlink_channel_t chan);
 
 /// Check for available data on the nominated MAVLink channel
 ///
 /// @param chan		Channel to check
 /// @returns		Number of bytes available
-static inline uint16_t comm_get_available(mavlink_channel_t chan)
-{
-    int16_t bytes = 0;
-    switch(chan) {
-	case MAVLINK_COMM_0:
-		bytes = mavlink_comm_0_port->available();
-		break;
-	case MAVLINK_COMM_1:
-		bytes = mavlink_comm_1_port->available();
-		break;
-	default:
-		break;
-	}
-	if (bytes == -1) {
-		return 0;
-	}
-    return (uint16_t)bytes;
-}
+uint16_t comm_get_available(mavlink_channel_t chan);
 
 
 /// Check for available transmit space on the nominated MAVLink channel
 ///
 /// @param chan		Channel to check
 /// @returns		Number of bytes available
-static inline uint16_t comm_get_txspace(mavlink_channel_t chan)
-{
-	int16_t ret = 0;
-    switch(chan) {
-	case MAVLINK_COMM_0:
-		ret = mavlink_comm_0_port->txspace();
-		break;
-	case MAVLINK_COMM_1:
-		ret = mavlink_comm_1_port->txspace();
-		break;
-	default:
-		break;
-	}
-	if (ret < 0) {
-		ret = 0;
-	}
-    return (uint16_t)ret;
-}
+uint16_t comm_get_txspace(mavlink_channel_t chan);
 
 #ifdef HAVE_CRC_ACCUMULATE
 // use the AVR C library implementation. This is a bit over twice as
@@ -158,5 +135,16 @@ uint8_t mav_var_type(enum ap_var_type t);
 
 // return CRC byte for a mavlink message ID
 uint8_t mavlink_get_message_crc(uint8_t msgid);
+
+// severity levels used in STATUSTEXT messages
+enum gcs_severity {
+    SEVERITY_LOW=1,
+    SEVERITY_MEDIUM,
+    SEVERITY_HIGH,
+    SEVERITY_CRITICAL,
+    SEVERITY_USER_RESPONSE
+};
+
+#pragma GCC diagnostic pop
 
 #endif // GCS_MAVLink_h

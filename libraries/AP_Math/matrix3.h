@@ -1,11 +1,20 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 // Copyright 2010 Michael Smith, all rights reserved.
-
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 
 // Inspired by:
 /****************************************
@@ -47,7 +56,7 @@ public:
     }
 
     // setting ctor
-    Matrix3<T>(const Vector3<T> a0, const Vector3<T> b0, const Vector3<T> c0) : a(a0), b(b0), c(c0) {
+    Matrix3<T>(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0) : a(a0), b(b0), c(c0) {
     }
 
     // setting ctor
@@ -55,7 +64,7 @@ public:
     }
 
     // function call operator
-    void operator        () (const Vector3<T> a0, const Vector3<T> b0, const Vector3<T> c0)
+    void operator        () (const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
     {
         a = a0; b = b0; c = c0;
     }
@@ -116,28 +125,48 @@ public:
         return *this = *this / num;
     }
 
+    // allow a Matrix3 to be used as an array of vectors, 0 indexed
+    Vector3<T> & operator[](uint8_t i) {
+        Vector3<T> *_v = &a;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 3);
+#endif
+        return _v[i];
+    }
+
+    const Vector3<T> & operator[](uint8_t i) const {
+        const Vector3<T> *_v = &a;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 3);
+#endif
+        return _v[i];
+    }
+
     // multiplication by a vector
     Vector3<T> operator         *(const Vector3<T> &v) const;
 
     // multiplication of transpose by a vector
     Vector3<T>                  mul_transpose(const Vector3<T> &v) const;
 
+    // multiplication by a vector giving a Vector2 result (XY components)
+    Vector2<T> mulXY(const Vector3<T> &v) const;
+
     // extract x column
     Vector3<T>                  colx(void) const
     {
-        return Vector3f(a.x, b.x, c.x);
+        return Vector3<T>(a.x, b.x, c.x);
     }
 
     // extract y column
     Vector3<T>        coly(void) const
     {
-        return Vector3f(a.y, b.y, c.y);
+        return Vector3<T>(a.y, b.y, c.y);
     }
 
     // extract z column
     Vector3<T>        colz(void) const
     {
-        return Vector3f(a.z, b.z, c.z);
+        return Vector3<T>(a.z, b.z, c.z);
     }
 
     // multiplication by another Matrix3<T>
@@ -151,9 +180,9 @@ public:
     // transpose the matrix
     Matrix3<T>          transposed(void) const;
 
-    Matrix3<T>          transpose(void)
+    void transpose(void)
     {
-        return *this = transposed();
+        *this = transposed();
     }
 
     // zero the matrix
@@ -173,18 +202,23 @@ public:
         return a.is_nan() || b.is_nan() || c.is_nan();
     }
 
-    // fill in the matrix with a standard rotation
-    void        rotation(enum Rotation rotation);
-
     // create a rotation matrix from Euler angles
     void        from_euler(float roll, float pitch, float yaw);
 
     // create eulers from a rotation matrix
-    void        to_euler(float *roll, float *pitch, float *yaw);
+    void        to_euler(float *roll, float *pitch, float *yaw) const;
 
     // apply an additional rotation from a body frame gyro vector
     // to a rotation matrix.
     void        rotate(const Vector3<T> &g);
+
+    // apply an additional rotation from a body frame gyro vector
+    // to a rotation matrix but only use X, Y elements from gyro vector
+    void        rotateXY(const Vector3<T> &g);
+
+    // apply an additional inverse rotation to a rotation matrix but 
+    // only use X, Y elements from rotation vector
+    void        rotateXYinv(const Vector3<T> &g);
 };
 
 typedef Matrix3<int16_t>                Matrix3i;
@@ -192,5 +226,8 @@ typedef Matrix3<uint16_t>               Matrix3ui;
 typedef Matrix3<int32_t>                Matrix3l;
 typedef Matrix3<uint32_t>               Matrix3ul;
 typedef Matrix3<float>                  Matrix3f;
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    typedef Matrix3<double>                 Matrix3d;
+#endif
 
 #endif // MATRIX3_H

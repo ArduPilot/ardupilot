@@ -1,13 +1,23 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       DataFlash_APM2.cpp - DataFlash log library for AT45DB321D
  *       Code by Jordi Muñoz and Jose Julio. DIYDrones.com
  *       This code works only on ATMega2560. It uses Serial port 3 in SPI MSPI mdoe.
- *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
  *
  *       Dataflash library for AT45DB321D flash memory
  *       Memory organization : 8192 pages of 512 bytes or 528 bytes
@@ -77,13 +87,14 @@ bool DataFlash_APM2::_sem_take(uint8_t timeout)
 
 
 // Public Methods //////////////////////////////////////////////////////////////
-void DataFlash_APM2::Init(void)
+void DataFlash_APM2::Init(const struct LogStructure *structure, uint8_t num_types)
 {
+    DataFlash_Class::Init(structure, num_types);
     // init to zero
     df_NumPages = 0;
 
-    hal.gpio->pinMode(DF_RESET, GPIO_OUTPUT);
-    hal.gpio->pinMode(DF_CARDDETECT, GPIO_INPUT);
+    hal.gpio->pinMode(DF_RESET, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(DF_CARDDETECT, HAL_GPIO_INPUT);
 
     // Reset the chip
     hal.gpio->write(DF_RESET,0);
@@ -312,18 +323,7 @@ bool DataFlash_APM2::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBu
     return true;
 }
 
-uint8_t DataFlash_APM2::BufferRead (uint8_t BufferNum, uint16_t IntPageAdr)
-{
-    uint8_t tmp;
-    if (!BlockRead(BufferNum, IntPageAdr, &tmp, 1)) {
-        return 0;
-    }
-    return tmp;
-}
-
-
 // *** END OF INTERNAL FUNCTIONS ***
-
 void DataFlash_APM2::PageErase (uint16_t PageAdr)
 {
     if (!_sem_take(1))

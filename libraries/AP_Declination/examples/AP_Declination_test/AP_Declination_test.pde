@@ -3,6 +3,7 @@
 #include <AP_Common.h>
 #include <AP_Progmem.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_HAL.h>
 #include <AP_Math.h>
 #include <AP_Declination.h>
@@ -61,8 +62,8 @@ static float get_declination(float lat, float lon)
     uint8_t latmin_index, lonmin_index;
 
     // Validate input values
-    lat = constrain(lat, -90, 90);
-    lon = constrain(lon, -180, 180);
+    lat = constrain_float(lat, -90, 90);
+    lon = constrain_float(lon, -180, 180);
 
     latmin = floor(lat/5)*5;
     lonmin = floor(lon/5)*5;

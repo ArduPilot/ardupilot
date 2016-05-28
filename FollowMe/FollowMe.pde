@@ -78,7 +78,7 @@ void setup(void) {
     input.joy_btn_event_callback(sm_on_button_cancel);
 
     hal.console->println_P(PSTR("GPS start init"));
-    auto_gps.init(hal.uartB, GPS::GPS_ENGINE_PEDESTRIAN);
+    auto_gps.init(hal.uartB, GPS::GPS_ENGINE_PEDESTRIAN, &DataFlash);
 }
 
 void loop(void) {

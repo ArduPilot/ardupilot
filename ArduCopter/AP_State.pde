@@ -14,21 +14,6 @@ void set_home_is_set(bool b)
 }
 
 // ---------------------------------------------
-void set_armed(bool b)
-{
-    // if no change, exit immediately
-    if( ap.armed == b )
-        return;
-
-    ap.armed = b;
-    if(b){
-        Log_Write_Event(DATA_ARMED);
-    }else{
-        Log_Write_Event(DATA_DISARMED);
-    }
-}
-
-// ---------------------------------------------
 void set_auto_armed(bool b)
 {
     // if no change, exit immediately
@@ -42,30 +27,34 @@ void set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void set_simple_mode(bool b)
+void set_simple_mode(uint8_t b)
 {
     if(ap.simple_mode != b){
-        if(b){
+        if(b == 0){
+            Log_Write_Event(DATA_SET_SIMPLE_OFF);
+        }else if(b == 1){
             Log_Write_Event(DATA_SET_SIMPLE_ON);
         }else{
-            Log_Write_Event(DATA_SET_SIMPLE_OFF);
+            // initialise super simple heading
+            update_super_simple_bearing(true);
+            Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
         }
         ap.simple_mode = b;
     }
 }
 
 // ---------------------------------------------
-static void set_failsafe_radio(bool mode)
+static void set_failsafe_radio(bool b)
 {
     // only act on changes
     // -------------------
-    if(ap.failsafe_radio != mode) {
+    if(failsafe.radio != b) {
 
         // store the value so we don't trip the gate twice
         // -----------------------------------------------
-        ap.failsafe_radio = mode;
+        failsafe.radio = b;
 
-        if (ap.failsafe_radio == false) {
+        if (failsafe.radio == false) {
             // We've regained radio contact
             // ----------------------------
             failsafe_radio_off_event();
@@ -74,34 +63,34 @@ static void set_failsafe_radio(bool mode)
             // ------------------------
             failsafe_radio_on_event();
         }
+
+        // update AP_Notify
+        AP_Notify::flags.failsafe_radio = b;
     }
 }
 
 
 // ---------------------------------------------
-void set_low_battery(bool b)
+void set_failsafe_battery(bool b)
 {
-    ap.low_battery = b;
+    failsafe.battery = b;
+    AP_Notify::flags.failsafe_battery = b;
 }
 
 
 // ---------------------------------------------
-static void set_failsafe_gps(bool mode)
+static void set_failsafe_gps(bool b)
 {
-    ap.failsafe_gps = mode;
+    failsafe.gps = b;
+
+    // update AP_Notify
+    AP_Notify::flags.failsafe_gps = b;
 }
 
 // ---------------------------------------------
-void set_takeoff_complete(bool b)
+static void set_failsafe_gcs(bool b)
 {
-    // if no change, exit immediately
-    if( ap.takeoff_complete == b )
-        return;
-
-    if(b){
-        Log_Write_Event(DATA_TAKEOFF);
-    }
-    ap.takeoff_complete = b;
+    failsafe.gcs = b;
 }
 
 // ---------------------------------------------
@@ -113,33 +102,41 @@ void set_land_complete(bool b)
 
     if(b){
         Log_Write_Event(DATA_LAND_COMPLETE);
+    }else{
+        Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
 }
 
 // ---------------------------------------------
 
-void set_compass_healthy(bool b)
+// set land complete maybe flag
+void set_land_complete_maybe(bool b)
 {
-    if(ap.compass_status != b){
-        if(false == b){
-            Log_Write_Event(DATA_LOST_COMPASS);
-        }
+    // if no change, exit immediately
+    if (ap.land_complete_maybe == b)
+        return;
+
+    if (b) {
+        Log_Write_Event(DATA_LAND_COMPLETE_MAYBE);
     }
-    ap.compass_status = b;
+    ap.land_complete_maybe = b;
 }
 
-void set_gps_healthy(bool b)
+// ---------------------------------------------
+
+void set_pre_arm_check(bool b)
 {
-    if(ap.gps_status != b){
-        if(false == b){
-            Log_Write_Event(DATA_LOST_GPS);
-        }
+    if(ap.pre_arm_check != b) {
+        ap.pre_arm_check = b;
+        AP_Notify::flags.pre_arm_check = b;
     }
-    ap.gps_status = b;
 }
 
-void dump_state()
+void set_pre_arm_rc_check(bool b)
 {
-    cliSerial->printf("st: %u\n",ap.value);
+    if(ap.pre_arm_rc_check != b) {
+        ap.pre_arm_rc_check = b;
+    }
 }
+

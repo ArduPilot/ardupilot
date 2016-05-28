@@ -22,7 +22,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
-    AP_GROUPINFO("OFS",    1, Compass, _offset, 0),
+    AP_GROUPINFO("OFS",    1, Compass, _offset[0], 0),
 
     // @Param: DEC
     // @DisplayName: Compass declination
@@ -58,7 +58,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
     // @Param: MOTCT
     // @DisplayName: Motor interference compensation type
-    // @Description: Set motor interference compensation type to disabled, throttle or current
+    // @Description: Set motor interference compensation type to disabled, throttle or current.  Do not change manually.
     // @Values: 0:Disabled,1:Use Throttle,2:Use Current
     // @Increment: 1
     AP_GROUPINFO("MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
@@ -67,20 +67,75 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Motor interference compensation for body frame X axis
     // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
 
     // @Param: MOT_Y
     // @DisplayName: Motor interference compensation for body frame Y axis
     // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
 
     // @Param: MOT_Z
     // @DisplayName: Motor interference compensation for body frame Z axis
     // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
-    AP_GROUPINFO("MOT",    7, Compass, _motor_compensation, 0),
+    AP_GROUPINFO("MOT",    7, Compass, _motor_compensation[0], 0),
+
+    // @Param: ORIENT
+    // @DisplayName: Compass orientation
+    // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a positive value for the Y axis, and a value close to zero for the X axis. On a PX4 or Pixhawk with an external compass the correct value is zero if the compass is correctly oriented. NOTE: This orientation is combined with any AHRS_ORIENTATION setting.
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270
+    AP_GROUPINFO("ORIENT", 8, Compass, _orientation, ROTATION_NONE),
+
+    // @Param: EXTERNAL
+    // @DisplayName: Compass is attached via an external cable
+    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4 and Pixhawk, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option
+    // @Values: 0:Internal,1:External
+    // @User: Advanced
+    AP_GROUPINFO("EXTERNAL", 9, Compass, _external, 0),
+
+#if COMPASS_MAX_INSTANCES > 1
+    AP_GROUPINFO("OFS2",    10, Compass, _offset[1], 0),
+    AP_GROUPINFO("MOT2",    11, Compass, _motor_compensation[1], 0),
+
+    // @Param: PRIMARY
+    // @DisplayName: Choose primary compass
+    // @Description: If more than one compass is available this selects which compass is the primary. Normally 0=External, 1=Internal. If no External compass is attached this parameter is ignored
+    // @Values: 0:FirstCompass,1:SecondCompass
+    // @User: Advanced
+    AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 2
+    AP_GROUPINFO("OFS3",    13, Compass, _offset[2], 0),
+    AP_GROUPINFO("MOT3",    14, Compass, _motor_compensation[2], 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: DEV_ID
+    // @DisplayName: Compass device id
+    // @Description: Compass device id.  Automatically detected, do not set manually
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID",  15, Compass, _dev_id[0], 0),
+
+    // @Param: DEV_ID2
+    // @DisplayName: Compass2 device id
+    // @Description: Second compass's device id.  Automatically detected, do not set manually
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID2", 16, Compass, _dev_id[1], 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: DEV_ID3
+    // @DisplayName: Compass3 device id
+    // @Description: Third compass's device id.  Automatically detected, do not set manually
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID3", 17, Compass, _dev_id[2], 0),
+#endif
 
     AP_GROUPEND
 };
@@ -91,10 +146,19 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 //
 Compass::Compass(void) :
     product_id(AP_COMPASS_TYPE_UNKNOWN),
-    _orientation(ROTATION_NONE),
-    _null_init_done(false)
+    last_update(0),
+    _null_init_done(false),
+    _thr_or_curr(0.0f),
+    _board_orientation(ROTATION_NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+#if COMPASS_MAX_INSTANCES > 1
+    // default device ids to zero.  init() method will overwrite with the actual device ids
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        _dev_id[i] = 0;
+    }
+#endif
 }
 
 // Default init method, just returns success.
@@ -106,40 +170,54 @@ Compass::init()
 }
 
 void
-Compass::set_orientation(enum Rotation rotation)
+Compass::set_offsets(uint8_t i, const Vector3f &offsets)
 {
-    _orientation = rotation;
+    // sanity check compass instance provided
+    if (i < COMPASS_MAX_INSTANCES) {
+        _offset[i].set(offsets);
+    }
 }
 
 void
-Compass::set_offsets(const Vector3f &offsets)
+Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 {
-    _offset.set(offsets);
+    // sanity check compass instance provided
+    if (i < COMPASS_MAX_INSTANCES) {
+        _offset[i].set(offsets);
+        save_offsets(i);
+    }
 }
 
 void
-Compass::save_offsets()
+Compass::save_offsets(uint8_t i)
 {
-    _offset.save();
-}
-
-const Vector3f &
-Compass::get_offsets() const
-{
-    return _offset;
+    _offset[i].save();  // save offsets
+#if COMPASS_MAX_INSTANCES > 1
+    _dev_id[i].save();  // save device id corresponding to these offsets
+#endif
 }
 
 void
-Compass::set_motor_compensation(const Vector3f &motor_comp_factor)
+Compass::save_offsets(void)
 {
-    _motor_compensation.set(motor_comp_factor);
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        save_offsets(i);
+    }
+}
+
+void
+Compass::set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor)
+{
+    _motor_compensation[i].set(motor_comp_factor);
 }
 
 void
 Compass::save_motor_compensation()
 {
     _motor_comp_type.save();
-    _motor_compensation.save();
+    for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
+        _motor_compensation[k].save();
+    }
 }
 
 void
@@ -169,77 +247,28 @@ Compass::set_declination(float radians, bool save_to_eeprom)
 }
 
 float
-Compass::get_declination()
+Compass::get_declination() const
 {
     return _declination.get();
 }
 
-
+/*
+  calculate a compass heading given the attitude from DCM and the mag vector
+ */
 float
-Compass::calculate_heading(float roll, float pitch)
+Compass::calculate_heading(const Matrix3f &dcm_matrix) const
 {
-//  Note - This function implementation is deprecated
-//  The alternate implementation of this function using the dcm matrix is preferred
-    float headX;
-    float headY;
-    float cos_roll;
-    float sin_roll;
-    float cos_pitch;
-    float sin_pitch;
-    float heading;
+    float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
-    cos_roll = cosf(roll);
-    sin_roll = sinf(roll);
-    cos_pitch = cosf(pitch);
-    sin_pitch = sinf(pitch);
+    // Tilt compensated magnetic field Y component:
+    float headY = _field[0].y * dcm_matrix.c.z - _field[0].z * dcm_matrix.c.y;
 
     // Tilt compensated magnetic field X component:
-    headX = mag_x*cos_pitch + mag_y*sin_roll*sin_pitch + mag_z*cos_roll*sin_pitch;
-    // Tilt compensated magnetic field Y component:
-    headY = mag_y*cos_roll - mag_z*sin_roll;
-    // magnetic heading
-    heading = atan2f(-headY,headX);
+    float headX = _field[0].x * cos_pitch_sq - dcm_matrix.c.x * (_field[0].y * dcm_matrix.c.y + _field[0].z * dcm_matrix.c.z);
 
-    // Declination correction (if supplied)
-    if( fabsf(_declination) > 0.0f )
-    {
-        heading = heading + _declination;
-        if (heading > PI)    // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0f * PI);
-        else if (heading < -PI)
-            heading += (2.0f * PI);
-    }
-
-    return heading;
-}
-
-
-float
-Compass::calculate_heading(const Matrix3f &dcm_matrix)
-{
-    float headX;
-    float headY;
-    float cos_pitch = safe_sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
-    float heading;
-
-    // sinf(pitch) = - dcm_matrix(3,1)
-    // cosf(pitch)*sinf(roll) = - dcm_matrix(3,2)
-    // cosf(pitch)*cosf(roll) = - dcm_matrix(3,3)
-
-    if (cos_pitch == 0.0f) {
-        // we are pointing straight up or down so don't update our
-        // heading using the compass. Wait for the next iteration when
-        // we hopefully will have valid values again.
-        return 0;
-    }
-
-    // Tilt compensated magnetic field X component:
-    headX = mag_x*cos_pitch - mag_y*dcm_matrix.c.y*dcm_matrix.c.x/cos_pitch - mag_z*dcm_matrix.c.z*dcm_matrix.c.x/cos_pitch;
-    // Tilt compensated magnetic field Y component:
-    headY = mag_y*dcm_matrix.c.z/cos_pitch - mag_z*dcm_matrix.c.y/cos_pitch;
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    heading = constrain(atan2f(-headY,headX), -3.15f, 3.15f);
+    float heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
 
     // Declination correction (if supplied)
     if( fabsf(_declination) > 0.0f )
@@ -254,99 +283,47 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix)
     return heading;
 }
 
-
-/*
- *  this offset nulling algorithm is inspired by this paper from Bill Premerlani
- *
- *  http://gentlenav.googlecode.com/files/MagnetometerOffsetNullingRevisited.pdf
- *
- *  The base algorithm works well, but is quite sensitive to
- *  noise. After long discussions with Bill, the following changes were
- *  made:
- *
- *   1) we keep a history buffer that effectively divides the mag
- *      vectors into a set of N streams. The algorithm is run on the
- *      streams separately
- *
- *   2) within each stream we only calculate a change when the mag
- *      vector has changed by a significant amount.
- *
- *  This gives us the property that we learn quickly if there is no
- *  noise, but still learn correctly (and slowly) in the face of lots of
- *  noise.
- */
-void
-Compass::null_offsets(void)
+/// Returns True if the compasses have been configured (i.e. offsets saved)
+///
+/// @returns                    True if compass has been configured
+///
+bool Compass::configured(uint8_t i)
 {
-    if (_learn == 0) {
-        // auto-calibration is disabled
-        return;
+    // exit immediately if instance is beyond the number of compasses we have available
+    if (i > get_count()) {
+        return false;
     }
 
-    // this gain is set so we converge on the offsets in about 5
-    // minutes with a 10Hz compass
-    const float gain = 0.01;
-    const float max_change = 10.0;
-    const float min_diff = 50.0;
-    Vector3f ofs;
-
-    ofs = _offset.get();
-
-    if (!_null_init_done) {
-        // first time through
-        _null_init_done = true;
-        for (uint8_t i=0; i<_mag_history_size; i++) {
-            // fill the history buffer with the current mag vector,
-            // with the offset removed
-            _mag_history[i] = Vector3i((mag_x+0.5f) - ofs.x, (mag_y+0.5f) - ofs.y, (mag_z+0.5f) - ofs.z);
-        }
-        _mag_history_index = 0;
-        return;
+    // exit immediately if all offsets are zero
+    if (get_offsets(i).length() == 0.0f) {
+        return false;
     }
 
-    Vector3f b1, b2, diff;
-    float length;
+#if COMPASS_MAX_INSTANCES > 1
+    // backup detected dev_id
+    int32_t dev_id_orig = _dev_id[i];
 
-    // get a past element
-    b1 = Vector3f(_mag_history[_mag_history_index].x,
-                  _mag_history[_mag_history_index].y,
-                  _mag_history[_mag_history_index].z);
-    // the history buffer doesn't have the offsets
-    b1 += ofs;
+    // load dev_id from eeprom
+    _dev_id[i].load();
 
-    // get the current vector
-    b2 = Vector3f(mag_x, mag_y, mag_z);
-
-    // calculate the delta for this sample
-    diff = b2 - b1;
-    length = diff.length();
-    if (length < min_diff) {
-        // the mag vector hasn't changed enough - we don't get
-        // enough information from this vector to use it.
-        // Note that we don't put the current vector into the mag
-        // history here. We want to wait for a larger rotation to
-        // build up before calculating an offset change, as accuracy
-        // of the offset change is highly dependent on the size of the
-        // rotation.
-        _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
-        return;
+    // if different then the device has not been configured
+    if (_dev_id[i] != dev_id_orig) {
+        // restore device id
+        _dev_id[i] = dev_id_orig;
+        // return failure
+        return false;
     }
+#endif
 
-    // put the vector in the history
-    _mag_history[_mag_history_index] = Vector3i((mag_x+0.5f) - ofs.x, (mag_y+0.5f) - ofs.y, (mag_z+0.5f) - ofs.z);
-    _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
+    // if we got here then it must be configured
+    return true;
+}
 
-    // equation 6 of Bills paper
-    diff = diff * (gain * (b2.length() - b1.length()) / length);
-
-    // limit the change from any one reading. This is to prevent
-    // single crazy readings from throwing off the offsets for a long
-    // time
-    length = diff.length();
-    if (length > max_change) {
-        diff *= max_change / length;
+bool Compass::configured(void)
+{
+    bool all_configured = true;
+    for(uint8_t i=0; i<get_count(); i++) {
+        all_configured = all_configured && configured(i);
     }
-
-    // set the new offsets
-    _offset.set(_offset.get() - diff);
+    return all_configured;
 }

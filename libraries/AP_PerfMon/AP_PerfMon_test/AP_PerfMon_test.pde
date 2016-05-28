@@ -13,16 +13,21 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
+AP_PERFMON_REGISTER_FN(setup)
+AP_PERFMON_REGISTER_FN(loop)
+AP_PERFMON_REGISTER_FN(testFn)
+AP_PERFMON_REGISTER_FN(testFn2)
+
 void setup()
 {
-  AP_PERFMON_REGISTER_NAME("setupA")
+  AP_PERFMON_FUNCTION(setup)
 
   hal.console->print_P(PSTR("Performance Monitor test v1.1\n"));
 }
 
 void loop()
 {
-    AP_PERFMON_REGISTER
+    AP_PERFMON_FUNCTION(loop)
 
     int16_t i = 0;
 
@@ -30,16 +35,16 @@ void loop()
         testFn();
     }
 
-    //AP_PerfMon::DisplayAndClear(5);
-    AP_PerfMon::DisplayResults();
-    AP_PerfMon::ClearAll();
+    AP_PerfMon::DisplayAndClear(5);
+    //AP_PerfMon::DisplayResults();
+    //AP_PerfMon::ClearAll();
 
-    hal.scheduler->delay(10000);
+    hal.scheduler->delay(2000);
 }
 
 void testFn()
 {
-    AP_PERFMON_REGISTER
+    AP_PERFMON_FUNCTION(testFn)
     hal.scheduler->delay(10);
     testFn2();
     hal.scheduler->delay(10);
@@ -47,6 +52,8 @@ void testFn()
 
 void testFn2()
 {
-    AP_PERFMON_REGISTER
+    AP_PERFMON_FUNCTION(testFn2)
     hal.scheduler->delay(10);
 }
+
+AP_HAL_MAIN();

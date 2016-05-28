@@ -1,17 +1,27 @@
 #!/bin/bash
 
-export PATH=/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_6-2012q2/bin:$PATH
+export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_6-2012q2/bin:$PATH
 export PYTHONUNBUFFERED=1
-export PX4_ROOT=$HOME/APM/px4/PX4Firmware
+export PYTHONPATH=$HOME/APM
 
 cd $HOME/APM || exit 1
 
 test -n "$FORCEBUILD" || {
 (cd APM && git fetch > /dev/null 2>&1)
+
 newtags=$(cd APM && git fetch --tags | wc -l)
 oldhash=$(cd APM && git rev-parse origin/master)
 newhash=$(cd APM && git rev-parse HEAD)
-if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
+
+newtagspx4=$(cd PX4Firmware && git fetch --tags | wc -l)
+oldhashpx4=$(cd PX4Firmware && git rev-parse origin/master)
+newhashpx4=$(cd PX4Firmware && git rev-parse HEAD)
+
+newtagsnuttx=$(cd PX4NuttX && git fetch --tags | wc -l)
+oldhashnuttx=$(cd PX4NuttX && git rev-parse origin/master)
+newhashnuttx=$(cd PX4NuttX && git rev-parse HEAD)
+
+if [ "$oldhash" = "$newhash" -a "$newtags" = "0" -a "$oldhashpx4" = "$newhashpx4" -a "$newtagspx4" = "0" -a "$oldhashnuttx" = "$newhashnuttx" -a "$newtagsnuttx" = "0" ]; then
     echo "no change $oldhash $newhash `date`" >> build.log
     exit 0
 fi
@@ -82,16 +92,43 @@ popd
 
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
-pushd px4/PX4Firmware
+pushd PX4Firmware
 git fetch origin
 git reset --hard origin/master
+for v in ArduPlane ArduCopter APMrover2; do
+    git tag -d $v-beta || true
+    git tag -d $v-stable || true
+done
+git fetch origin --tags
+git show
 popd
 
-for d in MAVProxy mavlink; do
-    pushd $d
-    git pr
-    popd
+pushd PX4NuttX
+git fetch origin
+git reset --hard origin/master
+for v in ArduPlane ArduCopter APMrover2; do
+    git tag -d $v-beta || true
+    git tag -d $v-stable || true
 done
+git fetch origin --tags
+git show
+popd
+
+echo "Updating pymavlink"
+pushd mavlink/pymavlink
+git fetch origin
+git reset --hard origin/master
+git show
+python setup.py build install --user
+popd
+
+echo "Updating MAVProxy"
+pushd MAVProxy
+git fetch origin
+git reset --hard origin/master
+git show
+python setup.py build install --user
+popd
 
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
@@ -113,11 +150,15 @@ for d in ArduPlane ArduCopter APMrover2; do
 done
 
 mkdir -p "buildlogs/history/$hdate"
-(cd buildlogs && cp -f *.txt *.flashlog *.mavlog *.km[lz] *.gpx *.html "history/$hdate/")
+(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png "history/$hdate/")
 echo $githash > "buildlogs/history/$hdate/githash.txt"
 
-APM/Tools/scripts/build_parameters.sh
+(cd APM && Tools/scripts/build_parameters.sh)
 
-timelimit 4000 APM/Tools/autotest/autotest.py --timeout=3900 > buildlogs/autotest-output.txt 2>&1
+(cd APM && Tools/scripts/build_docs.sh)
+
+killall -9 JSBSim || /bin/true
+
+timelimit 7500 APM/Tools/autotest/autotest.py --timeout=7000 > buildlogs/autotest-output.txt 2>&1
 
 ) >> build.log 2>&1

@@ -12,14 +12,17 @@ public:
     friend class AP_HAL_AVR::AVRAnalogIn;
     /* pin designates the ADC input number, or when == AVR_ANALOG_PIN_VCC,
      * board vcc */
-    ADCSource(uint8_t pin, float prescale = 1.0);
+    ADCSource(uint8_t pin);
 
     /* implement AnalogSource virtual api: */
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
-    
+    float voltage_latest();
+    float voltage_average_ratiometric();
+    void set_stop_pin(uint8_t p);
+    void set_settle_time(uint16_t settle_time_ms);    
 
     /* implementation specific interface: */
 
@@ -29,6 +32,12 @@ public:
     /* setup_read(): called to setup ADC registers for next measurment,
      * from interrupt */
     void setup_read();
+
+    /* stop_read(): called to stop device measurement */
+    void stop_read();
+
+    /* reading_settled(): called to check if we have read for long enough */
+    bool reading_settled();
 
     /* read_average: called to calculate and clear the internal average.
      * implements read_average(), unscaled. */
@@ -44,8 +53,12 @@ private:
 
     /* _pin designates the ADC input mux for the sample */
     uint8_t _pin;
-    /* prescale scales the raw measurments for read()*/
-    const float _prescale;
+
+    /* _stop_pin designates a digital pin to use for
+       enabling/disabling the analog device */
+    uint8_t _stop_pin;
+    uint16_t _settle_time_ms;
+    uint32_t _read_start_time_ms;
 };
 
 /* AVRAnalogIn : a concrete class providing the implementations of the 
@@ -55,16 +68,16 @@ public:
     AVRAnalogIn();
     void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int16_t n);
-    AP_HAL::AnalogSource* channel(int16_t n, float prescale);
+    float board_voltage(void);
 
 protected: 
-    static ADCSource* _create_channel(int16_t num, float scale);
-    static void _register_channel(ADCSource*);
-    static void _timer_event(uint32_t);
-    static ADCSource* _channels[AVR_INPUT_MAX_CHANNELS];
-    static int16_t _num_channels;
-    static int16_t _active_channel;
-    static int16_t _channel_repeat_count;
+    ADCSource* _create_channel(int16_t num);
+    void _register_channel(ADCSource*);
+    void _timer_event(void);
+    ADCSource* _channels[AVR_INPUT_MAX_CHANNELS];
+    int16_t _num_channels;
+    int16_t _active_channel;
+    uint16_t _channel_repeat_count;
 
 private:
     ADCSource _vcc;

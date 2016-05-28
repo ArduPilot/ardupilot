@@ -7,11 +7,11 @@ include $(MK_DIR)/find_tools.mk
 # Tool options
 #
 DEFINES         =   -DF_CPU=$(F_CPU)
-DEFINES        +=   -DSKETCH=\"$(SKETCH)\"
+DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-unused-parameter -Wno-missing-field-initializers
 WARNFLAGSCXX    =   -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
 
@@ -94,6 +94,10 @@ endif
 ifneq ($(findstring MINGW, $(SYSTYPE)),) 
   USERAVRDUDEFLAGS := -C $(ARDUINO)/hardware/tools/avr/etc/avrdude.conf
 endif
+#make sure the avrdude conf file is referenced correctly in darwin
+ifneq ($(findstring Darwin, $(SYSTYPE)),)
+  USERAVRDUDEFLAGS := -C $(ARDUINO)/hardware/tools/avr/etc/avrdude.conf
+endif
 
 ifeq ($(UPLOAD_PROTOCOL),)
   UPLOAD_PROTOCOL	:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
@@ -120,6 +124,7 @@ endif
 
 # The ELF file
 SKETCHELF		=	$(BUILDROOT)/$(SKETCH).elf
+BUILDELF                =       $(notdir $(SKETCHELF))
 
 # HEX file
 SKETCHHEX		=	$(BUILDROOT)/$(SKETCH).hex
@@ -166,16 +171,12 @@ jtag-program:
 # fetch dependency info from a previous build if any of it exists
 -include $(ALLDEPS)
 
-# common header for rules, prints what is being built
-define RULEHDR
-	@echo %% $(subst $(BUILDROOT)/,,$@)
-	@mkdir -p $(dir $@)
-endef
-
 # Link the final object
 $(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
 	$(RULEHDR)
 	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(v)cp $(SKETCHELF) $(BUILDELF)
+	@echo "Firmware is in $(BUILDELF)"
 
 # Create the hex file
 $(SKETCHHEX):	$(SKETCHELF)

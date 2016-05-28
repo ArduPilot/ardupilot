@@ -1,0 +1,493 @@
+Release 3.1.0, August XXth 2014
+-------------------------------
+
+DRAFT DRAFT
+
+Changes in this release:
+
+  - added terrain following support. See
+    http://plane.ardupilot.com/wiki/common-terrain-following/
+
+  - added support for higher baudrates on telemetry ports, to make it
+    easier to use high rate telemetry to companion boards
+
+  - added new takeoff code, including new parameters:
+      TKOFF_TDRAG_ELEV, TKOFF_TDRAG_SPD1, TKOFF_ROTATE_SPD,
+      TKOFF_THR_SLEW and TKOFF_THR_MAX
+
+  - overhauled glide slope code to fix glide slope handling in many
+    situations. This should make transitions between different
+    altitudes much smoother
+
+  - prevent early waypoint completion for straight ahead waypoints
+
+  - added MAV_CMD_DO_INVERTED_FLIGHT command in missions, to change
+    from normal to inverted flight in AUTO
+
+  - new Rangefinder code with support for a wider range of rangefinder
+    types
+
+  - added support for FrSky telemetry via SERIAL2_PROTOCOL parameter
+
+  - added new STAB_PITCH_DOWN parameter to improve low throttle
+    behaviour in FBWA mode
+
+  - added GLIDE_SLOPE_MIN parameter for better handling of small
+    altitude deviations in AUTO
+
+
+Release 3.0.3, May 19th 2014
+----------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.0.3 of APM:Plane. This release contains some important bug
+fixes for all supported boards.
+
+The key bug fixes in this release are:
+
+ - fixed handling of filter divergance in the EKF filter
+ - fixed a glide slope calculation bug when entering AUTO mode
+
+The EKF fixes are the main focus of this release. During testing of
+APM:Plane with the AHRS_EKF_USE enabled it was found that under some
+circumstances the EKF could diverge, resulting in loss of attitude
+estimate. Unless the pilot quickly took control in MANUAL this could
+result in the aircraft crashing.
+
+The fix for this problem was in several parts. The main fix was to
+prevent the divergance, but as a precuation against future bugs of
+this type additional numerical checks were added to allow the EKF to
+automatically reset in flight when the internal state shows
+large gyro bias changes, which are the first sign of something going
+wrong in the filter. If this happens again the EKF will automatically
+disable itself for 10 seconds, allowing APM:Plane to fall back to the
+old DCM code. The EKF will then reset itself using initial state based
+on the DCM state. The aircraft will report the failure using the AHRS
+health bit in the SYS_STATUS MAVLink message.
+
+The default EKF tuning parameters were also updated based on a number
+of user supplied flight logs to increase the robustness of the filter.
+
+The second bug fixed in this release relates to the glide slope
+calculation when the aircraft enters AUTO mode for the first time when
+at an altitude above the altitude of the first waypoint in the
+mission. The starting point for the glide slope was incorrectly
+calculated using the home altitude, which resulted in the aircraft
+descending below the first waypoint altitude before climbing again. In
+some circumstances this could lead to a crash due to local terrain.
+
+Many thanks to everyone who tested this release. Special thanks to
+Dellarb for reporting the glide slope bug and to Paul Riseborough for
+all his work on the EKF code over the last few weeks.
+
+Happy flying!
+
+
+Release 3.0.2, May 4th 2014
+---------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.0.2 of APM:Plane. This release combines some important bug
+fixes with some new features.
+
+I2C bug fix
+-----------
+
+The most important change for this release is a bug fix for an I2C bug
+in the NuttX I2C driver code that could (under some rare
+circumstances) cause a Pixhawk to crash. This bug fix is the primary
+reason for doing a new release now.
+
+This bug was able to be reproduced by creating a 1.3m GPS cable
+carrying both the I2C signals for a magnetometer and the UART signals
+for the GPS. Interference between these two signals could cause the
+I2C controller to give spurious data to the I2C driver. The I2C driver
+did not have sufficient protection against these errors and could
+crash the board.
+
+While we have not been able to reproduce this error with the normal
+cables that come with a Pixhawk we cannot rule out the bug triggering
+with shorter cables, so we are doing a fast release to fix the bug.
+
+Autotune
+--------
+
+This release also includes an important new feature - automatic
+roll/pitch tuning. While this feature is still considered experimental
+we have had very positive feedback from beta testers and have decided
+to include it in the release.
+
+Full documentation for how to use automatic tuning is available here:
+
+  http://plane.ardupilot.com/wiki/automatic-tuning-with-autotune/
+
+we hope that the automatic tuning will help users who have had
+difficulty with the standard APM:Plane manual tuning procedure. We
+plan on extending autotune to other aspects of fixed wing tuning in
+future releases.
+
+Other changes
+-------------
+
+ - fixed a glide slope calculation error when very close to waypoints
+ - fixed a bug when swithing to another auto-throttle mode during auto
+   takeoff (thanks to Marco for finding this bug!)
+ - added MIS_AUTORESET parameter (thanks to Andrew Chapman)
+ - support compassmot calibration by supplying current measurments to the
+   compass driver (thanks to Jon Challinger)
+ - fixed a GPS driver bug that could cause GPS lag in case of lost GPS
+   samples (thanks to Jon Challinger)
+ - fixed a LOITER_TURNS bug in missions for counter-clockwise loiter
+   (thanks to Iskess for finding this bug)
+ - added support for OBC termination requirements to PX4IO
+ - added support for pressure altitude termination to OBC module
+ - fixed EKF wind estimation with no airspeed sensor (thanks to Paul
+   Riseborough)
+ - improved tuning of EKF for fixed wing aircraft (thanks to Paul
+   Riseborough)
+ - Converted rally point code to library AP_Rally (thanks to Andrew
+   Chapman)
+ - added SITL checking for numerical errors
+
+Thanks to testers!
+
+Many thanks to everyone who tested the beta versions of this release!
+Special thanks to Marco, Paul, Jon, Iam, JNJO, sonicdahousecat and
+Keeyen for providing testing of both existing features and the new
+autotune code.
+
+
+Release 3.0.1, April 9th 2014
+-----------------------------
+
+I've just released APM:Plane 3.0.1, a bug fix release for the 3.0.0 release.
+This release fixes two bugs:
+
+    throttle failsafe for aircraft using PWM level for failsafe detection
+    wind reporting with EKF enabled and no airspeed sensor
+
+The throttle failsafe fix is a critical bugfix, which is why I am
+doing a new release so soon. The bug was found by Sam Tabor, and he
+posted the bug report before the 3.0.0 release, but I didn't notice it
+in the release preparations.  The bug only affects systems using PWM
+value as the sole method of detecting loss of RC control. I hadn't
+noticed it myself as my planes all use receivers which stop sending
+value PWM frames when the RC link is lost. In that case failsafe
+worked correctly. Receivers that keep sending PWM frames but with low
+throttle levels are common though, so this is a very important fix.
+Many thanks to Sam for reporting the bug, and my apologies for not
+noticing it in time for the 3.0.0 release.
+
+
+Release 3.0.0, April 8th 2014
+-----------------------------
+
+The ardupilot development team is proud to announce the release of
+version 3.0.0 of APM:Plane. This is a major release with a lot of new
+features.
+
+For each release I try to highlight the two or 3 key new features that
+have gone in since the last release. That is a more difficult task
+this time around because there are just so many new things. Still, I
+think the most important ones are the new Extended Kalman Filter (EKF)
+for attitude/position estimation, the extensive dual sensors support
+and the new AP_Mission library.
+
+We have also managed to still keep support for the APM1 and APM2,
+although quite a few of the new features are not available on those
+boards. We don't yet know for how long we'll be able to keep going on
+supporting these old boards, so if you are thinking of getting a new
+board then you should get a Pixhawk, and if you want the best
+performance from the APM:Plane code then you should swap to a
+Pixhawk now. It really is a big improvement.
+
+New Extended Kalman Filter
+--------------------------
+
+The biggest change for the 3.0.0 release (and in fact the major reason
+why we are calling it 3.0.0) is the new Extended Kalman Filter from
+Paul Riseborough. Using an EKF for attitude and position estimation
+was never an option on the APM2 as it didn't have the CPU power or
+memory to handle it. The Pixhawk does have plenty of floating point
+performance, and Paul has done a fantastic job of taking full
+advantage of the faster board.
+
+As this is the first stable release with the EKF code we have decided
+to not enable it by default. It does however run all the time in
+parallel with the existing DCM code, and both attitude/position
+solutions are logged both to the on-board SD card and over
+MAVLink. You can enable the EKF code using the parameter
+AHRS_EKF_USE=1, which can be set and unset while flying, allowing you
+to experiment with using the EKF either by examining your logs with
+the EKF disabled to see how it would have done or by enabling it while
+flying.
+
+The main thing you will notice with the EKF enabled is more accurate
+attitude estimation and better handling of sensor glitches. A Kalman
+filter has an internal estimate of the reliability of each of its
+sensor inputs, and is able to weight them accordingly. This means that
+if your accelerometers start giving data that is inconsistent with
+your other sensors then it can cope in a much more graceful way than
+our old DCM code.
+
+The result is more accurate flying, particularly in turns. It also
+makes it possible to use higher tuning gains, as the increased
+accuracy of the attitude estimation means that you can push the
+airframe harder without it becoming unstable. You may find you can use
+a smaller value for NAVL1_PERIOD, giving tighter turns, and higher
+gains on your roll and pitch attitude controllers.
+
+Paul has written up a more technical description of the new EKF code
+here:
+
+  http://plane.ardupilot.com/wiki/common-apm-navigation-extended-kalman-filter-overview/
+
+
+Dual Sensors
+------------
+
+The second really big change for this release is support for
+dual-sensors. We now take full advantage of the dual accelerometers
+and dual gyros in the Pixhawk, and can use dual-GPS for GPS
+failover. We already had dual compass support, so the only main
+sensors we don't support two of now are the barometer and the airspeed
+sensor. I fully expect we will support dual baro and dual airspeed in
+a future release.
+
+You might wonder why dual sensors is useful, so let me give you an
+example. I fly a lot of nitro and petrol planes, and one of my planes
+(a BigStik 60) had a strange problem where it would be flying
+perfectly in AUTO mode, then when the throttle reached a very specific
+level the pitch solution would go crazy (sometimes off by 90
+degrees). I managed to recover in MANUAL each time, but it certainly
+was exciting!
+
+A careful analysis of the logs showed that the culprit was
+accelerometer aliasing. At a very specific throttle level the Z
+accelerometer got a DC offset of 11 m/s/s. So when the plane was
+flying along nice and level the Z accelerometer would change from -10
+m/s/s to +1 m/s/s. That resulted in massive errors in the attitude
+solution.
+
+This sort of error happens because of the way the accelerometer is
+sampled. In the APM code the MPU6000 (used on both the APM2 and
+Pixhawk) samples the acceleration at 1kHz. So if you have a strong
+vibrational mode that is right on 1kHz then you are sampling the "top
+of the sine wave", and get a DC offset.
+
+The normal way to fix this issue is to improve the physical
+anti-vibration mounting in the aircraft, but I don't like to fix
+problems like this by making changes to my aircraft, as if I fix my
+aircraft it does nothing for the thousands of other people running the
+same code. As the lead APM developer I instead like to fix things in
+software, so that everyone benefits.
+
+The solution was to take advantage of the fact that the Pixhawk has
+two accelerometers, one is a MPU6000, and the 2nd is a LSM303D. The
+LSM303D is sampled at 800Hz, whereas the MPU6000 is sampled at
+1kHz. It would be extremely unusual to have a vibration mode with
+aliasing at both frequencies at once, which means that all we needed
+to do was work out which accelerometer is accurate at any point in
+time. For the DCM code that involved matching each accelerometer at
+each time step to the combination of the GPS velocity vector and
+current attitude, and for the EKF it was a matter of producing a
+weighting for the two accelerometers based on the covariance matrix.
+
+The result is that the plane flew perfectly with the new dual
+accelerometer code, automatically switching between accelerometers as
+aliasing occurred.
+
+Since adding that code I have been on the lookout for signs of
+aliasing in other logs that people send me, and it looks like it is
+more common than we expected. It is rarely so dramatic as seen on my
+BigStik, but often results in some pitch error in turns. I am hopeful
+that with a Pixhawk and the 3.0 release of APM:Plane that these types
+of problems will now be greatly reduced.
+
+For the dual gyro support we went with a much simpler solution and
+just average the two gyros when both are healthy. That reduces noise,
+and works well, but doesn't produce the dramatic improvements that the
+dual accelerometer code resulted in.
+
+Dual GPS was also quite a large development effort. We now support
+connecting a 2nd GPS to the serial4/5 port on the Pixhawk. This allows
+you to protect against GPS glitches, and has also allowed us to get a
+lot of logs showing that even with two identical GPS modules it is
+quite common for one of the GPS modules to get a significant error
+during a flight. The new code currently switches between the two GPS
+modules based on the lock status and number of satellites, but we are
+working on a more sophisticated switching mechanism.
+
+Supporting dual GPS has also made it easier to test new GPS
+modules. This has enabled us to do more direct comparisons between the
+Lea6 and the Neo7 for example, and found the Neo7 performs very
+well. It also helps with developing completely new GPS drivers, such
+as the Piksi driver (see notes below).
+
+New AP_Mission library
+----------------------
+
+Many months ago Brandon Jones re-worked our mission handling code to
+be a library, making it much cleaner and fixing a number of long term
+annoyances with the behaviour. For this release Randy built upon the
+work that Brandon did and created the new AP_Mission library.
+
+The main feature of this library from the point of view of the
+developers is that it has a much cleaner interface, but it also has
+some new user-visible features. The one that many users will be glad
+to hear is that it no longer needs a "dummy waypoint" after a
+jump. That was always an annoyance when creating complex missions.
+
+The real advantage of AP_Mission will come in future releases though,
+as it has the ability to look ahead in the mission to see what is
+coming, allowing for more sophisticated navigation. The copter code
+already takes advantage of this with the new spline waypoint feature,
+and we expect to take similar advantage of this in APM:Plane in future
+releases.
+
+New Piksi GPS driver
+--------------------
+
+One of the most exciting things to happen in the world of GPS modules
+in the last couple of years is the announcement by SwiftNav that they
+would be producing a RTK capable GPS module called the Piksi at a
+price that (while certainly expensive!) is within reach of more
+dedicated hobbyists. It offers the possibility of decimeter and
+possibly even centimetre level relative positioning, which has a lot
+of potential for small aircraft, particularly for landing control and
+more precise aerial mapping.
+
+This release of APM:Plane has the first driver for the Piksi. The new
+driver is written by Niels Joubert, and he has done a great job. It is
+only a start though, as this is a single point positioning driver. It
+will allow you to use your new Piksi if you were part of the
+kickstarter, but it doesn't yet let you use it in RTK mode. Niels and
+the SwiftNav team are working on a full RTK driver which we hope will
+be in the next release.
+
+Support for more RC channels
+----------------------------
+
+This release is the first to allow use of more than 8 RC input
+channels. We now support up to 18 input channels on SBus on Pixhawk,
+with up to 14 of them able to be assigned to functions using the
+RCn_FUNCTION settings. For my own flying I now use a FrSky Taranis
+with X8R and X6R receivers and they work very nicely. Many thanks to
+the PX4 team, and especially to Holger and Lorenz for their great work
+on improving the SBus code.
+
+Flaperon Support
+----------------
+
+This release is the first to have integrated flaperon support, and
+also includes much improved flaps support in general. You can now set
+a FLAP_IN_CHANNEL parameter to give an RC channel for manual flap
+control, and setup a FLAPERON_OUTPUT to allow you to setup your
+ailerons for both manual and automatic flaperon control.
+
+We don't yet have a full wiki page on setting up flaperons, but you
+can read about the parameters here:
+
+  http://plane.ardupilot.com/wiki/arduplane-parameters/#Flap_input_channel_ArduPlaneFLAP_IN_CHANNEL
+
+Geofence improvements
+---------------------
+
+Michael Day has made an number of significant improvements to the
+geo-fencing support for this release. It is now possible to
+enable/disable the geofence via MAVLink, allowing ground stations to
+control the fence. 
+
+There are also three new fence control parameters. One is
+FENCE_RET_RALLY which when enabled tells APM to fly back to the
+closest rally point on a fence breach, instead of flying to the center
+of the fence area. That can be very useful for more precise control of
+fence breach handling.
+
+The second new parameter is FENCE_AUTOENABLE, which allows you to
+automatically enable a geofence on takeoff, and disable when doing an
+automatic landing. That is very useful for fully automated missions.
+
+The third new geofence parameter is FENCE_RETALT, which allows you to
+specify a return altitude on fence breach. This can be used to
+override the default (half way between min and max fence altitude).
+
+Automatic Landing improvements
+------------------------------
+
+Michael has also been busy on the automatic landing code, with
+improvements to the TECS speed/height control when landing and new
+TECS_LAND_ARSPD and TECS_LAND_THR parameters to control airspeed and
+throttle when landing. This is much simpler to setup than
+DO_CHANGE_SPEED commands in a mission.
+
+Michael is also working on automatic path planning for landing, based
+on the rally points code. We hope that will get into a release soon.
+
+Detailed Pixhawk Power Logging
+------------------------------
+
+One of the most common causes of issues with autopilots is power
+handling, with poor power supplies leading to brownouts or sensor
+malfunction. For this release we have enabled detailed logging of the
+information available from the on-board power management system of the
+Pixhawk, allowing us to log the status of 3 different power sources
+(brick input, servo rail and USB) and log the voltage level of the
+servo rail separately from the 5v peripheral rail on the FMU.
+
+This new logging should make it much easier for us to diagnose power
+issues that users may run into.
+
+New SERIAL_CONTROL protocol
+---------------------------
+
+This release adds a new SERIAL_CONTROL MAVLink message which makes it
+possible to remotely control a serial port on a Pixhawk from a ground
+station. This makes it possible to do things like upgrade the firmware
+on a 3DR radio without removing it from an aircraft, and will also
+make it possible to attach to and control a GPS without removing it
+from the plane.
+
+There is still work to be done in the ground station code to take full
+advantage of this new feature and we hope to provide documentation
+soon on how to use u-Blox uCenter to talk to and configure a GPS in an
+aircraft and to offer an easy 3DR radio upgrade button via the Pixhawk
+USB port.
+
+Lots of other changes!
+----------------------
+
+There have been a lot of other improvements in the code, but to stop
+this turning into a book instead of a set of release notes I'll stop
+the detailed description there. Instead here is a list of the more
+important changes not mentioned above:
+
+  - added LOG_WHEN_DISARMED flag in LOG_BITMASK
+  - raised default LIM_PITCH_MAX to 20 degrees
+  - support a separate steering channel from the rudder channel
+  - faster mission upload on USB
+  - new mavlink API for reduced memory usage
+  - fixes for the APM_OBC Outback Challenge module
+  - fixed accelerometer launch detection with no airspeed sensor
+  - greatly improved UART flow control on Pixhawk
+  - added BRD_SAFETYENABLE option to auto-enable the safety
+    switch on PX4 and Pixhawk on boot
+  - fixed pitot tube ordering bug and added ARSPD_TUBE_ORDER parameter
+  - fixed log corruption bug on PX4 and Pixhawk
+  - fixed repeated log download bug on PX4 and Pixhawk
+  - new Replay tool for detailed log replay and analysis
+  - flymaple updates from Mike McCauley
+  - fixed zero logs display in MAVLink log download
+  - fixed norm_input for cruise mode attitude control
+  - added RADIO_STATUS logging in aircraft logs
+  - added UBX monitor messages for detailed hardware logging of u-Blox status
+  - added MS4525 I2C airspeed sensor voltage compensation
+
+
+I hope that everyone enjoys flying this new APM:Plane release as much
+as we enjoyed producing it! It is a major milestone in the development
+of the fixed wing code for APM, and I think puts us in a great
+position for future development.
+
+Happy flying!
+

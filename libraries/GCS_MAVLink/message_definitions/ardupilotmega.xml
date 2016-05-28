@@ -10,91 +10,20 @@
     -->
 
 	<enums>
-	  <!-- Camera Mount mode Enumeration -->
-	  <enum name="MAV_MOUNT_MODE">
-	    <description>Enumeration of possible mount operation modes</description>
-	    <entry name="MAV_MOUNT_MODE_RETRACT" value="0"><description>Load and keep safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization</description></entry>
-	    <entry name="MAV_MOUNT_MODE_NEUTRAL" value="1"><description>Load and keep neutral position (Roll,Pitch,Yaw) from EEPROM.</description></entry>
-	    <entry name="MAV_MOUNT_MODE_MAVLINK_TARGETING" value="2"><description>Load neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization</description></entry>
-	    <entry name="MAV_MOUNT_MODE_RC_TARGETING" value="3"><description>Load neutral position and start RC Roll,Pitch,Yaw control with stabilization</description></entry>
-	    <entry name="MAV_MOUNT_MODE_GPS_POINT" value="4"><description>Load neutral position and start to point to Lat,Lon,Alt</description></entry>
-	  </enum>
 
-	  <enum name="MAV_CMD" >
-	    <!-- Camera Controller Mission Commands Enumeration -->
-	    <entry name="MAV_CMD_DO_DIGICAM_CONFIGURE" value="202">
-	      <description>Mission command to configure an on-board camera controller system.</description>
-	      <param index="1">Modes: P, TV, AV, M, Etc</param>
-	      <param index="2">Shutter speed: Divisor number for one second</param>
-	      <param index="3">Aperture: F stop number</param>
-	      <param index="4">ISO number e.g. 80, 100, 200, Etc</param>
-	      <param index="5">Exposure type enumerator</param>
-	      <param index="6">Command Identity</param>
-	      <param index="7">Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)</param>
-	    </entry>
-	    
-	    <entry name="MAV_CMD_DO_DIGICAM_CONTROL" value="203">
-	      <description>Mission command to control an on-board camera controller system.</description>
-	      <param index="1">Session control e.g. show/hide lens</param>
-	      <param index="2">Zoom's absolute position</param>
-	      <param index="3">Zooming step value to offset zoom from the current position</param>
-	      <param index="4">Focus Locking, Unlocking or Re-locking</param>
-	      <param index="5">Shooting Command</param>
-	      <param index="6">Command Identity</param>
-	      <param index="7">Empty</param>
-	    </entry>
-	    
-	    <!-- Camera Mount Mission Commands Enumeration -->
-	    <entry name="MAV_CMD_DO_MOUNT_CONFIGURE" value="204">
-	      <description>Mission command to configure a camera or antenna mount</description>
-	      <param index="1">Mount operation mode (see MAV_MOUNT_MODE enum)</param>
-	      <param index="2">stabilize roll? (1 = yes, 0 = no)</param>
-	      <param index="3">stabilize pitch? (1 = yes, 0 = no)</param>
-	      <param index="4">stabilize yaw? (1 = yes, 0 = no)</param>
-	      <param index="5">Empty</param>
-	      <param index="6">Empty</param>
-	      <param index="7">Empty</param>
-	    </entry>
-	
-	    <entry name="MAV_CMD_DO_MOUNT_CONTROL" value="205">
-	      <description>Mission command to control a camera or antenna mount</description>
-	      <param index="1">pitch(deg*100) or lat, depending on mount mode.</param>
-	      <param index="2">roll(deg*100) or lon depending on mount mode</param>
-	      <param index="3">yaw(deg*100) or alt (in cm) depending on mount mode</param>
-	      <param index="4">Empty</param>
-	      <param index="5">Empty</param>
-	      <param index="6">Empty</param>
-	      <param index="7">Empty</param>
-	    </entry>
-	  </enum>
-
-	  <!-- fenced mode enums -->
-	  <enum name="FENCE_ACTION">
-	    <entry name="FENCE_ACTION_NONE" value="0">
-	      <description>Disable fenced mode</description>
-	    </entry>
-	    <entry name="FENCE_ACTION_GUIDED" value="1">
-	      <description>Switched to guided mode to return point (fence point 0)</description>
-	    </entry>
-	    <entry name="FENCE_ACTION_REPORT" value="2">
-	      <description>Report fence breach, but don't take action</description>
-	    </entry>
-	  </enum>
-
-	  <enum name="FENCE_BREACH">
-	    <entry name="FENCE_BREACH_NONE" value="0">
-	      <description>No last fence breach</description>
-	    </entry>
-	    <entry name="FENCE_BREACH_MINALT" value="1">
-	      <description>Breached minimum altitude</description>
-	    </entry>
-	    <entry name="FENCE_BREACH_MAXALT" value="2">
-	      <description>Breached minimum altitude</description>
-	    </entry>
-	    <entry name="FENCE_BREACH_BOUNDARY" value="3">
-	      <description>Breached fence boundary</description>
-	    </entry>
-	  </enum>
+          <!-- ardupilot specific MAV_CMD_* commands -->
+          <enum name="MAV_CMD">
+            <entry name="MAV_CMD_DO_MOTOR_TEST" value="209">
+              <description>Mission command to perform motor test</description>
+              <param index="1">motor sequence number (a number from 1 to max number of motors on the vehicle)</param>
+              <param index="2">throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)</param>
+              <param index="3">throttle</param>
+              <param index="4">timeout (in seconds)</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
+            </entry>
+          </enum>
 	  
 	  	<!--  AP_Limits Enums -->
 	<enum name="LIMITS_STATE">
@@ -112,7 +41,60 @@
 		<entry name="LIMIT_GEOFENCE" value="2"> <description> disabled</description></entry>
 		<entry name="LIMIT_ALTITUDE" value="4"> <description> checking limits</description></entry>
 	</enum>
-	</enums>
+
+	<!-- RALLY flags - power of 2 (1,2,4,8,16,32,64,128) so we can send as a bitfield -->
+        <enum name="RALLY_FLAGS">
+          <description>Flags in RALLY_POINT message</description>
+          <entry name="FAVORABLE_WIND" value="1"> <description>Flag set when requiring favorable winds for landing. </description></entry>
+          <entry name="LAND_IMMEDIATELY" value="2"> <description>Flag set when plane is to immediately descend to break altitude and land without GCS intervention.  Flag not set when plane is to loiter at Rally point until commanded to land.</description></entry>
+	</enum>
+
+    <!-- parachute action enum -->
+    <enum name="PARACHUTE_ACTION">
+        <entry name="PARACHUTE_DISABLE" value="0">
+        <description>Disable parachute release</description>
+        </entry>
+        <entry name="PARACHUTE_ENABLE" value="1">
+        <description>Enable parachute release</description>
+        </entry>
+        <entry name="PARACHUTE_RELEASE" value="2">
+        <description>Release parachute</description>
+        </entry>
+    </enum>
+
+    <!-- motor test type enum -->
+    <enum name="MOTOR_TEST_THROTTLE_TYPE">
+      <entry name="MOTOR_TEST_THROTTLE_PERCENT" value="0">
+        <description>throttle as a percentage from 0 ~ 100</description>
+      </entry>
+      <entry name="MOTOR_TEST_THROTTLE_PWM" value="1">
+        <description>throttle as an absolute PWM value (normally in range of 1000~2000)</description>
+      </entry>
+      <entry name="MOTOR_TEST_THROTTLE_PILOT" value="2">
+        <description>throttle pass-through from pilot's transmitter</description>
+      </entry>
+    </enum>
+
+    <!-- Camera event types -->
+    <enum name="CAMERA_STATUS_TYPES">
+        <entry name="CAMERA_STATUS_TYPE_HEARTBEAT"  value="0"><description>Camera heartbeat, announce camera component ID at 1hz</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_TRIGGER"    value="1"><description>Camera image triggered</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_DISCONNECT" value="2"><description>Camera connection lost</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_ERROR"      value="3"><description>Camera unknown error</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWBATT"    value="4"><description>Camera battery low. Parameter p1 shows reported voltage</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWSTORE"   value="5"><description>Camera storage low. Parameter p1 shows reported shots remaining</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWSTOREV"  value="6"><description>Camera storage low. Parameter p1 shows reported video minutes remaining</description></entry>
+    </enum>
+
+    <!-- camera feedback flags, a little bit of future-proofing -->
+    <enum name="CAMERA_FEEDBACK_FLAGS">
+        <entry name="VIDEO"       value="1"> <description>Shooting video, not stills</description></entry>
+        <entry name="BADEXPOSURE" value="2"> <description>Unable to achieve requested exposure (e.g. shutter speed too low)</description></entry>
+        <entry name="CLOSEDLOOP"  value="3"> <description>Closed loop feedback from camera, we know for sure it has successfully taken a picture</description></entry>
+        <entry name="OPENLOOP"    value="4"> <description>Open loop camera, an image trigger has been requested but we can't know for sure it has successfully taken a picture</description></entry>
+    </enum>
+
+      </enums>
 
      <messages>
           <message id="150" name="SENSOR_OFFSETS">
@@ -133,7 +115,7 @@
           </message>
 
           <message id="151" name="SET_MAG_OFFSETS">
-               <description>set the magnetometer offsets</description>
+               <description>Deprecated. Use MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS instead. Set the magnetometer offsets</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="int16_t" name="mag_ofs_x">magnetometer X offset</field>
@@ -192,7 +174,7 @@
 	    <description>Message to configure a camera mount, directional antenna, etc.</description>
 	    <field name="target_system" type="uint8_t">System ID</field>
 	    <field name="target_component" type="uint8_t">Component ID</field>
-	    <field name="mount_mode" type="uint8_t">mount operating mode (see MAV_MOUNT_MODE enum)</field>
+	    <field name="mount_mode" type="uint8_t" enum="MAV_MOUNT_MODE">mount operating mode (see MAV_MOUNT_MODE enum)</field>
 	    <field name="stab_roll" type="uint8_t">(1 = yes, 0 = no)</field>
 	    <field name="stab_pitch" type="uint8_t">(1 = yes, 0 = no)</field>
 	    <field name="stab_yaw" type="uint8_t">(1 = yes, 0 = no)</field>
@@ -241,7 +223,7 @@
 	    status stream when fencing enabled</description>
 	    <field name="breach_status" type="uint8_t">0 if currently inside fence, 1 if outside</field>
 	    <field name="breach_count" type="uint16_t">number of fence breaches</field>
-	    <field name="breach_type" type="uint8_t">last breach type (see FENCE_BREACH_* enum)</field>
+	    <field name="breach_type" type="uint8_t" enum="FENCE_BREACH">last breach type (see FENCE_BREACH_* enum)</field>
 	    <field name="breach_time" type="uint32_t">time of last breach in milliseconds since boot</field>
 	  </message>
 
@@ -267,8 +249,8 @@
             <field type="float" name="xgyro">Angular speed around X axis rad/s</field>
             <field type="float" name="ygyro">Angular speed around Y axis rad/s</field>
             <field type="float" name="zgyro">Angular speed around Z axis rad/s</field>
-            <field type="float" name="lat">Latitude in degrees</field>
-            <field type="float" name="lng">Longitude in degrees</field>
+            <field type="int32_t" name="lat">Latitude in degrees * 1E7</field>
+            <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
 	  </message>
 
 	  <message name="HWSTATUS" id="165">
@@ -293,7 +275,7 @@
 	  <message name="LIMITS_STATUS" id="167">
 	    <description>Status of AP_Limits. Sent in extended
 	    status stream when AP_Limits is enabled</description>
-	    <field name="limits_state" type="uint8_t">state of AP_Limits, (see enum LimitState, LIMITS_STATE)</field>
+	    <field name="limits_state" type="uint8_t" enum="LIMITS_STATE">state of AP_Limits, (see enum LimitState, LIMITS_STATE)</field>
 	    <field name="last_trigger" type="uint32_t">time of last breach in milliseconds since boot</field>
 	    <field name="last_action" type="uint32_t">time of last recovery action in milliseconds since boot</field>
 	    <field name="last_recovery" type="uint32_t">time of last successful recovery in milliseconds since boot</field>
@@ -311,19 +293,19 @@
             <field type="float" name="speed_z">vertical wind speed (m/s)</field>
 	  </message>
 
-      <message name="DATA16" id="169">
-        <description>Data packet, size 16</description>
-        <field type="uint8_t" name="type">data type</field>
-        <field type="uint8_t" name="len">data length</field>
-        <field type="uint8_t[16]" name="data">raw data</field>
-      </message>
+	  <message name="DATA16" id="169">
+	    <description>Data packet, size 16</description>
+	    <field type="uint8_t" name="type">data type</field>
+	    <field type="uint8_t" name="len">data length</field>
+	    <field type="uint8_t[16]" name="data">raw data</field>
+	  </message>
 
-      <message name="DATA32" id="170">
-        <description>Data packet, size 32</description>
-        <field type="uint8_t" name="type">data type</field>
-        <field type="uint8_t" name="len">data length</field>
-        <field type="uint8_t[32]" name="data">raw data</field>
-      </message>
+	  <message name="DATA32" id="170">
+	    <description>Data packet, size 32</description>
+	    <field type="uint8_t" name="type">data type</field>
+	    <field type="uint8_t" name="len">data length</field>
+	    <field type="uint8_t[32]" name="data">raw data</field>
+	  </message>
 
 	  <message name="DATA64" id="171">
 	    <description>Data packet, size 64</description>
@@ -344,6 +326,123 @@
 	    <field type="float" name="distance">distance in meters</field>
 	    <field type="float" name="voltage">raw voltage if available, zero otherwise</field>
 	  </message>
-	 
+
+	  <message name="AIRSPEED_AUTOCAL" id="174">
+            <description>Airspeed auto-calibration</description>
+            <field type="float" name="vx">GPS velocity north m/s</field>
+            <field type="float" name="vy">GPS velocity east m/s</field>
+            <field type="float" name="vz">GPS velocity down m/s</field>
+            <field type="float" name="diff_pressure">Differential pressure pascals</field>
+            <field type="float" name="EAS2TAS">Estimated to true airspeed ratio</field>
+            <field type="float" name="ratio">Airspeed ratio</field>
+            <field type="float" name="state_x">EKF state x</field>
+            <field type="float" name="state_y">EKF state y</field>
+            <field type="float" name="state_z">EKF state z</field>
+            <field type="float" name="Pax">EKF Pax</field>
+            <field type="float" name="Pby">EKF Pby</field>
+            <field type="float" name="Pcz">EKF Pcz</field>
+          </message>
+
+      <!-- rally point messages -->
+	  <message name="RALLY_POINT" id="175">
+	    <description>A rally point. Used to set a point when from GCS -> MAV. Also used to return a point from MAV -> GCS</description>
+	    <field name="target_system" type="uint8_t">System ID</field>      
+	    <field name="target_component" type="uint8_t">Component ID</field>
+	    <field name="idx" type="uint8_t">point index (first point is 0)</field>
+	    <field name="count" type="uint8_t">total number of points (for sanity checking)</field>
+	    <field name="lat" type="int32_t">Latitude of point in degrees * 1E7</field>
+            <field name="lng" type="int32_t">Longitude of point in degrees * 1E7</field>
+            <field name="alt" type="int16_t">Transit / loiter altitude in meters relative to home</field>
+            <!-- Path planned landings are still in the future, but we want these fields ready: -->
+            <field name="break_alt" type="int16_t">Break altitude in meters relative to home</field>
+            <field name="land_dir" type="uint16_t">Heading to aim for when landing. In centi-degrees.</field>
+            <field name="flags" type="uint8_t">See RALLY_FLAGS enum for definition of the bitmask.</field>
+	  </message>
+
+          <message name="RALLY_FETCH_POINT" id="176">
+            <description>Request a current rally point from MAV. MAV should respond with a RALLY_POINT message. MAV should not respond if the request is invalid.</description>
+            <field name="target_system" type="uint8_t">System ID</field>      
+            <field name="target_component" type="uint8_t">Component ID</field>
+            <field name="idx" type="uint8_t">point index (first point is 0)</field>
+          </message>
+
+          <message name="COMPASSMOT_STATUS" id="177">
+            <description>Status of compassmot calibration</description>
+            <field name="throttle" type="uint16_t">throttle (percent*10)</field>
+            <field name="current" type="float">current (amps)</field>
+            <field name="interference" type="uint16_t">interference (percent)</field>
+            <field name="CompensationX" type="float">Motor Compensation X</field>
+            <field name="CompensationY" type="float">Motor Compensation Y</field>
+            <field name="CompensationZ" type="float">Motor Compensation Z</field>
+          </message>
+
+<!-- Coming soon
+      <message name="RALLY_LAND_POINT" id="177"> 
+         <description>A rally landing point.  An aircraft loitering at a rally point may choose one of these points to land at.</description>
+         <field name="target_system" type="uint8_t">System ID</field>      
+	     <field name="target_component" type="uint8_t">Component ID</field>
+	     <field name="idx" type="uint8_t">point index (first point is 0)</field>
+	     <field name="count" type="uint8_t">total number of points (for sanity checking)</field>
+	     <field name="lat" type="int32_t">Latitude of point</field>
+         <field name="lng" type="int32_t">Longitude of point</field>
+         <field name="alt" type="uint16_t">Ground AGL (usually 0)</field>
+     </message>
+
+	   <message name="RALLY_LAND_FETCH_POINT" id="178">
+         <description>Request a current rally land point from MAV</description>
+	     <field name="target_system" type="uint8_t">System ID</field>      
+	     <field name="target_component" type="uint8_t">Component ID</field>
+	     <field name="idx" type="uint8_t">point index (first point is 0)</field>
+      </message>
+-->
+
+	  <message name="AHRS2" id="178">
+	    <description>Status of secondary AHRS filter if available</description>
+            <field type="float" name="roll">Roll angle (rad)</field>
+            <field type="float" name="pitch">Pitch angle (rad)</field>
+            <field type="float" name="yaw">Yaw angle (rad)</field>
+            <field type="float" name="altitude">Altitude (MSL)</field>
+            <field type="int32_t" name="lat">Latitude in degrees * 1E7</field>
+            <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
+	  </message>
+
+  <!-- camera event message from CCB to autopilot: for image trigger events but also things like heartbeat, error, low power, full card, etc -->
+    <message name="CAMERA_STATUS" id="179">
+        <description>Camera Event</description>
+        <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch, according to camera clock)</field>    
+        <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
+        <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
+        <field name="img_idx"   type="uint16_t" >Image index</field>    <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
+        <field name="event_id"  type="uint8_t" >See CAMERA_STATUS_TYPES enum for definition of the bitmask</field>
+        <field name="p1"        type="float"   >Parameter 1 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p2"        type="float"   >Parameter 2 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p3"        type="float"   >Parameter 3 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p4"        type="float"   >Parameter 4 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+    </message>
+
+    <!-- camera feedback message - can be originated from CCB (in response to a CAMERA_STATUS), or directly from the autopilot as part of a DO_DIGICAM_CONTROL-->
+    <message name="CAMERA_FEEDBACK" id="180">
+        <description>Camera Capture Feedback</description>
+        <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_STATUS message (or autopilot if no CCB)</field>
+        <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
+        <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
+        <field name="img_idx"   type="uint16_t">Image index</field>     <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
+        <field name="lat"       type="int32_t" >Latitude in (deg * 1E7)</field>
+        <field name="lng"       type="int32_t" >Longitude in (deg * 1E7)</field>
+        <field name="alt_msl"   type="float"   >Altitude Absolute (meters AMSL)</field>
+        <field name="alt_rel"   type="float"   >Altitude Relative (meters above HOME location)</field>
+        <field name="roll"      type="float"   >Camera Roll angle (earth frame, degrees, +-180)</field>  <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="pitch"     type="float"   >Camera Pitch angle (earth frame, degrees, +-180)</field> <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="yaw"       type="float"   >Camera Yaw (earth frame, degrees, 0-360, true)</field>   <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="foc_len"   type="float"   >Focal Length (mm)</field> <!-- per-image to support zooms. Zero means fixed focal length or unknown. Should be true mm, not scaled to 35mm film equivalent -->
+        <field name="flags"     type="uint8_t" >See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask</field> <!-- future proofing -->
+    </message>
+
+    <message name="BATTERY2" id="181">
+      <description>2nd Battery status</description>
+      <field type="uint16_t" name="voltage">voltage in millivolts</field>
+      <field type="int16_t" name="current_battery">Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current</field>
+    </message>
+
      </messages>
 </mavlink>

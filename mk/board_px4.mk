@@ -1,6 +1,3 @@
-# PX4 specific build support
-ifeq ($(APPDIR),)
+TOOLCHAIN = NATIVE
+include $(MK_DIR)/find_tools.mk
 include $(MK_DIR)/px4_targets.mk
-else
-include $(MK_DIR)/px4_core.mk
-endif

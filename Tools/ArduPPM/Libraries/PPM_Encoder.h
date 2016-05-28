@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// ArduPPM (PPM Encoder) V2.3.16
+// ArduPPM (PPM Encoder) V2.3.17
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2.x (ATmega32u2)
@@ -34,12 +34,8 @@
 
 // PPM PASS-THROUGH MODE (signal pin 2&3 shorted):
 // -----------------------------------------------
-// - PPM output will not be enabled unless a input signal has been detected
-// - Active signal on input channel 1 has been detected:
-//   + Any input level changes will be passed directly to the PPM output (PPM pass-trough)
-//   + If no input level changes are detected withing 250ms:
-//     + PPM output is enabled and default fail-safe values for all eight channels transmitted
-//     + Input level change detected again, PPM fail-safe output is terminated and normal PPM pass-through operation is restored
+// - Any input level changes on pin 1 will be passed directly to the PPM output (PPM pass-trough)
+//   + If no input level changes are detected or if the input signals stop, there will be no PPM output 
 
 // Changelog:
 
@@ -146,6 +142,9 @@
 //         - if channel 5-8 are disconnected: set it to last value
 //         - permanent LED error condition indication is only triggered when throttle is set low (or all channels are disconnected)
 
+// 16-12-2013
+// V2.3.17 - Disabled fail-safe output when signal is missing in PPM pass-trough (PPMSUM) mode (feature depreciated by addition of missing signal detection in APM code) 
+//         - ppm_encoder_init() will now make sure PPM output always starts with fail-safe (900us) value on throttle after a brown-out reset
 
 // -------------------------------------------------------------
 
@@ -188,7 +187,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[15] = "ArduPPMv2.3.16"; 
+const char ver[15] = "ArduPPMv2.3.17"; 
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -211,6 +210,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 
 //#define _THROTTLE_LOW_FAILSAFE_INDICATION //if set, throttle is set to low when a single channel is lost
 //#define _THROTTLE_LOW_RECOVERY_POSSIBLE //if set, throttle low recovers from being low when the single channel comes back, only makes sense together with _THROTTLE_LOW_FAILSAFE_INDICATION
+
+#define _PPM_PASSTROUGH_MODE_DISABLE_FAILSAFE_ // Disable fail-safe PPM generator and watchdog timer in ppm pass-trough (PPMSUM) mode 
 
 #if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && !defined _THROTTLE_LOW_FAILSAFE_INDICATION
 #error failsafe recovery is only possible with throttle_low_failsafe_indication defined as well
@@ -626,8 +627,10 @@ ISR( SERVO_INT_VECTOR )
         }
 
         // Reset Watchdog Timer
+        #ifndef _PPM_PASSTROUGH_MODE_DISABLE_FAILSAFE_
         wdt_reset(); 
-
+        #endif
+        
         // Set servo input missing flag false to indicate that we have received servo input signals
         servo_input_missing = false;
 
@@ -684,7 +687,7 @@ CHECK_PINS_LOOP: // Input servo pin check loop
 
             // Reset Watchdog Timer
             wdt_reset(); 
-
+            
             // Set servo input missing flag false to indicate that we have received servo input signals
             servo_input_missing = false;
             
@@ -921,6 +924,8 @@ void ppm_encoder_init( void )
         {
            MCUSR=0; // Clear MCU Status register
            brownout_reset=true;
+           // Make sure PPM generator will always start directly with throttle F/S value (900us) after a brown-out reset
+           ppm[5] = failsafe_ppm[ 5 ]; 
         }
         else    // Watchdog Reset
         {
@@ -1035,14 +1040,19 @@ void ppm_encoder_init( void )
     // ------------------------------------------------------------------------------
     // Enable watchdog interrupt mode
     // ------------------------------------------------------------------------------
-    // Disable watchdog
-    wdt_disable();
-     // Reset watchdog timer
-    wdt_reset();
-     // Start timed watchdog setup sequence
-    WDTCSR |= (1<<WDCE) | (1<<WDE );
-    // Set 250 ms watchdog timeout and enable interrupt
-    WDTCSR = (1<<WDIE) | (1<<WDP2);
+    #ifdef _PPM_PASSTROUGH_MODE_DISABLE_FAILSAFE_
+    if( servo_input_mode != PPM_PASSTROUGH_MODE )
+    #endif    
+    {
+        // Disable watchdog
+        wdt_disable();
+         // Reset watchdog timer
+        wdt_reset();
+         // Start timed watchdog setup sequence
+        WDTCSR |= (1<<WDCE) | (1<<WDE );
+        // Set 250 ms watchdog timeout and enable interrupt
+        WDTCSR = (1<<WDIE) | (1<<WDP2);
+    }
 }
 // ------------------------------------------------------------------------------
 

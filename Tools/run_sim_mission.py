@@ -7,11 +7,7 @@ import pexpect
 
 MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
 
-# This is terrible.
-sys.path.insert(0,
-                os.path.join(MODULE_DIR, '..', '..', 'mavlink', 'pymavlink'))
-import mavutil
-import mavwp
+from pymavlink import mavutil, mavwp
 
 # So is this.
 sys.path.insert(0, os.path.join(MODULE_DIR, 'autotest'))

@@ -1,13 +1,10 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_Camera.h>
 #include <AP_Relay.h>
 #include <AP_Math.h>
 #include <RC_Channel.h>
 #include <AP_HAL.h>
-
-extern const AP_HAL::HAL& hal;
-extern int32_t wp_distance;     // Note: unfortunately this variable is in meter for ArduPlane and cm for ArduCopter
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -16,7 +13,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Param: TRIGG_TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 0:Servo,1:Relay,2:Servo and turn off throttle,3:Servo when 3m from waypoint,4:transistor
+    // @Values: 0:Servo,1:Relay
     // @User: Standard
     AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE),
 
@@ -41,6 +38,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("SERVO_OFF",   3, AP_Camera, _servo_off_pwm, AP_CAMERA_SERVO_OFF_PWM),
 
+    // @Param: TRIGG_DIST
+    // @DisplayName: Camera trigger distance
+    // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.
+    // @User: Standard
+    // @Range: 0 1000
+    AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
+
     AP_GROUPEND
 };
 
@@ -59,44 +63,10 @@ AP_Camera::servo_pic()
 void
 AP_Camera::relay_pic()
 {
-    _apm_relay->on();
+    _apm_relay->on(0);
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
-}
-
-/// pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
-void
-AP_Camera::throttle_pic()
-{
-// TODO find a way to do this without using the global parameter g
-//	g.channel_throttle.radio_out = g.throttle_min;
-    if (_thr_pic_counter == 10) {
-        servo_pic();            // triggering method
-        _thr_pic_counter = 0;
-//		g.channel_throttle.radio_out = g.throttle_cruise;
-    }
-    _thr_pic_counter++;
-}
-
-/// distance_pic - triggers picture when within 3m of waypoint
-void
-AP_Camera::distance_pic()
-{
-    if (wp_distance < AP_CAMERA_WP_DISTANCE) {
-        servo_pic();            // triggering method
-    }
-}
-
-/// hacked the circuit to run a transistor? use this trigger to send output.
-void
-AP_Camera::transistor_pic()
-{
-    // TODO: Assign pin spare pin for output
-    hal.gpio->write(AP_CAMERA_TRANSISTOR_PIN,1);
-
-    // leave a message that it should be active for two event loop cycles
-    _trigger_counter = 1;
 }
 
 /// single entry point to take pictures
@@ -111,15 +81,6 @@ AP_Camera::trigger_pic()
     case AP_CAMERA_TRIGGER_TYPE_RELAY:
         relay_pic();                    // basic relay activation
         break;
-    case AP_CAMERA_TRIGGER_TYPE_THROTTLE_OFF_TIME:
-        throttle_pic();                 // pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
-        break;
-    case AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE:
-        distance_pic();                 // pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
-        break;
-    case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
-        transistor_pic();                              // hacked the circuit to run a transistor? use this trigger to send output.
-        break;
     }
 }
 
@@ -133,15 +94,10 @@ AP_Camera::trigger_pic_cleanup()
     } else {
         switch (_trigger_type) {
             case AP_CAMERA_TRIGGER_TYPE_SERVO:
-            case AP_CAMERA_TRIGGER_TYPE_THROTTLE_OFF_TIME:
-            case AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE:
                 RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
                 break;
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
-                _apm_relay->off();
-                break;
-            case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
-                hal.gpio->write(AP_CAMERA_TRANSISTOR_PIN, 0);
+                _apm_relay->off(0);
                 break;
         }
     }
@@ -170,10 +126,6 @@ AP_Camera::configure_msg(mavlink_message_t* msg)
      *  packet.mode
      *  packet.shutter_speed
      */
-    // echo the message to the ArduCam OSD camera control board
-    // for more info see: http://code.google.com/p/arducam-osd/
-    // TODO is it connected to MAVLINK_COMM_3 ?
-    mavlink_msg_digicam_configure_send(MAVLINK_COMM_3, packet.target_system, packet.target_component, packet.mode, packet.shutter_speed, packet.aperture, packet.iso, packet.exposure_type, packet.command_id, packet.engine_cut_off, packet.extra_param, packet.extra_value);
 }
 
 /// decode MavLink that controls camera
@@ -202,10 +154,31 @@ AP_Camera::control_msg(mavlink_message_t* msg)
     {
         trigger_pic();
     }
-    // echo the message to the ArduCam OSD camera control board
-    // for more info see: http://code.google.com/p/arducam-osd/
-    // TODO is it connected to MAVLINK_COMM_3 ?
-    mavlink_msg_digicam_control_send(MAVLINK_COMM_3, packet.target_system, packet.target_component, packet.session, packet.zoom_pos, packet.zoom_step, packet.focus_lock, packet.shot, packet.command_id, packet.extra_param, packet.extra_value);
 }
 
 
+/*  update location, for triggering by GPS distance moved
+    This function returns true if a picture should be taken
+    The caller is responsible for taking the picture based on the return value of this function.
+    The caller is also responsible for logging the details about the photo
+*/
+bool AP_Camera::update_location(const struct Location &loc)
+{
+    if (_trigg_dist == 0.0f) {
+        return false;
+    }
+    if (_last_location.lat == 0 && _last_location.lng == 0) {
+        _last_location = loc;
+        return false;
+    }
+    if (_last_location.lat == loc.lat && _last_location.lng == loc.lng) {
+        // we haven't moved - this can happen as update_location() may
+        // be called without a new GPS fix
+        return false;
+    }
+    if (get_distance(loc, _last_location) < _trigg_dist) {
+        return false;
+    }
+    _last_location = loc;
+    return true;
+}

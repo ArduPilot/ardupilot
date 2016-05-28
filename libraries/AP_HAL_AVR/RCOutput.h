@@ -17,10 +17,7 @@ public:
     /* Output active/highZ control, either by single channel at a time
      * or a mask of channels */
     void     enable_ch(uint8_t ch);
-    void     enable_mask(uint32_t chmask);
-
     void     disable_ch(uint8_t ch);
-    void     disable_mask(uint32_t chmask);
 
     /* Output, either single channel or bulk array of channels */
     void     write(uint8_t ch, uint16_t period_ms);
@@ -47,10 +44,7 @@ public:
     /* Output active/highZ control, either by single channel at a time
      * or a mask of channels */
     void     enable_ch(uint8_t ch);
-    void     enable_mask(uint32_t chmask);
-
     void     disable_ch(uint8_t ch);
-    void     disable_mask(uint32_t chmask);
 
     /* Output, either single channel or bulk array of channels */
     void     write(uint8_t ch, uint16_t period_us);

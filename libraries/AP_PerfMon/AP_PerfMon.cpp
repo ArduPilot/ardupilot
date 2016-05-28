@@ -126,7 +126,6 @@ void AP_PerfMon::DisplayResults()
     uint32_t sumOfTime = 0;
     uint32_t unExplainedTime;
     uint8_t order[PERFMON_MAX_FUNCTIONS];
-    bool blocking_writes;
 
     // record end time
     if( allEndTime == 0 ) {
@@ -159,8 +158,7 @@ void AP_PerfMon::DisplayResults()
     totalTime = allEndTime - allStartTime;
 
     // ensure serial is blocking
-    //blocking_writes = hal.console->get_blocking_writes();
-    //hal.console->set_blocking_writes(true);
+    hal.console->set_blocking_writes(true);
 
     // print table of results
     hal.console->printf_P(PSTR("\nPerfMon elapsed:%lu(ms)\n"),(unsigned long)totalTime/1000);
@@ -197,7 +195,7 @@ void AP_PerfMon::DisplayResults()
     hal.console->printf_P(PSTR("unexpl:\t\t%4.2f\t%lu\n"),pct,(unsigned long)unExplainedTime/1000);
 
     // restore to blocking writes if necessary
-    //hal.console->set_blocking_writes(blocking_writes);
+    hal.console->set_blocking_writes(false);
 
     // turn back on any time recording
     if( lastCreated != NULL ) {

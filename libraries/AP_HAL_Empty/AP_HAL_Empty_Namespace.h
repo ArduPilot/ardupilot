@@ -15,7 +15,6 @@ namespace Empty {
     class EmptyAnalogSource;
     class EmptyAnalogIn;
     class EmptyStorage;
-    class EmptyConsoleDriver;
     class EmptyGPIO;
     class EmptyDigitalSource;
     class EmptyRCInput;

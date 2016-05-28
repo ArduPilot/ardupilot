@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /************************************************************
 * AP_mount -- library to control a 2 or 3 axis mount.		*
@@ -32,7 +32,7 @@ class AP_Mount
 {
 public:
     //Constructor
-    AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id);
+    AP_Mount(const struct Location *current_loc, const AP_AHRS &ahrs, uint8_t id);
 
     //enums
     enum MountType {
@@ -42,13 +42,18 @@ public:
         k_pan_tilt_roll = 3,            ///< yaw-pitch-roll
     };
 
+    // get_mode - return current mount mode
+    enum MAV_MOUNT_MODE     get_mode() const { return (enum MAV_MOUNT_MODE)_mount_mode.get(); }
+
+    // set_mode_to_default - restores the mode to it's default held in the MNT_MODE parameter
+    //      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
+    void                    set_mode_to_default() { _mount_mode.load(); }
+
     // MAVLink methods
     void                    configure_msg(mavlink_message_t* msg);
     void                    control_msg(mavlink_message_t* msg);
-    void                    status_msg(mavlink_message_t* msg);
+    void                    status_msg(mavlink_message_t* msg, mavlink_channel_t chan);
     void                    set_roi_cmd(const struct Location *target_loc);
-    void                    configure_cmd();
-    void                    control_cmd();
 
     // should be called periodically
     void                    update_mount_position();
@@ -61,10 +66,11 @@ public:
     // hook for eeprom variables
     static const struct AP_Param::GroupInfo        var_info[];
 
+    void                            set_mode(enum MAV_MOUNT_MODE mode);
+
 private:
 
     //methods
-    void                            set_mode(enum MAV_MOUNT_MODE mode);
 
     void                            set_retract_angles(float roll, float tilt, float pan); ///< set mount retracted position
     void                            set_neutral_angles(float roll, float tilt, float pan);
@@ -80,8 +86,7 @@ private:
     float                           angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     //members
-    AP_AHRS *                       _ahrs; ///< Rotation matrix from earth to plane.
-    GPS *&                          _gps;
+    const AP_AHRS                   &_ahrs; ///< Rotation matrix from earth to plane.
     const struct Location *         _current_loc;
     struct Location                 _target_GPS_location;
     MountType                       _mount_type;

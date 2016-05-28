@@ -6,7 +6,7 @@
 set -e
 set -x
 
-targets="clean apm1 clean apm2"
+targets="clean apm2"
 
 [ $# -gt 0 ] && {
     targets="$*"
@@ -14,7 +14,7 @@ targets="clean apm1 clean apm2"
 
 export PATH=/usr/lib/ccache:$PATH
 
-TESTS=$(find libraries -name 'Makefile' | xargs -i dirname '{}')
+TESTS=$(find libraries -name 'Makefile' | grep -v FLYMAPLE | xargs -i dirname '{}')
 
 for b in $TESTS; do
     echo "TESTING $b"

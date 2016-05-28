@@ -26,6 +26,9 @@ void PX4RCOutput::init(void* unused)
     if (ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming\n");
     }
+    if (ioctl(_pwm_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
+        hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
+    }
     _rate_mask = 0;
     _alt_fd = -1;    
     _servo_count = 0;
@@ -36,24 +39,29 @@ void PX4RCOutput::init(void* unused)
         return;
     }
 
-    /* if we have 8 servos, then we are attached to PX4IO. In that
-     * case, we want to open the PX4FMU driver for the 4 additional
-     * channels
-     */
-    if (_servo_count <= 4) {
-        return;
-    }
     _alt_fd = open("/dev/px4fmu", O_RDWR);
     if (_alt_fd == -1) {
         hal.console->printf("RCOutput: failed to open /dev/px4fmu");
         return;
     }
+}
+
+
+void PX4RCOutput::_init_alt_channels(void) 
+{
+    if (_alt_fd == -1) {
+        return;
+    }
     if (ioctl(_alt_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup alt IO arming\n");
+        return;
+    }
+    if (ioctl(_alt_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
+        hal.console->printf("RCOutput: Unable to setup alt IO arming OK\n");
+        return;
     }
     if (ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
         hal.console->printf("RCOutput: Unable to get servo count\n");        
-        return;
     }
 }
 
@@ -105,14 +113,14 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         }
     }
 
-    if (ioctl(_pwm_fd, PWM_SERVO_SELECT_UPDATE_RATE, _rate_mask) != 0) {
+    if (ioctl(_pwm_fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
         hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)_rate_mask);
     }
 }
 
 uint16_t PX4RCOutput::get_freq(uint8_t ch) 
 {
-    if (_rate_mask & (1<<ch)) {
+    if (_rate_mask & (1U<<ch)) {
         return _freq_hz;
     }
     return 50;
@@ -120,27 +128,67 @@ uint16_t PX4RCOutput::get_freq(uint8_t ch)
 
 void PX4RCOutput::enable_ch(uint8_t ch)
 {
-    // channels are always enabled ...
-}
-
-void PX4RCOutput::enable_mask(uint32_t chmask)
-{
-    // channels are always enabled ...
+    if (ch >= 8 && !(_enabled_channels & (1U<<ch))) {
+        // this is the first enable of an auxillary channel - setup
+        // aux channels now. This delayed setup makes it possible to
+        // use BRD_PWM_COUNT to setup the number of PWM channels.
+        _init_alt_channels();
+    }
+    _enabled_channels |= (1U<<ch);
 }
 
 void PX4RCOutput::disable_ch(uint8_t ch)
 {
-    // channels are always enabled ...
+    _enabled_channels &= ~(1U<<ch);
 }
 
-void PX4RCOutput::disable_mask(uint32_t chmask)
+void PX4RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
 {
-    // channels are always enabled ...
+    struct pwm_output_values pwm_values;
+    memset(&pwm_values, 0, sizeof(pwm_values));
+    for (uint8_t i=0; i<_servo_count; i++) {
+        if ((1UL<<i) & chmask) {
+            pwm_values.values[i] = period_us;
+        }
+        pwm_values.channel_count++;
+    }
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_DISARMED_PWM, (long unsigned int)&pwm_values);
+    if (ret != OK) {
+        hal.console->printf("Failed to setup disarmed PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
+    }
+}
+
+void PX4RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
+{
+    struct pwm_output_values pwm_values;
+    memset(&pwm_values, 0, sizeof(pwm_values));
+    for (uint8_t i=0; i<_servo_count; i++) {
+        if ((1UL<<i) & chmask) {
+            pwm_values.values[i] = period_us;
+        }
+        pwm_values.channel_count++;
+    }
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FAILSAFE_PWM, (long unsigned int)&pwm_values);
+    if (ret != OK) {
+        hal.console->printf("Failed to setup failsafe PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
+    }
+}
+
+void PX4RCOutput::force_safety_off(void)
+{
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
+    if (ret != OK) {
+        hal.console->printf("Failed to force safety off\n");
+    }
 }
 
 void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
 {
     if (ch >= _servo_count + _alt_servo_count) {
+        return;
+    }
+    if (!(_enabled_channels & (1U<<ch))) {
+        // not enabled
         return;
     }
     if (ch >= _max_channel) {

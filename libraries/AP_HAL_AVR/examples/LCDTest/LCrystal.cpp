@@ -70,12 +70,12 @@ void LiquidCrystal::init(uint8_t fourbitmode, uint8_t rs, uint8_t rw, uint8_t en
   _data_pins[6] = d6;
   _data_pins[7] = d7; 
 
-  hal.gpio->pinMode(_rs_pin, GPIO_OUTPUT);
+  hal.gpio->pinMode(_rs_pin, HAL_GPIO_OUTPUT);
   // we can save 1 pin by not using RW. Indicate by passing 255 instead of pin#
   if (_rw_pin != 255) { 
-    hal.gpio->pinMode(_rw_pin, GPIO_OUTPUT);
+    hal.gpio->pinMode(_rw_pin, HAL_GPIO_OUTPUT);
   }
-  hal.gpio->pinMode(_enable_pin, GPIO_OUTPUT);
+  hal.gpio->pinMode(_enable_pin, HAL_GPIO_OUTPUT);
   
   if (fourbitmode)
     _displayfunction = LCD_4BITMODE | LCD_1LINE | LCD_5x8DOTS;
@@ -296,7 +296,7 @@ void LiquidCrystal::pulseEnable(void) {
 
 void LiquidCrystal::write4bits(uint8_t value) {
   for (int i = 0; i < 4; i++) {
-    hal.gpio->pinMode(_data_pins[i], GPIO_OUTPUT);
+    hal.gpio->pinMode(_data_pins[i], HAL_GPIO_OUTPUT);
     hal.gpio->write(_data_pins[i], (value >> i) & 0x01);
   }
 
@@ -305,7 +305,7 @@ void LiquidCrystal::write4bits(uint8_t value) {
 
 void LiquidCrystal::write8bits(uint8_t value) {
   for (int i = 0; i < 8; i++) {
-    hal.gpio->pinMode(_data_pins[i], GPIO_OUTPUT);
+    hal.gpio->pinMode(_data_pins[i], HAL_GPIO_OUTPUT);
     hal.gpio->write(_data_pins[i], (value >> i) & 0x01);
   }
   

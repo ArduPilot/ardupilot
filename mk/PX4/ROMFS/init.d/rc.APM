@@ -1,0 +1,377 @@
+#!nsh
+
+# APM startup script for NuttX on PX4
+
+# To disable APM startup add a /fs/microsd/APM/nostart file
+# To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
+# To enable mkblctrl_+ startup add a /fs/microsd/APM/mkblctrl_+ file
+# To enable mkblctrl_x startup add a /fs/microsd/APM/mkblctrl_x file
+# To enable PWM on FMUv1 on ttyS1 add a /fs/microsd/APM/AUXPWM.en file
+
+set deviceA /dev/ttyACM0
+
+# check for an old file called APM, caused by 
+# a bug in an earlier firmware release
+if [ -f /fs/microsd/APM ]
+then
+   echo "APM file found - renaming"
+   mv /fs/microsd/APM /fs/microsd/APM.old
+fi
+
+if [ -f /fs/microsd/APM/nostart ]
+then
+   echo "APM/nostart found - skipping APM startup"
+   sh /etc/init.d/rc.error
+fi
+
+# mount binfs so we can find the built-in apps
+if [ -f /bin/reboot ]
+then
+	echo "binfs already mounted"
+else
+	echo "Mounting binfs"
+        if mount -t binfs /dev/null /bin
+        then
+                echo "binfs mounted OK"
+        else
+                sh /etc/init.d/rc.error
+        fi
+fi
+
+set sketch NONE
+if rm /fs/microsd/APM/boot.log
+then
+   echo "removed old boot.log"
+fi
+set logfile /fs/microsd/APM/BOOT.LOG
+
+if [ ! -f /bin/ArduPilot ]
+then
+   echo "/bin/ardupilot not found"
+   sh /etc/init.d/rc.error
+fi
+
+if mkdir /fs/microsd/APM > /dev/null
+then
+     echo "Created APM directory"
+fi
+
+if [ -f /bin/lsm303d ]
+then
+     echo "Detected FMUv2 board"
+     set BOARD FMUv2
+else
+     echo "Detected FMUv1 board"
+     set BOARD FMUv1
+fi
+
+if [ $BOARD == FMUv1 ]
+then
+   set deviceC /dev/ttyS2
+   if [ -f /fs/microsd/APM/AUXPWM.en ]
+   then
+      set deviceD /dev/null
+   else
+      set deviceD /dev/ttyS1
+   fi
+else
+   set deviceC /dev/ttyS1
+   set deviceD /dev/ttyS2
+fi
+
+if uorb start
+then
+    echo "uorb started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+# start mkblctrl driver if configured
+if [ -f /fs/microsd/APM/mkblctrl ]
+then
+    echo "Setting up mkblctrl driver"
+    echo "Setting up mkblctrl driver" >> $logfile
+    mkblctrl -d /dev/pwm_output
+fi
+
+if [ -f /fs/microsd/APM/mkblctrl_+ ]
+then
+    echo "Setting up mkblctrl driver +"
+    echo "Setting up mkblctrl driver +" >> $logfile
+    mkblctrl -mkmode + -d /dev/pwm_output
+fi
+
+if [ -f /fs/microsd/APM/mkblctrl_x ]
+then
+    echo "Setting up mkblctrl driver x"
+    echo "Setting up mkblctrl driver x" >> $logfile
+    mkblctrl -mkmode x -d /dev/pwm_output
+fi
+
+
+# try the px4io start twice. Some FMUv2 board don't
+# come up the first time
+set HAVE_PX4IO false
+if px4io start norc
+then
+    set HAVE_PX4IO true
+else
+    # it may be in bootloader mode
+    echo Loading /etc/px4io/px4io.bin
+    tone_alarm MBABGP
+    if px4io update /etc/px4io/px4io.bin
+    then
+	echo "upgraded PX4IO firmware OK"
+        tone_alarm MSPAA
+    else
+	echo "Failed to upgrade PX4IO firmware"
+        tone_alarm MNGGG
+    fi
+    sleep 1
+    if px4io start norc
+    then
+        set HAVE_PX4IO true
+        # play happy tune again
+	tone_alarm start
+    fi
+fi
+
+if [ $HAVE_PX4IO == true ]
+then
+    echo "PX4IO board OK"
+    if px4io checkcrc /etc/px4io/px4io.bin
+    then
+        echo "PX4IO CRC OK"
+    else
+        echo "PX4IO CRC failure"
+        echo "PX4IO CRC failure" >> $logfile    
+        tone_alarm MBABGP
+        if px4io forceupdate 14662 /etc/px4io/px4io.bin
+        then
+               sleep 1
+               if px4io start norc
+               then
+                  echo "PX4IO restart OK"
+                  echo "PX4IO restart OK" >> $logfile    
+                  tone_alarm MSPAA
+               else
+                  echo "PX4IO restart failed"
+                  echo "PX4IO restart failed" >> $logfile    
+                  tone_alarm MNGGG
+                  sh /etc/init.d/rc.error
+               fi
+        else
+               echo "PX4IO update failed"
+               echo "PX4IO update failed" >> $logfile    
+               tone_alarm MNGGG
+        fi
+    fi
+else
+    echo "No PX4IO board found"
+    echo "No PX4IO board found" >> $logfile
+
+    if [ $BOARD == FMUv2 ]
+    then
+       sh /etc/init.d/rc.error
+    fi
+fi
+
+if [ $BOARD == FMUv1 -a $deviceD == /dev/ttyS1 ]
+then
+        echo "Setting FMU mode_serial"
+        fmu mode_serial
+else
+        echo "Setting FMU mode_pwm"
+        fmu mode_pwm
+fi
+
+
+echo "Starting APM sensors"
+if ms5611 start
+then
+    echo "ms5611 started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+if adc start
+then
+    echo "adc started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+if [ $BOARD == FMUv1 ]
+then
+    echo "Starting FMUv1 sensors"
+    if hmc5883 start
+    then
+        echo "hmc5883 started OK"
+        if hmc5883 calibrate
+        then
+          echo "hmc5883 calibrate OK"
+        else 
+          echo "hmc5883 calibrate failed"
+          echo "hmc5883 calibrate failed" >> $logfile
+          tone_alarm MSBBB
+        fi
+    else
+        echo "hmc5883 start failed"
+        echo "hmc5883 start failed" >> $logfile
+        sh /etc/init.d/rc.error
+    fi
+    if mpu6000 start
+    then
+       echo "mpu6000  started OK"
+    else
+       sh /etc/init.d/rc.error
+    fi
+    if l3gd20 start
+    then
+       echo "l3gd20 started OK"
+    else
+       echo "No l3gd20"
+       echo "No l3gd20" >> $logfile
+    fi
+else
+    echo "Starting FMUv2 sensors"
+    if hmc5883 -C -X start
+    then
+        echo "Have external hmc5883"
+    else
+        echo "No external hmc5883"
+    fi
+    if hmc5883 -C -I -R 4 start
+    then
+        echo "Have internal hmc5883"
+    else
+        echo "No internal hmc5883"
+    fi
+
+    # external MPU6000 is rotated YAW_180 from standard
+    if mpu6000 -X -R 4 start
+    then
+       echo "Found MPU6000 external"
+       set HAVE_FMUV3 true
+    else
+       echo "No MPU6000 external"
+       set HAVE_FMUV3 false
+    fi
+    if [ $HAVE_FMUV3 == true ]
+    then
+        # internal MPU6000 is rotated ROLL_180_YAW_270 from standard
+        if mpu6000 -R 14 start
+        then
+               echo "Found MPU6000 internal"
+        else
+               echo "No MPU6000"
+               echo "No MPU6000" >> $logfile
+               sh /etc/init.d/rc.error
+        fi
+        # external L3GD20 is rotated YAW_180 from standard
+        if l3gd20 -X -R 4 start
+        then
+               echo "l3gd20 external started OK"
+        else
+               echo "No l3gd20"
+               sh /etc/init.d/rc.error
+        fi
+        # external LSM303D is rotated YAW_270 from standard
+        if lsm303d -X -R 6 start
+        then
+               echo "lsm303d external started OK"
+        else
+               echo "No lsm303d"
+               sh /etc/init.d/rc.error
+        fi
+    else
+        if mpu6000 start
+        then
+               echo "Found MPU6000"
+        else
+               echo "No MPU6000"
+               echo "No MPU6000" >> $logfile
+        fi
+        if l3gd20 start
+        then
+               echo "l3gd20 started OK"
+        else
+               sh /etc/init.d/rc.error
+        fi
+        if lsm303d start
+        then
+               echo "lsm303d started OK"
+        else
+               sh /etc/init.d/rc.error
+        fi
+    fi
+fi
+
+# optional ETS airspeed sensor
+if ets_airspeed start
+then
+    echo "Found ETS airspeed sensor"
+fi
+
+if meas_airspeed start
+then
+    echo "Found MEAS airspeed sensor"
+fi
+
+# optional Range Finder sensor
+if ll40ls start
+then
+    echo "Found ll40ls sensor"
+fi
+
+if mb12xx start
+then
+    echo "Found mb12xx sensor"
+fi
+
+echo "Trying PX4IO board"
+
+if mtd start /fs/mtd
+then
+    echo "started mtd driver OK"
+else
+    echo "failed to start mtd driver"
+    echo "failed to start mtd driver" >> $logfile
+    sh /etc/init.d/rc.error           
+fi
+
+if mtd readtest /fs/mtd
+then
+    echo "mtd readtest OK"
+else
+    echo "failed to read mtd"
+    echo "failed to read mtd" >> $logfile
+    sh /etc/init.d/rc.error           
+fi
+
+if [ $BOARD == FMUv2 ]
+then
+  # the ramtron on FMUv2 is very fast and can handle trillions of
+  # writes. This full rw test on each boot ensures it is working
+  # properly. We have one board that failed this, so
+  # the test is arguably worth having
+  if mtd rwtest /fs/mtd
+  then
+    echo "mtd rwtest OK"
+  else
+    echo "failed to test mtd"
+    echo "failed to test mtd" >> $logfile
+    sh /etc/init.d/rc.error           
+  fi
+fi
+
+echo Starting ArduPilot $deviceA $deviceC $deviceD
+if ArduPilot -d $deviceA -d2 $deviceC -d3 $deviceD start
+then
+    echo ArduPilot started OK
+else
+    sh /etc/init.d/rc.error
+fi
+
+echo "rc.APM finished"
+

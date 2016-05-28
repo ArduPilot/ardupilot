@@ -1,12 +1,22 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*
   ArduPlane parameter definitions
 
-  This firmware is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
 */
 
 #define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, { def_value:def } }
@@ -44,8 +54,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
 #endif
 
-	GSCALAR(flybywire_airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
-	GSCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
+	GSCALAR(airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
+	GSCALAR(airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
 
 	GSCALAR(throttle_min,           "THR_MIN",        THROTTLE_MIN),
 	GSCALAR(throttle_max,           "THR_MAX",        THROTTLE_MAX),
@@ -77,7 +87,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(reverse_ch1_elevon,     "ELEVON_CH1_REV", ELEVON_CH1_REVERSE),
 	GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV", ELEVON_CH2_REVERSE),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS", 0),
-	GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
+	GSCALAR(log_bitmask,            "LOG_BITMASK",    0),
 	GSCALAR(log_last_filenumber,    "LOG_LASTFILE",   0),
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
 	GSCALAR(airspeed_cruise,        "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),

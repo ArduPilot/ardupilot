@@ -2,6 +2,11 @@
 
 You can find lots of development information at the [ArduPilot development site](http://dev.ardupilot.com)
 
+#### To compile APM2.x Ardupilot after version 3.1 please follow the instructions found at 
+
+[Dev.Ardupilot] (http://dev.ardupilot.com/wiki/building-ardupilot-with-arduino-windows/) 
+
+
 ## Getting the source
 
 You can either download the source using the "ZIP" button at the top
@@ -87,9 +92,8 @@ few minutes in Linux, OS X, or Windows.
  4. In the `ardupilot` directory, run `vagrant up` from the command
  line.  This will create a new Ubuntu Linux VM.
 
- 5. Run `vagrant ssh -c
- "ardupilot/Tools/scripts/install-prereqs-ubuntu.sh -y"`.  This will
- install all the prerequisites for doing ardupilot development.
+ 5. Run `vagrant ssh -c "ardupilot/Tools/scripts/install-prereqs-ubuntu.sh -y"`.
+ This will install all the prerequisites for doing ardupilot development.
 
 You can now run `vagrant ssh` to log in to the development
 environment.  The `~/ardupilot` directory in the VM is actually the
@@ -101,22 +105,15 @@ build ArduCopter for PX4 in the development environment:
 
 ```
 $ vagrant ssh
-# cd ardupilot/Arducopter
+# cd ardupilot/ArduCopter
 # make configure
-```
-
-Now edit `ardupilot/config.mk` so it has the following line:
-
-```
-PX4_ROOT = ~/PX4-Firmware
 ```
 
 Back at the terminal:
 
 ```
-# cd ~/PX4-Firmware
-# make configure_px4fmu
 # make px4
+# make px4-upload  # (optional)
 ```
 
 # User Technical Support

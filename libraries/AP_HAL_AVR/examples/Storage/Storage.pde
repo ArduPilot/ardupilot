@@ -2,6 +2,7 @@
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include <AP_Param.h>
+#include <StorageManager.h>
 #include <AP_Progmem.h>
 
 #include <AP_HAL.h>
@@ -14,14 +15,6 @@ const AP_HAL::HAL& hal = AP_HAL_AVR_APM1;
 #endif
 
 uint8_t fibs[12] = { 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144 };
-
-void test_erase() {
-    hal.console->printf_P(PSTR("erasing... "));
-    for(int i = 0; i < 100; i++) {
-        hal.storage->write_byte(i, 0);
-    }
-    hal.console->printf_P(PSTR(" done.\r\n"));
-}
 
 void test_write() {
     hal.console->printf_P(PSTR("writing... "));
@@ -49,7 +42,6 @@ void test_readback() {
 
 void setup (void) {
     hal.console->printf_P(PSTR("Starting AP_HAL_AVR::Storage test\r\n"));
-    test_erase();
     test_write();
     test_readback();
 }

@@ -10,7 +10,7 @@
 #include "GPIO.h"
 #include "Semaphores.h"
 
-#include "pins_arduino_mega.h"
+#include "utility/pins_arduino_mega.h"
 
 using namespace AP_HAL_AVR;
 
@@ -26,9 +26,9 @@ void AVRSPI3DeviceDriver::init() {
      * by the arduino pin numbers, so we access it directly
      * with AVRDigitalSource. */
     AVRDigitalSource spi3_sck(_BV(2), PJ);
-    spi3_sck.mode(GPIO_OUTPUT);
-    hal.gpio->pinMode(SPI3_MOSI, GPIO_OUTPUT);
-    hal.gpio->pinMode(SPI3_MISO, GPIO_INPUT);
+    spi3_sck.mode(HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(SPI3_MOSI, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(SPI3_MISO, HAL_GPIO_INPUT);
 
     /* UMSELn1 and UMSELn2: USART in SPI Master mode */
     UCSR3C = _BV(UMSEL31) | _BV(UMSEL30);
@@ -36,7 +36,7 @@ void AVRSPI3DeviceDriver::init() {
     UCSR3B = _BV(RXEN3) | _BV(TXEN3);
 
     /* Setup chip select pin */
-    _cs_pin->mode(GPIO_OUTPUT);
+    _cs_pin->mode(HAL_GPIO_OUTPUT);
     _cs_pin->write(1);
 }
 
@@ -44,11 +44,12 @@ AP_HAL::Semaphore* AVRSPI3DeviceDriver::get_semaphore() {
     return &_semaphore;
 }
 
-void AVRSPI3DeviceDriver::_cs_assert() {
+void AVRSPI3DeviceDriver::_cs_assert() 
+{
     /* set the device UCSRnC configuration bits.
      * only sets data order, clock phase, and clock polarity bits (lowest
      * three bits)  */
-    const uint8_t new_ucsr3c = UCSR3C | (_ucsr3c & (0x07));
+    const uint8_t new_ucsr3c = (UCSR3C & ~0x07) | (_ucsr3c & (0x07));
     UCSR3C = new_ucsr3c;
     /* set the device baud rate */
     UBRR3 = _ubrr3;

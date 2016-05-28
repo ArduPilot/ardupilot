@@ -9,18 +9,11 @@
 
 #include <stdint.h>
 
-// the last page holds the log format in first 4 bytes. Please change
-// this if (and only if!) the low level format changes
-#define DF_LOGGING_FORMAT    0x28122013
-
-// we use an invalie logging format to test the chip erase
-#define DF_LOGGING_FORMAT_INVALID   0x28122012
-
 class DataFlash_Block : public DataFlash_Class
 {
 public:
     // initialisation
-    virtual void Init(void) = 0;
+    virtual void Init(const struct LogStructure *structure, uint8_t num_types) = 0;
     virtual bool CardInserted(void) = 0;
 
     // erase handling
@@ -33,17 +26,20 @@ public:
     // high level interface
     uint16_t find_last_log(void);
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
+    int16_t get_log_data_raw(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs(void);
     uint16_t start_new_log(void);
+#ifndef DATAFLASH_NO_CLI
     void LogReadProcess(uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
-                        uint8_t num_types,
-                        const struct LogStructure *structure,
                         void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                         AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
+#endif
 
 private:
     struct PageHeader {
@@ -60,6 +56,9 @@ private:
     uint16_t df_Read_PageAdr;
     uint16_t df_FileNumber;
     uint16_t df_FilePage;
+
+    // offset from adding FMT messages to log data
+    bool adding_fmt_headers;
 
     /*
       functions implemented by the board specific backends
@@ -101,6 +100,8 @@ private:
     uint16_t GetFilePage();
     uint16_t GetFileNumber();
 
+    void _print_log_formats(AP_HAL::BetterStream *port);
+    
 protected:
     uint8_t df_manufacturer;
     uint16_t df_device;

@@ -14,6 +14,9 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mission.h>
+#include <StorageManager.h>
+#include <AP_Terrain.h>
 #include <GCS_Console.h>
 
 #include "simplegcs.h"

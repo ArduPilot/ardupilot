@@ -1,0 +1,64 @@
+Aileron/rudder/elevator/throttle mixer for PX4FMU
+==================================================
+
+This file defines mixers suitable for controlling a fixed wing aircraft with
+aileron, rudder, elevator and throttle controls using PX4FMU. The configuration
+assumes the aileron servo(s) are connected to PX4FMU servo output 0, the
+elevator to output 1, the rudder to output 2 and the throttle to output 3.
+
+Inputs to the mixer come from channel group 0 (vehicle attitude), channels 0
+(roll), 1 (pitch) and 3 (thrust).
+
+Aileron mixer
+-------------
+Two scalers total (output, roll).
+
+This mixer assumes that the aileron servos are set up correctly mechanically;
+depending on the actual configuration it may be necessary to reverse the scaling
+factors (to reverse the servo movement) and adjust the offset, scaling and
+endpoints to suit.
+
+As there is only one output, if using two servos adjustments to compensate for
+differences between the servos must be made mechanically.  To obtain the correct
+motion using a Y  cable, the servos can be positioned reversed from one another.
+
+M: 1
+O:      10000  10000      0 -10000  10000
+S: 0 0  10000  10000      0 -10000  10000
+
+Elevator mixer
+------------
+Two scalers total (output, roll).
+
+This mixer assumes that the elevator servo is set up correctly mechanically;
+depending on the actual configuration it may be necessary to reverse the scaling
+factors (to reverse the servo movement) and adjust the offset, scaling and
+endpoints to suit.
+
+M: 1
+O:       10000   10000      0 -10000  10000
+S: 0 1  -10000  -10000      0 -10000  10000
+
+Rudder mixer
+------------
+Two scalers total (output, yaw).
+
+This mixer assumes that the rudder servo is set up correctly mechanically;
+depending on the actual configuration it may be necessary to reverse the scaling
+factors (to reverse the servo movement) and adjust the offset, scaling and
+endpoints to suit.
+
+M: 1
+O:      10000  10000      0 -10000  10000
+S: 0 2  10000  10000      0 -10000  10000
+
+Motor speed mixer
+-----------------
+Two scalers total (output, thrust).
+
+This mixer generates a full-range output (-1 to 1) from an input in the (0 - 1)
+range.  Inputs below zero are treated as zero.
+
+M: 1
+O:      10000  10000      0 -10000  10000
+S: 0 3      0  20000 -10000 -10000  10000

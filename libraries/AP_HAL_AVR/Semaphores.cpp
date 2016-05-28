@@ -52,14 +52,15 @@ bool AVRSemaphore::_take_from_mainloop(uint32_t timeout_ms) {
         return false;
     }
 
+    uint16_t timeout_ticks = timeout_ms*10;
     do {
         /* Delay 1ms until we can successfully take, or we timed out */
-        hal.scheduler->delay(1);
-        timeout_ms--;
+        hal.scheduler->delay_microseconds(100);
+        timeout_ticks--;
         if (_take_nonblocking()) {
             return true;
         }
-    } while (timeout_ms > 0);
+    } while (timeout_ticks > 0);
 
     return false;
 }

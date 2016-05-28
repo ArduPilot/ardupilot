@@ -6,36 +6,26 @@
 #include "Storage.h"
 using namespace AP_HAL_AVR;
 
-uint8_t AVREEPROMStorage::read_byte(uint16_t loc) {
-    return eeprom_read_byte((uint8_t*)loc);
-}
-
-uint16_t AVREEPROMStorage::read_word(uint16_t loc) {
-    return eeprom_read_word((uint16_t*)loc);
-}
-
-uint32_t AVREEPROMStorage::read_dword(uint16_t loc) {
-    return eeprom_read_dword((uint32_t*)loc);
-}
-
-void AVREEPROMStorage::read_block(void *dst, uint16_t src, size_t n) {
+void AVREEPROMStorage::read_block(void *dst, uint16_t src, size_t n) 
+{
     eeprom_read_block(dst,(const void*)src,n);
 }
 
-void AVREEPROMStorage::write_byte(uint16_t loc, uint8_t value) {
-    eeprom_write_byte((uint8_t*)loc,value);
-}
-
-void AVREEPROMStorage::write_word(uint16_t loc, uint16_t value) {
-    eeprom_write_word((uint16_t*)loc,value);
-}
-
-void AVREEPROMStorage::write_dword(uint16_t loc, uint32_t value) {
-    eeprom_write_dword((uint32_t*)loc,value);
-}
-
-void AVREEPROMStorage::write_block(uint16_t dst, void *src, size_t n) {
-    eeprom_write_block(src,(void*)dst,n);
+void AVREEPROMStorage::write_block(uint16_t dst, const void *src, size_t n) 
+{
+    uint8_t *p = (uint8_t *)src;
+    while (n--) {
+        /*
+          it is much faster to read than write, so it is worth
+          checking if the value is already correct
+         */
+        uint8_t b = eeprom_read_byte((uint8_t*)dst);
+        if (b != *p) {
+            eeprom_write_byte((uint8_t*)dst, *p);
+        }
+        dst++;
+        *p++;
+    }
 }
 
 #endif

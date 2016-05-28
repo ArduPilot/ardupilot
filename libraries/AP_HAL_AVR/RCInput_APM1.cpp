@@ -15,7 +15,8 @@ extern const HAL& hal;
 
 /* private variables to communicate with input capture isr */
 volatile uint16_t APM1RCInput::_pulse_capt[AVR_RC_INPUT_NUM_CHANNELS] = {0};  
-volatile uint8_t  APM1RCInput::_valid = 0;
+volatile uint8_t  APM1RCInput::_num_channels = 0;
+volatile bool  APM1RCInput::_new_input = false;
 
 /* private callback for input capture ISR */
 void APM1RCInput::_timer4_capt_cb(void) {
@@ -32,14 +33,19 @@ void APM1RCInput::_timer4_capt_cb(void) {
     }
 
     if (pulse_width > 8000) {
-        /* sync pulse detected */
+        // sync pulse detected.  Pass through values if at least a minimum number of channels received
+        if( channel_ctr >= AVR_RC_INPUT_MIN_CHANNELS ) {
+            _num_channels = channel_ctr;
+            _new_input = true;
+        }
         channel_ctr = 0;
     } else {
         if (channel_ctr < AVR_RC_INPUT_NUM_CHANNELS) {
             _pulse_capt[channel_ctr] = pulse_width;
             channel_ctr++;
             if (channel_ctr == AVR_RC_INPUT_NUM_CHANNELS) {
-                _valid = AVR_RC_INPUT_NUM_CHANNELS;
+                _num_channels = AVR_RC_INPUT_NUM_CHANNELS;
+                _new_input = true;
             }
         }
     }
@@ -53,7 +59,7 @@ void APM1RCInput::init(void* _isrregistry) {
     /* initialize overrides */
     clear_overrides();
     /* Arduino pin 49 is ICP4 / PL0,  timer 4 input capture */
-    hal.gpio->pinMode(49, GPIO_INPUT);
+    hal.gpio->pinMode(49, HAL_GPIO_INPUT);
     /**
      * WGM: 1 1 1 1. Fast WPM, TOP is in OCR4A
      * COM all disabled
@@ -62,19 +68,32 @@ void APM1RCInput::init(void* _isrregistry) {
      * OCR4A: 40000, 0.5us tick => 2ms period / 50hz freq for outbound
      * fast PWM.
      */
-    TCCR4A = _BV(WGM40) | _BV(WGM41);
-    TCCR4B = _BV(WGM43) | _BV(WGM42) | _BV(CS41) | _BV(ICES4);
-    OCR4A  = 40000;
 
-    /* OCR4B and OCR4C will be used by RCOutput_APM1. init to nil output */
+    uint8_t oldSREG = SREG;
+    cli();
+    
+    /* Timer cleanup before configuring */
+    TCNT4 = 0;
+    TIFR4 = 0;
+
+    /* Set timer 8x prescaler fast PWM mode toggle compare at OCRA with rising edge input capture */
+    TCCR4A = _BV(WGM40) | _BV(WGM41);
+    TCCR4B |= _BV(WGM43) | _BV(WGM42) | _BV(CS41) | _BV(ICES4);
+    OCR4A  = 40000 - 1; // -1 to correct for wrap
+
+    /* OCR4B and OCR4C will be used by RCOutput_APM1. Init to 0xFFFF to prevent premature PWM output */
     OCR4B  = 0xFFFF;
     OCR4C  = 0xFFFF;
 
     /* Enable input capture interrupt */
     TIMSK4 |= _BV(ICIE4);
+    
+    SREG = oldSREG;    
 }
 
-uint8_t APM1RCInput::valid() { return _valid; }
+bool APM1RCInput::new_input() { return _new_input; }
+
+uint8_t APM1RCInput::num_channels() { return _num_channels; }
 
 
 /* constrain captured pulse to be between min and max pulsewidth. */
@@ -88,10 +107,11 @@ uint16_t APM1RCInput::read(uint8_t ch) {
     /* constrain ch */
     if (ch >= AVR_RC_INPUT_NUM_CHANNELS) return 0;
     /* grab channel from isr's memory in critical section*/
+    uint8_t oldSREG = SREG;
     cli();
     uint16_t capt = _pulse_capt[ch];
-    sei();
-    _valid = 0;
+    SREG = oldSREG;
+    _new_input = false;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
     /* Check for override */
@@ -103,11 +123,12 @@ uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
     /* constrain len */
     if (len > AVR_RC_INPUT_NUM_CHANNELS) { len = AVR_RC_INPUT_NUM_CHANNELS; }
     /* grab channels from isr's memory in critical section */
+    uint8_t oldSREG = SREG;
     cli();
     for (uint8_t i = 0; i < len; i++) {
         periods[i] = _pulse_capt[i];
     }
-    sei();
+    SREG = oldSREG;
     /* Outside of critical section, do the math (in place) to scale and
      * constrain the pulse. */
     for (uint8_t i = 0; i < len; i++) {
@@ -118,9 +139,8 @@ uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
             periods[i] = _override[i];
         }
     }
-    uint8_t v = _valid;
-    _valid = 0;
-    return v;
+    _new_input = false;
+    return _num_channels;
 }
 
 bool APM1RCInput::set_overrides(int16_t *overrides, uint8_t len) {
@@ -136,7 +156,7 @@ bool APM1RCInput::set_override(uint8_t channel, int16_t override) {
     if (channel < AVR_RC_INPUT_NUM_CHANNELS) {
         _override[channel] = override;
         if (override != 0) {
-            _valid = 1;
+            _new_input = true;
             return true;
         }
     }

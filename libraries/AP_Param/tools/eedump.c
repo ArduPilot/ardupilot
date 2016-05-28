@@ -7,9 +7,7 @@
 
 uint8_t eeprom[0x1000];
 
-#pragma pack(1)
-
-struct EEPROM_header {
+struct PACKED EEPROM_header {
     uint16_t magic;
     uint8_t revision;
     uint8_t spare;
@@ -18,7 +16,7 @@ struct EEPROM_header {
 static const uint16_t k_EEPROM_magic      = 0x5041;
 static const uint16_t k_EEPROM_revision   = 2;
 
-struct Var_header {
+struct PACKED Var_header {
     uint8_t size : 6;
     uint8_t spare : 2;
     uint8_t key;

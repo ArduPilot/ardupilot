@@ -48,3 +48,10 @@ class Aircraft(object):
         velocity_body = self.dcm.transposed() * self.velocity
 
         self.accelerometer = self.accel_body.copy()
+
+    def set_yaw_degrees(self, yaw_degrees):
+        '''rotate to the given yaw'''
+        (roll, pitch, yaw) = self.dcm.to_euler()
+        yaw = math.radians(yaw_degrees)
+        self.dcm.from_euler(roll, pitch, yaw)
+        

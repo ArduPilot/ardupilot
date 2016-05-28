@@ -1,11 +1,20 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-//
-// This is free software; you can redistribute it and/or modify it under
-// the terms of the GNU Lesser General Public License as published by the
-// Free Software Foundation; either version 2.1 of the License, or (at
-// your option) any later version.
-//
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//
 /// @file	LowPassFilter.h
 /// @brief	A class to implement a low pass filter without losing precision even for int types
 ///         the downside being that it's a little slower as it internally uses a float
@@ -25,8 +34,8 @@ public:
     // constructor
     LowPassFilter();
 
-    virtual void    set_cutoff_frequency(float time_step, float cutoff_freq);
-    virtual void    set_time_constant(float time_step, float time_constant);
+    void set_cutoff_frequency(float time_step, float cutoff_freq);
+    void set_time_constant(float time_step, float time_constant);
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
     virtual T        apply(T sample);
@@ -37,7 +46,7 @@ public:
     };
 
     // reset - clear the filter and provide the new base value
-    virtual void        reset( T new_base_value ) {
+    void        reset( T new_base_value ) {
         _base_value = new_base_value; _base_value_set = true;
     };
 
@@ -77,6 +86,12 @@ LowPassFilter<T>::LowPassFilter() :
 template <class T>
 void LowPassFilter<T>::set_cutoff_frequency(float time_step, float cutoff_freq)
 {
+    // avoid divide by zero and allow removing filtering
+    if (cutoff_freq <= 0.0f) {
+        _alpha = 1.0f;
+        return;
+    }
+
     // calculate alpha
     float rc = 1/(2*PI*cutoff_freq);
     _alpha = time_step / (time_step + rc);
@@ -85,6 +100,12 @@ void LowPassFilter<T>::set_cutoff_frequency(float time_step, float cutoff_freq)
 template <class T>
 void LowPassFilter<T>::set_time_constant(float time_step, float time_constant)
 {
+    // avoid divide by zero
+    if (time_constant + time_step <= 0.0f) {
+        _alpha = 1.0f;
+        return;
+    }
+
     // calculate alpha
     _alpha = time_step / (time_constant + time_step);
 }

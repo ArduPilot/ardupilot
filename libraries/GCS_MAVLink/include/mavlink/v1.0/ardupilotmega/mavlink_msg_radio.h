@@ -16,6 +16,9 @@ typedef struct __mavlink_radio_t
 #define MAVLINK_MSG_ID_RADIO_LEN 9
 #define MAVLINK_MSG_ID_166_LEN 9
 
+#define MAVLINK_MSG_ID_RADIO_CRC 21
+#define MAVLINK_MSG_ID_166_CRC 21
+
 
 
 #define MAVLINK_MESSAGE_INFO_RADIO { \
@@ -51,7 +54,7 @@ static inline uint16_t mavlink_msg_radio_pack(uint8_t system_id, uint8_t compone
 						       uint8_t rssi, uint8_t remrssi, uint8_t txbuf, uint8_t noise, uint8_t remnoise, uint16_t rxerrors, uint16_t fixed)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_RADIO_LEN];
 	_mav_put_uint16_t(buf, 0, rxerrors);
 	_mav_put_uint16_t(buf, 2, fixed);
 	_mav_put_uint8_t(buf, 4, rssi);
@@ -60,7 +63,7 @@ static inline uint16_t mavlink_msg_radio_pack(uint8_t system_id, uint8_t compone
 	_mav_put_uint8_t(buf, 7, noise);
 	_mav_put_uint8_t(buf, 8, remnoise);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_RADIO_LEN);
 #else
 	mavlink_radio_t packet;
 	packet.rxerrors = rxerrors;
@@ -71,18 +74,22 @@ static inline uint16_t mavlink_msg_radio_pack(uint8_t system_id, uint8_t compone
 	packet.noise = noise;
 	packet.remnoise = remnoise;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_RADIO_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_RADIO;
-	return mavlink_finalize_message(msg, system_id, component_id, 9, 21);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_RADIO_LEN, MAVLINK_MSG_ID_RADIO_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_RADIO_LEN);
+#endif
 }
 
 /**
  * @brief Pack a radio message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param rssi local signal strength
  * @param remrssi remote signal strength
@@ -98,7 +105,7 @@ static inline uint16_t mavlink_msg_radio_pack_chan(uint8_t system_id, uint8_t co
 						           uint8_t rssi,uint8_t remrssi,uint8_t txbuf,uint8_t noise,uint8_t remnoise,uint16_t rxerrors,uint16_t fixed)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_RADIO_LEN];
 	_mav_put_uint16_t(buf, 0, rxerrors);
 	_mav_put_uint16_t(buf, 2, fixed);
 	_mav_put_uint8_t(buf, 4, rssi);
@@ -107,7 +114,7 @@ static inline uint16_t mavlink_msg_radio_pack_chan(uint8_t system_id, uint8_t co
 	_mav_put_uint8_t(buf, 7, noise);
 	_mav_put_uint8_t(buf, 8, remnoise);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_RADIO_LEN);
 #else
 	mavlink_radio_t packet;
 	packet.rxerrors = rxerrors;
@@ -118,15 +125,19 @@ static inline uint16_t mavlink_msg_radio_pack_chan(uint8_t system_id, uint8_t co
 	packet.noise = noise;
 	packet.remnoise = remnoise;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_RADIO_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_RADIO;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 9, 21);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_RADIO_LEN, MAVLINK_MSG_ID_RADIO_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_RADIO_LEN);
+#endif
 }
 
 /**
- * @brief Encode a radio struct into a message
+ * @brief Encode a radio struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -136,6 +147,20 @@ static inline uint16_t mavlink_msg_radio_pack_chan(uint8_t system_id, uint8_t co
 static inline uint16_t mavlink_msg_radio_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_radio_t* radio)
 {
 	return mavlink_msg_radio_pack(system_id, component_id, msg, radio->rssi, radio->remrssi, radio->txbuf, radio->noise, radio->remnoise, radio->rxerrors, radio->fixed);
+}
+
+/**
+ * @brief Encode a radio struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param radio C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_radio_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_radio_t* radio)
+{
+	return mavlink_msg_radio_pack_chan(system_id, component_id, chan, msg, radio->rssi, radio->remrssi, radio->txbuf, radio->noise, radio->remnoise, radio->rxerrors, radio->fixed);
 }
 
 /**
@@ -155,7 +180,7 @@ static inline uint16_t mavlink_msg_radio_encode(uint8_t system_id, uint8_t compo
 static inline void mavlink_msg_radio_send(mavlink_channel_t chan, uint8_t rssi, uint8_t remrssi, uint8_t txbuf, uint8_t noise, uint8_t remnoise, uint16_t rxerrors, uint16_t fixed)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_RADIO_LEN];
 	_mav_put_uint16_t(buf, 0, rxerrors);
 	_mav_put_uint16_t(buf, 2, fixed);
 	_mav_put_uint8_t(buf, 4, rssi);
@@ -164,7 +189,11 @@ static inline void mavlink_msg_radio_send(mavlink_channel_t chan, uint8_t rssi, 
 	_mav_put_uint8_t(buf, 7, noise);
 	_mav_put_uint8_t(buf, 8, remnoise);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, buf, 9, 21);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, buf, MAVLINK_MSG_ID_RADIO_LEN, MAVLINK_MSG_ID_RADIO_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, buf, MAVLINK_MSG_ID_RADIO_LEN);
+#endif
 #else
 	mavlink_radio_t packet;
 	packet.rxerrors = rxerrors;
@@ -175,9 +204,57 @@ static inline void mavlink_msg_radio_send(mavlink_channel_t chan, uint8_t rssi, 
 	packet.noise = noise;
 	packet.remnoise = remnoise;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, (const char *)&packet, 9, 21);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, (const char *)&packet, MAVLINK_MSG_ID_RADIO_LEN, MAVLINK_MSG_ID_RADIO_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, (const char *)&packet, MAVLINK_MSG_ID_RADIO_LEN);
+#endif
 #endif
 }
+
+#if MAVLINK_MSG_ID_RADIO_LEN <= MAVLINK_MAX_PAYLOAD_LEN
+/*
+  This varient of _send() can be used to save stack space by re-using
+  memory from the receive buffer.  The caller provides a
+  mavlink_message_t which is the size of a full mavlink message. This
+  is usually the receive buffer for the channel, and allows a reply to an
+  incoming message with minimum stack space usage.
+ */
+static inline void mavlink_msg_radio_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint8_t rssi, uint8_t remrssi, uint8_t txbuf, uint8_t noise, uint8_t remnoise, uint16_t rxerrors, uint16_t fixed)
+{
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char *buf = (char *)msgbuf;
+	_mav_put_uint16_t(buf, 0, rxerrors);
+	_mav_put_uint16_t(buf, 2, fixed);
+	_mav_put_uint8_t(buf, 4, rssi);
+	_mav_put_uint8_t(buf, 5, remrssi);
+	_mav_put_uint8_t(buf, 6, txbuf);
+	_mav_put_uint8_t(buf, 7, noise);
+	_mav_put_uint8_t(buf, 8, remnoise);
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, buf, MAVLINK_MSG_ID_RADIO_LEN, MAVLINK_MSG_ID_RADIO_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, buf, MAVLINK_MSG_ID_RADIO_LEN);
+#endif
+#else
+	mavlink_radio_t *packet = (mavlink_radio_t *)msgbuf;
+	packet->rxerrors = rxerrors;
+	packet->fixed = fixed;
+	packet->rssi = rssi;
+	packet->remrssi = remrssi;
+	packet->txbuf = txbuf;
+	packet->noise = noise;
+	packet->remnoise = remnoise;
+
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, (const char *)packet, MAVLINK_MSG_ID_RADIO_LEN, MAVLINK_MSG_ID_RADIO_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RADIO, (const char *)packet, MAVLINK_MSG_ID_RADIO_LEN);
+#endif
+#endif
+}
+#endif
 
 #endif
 
@@ -271,6 +348,6 @@ static inline void mavlink_msg_radio_decode(const mavlink_message_t* msg, mavlin
 	radio->noise = mavlink_msg_radio_get_noise(msg);
 	radio->remnoise = mavlink_msg_radio_get_remnoise(msg);
 #else
-	memcpy(radio, _MAV_PAYLOAD(msg), 9);
+	memcpy(radio, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_RADIO_LEN);
 #endif
 }

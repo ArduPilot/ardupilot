@@ -4,7 +4,7 @@
 #define __AP_INERTIAL_SENSOR_PX4_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
@@ -13,33 +13,33 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/sensor_combined.h>
 
-class AP_InertialSensor_PX4 : public AP_InertialSensor
+class AP_InertialSensor_PX4 : public AP_InertialSensor_Backend
 {
 public:
 
-    AP_InertialSensor_PX4() : AP_InertialSensor() {}
+    AP_InertialSensor_PX4(AP_InertialSensor &imu);
 
-    /* Concrete implementation of AP_InertialSensor functions: */
-    bool            update();
-    float        	get_delta_time();
-    uint32_t        get_last_sample_time_micros();
-    float           get_gyro_drift_rate();
-    uint16_t        num_samples_available();
+    /* update accel and gyro state */
+    bool update();
+
+    // detect the sensor
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
+
+    bool gyro_sample_available(void);
+    bool accel_sample_available(void);
 
 private:
-    uint16_t        _init_sensor( Sample_rate sample_rate );
-    static		    void _ins_timer(uint32_t now);
-    static          void _accumulate(void);
-    uint64_t        _last_update_usec;
-    float           _delta_time;
-    static Vector3f	_accel_sum;
-    static uint32_t _accel_sum_count;
-    static Vector3f	_gyro_sum;
-    static uint32_t _gyro_sum_count;
-    static volatile bool _in_accumulate;
-    static uint64_t _last_accel_timestamp;
-    static uint64_t _last_gyro_timestamp;
-    uint8_t  _sample_divider;
+    bool     _init_sensor(void);
+    void     _get_sample(void);
+    bool     _sample_available(void);
+    Vector3f _accel_in[INS_MAX_INSTANCES];
+    Vector3f _gyro_in[INS_MAX_INSTANCES];
+    uint64_t _last_accel_timestamp[INS_MAX_INSTANCES];
+    uint64_t _last_gyro_timestamp[INS_MAX_INSTANCES];
+    uint64_t _last_accel_update_timestamp[INS_MAX_INSTANCES];
+    uint64_t _last_gyro_update_timestamp[INS_MAX_INSTANCES];
+    uint64_t _last_get_sample_timestamp;
+    uint64_t _last_sample_timestamp;
 
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
@@ -48,8 +48,16 @@ private:
     void _set_filter_frequency(uint8_t filter_hz);
 
     // accelerometer and gyro driver handles
-    static int _accel_fd;
-    static int _gyro_fd;
+    uint8_t _num_accel_instances;
+    uint8_t _num_gyro_instances;
+
+    int _accel_fd[INS_MAX_INSTANCES];
+    int _gyro_fd[INS_MAX_INSTANCES];
+
+    // indexes in frontend object. Note that these could be different
+    // from the backend indexes
+    uint8_t _accel_instance[INS_MAX_INSTANCES];
+    uint8_t _gyro_instance[INS_MAX_INSTANCES];
 };
-#endif
+#endif // CONFIG_HAL_BOARD
 #endif // __AP_INERTIAL_SENSOR_PX4_H__

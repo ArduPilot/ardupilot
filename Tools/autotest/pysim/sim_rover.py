@@ -8,8 +8,6 @@ import util, time, os, sys, math
 import socket, struct
 import select, errno
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
-
 def sim_send(a):
     '''send flight information to mavproxy'''
     from math import degrees
@@ -119,6 +117,8 @@ a.altitude       = a.home_altitude
 a.yaw            = float(v[3])
 a.latitude = a.home_latitude
 a.longitude = a.home_longitude
+
+a.set_yaw_degrees(a.yaw)
 
 print("Starting at lat=%f lon=%f alt=%f heading=%.1f" % (
     a.home_latitude,

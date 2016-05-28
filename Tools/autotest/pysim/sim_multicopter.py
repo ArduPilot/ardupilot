@@ -5,8 +5,7 @@ import util, time, os, sys, math
 import socket, struct
 import select, errno
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
-import fgFDM
+from pymavlink import fgFDM
 
 def sim_send(m, a):
     '''send flight information to mavproxy and flightgear'''
@@ -155,6 +154,7 @@ a.yaw = float(v[3])
 a.ground_level = a.home_altitude
 a.position.z = 0
 a.wind = util.Wind(opts.wind)
+a.set_yaw_degrees(a.yaw)
 
 print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.home_latitude,

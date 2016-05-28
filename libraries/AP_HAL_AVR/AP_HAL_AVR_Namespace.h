@@ -15,7 +15,6 @@ namespace AP_HAL_AVR {
     class ADCSource;
     class AVRAnalogIn;
     class AVREEPROMStorage;
-    class AVRConsoleDriver;
     class AVRGPIO;
     class AVRDigitalSource;
     class APM1RCInput;

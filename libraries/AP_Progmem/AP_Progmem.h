@@ -5,10 +5,8 @@
 #include <AP_HAL_Boards.h>
 #if defined(__AVR__) 
 #include "AP_Progmem_AVR.h"
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
-#include "AP_Progmem_Identity.h"
 #else
-#error "this build type is unknown - please edit AP_Progmem.h"
+#include "AP_Progmem_Identity.h"
 #endif
 
 #define PROGMEM_STRING(_v, _s)  static const char _v[] PROGMEM = _s

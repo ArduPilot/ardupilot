@@ -36,12 +36,6 @@
  // default choices for a 1280. We can't fit everything in, so we 
  // make some popular choices by default
  #define LOGGING_ENABLED DISABLED
- #ifndef CONFIG_RELAY
- # define CONFIG_RELAY DISABLED
- #endif
- #ifndef MOUNT2
- # define MOUNT2 DISABLED
- #endif
  #ifndef MOUNT
  # define MOUNT DISABLED
  #endif
@@ -55,134 +49,53 @@
 #define DISABLED		0
 
 //////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// HARDWARE CONFIGURATION AND CONNECTIONS
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+// sensor types
+
+#define CONFIG_INS_TYPE HAL_INS_DEFAULT
+#define CONFIG_BARO     HAL_BARO_DEFAULT
+#define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
+
+#ifdef HAL_SERIAL0_BAUD_DEFAULT
+# define SERIAL0_BAUD HAL_SERIAL0_BAUD_DEFAULT
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
-// LED and IO Pins
-//
+// HIL_MODE                                 OPTIONAL
+
+#ifndef HIL_MODE
+ #define HIL_MODE        HIL_MODE_DISABLED
+#endif
+
+#if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
+ #undef CONFIG_BARO
+ #define CONFIG_BARO HAL_BARO_HIL
+ #undef CONFIG_INS_TYPE
+ #define CONFIG_INS_TYPE HAL_INS_HIL
+ #undef  CONFIG_COMPASS
+ #define CONFIG_COMPASS HAL_COMPASS_HIL
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-# define CONFIG_INS_TYPE   CONFIG_INS_OILPAN
-# define CONFIG_COMPASS  AP_COMPASS_HMC5843
-# define A_LED_PIN        37
-# define B_LED_PIN        36
-# define C_LED_PIN        35
-# define LED_ON           HIGH
-# define LED_OFF          LOW
-# define SLIDE_SWITCH_PIN 40
-# define PUSHBUTTON_PIN   41
-# define USB_MUX_PIN      -1
-# define CONFIG_RELAY     ENABLED
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
-# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ADC
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-# define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
-# define CONFIG_COMPASS  AP_COMPASS_HMC5843
-# define CONFIG_PUSHBUTTON DISABLED
-# define CONFIG_RELAY      DISABLED
-# define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
-# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN 23
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-# define CONFIG_INS_TYPE CONFIG_INS_STUB
-# define CONFIG_COMPASS  AP_COMPASS_HIL
-# define CONFIG_PUSHBUTTON DISABLED
-# define CONFIG_RELAY      DISABLED
-# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN -1
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
-# define MAG_ORIENTATION  AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-# define CONFIG_INS_TYPE   CONFIG_INS_PX4
-# define CONFIG_COMPASS  AP_COMPASS_PX4
-# define CONFIG_PUSHBUTTON DISABLED
-# define CONFIG_RELAY      DISABLED
-# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN -1
 # define BATTERY_PIN_1	  -1
 # define CURRENT_PIN_1	  -1
-# define MAG_ORIENTATION   ROTATION_NONE
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// IMU Selection
-//
-#ifndef CONFIG_INS_TYPE
-# define CONFIG_INS_TYPE CONFIG_INS_OILPAN
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// ADC Enable - used to eliminate for systems which don't have ADC.
-//
-#ifndef CONFIG_ADC
-# if CONFIG_INS_TYPE == CONFIG_INS_OILPAN
-#   define CONFIG_ADC ENABLED
-# else
-#   define CONFIG_ADC DISABLED
-# endif
-#endif
-
-#ifndef SONAR_TYPE
-# define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Sonar
-//
-
-#ifndef CONFIG_SONAR_SOURCE
-# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ADC
-#endif
-
-#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC && CONFIG_ADC == DISABLED
-# warning Cannot use ADC for CONFIG_SONAR_SOURCE, becaude CONFIG_ADC is DISABLED
-# warning Defaulting CONFIG_SONAR_SOURCE to ANALOG_PIN
-# undef CONFIG_SONAR_SOURCE
-# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
-#endif
-
-#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-# ifndef CONFIG_SONAR_SOURCE_ADC_CHANNEL
-#  define CONFIG_SONAR_SOURCE_ADC_CHANNEL 7
-# endif
-#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-# ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
-#  define CONFIG_SONAR_SOURCE_ANALOG_PIN 0
-# endif
-#else
-# warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
-# undef SONAR_ENABLED
-# define SONAR_ENABLED DISABLED
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+# define BATTERY_PIN_1     20
+# define CURRENT_PIN_1	   19
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+# define BATTERY_PIN_1     -1
+# define CURRENT_PIN_1	   -1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+# define BATTERY_PIN_1	  -1
+# define CURRENT_PIN_1	  -1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -190,27 +103,6 @@
 
 #ifndef HIL_MODE
 #define HIL_MODE	HIL_MODE_DISABLED
-#endif
-
-#if HIL_MODE != HIL_MODE_DISABLED       // we are in HIL mode
- #undef GPS_PROTOCOL
- #define GPS_PROTOCOL GPS_PROTOCOL_HIL
- #undef CONFIG_INS_TYPE
- #define CONFIG_INS_TYPE CONFIG_INS_STUB
- #undef CONFIG_ADC
- #define CONFIG_ADC DISABLED
- #undef  CONFIG_COMPASS
- #define CONFIG_COMPASS  AP_COMPASS_HIL
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GPS_PROTOCOL
-//
-// Note that this test must follow the HIL_PROTOCOL block as the HIL
-// setup may override the GPS configuration.
-//
-#ifndef GPS_PROTOCOL
-# define GPS_PROTOCOL GPS_PROTOCOL_AUTO
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -223,9 +115,25 @@
 #ifndef SERIAL0_BAUD
 # define SERIAL0_BAUD			115200
 #endif
-#ifndef SERIAL3_BAUD
-# define SERIAL3_BAUD			 57600
+#ifndef SERIAL1_BAUD
+# define SERIAL1_BAUD			 57600
 #endif
+#ifndef SERIAL2_BAUD
+# define SERIAL2_BAUD			 57600
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// FrSky telemetry support
+//
+
+#ifndef FRSKY_TELEM_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ # define FRSKY_TELEM_ENABLED DISABLED
+#else
+ # define FRSKY_TELEM_ENABLED ENABLED
+#endif
+#endif
+
 
 #ifndef CH7_OPTION
 # define CH7_OPTION		          CH7_SAVE_WP
@@ -233,30 +141,6 @@
 
 #ifndef TUNING_OPTION
 # define TUNING_OPTION		          TUN_NONE
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef BATTERY_EVENT
-# define BATTERY_EVENT			DISABLED
-#endif
-#ifndef LOW_VOLTAGE
-# define LOW_VOLTAGE			9.6
-#endif
-#ifndef VOLT_DIV_RATIO
-# define VOLT_DIV_RATIO			3.56	// This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-#endif
-
-#ifndef CURR_AMP_PER_VOLT
-# define CURR_AMP_PER_VOLT		27.32	// This is the proper value for the AttoPilot 50V/90A sensor
-#endif
-
-#ifndef CURR_AMPS_OFFSET
-# define CURR_AMPS_OFFSET		0.0
-#endif
-#ifndef HIGH_DISCHARGE
-# define HIGH_DISCHARGE		1760
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -270,9 +154,6 @@
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
 # define MAGNETOMETER			ENABLED
-#endif
-#ifndef MAG_ORIENTATION
-# define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -349,7 +230,14 @@
 // MOUNT (ANTENNA OR CAMERA)
 //
 #ifndef MOUNT
-# define MOUNT		DISABLED
+# define MOUNT		ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// CAMERA control
+//
+#ifndef CAMERA
+# define CAMERA ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -427,16 +315,24 @@
 # define LOGGING_ENABLED		ENABLED
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #define DEFAULT_LOG_BITMASK     \
     MASK_LOG_ATTITUDE_MED | \
     MASK_LOG_GPS | \
     MASK_LOG_PM | \
+    MASK_LOG_CTUN | \
     MASK_LOG_NTUN | \
     MASK_LOG_MODE | \
     MASK_LOG_CMD | \
     MASK_LOG_SONAR | \
     MASK_LOG_COMPASS | \
-    MASK_LOG_CURRENT
+    MASK_LOG_CURRENT | \
+    MASK_LOG_STEERING | \
+    MASK_LOG_CAMERA
+#else
+// other systems have plenty of space for full logs
+#define DEFAULT_LOG_BITMASK   0xffff
+#endif
 
 
 
@@ -474,4 +370,14 @@
 
 #ifndef SONAR_ENABLED
 # define SONAR_ENABLED       DISABLED
+#endif
+
+/*
+  build a firmware version string.
+  GIT_VERSION comes from Makefile builds
+*/
+#ifndef GIT_VERSION
+#define FIRMWARE_STRING THISFIRMWARE
+#else
+#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
 #endif

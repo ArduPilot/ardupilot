@@ -2,14 +2,15 @@
 
 import util, pexpect, sys, time, math, shutil, os
 from common import *
-import mavutil, random
+from pymavlink import mavutil
+import random
 
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
 
 
-HOME=mavutil.location(-35.362938,149.165085,584,270)
-
+#HOME=mavutil.location(-35.362938,149.165085,584,270)
+HOME=mavutil.location(40.071374969556928,-105.22978898137808,1583.702759,246)
 homeloc = None
 
 def drive_left_circuit(mavproxy, mav):
@@ -68,7 +69,7 @@ def drive_mission(mavproxy, mav, filename):
     return True
 
 
-def drive_APMrover2(viewerip=None):
+def drive_APMrover2(viewerip=None, map=False):
     '''drive APMrover2 in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -79,13 +80,14 @@ def drive_APMrover2(viewerip=None):
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
+    if map:
+        options += ' --map'
 
     sil = util.start_SIL('APMrover2', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
     mavproxy.send("param load %s/Rover.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
@@ -107,11 +109,14 @@ def drive_APMrover2(viewerip=None):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/APMrover2-test.mavlog")
+    buildlog = util.reltopdir("../buildlogs/APMrover2-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     mavproxy.expect('Received [0-9]+ parameters')
 
@@ -142,15 +147,18 @@ def drive_APMrover2(viewerip=None):
         mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
-        if not drive_left_circuit(mavproxy, mav):
-            print("Failed left circuit")
-            failed = True
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
             print("Failed mission")
             failed = True
-        if not drive_RTL(mavproxy, mav):
-            print("Failed RTL")
+        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
+            print("Failed log download")
             failed = True
+#        if not drive_left_circuit(mavproxy, mav):
+#            print("Failed left circuit")
+#            failed = True
+#        if not drive_RTL(mavproxy, mav):
+#            print("Failed RTL")
+#            failed = True
     except pexpect.TIMEOUT, e:
         print("Failed with timeout")
         failed = True

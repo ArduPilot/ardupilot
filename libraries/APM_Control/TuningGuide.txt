@@ -1,0 +1,411 @@
+Tuning Overview
+---------------
+
+The following instruction assume that:
+
+a) your model is trimmed correctly in manual mode
+b) you have done your radio calibration
+c) you have calibrated your airspeed sensor
+d) you have set your APM and transmitter to be able to select FBW-A mode
+e) You have checked your pitch roll and yaw angle on the HUD and
+   verified that they match the rotation of the model
+
+Ground checks
+-------------
+
+1) On the ground select FBW-A mode
+
+2) Rotate your model nose up - you should see the elevators/elevons deflect down
+
+3) Rotate your model nose down - you should see the elevators/elevons deflect up
+
+4) roll the model to the right - you should see the LH aileron/elevon
+   go up and the RH aileron/elevon go down.
+
+5) roll the model to the left - you should see the LH aileron/elevon
+   go down and the RH aileron/elevon go up.
+
+6) level the model - the control surfaces should be close to
+   neutral. There will be a little bit of offset, but any more than
+   10% of your maximum throw indicates that the APM has not been
+   leveled or the radio calibration needs to be repeated.
+
+7) With the model level apply LH and RH roll stick inputs on your
+   transmitter - the controls should deflect in the same direction that
+   they would in manual mode.
+
+8) With the model level apply up and down pitch stick inputs on your
+   transmitter the controls should deflect in the same direction that
+   they would in manual mode.
+
+6) If you have an airspeed sensor enabled then blow air towards the
+   front of the pitot tube and watch the HUD. You should see the
+   airspeed reading increase
+
+Flight testing
+--------------
+
+Ideally you will need a second person to do this - one person to fly
+the plane and one person to adjust the parameters.  To follow the
+manual parts of this procedure you need to be a proficient RC pilot
+and have the skills to be able to recover from an unusual attitude. If
+not, then get someone who can to help you.
+
+Initial assessment
+------------------
+
+1) Takeoff in manual and adjust the trims and throttle to a cruise
+   position so that the plane flies straight and level at a speed that
+   you are comfortable with. This will normally be somewhere between
+   30 and 60% throttle depending on how overpowered your model is.
+
+2) With the plane flying away from you switch to FBW-A. It should
+   continue to fly wings level and at a fairly constant height (it
+   will climb or descend slowly). If it wants to roll or pitch more
+   than a small amount then there is a problem with the models trim or
+   radio calibration and you need to solve that first before
+   proceeding further.
+
+3) If the model starts to wag its wings, then the autopilot default
+   gain is too high for your model (this is unlikely but could happen)
+   and you need to switch back to manual immediately and ask your
+   assistant to halve the CTL_RLL_K_P parameter before switching back
+   into FBW-A
+
+4) If the model starts to porpoise, the default autopilot gain is too
+   high (this is unlikely but could happen) and you need to switch
+   back to manual immediately and ask your assistant to halve the
+   CTL_PTCH_K_P parameter before switching back into FBW-A
+
+Roll control tuning
+-------------------
+
+Method 1:
+
+This method is the simplest, but won't give the best result. For those 
+users familiar with tuning the old PID controller gains, the K_P, K_I 
+and K_D gains in this controller have the same effect, but there are some 
+additional values that can be set by more advanced users.
+
+1)  With the model in FBW-A mode, put in a rapid bank angle demand,
+    hold it and release. Do the same in the other direction. You want
+    the model to roll quickly and smoothly to the new bank angle and
+    back again without overshoot or any wing 'waggle'. If the roll
+    response is too slow, then progressively increase the CTL_RLL_K_P
+    gain in increments of 0.1 until you are happy with the response.
+   
+2)  If during 1) the wings start to 'waggle' and you are not happy with 
+	the speed of the response, then CTL_RLL_K_D can be increased in small 
+	increments of 0.01 until the wing waggle goes away and step 1 can be 
+	repeated. Do not go above 0.1 for CTL_RLL_K_D without checking the 
+	temperature of your servos when you land as in extreme cases turning 
+	up this gain can cause rapid servo movement and overheat the servos 
+	leading to premature failure.
+
+Method 2:
+
+This method can give a better result, but requires more caution because
+step 2) can produce a high frequency instability that unless reversion
+back to manual is done quickly, could overstress the plane.
+
+1)  Follow basic method 1) first
+
+2)  Increase CTL_RLL_K_D in increments of 0.01 until it it starts to
+    oscillate, then halve it.
+
+3)  Reduce CTL_RLL_TAU from the default value of 0.7 for a more rapid 
+	response if desired and if your aircraft is capable of doing so. 
+	If the bank angle starts to overshoot or you see wing 'waggle', 
+	you have gone too far.
+
+Advanced:
+
+1) Select the tuning box on the bottom of the Mission planers Flight
+   Data page. You should get a scrolling black window above the
+   map. Double click in the black window and you should get a list of
+   parameters to plot. Change the selection until you have the roll
+   and nav_roll plotted. Nav_roll is the demand and roll is the
+   response. You can use this to look for overshoot and other behavior
+   that isn't so obvious from the ground looking at the model.
+
+2) Check for any steady offset between nav-roll and roll. If there is
+   one you can set the CTL_RLL_K_I to a small value (say 0.01) which
+   will allow the control loop to slowly trim the aileron demand to
+   remove the steady error. If you want it to trim faster, you can
+   increase the value for this gain.
+
+3) If you can slow down the rate of roll and make the model bank more
+   smoothly by setting the roll rate limit CTL_RLL_RMAX parameter to a 
+   non zero value. A value of 60 deg/sec works weel for most models. 
+   The default is 0 which turns the rate limiter off and makes the 
+   effect of tuning easier to see.
+
+
+Pitch Control Tuning
+--------------------
+
+Method 1:
+
+This method is the simplest and but won't give the best result. For those 
+users familiar with tuning the old PID controller gains, the K_P, K_I 
+and K_D gains in this controller have the same effect, but there are some 
+additional values that anbe set by more advanced users.
+
+1) With the model in FBW-A mode and the throttle at the cruise
+   position, put in a pitch angle demand, hold it and release. Do the
+   same in the other direction. You want the model to pitch smoothly
+   to the new pitch angle and back again without overshoot or
+   proposing. If the pitch response is too slow, then progressively
+   increase the CTL_PTCH_K_P parameter in increments of 0.1 you are happy 
+   with the speed of the response or it starts to porpoise a little. If 
+   you are happy with the response after this step, you can skip step 2)
+
+2) If you get porposising and the response is still too sluggish, increase 
+   the CTL_RLL_K_D gain in small increments of 0.01 until the overshoot or 
+   porpoise goes away. If it hasn't worked by the time you have reached a 
+   value of 0.1 for CTL_PTCH_K_D, DONT go any further until you have checked 
+   your servo temperatures immediately after landing as in extreme 
+   cases turning up this gain can cause rapid servo movement and overheat 
+   the servos leading to premature failure. 
+
+3) Now roll the model to maximum bank in each direction. The nose
+   should stay fairly level during the turns without significant gain
+   or loss of altitude. Some loss of altitude during sustained turns
+   at constant throttle is expected, because the extra drag of turning
+   slows the model down which will cause a mild descent. If the model
+   gains height during the turns then you need to reduce the
+   CTL_PTCH_K_RLL by small increments of 0.01 from the default value
+   of 1.0. If the model descends immediately when the model banks (a
+   mild descent later in the turn when the model slows down is normal
+   as explained earlier) then increase the CTL_PTCH_K_RLL by small
+   increments of 0.01 from the default value of 1.0. If you need to
+   change the CTL_PTCH_K_RLL parameter outside the range from 0.7 to
+   1.4 then something is likely wrong with either the earlier tuning
+   of your pitch loop, your airspeed calibration or you APM's bank
+   angle estimate.
+
+Method 2:
+
+This method can give a better result, but requires more caution because
+step 2) can produce a high frequency instability that unless reversion
+back to manual is done quickly, could overstress the plane.
+
+1)  Follow Basic Method 1) first
+
+2)  Increase CTL_PTCH_K_D in increments of 0.01 until it it starts to
+    oscillate, then halve it.
+	
+1)  Reduce CTL_PTCH_TAU from the default value of 0.7 for a more rapid 
+	response if required and if your aircraft is capable of doing so. 
+	If the pitch response starts to overshoot, you have gone too far. 
+
+Advanced Options:
+
+3)  Increase CTL_PTCH_K_I from the default value to more rapidly trim
+    out errors in pitch angle (you will need to monitor the nav_pitch 
+    and pitch in the tuning graphs window to do this).
+
+2)  The maximum nose down and nose up pitch rate in degrees/second can
+    be constrained by setting the CTL_PTCH_RMAX_D and CTL_PTCH_RMAX_U
+    parameters to a value other than 0. These parameters can be
+    used to limit the amount of g produced during a pull-up or push
+    down.
+
+Yaw Control Tuning
+------------------
+
+The yaw control loop can be configured either as a simple yaw damper
+(good for models with inadequate fin area) or as a combined yaw damper
+and sideslip controller. Because control of sideslip uses measured
+lateral acceleration, it will only work for those models that have
+enough fuselage side area to produce a measureable lateral
+acceleration when they sideslip (an extreme example of this is an
+aerobatic model flying a knife-edge maneuver where all of the lift is
+produced by the fuselage). Gliders with very skinny fuselages and
+flying wings cannot use this feature, but can still benefit from the
+yaw damper provided they have a yaw control of some sort of yaw
+control (rudder, differential airbrakes, etc)
+
+Tuning the yaw damper:
+
+1) Verify that the CTL_YAW_K_A and CTL_YAW_K_I gain terms are set to
+   zero, the CTL_YAW_K_RLL gain term is set to 1.0 and the CTL_YAW_K_D
+   gain term is set to zero
+
+2) Roll into and out of turns in both directions and observe the
+   yawing motion as it rolls into the turn. If the nose yaws away from
+   the direction of roll, you need to increase the KFF_RDDRMIX gain
+   until the yaw goes away.
+
+3) Increase CTL_YAW_K_D in small increments of 0.05 until the tail
+   starts to 'wag'. Halve the gain from value at which you start to
+   see the tail 'wag'.
+
+4) Now roll the model into and out of turns in both directions. If the
+   model has a tendency to yaw the nose to the outside of the turn,
+   then increase the CTL_YAW_K_RLL gain term in increments of 0.01
+   from its default value of 1.0. Conversely if the model has the
+   tendency to yaw the nose to the inside of the turn on turn entry,
+   then reduce the CTL_YAW_K_RLL gain term in increments of 0.01 from
+   its default value of 1.0. If you have to go outside the range from
+   0.8 to 1.2, then there is something else that needs to be sorted
+   and you should check step 2), the airspeed calibration and accuracy
+   of the bank angle measurement.
+
+Tuning the sideslip controller (advanced):
+
+1) Tune the yaw damper first
+
+2) Set the CTL_YAW_K_I gain term to 1.0. If this causes the tail to
+   'wag' then reduce this gain until the wag stops
+
+3) Bring up the tuning graph window in the mission planner and plot
+   the lateral acceleration ay.
+
+4) Roll the model rapidly from full bank in each direction and observe
+   the lateral acceleration ay. If the lateral acceleration sits
+   around zero and doesn't change when you roll into or out of turns
+   then your model is very well trimmed and no sideslip control is
+   required. You can change the CTL_YAW_K_I gain term back to zero.
+
+5) IF you see that the y acceleration is offset or spikes up during
+   turns, then progressively increase the CTL_YAW_K_A gain in steps of
+   0.5 until the error goes away or the tail starts to wag. If the
+   tail starts to wag, then halve the gain from the value at which the
+   wag appeared.
+
+
+Control Parameter Descriptions
+------------------------------
+
+The default values for each parameter are shown.
+
+Pitch control parameters:
+
+Main Parameters:
+
+CTL_PTCH_K_P = 0.4
+This is the gain from demanded pitch rate to demanded
+elevator. Provided CTL_PTCH_OMEGA is set to 1.0, then this gain works
+the same way as the P term in the old PID and can be set to the same
+value.
+
+CTL_PTCH_K_I = 0.0
+This is the gain for integration of the pitch rate error. It has
+essentially the same effect as the I term in the old PID. This can be
+set to 0 as a default, however users can increment this to make the
+pitch angle tracking more accurate.
+
+CTL_PTCH_K_D = 0.0
+This is the gain from pitch rate error to demanded elevator. This
+adjusts the damping of the pitch control loop. It has the same effect
+as the D term in the old PID but without the large spikes in servo
+demands. this will be set to 0 as a default. Some airframes such as
+flying wings that have poor pitch damping can benefit from a small
+value of up to 0.1 on this gain term. This should be increased in 0.01
+increments as to high a value can lead to a high frequency pitch
+oscillation that could overstress the airframe.
+
+CTL_PTCH_K_RLL = 1.0
+This is the gain term that is applied to the pitch rate offset
+calculated as required to keep the nose level during turns. The
+default value is 1 which will work for all models. Advanced users can
+use it to correct for height variation in turns. If height is lost
+initially in the turn this can be increased in small increments of
+0.05 to compensate. If height is gained initially then it can be
+decreased.
+
+Advanced Parameters:
+
+CTL_PTCH_RMAX_D = 0
+This sets the maximum nose down pitch rate that the controller will
+demand in (degrees/sec). Setting it to zero disables the limit.
+
+CTL_PTCH_RMAX_U = 0
+This sets the maximum nose up pitch rate that the controller will
+demand (degrees/sec). Setting it to zero disables the limit.
+
+CTL_PTCH_OMEGA = 1.0
+This is the gain from pitch angle error to demanded pitch rate. It
+controls the time constant from demanded to achieved pitch angle. For
+example if a time constant from demanded to achieved pitch of 0.5 sec
+was required, this gain would be set to 1/0.5 = 2.0. A value of 1.0 is
+a good default and will work with nearly all models. Advanced users
+may want to increase this to obtain a faster response.
+
+Roll Control Parameters:
+
+Main Parameters:
+
+CTL_RLL_K_P = 0.4
+This is the gain from demanded roll rate to demanded aileron. Provided
+CTL_RLL_OMEGA is set to 1.0, then this gain works the same way as the
+P term in the old PID and can be set to the same value.
+
+CTL_RLL_K_I = 0.0
+This is the gain for integration of the roll rate error. It has
+essentially the same effect as the I term in the old PID. This can be
+set to 0 as a default, however users can increment this to enable the
+controller trim out any roll trim offset.
+
+CTL_RLL_K_D = 0.0
+This is the gain from pitch rate error to demanded elevator. This
+adjusts the damping of the roll control loop. It has the same effect
+as the D term in the old PID but without the large spikes in servo
+demands. This will be set to 0 as a default. This should be increased
+in 0.01 increments as too high a value can lead to high frequency roll
+oscillation.
+
+Advanced Parameters:
+
+CTL_RLL_OMEGA = 1.0
+This is the gain from roll angle error to demanded roll rate. It
+controls the time constant from demanded to achieved roll angle. For
+example if a time constant from demanded to achieved roll of 0.5 sec
+was required, this gain would be set to 1/0.5 = 2.0. A value of 1.0 is
+a good default and will work with nearly all models. Advanced users
+may want to increase this to obtain a faster response.
+
+CTL_RLL_RMAX = 60;
+This sets the maximum roll rate that the controller will demand
+(degrees/sec). Setting it to zero disables the limit. If this value is
+set too low, then the roll can't keep up with the navigation demands
+and the plane will start weaving. If it is set too high (or disabled
+by setting to zero) then ailerons will get large inputs at the start
+of turns. A limit of 60 degrees/sec is a good default.
+
+Yaw Control Parameters:
+
+Advanced Parameters:
+
+CTL_YAW_K_A = 0.0
+This is the gain from measured lateral acceleration to demanded yaw
+rate. It should be set to zero unless active control of sideslip is
+desired. This will only work effectively if there is enough fuselage
+side area to generate a measureable lateral acceleration when the
+model sideslips. Flying wings and most gliders cannot use this
+term. This term should only be adjusted after the basic yaw damper
+gain K_D is tuned and the K_I integrator gain has been set. Set this
+gain to zero if only yaw damping is required.
+
+CTL_YAW_K_D = 0.0
+This is the gain from yaw rate to rudder. It acts as a damper on yaw
+motion. If a basic yaw damper is required, this gain term can be
+incremented, whilst leaving the K_A and K_I gains at zero.
+
+CTL_YAW_K_I = 0.0
+This is the integral gain from lateral acceleration error. This gain
+should only be non-zero if active control over sideslip is desired. If
+active control over sideslip is required then this can be set to 1.0
+as a first try.
+
+CTL_YAW_K_RLL = 1.0
+This is the gain term that is applied to the yaw rate offset
+calculated as required to keep the yaw rate consistent with the turn
+rate for a coordinated turn. The default value is 1 which will work
+for all models. Advanced users can use it to correct for any tendency
+to yaw away from or into the turn once the turn is
+established. Increase to make the model yaw more initially and
+decrease to make the model yaw less initially. If values greater than
+1.1 or less than 0.9 are required then it normally indicates a problem
+with the airspeed calibration.

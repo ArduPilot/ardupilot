@@ -14,12 +14,15 @@
 #include <drivers/drv_hrt.h>
 #include <nuttx/arch.h>
 #include <systemlib/systemlib.h>
+#include <pthread.h>
 #include <poll.h>
 
 #include "UARTDriver.h"
+#include "AnalogIn.h"
 #include "Storage.h"
 #include "RCOutput.h"
 #include "RCInput.h"
+#include <AP_Scheduler.h>
 
 using namespace PX4;
 
@@ -37,6 +40,8 @@ void PX4Scheduler::init(void *unused)
 {
     _sketch_start_time = hrt_absolute_time();
 
+    _main_task_pid = getpid();
+
     // setup the timer thread - this will call tasks at 1kHz
 	pthread_attr_t thread_attr;
 	struct sched_param param;
@@ -50,6 +55,16 @@ void PX4Scheduler::init(void *unused)
 
 	pthread_create(&_timer_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_timer_thread, this);
 
+    // the UART thread runs at a medium priority
+	pthread_attr_init(&thread_attr);
+	pthread_attr_setstacksize(&thread_attr, 2048);
+
+	param.sched_priority = APM_UART_PRIORITY;
+	(void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+	pthread_create(&_uart_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_uart_thread, this);
+
     // the IO thread runs at lower priority
 	pthread_attr_init(&thread_attr);
 	pthread_attr_setstacksize(&thread_attr, 2048);
@@ -61,6 +76,16 @@ void PX4Scheduler::init(void *unused)
 	pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_io_thread, this);
 }
 
+uint64_t PX4Scheduler::micros64() 
+{
+    return hrt_absolute_time();
+}
+
+uint64_t PX4Scheduler::millis64() 
+{
+    return micros64() / 1000;
+}
+
 uint32_t PX4Scheduler::micros() 
 {
     return (uint32_t)(hrt_absolute_time() - _sketch_start_time);
@@ -68,36 +93,49 @@ uint32_t PX4Scheduler::micros()
 
 uint32_t PX4Scheduler::millis() 
 {
-    return hrt_absolute_time() / 1000;
+    return millis64() & 0xFFFFFFFF;
+}
+
+/**
+   delay for a specified number of microseconds using a semaphore wait
+ */
+void PX4Scheduler::delay_microseconds_semaphore(uint16_t usec) 
+{
+    sem_t wait_semaphore;
+    struct hrt_call wait_call;
+    sem_init(&wait_semaphore, 0, 0);
+    hrt_call_after(&wait_call, usec, (hrt_callout)sem_post, &wait_semaphore);
+    sem_wait(&wait_semaphore);
 }
 
 void PX4Scheduler::delay_microseconds(uint16_t usec) 
 {
-    if (_in_timer_proc) {
-        ::printf("ERROR: delay_microseconds() from timer process\n");
+    perf_begin(_perf_delay);
+    if (usec >= 500) {
+        delay_microseconds_semaphore(usec);
+        perf_end(_perf_delay);
         return;
     }
-    perf_begin(_perf_delay);
-	uint32_t start = micros();
-	while (micros() - start < usec) {
-		up_udelay(usec - (micros() - start));
+	uint64_t start = micros64();
+    uint64_t dt;
+	while ((dt=(micros64() - start)) < usec) {
+		up_udelay(usec - dt);
 	}
     perf_end(_perf_delay);
 }
 
 void PX4Scheduler::delay(uint16_t ms)
 {
-    if (_in_timer_proc) {
+    if (in_timerprocess()) {
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
     perf_begin(_perf_delay);
-	uint64_t start = hrt_absolute_time();
+	uint64_t start = micros64();
     
-    while ((hrt_absolute_time() - start)/1000 < ms && 
+    while ((micros64() - start)/1000 < ms && 
            !_px4_thread_should_exit) {
-        // this yields the CPU to other apps
-        poll(NULL, 0, 1);
+        delay_microseconds_semaphore(1000);
         if (_min_delay_cb_ms <= ms) {
             if (_delay_cb) {
                 _delay_cb();
@@ -117,7 +155,7 @@ void PX4Scheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void PX4Scheduler::register_timer_process(AP_HAL::TimedProc proc) 
+void PX4Scheduler::register_timer_process(AP_HAL::MemberProc proc) 
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -133,7 +171,7 @@ void PX4Scheduler::register_timer_process(AP_HAL::TimedProc proc)
     }
 }
 
-void PX4Scheduler::register_io_process(AP_HAL::TimedProc proc) 
+void PX4Scheduler::register_io_process(AP_HAL::MemberProc proc) 
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -149,7 +187,7 @@ void PX4Scheduler::register_io_process(AP_HAL::TimedProc proc)
     }
 }
 
-void PX4Scheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us) 
+void PX4Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) 
 {
     _failsafe = failsafe;
 }
@@ -168,14 +206,13 @@ void PX4Scheduler::resume_timer_procs()
     }
 }
 
-void PX4Scheduler::reboot() 
+void PX4Scheduler::reboot(bool hold_in_bootloader) 
 {
-	up_systemreset();
+	systemreset(hold_in_bootloader);
 }
 
 void PX4Scheduler::_run_timers(bool called_from_timer_thread)
 {
-    uint32_t tnow = micros();
     if (_in_timer_proc) {
         return;
     }
@@ -185,7 +222,7 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](tnow);
+                _timer_proc[i]();
             }
         }
     } else if (called_from_timer_thread) {
@@ -194,16 +231,25 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        _failsafe(tnow);
+        _failsafe();
     }
+
+    // process analog input
+    ((PX4AnalogIn *)hal.analogin)->_timer_tick();
 
     _in_timer_proc = false;
 }
 
+extern bool px4_ran_overtime;
+
 void *PX4Scheduler::_timer_thread(void)
 {
+    uint32_t last_ran_overtime = 0;
+    while (!_hal_initialized) {
+        poll(NULL, 0, 1);        
+    }
     while (!_px4_thread_should_exit) {
-        poll(NULL, 0, 1);
+        delay_microseconds_semaphore(1000);
 
         // run registered timers
         perf_begin(_perf_timers);
@@ -215,13 +261,18 @@ void *PX4Scheduler::_timer_thread(void)
 
         // process any pending RC input requests
         ((PX4RCInput *)hal.rcin)->_timer_tick();
+
+        if (px4_ran_overtime && millis() - last_ran_overtime > 2000) {
+            last_ran_overtime = millis();
+            printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+            hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+        }
     }
     return NULL;
 }
 
 void PX4Scheduler::_run_io(void)
 {
-    uint32_t tnow = micros();
     if (_in_io_proc) {
         return;
     }
@@ -231,7 +282,7 @@ void PX4Scheduler::_run_io(void)
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
             if (_io_proc[i] != NULL) {
-                _io_proc[i](tnow);
+                _io_proc[i]();
             }
         }
     }
@@ -239,15 +290,31 @@ void PX4Scheduler::_run_io(void)
     _in_io_proc = false;
 }
 
-void *PX4Scheduler::_io_thread(void)
+void *PX4Scheduler::_uart_thread(void)
 {
+    while (!_hal_initialized) {
+        poll(NULL, 0, 1);        
+    }
     while (!_px4_thread_should_exit) {
-        poll(NULL, 0, 1);
+        delay_microseconds_semaphore(1000);
 
         // process any pending serial bytes
         ((PX4UARTDriver *)hal.uartA)->_timer_tick();
         ((PX4UARTDriver *)hal.uartB)->_timer_tick();
         ((PX4UARTDriver *)hal.uartC)->_timer_tick();
+        ((PX4UARTDriver *)hal.uartD)->_timer_tick();
+        ((PX4UARTDriver *)hal.uartE)->_timer_tick();
+    }
+    return NULL;
+}
+
+void *PX4Scheduler::_io_thread(void)
+{
+    while (!_hal_initialized) {
+        poll(NULL, 0, 1);        
+    }
+    while (!_px4_thread_should_exit) {
+        poll(NULL, 0, 1);
 
         // process any pending storage writes
         ((PX4Storage *)hal.storage)->_timer_tick();
@@ -269,8 +336,9 @@ void PX4Scheduler::panic(const prog_char_t *errormsg)
     exit(1);
 }
 
-bool PX4Scheduler::in_timerprocess() {
-    return _in_timer_proc;
+bool PX4Scheduler::in_timerprocess() 
+{
+    return getpid() != _main_task_pid;
 }
 
 bool PX4Scheduler::system_initializing() {

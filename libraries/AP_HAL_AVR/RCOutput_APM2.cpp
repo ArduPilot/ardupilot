@@ -13,8 +13,8 @@ extern const AP_HAL::HAL& hal;
 /* No init argument required */
 void APM2RCOutput::init(void* machtnichts) {
     // --------------------- TIMER1: CH_1 and CH_2 -----------------------
-    hal.gpio->pinMode(12,GPIO_OUTPUT); // CH_1 (PB6/OC1B)
-    hal.gpio->pinMode(11,GPIO_OUTPUT); // CH_2 (PB5/OC1A)
+    hal.gpio->pinMode(12,HAL_GPIO_OUTPUT); // CH_1 (PB6/OC1B)
+    hal.gpio->pinMode(11,HAL_GPIO_OUTPUT); // CH_2 (PB5/OC1A)
 
     // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR1.
     // CS11: prescale by 8 => 0.5us tick
@@ -25,9 +25,9 @@ void APM2RCOutput::init(void* machtnichts) {
     OCR1B = 0xFFFF;
 
     // --------------- TIMER4: CH_3, CH_4, and CH_5 ---------------------
-    hal.gpio->pinMode(8,GPIO_OUTPUT); // CH_3 (PH5/OC4C)
-    hal.gpio->pinMode(7,GPIO_OUTPUT); // CH_4 (PH4/OC4B)
-    hal.gpio->pinMode(6,GPIO_OUTPUT); // CH_5 (PH3/OC4A)
+    hal.gpio->pinMode(8,HAL_GPIO_OUTPUT); // CH_3 (PH5/OC4C)
+    hal.gpio->pinMode(7,HAL_GPIO_OUTPUT); // CH_4 (PH4/OC4B)
+    hal.gpio->pinMode(6,HAL_GPIO_OUTPUT); // CH_5 (PH3/OC4A)
 
     // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR4.
     // CS41: prescale by 8 => 0.5us tick
@@ -39,9 +39,9 @@ void APM2RCOutput::init(void* machtnichts) {
     ICR4 = 40000; // 0.5us tick => 50hz freq
 
     //--------------- TIMER3: CH_6, CH_7, and CH_8 ----------------------
-    hal.gpio->pinMode(3,GPIO_OUTPUT); // CH_6 (PE5/OC3C)
-    hal.gpio->pinMode(2,GPIO_OUTPUT); // CH_7 (PE4/OC3B)
-    hal.gpio->pinMode(5,GPIO_OUTPUT); // CH_8 (PE3/OC3A)
+    hal.gpio->pinMode(3,HAL_GPIO_OUTPUT); // CH_6 (PE5/OC3C)
+    hal.gpio->pinMode(2,HAL_GPIO_OUTPUT); // CH_7 (PE4/OC3B)
+    hal.gpio->pinMode(5,HAL_GPIO_OUTPUT); // CH_8 (PE3/OC3A)
 
     // WGM: 1 1 1 0. Clear timer on Compare, TOP is ICR3
     // CS31: prescale by 8 => 0.5us tick
@@ -55,8 +55,8 @@ void APM2RCOutput::init(void* machtnichts) {
     //--------------- TIMER5: CH_10, and CH_11 ---------------
     // NB TIMER5 is shared with PPM input from RCInput_APM2.cpp
     // The TIMER5 registers are assumed to be setup already.
-    hal.gpio->pinMode(45, GPIO_OUTPUT); // CH_10 (PL4/OC5B)
-    hal.gpio->pinMode(44, GPIO_OUTPUT); // CH_11 (PL5/OC5C)
+    hal.gpio->pinMode(45, HAL_GPIO_OUTPUT); // CH_10 (PL4/OC5B)
+    hal.gpio->pinMode(44, HAL_GPIO_OUTPUT); // CH_11 (PL5/OC5C)
 }
 
 /* Output freq (1/period) control */
@@ -123,15 +123,6 @@ void APM2RCOutput::enable_ch(uint8_t ch) {
     }
 }
 
-void APM2RCOutput::enable_mask(uint32_t chmask) {
-    for (int i = 0; i < 32; i++) {
-        uint32_t c = chmask >> i;
-        if (c & 1) {
-            enable_ch(i);
-        }
-    }
-}
-
 void APM2RCOutput::disable_ch(uint8_t ch) {
     switch(ch) {
     case 0: TCCR1A &= ~(1<<COM1B1); break; // CH_1 : OC1B
@@ -144,14 +135,6 @@ void APM2RCOutput::disable_ch(uint8_t ch) {
     case 7: TCCR3A &= ~(1<<COM3A1); break; // CH_8 : OC3A
     case 9: TCCR5A &= ~(1<<COM5B1); break; // CH_10 : OC5B
     case 10: TCCR5A &= ~(1<<COM5C1); break; // CH_11 : OC5C
-    }
-}
-
-void APM2RCOutput::disable_mask(uint32_t chmask) {
-    for (int i = 0; i < 32; i++) {
-        if ((chmask >> i) & 1) {
-            disable_ch(i);
-        }
     }
 }
 

@@ -6,6 +6,10 @@
 
 #if GEOFENCE_ENABLED == ENABLED
 
+#define MIN_GEOFENCE_POINTS 5 // 3 to define a minimal polygon (triangle)
+                              // + 1 for return point and +1 for last
+                              // pt (same as first)
+
 /*
  *  The state of geo-fencing. This structure is dynamically allocated
  *  the first time it is used. This means we only pay for the pointer
@@ -15,36 +19,50 @@
  *  We store a copy of the boundary in memory as we need to access it
  *  very quickly at runtime
  */
-static struct geofence_state {
+static struct GeofenceState {
     uint8_t num_points;
     bool boundary_uptodate;
     bool fence_triggered;
+    bool is_pwm_enabled;          //true if above FENCE_ENABLE_PWM threshold
+    bool previous_is_pwm_enabled; //true if above FENCE_ENALBE_PWM threshold
+                                  // last time we checked
+    bool is_enabled;
+    GeofenceEnableReason enable_reason;
     uint16_t breach_count;
     uint8_t breach_type;
     uint32_t breach_time;
     uint8_t old_switch_position;
+    int32_t guided_lat;
+    int32_t guided_lng;
     /* point 0 is the return point */
-    Vector2l boundary[MAX_FENCEPOINTS];
+    Vector2l *boundary;
 } *geofence_state;
 
+
+static const StorageAccess fence_storage(StorageManager::StorageFence);
+
+/*
+  maximum number of fencepoints
+ */
+static uint8_t max_fencepoints(void)
+{
+    return min(255, fence_storage.size() / sizeof(Vector2l));
+}
 
 /*
  *  fence boundaries fetch/store
  */
 static Vector2l get_fence_point_with_index(unsigned i)
 {
-    uint16_t mem;
     Vector2l ret;
 
-    if (i > (unsigned)g.fence_total) {
+    if (i > (unsigned)g.fence_total || i >= max_fencepoints()) {
         return Vector2l(0,0);
     }
 
     // read fence point
-    mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
-    ret.x = hal.storage->read_dword(mem);
-    mem += sizeof(uint32_t);
-    ret.y = hal.storage->read_dword(mem);
+    ret.x = fence_storage.read_uint32(i * sizeof(Vector2l));
+    ret.y = fence_storage.read_uint32(i * sizeof(Vector2l) + 4);
 
     return ret;
 }
@@ -52,18 +70,13 @@ static Vector2l get_fence_point_with_index(unsigned i)
 // save a fence point
 static void set_fence_point_with_index(Vector2l &point, unsigned i)
 {
-    uint16_t mem;
-
-    if (i >= (unsigned)g.fence_total.get()) {
+    if (i >= (unsigned)g.fence_total.get() || i >= max_fencepoints()) {
         // not allowed
         return;
     }
 
-    mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
-
-    hal.storage->write_dword(mem, point.x);
-    mem += sizeof(uint32_t);
-    hal.storage->write_dword(mem, point.y);
+    fence_storage.write_uint32(i * sizeof(Vector2l), point.x);
+    fence_storage.write_uint32(i * sizeof(Vector2l)+4, point.y);
 
     if (geofence_state != NULL) {
         geofence_state->boundary_uptodate = false;
@@ -78,15 +91,24 @@ static void geofence_load(void)
     uint8_t i;
 
     if (geofence_state == NULL) {
-        if (memcheck_available_memory() < 512 + sizeof(struct geofence_state)) {
+        if (hal.util->available_memory() < 512 + sizeof(struct GeofenceState)) {
             // too risky to enable as we could run out of stack
             goto failed;
         }
-        geofence_state = (struct geofence_state *)calloc(1, sizeof(struct geofence_state));
+        geofence_state = (struct GeofenceState *)calloc(1, sizeof(struct GeofenceState));
         if (geofence_state == NULL) {
             // not much we can do here except disable it
             goto failed;
         }
+
+        geofence_state->boundary = (Vector2l *)calloc(sizeof(Vector2l), max_fencepoints());
+        if (geofence_state->boundary == NULL) {
+            free(geofence_state);
+            geofence_state = NULL;
+            goto failed;
+        }
+        
+        geofence_state->old_switch_position = 254;
     }
 
     if (g.fence_total <= 0) {
@@ -121,20 +143,82 @@ failed:
 }
 
 /*
+ * return true if a geo-fence has been uploaded and
+ * FENCE_ACTION is 1 (not necessarily enabled)
+ */
+static bool geofence_present(void)
+{
+    //require at least a return point and a triangle
+    //to define a geofence area:
+    if (g.fence_action == FENCE_ACTION_NONE || g.fence_total < MIN_GEOFENCE_POINTS) {
+        return false;
+    }
+    return true;
+}
+
+/*
+  check FENCE_CHANNEL and update the is_pwm_enabled state
+ */
+static void geofence_update_pwm_enabled_state() 
+{
+    bool is_pwm_enabled;
+    if (g.fence_channel == 0) {
+        is_pwm_enabled = false;
+    } else {
+        is_pwm_enabled = (hal.rcin->read(g.fence_channel-1) > FENCE_ENABLE_PWM);
+    }
+    if (is_pwm_enabled && geofence_state == NULL) {
+        // we need to load the fence
+        geofence_load();
+        return;
+    }
+
+    if (geofence_state == NULL) {
+        // not loaded
+        return;
+    }
+
+    geofence_state->previous_is_pwm_enabled = geofence_state->is_pwm_enabled;
+    geofence_state->is_pwm_enabled = is_pwm_enabled;
+
+    if (geofence_state->is_pwm_enabled != geofence_state->previous_is_pwm_enabled) {
+        geofence_set_enabled(geofence_state->is_pwm_enabled, PWM_TOGGLED);
+    }    
+}
+
+//return true on success, false on failure
+static bool geofence_set_enabled(bool enable, GeofenceEnableReason r) 
+{
+    if (geofence_state == NULL && enable) {
+        geofence_load();
+    }
+    if (geofence_state == NULL) {
+        return false;
+    }
+
+    geofence_state->is_enabled = enable;
+    geofence_state->enable_reason = r;
+    
+    return true;
+}
+
+/*
  *  return true if geo-fencing is enabled
  */
 static bool geofence_enabled(void)
 {
+    geofence_update_pwm_enabled_state();
+
+    if (geofence_state == NULL) {
+        return false;
+    }
+
     if (g.fence_action == FENCE_ACTION_NONE ||
-        g.fence_total < 5 ||
-        (g.fence_action != FENCE_ACTION_REPORT &&
-         (g.fence_channel == 0 ||
-          hal.rcin->read(g.fence_channel-1) < FENCE_ENABLE_PWM))) {
+        !geofence_present() ||
+        (g.fence_action != FENCE_ACTION_REPORT && !geofence_state->is_enabled)) {
         // geo-fencing is disabled
-        if (geofence_state != NULL) {
-            // re-arm for when the channel trigger is switched on
-            geofence_state->fence_triggered = false;
-        }
+        // re-arm for when the channel trigger is switched on
+        geofence_state->fence_triggered = false;
         return false;
     }
 
@@ -180,16 +264,15 @@ static void geofence_check(bool altitude_check_only)
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
         if (geofence_state != NULL &&
-            g.fence_action == FENCE_ACTION_GUIDED &&
-            g.fence_channel != 0 &&
+            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) &&
             control_mode == GUIDED &&
-            g.fence_total >= 5 &&
+            geofence_present() &&
             geofence_state->boundary_uptodate &&
             geofence_state->old_switch_position == oldSwitchPosition &&
-            guided_WP.lat == geofence_state->boundary[0].x &&
-            guided_WP.lng == geofence_state->boundary[0].y) {
-            geofence_state->old_switch_position = 0;
-            reset_control_switch();
+            guided_WP_loc.lat == geofence_state->guided_lat &&
+            guided_WP_loc.lng == geofence_state->guided_lng) {
+            geofence_state->old_switch_position = 254;
+            set_mode(get_previous_mode());
         }
         return;
     }
@@ -213,7 +296,7 @@ static void geofence_check(bool altitude_check_only)
     } else if (geofence_check_maxalt()) {
         outside = true;
         breach_type = FENCE_BREACH_MAXALT;
-    } else if (!altitude_check_only && ahrs.get_position(&loc)) {
+    } else if (!altitude_check_only && ahrs.get_position(loc)) {
         Vector2l location;
         location.x = loc.lat;
         location.y = loc.lng;
@@ -229,7 +312,8 @@ static void geofence_check(bool altitude_check_only)
             geofence_state->fence_triggered = false;
             gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence OK"));
  #if FENCE_TRIGGERED_PIN > 0
-            digitalWrite(FENCE_TRIGGERED_PIN, LOW);
+            hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
+            hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
  #endif
             gcs_send_message(MSG_FENCE_STATUS);
         }
@@ -252,7 +336,8 @@ static void geofence_check(bool altitude_check_only)
     geofence_state->breach_type = breach_type;
 
  #if FENCE_TRIGGERED_PIN > 0
-    digitalWrite(FENCE_TRIGGERED_PIN, HIGH);
+    hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->write(FENCE_TRIGGERED_PIN, 1);
  #endif
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence triggered"));
@@ -264,28 +349,44 @@ static void geofence_check(bool altitude_check_only)
         break;
 
     case FENCE_ACTION_GUIDED:
-        // fly to the return point, with an altitude half way between
-        // min and max
-        if (g.fence_minalt >= g.fence_maxalt) {
-            // invalid min/max, use RTL_altitude
-            guided_WP.alt = home.alt + g.RTL_altitude_cm;
-        } else {
-            guided_WP.alt = home.alt + 100.0*(g.fence_minalt + g.fence_maxalt)/2;
-        }
-        guided_WP.id = 0;
-        guided_WP.p1  = 0;
-        guided_WP.options = 0;
-        guided_WP.lat = geofence_state->boundary[0].x;
-        guided_WP.lng = geofence_state->boundary[0].y;
+    case FENCE_ACTION_GUIDED_THR_PASS:
+        if (g.fence_ret_rally != 0) { //return to a rally point
+            guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
+        } else { //return to fence return point, not a rally point
+            if (g.fence_retalt > 0) {
+                //fly to the return point using fence_retalt
+                guided_WP_loc.alt = home.alt + 100.0*g.fence_retalt;
+            } else if (g.fence_minalt >= g.fence_maxalt) {
+                // invalid min/max, use RTL_altitude
+                guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
+            } else {
+                // fly to the return point, with an altitude half way between
+                // min and max
+                guided_WP_loc.alt = home.alt + 100.0*(g.fence_minalt + g.fence_maxalt)/2;
+            }
+            guided_WP_loc.options = 0;
+            guided_WP_loc.lat = geofence_state->boundary[0].x;
+            guided_WP_loc.lng = geofence_state->boundary[0].y;
+        }
+        geofence_state->guided_lat = guided_WP_loc.lat;
+        geofence_state->guided_lng = guided_WP_loc.lng;
         geofence_state->old_switch_position = oldSwitchPosition;
 
-        if (control_mode == MANUAL && g.auto_trim) {
-            // make sure we don't auto trim the surfaces on this change
-            control_mode = STABILIZE;
-        }
+        setup_terrain_target_alt(guided_WP_loc);
+
+        set_guided_WP();
+
+        // make sure we don't auto trim the surfaces on this mode change
+        int8_t saved_auto_trim = g.auto_trim;
+        g.auto_trim.set(0);
 
         set_mode(GUIDED);
+        g.auto_trim.set(saved_auto_trim);
+
+        if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
+            guided_throttle_passthru = true;
+        }
         break;
     }
 
@@ -338,6 +439,18 @@ static bool geofence_stickmixing(void) {
     return true;
 }
 static bool geofence_enabled(void) {
+    return false;
+}
+
+static bool geofence_present(void) {
+    return false;
+}
+
+static bool geofence_set_enabled(bool enable, GeofenceEnableReason r) {
+    return false;
+}
+
+bool geofence_breached(void) {
     return false;
 }
 
