@@ -13,9 +13,10 @@
 #include "AP_Airspeed.h"
 
 extern const AP_HAL::HAL& hal;
+AP_Airspeed arspd;
 
 // constructor - fill in all the initial values
-Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms)
+Airspeed_Calibration::Airspeed_Calibration()
     : P(100,   0,         0,
         0,   100,         0,
         0,     0,  0.000001f)
@@ -23,7 +24,6 @@ Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms)
     , Q1(0.0000005f)
     , state(0, 0, 0)
     , DT(1)
-    , aparm(parms)
 {
 }
 
@@ -39,7 +39,7 @@ void Airspeed_Calibration::init(float initial_ratio)
   update the state of the airspeed calibration - needs to be called
   once a second
  */
-float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
+float Airspeed_Calibration::update(float aspeed, const Vector3f &vg)
 {
     // Perform the covariance prediction
     // Q is a diagonal matrix so only need to add three terms in
@@ -54,7 +54,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     // invariant plus process noise
     // Ignore vertical wind component
     float TAS_pred = state.z * norm(vg.x - state.x, vg.y - state.y, vg.z);
-    float TAS_mea  = airspeed;
+    float TAS_mea  = aspeed;
 
     // Calculate the observation Jacobian H_TAS
     float SH1 = sq(vg.y - state.y) + sq(vg.x - state.x);
@@ -101,8 +101,8 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     P.b.y = MAX(P.b.y, 0.0f);
     P.c.z = MAX(P.c.z, 0.0f);
 
-    state.x = constrain_float(state.x, -aparm.airspeed_max, aparm.airspeed_max);
-    state.y = constrain_float(state.y, -aparm.airspeed_max, aparm.airspeed_max);
+    state.x = constrain_float(state.x, -arspd.get_airspeed_max(), arspd.get_airspeed_max());
+    state.y = constrain_float(state.y, -arspd.get_airspeed_max(), arspd.get_airspeed_max());
     state.z = constrain_float(state.z, 0.5f, 1.0f);
 
     return state.z;
