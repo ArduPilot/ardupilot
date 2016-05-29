@@ -116,10 +116,14 @@
 #include <SITL/SITL.h>
 #endif
 
+// transmitter tuning class
+#include "tuning.h"
+
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK;
     friend class Parameters;
+    friend class AP_Tuning_Copter;
 
     Copter(void);
 
@@ -541,6 +545,9 @@ private:
     AC_InputManager_Heli input_manager;
 #endif
 
+    // transmitter tuning
+    AP_Tuning_Copter tuning;
+    
     AP_ADSB adsb {ahrs};
 
     // use this to prevent recursion during sensor init
@@ -673,7 +680,6 @@ private:
     void Log_Write_Data(uint8_t id, float value);
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
-    void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
     void Log_Write_Home_And_Origin();
     void Log_Sensor_Health();
 #if FRAME_CONFIG == HELI_FRAME
@@ -1002,7 +1008,6 @@ private:
     void takeoff_stop();
     void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void print_hit_enter();
-    void tuning();
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);

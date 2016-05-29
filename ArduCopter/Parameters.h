@@ -287,9 +287,9 @@ public:
         k_param_failsafe_throttle_value,
         k_param_throttle_trim,          // remove
         k_param_esc_calibrate,
-        k_param_radio_tuning,
-        k_param_radio_tuning_high,
-        k_param_radio_tuning_low,
+        k_param_radio_tuning,  // remove 
+        k_param_radio_tuning_high, // remove
+        k_param_radio_tuning_low, // remove
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,
@@ -360,8 +360,7 @@ public:
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
         k_param_DataFlash = 253, // 253 - Logging Group
-
-        // 254,255: reserved
+        k_param_tuning
     };
 
     AP_Int16        format_version;
