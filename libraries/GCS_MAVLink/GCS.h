@@ -254,8 +254,8 @@ protected:
     void handle_setup_signing(const mavlink_message_t *msg);
 
 private:
-    // Tracker is the only vehicle to override this, and it probably shouldn't
-    virtual float       adjust_rate_for_stream_trigger(enum streams stream_num);
+
+    float       adjust_rate_for_stream_trigger(enum streams stream_num);
 
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
 
