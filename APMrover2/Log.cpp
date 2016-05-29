@@ -293,7 +293,7 @@ void Rover::Log_Write_Attitude()
 #endif
     DataFlash.Log_Write_POS(ahrs);
 
-    DataFlash.Log_Write_PID(LOG_PIDY_MSG, steerController.get_pid_info());
+    DataFlash.Log_Write_PID(LOG_PIDR_MSG, steerController.get_pid_info());
 }
 
 struct PACKED log_Sonar {
