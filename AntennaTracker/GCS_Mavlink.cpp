@@ -377,15 +377,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-float GCS_MAVLINK_Tracker::adjust_rate_for_stream_trigger(enum streams stream_num)
-{
-    if (_queued_parameter != nullptr) {
-        return 0.25f;
-    }
-
-    return 1.0f;
-}
-
 void
 GCS_MAVLINK_Tracker::data_stream_send(void)
 {
