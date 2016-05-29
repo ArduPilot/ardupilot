@@ -211,6 +211,10 @@ public:
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
 
+    // FIXME: move this to be private/protected once possible
+    bool telemetry_delayed(mavlink_channel_t chan);
+    virtual uint32_t telem_delay() const = 0;
+
 protected:
 
     bool            waypoint_receiving; // currently receiving
