@@ -65,7 +65,15 @@ void FlightAxis::parse_reply(const char *reply)
             break;
         }
         p += strlen(keytable[i].key) + 1;
-        keytable[i].ref = atof(p);
+        double v;
+        if (strncmp(p, "true", 4) == 0) {
+            v = 1;
+        } else if (strncmp(p, "false", 5) == 0) {
+            v = 0;
+        } else {
+            v = atof(p);
+        }
+        keytable[i].ref = v;
         // this assumes key order and allows us to decode arrays
         p = strchr(p, '>');
         if (p != nullptr) {
@@ -154,7 +162,9 @@ Connection: Keep-Alive
 
 void FlightAxis::exchange_data(const struct sitl_input &input)
 {
-    if (!controller_started) {
+    if (!controller_started ||
+        is_zero(state.m_flightAxisControllerIsActive) ||
+        !is_zero(state.m_resetButtonHasBeenPressed)) {
         printf("Starting controller at %s\n", controller_ip);
         // call a restore first. This allows us to connect after the aircraft is changed in RealFlight
         char *reply = soap_request("RestoreOriginalControllerDevice", R"(<?xml version='1.0' encoding='UTF-8'?>
@@ -315,9 +325,11 @@ void FlightAxis::update(const struct sitl_input &input)
         if (last_frame_count_s != 0) {
             printf("%.2f FPS\n",
                    1000 / (state.m_currentPhysicsTime_SEC - last_frame_count_s));
+#if 0
             printf("(%.3f %.3f %.3f %.3f) (%.3f %.3f %.3f %.3f)\n",
                    quat.q1, quat.q2, quat.q3, quat.q4, 
                    quat2.q1, quat2.q2, quat2.q3, quat2.q4);
+#endif
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
