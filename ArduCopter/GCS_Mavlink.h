@@ -11,6 +11,8 @@ public:
 
 protected:
 
+    uint32_t telem_delay() const override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
