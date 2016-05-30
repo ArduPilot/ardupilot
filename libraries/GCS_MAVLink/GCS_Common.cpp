@@ -29,8 +29,9 @@ extern const AP_HAL::HAL& hal;
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
 uint8_t GCS_MAVLINK::chan_is_streaming = 0;
-ObjectArray<GCS_MAVLINK::statustext_t> GCS_MAVLINK::_statustext_queue(GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY);
 uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
+
+GCS *GCS::_singleton = nullptr;
 
 GCS_MAVLINK::GCS_MAVLINK()
 {
@@ -1295,7 +1296,7 @@ void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ..
     hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
     va_end(arg_list);
     text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
-    send_statustext(severity, mavlink_active | chan_is_streaming, text);
+    GCS::instance()->send_statustext(severity, mavlink_active | chan_is_streaming, text);
 }
 
 /*
@@ -1308,14 +1309,14 @@ void GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan,
     va_start(arg_list, fmt);
     hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
     va_end(arg_list);
-    send_statustext(severity, (1<<dest_chan), text);
+    GCS::instance()->send_statustext(severity, (1<<dest_chan), text);
 }
 
 
 /*
     send a statustext text string to specific MAVLink bitmask
 */
-void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
+void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
     if (dataflash_p != NULL) {
         dataflash_p->Log_Write_Message(text);
@@ -1323,7 +1324,7 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
 
     // filter destination ports to only allow active ports.
     statustext_t statustext{};
-    statustext.bitmask = (mavlink_active | chan_is_streaming) & dest_bitmask;
+    statustext.bitmask = (GCS_MAVLINK::active_channel_mask()  | GCS_MAVLINK::streaming_channel_mask() ) & dest_bitmask;
     if (!statustext.bitmask) {
         // nowhere to send
         return;
@@ -1340,17 +1341,18 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
     // try and send immediately if possible
     service_statustext();
 }
+
 /*
     send a statustext message to specific MAVLink connections in a bitmask
  */
-void GCS_MAVLINK::service_statustext(void)
+void GCS::service_statustext(void)
 {
     // create bitmask of what mavlink ports we should send this text to.
     // note, if sending to all ports, we only need to store the bitmask for each and the string only once.
     // once we send over a link, clear the port but other busy ports bit may stay allowing for faster links
     // to clear the bit and send quickly but slower links to still store the string. Regardless of mixed
-    // bitrates of ports, a maximum of GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY strings can be buffered. Downside
-    // is if you have a super slow link mixed with a faster port, if there are GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY
+    // bitrates of ports, a maximum of _status_capacity strings can be buffered. Downside
+    // is if you have a super slow link mixed with a faster port, if there are _status_capacity
     // strings in the slow queue then the next item can not be queued for the faster link
 
     if (_statustext_queue.empty()) {
@@ -1358,7 +1360,7 @@ void GCS_MAVLINK::service_statustext(void)
         return;
     }
 
-    for (uint8_t idx=0; idx<GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY; ) {
+    for (uint8_t idx=0; idx<_status_capacity; ) {
         statustext_t *statustext = _statustext_queue[idx];
         if (statustext == nullptr) {
             break;
@@ -1667,5 +1669,3 @@ bool GCS_MAVLINK::telemetry_delayed(mavlink_channel_t _chan)
     // we need to delay telemetry by the TELEM_DELAY time
     return true;
 }
-
-
