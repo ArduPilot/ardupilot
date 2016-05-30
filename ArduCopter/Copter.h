@@ -212,6 +212,7 @@ private:
     static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 
     GCS_MAVLINK_Copter gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS _gcs; // avoid using this; use GCS::instance()
 
     // User variables
 #ifdef USERHOOK_VARIABLES
