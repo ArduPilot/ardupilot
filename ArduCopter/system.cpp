@@ -111,7 +111,7 @@ void Copter::init_ardupilot()
     // initialise stats module
     g2.stats.init();
 
-    GCS_MAVLINK::set_dataflash(&DataFlash);
+    gcs().set_dataflash(&DataFlash);
 
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
