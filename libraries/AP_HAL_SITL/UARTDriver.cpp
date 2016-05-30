@@ -271,7 +271,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 #ifdef HAVE_SOCK_SIN_LEN
     sockaddr.sin_len = sizeof(sockaddr);
 #endif
-    sockaddr.sin_port = port;
+    sockaddr.sin_port = htons(port);
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = inet_addr(address);
 
