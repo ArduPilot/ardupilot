@@ -376,6 +376,18 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
+    if (g.gcs_pid_mask & 2) {
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ, 
+                                    0,
+                                    0,
+                                    0,
+                                    g.pidSpeedThrottle.kP(),
+                                    g.pidSpeedThrottle.kI(),
+                                    g.pidSpeedThrottle.kD());
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
 }
 
 void Rover::send_current_waypoint(mavlink_channel_t chan)
