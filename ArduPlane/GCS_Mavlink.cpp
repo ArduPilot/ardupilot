@@ -620,27 +620,15 @@ void Plane::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-// are we still delaying telemetry to try to avoid Xbee bricking?
-bool Plane::telemetry_delayed(mavlink_channel_t chan)
+uint32_t GCS_MAVLINK_Plane::telem_delay() const
 {
-    uint32_t tnow = millis() >> 10;
-    if (tnow > (uint32_t)g.telem_delay) {
-        return false;
-    }
-    if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
-        // this is USB telemetry, so won't be an Xbee
-        return false;
-    }
-    // we're either on the 2nd UART, or no USB cable is connected
-    // we need to delay telemetry by the TELEM_DELAY time
-    return true;
+    return (uint32_t)(plane.g.telem_delay);
 }
-
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 {
-    if (plane.telemetry_delayed(chan)) {
+    if (telemetry_delayed(chan)) {
         return false;
     }
 
