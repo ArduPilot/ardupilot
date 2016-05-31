@@ -274,7 +274,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
         }
 
         // limit thrust out for calculation of actuator gains
-        float thrust_out_actuator = MAX(throttle_thrust_hover*0.5,_thrust_out);
+        float thrust_out_actuator = MAX(_throttle_hover*0.5,_thrust_out);
 
         // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
         // static thrust is proportional to the airflow velocity squared
