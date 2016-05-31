@@ -140,6 +140,8 @@ private:
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
     GCS_MAVLINK_Tracker gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
+    GCS _gcs; // avoid using this; use GCS::instance()
+    GCS &gcs() { return _gcs; }
 
     AP_BoardConfig BoardConfig;
 
