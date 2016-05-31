@@ -468,6 +468,19 @@ void NavEKF2_core::UpdateFilter(bool predict)
 #endif
 }
 
+void NavEKF2_core::correctDeltaAngle(Vector3f &delAng, float delAngDT)
+{
+    delAng.x = delAng.x * stateStruct.gyro_scale.x;
+    delAng.y = delAng.y * stateStruct.gyro_scale.y;
+    delAng.z = delAng.z * stateStruct.gyro_scale.z;
+    delAng -= stateStruct.gyro_bias * (delAngDT / dtEkfAvg);
+}
+
+void NavEKF2_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT)
+{
+    delVel.z -= stateStruct.accel_zbias * (delVelDT / dtEkfAvg);
+}
+
 /*
  * Update the quaternion, velocity and position states using delayed IMU measurements
  * because the EKF is running on a delayed time horizon. Note that the quaternion is
@@ -477,14 +490,9 @@ void NavEKF2_core::UpdateFilter(bool predict)
 */
 void NavEKF2_core::UpdateStrapdownEquationsNED()
 {
-    // remove gyro scale factor errors
-    imuDataDelayed.delAng.x = imuDataDelayed.delAng.x * stateStruct.gyro_scale.x;
-    imuDataDelayed.delAng.y = imuDataDelayed.delAng.y * stateStruct.gyro_scale.y;
-    imuDataDelayed.delAng.z = imuDataDelayed.delAng.z * stateStruct.gyro_scale.z;
-
-    // remove sensor bias errors
-    imuDataDelayed.delAng -= stateStruct.gyro_bias * (imuDataDelayed.delAngDT / dtEkfAvg);
-    imuDataDelayed.delVel.z -= stateStruct.accel_zbias * (imuDataDelayed.delVelDT / dtEkfAvg);
+    // apply corrections to the IMU data
+    correctDeltaAngle(imuDataDelayed.delAng, imuDataDelayed.delAngDT);
+    correctDeltaVelocity(imuDataDelayed.delVel, imuDataDelayed.delVelDT);
 
     // apply correction for earth's rotation rate
     // % * - and + operators have been overloaded
@@ -558,8 +566,14 @@ void  NavEKF2_core::calcOutputStatesFast() {
 
     // Calculate strapdown solution at the current time horizon
 
+    // apply corrections to the IMU data
+    Vector3f delAngNewCorrected = imuDataNew.delAng;
+    Vector3f delVelNewCorrected = imuDataNew.delVel;
+    correctDeltaAngle(delAngNewCorrected, imuDataNew.delAngDT);
+    correctDeltaVelocity(delVelNewCorrected, imuDataNew.delVelDT);
+
     // apply corections to track EKF solution
-    Vector3f delAng = imuDataNew.delAng + delAngCorrection;
+    Vector3f delAng = delAngNewCorrected + delAngCorrection;
 
     // convert the rotation vector to its equivalent quaternion
     Quaternion deltaQuat;
@@ -577,7 +591,7 @@ void  NavEKF2_core::calcOutputStatesFast() {
     // transform body delta velocities to delta velocities in the nav frame
     // Add the earth frame correction required to track the EKF states
     // * and + operators have been overloaded
-    Vector3f delVelNav  = Tbn_temp*imuDataNew.delVel + delVelCorrection;
+    Vector3f delVelNav  = Tbn_temp*delVelNewCorrected + delVelCorrection;
     delVelNav.z += GRAVITY_MSS*imuDataNew.delVelDT;
 
     // save velocity for use in trapezoidal integration for position calcuation
