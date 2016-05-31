@@ -269,10 +269,11 @@ void NavEKF2_core::readIMUData()
     imuQuatDownSampleNew.rotate(imuDataNew.delAng);
     imuQuatDownSampleNew.normalize();
 
-    // Rotate the latest delta velocity into the frame of reference at the start of
-    // accumulate the latest delta velocity and apply it to the delta velocity accumulator
+    // Rotate the latest delta velocity into body frame at the start of accumulation
     Matrix3f deltaRotMat;
     imuQuatDownSampleNew.rotation_matrix(deltaRotMat);
+
+    // Apply the delta velocity to the delta velocity accumulator
     imuDataDownSampledNew.delVel += deltaRotMat*imuDataNew.delVel;
 
     // Keep track of the number of IMU frames since the last state prediction
