@@ -474,6 +474,10 @@ private:
     bool readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
     bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng);
 
+    // helper functions for correcting IMU data
+    void correctDeltaAngle(Vector3f &delAng, float delAngDT);
+    void correctDeltaVelocity(Vector3f &delVel, float delVelDT);
+
     // update IMU delta angle and delta velocity measurements
     void readIMUData();
 
