@@ -560,7 +560,7 @@ private:
     // avoid unnecessary operations
     void setWindMagStateLearningMode();
 
-    // Check the alignmnent status of the tilt and yaw attitude
+    // Check the alignmnent status of the tilt attitude
     // Used during initial bootstrap alignment of the filter
     void checkAttitudeAlignmentStatus();
 
@@ -610,6 +610,12 @@ private:
 
     // zero attitude state covariances, but preserve variances
     void zeroAttCovOnly();
+
+    // record a yaw reset event
+    void recordYawReset();
+
+    // record a magnetic field state reset event
+    void recordMagReset();
 
     // effective value of MAG_CAL
     uint8_t effective_magCal(void) const;
@@ -708,7 +714,8 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
-    bool firstMagYawInit;           // true when the first post takeoff initialisation of earth field and yaw angle has been performed
+    bool firstInflightYawInit;      // true when the first post takeoff initialisation of yaw angle has been performed
+    bool firstInflightMagInit;      // true when the first post takeoff initialisation of magnetic field states been performed
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     bool isAiding;                  // true when the filter is fusing position, velocity or flow measurements
     bool prevIsAiding;              // isAiding from previous frame
@@ -726,6 +733,7 @@ private:
     float tiltErrFilt;              // Filtered tilt error metric
     bool tiltAlignComplete;         // true when tilt alignment is complete
     bool yawAlignComplete;          // true when yaw alignment is complete
+    bool magStateInitComplete;      // true when the magnetic field sttes have been initialised
     uint8_t stateIndexLim;          // Max state index used during matrix and array operations
     imu_elements imuDataDelayed;    // IMU data at the fusion time horizon
     imu_elements imuDataNew;        // IMU data at the current time horizon
@@ -780,6 +788,9 @@ private:
     bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
     float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
+    bool magStateResetRequest;      // true if magnetic field states need to be reset using the magneteomter measurements
+    bool magYawResetRequest;        // true if the vehicle yaw and magnetic field states need to be reset using the magnetometer measurements
+    bool gpsYawResetRequest;        // true if the vehicle yaw needs to be reset to the GPS course
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.

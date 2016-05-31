@@ -98,12 +98,12 @@ void NavEKF2_core::setWindMagStateLearningMode()
     bool magCalRequested =
             ((magCal == 0) && inFlight) || // when flying
             ((magCal == 1) && manoeuvring)  || // when manoeuvring
-            ((magCal == 3) && firstMagYawInit) || // when initial in-air yaw and field reset has completed
+            ((magCal == 3) && firstInflightYawInit && firstInflightMagInit) || // when initial in-air yaw and mag field reset is complete
             (magCal == 4); // all the time
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
     // we do not have an absolute position reference or are on the ground (unless explicitly requested by the user)
-    bool magCalDenied = !use_compass() || (magCal == 2) ||(onGround && magCal != 4);
+    bool magCalDenied = !use_compass() || (magCal == 2) || (onGround && magCal != 4);
 
     // Inhibit the magnetic field calibration if not requested or denied
     bool setMagInhibit = !magCalRequested || magCalDenied;
@@ -115,12 +115,17 @@ void NavEKF2_core::setWindMagStateLearningMode()
         for (uint8_t index=16; index<=21; index++) {
             P[index][index] = sq(frontend->_magNoise);
         }
+        // request a reset of the yaw and magnetic field states if not done before
+        if (!magStateInitComplete || (!firstInflightMagInit && inFlight)) {
+            magYawResetRequest = true;
+        }
     }
 
     // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
     // because we want it re-done for each takeoff
     if (onGround) {
-        firstMagYawInit = false;
+        firstInflightYawInit = false;
+        firstInflightMagInit = false;
     }
 
     // Adjust the indexing limits used to address the covariance, states and other EKF arrays to avoid unnecessary operations
@@ -205,7 +210,7 @@ void NavEKF2_core::setAidingMode()
     }
 }
 
-// Check the alignmnent status of the tilt and yaw attitude
+// Check the tilt and yaw alignmnent status
 // Used during initial bootstrap alignment of the filter
 void NavEKF2_core::checkAttitudeAlignmentStatus()
 {
@@ -218,14 +223,15 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
         hal.console->printf("EKF2 IMU%u tilt alignment complete\n",(unsigned)imu_index);
     }
 
-    // Once tilt has converged, align yaw using magnetic field measurements
-    if (tiltAlignComplete && !yawAlignComplete && use_compass()) {
-        Vector3f eulerAngles;
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-        stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
-        StoreQuatReset();
-        yawAlignComplete = true;
-        hal.console->printf("EKF2 IMU%u yaw alignment complete\n",(unsigned)imu_index);
+    // submit yaw and magnetic field reset requests depending on whether we have compass data
+    if (tiltAlignComplete && !yawAlignComplete) {
+        if (use_compass()) {
+            magYawResetRequest = true;
+            gpsYawResetRequest = false;
+        } else {
+            magYawResetRequest = false;
+            gpsYawResetRequest = true;
+        }
     }
 }
 
@@ -291,6 +297,15 @@ void NavEKF2_core::setOrigin()
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
     hal.console->printf("EKF2 IMU%u Origin Set\n",(unsigned)imu_index);
+}
+
+// record a yaw reset event
+void NavEKF2_core::recordYawReset()
+{
+    yawAlignComplete = true;
+    if (inFlight) {
+        firstInflightYawInit = true;
+    }
 }
 
 // Commands the EKF to not use GPS.

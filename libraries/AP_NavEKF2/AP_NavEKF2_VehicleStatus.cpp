@@ -39,10 +39,8 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         magYawResetTimer_ms = imuSampleTime_ms;
     }
     if (imuSampleTime_ms - magYawResetTimer_ms > 5000) {
-        // reset heading and field states
-        Vector3f eulerAngles;
-        getEulerAngles(eulerAngles);
-        stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+        // request reset of heading and magnetic field states
+        magYawResetRequest = true;
         // reset timer to ensure that bad magnetometer data cannot cause a heading reset more often than every 5 seconds
         magYawResetTimer_ms = imuSampleTime_ms;
     }
