@@ -116,7 +116,7 @@ void Plane::init_ardupilot()
     }
 #endif
 
-    GCS_MAVLINK::set_dataflash(&DataFlash);
+    gcs().set_dataflash(&DataFlash);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
