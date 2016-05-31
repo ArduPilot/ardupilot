@@ -391,12 +391,8 @@ void Rover::update_GPS_10Hz(void)
                 ground_start_count = 0;
             }
         }
-        Vector3f velocity;
-        if (ahrs.get_velocity_NED(velocity)) {
-            ground_speed = norm(velocity.x, velocity.y);
-        } else {
-            ground_speed   = gps.ground_speed();
-        }
+        // get ground speed estimate from AHRS
+        ground_speed = ahrs.groundspeed();
 
 #if CAMERA == ENABLED
         if (camera.update_location(current_loc, rover.ahrs) == true) {

@@ -200,7 +200,7 @@ void Rover::Log_Write_Steering()
         LOG_PACKET_HEADER_INIT(LOG_STEERING_MSG),
         time_us        : AP_HAL::micros64(),
         demanded_accel : lateral_acceleration,
-        achieved_accel : gps.ground_speed() * ins.get_gyro().z,
+        achieved_accel : ahrs.groundspeed() * ins.get_gyro().z,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
