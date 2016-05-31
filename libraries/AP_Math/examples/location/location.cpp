@@ -37,7 +37,7 @@ static const struct {
 
 static struct Location location_from_point(Vector2f pt)
 {
-    struct Location loc = {0};
+    struct Location loc = {};
     loc.lat = pt.x * 1.0e7f;
     loc.lng = pt.y * 1.0e7f;
     return loc;
