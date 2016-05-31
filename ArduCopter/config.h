@@ -455,8 +455,8 @@
  # define RTL_ABS_MIN_CLIMB         250     // absolute minimum initial climb
 #endif
 
-#ifndef RTL_CONE_SLOPE
- # define RTL_CONE_SLOPE            3.0f    // slope of RTL cone (height / distance). 0 = No cone
+#ifndef RTL_CONE_SLOPE_DEFAULT
+ # define RTL_CONE_SLOPE_DEFAULT    3.0f    // slope of RTL cone (height / distance). 0 = No cone
 #endif
 
 #ifndef RTL_MIN_CONE_SLOPE
