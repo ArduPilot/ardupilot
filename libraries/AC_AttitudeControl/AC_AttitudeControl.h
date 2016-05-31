@@ -367,7 +367,7 @@ protected:
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
 
-private:
+protected:
     /*
       state of control monitoring
     */
