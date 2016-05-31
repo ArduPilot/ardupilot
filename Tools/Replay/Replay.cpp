@@ -36,6 +36,9 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+#include <GCS_MAVLink/GCS.h>
+GCS _gcs;
+
 ReplayVehicle replayvehicle;
 
 struct globals globals;
