@@ -36,6 +36,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_PXFMINI  1012
 #define HAL_BOARD_SUBTYPE_LINUX_NAVIO2   1013
 #define HAL_BOARD_SUBTYPE_LINUX_DISCO    1014
+#define HAL_BOARD_SUBTYPE_LINUX_AERO     1015
 
 /**
    HAL PX4 sub-types, starting at 2000
@@ -70,6 +71,7 @@
 #define HAL_INS_QFLIGHT  15
 #define HAL_INS_QURT     16
 #define HAL_INS_BBBMINI  17
+#define HAL_INS_AERO 18
 
 // barometer driver types
 #define HAL_BARO_BMP085     1
@@ -99,6 +101,7 @@
 #define HAL_COMPASS_BBBMINI   13
 #define HAL_COMPASS_NAVIO2    14
 #define HAL_COMPASS_NAVIO     15
+#define HAL_COMPASS_AERO      16
 
 // Heat Types
 #define HAL_LINUX_HEAT_PWM 1
@@ -443,6 +446,16 @@
 #define HAL_GPIO_C_LED_PIN        16
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH  
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
+#define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
+#define HAL_INS_DEFAULT HAL_INS_AERO
+#define HAL_BARO_DEFAULT HAL_BARO_MS5611_I2C
+#define HAL_BARO_MS5611_I2C_BUS 2
+#define HAL_BARO_MS5611_I2C_ADDR 0x76
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_AERO
+#define HAL_COMPASS_BMM150_I2C_BUS 2
+#define HAL_COMPASS_BMM150_I2C_ADDR 0x12
 #else
 #error "no Linux board subtype set"
 #endif
