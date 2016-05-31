@@ -92,7 +92,7 @@ void Rover::init_ardupilot()
     // initialise stats module
     g2.stats.init();
 
-    GCS_MAVLINK::set_dataflash(&DataFlash);
+    gcs().set_dataflash(&DataFlash);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
