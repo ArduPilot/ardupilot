@@ -412,10 +412,6 @@ void NavEKF2_core::UpdateFilter(bool predict)
     // Set the flag to indicate to the filter that the front-end has given permission for a new state prediction cycle to be started
     startPredictEnabled = predict;
 
-    // zero the delta quaternion used by the strapdown navigation because it is published
-    // and we need to return a zero rotation of the INS fails to update it
-    correctedDelAngQuat.initialise();
-
     // don't run filter updates if states have not been initialised
     if (!statesInitialised) {
         return;
@@ -481,28 +477,34 @@ void NavEKF2_core::UpdateFilter(bool predict)
 */
 void NavEKF2_core::UpdateStrapdownEquationsNED()
 {
-    // apply correction for earths rotation rate
-    // % * - and + operators have been overloaded
-    correctedDelAng   = imuDataDelayed.delAng - prevTnb * earthRateNED*imuDataDelayed.delAngDT;
+    // remove gyro scale factor errors
+    imuDataDelayed.delAng.x = imuDataDelayed.delAng.x * stateStruct.gyro_scale.x;
+    imuDataDelayed.delAng.y = imuDataDelayed.delAng.y * stateStruct.gyro_scale.y;
+    imuDataDelayed.delAng.z = imuDataDelayed.delAng.z * stateStruct.gyro_scale.z;
 
-    // convert the rotation vector to its equivalent quaternion
-    correctedDelAngQuat.from_axis_angle(correctedDelAng);
+    // remove sensor bias errors
+    imuDataDelayed.delAng -= stateStruct.gyro_bias * (imuDataDelayed.delAngDT / dtEkfAvg);
+    imuDataDelayed.delVel.z -= stateStruct.accel_zbias * (imuDataDelayed.delVelDT / dtEkfAvg);
+
+    // apply correction for earth's rotation rate
+    // % * - and + operators have been overloaded
+    imuDataDelayed.delAng -= prevTnb * earthRateNED*imuDataDelayed.delAngDT;
 
     // update the quaternion states by rotating from the previous attitude through
     // the delta angle rotation quaternion and normalise
-    stateStruct.quat *= correctedDelAngQuat;
+    stateStruct.quat.rotate(imuDataDelayed.delAng);
     stateStruct.quat.normalize();
 
-    // calculate the body to nav cosine matrix
-    Matrix3f Tbn_temp;
-    stateStruct.quat.rotation_matrix(Tbn_temp);
-    prevTnb = Tbn_temp.transposed();
-
     // transform body delta velocities to delta velocities in the nav frame
+    // use the nav frame from previous time step as the delta velocities
+    // have been rotated into that frame
     // * and + operators have been overloaded
     Vector3f delVelNav;  // delta velocity vector in earth axes
-    delVelNav  = Tbn_temp*imuDataDelayed.delVel;
+    delVelNav  = prevTnb.mul_transpose(imuDataDelayed.delVel);
     delVelNav.z += GRAVITY_MSS*imuDataDelayed.delVelDT;
+
+    // calculate the body to nav cosine matrix
+    stateStruct.quat.inverse().rotation_matrix(prevTnb);
 
     // calculate the rate of change of velocity (used for launch detect and other functions)
     velDotNED = delVelNav / imuDataDelayed.delVelDT;
