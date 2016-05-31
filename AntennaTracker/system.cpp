@@ -57,7 +57,7 @@ void Tracker::init_tracker()
     log_init();
 #endif
 
-    GCS_MAVLINK::set_dataflash(&DataFlash);
+    GCS::instance()->set_dataflash(&DataFlash);
 
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
