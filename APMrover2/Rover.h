@@ -176,6 +176,7 @@ private:
     AP_SerialManager serial_manager;
     const uint8_t num_gcs;
     GCS_MAVLINK_Rover gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS _gcs; // avoid using this; use GCS::instance()
 
     // relay support
     AP_Relay relay;
