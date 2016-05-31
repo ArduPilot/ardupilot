@@ -228,4 +228,6 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     _motors.set_roll(rate_bf_to_motor_roll(_ang_vel_target_rads.x));
     _motors.set_pitch(rate_bf_to_motor_pitch(_ang_vel_target_rads.y));
     _motors.set_yaw(rate_bf_to_motor_yaw(_ang_vel_target_rads.z));
+
+    control_monitor_update();
 }
