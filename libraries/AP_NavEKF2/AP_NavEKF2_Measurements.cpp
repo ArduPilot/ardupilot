@@ -260,34 +260,20 @@ void NavEKF2_core::readIMUData()
     // Get current time stamp
     imuDataNew.time_ms = imuSampleTime_ms;
 
-    // remove gyro scale factor errors
-    imuDataNew.delAng.x = imuDataNew.delAng.x * stateStruct.gyro_scale.x;
-    imuDataNew.delAng.y = imuDataNew.delAng.y * stateStruct.gyro_scale.y;
-    imuDataNew.delAng.z = imuDataNew.delAng.z * stateStruct.gyro_scale.z;
-
-    // remove sensor bias errors
-    imuDataNew.delAng -= stateStruct.gyro_bias * (imuDataNew.delAngDT / dtEkfAvg);
-    imuDataNew.delVel.z -= stateStruct.accel_zbias * (imuDataNew.delVelDT / dtEkfAvg);
-
     // Accumulate the measurement time interval for the delta velocity and angle data
     imuDataDownSampledNew.delAngDT += imuDataNew.delAngDT;
     imuDataDownSampledNew.delVelDT += imuDataNew.delVelDT;
 
     // Rotate quaternon atitude from previous to new and normalise.
     // Accumulation using quaternions prevents introduction of coning errors due to downsampling
-    Quaternion deltaQuat;
-    deltaQuat.rotate(imuDataNew.delAng);
-    imuQuatDownSampleNew = imuQuatDownSampleNew*deltaQuat;
+    imuQuatDownSampleNew.rotate(imuDataNew.delAng);
     imuQuatDownSampleNew.normalize();
 
-    // Rotate the accumulated delta velocity into the new frame of reference created by the latest delta angle
-    // This prevents introduction of sculling errors due to downsampling
+    // Rotate the latest delta velocity into the frame of reference at the start of
+    // accumulate the latest delta velocity and apply it to the delta velocity accumulator
     Matrix3f deltaRotMat;
-    deltaQuat.inverse().rotation_matrix(deltaRotMat);
-    imuDataDownSampledNew.delVel = deltaRotMat*imuDataDownSampledNew.delVel;
-
-    // accumulate the latest delta velocity
-    imuDataDownSampledNew.delVel += imuDataNew.delVel;
+    imuQuatDownSampleNew.rotation_matrix(deltaRotMat);
+    imuDataDownSampledNew.delVel += deltaRotMat*imuDataNew.delVel;
 
     // Keep track of the number of IMU frames since the last state prediction
     framesSincePredict++;
