@@ -255,6 +255,7 @@ private:
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
     GCS_MAVLINK_Plane gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS _gcs; // avoid using this; use GCS::instance()
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
