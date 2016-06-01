@@ -39,9 +39,9 @@ void AC_AttitudeControl::control_monitor_log(void)
 {
     DataFlash_Class::instance()->Log_Write("CTRL", "TimeUS,RMSRoll,RMSPitch,RMSYaw", "Qfff",
                                            AP_HAL::micros64(),
-                                           sqrtf(_control_monitor.rms_roll),
-                                           sqrtf(_control_monitor.rms_pitch),
-                                           sqrtf(_control_monitor.rms_yaw));
+                                           (double)sqrtf(_control_monitor.rms_roll),
+                                           (double)sqrtf(_control_monitor.rms_pitch),
+                                           (double)sqrtf(_control_monitor.rms_yaw));
 }
 
 /*
