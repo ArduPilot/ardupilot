@@ -308,3 +308,17 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   llh[0] = copysign(1.0, ecef[2]) * atan(S / (e_c*C));
   llh[2] = (p*e_c*C + fabs(ecef[2])*S - WGS84_A*e_c*A_n) / sqrt(e_c*e_c*C*C + S*S);
 }
+
+// return true when lat and lng are within range
+bool check_latlng(float lat, float lng)
+{
+    return (fabsf(lat) <= 90) && (fabsf(lng) <= 180);
+}
+bool check_latlng(int32_t lat, int32_t lng)
+{
+    return (labs(lat) <= 90*1e7) && (labs(lng) <= 180*1e7);
+}
+bool check_latlng(Location loc)
+{
+    return check_latlng(loc.lat, loc.lng);
+}
