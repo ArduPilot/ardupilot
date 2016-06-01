@@ -16,8 +16,8 @@ void Copter::failsafe_radio_on_event()
     if (should_disarm_on_failsafe()) {
         init_disarm_motors();
     } else {
-        if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
-            // continue mission
+        if ((control_mode == AUTO || (control_mode == GUIDED && !failsafe.guided_sp_expired)) && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
+            // continue mission or guided mode
         } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
             // continue landing
         } else {

@@ -288,6 +288,10 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
 // should be called at 100hz or more
 void Copter::guided_run()
 {
+
+    // reset the guided mode exit flag
+    failsafe.guided_sp_expired = false;
+
     // call the correct auto controller
     switch (guided_mode) {
 
@@ -316,6 +320,11 @@ void Copter::guided_run()
         guided_angle_control_run();
         break;
     }
+    
+    if (failsafe.guided_sp_expired && failsafe.radio) {
+        failsafe_radio_on_event();
+    }
+
  }
 
 // guided_takeoff_run - takeoff in guided mode
@@ -436,10 +445,10 @@ void Copter::guided_vel_control_run()
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // set velocity to zero if no updates received for 3 seconds
+    // exit guided if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - vel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !pos_control.get_desired_velocity().is_zero()) {
-        pos_control.set_desired_velocity(Vector3f(0,0,0));
+        failsafe.guided_sp_expired = true;
     }
 
     // call velocity controller which includes z axis controller
@@ -490,10 +499,10 @@ void Copter::guided_posvel_control_run()
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // set velocity to zero if no updates received for 3 seconds
+    // exit guided if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !posvel_vel_target_cms.is_zero()) {
-        posvel_vel_target_cms.zero();
+        failsafe.guided_sp_expired = true;
     }
 
     // calculate dt
@@ -566,12 +575,10 @@ void Copter::guided_angle_control_run()
     // constrain climb rate
     float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabs(wp_nav.get_speed_down()), wp_nav.get_speed_up());
 
-    // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
+    // check for timeout - exit guided if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - guided_angle_state.update_time_ms > GUIDED_ATTITUDE_TIMEOUT_MS) {
-        roll_in = 0.0f;
-        pitch_in = 0.0f;
-        climb_rate_cms = 0.0f;
+        failsafe.guided_sp_expired = true;
     }
 
     // set motors to full range

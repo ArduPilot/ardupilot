@@ -287,6 +287,7 @@ private:
         uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
         uint8_t terrain             : 1; // 6   // true if the missing terrain data failsafe has occurred
         uint8_t gps_glitch          : 1; // 7   // true if gps glitch failsafe has occurred
+        uint8_t guided_sp_expired   : 1; // 8   // true if the setpoint used by guided has expired
 
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
