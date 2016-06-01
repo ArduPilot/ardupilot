@@ -372,8 +372,10 @@ public:
     // log a CTRL message
     void control_monitor_log(void);
 
-    // return current worst RMS controller filter
-    float control_monitor_rms_output(void) const;
+    // return current RMS controller filter for each axis
+    float control_monitor_rms_output_roll(void) const;
+    float control_monitor_rms_output_pitch(void) const;
+    float control_monitor_rms_output_yaw(void) const;
 };
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\

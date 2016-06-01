@@ -45,10 +45,25 @@ void AC_AttitudeControl::control_monitor_log(void)
 }
 
 /*
-  return current maximum controller RMS filter value
+  return current controller RMS filter value for roll
  */
-float AC_AttitudeControl::control_monitor_rms_output(void) const
+float AC_AttitudeControl::control_monitor_rms_output_roll(void) const
 {
-    float v = MAX(MAX(_control_monitor.rms_roll, _control_monitor.rms_pitch), _control_monitor.rms_yaw);
-    return sqrtf(v);
+    return sqrtf(_control_monitor.rms_roll);
+}
+
+/*
+  return current controller RMS filter value for pitch
+ */
+float AC_AttitudeControl::control_monitor_rms_output_pitch(void) const
+{
+    return sqrtf(_control_monitor.rms_pitch);
+}
+
+/*
+  return current controller RMS filter value for yaw
+ */
+float AC_AttitudeControl::control_monitor_rms_output_yaw(void) const
+{
+    return sqrtf(_control_monitor.rms_yaw);
 }
