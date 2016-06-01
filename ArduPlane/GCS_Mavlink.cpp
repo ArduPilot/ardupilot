@@ -1142,6 +1142,12 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         switch(packet.command) {
 
         case MAV_CMD_DO_REPOSITION:
+            // sanity check location
+            if (!check_latlng(packet.x, packet.y)) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
+
             Location requested_position {};
             requested_position.lat = packet.x;
             requested_position.lng = packet.y;
@@ -1252,7 +1258,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // Sets the region of interest (ROI) for the camera
         case MAV_CMD_DO_SET_ROI:
             // sanity check location
-            if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+            if (!check_latlng(packet.param5, packet.param6)) {
                 break;
             }
             Location roi_loc;
@@ -1588,7 +1594,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     break;
                 }
                 // sanity check location
-                if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+                if (!check_latlng(packet.param5,packet.param6)) {
                     break;
                 }
                 Location new_home_loc {};
@@ -1786,7 +1792,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             send_text(MAV_SEVERITY_WARNING,"Fencing must be disabled");
         } else if (packet.count != plane.g.fence_total) {
             send_text(MAV_SEVERITY_WARNING,"Bad fence point");
-        } else if (fabsf(packet.lat) > 90.0f || fabsf(packet.lng) > 180.0f) {
+        } else if (!check_latlng(packet.lat,packet.lng)) {
             send_text(MAV_SEVERITY_WARNING,"Invalid fence point, lat or lng too large");
         } else {
             Vector2l point;
@@ -1825,6 +1831,11 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
         if (packet.count != plane.rally.get_rally_total()) {
             send_text(MAV_SEVERITY_WARNING,"Bad rally point message count");
+            break;
+        }
+
+        // sanity check location
+        if (!check_latlng(packet.lat, packet.lng)) {
             break;
         }
 
@@ -1920,8 +1931,14 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         if (plane.g.hil_mode != 1) {
             break;
         }
+
         mavlink_hil_state_t packet;
         mavlink_msg_hil_state_decode(msg, &packet);
+
+        // sanity check location
+        if (!check_latlng(packet.lat, packet.lon)) {
+            break;
+        }
 
         last_hil_state = packet;
 
@@ -2064,7 +2081,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
         }
         // sanity check location
-        if (labs(packet.latitude) > 90*10e7 || labs(packet.longitude) > 180 * 10e7) {
+        if (!check_latlng(packet.latitude,packet.longitude)) {
             break;
         }
         Location new_home_loc {};
