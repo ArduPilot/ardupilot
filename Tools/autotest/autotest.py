@@ -81,11 +81,16 @@ def build_devrelease():
     return True
 
 def build_examples():
-    '''run the build_examples.sh script'''
-    print("Running build_examples.sh")
-    if util.run_cmd(util.reltopdir('Tools/scripts/build_examples.sh'), dir=util.reltopdir('.')) != 0:
-        print("Failed build_examples.sh")
-        return False
+    '''build examples'''
+    for target in 'px4-v2', 'navio':
+        print("Running build.examples for %s" % target)
+        try:
+            util.build_examples(target)
+        except Exception as e:
+            print("Failed build_examples on board=%s" % target)
+            print(str(e))
+            return False
+
     return True
 
 def build_parameters():
