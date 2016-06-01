@@ -18,12 +18,12 @@ void Sub::default_dead_zones()
 
 void Sub::init_rc_in()
 {
-    channel_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
-    channel_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
-    channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
-    channel_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
-    channel_forward  = RC_Channel::rc_channel(rcmap.forward()-1);
-    channel_lateral  = RC_Channel::rc_channel(rcmap.lateral()-1);
+	channel_pitch    = RC_Channel::rc_channel(0);
+    channel_roll     = RC_Channel::rc_channel(1);
+    channel_throttle = RC_Channel::rc_channel(2);
+    channel_yaw      = RC_Channel::rc_channel(3);
+    channel_forward  = RC_Channel::rc_channel(5);
+    channel_lateral  = RC_Channel::rc_channel(6);
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
