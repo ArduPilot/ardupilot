@@ -200,8 +200,10 @@ void Plane::stabilize_stick_mixing_fbw()
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
     
     float pitch_input = channel_pitch->norm_input();
-    if (fabsf(pitch_input) > 0.5f) {
+    if (pitch_input > 0.5f) {
         pitch_input = (3*pitch_input - 1);
+    } else if (pitch_input < -0.5f) {
+        pitch_input = (3*pitch_input + 1);
     }
     if (fly_inverted()) {
         pitch_input = -pitch_input;
