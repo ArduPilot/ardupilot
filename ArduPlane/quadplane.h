@@ -227,7 +227,7 @@ private:
     struct {
         AP_Float gain;
         float integrator;
-        uint32_t lastt_ms;
+        uint32_t last_ms;
         int8_t last_pct;
     } vel_forward;
 

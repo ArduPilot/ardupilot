@@ -1678,7 +1678,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
         return 0;
     }
 
-    float deltat = (AP_HAL::millis() - vel_forward.lastt_ms) * 0.001f;
+    float deltat = (AP_HAL::millis() - vel_forward.last_ms) * 0.001f;
     if (deltat > 1 || deltat < 0) {
         vel_forward.integrator = 0;
         deltat = 0.1;
@@ -1687,7 +1687,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
         // run at 10Hz
         return vel_forward.last_pct;
     }
-    vel_forward.lastt_ms = AP_HAL::millis();
+    vel_forward.last_ms = AP_HAL::millis();
     
     // work out the desired speed in forward direction
     const Vector3f &desired_velocity_cms = pos_control->get_desired_velocity();
