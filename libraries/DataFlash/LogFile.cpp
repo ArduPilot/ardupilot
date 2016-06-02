@@ -1638,7 +1638,7 @@ void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets)
 }
 
 // Write an Current data packet
-void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle)
+void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery)
 {
     float voltage2 = battery.voltage2();
     struct log_Current pkt = {
