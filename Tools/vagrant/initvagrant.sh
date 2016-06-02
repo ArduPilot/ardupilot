@@ -9,7 +9,7 @@ SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python
 PYTHON_PKGS="pymavlink MAVProxy droneapi"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          zip genromfs"
+          zip genromfs cmake"
 UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc++6:i386"
 
 # GNU Tools for ARM Embedded Processors
