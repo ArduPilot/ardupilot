@@ -521,6 +521,11 @@ void QuadPlane::init_stabilize(void)
 // hold in stabilize with given throttle
 void QuadPlane::hold_stabilize(float throttle_in)
 {    
+    if (esc_calibration != 0) {
+        run_esc_calibration();
+        return;
+    }
+    
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
