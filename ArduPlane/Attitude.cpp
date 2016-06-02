@@ -593,11 +593,13 @@ void Plane::flap_slew_limit(int8_t &last_value, int8_t &new_value)
 */
 bool Plane::suppress_throttle(void)
 {
+#if PARACHUTE == ENABLED
     if (auto_throttle_mode && parachute.release_initiated()) {
         // throttle always suppressed in auto-throttle modes after parachute release initiated
         throttle_suppressed = true;
         return true;
     }
+#endif
 
     if (!throttle_suppressed) {
         // we've previously met a condition for unsupressing the throttle
