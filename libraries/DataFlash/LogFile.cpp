@@ -1072,8 +1072,8 @@ void DataFlash_Class::Log_Write_Power(void)
     struct log_POWR pkt = {
         LOG_PACKET_HEADER_INIT(LOG_POWR_MSG),
         time_us : AP_HAL::micros64(),
-        Vcc     : (uint16_t)(hal.analogin->board_voltage() * 100),
-        Vservo  : (uint16_t)(hal.analogin->servorail_voltage() * 100),
+        Vcc     : hal.analogin->board_voltage(),
+        Vservo  : hal.analogin->servorail_voltage(),
         flags   : hal.analogin->power_status_flags()
     };
     WriteBlock(&pkt, sizeof(pkt));

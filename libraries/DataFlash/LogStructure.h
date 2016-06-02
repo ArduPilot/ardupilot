@@ -214,8 +214,8 @@ struct PACKED log_POS {
 struct PACKED log_POWR {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint16_t Vcc;
-    uint16_t Vservo;
+    float Vcc;
+    float Vservo;
     uint16_t flags;
 };
 
@@ -739,7 +739,7 @@ Format characters in the format string for binary log messages
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  "QffcfIf", "TimeUS,Alt,Press,Temp,CRt,SMS,Offset" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QCCH","TimeUS,Vcc,VServo,Flags" },  \
+      "POWR","QffH","TimeUS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHfffffff","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
