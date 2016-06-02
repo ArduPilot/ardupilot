@@ -312,6 +312,13 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("THR_MIN", 41, QuadPlane, throttle_min,  100),
+
+    // @Param: ESC_CAL
+    // @DisplayName: ESC Calibration
+    // @Description: This is used to calibrate the throttle range of the VTOL motors. Please read http://ardupilot.org/plane/docs/quadplane-esc-calibration.html before using. This parameter is automatically set back to 0 on every boot. This parameter only takes effect in QSTABILIZE mode. When set to 1 the output of all motors will come directly from the throttle stick when armed, and will be zero when disarmed. When set to 2 the output of all motors will be maximum when armed and zero when disarmed. Make sure you remove all properllers before using.
+    // @Values: 0:Disabled,1:ThrottleInput,2:FullInput
+    // @User: Standard
+    AP_GROUPINFO("ESC_CAL", 42, QuadPlane, esc_calibration,  0),
     
     AP_GROUPEND
 };
@@ -473,7 +480,37 @@ void QuadPlane::setup_defaults(void)
             AP_HAL::panic("quadplane bad default %s", defaults_table[i].name);
         }
     }
+
+    // reset ESC calibration
+    if (esc_calibration != 0) {
+        esc_calibration.set_and_save(0);
+    }
 }
+
+// run ESC calibration
+void QuadPlane::run_esc_calibration(void)
+{
+    if (!motors->armed()) {
+        motors->set_throttle_passthrough_for_esc_calibration(0);
+        AP_Notify::flags.esc_calibration = false;
+        return;
+    }
+    if (!AP_Notify::flags.esc_calibration) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting ESC calibration");        
+    }
+    AP_Notify::flags.esc_calibration = true;
+    switch (esc_calibration) {
+    case 1:
+        // throttle based calibration
+        motors->set_throttle_passthrough_for_esc_calibration(plane.channel_throttle->get_control_in() * 0.01f);
+        break;
+    case 2:
+        // full range calibration
+        motors->set_throttle_passthrough_for_esc_calibration(1);
+        break;
+    }
+}
+
 
 // init quadplane stabilize mode 
 void QuadPlane::init_stabilize(void)
@@ -484,6 +521,11 @@ void QuadPlane::init_stabilize(void)
 // hold in stabilize with given throttle
 void QuadPlane::hold_stabilize(float throttle_in)
 {    
+    if (esc_calibration != 0) {
+        run_esc_calibration();
+        return;
+    }
+    
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
@@ -959,6 +1001,10 @@ void QuadPlane::update(void)
  */
 void QuadPlane::motors_output(void)
 {
+    if (esc_calibration && AP_Notify::flags.esc_calibration && plane.control_mode == QSTABILIZE) {
+        // output is direct from run_esc_calibration()
+        return;
+    }
     motors->output();
     if (motors->armed()) {
         plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
@@ -1014,6 +1060,9 @@ bool QuadPlane::init_mode(void)
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");        
         return false;
     }
+
+    AP_Notify::flags.esc_calibration = false;
+
     switch (plane.control_mode) {
     case QSTABILIZE:
         init_stabilize();
