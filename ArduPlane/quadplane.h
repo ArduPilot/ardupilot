@@ -219,6 +219,10 @@ private:
 
     // control if a VTOL GUIDED will be used
     AP_Int8 guided_mode;
+
+    // control ESC throttle calibration
+    AP_Int8 esc_calibration;
+    void run_esc_calibration(void);
     
     struct {
         AP_Float gain;
