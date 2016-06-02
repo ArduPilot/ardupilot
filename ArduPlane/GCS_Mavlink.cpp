@@ -1549,7 +1549,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             
             if (!plane.geofence_present()) {
                 result = MAV_RESULT_FAILED;
-            } switch((uint16_t)packet.param1) {
+            } else {
+                switch((uint16_t)packet.param1) {
                 case 0:
                     if (! plane.geofence_set_enabled(false, GCS_TOGGLED)) {
                         result = MAV_RESULT_FAILED;
@@ -1570,6 +1571,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 default:
                     result = MAV_RESULT_FAILED;
                     break;
+                }
             }
             break;
 
