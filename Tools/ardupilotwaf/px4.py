@@ -207,6 +207,7 @@ def _process_romfs(self):
         self.create_task('px4_copy', src, dst)
 
 def configure(cfg):
+    cfg.env.CMAKE_MIN_VERSION = '3.2'
     cfg.load('cmake')
     cfg.find_program('cp')
 
