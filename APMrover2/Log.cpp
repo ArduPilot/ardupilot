@@ -335,7 +335,7 @@ void Rover::Log_Write_Sonar()
 
 void Rover::Log_Write_Current()
 {
-    DataFlash.Log_Write_Current(battery, channel_throttle->get_control_in());
+    DataFlash.Log_Write_Current(battery);
 
     // also write power status
     DataFlash.Log_Write_Power();
