@@ -756,12 +756,12 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         // depreciated, use GCS_MAVLINK::send_statustext*
         return false;
 
-#if GEOFENCE_ENABLED == ENABLED
     case MSG_FENCE_STATUS:
+#if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         plane.send_fence_status(chan);
-        break;
 #endif
+        break;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
