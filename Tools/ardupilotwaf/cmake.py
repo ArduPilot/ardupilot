@@ -20,7 +20,14 @@
 Waf tool for external builds with cmake. This tool defines the feature
 'cmake_build', for building through the cmake interface.
 
-Example::
+You can use CMAKE_MIN_VERSION environment variable before loading this tool in
+the configuration to set a minimum version required for cmake. Example::
+
+    def configure(cfg):
+        cfg.CMAKE_MIN_VERSION = '3.5.2'
+        cfg.load('cmake')
+
+Usage example::
 
     def build(bld):
         # cmake configuration
@@ -117,12 +124,13 @@ build task, so that they get a signature. Example::
         ...
 """
 
-from waflib import Node, Task, Utils
+from waflib import Context, Node, Task, Utils
 from waflib.Configure import conf
 from waflib.TaskGen import feature, taskgen_method
 
 from collections import OrderedDict
 import os
+import re
 import sys
 
 class cmake_configure_task(Task.Task):
@@ -358,8 +366,30 @@ def create_cmake_build_task(self, cmake_config, cmake_target):
 
     return tsk
 
+def _check_min_version(cfg):
+    cfg.start_msg('Checking cmake version')
+    cmd = cfg.env.get_flat('CMAKE'), '--version'
+    out = cfg.cmd_and_log(cmd, quiet=Context.BOTH)
+    m = re.search(r'\d+\.\d+(\.\d+(\.\d+)?)?', out)
+    if not m:
+        cfg.end_msg(
+            'unable to parse version, build is not guaranteed to succeed',
+            color='YELLOW',
+        )
+    else:
+        version = Utils.num2ver(m.group(0))
+        minver_str = cfg.env.get_flat('CMAKE_MIN_VERSION')
+        minver = Utils.num2ver(minver_str)
+        if version < minver:
+            cfg.fatal('cmake must be at least at version %s' % minver_str)
+        cfg.end_msg(m.group(0))
+
 def configure(cfg):
     cfg.find_program('cmake')
+
+    if cfg.env.CMAKE_MIN_VERSION:
+        _check_min_version(cfg)
+
     cfg.find_program(['ninja', 'ninja-build'], var='NINJA', mandatory=False)
     cfg.env.CMAKE_GENERATOR_OPTION = ''
     if cfg.env.NINJA:
