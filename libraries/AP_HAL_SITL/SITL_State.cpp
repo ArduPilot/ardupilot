@@ -80,7 +80,9 @@ void SITL_State::_sitl_setup(const char *home_str)
     _barometer = (AP_Baro *)AP_Param::find_object("GND_");
     _ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
     _compass = (Compass *)AP_Param::find_object("COMPASS_");
+#if AP_TERRAIN_AVAILABLE
     _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+#endif
     _optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
 
     if (_sitl != NULL) {
@@ -486,6 +488,7 @@ float SITL_State::height_agl(void)
         home_alt = _sitl->state.altitude;
     }
 
+#if AP_TERRAIN_AVAILABLE
     if (_terrain &&
             _sitl->terrain_enable) {
         // get height above terrain from AP_Terrain. This assumes
@@ -499,6 +502,7 @@ float SITL_State::height_agl(void)
             return _sitl->state.altitude - terrain_height_amsl;
         }
     }
+#endif
 
     // fall back to flat earth model
     return _sitl->state.altitude - home_alt;
