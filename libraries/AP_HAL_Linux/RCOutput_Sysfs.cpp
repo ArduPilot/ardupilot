@@ -49,9 +49,11 @@ void RCOutput_Sysfs::init()
         _pwm_channels[i]->enable(false);
 
         /* Set the initial frequency */
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NAVIO2
         _pwm_channels[i]->set_freq(50);
         _pwm_channels[i]->set_duty_cycle(0);
         _pwm_channels[i]->set_polarity(PWM_Sysfs::Polarity::NORMAL);
+#endif
     }
 }
 
