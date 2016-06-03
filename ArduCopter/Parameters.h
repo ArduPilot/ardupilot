@@ -176,7 +176,7 @@ public:
         //
         // 90: misc2
         //
-        k_param_motors = 90,
+        k_param_motors = 0,
         k_param_disarm_delay,
         k_param_fs_crash_check,
         k_param_throw_motor_start,
