@@ -678,6 +678,10 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
             case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             {
                 if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
+                    // disarm motors so ensure they are off during bootloader upload
+                    hal.rcout->force_safety_on();
+                    hal.rcout->force_safety_no_wait();
+
                     // when packet.param1 == 3 we reboot to hold in bootloader
                     hal.scheduler->reboot(is_equal(packet.param1,3.0f));
                     result = MAV_RESULT_ACCEPTED;
