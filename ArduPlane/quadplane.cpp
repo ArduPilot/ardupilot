@@ -728,12 +728,7 @@ void QuadPlane::control_loiter()
     plane.nav_pitch_cd = wp_nav->get_pitch();
 
     if (plane.control_mode == QLAND) {
-        float height_above_ground;
-        if (plane.g.rangefinder_landing && plane.rangefinder_state.in_range) {
-            height_above_ground = plane.rangefinder_state.height_estimate;
-        } else {
-            height_above_ground = plane.adjusted_relative_altitude_cm() * 0.01;
-        }
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         if (height_above_ground < land_final_alt && poscontrol.state < QPOS_LAND_FINAL) {
             poscontrol.state = QPOS_LAND_FINAL;
         }
