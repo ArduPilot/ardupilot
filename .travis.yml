@@ -4,9 +4,9 @@ sudo: false
 addons:
   coverity_scan:
     project:
-      name: "diydrones/ardupilot"
+      name: "OXINARF/ardupilot"
       description: "Build submitted via Travis CI"
-    notification_email: andrew-scan@tridgell.net
+    notification_email: OXINARF@users.noreply.github.com
     build_command_prepend: "Tools/scripts/configure_coverity.sh"
     build_command:   "Tools/scripts/build_coverity.sh"
     branch_pattern: coverity_scan
@@ -54,4 +54,4 @@ env:
   global:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
-    - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
+    - secure: "da1sezmm+35p8Vi/EVLx4wc7zHbVN4vH4HjUbcDgWKFQURjrurgve9fd2MkvwBbjDl3JGBzCwW1tVQLCvSUJcX1wXo9D4zJNQd1aNng+UJsdmGJDvPOY1dvXnUgC6CzELr+2G3Z2AeCeOdU20KWM+PEXm4uBwvFE6xl2kQGMDuu1C2mZkqYycby2yFhitfxgKnCm2gGdlWMwqAT0jqQYw7yCQQDVh5+TyMAMmF2XbAl/K1llkRZ/f83+01LM/tPY2UbfXfc4kdE4vmE/fySqT3A93WAWsOIuU/qj0uSYycrfq3ce5p/H/TN+DxMNrsfPOFSwiFYy6Q0BiLBY7TExnT9n8LOTedJOVTrXx78ksGRbyvQNC9TazSXYTfL+W9caj5ZGUiSVnH+UrJXDtVsss6UXMqYoBjmuERH2PH+fZanC60fa6hC1vLEI1Lq9Hcouk3FF5dnSq9noAfewMpWqXkVZrVaD2IAUI+XYs9Pwy6OmUTBr2b69RhxHAEe0fHjubWU4ptPEyEy/6OxUs+mAy2ry0ZnozCLlaRxNI2dSFqegI40dXn9gjgHLoiXkQ9oy+AN9w1f+aiwV1f7v76le7LlR+tmANT7ZafPJDjfN47a6L4Bb6+gSk3N+SrvUFqCbARCXCBieevFStX31WN+eskBLoEro4SIu9hL6iYhASPo="
