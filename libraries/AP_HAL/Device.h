@@ -64,6 +64,17 @@ public:
         return transfer(buf, sizeof(buf), nullptr, 0);
     }
 
+    /**
+     * Write to a register and wait for delay_ms milliseconds if the write was
+     * successful.
+     *
+     * Some devices require a delay for the expected effect of writing to a
+     * register to take place.
+     *
+     * Return: true on a successful write, false on failure.
+     */
+    bool write_register(uint8_t reg, uint8_t val, uint16_t delay_ms);
+
     /*
      * Get the semaphore for the bus this device is in.  This is intended for
      * drivers to use during initialization phase only.
