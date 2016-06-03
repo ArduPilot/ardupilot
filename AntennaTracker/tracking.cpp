@@ -146,16 +146,16 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 
     // calculate altitude difference based on difference in barometric pressure
     float alt_diff = barometer.get_altitude_difference(local_pressure, aircraft_pressure);
-    if (!isnan(alt_diff)) {
+    if (!isnan(alt_diff) && !isinf(alt_diff)) {
         nav_status.alt_difference_baro = alt_diff + nav_status.altitude_offset;
-    }
 
-    if (nav_status.need_altitude_calibration) {
-        // we have done a baro calibration - zero the altitude
-        // difference to the aircraft
-        nav_status.altitude_offset = -nav_status.alt_difference_baro;
-        nav_status.alt_difference_baro = 0;
-        nav_status.need_altitude_calibration = false;
+		if (nav_status.need_altitude_calibration) {
+			// we have done a baro calibration - zero the altitude
+			// difference to the aircraft
+			nav_status.altitude_offset = -alt_diff;
+			nav_status.alt_difference_baro = 0;
+			nav_status.need_altitude_calibration = false;
+		}
     }
 
     // log altitude difference
