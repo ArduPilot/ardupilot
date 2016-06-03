@@ -319,6 +319,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Disabled,1:ThrottleInput,2:FullInput
     // @User: Standard
     AP_GROUPINFO("ESC_CAL", 42, QuadPlane, esc_calibration,  0),
+
+    // @Param: VFWD_ALT
+    // @DisplayName: Forward velocity alt cutoff
+    // @Description: Controls altitude to disable forward velocity assist when below this relative altitude. This is useful to keep the forward velocity propeller from hitting the ground. Rangefinder height data is incorporated when available.
+    // @Range: 0 10
+    // @Increment: 0.25
+    // @User: Standard
+    AP_GROUPINFO("VFWD_ALT", 43, QuadPlane, vel_forward_alt_cutoff,  0),
     
     AP_GROUPEND
 };
@@ -1690,6 +1698,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
     if (!plane.ahrs.get_velocity_NED(vel_ned)) {
         // we don't know our velocity? EKF must be pretty sick
         vel_forward.last_pct = 0;
+        vel_forward.integrator = 0;
         return 0;
     }
     Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
@@ -1717,7 +1726,15 @@ int8_t QuadPlane::forward_throttle_pct(void)
     // constrain to throttle range. This allows for reverse throttle if configured
     vel_forward.integrator = constrain_float(vel_forward.integrator, MIN(0,plane.aparm.throttle_min), plane.aparm.throttle_max);
     
-    vel_forward.last_pct = vel_forward.integrator;
+    // If we are below alt_cutoff then scale down the effect until it turns off at alt_cutoff and decay the integrator
+    float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
+    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
+                                   height_above_ground, alt_cutoff, alt_cutoff+2);
+    if (vel_forward.last_pct == 0) {
+        // if the percent is 0 then decay the integrator
+        vel_forward.integrator *= 0.95f;
+    }
 
     return vel_forward.last_pct;
 }
