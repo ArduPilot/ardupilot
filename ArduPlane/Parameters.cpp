@@ -1356,8 +1356,17 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_quadplane,         14,      AP_PARAM_FLOAT, "Q_VXY_P" },
     { Parameters::k_param_quadplane,         15,      AP_PARAM_FLOAT, "Q_VZ_P" },
     { Parameters::k_param_quadplane,         16,      AP_PARAM_FLOAT, "Q_AZ_P" },
-    
-    
+
+    // PolyFence moved to library; move FENCE_ parameters appropriately:
+    { Parameters::k_param_fence_retalt,       0,      AP_PARAM_INT16, "FENCE_RETALT" },
+    { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE" },
+    { Parameters::k_param_fence_action,       0,      AP_PARAM_INT8, "FENCE_ACTION" },
+    { Parameters::k_param_fence_total,        0,      AP_PARAM_INT8, "FENCE_TOTAL" },
+    { Parameters::k_param_fence_channel,      0,      AP_PARAM_INT8, "FENCE_CHANNEL" },
+    { Parameters::k_param_fence_minalt,       0,      AP_PARAM_INT16, "FENCE_MINALT" },
+    { Parameters::k_param_fence_maxalt,       0,      AP_PARAM_INT16, "FENCE_MAXALT" },
+    { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY" }
+
 };
 
 void Plane::load_parameters(void)
