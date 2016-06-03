@@ -1,4 +1,0 @@
-# generated from genmsg/cmake/pkg-msg-paths.cmake.installspace.in
-
-_prepend_path("${@PROJECT_NAME@_DIR}/.." "@PKG_MSG_INCLUDE_DIRS@" @PROJECT_NAME@_MSG_INCLUDE_DIRS UNIQUE)
-set(@PROJECT_NAME@_MSG_DEPENDENCIES @ARG_DEPENDENCIES@)
