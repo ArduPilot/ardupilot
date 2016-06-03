@@ -210,6 +210,7 @@ private:
     
     // alt to switch to QLAND_FINAL
     AP_Float land_final_alt;
+    AP_Float vel_forward_alt_cutoff;
     
     AP_Int8 enable;
     AP_Int8 transition_pitch_max;
