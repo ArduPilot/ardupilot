@@ -86,6 +86,8 @@ def build_SIL(build_target, j=None, debug=False, board='sitl'):
 
     # then build
     cmd_make = [relwaf(), "build", "--target", build_target]
+    if j is not None:
+        cmd_make.extend(['-j', str(j)])
     run_cmd(cmd_make, dir=topdir(), checkfail=True, show=True)
     return True
 
