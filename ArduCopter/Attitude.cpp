@@ -103,6 +103,11 @@ void Copter::update_thr_average()
         return;
     }
 
+    // do not update in manual throttle modes
+    if (mode_has_manual_throttle(control_mode)) {
+        return;
+    }
+
     // get throttle output
     float throttle = motors.get_throttle();
 
