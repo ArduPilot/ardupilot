@@ -23,6 +23,8 @@ enum RotorControlMode {
 
 class AP_MotorsHeli_RSC {
 public:
+    friend class AP_MotorsHeli_Single;
+    
     AP_MotorsHeli_RSC(RC_Channel_aux::Aux_servo_function_t aux_fn,
                       uint8_t default_channel,
                       uint16_t loop_rate) :
@@ -69,7 +71,7 @@ public:
     void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
 
     // set_power_output_range
-    void        set_power_output_range(uint16_t power_low, uint16_t power_high);
+    void        set_power_output_range(float power_low, float power_high);
 
     // set_motor_load
     void        set_motor_load(float load) { _load_feedforward = load; }
@@ -102,6 +104,10 @@ private:
     float           _power_output_range = 0.0f; // maximum range of output power
     float           _load_feedforward = 0.0f;   // estimate of motor load, range 0-1.0f
 
+    AP_Int16        _pwm_min;
+    AP_Int16        _pwm_max;
+    AP_Int8         _pwm_rev;
+    
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input);
 
