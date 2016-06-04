@@ -94,9 +94,9 @@ float Copter::get_look_ahead_yaw()
  *  throttle control
  ****************************************************************/
 
-// update_thr_average - update estimated throttle required to hover (if necessary)
-//  should be called at 100hz
-void Copter::update_thr_average()
+// update estimated throttle required to hover (if necessary)
+//  called at 100hz
+void Copter::update_throttle_hover()
 {
 #if FRAME_CONFIG != HELI_FRAME
     // if not armed or landed exit
