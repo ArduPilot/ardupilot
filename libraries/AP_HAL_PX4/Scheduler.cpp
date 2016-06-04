@@ -222,6 +222,13 @@ void PX4Scheduler::resume_timer_procs()
 
 void PX4Scheduler::reboot(bool hold_in_bootloader) 
 {
+    // disarm motors to ensure they are off during a bootloader upload
+    hal.rcout->force_safety_on();
+    hal.rcout->force_safety_no_wait();
+
+    // delay to ensure the async force_saftey operation completes
+    delay(500);
+
 	px4_systemreset(hold_in_bootloader);
 }
 
