@@ -14,7 +14,7 @@ float Plane::get_speed_scaler(void)
         if (aspeed > auto_state.highest_airspeed) {
             auto_state.highest_airspeed = aspeed;
         }
-        if (aspeed > 0) {
+        if (aspeed > 0.0001f) {
             speed_scaler = g.scaling_speed / aspeed;
         } else {
             speed_scaler = 2.0;
