@@ -82,7 +82,7 @@ public:
     float               get_throttle_thrust_max() const { return _throttle_thrust_max; }
 
     // return true if spool up is complete
-    bool spool_up_complete() const { return _multicopter_flags.spool_mode == THROTTLE_UNLIMITED; }
+    bool spool_up_complete() const { return _spool_mode == THROTTLE_UNLIMITED; }
 
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
@@ -140,11 +140,6 @@ protected:
     // save parameters as part of disarming
     void save_params_on_disarm();
 
-    // flag bitmask
-    struct {
-        spool_up_down_mode     spool_mode       : 3;    // motor's current spool mode
-    } _multicopter_flags;
-
     // parameters
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
     AP_Float            _thrust_curve_expo;     // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
@@ -166,6 +161,7 @@ protected:
     int16_t             _throttle_radio_max;        // maximum PWM from RC input's throttle channel (i.e. maximum PWM input from receiver, RC3_MAX)
 
     // spool variables
+    spool_up_down_mode  _spool_mode;         // motor's current spool mode
     float               _spin_up_ratio;      // throttle percentage (0 ~ 1) between zero and throttle_min
 
     // battery voltage, current and air pressure compensation variables

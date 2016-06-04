@@ -114,7 +114,7 @@ void AP_MotorsCoax::enable()
 
 void AP_MotorsCoax::output_to_motors()
 {
-    switch (_multicopter_flags.spool_mode) {
+    switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
             hal.rcout->cork();
