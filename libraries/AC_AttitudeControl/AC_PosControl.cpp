@@ -139,11 +139,14 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 
     // do not use z-axis desired velocity feed forward
     _flags.use_desvel_ff_z = false;
-    _vel_desired.z = 0.0f;
 
     // adjust desired alt if motors have not hit their limits
     if ((alt_change<0 && !_motors.limit.throttle_lower) || (alt_change>0 && !_motors.limit.throttle_upper)) {
-        _pos_target.z += constrain_float(alt_change, _speed_down_cms*dt, _speed_up_cms*dt);
+        if (!is_zero(dt)) {
+            float climb_rate_cms = constrain_float(alt_change/dt, _speed_down_cms, _speed_up_cms);
+            _pos_target.z += climb_rate_cms*dt;
+            _vel_desired.z = climb_rate_cms;    // recorded for reporting purposes
+        }
     }
 
     // do not let target get too far from current altitude
