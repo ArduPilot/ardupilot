@@ -412,6 +412,9 @@ RC_Channel_aux::move_servo(RC_Channel_aux::Aux_servo_function_t function,
  */
 bool RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::Aux_servo_function_t function, uint8_t channel)
 {
+    if (!_initialised) {
+        update_aux_servo_function();
+    }
     if (function_assigned(function)) {
         // already assigned
         return true;
