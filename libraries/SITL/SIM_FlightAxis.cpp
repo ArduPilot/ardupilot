@@ -28,6 +28,7 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -253,8 +254,6 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
  */
 void FlightAxis::update(const struct sitl_input &input)
 {
-    Vector3f last_velocity_ef = velocity_ef;
-    
     exchange_data(input);
 
     double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
@@ -267,6 +266,7 @@ void FlightAxis::update(const struct sitl_input &input)
     }
     if (dt_seconds < 0.0001f) {
         // we probably got a repeated frame
+        time_now_us += 1;
         return;
     }
     if (initial_time_s <= 0) {
@@ -290,29 +290,22 @@ void FlightAxis::update(const struct sitl_input &input)
                              state.m_velocityWorldW_MPS);
     position = Vector3f(state.m_aircraftPositionY_MTR,
                         state.m_aircraftPositionX_MTR,
-                        -state.m_altitudeAGL_MTR);
+                        -state.m_altitudeASL_MTR - home.alt*0.01);
 
+    accel_body(state.m_accelerationBodyAX_MPS2,
+               state.m_accelerationBodyAY_MPS2,
+               state.m_accelerationBodyAZ_MPS2);
+    // limit to 16G to match pixhawk
+    float a_limit = GRAVITY_MSS*16;
+    accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
+    accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
+    accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
+    
     // offset based on first position to account for offset in RF world
     if (position_offset.is_zero() || state.m_resetButtonHasBeenPressed) {
         position_offset = position;
     }
     position -= position_offset;
-
-    Vector3f accel_ef(state.m_accelerationWorldAX_MPS2,
-                      state.m_accelerationWorldAY_MPS2,
-                      state.m_accelerationWorldAZ_MPS2);
-    // the accel values given in the state are very strange when on
-    // the ground. Calculate it from delta-velocity instead, although
-    // this does introduce noise
-    if (state.m_isTouchingGround) {
-        accel_ef = (velocity_ef - last_velocity_ef) / dt_seconds;
-    }
-    accel_ef.z -= GRAVITY_MSS;
-    accel_body = dcm.transposed() * accel_ef;
-    // limit accel range to what a pixhawk could see
-    accel_body.x = constrain_float(accel_body.x, -16, 16);
-    accel_body.y = constrain_float(accel_body.y, -16, 16);
-    accel_body.z = constrain_float(accel_body.z, -16, 16);
 
     airspeed = state.m_airspeed_MPS;
     airspeed_pitot = state.m_airspeed_MPS;
@@ -329,7 +322,7 @@ void FlightAxis::update(const struct sitl_input &input)
     for (uint8_t i=0; i<rcin_chan_count; i++) {
         rcin[i] = state.rcin[i];
     }
-    
+
     update_position();
     time_now_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;
 
@@ -342,7 +335,7 @@ void FlightAxis::update(const struct sitl_input &input)
         }
         last_frame_count_s = state.m_currentPhysicsTime_SEC;
     }
-
+    
     last_time_s = state.m_currentPhysicsTime_SEC;
 }
 
