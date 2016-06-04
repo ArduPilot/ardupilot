@@ -23,7 +23,7 @@ homeloc = None
 num_wp = 0
 speedup_default = 5
 
-def hover(mavproxy, mav, hover_throttle=1450):
+def hover(mavproxy, mav, hover_throttle=1500):
     mavproxy.send('rc 3 %u\n' % hover_throttle)
     return True
 
@@ -158,7 +158,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     save_wp(mavproxy, mav)
 
     # switch back to stabilize mode
-    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 3 1500\n')
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
 
@@ -253,6 +253,9 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
     if not wait_heading(mav, 135):
         return False
     mavproxy.send('rc 4 1500\n')
+
+    # raise throttle slightly to avoid hitting the ground
+    mavproxy.send('rc 3 1600\n')
 
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
@@ -647,7 +650,7 @@ def fly_simple(mavproxy, mav, side=50, timeout=120):
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 3 1500\n')
 
     # fly south 50m
     print("# Flying south %u meters" % side)
@@ -712,7 +715,7 @@ def fly_super_simple(mavproxy, mav, timeout=45):
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 3 1500\n')
 
     # start copter yawing slowly
     mavproxy.send('rc 4 1550\n')
