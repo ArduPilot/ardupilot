@@ -42,9 +42,6 @@ public:
     // output_min - sends minimum values out to the motors
     void                output_min();
 
-    // output_to_motors - sends commands to the motors
-    virtual void        output_to_motors() = 0;
-
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
 
@@ -64,8 +61,6 @@ public:
         THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
         SPOOL_DOWN = 4,                     // decreasing maximum throttle while stabilizing
     };
-
-    void                output_logic();
 
     // passes throttle directly to all motors for ESC calibration.
     //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
@@ -108,6 +103,12 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+
+    // run spool logic
+    void                output_logic();
+
+    // output_to_motors - sends commands to the motors
+    virtual void        output_to_motors() = 0;
 
     // update the throttle input filter
     virtual void        update_throttle_filter();
