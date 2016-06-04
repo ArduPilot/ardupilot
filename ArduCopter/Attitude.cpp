@@ -98,6 +98,7 @@ float Copter::get_look_ahead_yaw()
 //  should be called at 100hz
 void Copter::update_thr_average()
 {
+#if FRAME_CONFIG != HELI_FRAME
     // if not armed or landed exit
     if (!motors.armed() || ap.land_complete) {
         return;
@@ -121,6 +122,7 @@ void Copter::update_thr_average()
         // Can we set the time constant automatically
         motors.update_throttle_hover(0.01f);
     }
+#endif
 }
 
 // set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
