@@ -103,8 +103,13 @@ void Copter::update_thr_average()
         return;
     }
 
-    // do not update in manual throttle modes
-    if (mode_has_manual_throttle(control_mode)) {
+    // do not update in manual throttle modes or Drift
+    if (mode_has_manual_throttle(control_mode) || (control_mode == DRIFT)) {
+        return;
+    }
+
+    // do not update while climbing or descending
+    if (!is_zero(pos_control.get_desired_velocity().z)) {
         return;
     }
 
