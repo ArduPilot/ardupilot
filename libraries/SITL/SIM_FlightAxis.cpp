@@ -319,8 +319,8 @@ void FlightAxis::update(const struct sitl_input &input)
 
     battery_voltage = state.m_batteryVoltage_VOLTS;
     battery_current = state.m_batteryCurrentDraw_AMPS;
-    rpm1 = state.m_propRPM;
-    rpm2 = state.m_heliMainRotorRPM;
+    rpm1 = state.m_heliMainRotorRPM;
+    rpm2 = state.m_propRPM;
 
     /*
       the interlink interface supports 8 input channels
