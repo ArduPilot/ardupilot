@@ -59,8 +59,11 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
 
 void AP_Motors::armed(bool arm)
 {
-    _flags.armed = arm;
-    AP_Notify::flags.armed = arm;
+    if (_flags.armed != arm) {
+        _flags.armed = arm;
+        AP_Notify::flags.armed = arm;
+        save_params_on_disarm();
+    }
 };
 
 // pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle

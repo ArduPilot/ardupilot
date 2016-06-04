@@ -136,7 +136,10 @@ protected:
 
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
-    
+
+    // save parameters as part of disarming
+    void save_params_on_disarm();
+
     // flag bitmask
     struct {
         spool_up_down_mode     spool_mode       : 3;    // motor's current spool mode
