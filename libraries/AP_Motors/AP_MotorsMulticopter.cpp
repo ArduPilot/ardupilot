@@ -380,6 +380,7 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
     }
 }
 
+// run spool logic
 void AP_MotorsMulticopter::output_logic()
 {
     // force desired and current spool mode if disarmed or not interlocked

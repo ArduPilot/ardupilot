@@ -76,7 +76,7 @@ public:
     // get_batt_resistance - get battery resistance approximation - for logging purposes only
     float               get_batt_resistance() const { return _batt_resistance; }
 
-    // get_throttle_limit - throttle limit ratio - for logging purposes only
+    // get throttle limit imposed by battery current limiting.  This is a number from 0 ~ 1 where 0 means hover throttle, 1 means the hover throttle
     float               get_throttle_limit() const { return _throttle_limit; }
 
     // returns maximum thrust in the range 0 to 1
