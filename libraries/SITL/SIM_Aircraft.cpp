@@ -29,6 +29,8 @@
 #include <Mmsystem.h>
 #endif
 
+#include <DataFlash/DataFlash.h>
+
 namespace SITL {
 
 /*
@@ -123,11 +125,8 @@ bool Aircraft::on_ground(const Vector3f &pos) const
 */
 void Aircraft::update_position(void)
 {
-    float bearing = degrees(atan2f(position.y, position.x));
-    float distance = sqrtf(sq(position.x) + sq(position.y));
-
     location = home;
-    location_update(location, bearing, distance);
+    location_offset(location, position.x, position.y);
 
     location.alt  = home.alt - position.z*100.0f;
 
@@ -140,6 +139,16 @@ void Aircraft::update_position(void)
     if (use_time_sync) {
         sync_frame_time();
     }
+
+#if 0
+    // logging of raw sitl data
+    Vector3f accel_ef = dcm * accel_body;
+    DataFlash_Class::instance()->Log_Write("SITL", "TimeUS,VN,VE,VD,AN,AE,AD,PN,PE,PD", "Qfffffffff",
+                                           AP_HAL::micros64(),
+                                           velocity_ef.x, velocity_ef.y, velocity_ef.z,
+                                           accel_ef.x, accel_ef.y, accel_ef.z,
+                                           position.x, position.y, position.z);
+#endif
 }
 
 /* advance time by deltat in seconds */
