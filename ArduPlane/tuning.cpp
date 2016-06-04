@@ -41,6 +41,10 @@ const AP_Tuning_Plane::tuning_set AP_Tuning_Plane::tuning_sets[] = {
     { TUNING_SET_RATE_ROLL_PITCH, TUNING_ARRAY(tuning_set_rate_roll_pitch) },
     { TUNING_SET_RATE_ROLL,       TUNING_ARRAY(tuning_set_rate_roll) },
     { TUNING_SET_RATE_PITCH,      TUNING_ARRAY(tuning_set_rate_pitch) },
+    { TUNING_SET_RATE_YAW,        TUNING_ARRAY(tuning_set_rate_yaw) },
+    { TUNING_SET_ANG_ROLL_PITCH,  TUNING_ARRAY(tuning_set_ang_roll_pitch) },
+    { TUNING_SET_VXY,             TUNING_ARRAY(tuning_set_vxy) },
+    { TUNING_SET_AZ,              TUNING_ARRAY(tuning_set_az) },
     { 0, 0, nullptr }
 };
 
