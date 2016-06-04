@@ -265,17 +265,15 @@ void FlightAxis::update(const struct sitl_input &input)
         dt_seconds = 0.001f;
         initial_time_s = state.m_currentPhysicsTime_SEC - dt_seconds;
     }
-    
+
+    /*
+      the queternion convention in realflight seems to have Z negative
+     */
     Quaternion quat(state.m_orientationQuaternion_W,
-                    state.m_orientationQuaternion_Z,
-                    -state.m_orientationQuaternion_Y,
+                    state.m_orientationQuaternion_Y,
+                    state.m_orientationQuaternion_X,
                     -state.m_orientationQuaternion_Z);
     quat.rotation_matrix(dcm);
-    dcm.from_euler(radians(state.m_roll_DEG),
-                   radians(state.m_inclination_DEG),
-                   -radians(state.m_azimuth_DEG));
-    Quaternion quat2;
-    quat2.from_rotation_matrix(dcm);
     gyro = Vector3f(radians(constrain_float(state.m_rollRate_DEGpSEC, -2000, 2000)),
                     radians(constrain_float(state.m_pitchRate_DEGpSEC, -2000, 2000)),
                     -radians(constrain_float(state.m_yawRate_DEGpSEC, -2000, 2000))) * target_speedup;
@@ -287,7 +285,7 @@ void FlightAxis::update(const struct sitl_input &input)
                         -state.m_altitudeAGL_MTR);
 
     // offset based on first position to account for offset in RF world
-    if (position_offset.is_zero()) {
+    if (position_offset.is_zero() || state.m_resetButtonHasBeenPressed) {
         position_offset = position;
     }
     position -= position_offset;
@@ -325,11 +323,6 @@ void FlightAxis::update(const struct sitl_input &input)
         if (last_frame_count_s != 0) {
             printf("%.2f FPS\n",
                    1000 / (state.m_currentPhysicsTime_SEC - last_frame_count_s));
-#if 0
-            printf("(%.3f %.3f %.3f %.3f) (%.3f %.3f %.3f %.3f)\n",
-                   quat.q1, quat.q2, quat.q3, quat.q4, 
-                   quat2.q1, quat2.q2, quat2.q3, quat2.q4);
-#endif
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
