@@ -645,7 +645,6 @@ private:
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
     void Log_Write_Optflow();
-    void Log_Write_Enviro(uint16_t _PM10,uint16_t _PM25,uint16_t _PM100,uint16_t _CP030,uint16_t _CP050,uint16_t _CP10,uint16_t _CP25,uint16_t _CP50,uint16_t _CP100,uint16_t _HUM,int16_t _TEMP_C);//-------------------------------------------------------------------// added by Luis
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();

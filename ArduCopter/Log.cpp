@@ -45,7 +45,6 @@ bool Copter::print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf(" COMPASS");
         if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf(" CAMERA");
         if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf(" PID");
-        if (g.log_bitmask & MASK_LOG_ENVIRO) cliSerial->printf(" ENVIRO");//----------------------// added by Luis
     }
 
     cliSerial->println();
@@ -127,7 +126,6 @@ int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(COMPASS);
         TARG(CAMERA);
         TARG(PID);
-        TARG(ENVIRO);//---------------------------------------------------------------------------// added by Luis
  #undef TARG
     }
 
@@ -249,45 +247,6 @@ void Copter::Log_Write_Optflow()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // OPTFLOW == ENABLED
 }
-
-struct PACKED log_Enviro {  //====================================================================== added by Luis
-    LOG_PACKET_HEADER;
-    uint64_t    time_us;
-    uint16_t    _PM10;
-    uint16_t    _PM25;
-    uint16_t    _PM100;
-    uint16_t    _CP030;
-    uint16_t    _CP050;
-    uint16_t    _CP10;
-    uint16_t    _CP25;
-    uint16_t    _CP50;
-    uint16_t    _CP100;
-    uint16_t    _HUM;
-    int16_t     _TEMP_C;
-
-};
-
-//Write an environmental packet
-void Copter::Log_Write_Enviro(uint16_t _PM10,uint16_t _PM25,uint16_t _PM100,uint16_t _CP030,uint16_t _CP050,uint16_t _CP10,uint16_t _CP25,uint16_t _CP50,uint16_t _CP100, uint16_t _HUM, int16_t _TEMP_C)
-{
-    struct log_Enviro pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_ENVIRO_MSG),
-            time_us     : AP_HAL::micros64(),
-            _PM10       : _PM10,
-            _PM25       : _PM25,
-            _PM100      : _PM100,
-            _CP030      : _CP030,
-            _CP050      : _CP050,
-            _CP10       : _CP10,
-            _CP25       : _CP25,
-            _CP50       : _CP50,
-            _CP100      : _CP100,
-            _HUM        : _HUM,
-            _TEMP_C     : _TEMP_C
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}//==================================================================================================added by Luis
-
 
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
@@ -834,8 +793,6 @@ const struct LogStructure Copter::log_structure[] = {
       "PL",    "QBffffff",    "TimeUS,Heal,bX,bY,eX,eY,pX,pY" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
-    { LOG_ENVIRO_MSG, sizeof(log_Enviro),//-------------------------------------------------------// added by Luis
-      "ENVI",  "QBBBBBBBBBBh","TimeUS,pm1,pm2.5,pm10,cp.3,cp.5,cp1,cp2.5,cp5,cp10,Hum,Temp" },
 };
 
 #if CLI_ENABLED == ENABLED
@@ -911,7 +868,6 @@ void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_targ
                                 float new_gain_rd, float new_gain_sp, float new_ddt) {}
 void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
 void Copter::Log_Write_Current() {}
-void Copter::Log_Write_Enviro() {}//--------------------------------------------------------------// added by Luis
 void Copter::Log_Write_Nav_Tuning() {}
 void Copter::Log_Write_Control_Tuning() {}
 void Copter::Log_Write_Performance() {}
