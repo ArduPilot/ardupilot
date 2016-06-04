@@ -295,6 +295,13 @@ void FlightAxis::update(const struct sitl_input &input)
     accel_body(state.m_accelerationBodyAX_MPS2,
                state.m_accelerationBodyAY_MPS2,
                state.m_accelerationBodyAZ_MPS2);
+    // accel on the ground is nasty in realflight, and prevents helicopter disarm
+    if (state.m_isTouchingGround) {
+        Vector3f accel_ef = (velocity_ef - last_velocity_ef) / dt_seconds;
+        accel_ef.z -= GRAVITY_MSS;
+        accel_body = dcm.transposed() * accel_ef;
+    }
+    
     // limit to 16G to match pixhawk
     float a_limit = GRAVITY_MSS*16;
     accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
@@ -337,6 +344,8 @@ void FlightAxis::update(const struct sitl_input &input)
     }
     
     last_time_s = state.m_currentPhysicsTime_SEC;
+
+    last_velocity_ef = velocity_ef;
 }
 
 } // namespace SITL
