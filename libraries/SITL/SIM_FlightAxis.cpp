@@ -62,6 +62,7 @@ void FlightAxis::parse_reply(const char *reply)
         }
         if (p == nullptr) {
             printf("Failed to find key %s\n", keytable[i].key);
+            controller_started = false;
             break;
         }
         p += strlen(keytable[i].key) + 1;
@@ -257,10 +258,17 @@ void FlightAxis::update(const struct sitl_input &input)
     exchange_data(input);
 
     double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
-    if (dt_seconds <= 0) {
+    if (dt_seconds < 0) {
+        // cope with restarting RealFlight while connected
+        initial_time_s = time_now_us * 1.0e-6f;
+        last_time_s = state.m_currentPhysicsTime_SEC;
+        position_offset.zero();
         return;
     }
-
+    if (dt_seconds < 0.0001f) {
+        // we probably got a repeated frame
+        return;
+    }
     if (initial_time_s <= 0) {
         dt_seconds = 0.001f;
         initial_time_s = state.m_currentPhysicsTime_SEC - dt_seconds;
