@@ -139,8 +139,6 @@ protected:
     } _multicopter_flags;
 
     // parameters
-    AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min
-
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
     AP_Float            _thrust_curve_expo;     // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
     AP_Float            _spin_min;      // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range

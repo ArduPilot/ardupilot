@@ -29,13 +29,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // 0 was used by TB_RATIO
     // 1,2,3 were used by throttle curve
-
-    // @Param: SPIN_ARMED
-    // @DisplayName: Motors always spin when armed
-    // @Description: Controls whether motors always spin when armed (must be below THR_MIN)
-    // @Values: 0:Do Not Spin,70:VerySlow,100:Slow,130:Medium,150:Fast
-    // @User: Standard
-    AP_GROUPINFO("SPIN_ARMED", 5, AP_MotorsMulticopter, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
+    // 5 was SPIN_ARMED
 
     // @Param: YAW_HEADROOM
     // @DisplayName: Matrix Yaw Min
