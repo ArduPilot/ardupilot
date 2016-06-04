@@ -365,6 +365,12 @@ void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_m
     }
 }
 
+// update the throttle input filter.  should be called at 100hz
+void AP_MotorsMulticopter::update_throttle_hover(float dt)
+{
+    _throttle_hover = _throttle_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC_DEFAULT))*(_throttle_in-_throttle_hover);
+}
+
 void AP_MotorsMulticopter::output_logic()
 {
     // force desired and current spool mode if disarmed or not interlocked

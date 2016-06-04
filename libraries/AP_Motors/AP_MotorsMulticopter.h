@@ -53,6 +53,10 @@ public:
     // also sets minimum and maximum pwm values that will be sent to the motors
     void                set_throttle_range(int16_t radio_min, int16_t radio_max);
 
+    // update estimated throttle required to hover
+    void                update_throttle_hover(float dt);
+    virtual float       get_throttle_hover() const { return _throttle_hover; };
+
     // spool up states
     enum spool_up_down_mode {
         SHUT_DOWN = 0,                      // all motors stop
@@ -150,6 +154,8 @@ protected:
     AP_Float            _batt_current_time_constant;    // Time constant used to limit the maximum current
     AP_Int16            _pwm_min;               // minimum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's min pwm used)
     AP_Int16            _pwm_max;               // maximum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's max pwm used)
+    AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
+    AP_Int8             _throttle_hover_learn;  // enable/disabled hover thrust learning
 
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
