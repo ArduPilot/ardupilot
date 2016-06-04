@@ -124,7 +124,7 @@ void AP_MotorsTri::enable()
 
 void AP_MotorsTri::output_to_motors()
 {
-    switch (_multicopter_flags.spool_mode) {
+    switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
             hal.rcout->cork();
