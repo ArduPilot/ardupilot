@@ -97,7 +97,7 @@ static const struct {
 
 static void test_offset(void)
 {
-    struct Location loc;
+    struct Location loc {};
 
     loc.lat = -35*1.0e7f;
     loc.lng = 149*1.0e7f;
@@ -117,7 +117,7 @@ static void test_offset(void)
  */
 static void test_accuracy(void)
 {
-    struct Location loc;
+    struct Location loc {};
 
     loc.lat = 0.0e7f;
     loc.lng = -120.0e7f;
