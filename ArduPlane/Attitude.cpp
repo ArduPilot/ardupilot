@@ -646,8 +646,6 @@ bool Plane::suppress_throttle(void)
     if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled. Altitude %.2f",
-                          (double)(relative_altitude_abs_cm()*0.01f));
         return false;
     }
 
@@ -657,16 +655,12 @@ bool Plane::suppress_throttle(void)
         // groundspeed with bad GPS reception
         if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled. Speed %.2f airspeed %.2f",
-                              (double)gps.ground_speed(),
-                              (double)airspeed.get_airspeed());
             throttle_suppressed = false;
             return false;        
         }
     }
 
     if (quadplane.is_flying()) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled VTOL");
         throttle_suppressed = false;
     }
 
