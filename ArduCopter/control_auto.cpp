@@ -138,6 +138,9 @@ void Copter::auto_takeoff_start(const Location& dest_loc)
 
     // clear i term when we're taking off
     set_throttle_takeoff();
+
+    // get initial alt for TKOFF_NAV_ALT
+    auto_takeoff_set_start_alt();
 }
 
 // auto_takeoff_run - takeoff in auto mode
@@ -178,8 +181,8 @@ void Copter::auto_takeoff_run()
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
 
-    // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+    // call attitude controller
+    auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
