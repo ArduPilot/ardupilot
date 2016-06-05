@@ -235,20 +235,23 @@ bool Plane::setup_failsafe_mixing(void)
     bool ret = false;
     char *buf = NULL;
     const uint16_t buf_size = 2048;
+    uint16_t fileSize, new_crc;
+    int px4io_fd = -1;
+    enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
+    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
 
     buf = (char *)malloc(buf_size);
     if (buf == NULL) {
-        return false;
+        goto failed;
     }
 
-    uint16_t fileSize = create_mixer(buf, buf_size, mixer_filename);
+    fileSize = create_mixer(buf, buf_size, mixer_filename);
     if (!fileSize) {
         hal.console->printf("Unable to create mixer\n");
-        free(buf);
-        return false;
+        goto failed;
     }
 
-    uint16_t new_crc = crc_calculate((uint8_t *)buf, fileSize);
+    new_crc = crc_calculate((uint8_t *)buf, fileSize);
 
     if ((int32_t)new_crc == last_mixer_crc) {
         return true;
@@ -256,14 +259,10 @@ bool Plane::setup_failsafe_mixing(void)
         last_mixer_crc = new_crc;
     }
 
-    enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
-    struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
-
-    int px4io_fd = open("/dev/px4io", 0);
+    px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd == -1) {
         // px4io isn't started, no point in setting up a mixer
-        free(buf);
-        return false;
+        goto failed;
     }
 
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
