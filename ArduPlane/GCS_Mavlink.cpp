@@ -1153,7 +1153,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             requested_position.lng = packet.y;
 
             // check the floating representation for overflow of altitude
-            if (abs(packet.z * 100.0f) >= 0x7fffff) {
+            if (fabsf(packet.z * 100.0f) >= 0x7fffff) {
                 result = MAV_RESULT_FAILED;
                 break;
             }
