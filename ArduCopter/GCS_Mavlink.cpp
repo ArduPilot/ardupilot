@@ -378,11 +378,11 @@ void NOINLINE Copter::send_radio_out(mavlink_channel_t chan)
         chan,
         micros(),
         0,     // port
-        100,//hal.rcout->read(0),
-        200,//hal.rcout->read(1),
-        300,//hal.rcout->read(2),
-        400,//hal.rcout->read(3),
-        500,//hal.rcout->read(4),
+        hal.rcout->read(0),
+        hal.rcout->read(1),
+        hal.rcout->read(2),
+        hal.rcout->read(3),
+        hal.rcout->read(4),
         hal.rcout->read(5),
         hal.rcout->read(6),
         hal.rcout->read(7));
