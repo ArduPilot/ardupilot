@@ -18,16 +18,16 @@
 class PMS3003
 {
 public:
-    PMS3003(uint16_t pm10 =0, // constructor
-            uint16_t pm25=0,
-            uint16_t pm100=0,
-            uint16_t cp030=0,
-            uint16_t cp050=0,
-            uint16_t cp10=0,
-            uint16_t cp25=0,
-            uint16_t cp50=0,
-            uint16_t cp100=0,
-            uint16_t hum=0,
+    PMS3003(int16_t pm10 =0, // constructor
+            int16_t pm25=0,
+            int16_t pm100=0,
+            int16_t cp030=0,
+            int16_t cp050=0,
+            int16_t cp10=0,
+            int16_t cp25=0,
+            int16_t cp50=0,
+            int16_t cp100=0,
+            int16_t hum=0,
             int16_t temp_c=0)
         : _PM10(pm10),
           _PM25(pm25),
@@ -48,7 +48,7 @@ public:
     void _collect(void);
     void _timer(void);
 
-    uint16_t _PM10,
+    int16_t _PM10,
     _PM25,
     _PM100,
     _CP030,
@@ -57,8 +57,9 @@ public:
     _CP25,
     _CP50,
     _CP100,
-    _HUM;
-    int16_t _TEMP_C;
+    _HUM,
+    _TEMP_C;
+
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
 

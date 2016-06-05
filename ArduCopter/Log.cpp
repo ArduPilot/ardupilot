@@ -253,22 +253,22 @@ void Copter::Log_Write_Optflow()
 struct PACKED log_Enviro {  //====================================================================== added by Luis
     LOG_PACKET_HEADER;
     uint64_t    time_us;
-    uint16_t    _PM10;
-    uint16_t    _PM25;
-    uint16_t    _PM100;
-    uint16_t    _CP030;
-    uint16_t    _CP050;
-    uint16_t    _CP10;
-    uint16_t    _CP25;
-    uint16_t    _CP50;
-    uint16_t    _CP100;
-    uint16_t    _HUM;
+    int16_t    _PM10;
+    int16_t    _PM25;
+    int16_t    _PM100;
+    int16_t    _CP030;
+    int16_t    _CP050;
+    int16_t    _CP10;
+    int16_t    _CP25;
+    int16_t    _CP50;
+    int16_t    _CP100;
+    int16_t    _HUM;
     int16_t     _TEMP_C;
 
 };
 
 //Write an environmental packet
-void Copter::Log_Write_Enviro(uint16_t _PM10,uint16_t _PM25,uint16_t _PM100,uint16_t _CP030,uint16_t _CP050,uint16_t _CP10,uint16_t _CP25,uint16_t _CP50,uint16_t _CP100, uint16_t _HUM, int16_t _TEMP_C)
+void Copter::Log_Write_Enviro(int16_t _PM10,int16_t _PM25,int16_t _PM100,int16_t _CP030,int16_t _CP050,int16_t _CP10,int16_t _CP25,int16_t _CP50,int16_t _CP100, int16_t _HUM, int16_t _TEMP_C)
 {
     struct log_Enviro pkt = {
             LOG_PACKET_HEADER_INIT(LOG_ENVIRO_MSG),
@@ -835,7 +835,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
     { LOG_ENVIRO_MSG, sizeof(log_Enviro),//-------------------------------------------------------// added by Luis
-      "ENVI",  "QBBBBBBBBBBh","TimeUS,pm1,pm2.5,pm10,cp.3,cp.5,cp1,cp2.5,cp5,cp10,Hum,Temp" },
+      "ENVI",  "Qhhhhhhhhhhh","TimeUS,pm1,pm2.5,pm10,cp.3,cp.5,cp1,cp2.5,cp5,cp10,Hum,Temp" },
 };
 
 #if CLI_ENABLED == ENABLED
