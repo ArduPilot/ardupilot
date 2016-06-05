@@ -73,17 +73,14 @@ void Plane::read_control_switch()
         // if the user has configured an override channel then check it
         bool override_requested = (hal.rcin->read(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
         if (override_requested && !px4io_override_enabled) {
-            // we only update the mixer if we are not armed. This is
-            // important as otherwise we will need to temporarily
-            // disarm to change the mixer
-            if (hal.util->get_soft_armed() || setup_failsafe_mixing()) {
+            if (hal.util->get_soft_armed() || (last_mixer_crc != -1)) {
                 px4io_override_enabled = true;
                 // disable output channels to force PX4IO override
                 gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override enabled");
             } else {
-                // we'll try again next loop. The PX4IO code sometimes
-                // rejects a mixer, probably due to it being busy in
-                // some way?
+                // we'll let the one second loop reconfigure the mixer. The
+                // PX4IO code sometimes rejects a mixer, probably due to it
+                // being busy in some way?
                 gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override enable failed");
             }
         } else if (!override_requested && px4io_override_enabled) {
