@@ -26,9 +26,7 @@ public:
     friend class AP_MotorsHeli_Single;
     
     AP_MotorsHeli_RSC(RC_Channel_aux::Aux_servo_function_t aux_fn,
-                      uint8_t default_channel,
-                      uint16_t loop_rate) :
-        _loop_rate(loop_rate),
+                      uint8_t default_channel) :
         _aux_fn(aux_fn),
         _default_channel(default_channel)
     {};
@@ -80,10 +78,8 @@ public:
     void        output(RotorControlState state);
 
 private:
-
-    // external variables
-    float           _loop_rate;                 // main loop rate
-
+    uint64_t        _last_update_us;
+    
     // channel setup for aux function
     RC_Channel_aux::Aux_servo_function_t _aux_fn;
     uint8_t         _default_channel;
@@ -109,10 +105,10 @@ private:
     AP_Int8         _pwm_rev;
     
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
-    void            update_rotor_ramp(float rotor_ramp_input);
+    void            update_rotor_ramp(float rotor_ramp_input, float dt);
 
     // update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
-    void            update_rotor_runup();
+    void            update_rotor_runup(float dt);
 
     // write_rsc - outputs pwm onto output rsc channel. servo_out parameter is of the range 0 ~ 1
     void            write_rsc(float servo_out);
