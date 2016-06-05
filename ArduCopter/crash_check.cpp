@@ -43,7 +43,7 @@ void Copter::crash_check()
     crash_counter++;
 
     // check if crashing for 2 seconds
-    if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * MAIN_LOOP_RATE)) {
+    if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
         // send message to gcs
@@ -106,7 +106,7 @@ void Copter::parachute_check()
     }
 
     // increment counter
-    if (control_loss_count < (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE)) {
+    if (control_loss_count < (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
         control_loss_count++;
     }
 
@@ -122,7 +122,7 @@ void Copter::parachute_check()
     // To-Do: add check that the vehicle is actually falling
 
     // check if loss of control for at least 1 second
-    } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE)) {
+    } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
         // reset control loss counter
         control_loss_count = 0;
         // log an error in the dataflash
