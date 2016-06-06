@@ -18,10 +18,11 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO)
 
 #include "AP_BattMonitor_Bebop.h"
 #include <AP_HAL_Linux/RCOutput_Bebop.h>
+#include <AP_HAL_Linux/RCOutput_Disco.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -143,7 +144,11 @@ void AP_BattMonitor_Bebop::read(void)
     BebopBLDC_ObsData data;
     float remaining, vbat, vbat_raw;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     auto rcout = Linux::RCOutput_Bebop::from(hal.rcout);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+    auto rcout = Linux::RCOutput_Disco::from(hal.rcout);
+#endif
     tnow = AP_HAL::micros();
 
     ret = rcout->read_obs_data(data);

@@ -155,7 +155,7 @@ AP_BattMonitor::init()
         return;
     }
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
     // force monitor for bebop
     _monitoring[0] = BattMonitor_TYPE_BEBOP;
 #endif
@@ -180,7 +180,7 @@ AP_BattMonitor::init()
                 _num_instances++;
                 break;
             case BattMonitor_TYPE_BEBOP:
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 state[instance].instance = instance;
                 drivers[instance] = new AP_BattMonitor_Bebop(*this, instance, state[instance]);
                 _num_instances++;
