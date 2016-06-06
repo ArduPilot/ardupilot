@@ -1070,6 +1070,12 @@ void Plane::set_servos(void)
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
                 break;
+            case AP_SpdHgtControl::FLIGHT_NORMAL:
+                if (auto_flap_percent != 0 && in_preLaunch_flight_stage()) {
+                    // TODO: move this to a new FLIGHT_PRE_TAKEOFF stage
+                    auto_flap_percent = g.takeoff_flap_percent;
+                }
+                break;
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
             case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
@@ -1078,9 +1084,6 @@ void Plane::set_servos(void)
                 }
                 break;
             default:
-                if (in_preLaunch_flight_stage()) {
-                    auto_flap_percent = g.takeoff_flap_percent;
-                }
                 break;
             }
         }
