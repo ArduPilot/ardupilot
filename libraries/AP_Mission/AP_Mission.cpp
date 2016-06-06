@@ -859,8 +859,16 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
     default:
         // all other commands use x and y as lat/lon. We need to
         // multiply by 1e7 to convert to int32_t
-        mav_cmd.x = packet.x * 1.0e7f;
-        mav_cmd.y = packet.y * 1.0e7f;
+        if (fabsf(packet.x) < 90.0f) {
+            mav_cmd.x = packet.x * 1.0e7f;
+        } else {
+            return MAV_MISSION_INVALID_PARAM5_X;
+        }
+        if (fabsf(packet.y) < 180.0f) {
+            mav_cmd.y = packet.y * 1.0e7f;
+        } else {
+            return MAV_MISSION_INVALID_PARAM6_Y;
+        }
         break;
     }
     
