@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #include "RCOutput_Bebop.h"
 
 #include <errno.h>
@@ -176,7 +176,7 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
     _dev->get_semaphore()->give();
 
     if (data.checksum != _checksum((uint8_t *)&data, sizeof(data) - 1)) {
-        hal.console->printf("RCOutput_Bebop: bad checksum in obs data");
+        return -EBUSY;
     }
 
     /* fill obs class */
@@ -424,6 +424,8 @@ void RCOutput_Bebop::_run_rcout()
     if (hw_version == UTIL_HARDWARE_BEBOP) {
         _max_rpm = BEBOP_BLDC_MAX_RPM_1;
     } else if (hw_version == UTIL_HARDWARE_BEBOP2) {
+        _max_rpm = BEBOP_BLDC_MAX_RPM_2;
+    } else if (hw_version == UTIL_HARDWARE_DISCO) {
         _max_rpm = BEBOP_BLDC_MAX_RPM_2;
     } else if (hw_version < 0) {
         AP_HAL::panic("failed to get hw version %s", strerror(hw_version));

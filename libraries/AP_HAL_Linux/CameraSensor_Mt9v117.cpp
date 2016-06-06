@@ -407,7 +407,7 @@ void CameraSensor_Mt9v117::_init_sensor()
 
     id = _read_reg16(CHIP_ID);
     if (id != MT9V117_CHIP_ID) {
-        AP_HAL::panic("Mt9v117: bad chip id\n");
+        AP_HAL::panic("Mt9v117: bad chip id 0x%04x\n", id);
     }
     _soft_reset();
     _apply_patch();
