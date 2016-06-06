@@ -393,8 +393,10 @@ failed:
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
         hal.rcout->force_safety_off();
     }
-    // clear out the mixer CRC so that we will attempt to send it again
-    last_mixer_crc = -1;
+    if (!ret) {
+        // clear out the mixer CRC so that we will attempt to send it again
+        last_mixer_crc = -1;
+    }
     return ret;
 }
 
