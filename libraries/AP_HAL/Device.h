@@ -64,8 +64,17 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) = 0;
 
+    /**
+     * Wrapper function over #transfer() to read recv_len registers, starting
+     * by first_reg, into the array pointed by recv. The read flag passed to
+     * #set_read_flag(uint8_t) is ORed with first_reg before performing the
+     * transfer.
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
     bool read_registers(uint8_t first_reg, uint8_t *recv, uint32_t recv_len)
     {
+        first_reg |= _read_flag;
         return transfer(&first_reg, 1, recv, recv_len);
     }
 
@@ -108,4 +117,17 @@ public:
      * allowing to convert old drivers to this new interface
      */
     virtual int get_fd() = 0;
+
+    /**
+     * Some devices connected on the I2C or SPI bus require a bit to be set on
+     * the register address in order to perform a read operation. This sets a
+     * flag to be used by #read_registers(). The flag's default value is zero.
+     */
+    void set_read_flag(uint8_t flag)
+    {
+        _read_flag = flag;
+    }
+
+protected:
+    uint8_t _read_flag = 0;
 };
