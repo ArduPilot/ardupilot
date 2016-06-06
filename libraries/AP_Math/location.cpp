@@ -310,15 +310,31 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
 }
 
 // return true when lat and lng are within range
+bool check_lat(float lat)
+{
+    return fabsf(lat) <= 90;
+}
+bool check_lng(float lng)
+{
+    return fabsf(lng) <= 180;
+}
+bool check_lat(int32_t lat)
+{
+    return labs(lat) <= 90*1e7;
+}
+bool check_lng(int32_t lng)
+{
+    return labs(lng) <= 180*1e7;
+}
 bool check_latlng(float lat, float lng)
 {
-    return (fabsf(lat) <= 90) && (fabsf(lng) <= 180);
+    return check_lat(lat) && check_lng(lng);
 }
 bool check_latlng(int32_t lat, int32_t lng)
 {
-    return (labs(lat) <= 90*1e7) && (labs(lng) <= 180*1e7);
+    return check_lat(lat) && check_lng(lng);
 }
 bool check_latlng(Location loc)
 {
-    return check_latlng(loc.lat, loc.lng);
+    return check_lat(loc.lat) && check_lng(loc.lng);
 }
