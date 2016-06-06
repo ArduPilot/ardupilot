@@ -110,7 +110,7 @@ AP_GPS_ERB::read(void)
         case 5:
             _ck_b += (_ck_a += data);                   // checksum byte
             if (_payload_counter < sizeof(_buffer)) {
-                _buffer.bytes[_payload_counter] = data;
+                _buffer[_payload_counter] = data;
             }
             if (++_payload_counter == _payload_length)
                 _step++;

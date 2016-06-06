@@ -138,7 +138,7 @@ AP_GPS_SIRF::read(void)
         case 5:
             if (_gather) {                                              // gather data if requested
                 _accumulate(data);
-                _buffer.bytes[_payload_counter] = data;
+                _buffer[_payload_counter] = data;
                 if (++_payload_counter == _payload_length)
                     _step++;
             } else {

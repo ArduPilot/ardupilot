@@ -71,8 +71,8 @@ private:
 
     // Receive buffer
     union PACKED {
+        ARRAY_SUBSCRIPT(uint8_t)
         diyd_mtk_msg msg;
-        uint8_t bytes[0];
     } _buffer;
 
     // Buffer parse & GPS state update
