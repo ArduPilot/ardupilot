@@ -284,11 +284,11 @@ private:
 
     };
     union PACKED alexmos_parameters {
+        ARRAY_SUBSCRIPT(uint8_t)
         alexmos_version version;
         alexmos_angles angles;
         alexmos_params params;
         alexmos_angles_speed angle_speed;
-        uint8_t bytes[0];
     } _buffer,_current_parameters;
 
     AP_HAL::UARTDriver *_port;
