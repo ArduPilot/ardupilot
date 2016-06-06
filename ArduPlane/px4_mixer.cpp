@@ -254,6 +254,7 @@ bool Plane::setup_failsafe_mixing(void)
     new_crc = crc_calculate((uint8_t *)buf, fileSize);
 
     if ((int32_t)new_crc == last_mixer_crc) {
+        free(buf);
         return true;
     } else {
         last_mixer_crc = new_crc;
