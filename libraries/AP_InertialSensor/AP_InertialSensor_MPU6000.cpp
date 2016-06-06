@@ -463,6 +463,9 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
         accel.rotate(ROTATION_YAW_270);
         gyro.rotate(ROTATION_YAW_270);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+        accel.rotate(ROTATION_PITCH_180_YAW_90);
+        gyro.rotate(ROTATION_PITCH_180_YAW_90);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
         accel.rotate(ROTATION_YAW_90);
         gyro.rotate(ROTATION_YAW_90);
