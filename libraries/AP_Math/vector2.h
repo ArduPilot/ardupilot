@@ -161,6 +161,35 @@ struct Vector2
     {
         return v * (*this * v)/(v*v);
     }
+
+    // given a position p1 and a velocity v1 produce a vector
+    // perpendicular to v1 maximising distance from p1
+    static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1)
+    {
+        Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
+        Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
+        T d1 = perpendicular1 * pos_delta;
+        T d2 = perpendicular2 * pos_delta;
+        if (d1 > d2) {
+            return perpendicular1;
+        }
+        return perpendicular2;
+    }
+
+    // thanks to grumdrig (http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment)
+    // w defines a line segment from the origin
+    // p is a point
+    // returns the closest distance between the radial and the point
+    static float closest_distance_between_radial_and_point(const Vector2<T> &w,
+                                                           const Vector2<T> &p)
+    {
+        const float len = w.length_squared();
+        if (len < FLT_EPSILON) return p.length();
+        const float t = fmax(0, fmin(1, (p*w) / len));
+        const Vector2<T> projection = w * t;
+        return (p-projection).length();
+    }
+
 };
 
 typedef Vector2<int16_t>        Vector2i;
