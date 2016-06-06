@@ -803,7 +803,9 @@ void DataFlash_Class::Log_Write_RCOUT(void)
         chan9         : hal.rcout->read(8),
         chan10        : hal.rcout->read(9),
         chan11        : hal.rcout->read(10),
-        chan12        : hal.rcout->read(11)
+        chan12        : hal.rcout->read(11),
+        chan13        : hal.rcout->read(12),
+        chan14        : hal.rcout->read(13)
     };
     WriteBlock(&pkt, sizeof(pkt));
     Log_Write_ESC();
