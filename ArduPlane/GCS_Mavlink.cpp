@@ -1226,16 +1226,16 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         switch(packet.command) {
 
         case MAV_CMD_DO_CHANGE_SPEED:
-            //if we're in failsafe modes (e.g., RTL, LOITER) or in pilot
-            //controlled modes (e.g., MANUAL, TRAINING) 
-            //this comand should be ignored since it comes in from GCS
-            //or a companion computer:
+            // if we're in failsafe modes (e.g., RTL, LOITER) or in pilot
+            // controlled modes (e.g., MANUAL, TRAINING)
+            // this command should be ignored since it comes in from GCS
+            // or a companion computer:
+            result = MAV_RESULT_FAILED;
             if (plane.control_mode != GUIDED && plane.control_mode != AUTO) {
-                result = MAV_RESULT_FAILED;
+                // failed
                 break;
             }
 
-            result = MAV_RESULT_FAILED;
             AP_Mission::Mission_Command cmd;
             if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd)
                     == MAV_MISSION_ACCEPTED) {
