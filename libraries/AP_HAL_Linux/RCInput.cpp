@@ -404,3 +404,65 @@ void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
         }
     }
 }
+
+
+/*
+  add some bytes of input in SBUS serial stream format, coping with partial packets
+ */
+void RCInput::add_sbus_input(const uint8_t *bytes, size_t nbytes)
+{
+    if (nbytes == 0) {
+        return;
+    }
+    const uint8_t sbus_frame_size = sizeof(sbus.frame);
+
+    uint32_t now = AP_HAL::millis();
+    if (now - sbus.last_input_ms > 5) {
+        // resync based on time
+        sbus.partial_frame_count = 0;
+    }
+    sbus.last_input_ms = now;
+
+    while (nbytes > 0) {
+        size_t n = nbytes;
+        if (sbus.partial_frame_count + n > sbus_frame_size) {
+            n = sbus_frame_size - sbus.partial_frame_count;
+        }
+        if (n > 0) {
+            memcpy(&sbus.frame[sbus.partial_frame_count], bytes, n);
+            sbus.partial_frame_count += n;
+            nbytes -= n;
+            bytes += n;
+        }
+
+	if (sbus.partial_frame_count == sbus_frame_size) {
+            sbus.partial_frame_count = 0;
+            uint16_t values[16] {};
+            uint16_t num_values=0;
+            bool sbus_failsafe;
+            bool sbus_frame_drop;
+            if (sbus_decode(sbus.frame, values, &num_values, &sbus_failsafe, &sbus_frame_drop, 16) &&
+                num_values >= 5) {
+                for (uint8_t i=0; i<num_values; i++) {
+                    if (values[i] != 0) {
+                        _pwm_values[i] = values[i];
+                    }
+                }
+                /*
+                  the apparent number of channels can change on SBUS,
+                  as they are spread across multiple frames. We just
+                  use the max num_values we get
+                 */
+                if (num_values > _num_channels) {
+                    _num_channels = num_values;
+                }
+                new_rc_input = true;
+#if 0
+                printf("Decoded SBUS %u channels %u %u %u %u %u %u %u %u\n",
+                       (unsigned)num_values,
+                       values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
+#endif
+            }
+        }
+    }
+}

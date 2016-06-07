@@ -25,6 +25,7 @@
 #include "RCInput_UDP.h"
 #include "RCInput_Raspilot.h"
 #include "RCInput_DSM.h"
+#include "RCInput_SBUS.h"
 #include "RCOutput_PRU.h"
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_PCA9685.h"

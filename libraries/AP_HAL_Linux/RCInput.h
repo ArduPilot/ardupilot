@@ -28,6 +28,9 @@ public:
 
     // add some DSM input bytes, for RCInput over a serial port
     void add_dsm_input(const uint8_t *bytes, size_t nbytes);
+
+    // add some SBUS input bytes, for RCInput over a serial port
+    void add_sbus_input(const uint8_t *bytes, size_t nbytes);
     
     
  protected:
@@ -71,6 +74,13 @@ public:
         uint8_t partial_frame_count;
         uint32_t last_input_ms;
     } dsm;
+
+    // state of add_sbus_input
+    struct {
+        uint8_t frame[25];
+        uint8_t partial_frame_count;
+        uint32_t last_input_ms;
+    } sbus;
 };
 
 #include "RCInput_PRU.h"

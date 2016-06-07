@@ -33,6 +33,7 @@ namespace Linux {
     class RCInput_UART;
     class RCInput_UDP;
     class RCInput_DSM;
+    class RCInput_SBUS;
     class RCOutput_PRU;
     class RCOutput_AioPRU;
     class RCOutput_PCA9685;
