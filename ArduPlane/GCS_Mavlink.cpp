@@ -2112,21 +2112,22 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
     {
-        //Only want to allow companion computer position control when
+        // Only want to allow companion computer position control when
         // in a certain mode to avoid inadvertently sending these
         // kinds of commands when the autopilot is responding to problems
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != GUIDED) { //don't screw up failsafes
+        if (plane.control_mode != GUIDED) {
+            //don't screw up failsafes
             break;
         }
 
         mavlink_set_position_target_global_int_t pos_target;
         mavlink_msg_set_position_target_global_int_decode(msg, &pos_target);
-        //Unexepectedly, the mask is expecting "ones" for dimensions that should
-        //be IGNORNED rather than INCLUDED.  See mavlink documentation of the
-        //SET_POSITION_TARGET_GLOBAL_INT message, type_mask field. 
+        // Unexpectedly, the mask is expecting "ones" for dimensions that should
+        // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
+        // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
         const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
             
         bool msg_valid = true;
