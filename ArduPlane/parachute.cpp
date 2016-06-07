@@ -39,12 +39,6 @@ bool Plane::parachute_manual_release()
         return false;
     }
 
-    // do not release if vehicle is not flying
-    if (!is_flying() && parachute.alt_min() != 0) {
-        // warn user of reason for failure
-        gcs_send_text(MAV_SEVERITY_WARNING,"Parachute: Not flying");
-        return false;
-    }
 
     if (parachute.alt_min() != 0 && relative_ground_altitude(false) < parachute.alt_min()) {
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Parachute: Too low");
