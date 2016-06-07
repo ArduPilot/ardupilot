@@ -2150,7 +2150,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     cmd.content.location.flags.terrain_alt = true;
                     break;
                 default:
-                    plane.gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Invalid coord fr. (SET_POSTION_TARGET_GLOBAL_INT)");
+                    plane.gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
                     msg_valid = false;
                     break;
             }    
