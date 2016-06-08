@@ -39,13 +39,7 @@ class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed(const AP_Vehicle::FixedWing &parms)
-        : _EAS2TAS(1.0f)
-        , _calibration(parms)
-        , analog(_pin)
-    {
-		AP_Param::setup_object_defaults(this, var_info);
-    };
+    AP_Airspeed(const AP_Vehicle::FixedWing &parms);
 
     void init(void);
 

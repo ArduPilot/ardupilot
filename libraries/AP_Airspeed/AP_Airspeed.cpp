@@ -21,8 +21,10 @@
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <utility>
 
 extern const AP_HAL::HAL &hal;
 
@@ -120,6 +122,15 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     AP_GROUPEND
 };
+
+
+AP_Airspeed::AP_Airspeed(const AP_Vehicle::FixedWing &parms)
+    : _EAS2TAS(1.0f)
+    , _calibration(parms)
+    , analog(_pin)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
 
 
 /*

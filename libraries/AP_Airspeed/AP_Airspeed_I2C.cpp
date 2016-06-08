@@ -22,12 +22,20 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
+#include <stdio.h>
+#include <utility>
 
 extern const AP_HAL::HAL &hal;
 
-#define MS4525D0_I2C_BUS 1
 #define MS4525D0_I2C_ADDR 0x28
+
+#ifdef HAL_AIRSPEED_MS4515DO_I2C_BUS
+#define MS4525D0_I2C_BUS HAL_AIRSPEED_MS4515DO_I2C_BUS
+#else
+#define MS4525D0_I2C_BUS 1
+#endif
 
 // probe and initialise the sensor
 bool AP_Airspeed_I2C::init()
