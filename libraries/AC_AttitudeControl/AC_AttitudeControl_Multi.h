@@ -62,7 +62,7 @@ public:
     float get_throttle_boosted(float throttle_in);
 
     // calculate total body frame throttle required to produce the given earth frame throttle
-    float get_throttle_ave_max(float throttle_in);
+    float get_throttle_avg_max(float throttle_in);
 
     // set desired throttle vs attitude mixing (actual mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
