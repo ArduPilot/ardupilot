@@ -35,6 +35,7 @@
 #include "RCOutput_Raspilot.h"
 #include "RCOutput_Sysfs.h"
 #include "RCOutput_qflight.h"
+#include "RCOutput_Disco.h"
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "ToneAlarm.h"

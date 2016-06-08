@@ -42,6 +42,7 @@ namespace Linux {
     class RCOutput_Bebop;
     class RCOutput_Sysfs;
     class RCOutput_QFLIGHT;
+    class RCOutput_Disco;
     class Semaphore;
     class Scheduler;
     class Util;
