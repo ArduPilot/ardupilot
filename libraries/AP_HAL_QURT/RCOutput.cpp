@@ -4,7 +4,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
 
 #include "RCOutput.h"
-#include <GCS_MAVLink/include/mavlink/v1.0/checksum.h>
+#include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>

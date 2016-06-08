@@ -84,6 +84,7 @@ public:
         k_param_steering_learn, // unused
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
         k_param_mission, // mission library
+        k_param_NavEKF2_old, // deprecated
         k_param_NavEKF2,
 
         // 140: battery controls

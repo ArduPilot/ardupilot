@@ -88,8 +88,8 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Steering
-    // @Bitmask: 0:Steering
+    // @Values: 0:None,1:Steering,2:Throttle
+    // @Bitmask: 0:Steering,1:Throttle
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
     // @Param: MAG_ENABLED

@@ -50,31 +50,35 @@ def options(opt):
     }
 
     opt.load('ardupilotwaf')
+    opt.load('build_summary')
 
     g = opt.ap_groups['configure']
+
     boards_names = boards.get_boards_names()
     g.add_option('--board',
-                   action='store',
-                   choices=boards_names,
-                   default='sitl',
-                   help='Target board to build, choices are %s' % boards_names)
+        action='store',
+        choices=boards_names,
+        default='sitl',
+        help='Target board to build, choices are %s.' % boards_names)
 
     g.add_option('--no-submodule-update',
-                 dest='submodule_update',
-                 action='store_false',
-                 default=True,
-                 help='Don\'t update git submodules. Useful for building ' +
-                      'with submodules at specific revisions.')
+        dest='submodule_update',
+        action='store_false',
+        default=True,
+        help='''
+Don't update git submodules. Useful for building with submodules at specific
+revisions.
+''')
 
     g.add_option('--enable-benchmarks',
-                 action='store_true',
-                 default=False,
-                 help='Enable benchmarks')
+        action='store_true',
+        default=False,
+        help='Enable benchmarks.')
 
     g.add_option('--debug',
-                 action='store_true',
-                 default=False,
-                 help='Configure as debug variant')
+        action='store_true',
+        default=False,
+        help='Configure as debug variant.')
 
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
@@ -92,7 +96,7 @@ def configure(cfg):
     cfg.define('WAF_BUILD', 1)
 
     cfg.msg('Setting board to', cfg.options.board)
-    boards.get_board(cfg.env.BOARD).configure(cfg)
+    cfg.get_board().configure(cfg)
 
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
@@ -102,6 +106,7 @@ def configure(cfg):
         cfg.load('gbenchmark')
     cfg.load('gtest')
     cfg.load('static_linking')
+    cfg.load('build_summary')
 
     cfg.start_msg('Benchmarks')
     if cfg.env.HAS_GBENCHMARK:
@@ -166,7 +171,7 @@ def _build_dynamic_sources(bld):
     bld(
         features='mavgen',
         source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
-        output_dir='libraries/GCS_MAVLink/include/mavlink/v1.0/',
+        output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
         name='mavlink',
         # this below is not ideal, mavgen tool should set this, but that's not
         # currently possible
@@ -266,7 +271,7 @@ def build(bld):
     _build_dynamic_sources(bld)
 
     bld.add_group('build')
-    boards.get_board(bld.env.BOARD).build(bld)
+    bld.get_board().build(bld)
     _build_common_taskgens(bld)
 
     _build_recursion(bld)
@@ -279,6 +284,7 @@ def build(bld):
         group='dynamic_sources',
     )
 
+    bld.load('build_summary')
 
 ardupilotwaf.build_command('check',
     program_group_list='all',

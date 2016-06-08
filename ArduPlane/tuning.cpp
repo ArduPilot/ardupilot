@@ -41,6 +41,10 @@ const AP_Tuning_Plane::tuning_set AP_Tuning_Plane::tuning_sets[] = {
     { TUNING_SET_RATE_ROLL_PITCH, TUNING_ARRAY(tuning_set_rate_roll_pitch) },
     { TUNING_SET_RATE_ROLL,       TUNING_ARRAY(tuning_set_rate_roll) },
     { TUNING_SET_RATE_PITCH,      TUNING_ARRAY(tuning_set_rate_pitch) },
+    { TUNING_SET_RATE_YAW,        TUNING_ARRAY(tuning_set_rate_yaw) },
+    { TUNING_SET_ANG_ROLL_PITCH,  TUNING_ARRAY(tuning_set_ang_roll_pitch) },
+    { TUNING_SET_VXY,             TUNING_ARRAY(tuning_set_vxy) },
+    { TUNING_SET_AZ,              TUNING_ARRAY(tuning_set_az) },
     { 0, 0, nullptr }
 };
 
@@ -262,5 +266,40 @@ void AP_Tuning_Plane::reload_value(uint8_t parm)
             f->load();
         }
         break;
+    }
+}
+
+/*
+  return current controller error
+ */
+float AP_Tuning_Plane::controller_error(uint8_t parm)
+{
+    if (!plane.quadplane.available()) {
+        return 0;
+    }
+    
+    switch(parm) {
+    // special handling of dual-parameters
+    case TUNING_RATE_ROLL_PI:
+    case TUNING_RATE_ROLL_P:
+    case TUNING_RATE_ROLL_I:
+    case TUNING_RATE_ROLL_D:
+        return plane.quadplane.attitude_control->control_monitor_rms_output_roll();
+        
+    case TUNING_RATE_PITCH_PI:
+    case TUNING_RATE_PITCH_P:
+    case TUNING_RATE_PITCH_I:
+    case TUNING_RATE_PITCH_D:
+        return plane.quadplane.attitude_control->control_monitor_rms_output_pitch();
+
+    case TUNING_RATE_YAW_PI:
+    case TUNING_RATE_YAW_P:
+    case TUNING_RATE_YAW_I:
+    case TUNING_RATE_YAW_D:
+        return plane.quadplane.attitude_control->control_monitor_rms_output_yaw();
+
+    default:
+        // no special handler
+        return 0;
     }
 }

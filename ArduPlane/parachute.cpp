@@ -39,14 +39,9 @@ bool Plane::parachute_manual_release()
         return false;
     }
 
-    // do not release if vehicle is not flying
-    if (!is_flying()) {
-        // warn user of reason for failure
-        gcs_send_text(MAV_SEVERITY_WARNING,"Parachute: Not flying");
-        return false;
-    }
-
-    if (relative_ground_altitude() < parachute.alt_min()) {
+    if (parachute.alt_min() > 0 && relative_ground_altitude(false) < parachute.alt_min() &&
+            auto_state.started_flying_in_auto_ms > 0 && auto_state.takeoff_complete) {
+        // Allow manual ground tests by only checking if flying too low if we've taken off
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Parachute: Too low");
         return false;
     }

@@ -24,6 +24,7 @@ public:
     void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
     bool     force_safety_on(void) override;
     void     force_safety_off(void) override;
+    void     force_safety_no_wait(void) override;
     void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override {
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;
@@ -69,4 +70,7 @@ private:
     bool _corking;
     enum output_mode _output_mode = MODE_PWM_NORMAL;
     void _send_outputs(void);
+    enum AP_HAL::Util::safety_state _safety_state_request = AP_HAL::Util::SAFETY_NONE;
+    uint32_t _safety_state_request_last_ms = 0;
+    void force_safety_pending_requests(void);
 };

@@ -120,6 +120,16 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   endif
 endif
 
+ifneq ($(findstring mavlink1, $(MAKECMDGOALS)),)
+EXTRAFLAGS += -DMAVLINK_PROTOCOL_VERSION=1
+MAVLINK_SUBDIR=v1.0
+MAVLINK_WIRE_PROTOCOL=1.0
+else
+EXTRAFLAGS += -DMAVLINK_PROTOCOL_VERSION=2
+MAVLINK_SUBDIR=v2.0
+MAVLINK_WIRE_PROTOCOL=2.0
+endif
+
 ifneq ($(APPDIR),)
 # this is a recusive PX4 build
 HAL_BOARD = HAL_BOARD_PX4
@@ -199,10 +209,6 @@ endif
 ifneq ($(findstring vrhero, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
-endif
-
-ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_FLYMAPLE
 endif
 
 ifneq ($(findstring bhat, $(MAKECMDGOALS)),)

@@ -86,6 +86,10 @@ void Rover::calc_throttle(float target_speed) {
     // then set the throttle to minimum
     if (!auto_check_trigger() || ((loiter_time > 0) && (control_mode == AUTO))) {
         channel_throttle->set_servo_out(g.throttle_min.get());
+        // Stop rotation in case of loitering and skid steering
+        if (g.skid_steer_out) {
+            channel_steer->set_servo_out(0);
+        }
         return;
     }
 
@@ -223,6 +227,10 @@ void Rover::set_servos(void) {
         if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
             // suppress throttle if in failsafe and manual
             channel_throttle->set_radio_out(channel_throttle->get_radio_trim());
+            // suppress steer if in failsafe and manual and skid steer mode
+            if (g.skid_steer_out) {
+                channel_steer->set_radio_out(channel_steer->get_radio_trim());
+            }
         }
     } else {
         channel_steer->calc_pwm();
@@ -239,10 +247,18 @@ void Rover::set_servos(void) {
         if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
             // suppress throttle if in failsafe
             channel_throttle->set_servo_out(0);
+            // suppress steer if in failsafe and skid steer mode
+            if (g.skid_steer_out) {
+                channel_steer->set_servo_out(0);
+            }
         }
 
         if (!hal.util->get_soft_armed()) {
             channel_throttle->set_servo_out(0);
+            // suppress steer if in failsafe and skid steer mode
+            if (g.skid_steer_out) {
+                channel_steer->set_servo_out(0);
+            }
         }
 
         // convert 0 to 100% into PWM
@@ -285,11 +301,17 @@ void Rover::set_servos(void) {
 
         case AP_Arming::YES_ZERO_PWM:
             channel_throttle->set_radio_out(0);
+            if (g.skid_steer_out) {
+                channel_steer->set_radio_out(0);
+            }
             break;
 
         case AP_Arming::YES_MIN_PWM:
         default:
             channel_throttle->set_radio_out(channel_throttle->get_radio_trim());
+            if (g.skid_steer_out) {
+                channel_steer->set_radio_out(channel_steer->get_radio_trim());
+            }
             break;
         }
     }

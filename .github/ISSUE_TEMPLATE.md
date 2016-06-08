@@ -5,11 +5,11 @@ _Please describe the problem, or desired feature_
 _What version was the issue encountered with_
 
 #### Platform
-- [ ] All
-- [ ] AntennaTracker
-- [ ] Copter
-- [ ] Plane
-- [ ] Rover
+[  ] All
+[  ] AntennaTracker
+[  ] Copter
+[  ] Plane
+[  ] Rover
 
 #### Airframe type
 _What type of airframe (flying wing, glider, hex, Y6, octa etc)_

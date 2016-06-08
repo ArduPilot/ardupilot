@@ -151,7 +151,9 @@ private:
     Scheduler *_scheduler;
     Compass *_compass;
     OpticalFlow *_optical_flow;
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain *_terrain;
+#endif
 
     SocketAPM _sitl_rc_in{true};
     SITL::SITL *_sitl;

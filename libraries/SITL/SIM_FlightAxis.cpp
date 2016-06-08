@@ -28,6 +28,7 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -62,10 +63,19 @@ void FlightAxis::parse_reply(const char *reply)
         }
         if (p == nullptr) {
             printf("Failed to find key %s\n", keytable[i].key);
+            controller_started = false;
             break;
         }
         p += strlen(keytable[i].key) + 1;
-        keytable[i].ref = atof(p);
+        double v;
+        if (strncmp(p, "true", 4) == 0) {
+            v = 1;
+        } else if (strncmp(p, "false", 5) == 0) {
+            v = 0;
+        } else {
+            v = atof(p);
+        }
+        keytable[i].ref = v;
         // this assumes key order and allows us to decode arrays
         p = strchr(p, '>');
         if (p != nullptr) {
@@ -154,7 +164,9 @@ Connection: Keep-Alive
 
 void FlightAxis::exchange_data(const struct sitl_input &input)
 {
-    if (!controller_started) {
+    if (!controller_started ||
+        is_zero(state.m_flightAxisControllerIsActive) ||
+        !is_zero(state.m_resetButtonHasBeenPressed)) {
         printf("Starting controller at %s\n", controller_ip);
         // call a restore first. This allows us to connect after the aircraft is changed in RealFlight
         char *reply = soap_request("RestoreOriginalControllerDevice", R"(<?xml version='1.0' encoding='UTF-8'?>
@@ -242,30 +254,34 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
  */
 void FlightAxis::update(const struct sitl_input &input)
 {
-    Vector3f last_velocity_ef = velocity_ef;
-    
     exchange_data(input);
 
-    float dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
-    if (dt_seconds <= 0) {
+    double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
+    if (dt_seconds < 0) {
+        // cope with restarting RealFlight while connected
+        initial_time_s = time_now_us * 1.0e-6f;
+        last_time_s = state.m_currentPhysicsTime_SEC;
+        position_offset.zero();
         return;
     }
-
+    if (dt_seconds < 0.0001f) {
+        // we probably got a repeated frame
+        time_now_us += 1;
+        return;
+    }
     if (initial_time_s <= 0) {
         dt_seconds = 0.001f;
         initial_time_s = state.m_currentPhysicsTime_SEC - dt_seconds;
     }
-    
+
+    /*
+      the queternion convention in realflight seems to have Z negative
+     */
     Quaternion quat(state.m_orientationQuaternion_W,
-                    state.m_orientationQuaternion_Z,
-                    -state.m_orientationQuaternion_Y,
+                    state.m_orientationQuaternion_Y,
+                    state.m_orientationQuaternion_X,
                     -state.m_orientationQuaternion_Z);
     quat.rotation_matrix(dcm);
-    dcm.from_euler(radians(state.m_roll_DEG),
-                   radians(state.m_inclination_DEG),
-                   -radians(state.m_azimuth_DEG));
-    Quaternion quat2;
-    quat2.from_rotation_matrix(dcm);
     gyro = Vector3f(radians(constrain_float(state.m_rollRate_DEGpSEC, -2000, 2000)),
                     radians(constrain_float(state.m_pitchRate_DEGpSEC, -2000, 2000)),
                     -radians(constrain_float(state.m_yawRate_DEGpSEC, -2000, 2000))) * target_speedup;
@@ -274,31 +290,37 @@ void FlightAxis::update(const struct sitl_input &input)
                              state.m_velocityWorldW_MPS);
     position = Vector3f(state.m_aircraftPositionY_MTR,
                         state.m_aircraftPositionX_MTR,
-                        -state.m_altitudeAGL_MTR);
+                        -state.m_altitudeASL_MTR - home.alt*0.01);
 
+    accel_body(state.m_accelerationBodyAX_MPS2,
+               state.m_accelerationBodyAY_MPS2,
+               state.m_accelerationBodyAZ_MPS2);
+    // accel on the ground is nasty in realflight, and prevents helicopter disarm
+    if (state.m_isTouchingGround) {
+        Vector3f accel_ef = (velocity_ef - last_velocity_ef) / dt_seconds;
+        accel_ef.z -= GRAVITY_MSS;
+        accel_body = dcm.transposed() * accel_ef;
+    }
+    
+    // limit to 16G to match pixhawk
+    float a_limit = GRAVITY_MSS*16;
+    accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
+    accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
+    accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
+    
     // offset based on first position to account for offset in RF world
-    if (position_offset.is_zero()) {
+    if (position_offset.is_zero() || state.m_resetButtonHasBeenPressed) {
         position_offset = position;
     }
     position -= position_offset;
-
-    // the accel values given in the state are very strange. Calculate
-    // it from delta-velocity instead, although this does introduce
-    // noise
-    Vector3f accel_ef = (velocity_ef - last_velocity_ef) / dt_seconds;
-    accel_ef.z -= GRAVITY_MSS;
-    accel_body = dcm.transposed() * accel_ef;
-    accel_body.x = constrain_float(accel_body.x, -16, 16);
-    accel_body.y = constrain_float(accel_body.y, -16, 16);
-    accel_body.z = constrain_float(accel_body.z, -16, 16);
 
     airspeed = state.m_airspeed_MPS;
     airspeed_pitot = state.m_airspeed_MPS;
 
     battery_voltage = state.m_batteryVoltage_VOLTS;
     battery_current = state.m_batteryCurrentDraw_AMPS;
-    rpm1 = state.m_propRPM;
-    rpm2 = state.m_heliMainRotorRPM;
+    rpm1 = state.m_heliMainRotorRPM;
+    rpm2 = state.m_propRPM;
 
     /*
       the interlink interface supports 8 input channels
@@ -307,7 +329,7 @@ void FlightAxis::update(const struct sitl_input &input)
     for (uint8_t i=0; i<rcin_chan_count; i++) {
         rcin[i] = state.rcin[i];
     }
-    
+
     update_position();
     time_now_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;
 
@@ -315,16 +337,15 @@ void FlightAxis::update(const struct sitl_input &input)
         if (last_frame_count_s != 0) {
             printf("%.2f FPS\n",
                    1000 / (state.m_currentPhysicsTime_SEC - last_frame_count_s));
-            printf("(%.3f %.3f %.3f %.3f) (%.3f %.3f %.3f %.3f)\n",
-                   quat.q1, quat.q2, quat.q3, quat.q4, 
-                   quat2.q1, quat2.q2, quat2.q3, quat2.q4);
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
         last_frame_count_s = state.m_currentPhysicsTime_SEC;
     }
-
+    
     last_time_s = state.m_currentPhysicsTime_SEC;
+
+    last_velocity_ef = velocity_ef;
 }
 
 } // namespace SITL

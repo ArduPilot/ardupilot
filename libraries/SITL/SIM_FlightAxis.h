@@ -87,6 +87,7 @@ public:
         double m_orientationQuaternion_Z;
         double m_orientationQuaternion_W;
         double m_flightAxisControllerIsActive;
+        double m_resetButtonHasBeenPressed;
     } state;
 
     static const uint16_t num_keys = sizeof(state)/sizeof(double);
@@ -147,7 +148,8 @@ public:
         { "m-orientationQuaternion-Y", state.m_orientationQuaternion_Y },
         { "m-orientationQuaternion-Z", state.m_orientationQuaternion_Z },
         { "m-orientationQuaternion-W", state.m_orientationQuaternion_W },
-        { "m-flightAxisControllerIsActive", state.m_flightAxisControllerIsActive }
+        { "m-flightAxisControllerIsActive", state.m_flightAxisControllerIsActive },
+        { "m-resetButtonHasBeenPressed", state.m_resetButtonHasBeenPressed },
     };
     
 private:
@@ -164,6 +166,7 @@ private:
     uint64_t activation_frame_counter = 0;
     double last_frame_count_s = 0;
     Vector3f position_offset;
+    Vector3f last_velocity_ef;
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;

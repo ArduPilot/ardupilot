@@ -94,7 +94,7 @@ const char AP_GPS_NMEA::_initialisation_blob[] = SIRF_INIT_MSG MTK_INIT_MSG UBLO
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
-#define hexdigit(x) ((x)>9?'A'+(x):'0'+(x))
+#define hexdigit(x) ((x)>9?'A'+((x)-10):'0'+(x))
 
 AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
@@ -473,6 +473,7 @@ AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
 		break;
 	case 3:
 		if (hexdigit(state.ck&0xF) == data) {
+            state.step = 0;
 			return true;
 		}
 		state.step = 0;

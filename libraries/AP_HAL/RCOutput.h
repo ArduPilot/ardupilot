@@ -25,6 +25,7 @@
 #define CH_16 15
 #define CH_17 16
 #define CH_18 17
+#define CH_NONE 255
 #endif
 
 
@@ -99,6 +100,11 @@ public:
       force the safety switch off, enabling PWM output from the IO board
      */
     virtual void     force_safety_off(void) {}
+
+    /*
+      If we support async sends (px4), this will force it to be serviced immediately
+     */
+    virtual void     force_safety_no_wait(void) {}
 
     /*
       setup scaling of ESC output for ESCs that can output a

@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "GCS_Mavlink.h"
+
 #include "Tracker.h"
 #include "version.h"
 
@@ -53,13 +55,10 @@ void Tracker::send_heartbeat(mavlink_channel_t chan)
         break;
     }
 
-    mavlink_msg_heartbeat_send(
-        chan,
-        MAV_TYPE_ANTENNA_TRACKER,
-        MAV_AUTOPILOT_ARDUPILOTMEGA,
-        base_mode,
-        custom_mode,
-        system_status);
+    gcs[chan-MAVLINK_COMM_0].send_heartbeat(MAV_TYPE_ANTENNA_TRACKER,
+                                            base_mode,
+                                            custom_mode,
+                                            system_status);
 }
 
 void Tracker::send_attitude(mavlink_channel_t chan)
@@ -130,6 +129,8 @@ void Tracker::send_waypoint_request(mavlink_channel_t chan)
 
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 {
+	float alt_diff = (g.alt_source == 0) ? nav_status.alt_difference_baro : nav_status.alt_difference_gps;
+
     mavlink_msg_nav_controller_output_send(
         chan,
         0,
@@ -137,7 +138,7 @@ void Tracker::send_nav_controller_output(mavlink_channel_t chan)
         nav_status.bearing,
         nav_status.bearing,
         nav_status.distance,
-        nav_status.altitude_difference,
+        alt_diff,
         0,
         0);
 }
@@ -151,19 +152,19 @@ void Tracker::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
+bool GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
     return false;
 }
 
-void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command&)
+void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&)
 {
     // do nothing
 }
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK::try_send_message(enum ap_message id)
+bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 {
     switch (id) {
     case MSG_HEARTBEAT:
@@ -376,17 +377,8 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
-{
-    if (_queued_parameter != nullptr) {
-        return 0.25f;
-    }
-
-    return 1.0f;
-}
-
 void
-GCS_MAVLINK::data_stream_send(void)
+GCS_MAVLINK_Tracker::data_stream_send(void)
 {
     if (_queued_parameter != NULL) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
@@ -510,7 +502,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     for (uint8_t i=0; i < num_gcs; i++) {
         if (gcs[i].initialised) {
             // request position
-            if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_DATA_STREAM_LEN) {
+            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, DATA_STREAM)) {
                 mavlink_msg_request_data_stream_send(
                     (mavlink_channel_t)i,
                     msg->sysid,
@@ -520,7 +512,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
                     1); // start streaming
             }
             // request air pressure
-            if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_DATA_STREAM_LEN) {
+            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, DATA_STREAM)) {
                 mavlink_msg_request_data_stream_send(
                     (mavlink_channel_t)i,
                     msg->sysid,
@@ -536,7 +528,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     target_set = true;
 }
 
-void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
@@ -595,7 +587,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } 
                 if (is_equal(packet.param3,1.0f)) {
-                    tracker.init_barometer();
+                    tracker.init_barometer(false);
                     // zero the altitude difference on next baro update
                     tracker.nav_status.need_altitude_calibration = true;
                 }
@@ -886,6 +878,9 @@ mission_failed:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
 
+    case MAVLINK_MSG_ID_SETUP_SIGNING:
+        handle_setup_signing(msg);
+        break;
     } // end switch
 } // end handle mavlink
 

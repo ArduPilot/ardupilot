@@ -200,7 +200,7 @@ void Rover::Log_Write_Steering()
         LOG_PACKET_HEADER_INIT(LOG_STEERING_MSG),
         time_us        : AP_HAL::micros64(),
         demanded_accel : lateral_acceleration,
-        achieved_accel : gps.ground_speed() * ins.get_gyro().z,
+        achieved_accel : ahrs.groundspeed() * ins.get_gyro().z,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -293,7 +293,9 @@ void Rover::Log_Write_Attitude()
 #endif
     DataFlash.Log_Write_POS(ahrs);
 
-    DataFlash.Log_Write_PID(LOG_PIDY_MSG, steerController.get_pid_info());
+    DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+
+    DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pidSpeedThrottle.get_pid_info());
 }
 
 struct PACKED log_Sonar {
@@ -333,7 +335,7 @@ void Rover::Log_Write_Sonar()
 
 void Rover::Log_Write_Current()
 {
-    DataFlash.Log_Write_Current(battery, channel_throttle->get_control_in());
+    DataFlash.Log_Write_Current(battery);
 
     // also write power status
     DataFlash.Log_Write_Power();

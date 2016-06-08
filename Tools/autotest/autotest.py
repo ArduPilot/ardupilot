@@ -13,19 +13,19 @@ os.environ['PYTHONUNBUFFERED'] = '1'
 
 os.putenv('TMPDIR', util.reltopdir('tmp'))
 
-def get_default_params(atype):
+def get_default_params(atype, binary):
     '''get default parameters'''
 
     # use rover simulator so SITL is not starved of input
     from pymavlink import mavutil
     HOME=mavutil.location(40.071374969556928,-105.22978898137808,1583.702759,246)
-    if atype in ['APMrover2', 'ArduPlane']:
-        frame = 'rover'
+    if binary.find("plane") != -1 or binary.find("rover") != -1:
+        frame = "rover"
     else:
-        frame = '+'
+        frame = "+"
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sil = util.start_SIL(atype, wipe=True, model=frame, home=home, speedup=10)
+    sil = util.start_SIL(binary, wipe=True, model=frame, home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SIL(atype)
     print("Dumping defaults")
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
@@ -33,7 +33,7 @@ def get_default_params(atype):
         # we need to restart it after eeprom erase
         util.pexpect_close(mavproxy)
         util.pexpect_close(sil)
-        sil = util.start_SIL(atype, model=frame, home=home, speedup=10)
+        sil = util.start_SIL(binary, model=frame, home=home, speedup=10)
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
@@ -81,11 +81,16 @@ def build_devrelease():
     return True
 
 def build_examples():
-    '''run the build_examples.sh script'''
-    print("Running build_examples.sh")
-    if util.run_cmd(util.reltopdir('Tools/scripts/build_examples.sh'), dir=util.reltopdir('.')) != 0:
-        print("Failed build_examples.sh")
-        return False
+    '''build examples'''
+    for target in 'px4-v2', 'navio':
+        print("Running build.examples for %s" % target)
+        try:
+            util.build_examples(target)
+        except Exception as e:
+            print("Failed build_examples on board=%s" % target)
+            print(str(e))
+            return False
+
     return True
 
 def build_parameters():
@@ -139,7 +144,8 @@ parser.add_option("--map", action='store_true', default=False, help='show map')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
 parser.add_option("--valgrind", default=False, action='store_true', help='run ArduPilot binaries under valgrind')
-parser.add_option("-j", default=1, type='int', help='build CPUs')
+parser.add_option("--debug", default=False, action='store_true', help='make built binaries debug binaries')
+parser.add_option("-j", default=None, type='int', help='build CPUs')
 
 opts, args = parser.parse_args()
 
@@ -192,6 +198,37 @@ def skip_step(step):
             return True
     return False
 
+def binary_path(step, debug=False):
+    if step.find("ArduCopter") != -1:
+        binary_name = "arducopter-quad"
+    elif step.find("ArduPlane") != -1:
+        binary_name = "arduplane"
+    elif step.find("APMrover2") != -1:
+        binary_name = "ardurover"
+    elif step.find("AntennaTracker") != -1:
+        binary_name = "antennatracker"
+    elif step.find("CopterAVC") != -1:
+        binary_name = "arducopter-heli"
+    elif step.find("QuadPlane") != -1:
+        binary_name = "arduplane"
+    else:
+        # cope with builds that don't have a specific binary
+        return None
+
+    if debug:
+        binary_basedir = "sitl-debug"
+    else:
+        binary_basedir = "sitl"
+
+    binary = util.reltopdir(os.path.join('build', binary_basedir, 'bin', binary_name))
+    if not os.path.exists(binary):
+        if os.path.exists(binary + ".exe"):
+            binary_path += ".exe"
+        else:
+            raise ValueError("Binary (%s) does not exist" % (binary,))
+
+    return binary
+
 def run_step(step):
     '''run one step'''
 
@@ -202,43 +239,45 @@ def run_step(step):
         return test_prerequisites()
 
     if step == 'build.ArduPlane':
-        return util.build_SIL('ArduPlane', j=opts.j)
+        return util.build_SIL('bin/arduplane', j=opts.j, debug=opts.debug)
 
     if step == 'build.APMrover2':
-        return util.build_SIL('APMrover2', j=opts.j)
+        return util.build_SIL('bin/ardurover', j=opts.j, debug=opts.debug)
 
     if step == 'build.ArduCopter':
-        return util.build_SIL('ArduCopter', j=opts.j)
+        return util.build_SIL('bin/arducopter-quad', j=opts.j, debug=opts.debug)
 
     if step == 'build.AntennaTracker':
-        return util.build_SIL('AntennaTracker', j=opts.j)
+        return util.build_SIL('bin/antennatracker', j=opts.j, debug=opts.debug)
 
     if step == 'build.Helicopter':
-        return util.build_SIL('ArduCopter', target='sitl-heli', j=opts.j)
+        return util.build_SIL('bin/arducopter-heli', j=opts.j, debug=opts.debug)
+
+    binary = binary_path(step, debug=opts.debug)
 
     if step == 'defaults.ArduPlane':
-        return get_default_params('ArduPlane')
+        return get_default_params('ArduPlane', binary)
 
     if step == 'defaults.ArduCopter':
-        return get_default_params('ArduCopter')
+        return get_default_params('ArduCopter', binary)
 
     if step == 'defaults.APMrover2':
-        return get_default_params('APMrover2')
+        return get_default_params('APMrover2', binary)
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
 
     if step == 'fly.CopterAVC':
-        return arducopter.fly_CopterAVC(viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
 
     if step == 'fly.QuadPlane':
-        return quadplane.fly_QuadPlane(viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return apmrover2.drive_APMrover2(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
 
     if step == 'build.All':
         return build_all()

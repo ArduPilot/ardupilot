@@ -57,10 +57,17 @@ void Tracker::update_bearing_and_distance()
     // calculate distance to vehicle
     nav_status.distance = get_distance(current_loc, vehicle.location_estimate);
 
+    // calculate altitude difference to vehicle using gps
+    nav_status.alt_difference_gps = (vehicle.location.alt - current_loc.alt) / 100.0f;
+
     // calculate pitch to vehicle
     // To-Do: remove need for check of control_mode
     if (control_mode != SCAN && !nav_status.manual_control_pitch) {
-        nav_status.pitch    = degrees(atan2f(nav_status.altitude_difference, nav_status.distance));
+    	if (g.alt_source == 0) {
+    	    nav_status.pitch = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
+    	} else {
+            nav_status.pitch = degrees(atan2f(nav_status.alt_difference_gps, nav_status.distance));
+    	}
     }
 }
 
@@ -139,16 +146,16 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 
     // calculate altitude difference based on difference in barometric pressure
     float alt_diff = barometer.get_altitude_difference(local_pressure, aircraft_pressure);
-    if (!isnan(alt_diff)) {
-        nav_status.altitude_difference = alt_diff + nav_status.altitude_offset;
-    }
+    if (!isnan(alt_diff) && !isinf(alt_diff)) {
+        nav_status.alt_difference_baro = alt_diff + nav_status.altitude_offset;
 
-    if (nav_status.need_altitude_calibration) {
-        // we have done a baro calibration - zero the altitude
-        // difference to the aircraft
-        nav_status.altitude_offset = -nav_status.altitude_difference;
-        nav_status.altitude_difference = 0;
-        nav_status.need_altitude_calibration = false;
+		if (nav_status.need_altitude_calibration) {
+			// we have done a baro calibration - zero the altitude
+			// difference to the aircraft
+			nav_status.altitude_offset = -alt_diff;
+			nav_status.alt_difference_baro = 0;
+			nav_status.need_altitude_calibration = false;
+		}
     }
 
     // log altitude difference

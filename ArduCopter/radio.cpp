@@ -70,6 +70,10 @@ void Copter::init_rc_out()
     // we want the input to be scaled correctly
     channel_throttle->set_range_out(0,1000);
 
+    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+    // take a proportion of speed. 
+    hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+
     // check if we should enter esc calibration mode
     esc_calibration_startup_check();
 
@@ -81,10 +85,6 @@ void Copter::init_rc_out()
 
     // refresh auxiliary channel to function map
     RC_Channel_aux::update_aux_servo_function();
-
-    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
-    // take a proportion of speed. 
-    hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 }
 
 // enable_motor_output() - enable and output lowest possible value to motors

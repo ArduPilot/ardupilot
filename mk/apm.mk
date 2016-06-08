@@ -42,10 +42,6 @@ ifeq ($(HAL_BOARD),HAL_BOARD_VRBRAIN)
 include $(MK_DIR)/board_vrbrain.mk
 endif
 
-ifeq ($(HAL_BOARD),HAL_BOARD_FLYMAPLE)
-include $(MK_DIR)/board_flymaple.mk
-endif
-
 ifeq ($(HAL_BOARD),HAL_BOARD_QURT)
 include $(MK_DIR)/board_qurt.mk
 endif

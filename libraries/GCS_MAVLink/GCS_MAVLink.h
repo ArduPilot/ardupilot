@@ -14,10 +14,6 @@
 
 #define MAVLINK_SEND_UART_BYTES(chan, buf, len) comm_send_buffer(chan, buf, len)
 
-// define our own MAVLINK_MESSAGE_CRC() macro to allow it to be put
-// into progmem
-#define MAVLINK_MESSAGE_CRC(msgid) mavlink_get_message_crc(msgid)
-
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5
 
@@ -28,11 +24,11 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
 
-#include "include/mavlink/v1.0/ardupilotmega/version.h"
+#include "include/mavlink/v2.0/ardupilotmega/version.h"
 
 #define MAVLINK_MAX_PAYLOAD_LEN 255
 
-#include "include/mavlink/v1.0/mavlink_types.h"
+#include "include/mavlink/v2.0/mavlink_types.h"
 
 /// MAVLink stream used for uartA
 extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
@@ -93,12 +89,9 @@ uint16_t comm_get_txspace(mavlink_channel_t chan);
 bool comm_is_idle(mavlink_channel_t chan);
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
-#include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
+#include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
 
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t);
-
-// return CRC byte for a mavlink message ID
-uint8_t mavlink_get_message_crc(uint8_t msgid);
 
 #pragma GCC diagnostic pop

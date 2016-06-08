@@ -115,9 +115,9 @@ public:
         return _offset;
     }
 
-    // return the current raw pressure
-    float get_raw_pressure(void) const {
-        return _raw_pressure;
+    // return the current corrected pressure
+    float get_corrected_pressure(void) const {
+        return _corrected_pressure;
     }
 
     // set the apparent to true airspeed ratio
@@ -164,18 +164,26 @@ private:
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
-    float			_raw_pressure;
+    float			_corrected_pressure;
     float           _EAS2TAS;
     bool		    _healthy:1;
     bool		    _hil_set:1;
     float           _hil_pressure;
     uint32_t        _last_update_ms;
 
+    // state of runtime calibration
+    struct {
+        uint32_t        start_ms;
+        uint16_t        count;
+        float           sum;
+    } _cal;
+
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;
     uint8_t _counter;
 
     float get_pressure(void);
+    void update_calibration(float raw_pressure);
 
     AP_Airspeed_Analog analog;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN

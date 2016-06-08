@@ -43,7 +43,6 @@
 #include <Filter/Filter.h>                     // Filter library
 #include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
 
-#include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
@@ -69,7 +68,7 @@
 #include "defines.h"
 
 #include "Parameters.h"
-#include <GCS_MAVLink/GCS.h>
+#include "GCS_Mavlink.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -77,7 +76,7 @@
 
 class Tracker : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Tracker;
     friend class Parameters;
 
     Tracker(void);
@@ -135,7 +134,7 @@ private:
 
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Tracker gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     AP_BoardConfig BoardConfig;
 
@@ -159,14 +158,15 @@ private:
         float bearing;                  // bearing to vehicle in centi-degrees
         float distance;                 // distance to vehicle in meters
         float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
-        float altitude_difference;      // altitude difference between tracker and vehicle in meters.  positive value means vehicle is above tracker
+        float alt_difference_baro;      // altitude difference between tracker and vehicle in meters according to the barometer.  positive value means vehicle is above tracker
+        float alt_difference_gps;       // altitude difference between tracker and vehicle in meters according to the gps.  positive value means vehicle is above tracker
         float altitude_offset;          // offset in meters which is added to tracker altitude to align altitude measurements with vehicle's barometer
         bool manual_control_yaw         : 1;// true if tracker yaw is under manual control
         bool manual_control_pitch       : 1;// true if tracker pitch is manually controlled
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
-    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
+    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
     // Servo state
     struct {
@@ -214,7 +214,7 @@ private:
     void update_scan(void);
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
     void read_radio();
-    void init_barometer(void);
+    void init_barometer(bool full_calibration);
     void update_barometer(void);
     void update_ahrs();
     void update_compass(void);

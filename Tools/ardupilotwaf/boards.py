@@ -5,6 +5,7 @@ from collections import OrderedDict
 import sys
 
 import waflib
+from waflib.Configure import conf
 
 _board_classes = {}
 
@@ -160,10 +161,13 @@ def get_boards_names():
     return sorted(list(_board_classes.keys()))
 
 _board = None
-def get_board(name):
+@conf
+def get_board(ctx):
     global _board
     if not _board:
-        _board = _board_classes[name]()
+        if not ctx.env.BOARD:
+            ctx.fatal('BOARD environment variable must be set before first call to get_board()')
+        _board = _board_classes[ctx.env.BOARD]()
     return _board
 
 # NOTE: Keeping all the board definitions together so we can easily
@@ -184,12 +188,11 @@ class sitl(Board):
                 '-O3',
             ]
 
-        cfg.check_librt()
-
         env.LIB += [
             'm',
         ]
-        env.LIB += cfg.env.LIB_RT
+
+        cfg.check_librt(env)
 
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES += [
@@ -216,12 +219,13 @@ class linux(Board):
                 '-O3',
             ]
 
-        cfg.check_librt()
-
         env.LIB += [
             'm',
         ]
-        env.LIB += cfg.env.LIB_RT
+
+        cfg.check_librt(env)
+        cfg.check_lttng(env)
+        cfg.check_libiio(env)
 
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [
@@ -302,11 +306,6 @@ class bebop(linux):
 
     def configure_env(self, cfg, env):
         super(bebop, self).configure_env(cfg, env)
-
-        cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
-                args = ['--libs', '--cflags'])
-
-        env.LIB += cfg.env.LIB_LIBIIO
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',

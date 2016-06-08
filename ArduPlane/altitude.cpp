@@ -137,8 +137,12 @@ int32_t Plane::relative_altitude_abs_cm(void)
   return relative altitude in meters (relative to terrain, if available,
   or home otherwise)
  */
-float Plane::relative_ground_altitude(void)
+float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 {
+    if (use_rangefinder_if_available && rangefinder_state.in_range) {
+        return rangefinder_state.height_estimate;
+    }
+
 #if AP_TERRAIN_AVAILABLE
     float altitude;
     if (terrain.status() == AP_Terrain::TerrainStatusOK && terrain.height_above_terrain(altitude, true)) {

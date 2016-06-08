@@ -22,6 +22,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -55,8 +56,6 @@ extern const AP_HAL::HAL &hal;
 #else
  #define ARSPD_DEFAULT_PIN 15
 #endif
-#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
- #define ARSPD_DEFAULT_PIN 16
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
          #define ARSPD_DEFAULT_PIN 5
@@ -176,8 +175,6 @@ bool AP_Airspeed::get_temperature(float &temperature)
 // the get_airspeed() interface can be used
 void AP_Airspeed::calibrate(bool in_startup)
 {
-    float sum = 0;
-    uint8_t count = 0;
     if (!_enable) {
         return;
     }
@@ -186,24 +183,27 @@ void AP_Airspeed::calibrate(bool in_startup)
     }
     // discard first reading
     get_pressure();
-    for (uint8_t i = 0; i < 10; i++) {
-        hal.scheduler->delay(100);
-        float p = get_pressure();
-        if (_healthy) {
-            sum += p;
-            count++;
+    _cal.start_ms = AP_HAL::millis();
+    _cal.count = 0;
+    _cal.sum = 0;
+}
+
+void AP_Airspeed::update_calibration(float raw_pressure)
+{
+    if (AP_HAL::millis() - _cal.start_ms >= 1000) {
+        if (_cal.count == 0) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
+        } else {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor calibrated");
+            _offset.set_and_save(_cal.sum / _cal.count);
         }
-    }
-    if (count == 0) {
-        // unhealthy sensor
-        hal.console->println("Airspeed sensor unhealthy");
-        _offset.set(0);
+        _cal.start_ms = 0;
         return;
     }
-    float raw = sum/count;
-    _offset.set_and_save(raw);
-    _airspeed = 0;
-    _raw_airspeed = 0;
+    if (_healthy) {
+        _cal.sum += raw_pressure;
+        _cal.count++;
+    }
 }
 
 // read the airspeed sensor
@@ -213,10 +213,15 @@ void AP_Airspeed::read(void)
     if (!_enable) {
         return;
     }
-    airspeed_pressure = get_pressure() - _offset;
+    float raw_pressure = get_pressure();
+    if (_cal.start_ms != 0) {
+        update_calibration(raw_pressure);
+    }
+    
+    airspeed_pressure = raw_pressure - _offset;
 
     // remember raw pressure for logging
-    _raw_pressure     = airspeed_pressure;
+    _corrected_pressure = airspeed_pressure;
 
     /*
       we support different pitot tube setups so used can choose if

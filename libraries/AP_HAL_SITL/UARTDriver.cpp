@@ -271,7 +271,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 #ifdef HAVE_SOCK_SIN_LEN
     sockaddr.sin_len = sizeof(sockaddr);
 #endif
-    sockaddr.sin_port = port;
+    sockaddr.sin_port = htons(port);
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = inet_addr(address);
 
@@ -307,6 +307,9 @@ void UARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
     if (!_connected) {
         ::printf("Opening %s\n", path);
         _fd = ::open(path, O_RDWR | O_CLOEXEC);
+        // use much smaller buffer sizes on real UARTs
+        _writebuffer.set_size(1024);
+        _readbuffer.set_size(512);
     }
 
     if (_fd == -1) {

@@ -119,12 +119,19 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(startup_delay,          "STARTUP_DELAY",   0),
 
-    // @Param: SERVO_TYPE
-    // @DisplayName: Type of servo system being used
-    // @Description: This allows selection of position servos or on/off servos
+    // @Param: SERVO_PITCH_TYPE
+    // @DisplayName: Type of servo system being used for pitch
+    // @Description: This allows selection of position servos or on/off servos for pitch
     // @Values: 0:Position,1:OnOff,2:ContinuousRotation
     // @User: Standard
-    GSCALAR(servo_type,          "SERVO_TYPE",   SERVO_TYPE_POSITION),
+    GSCALAR(servo_pitch_type,          "SERVO_PITCH_TYPE",   SERVO_TYPE_POSITION),
+
+    // @Param: SERVO_YAW_TYPE
+    // @DisplayName: Type of servo system being used for yaw
+    // @Description: This allows selection of position servos or on/off servos for yaw
+    // @Values: 0:Position,1:OnOff,2:ContinuousRotation
+    // @User: Standard
+    GSCALAR(servo_yaw_type,          "SERVO_YAW_TYPE",   SERVO_TYPE_POSITION),
 
     // @Param: ONOFF_YAW_RATE
     // @DisplayName: Yaw rate for on/off servos
@@ -206,6 +213,13 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 0 100
     // @User: Standard
     GSCALAR(distance_min,           "DISTANCE_MIN", DISTANCE_MIN_DEFAULT),
+
+    // @Param: ALT_SOURCE
+    // @DisplayName: Altitude Source
+    // @Description: What provides altitude information for vehicle
+    // @Values: 0:Barometer,1:GPS
+    // @User: Standard
+    GSCALAR(alt_source,				"ALT_SOURCE",	0),
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane

@@ -29,6 +29,7 @@ BREAKPOINT=""
 OVERRIDE_BUILD_TARGET=""
 DELAY_START=0
 DEFAULTS_PATH=""
+MAVLINK_PROTOCOL_VERSION="1"
 
 usage()
 {
@@ -61,6 +62,7 @@ Options:
     -H               start HIL
     -S SPEEDUP       set simulation speedup (1 for wall clock time)
     -d TIME          delays the start of mavproxy by the number of seconds
+    -P VERSION       mavlink protocol version (1 or 2)
 
 mavproxy_options:
     --map            start with a map
@@ -77,7 +79,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:d:" opt; do
+while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:d:P:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -149,6 +151,9 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:d:" opt; do
       ;;
     b)
       OVERRIDE_BUILD_TARGET="$OPTARG"
+      ;;
+    P)
+      MAVLINK_PROTOCOL_VERSION="$OPTARG"
       ;;
     h)
       usage
@@ -286,6 +291,16 @@ case $FRAME in
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/Helicopter.parm"
 	;;
+    singlecopter*)
+	BUILD_TARGET="sitl-single"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/SingleCopter.parm"
+	;;
+    coaxcopter*)
+	BUILD_TARGET="sitl-coax"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/CoaxCopter.parm"
+	;;
     IrisRos)
 	BUILD_TARGET="sitl"
         DEFAULTS_PATH="$autotest/copter_params.parm"
@@ -329,6 +344,11 @@ case $FRAME in
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
         DEFAULTS_PATH="$autotest/plane.parm"
+	;;
+    rover-skid)
+	BUILD_TARGET="sitl"
+        MODEL="$FRAME"
+        DEFAULTS_PATH="$autotest/Rover-skid.parm"
 	;;
     flightaxis*)
         MODEL="$FRAME"
@@ -489,6 +509,10 @@ if [ $USE_MAVLINK_GIMBAL == 1 ]; then
 fi
 if [ $DELAY_START != 0 ]; then
   sleep $DELAY_START
+fi
+
+if [ $MAVLINK_PROTOCOL_VERSION == 2 ]; then
+    options="$options --mav20"
 fi
 
 if [ -f /usr/bin/cygstart ]; then

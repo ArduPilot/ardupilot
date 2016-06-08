@@ -29,7 +29,7 @@ void AP_MotorsHeli_RSC::init_servo()
 }
 
 // set_power_output_range
-void AP_MotorsHeli_RSC::set_power_output_range(uint16_t power_low, uint16_t power_high)
+void AP_MotorsHeli_RSC::set_power_output_range(float power_low, float power_high)
 {
     _power_output_low = power_low;
     _power_output_high = power_high;
@@ -162,6 +162,13 @@ void AP_MotorsHeli_RSC::write_rsc(float servo_out)
         // ToDo: We should probably use RC_Channel_Aux to avoid this problem
         return;
     } else {
-        RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_heli_rsc, servo_out * 1000.0f);
+        // calculate PWM value based on H_RSC_PWM_MIN, H_RSC_PWM_MAX and H_RSC_PWM_REV
+        uint16_t pwm = servo_out * (_pwm_max - _pwm_min);
+        if (_pwm_rev >= 0) {
+            pwm = _pwm_min + pwm;
+        } else {
+            pwm = _pwm_max - pwm;
+        }
+        RC_Channel_aux::set_radio(_aux_fn, pwm);
     }
 }

@@ -1,5 +1,11 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 0.7.7 31-May-2016
+Changes from 0.7.6
+1) SERVO_TYPE parameter split into SERVO_PITCH_TYPE, SERVO_YAW_TYPE to allow different servo types for each axis
+2) ALT_SOURCE parameter added to allow selecting vehicle's GPS as an altitude source instead of vehicle's baro
+3) VBAR dataflash log message added to capture vehicle barometer data
+------------------------------------------------------------------
 AntennaTracker 0.7.6 08-Feb-2016
 Changes from 0.7.5
 1) Fix logging of attitude and mode to dataflash 

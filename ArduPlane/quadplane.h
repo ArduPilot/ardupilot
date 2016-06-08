@@ -219,11 +219,15 @@ private:
 
     // control if a VTOL GUIDED will be used
     AP_Int8 guided_mode;
+
+    // control ESC throttle calibration
+    AP_Int8 esc_calibration;
+    void run_esc_calibration(void);
     
     struct {
         AP_Float gain;
         float integrator;
-        uint32_t lastt_ms;
+        uint32_t last_ms;
         int8_t last_pct;
     } vel_forward;
 
@@ -299,6 +303,9 @@ private:
         uint8_t motor_count;          // number of motors to cycle
     } motor_test;
 
+    // time of last control log message
+    uint32_t last_ctrl_log_ms;
+    
     // tiltrotor control variables
     struct {
         AP_Int16 tilt_mask;

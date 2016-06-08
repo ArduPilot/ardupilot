@@ -52,7 +52,6 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Mount/AP_Mount.h>		// Camera/Antenna mount
 #include <AP_Camera/AP_Camera.h>		// Camera triggering
-#include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Airspeed/AP_Airspeed.h>    // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>     // needed for AHRS build
@@ -80,7 +79,7 @@
 // Local modules
 #include "defines.h"
 #include "Parameters.h"
-#include <GCS_MAVLink/GCS.h>
+#include "GCS_Mavlink.h"
 
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
@@ -90,7 +89,7 @@
 
 class Rover : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Rover;
     friend class Parameters;
     friend class AP_Arming;
 
@@ -176,7 +175,7 @@ private:
     // GCS handling
     AP_SerialManager serial_manager;
     const uint8_t num_gcs;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Rover gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     // relay support
     AP_Relay relay;
@@ -464,7 +463,7 @@ private:
     bool throttle_failsafe_active();
     void trim_control_surfaces();
     void trim_radio();
-    void init_barometer(void);
+    void init_barometer(bool full_calibration);
     void init_sonar(void);
     void read_battery(void);
     void read_receiver_rssi(void);

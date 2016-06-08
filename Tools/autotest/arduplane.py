@@ -426,7 +426,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     return True
 
 
-def fly_ArduPlane(viewerip=None, map=False, valgrind=False):
+def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False):
     '''fly ArduPlane in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -440,7 +440,7 @@ def fly_ArduPlane(viewerip=None, map=False, valgrind=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=10)
+    sil = util.start_SIL(binary, wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=10)
     print("Starting MAVProxy")
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     util.expect_setup_callback(mavproxy, expect_callback)
@@ -451,6 +451,9 @@ def fly_ArduPlane(viewerip=None, map=False, valgrind=False):
     # setup test parameters
     mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
+    mavproxy.send("param set LOG_REPLAY 1\n")
+    mavproxy.send("param set LOG_DISARMED 1\n")
+    time.sleep(3)
 
     mavproxy.send("param fetch\n")
 
@@ -458,7 +461,7 @@ def fly_ArduPlane(viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=10, valgrind=valgrind)
+    sil = util.start_SIL(binary, model='jsbsim', home=HOME_LOCATION, speedup=10, valgrind=valgrind)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
@@ -553,9 +556,10 @@ def fly_ArduPlane(viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    if os.path.exists('ArduPlane-valgrind.log'):
-        os.chmod('ArduPlane-valgrind.log', 0644)
-        shutil.copy("ArduPlane-valgrind.log", util.reltopdir("../buildlogs/ArduPlane-valgrind.log"))
+    valgrind_log = sil.valgrind_log_filepath()
+    if os.path.exists(valgrind_log):
+        os.chmod(valgrind_log, 0644)
+        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduPlane-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % e)

@@ -79,7 +79,7 @@ public:
         k_param_gps,
         k_param_scan_speed,
         k_param_proxy_mode_unused, // deprecated
-        k_param_servo_type,
+        k_param_servo_pitch_type,
         k_param_onoff_yaw_rate,
         k_param_onoff_pitch_rate,
         k_param_onoff_yaw_mintime,
@@ -98,6 +98,8 @@ public:
         // 150: Telemetry control
         //
         k_param_serial_manager,     // serial manager library
+        k_param_servo_yaw_type,
+        k_param_alt_source,
 
         //
         // 200 : Radio settings
@@ -133,7 +135,9 @@ public:
     AP_Float start_longitude;
 
     AP_Float startup_delay;
-    AP_Int8  servo_type;
+    AP_Int8  servo_pitch_type;
+    AP_Int8  servo_yaw_type;
+    AP_Int8  alt_source;
     AP_Float onoff_yaw_rate;
     AP_Float onoff_pitch_rate;
     AP_Float onoff_yaw_mintime;

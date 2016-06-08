@@ -122,8 +122,8 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_pitch_radio_passthrough, _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_roll_radio_passthrough, _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_pitch_radio_passthrough, _servo4));
-            rc_write(AP_MOTORS_MOT_5, _throttle_radio_min);
-            rc_write(AP_MOTORS_MOT_6, _throttle_radio_min);
+            rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
+            rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
             hal.rcout->push();
             break;
         case SPIN_WHEN_ARMED:
@@ -133,8 +133,8 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[1], _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[2], _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[3], _servo4));
-            rc_write(AP_MOTORS_MOT_5, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
-            rc_write(AP_MOTORS_MOT_6, constrain_int16(_throttle_radio_min + _throttle_low_end_pct * _min_throttle, _throttle_radio_min, _throttle_radio_min + _min_throttle));
+            rc_write(AP_MOTORS_MOT_5, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
+            rc_write(AP_MOTORS_MOT_6, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
             hal.rcout->push();
             break;
         case SPOOL_UP:
@@ -233,7 +233,10 @@ void AP_MotorsCoax::output_armed_stabilizing()
     _thrust_yt_ccw = thrust_out + 0.5f * yaw_thrust;
     _thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
 
-    if (is_zero(thrust_out)) {
+    // limit thrust out for calculation of actuator gains
+    float thrust_out_actuator = MAX(throttle_thrust_hover*0.5,thrust_out);
+
+    if (is_zero(thrust_out_actuator)) {
         limit.roll_pitch = true;
         if (roll_thrust < 0.0f) {
             _actuator_out[0] = -1.0f;
@@ -254,8 +257,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
         // static thrust is proportional to the airflow velocity squared
         // therefore the torque of the roll and pitch actuators should be approximately proportional to
         // the angle of attack multiplied by the static thrust.
-        _actuator_out[0] = roll_thrust/thrust_out;
-        _actuator_out[1] = pitch_thrust/thrust_out;
+        _actuator_out[0] = roll_thrust/thrust_out_actuator;
+        _actuator_out[1] = pitch_thrust/thrust_out_actuator;
         if (fabsf(_actuator_out[0]) > 1.0f) {
             limit.roll_pitch = true;
             _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);

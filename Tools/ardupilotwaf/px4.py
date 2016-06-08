@@ -59,40 +59,6 @@ def px4_import_objects_from_use(self):
 
         queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
-class px4_copy_lib(Task.Task):
-    run_str = '${CP} ${SRC} ${PX4_AP_PROGRAM_LIB}'
-    color = 'CYAN'
-
-    def runnable_status(self):
-        status = super(px4_copy_lib, self).runnable_status()
-        if status != Task.SKIP_ME:
-            return status
-
-        pseudo_target = self.get_pseudo_target()
-        try:
-            if pseudo_target.sig != self.inputs[0].sig:
-                status = Task.RUN_ME
-        except AttributeError:
-            status = Task.RUN_ME
-
-        return status
-
-    def get_pseudo_target(self):
-        if hasattr(self, 'pseudo_target'):
-            return self.pseudo_target
-
-        bldnode = self.generator.bld.bldnode
-        self.pseudo_target = bldnode.make_node(self.env.PX4_AP_PROGRAM_LIB)
-        return self.pseudo_target
-
-    def keyword(self):
-        return 'PX4: Copying program library'
-
-    def post_run(self):
-        super(px4_copy_lib, self).post_run()
-        pseudo_target = self.get_pseudo_target()
-        pseudo_target.sig = pseudo_target.cache_sig = self.inputs[0].sig
-
 class px4_copy(Task.Task):
     run_str = '${CP} ${SRC} ${TGT}'
     color = 'CYAN'
@@ -113,11 +79,12 @@ class px4_add_git_hashes(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.outputs[0].ctx.launch_node())
 
-def _update_firmware_sig(fw_task, firmware):
+def _update_firmware_sig(fw_task, firmware, elf):
     original_post_run = fw_task.post_run
     def post_run():
         original_post_run()
         firmware.sig = firmware.cache_sig = Utils.h_file(firmware.abspath())
+        elf.sig = elf.cache_sig = Utils.h_file(elf.abspath())
     fw_task.post_run = post_run
 
 _cp_px4io = None
@@ -130,12 +97,18 @@ def px4_firmware(self):
     global _cp_px4io, _firmware_semaphorish_tasks, _upload_task
     version = self.env.get_flat('PX4_VERSION')
 
+    px4 = self.bld.cmake('px4')
+    px4.vars['APM_PROGRAM_LIB'] = self.link_task.outputs[0].abspath()
+
     if self.env.PX4_USE_PX4IO and not _cp_px4io:
         px4io_task = self.create_cmake_build_task('px4', 'fw_io')
-        px4io = px4io_task.config_taskgen.get_cmake_bldnode().make_node(
+        px4io = px4io_task.cmake.bldnode.make_node(
             'src/modules/px4iofirmware/px4io-v%s.bin' % version,
         )
-        px4io_task.set_outputs(px4io)
+        px4io_elf = px4.bldnode.make_node(
+            'src/modules/px4iofirmware/px4io-v%s' % version
+        )
+        px4io_task.set_outputs([px4io, px4io_elf])
 
         romfs = self.bld.bldnode.make_node(self.env.PX4_ROMFS_BLD)
         romfs_px4io = romfs.make_node('px4io/px4io.bin')
@@ -143,26 +116,30 @@ def px4_firmware(self):
         _cp_px4io = self.create_task('px4_copy', px4io, romfs_px4io)
         _cp_px4io.keyword = lambda: 'PX4: Copying PX4IO to ROMFS'
 
-    cp_lib = self.create_task('px4_copy_lib', self.link_task.outputs)
-    # we need to synchronize because the path PX4_AP_PROGRAM_LIB is used by all
-    # ap_programs
-    if _firmware_semaphorish_tasks:
-        for t in _firmware_semaphorish_tasks:
-            cp_lib.set_run_after(t)
-    _firmware_semaphorish_tasks = []
+        px4io_elf_dest = self.bld.bldnode.make_node(self.env.PX4IO_ELF_DEST)
+        cp_px4io_elf = self.create_task('px4_copy', px4io_elf, px4io_elf_dest)
 
     fw_task = self.create_cmake_build_task(
         'px4',
         'build_firmware_px4fmu-v%s' % version,
     )
-    fw_task.set_run_after(cp_lib)
+
+    # we need to synchronize in order to avoid the output expected by the
+    # previous ap_program being overwritten before used
+    for t in _firmware_semaphorish_tasks:
+        fw_task.set_run_after(t)
+    _firmware_semaphorish_tasks = []
+
     if self.env.PX4_USE_PX4IO and _cp_px4io.generator is self:
         fw_task.set_run_after(_cp_px4io)
 
-    firmware = fw_task.config_taskgen.cmake_bld.make_node(
+    firmware = px4.bldnode.make_node(
         'src/firmware/nuttx/nuttx-px4fmu-v%s-apm.px4' % version,
     )
-    _update_firmware_sig(fw_task, firmware)
+    fw_elf = px4.bldnode.make_node(
+        'src/firmware/nuttx/firmware_nuttx',
+    )
+    _update_firmware_sig(fw_task, firmware, fw_elf)
 
     fw_dest = self.bld.bldnode.make_node(
         os.path.join(self.program_dir, '%s.px4' % self.program_name)
@@ -170,6 +147,18 @@ def px4_firmware(self):
     git_hashes = self.create_task('px4_add_git_hashes', firmware, fw_dest)
     git_hashes.set_run_after(fw_task)
     _firmware_semaphorish_tasks.append(git_hashes)
+
+    fw_elf_dest = self.bld.bldnode.make_node(
+        os.path.join(self.program_dir, self.program_name)
+    )
+    cp_elf = self.create_task('px4_copy', fw_elf, fw_elf_dest)
+    cp_elf.set_run_after(fw_task)
+    _firmware_semaphorish_tasks.append(cp_elf)
+
+    self.build_summary = dict(
+        target=self.name,
+        binary=fw_elf_dest.path_from(self.bld.bldnode),
+    )
 
     if self.bld.options.upload:
         if _upload_task:
@@ -218,6 +207,7 @@ def _process_romfs(self):
         self.create_task('px4_copy', src, dst)
 
 def configure(cfg):
+    cfg.env.CMAKE_MIN_VERSION = '3.2'
     cfg.load('cmake')
     cfg.find_program('cp')
 
@@ -244,14 +234,14 @@ def configure(cfg):
     env.PX4_ROMFS_BLD = 'px4-extra-files/ROMFS'
     env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % bootloader_name
 
-    program_lib_name = cfg.env.cxxstlib_PATTERN % 'ap_program'
-    env.PX4_AP_PROGRAM_LIB = os.path.join('px4-extra-files', program_lib_name)
-
     env.PX4_ADD_GIT_HASHES = srcpath('Tools/scripts/add_git_hashes.py')
     env.PX4_APM_ROOT = srcpath('')
     env.PX4_ROOT = srcpath('modules/PX4Firmware')
     env.PX4_NUTTX_ROOT = srcpath('modules/PX4NuttX')
     env.PX4_UAVCAN_ROOT = srcpath('modules/uavcan')
+
+    if env.PX4_USE_PX4IO:
+        env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
 
     env.PX4_CMAKE_VARS = dict(
         CONFIG='nuttx_px4fmu-v%s_apm' % env.get_flat('PX4_VERSION'),
@@ -259,7 +249,6 @@ def configure(cfg):
         UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
         NUTTX_SRC=env.PX4_NUTTX_ROOT,
         PX4_NUTTX_ROMFS=bldpath(env.PX4_ROMFS_BLD),
-        APM_PROGRAM_LIB=bldpath(env.PX4_AP_PROGRAM_LIB),
         ARDUPILOT_BUILD='YES',
         EXTRA_CXX_FLAGS=' '.join((
             # NOTE: these "-Wno-error=*" flags should be removed as we update
@@ -272,6 +261,7 @@ def configure(cfg):
             '-DCMAKE_BUILD',
             '-DARDUPILOT_BUILD',
             '-I%s' % bldpath('libraries/GCS_MAVLink'),
+            '-I%s' % bldpath('libraries/GCS_MAVLink/include/mavlink'),
             '-Wl,--gc-sections',
         )),
         EXTRA_C_FLAGS=' '.join((
@@ -284,20 +274,18 @@ def configure(cfg):
 
 def build(bld):
     version = bld.env.get_flat('PX4_VERSION')
-    px4 = bld(
-        features='cmake_configure',
+    px4 = bld.cmake(
         name='px4',
         cmake_src=bld.srcnode.find_dir('modules/PX4Firmware'),
         cmake_vars=bld.env.PX4_CMAKE_VARS,
-        group='dynamic_sources',
     )
 
-    px4.cmake_build(
+    px4.build(
         'msg_gen',
         group='dynamic_sources',
         cmake_output_patterns='src/modules/uORB/topics/*.h',
     )
-    px4.cmake_build(
+    px4.build(
         'prebuild_targets',
         group='dynamic_sources',
         cmake_output_patterns='px4fmu-v%s/NuttX/nuttx-export/**/*.h' % version,
@@ -308,3 +296,31 @@ def build(bld):
         group='dynamic_sources',
         features='_px4_romfs',
     )
+
+    bld.extra_build_summary = _extra_build_summary
+
+def _extra_build_summary(bld, build_summary):
+    build_summary.text('')
+    build_summary.text('PX4')
+    build_summary.text('', '''
+The ELF files are pointed by the path in the "%s" column. The .px4 files are in
+the same directory of their corresponding ELF files.
+''' % build_summary.header_text['target'])
+
+    if not bld.options.upload:
+        build_summary.text('')
+        build_summary.text('', '''
+You can use the option --upload to upload the firmware to the PX4 board if you
+have one connected.''')
+
+    if bld.env.PX4_USE_PX4IO:
+        build_summary.text('')
+        build_summary.text('PX4IO')
+        summary_data_list = bld.size_summary([bld.env.PX4IO_ELF_DEST])
+        header = bld.env.BUILD_SUMMARY_HEADER[:]
+        try:
+            header.remove('target')
+        except ValueError:
+            pass
+        header.insert(0, 'binary_path')
+        build_summary.print_table(summary_data_list, header)

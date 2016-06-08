@@ -14,7 +14,7 @@ private:
     int open_channel(int ch);
 
     uint64_t _last_timestamp = 0l;
-    static const size_t CHANNEL_COUNT = 8;
+    static const size_t CHANNEL_COUNT = 16;
     int channels[CHANNEL_COUNT];
     uint16_t periods[ARRAY_SIZE(channels)] = {0};
 };

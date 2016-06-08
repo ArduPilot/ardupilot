@@ -54,36 +54,36 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_EXPO", 8, AP_MotorsMulticopter, _thrust_curve_expo, AP_MOTORS_THST_EXPO_DEFAULT),
 
-    // @Param: THST_MAX
-    // @DisplayName: Thrust Curve Max
-    // @Description: Point at which the thrust saturates
-    // @Values: 0.9:Low, 1.0:High
+    // @Param: SPIN_MAX
+    // @DisplayName: Motor Spin maximum
+    // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
+    // @Values: 0.9:Low, 0.95:Default, 1.0:High
     // @User: Advanced
-    AP_GROUPINFO("THST_MAX", 9, AP_MotorsMulticopter, _thrust_curve_max, AP_MOTORS_THST_MAX_DEFAULT),
+    AP_GROUPINFO("SPIN_MAX", 9, AP_MotorsMulticopter, _thrust_curve_max, AP_MOTORS_SPIN_MAX_DEFAULT),
 
-    // @Param: THST_BAT_MAX
+    // @Param: BAT_VOLT_MAX
     // @DisplayName: Battery voltage compensation maximum voltage
     // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.4 * cell count, 0 = Disabled
     // @Range: 6 35
     // @Units: Volts
     // @User: Advanced
-    AP_GROUPINFO("THST_BAT_MAX", 10, AP_MotorsMulticopter, _batt_voltage_max, AP_MOTORS_THST_BAT_MAX_DEFAULT),
+    AP_GROUPINFO("BAT_VOLT_MAX", 10, AP_MotorsMulticopter, _batt_voltage_max, AP_MOTORS_BAT_VOLT_MAX_DEFAULT),
 
-    // @Param: THST_BAT_MIN
+    // @Param: BAT_VOLT_MIN
     // @DisplayName: Battery voltage compensation minimum voltage
     // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled
     // @Range: 6 35
     // @Units: Volts
     // @User: Advanced
-    AP_GROUPINFO("THST_BAT_MIN", 11, AP_MotorsMulticopter, _batt_voltage_min, AP_MOTORS_THST_BAT_MIN_DEFAULT),
+    AP_GROUPINFO("BAT_VOLT_MIN", 11, AP_MotorsMulticopter, _batt_voltage_min, AP_MOTORS_BAT_VOLT_MIN_DEFAULT),
 
-    // @Param: CURR_MAX
+    // @Param: BAT_CURR_MAX
     // @DisplayName: Motor Current Max
     // @Description: Maximum current over which maximum throttle is limited (0 = Disabled)
     // @Range: 0 200
     // @Units: Amps
     // @User: Advanced
-    AP_GROUPINFO("CURR_MAX", 12, AP_MotorsMulticopter, _batt_current_max, AP_MOTORS_CURR_MAX_DEFAULT),
+    AP_GROUPINFO("BAT_CURR_MAX", 12, AP_MotorsMulticopter, _batt_current_max, AP_MOTORS_BAT_CURR_MAX_DEFAULT),
 
     // @Param: THR_MIX_MIN
     // @DisplayName: Throttle Mix Minimum
@@ -105,7 +105,21 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Values: 0:Normal,1:OneShot,2:OneShot125
     // @User: Advanced
     AP_GROUPINFO("PWM_TYPE", 15, AP_MotorsMulticopter, _pwm_type, PWM_TYPE_NORMAL),
-    
+
+    // @Param: PWM_MIN
+    // @DisplayName: PWM output miniumum
+    // @Description: This sets the min PWM output value that will ever be output to the motors, 0 = use input RC3_MIN
+    // @Range: 0 2000
+    // @User: Advanced
+    AP_GROUPINFO("PWM_MIN", 16, AP_MotorsMulticopter, _pwm_min, 0),
+
+    // @Param: PWM_MAX
+    // @DisplayName: PWM output maximum
+    // @Description: This sets the max PWM value that will ever be output to the motors, 0 = use input RC3_MAX
+    // @Range: 0 2000
+    // @User: Advanced
+    AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 0),
+
     AP_GROUPEND
 };
 
@@ -114,10 +128,7 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     AP_Motors(loop_rate, speed_hz),
     _throttle_rpy_mix_desired(AP_MOTORS_THR_LOW_CMP_DEFAULT),
     _throttle_rpy_mix(AP_MOTORS_THR_LOW_CMP_DEFAULT),
-    _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
-    _throttle_radio_min(1100),
-    _throttle_radio_max(1900),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
@@ -133,6 +144,9 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     // setup battery voltage filtering
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
+
+    // default throttle ranges (i.e. _min_throttle, _throttle_radio_min, _throttle_radio_max)
+    set_throttle_range(130, 1100, 1900);
 };
 
 // output - sends commands to the motors
@@ -314,17 +328,42 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 
 int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 {
-    return constrain_int16((_throttle_radio_min + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
-            ( _throttle_radio_max - (_throttle_radio_min + _min_throttle))), _throttle_radio_min + _min_throttle, _throttle_radio_max);
+    thrust_in = constrain_float(thrust_in, 0, 1);
+    return constrain_int16((get_pwm_output_min() + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
+            (get_pwm_output_max() - (get_pwm_output_min() + _min_throttle))), get_pwm_output_min() + _min_throttle, get_pwm_output_max());
+}
+
+// get minimum or maximum pwm value that can be output to motors
+int16_t AP_MotorsMulticopter::get_pwm_output_min() const
+{
+    // return _pwm_min if both PWM_MIN and PWM_MAX parameters are defined and valid
+    if ((_pwm_min > 0) && (_pwm_max > 0) && (_pwm_max > _pwm_min)) {
+        return _pwm_min;
+    }
+    return _throttle_radio_min;
+}
+
+// get maximum pwm value that can be output to motors
+int16_t AP_MotorsMulticopter::get_pwm_output_max() const
+{
+    // return _pwm_max if both PWM_MIN and PWM_MAX parameters are defined and valid
+    if ((_pwm_min > 0) && (_pwm_max > 0) && (_pwm_max > _pwm_min)) {
+        return _pwm_max;
+    }
+    return _throttle_radio_max;
 }
 
 // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 // also sets throttle channel minimum and maximum pwm
 void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t radio_min, int16_t radio_max)
 {
-    _throttle_radio_min = radio_min;
-    _throttle_radio_max = radio_max;
-    _min_throttle = (float)min_throttle * ((_throttle_radio_max - _throttle_radio_min) / 1000.0f);
+    // sanity check
+    if ((radio_max > radio_min) && (min_throttle < (radio_max - radio_min))) {
+        _throttle_radio_min = radio_min;
+        _throttle_radio_max = radio_max;
+    }
+    // update _min_throttle
+    _min_throttle = (float)min_throttle * ((get_pwm_output_max() - get_pwm_output_min()) / 1000.0f);
 }
 
 void AP_MotorsMulticopter::output_logic()
@@ -488,16 +527,17 @@ void AP_MotorsMulticopter::output_logic()
     }
 }
 
-// throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs
-//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsMulticopter::throttle_pass_through(int16_t pwm)
+// passes throttle directly to all motors for ESC calibration.
+//   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
+void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float throttle_input)
 {
     if (armed()) {
+        uint16_t pwm_out = get_pwm_output_min() + constrain_float(throttle_input, 0.0f, 1.0f) * (get_pwm_output_max() - get_pwm_output_min());
         // send the pilot's input directly to each enabled motor
         hal.rcout->cork();
         for (uint16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                rc_write(i, pwm);
+                rc_write(i, pwm_out);
             }
         }
         hal.rcout->push();
@@ -516,7 +556,7 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask)
             if (mask & (1U<<i)) {
                 motor_out = calc_thrust_to_pwm(thrust);
             } else {
-                motor_out = _throttle_radio_min;
+                motor_out = get_pwm_output_min();
             }
             rc_write(i, motor_out);
         }
