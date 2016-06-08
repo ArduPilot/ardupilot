@@ -30,7 +30,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
 	uint32_t tnow_ms = millis();
 
-	float rpyScale = 0.5*gain; // Scale -1000-1000 to -500-500 with gain
+	float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
 	float throttleScale = 0.8*gain; // Scale 0-1000 to 0-800 with gain
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1500-500*throttleScale;
