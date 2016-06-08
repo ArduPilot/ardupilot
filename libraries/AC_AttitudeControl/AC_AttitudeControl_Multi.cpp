@@ -176,7 +176,7 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
         _angle_boost = 0.0f;
     }
     _motors.set_throttle(throttle_in);
-    _motors.set_throttle_ave_max(get_throttle_ave_max(MAX(throttle_in, _throttle_in)));
+    _motors.set_throttle_avg_max(get_throttle_avg_max(MAX(throttle_in, _throttle_in)));
 }
 
 // returns a throttle including compensation for roll/pitch angle
@@ -201,7 +201,7 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
 
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1
-float AC_AttitudeControl_Multi::get_throttle_ave_max(float throttle_in)
+float AC_AttitudeControl_Multi::get_throttle_avg_max(float throttle_in)
 {
     return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_motors.get_throttle_hover()*_throttle_rpy_mix);
 }
