@@ -175,7 +175,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    _throttle_ave_max = constrain_float(_throttle_ave_max, throttle_thrust, _throttle_thrust_max);
+    _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
     // calculate throttle that gives most possible room for yaw which is the lower of:
     //      1. 0.5f - (rpy_low+rpy_high)/2.0 - this would give the maximum possible margin above the highest motor and below the lowest
@@ -190,7 +190,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // calculate amount of yaw we can fit into the throttle range
     // this is always equal to or less than the requested yaw from the pilot or rate controller
 
-    throttle_thrust_best_rpy = MIN(0.5f, _throttle_ave_max);
+    throttle_thrust_best_rpy = MIN(0.5f, _throttle_avg_max);
 
     // calculate roll and pitch for each motor
     // calculate the amount of yaw input that each motor can accept
@@ -240,7 +240,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     // check everything fits
-    throttle_thrust_best_rpy = MIN(0.5f - (rpy_low+rpy_high)/2.0, _throttle_ave_max);
+    throttle_thrust_best_rpy = MIN(0.5f - (rpy_low+rpy_high)/2.0, _throttle_avg_max);
     if (is_zero(rpy_low)){
         rpy_scale = 1.0f;
     } else {

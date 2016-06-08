@@ -200,7 +200,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    _throttle_ave_max = constrain_float(_throttle_ave_max, throttle_thrust, _throttle_thrust_max);
+    _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
     float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
 
@@ -234,15 +234,15 @@ void AP_MotorsSingle::output_armed_stabilizing()
     // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
     thrust_min_rpy = MAX(MAX(fabsf(actuator[0]), fabsf(actuator[1])), MAX(fabsf(actuator[2]), fabsf(actuator[3])));
 
-    thr_adj = throttle_thrust - _throttle_ave_max;
-    if (thr_adj < (thrust_min_rpy - _throttle_ave_max)) {
+    thr_adj = throttle_thrust - _throttle_avg_max;
+    if (thr_adj < (thrust_min_rpy - _throttle_avg_max)) {
         // Throttle can't be reduced to the desired level because this would mean roll or pitch control
         // would not be able to reach the desired level because of lack of thrust.
-        thr_adj = MIN(thrust_min_rpy, _throttle_ave_max) - _throttle_ave_max;
+        thr_adj = MIN(thrust_min_rpy, _throttle_avg_max) - _throttle_avg_max;
     }
 
     // calculate the throttle setting for the lift fan
-    _thrust_out = _throttle_ave_max + thr_adj;
+    _thrust_out = _throttle_avg_max + thr_adj;
 
     if (is_zero(_thrust_out)) {
         limit.roll_pitch = true;
