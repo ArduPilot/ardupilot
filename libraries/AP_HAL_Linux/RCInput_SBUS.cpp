@@ -34,8 +34,44 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
+#ifndef B100000
+// disco uses 100000 for baud rate to give 100000 baud
+#define B100000 100000
+#endif
+
+#define SBUS_FRAME_SIZE 25
+
 void RCInput_SBUS::init()
 {
+    fd = open(device_path, O_RDWR | O_NONBLOCK);
+    if (fd != -1) {
+        printf("Opened SBUS input %s fd=%d\n", device_path, (int)fd);
+        fflush(stdout);
+        struct termios2 tio {};
+        
+        if (ioctl(fd, TCGETS2, &tio) != 0) {
+            close(fd);
+            fd = -1;
+            return;
+        }
+        tio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR
+                         | IGNCR | ICRNL | IXON);
+        tio.c_iflag |= (INPCK | IGNPAR);
+        tio.c_oflag &= ~OPOST;
+        tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+        tio.c_ispeed = B100000;
+        tio.c_ospeed = B100000;
+        tio.c_cflag &= ~(CSIZE | CRTSCTS | PARODD | CBAUD);
+        tio.c_cflag |= (CS8 | CSTOPB | CLOCAL | PARENB | BOTHER | CREAD);
+        // see select() comment below
+        tio.c_cc[VMIN] = SBUS_FRAME_SIZE;
+        tio.c_cc[VTIME] = 0;
+        if (ioctl(fd, TCSETS2, &tio) != 0) {
+            close(fd);
+            fd = -1;
+            return;
+        }
+    }
 }
 
 void RCInput_SBUS::set_device_path(const char *path)
@@ -44,56 +80,103 @@ void RCInput_SBUS::set_device_path(const char *path)
     printf("Set SBUS device path %s\n", path);
 }
 
-#ifndef B100000
-// disco uses 010000 for 100000 baud (BOTHER)
-#define B100000 010000
-#endif
+#define SBUS_DEBUG_LOG 0
+#define SBUS_CAUSE_CORRUPTION 0
 
 void RCInput_SBUS::_timer_tick(void)
 {
-    if (device_path == nullptr) {
+    if (fd == -1) {
         return;
     }
-    /*
-      we defer the open to the timer tick to ensure all RPC calls are
-      made in the same thread
-     */
-    if (fd == -1) {
-        fd = open(device_path, O_RDONLY | O_NONBLOCK);
-        if (fd != -1) {
-            printf("Opened SBUS input %s fd=%d\n", device_path, (int)fd);
-            fflush(stdout);
-            struct termios2 tio {};
 
-            int ret = ioctl(fd, TCGETS2, &tio);
-            printf("ret1=%d\n", ret);
+    // read up to 10 frames at a time
+    uint8_t bytes[SBUS_FRAME_SIZE*10];
+    int nread;
+    
+    fd_set fds;
+    struct timeval tv;
+    
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
 
-            tio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR
-                             | IGNCR | ICRNL | IXON);
-            tio.c_iflag |= (INPCK | IGNPAR);
-            tio.c_oflag &= ~OPOST;
-            tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-            tio.c_ispeed = B100000;
-            tio.c_ospeed = B100000;
-            tio.c_cflag &= ~(CSIZE | CRTSCTS | PARODD | CBAUD);
-            tio.c_cflag |= (CS8 | CSTOPB | CLOCAL | PARENB | BOTHER | CREAD);
-            tio.c_cc[VMIN] = 25;
-            tio.c_cc[VTIME] = 0;
-            ret = ioctl(fd, TCSETS2, &tio);
-            printf("SBUS ret=%d %s\n", ret, strerror(errno));
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+
+    // as TMIN is SBUS_FRAME_SIZE the select won't return unless there is
+    // at least SBUS_FRAME_SIZE bytes available
+    if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
+        return;
+    }
+
+#if SBUS_DEBUG_LOG
+    static int logfd = -1;
+    if (logfd == -1) {
+        logfd = open("sbus.log", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    }
+#endif
+
+#if SBUS_CAUSE_CORRUPTION
+    // deliberately lose bytes from the port
+    static unsigned corruption_counter;
+    if (corruption_counter++ % 1000 == 0) {
+        uint8_t nn = corruption_counter/1000;
+        int n2 = ::read(fd, bytes, nn);
+        dprintf(logfd, "throw %u\n", (unsigned)n2);
+    }
+#endif
+
+    // cope with there being a large number of pending bytes at
+    // the start
+    do {
+        nread = ::read(fd, bytes, sizeof(bytes));
+    } while (nread == sizeof(bytes));
+    
+    if (nread % SBUS_FRAME_SIZE != 0) {
+        /*
+          SBUS frames are 25 bytes long, and always start with
+          0x0f, but there is no other framing information to
+          prevent us getting out of sync. All we have are the
+          timing guarantees
+          
+          In this case we have read a partial frame, or lost some
+          bytes. A 25 bytes frame at 100000 baud takes 2.5ms. By
+          delaying 3.5ms here we will get any remaining bytes for
+          this frame. We shouldn't get the start of the next frame
+          as frames happen at most every 7ms
+          
+          This strategy allows us to resync even if we lose
+          bytes. It assumes an interframe gap of more than
+          3.5ms. If SBUS is run at very high rate (like 300Hz)
+          then this won't work
+        */
+        hal.scheduler->delay_microseconds(3500);
+        int n2 = ::read(fd, bytes+nread, sizeof(bytes)-nread);
+        if (n2 > 0) {
+            nread += n2;
         }
     }
-    if (fd != -1) {
-        uint8_t bytes[25];
-        int32_t nread;
-        uint8_t counter = 100;
-        do {
-            nread = ::read(fd, bytes, sizeof(bytes));
-            if (nread > 0 && bytes[0] == 0x0f) {
-                add_sbus_input(bytes, nread);
-            }
-        } while (nread == 25 && counter--);
+    if (nread % SBUS_FRAME_SIZE != 0) {
+        // if we don't have a multuple of 25 then throw away the lot
+#if SBUS_DEBUG_LOG
+        dprintf(logfd, "discard %u\n", (unsigned)nread);
+#endif
+        return;
     }
+    if (nread <= 0) {
+        return;
+    }
+#if SBUS_DEBUG_LOG
+    if (logfd != -1) {
+        dprintf(logfd, "%06u %u: ", (unsigned)AP_HAL::millis(), (unsigned)nread);
+        for (uint8_t i=0; i<nread; i++) {
+            dprintf(logfd, "%02x ", (unsigned)bytes[i]);
+        }
+        dprintf(logfd, "\n");
+    }
+#endif
+    // only process the last SBUS_FRAME_SIZE bytes. Only the latest
+    // frame matters
+    add_sbus_input(&bytes[nread-SBUS_FRAME_SIZE], SBUS_FRAME_SIZE);
 }
 #endif // CONFIG_HAL_BOARD_SUBTYPE
 
