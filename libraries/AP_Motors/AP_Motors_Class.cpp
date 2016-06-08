@@ -32,7 +32,7 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _pitch_in(0.0f),
     _yaw_in(0.0f),
     _throttle_in(0.0f),
-    _throttle_ave_max(0.0f),
+    _throttle_avg_max(0.0f),
     _throttle_filter(),
     _spool_desired(DESIRED_SHUT_DOWN),
     _batt_voltage(0.0f),
