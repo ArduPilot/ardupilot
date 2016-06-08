@@ -169,19 +169,13 @@ void GPIO_RPI::setPWM0Period(uint32_t time_us)
     *(pwm + PWM_CTL) = 3;
 }
 
-void GPIO_RPI::setPWM0Duty(uint8_t percent)
-{
-    int bitCount;
-    unsigned int bits = 0;
-
-    bitCount = 320 * percent / 100;
-    if (bitCount > 320) bitCount = 320;
-    if (bitCount < 0) bitCount = 0;
-    bits = 0;
-    while (bitCount) {
+void setPWM0Duty(uint8_t percent) {
+    // Check whether percent is valid
+    percent = percent > 100 ? 100 : percent;
+    uint32_t bits = 0;
+    for (int bitCount = sizeof(uint32_t) * percent / 100; bitCount != 0; bitCount--) {
       bits <<= 1;
       bits |= 1;
-      bitCount--;
     }
     *(pwm + PWM_DAT1) = bits;
 }
