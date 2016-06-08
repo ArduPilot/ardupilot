@@ -137,9 +137,9 @@ void AP_MotorsTri::output_to_motors()
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             hal.rcout->cork();
-            rc_write(AP_MOTORS_MOT_1, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
-            rc_write(AP_MOTORS_MOT_2, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
-            rc_write(AP_MOTORS_MOT_4, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
+            rc_write(AP_MOTORS_MOT_1, calc_spin_up_to_pwm());
+            rc_write(AP_MOTORS_MOT_2, calc_spin_up_to_pwm());
+            rc_write(AP_MOTORS_MOT_4, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
             hal.rcout->push();
             break;

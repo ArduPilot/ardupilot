@@ -128,6 +128,9 @@ protected:
     // convert thrust (0~1) range back to pwm range
     int16_t             calc_thrust_to_pwm(float thrust_in) const;
 
+    // calculate spin up to pwm range
+    int16_t             calc_spin_up_to_pwm() const;
+
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
 
@@ -161,7 +164,7 @@ protected:
     float               _throttle_thrust_max;       // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
 
     // spool variables
-    float               _throttle_low_end_pct;      // throttle percentage (0 ~ 1) between zero and throttle_min
+    float               _spin_up_ratio;      // throttle percentage (0 ~ 1) between zero and throttle_min
 
     // battery voltage, current and air pressure compensation variables
     float               _batt_voltage_resting;  // battery voltage reading at minimum throttle
