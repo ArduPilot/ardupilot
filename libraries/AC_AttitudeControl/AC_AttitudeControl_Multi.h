@@ -36,7 +36,11 @@
  # define AC_ATC_MULTI_RATE_YAW_IMAX        0.222f
 #endif
 #ifndef AC_ATC_MULTI_RATE_YAW_FILT_HZ
- # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     5.0f
+ #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+  # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     30.0f
+ #else
+  # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     5.0f
+ #endif
 #endif
 
 
