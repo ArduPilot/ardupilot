@@ -539,7 +539,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: This enables automatic crash checking. When enabled the motors will disarm if a crash is detected.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
-    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
+    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    0),
 
     // RC channel
     //-----------
