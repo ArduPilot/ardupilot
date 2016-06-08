@@ -215,7 +215,7 @@ void Sub::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 // Write a Current data packet
 void Sub::Log_Write_Current()
 {
-    DataFlash.Log_Write_Current(battery, (int16_t)(motors.get_throttle()));
+    DataFlash.Log_Write_Current(battery);
 
     // also write power status
     DataFlash.Log_Write_Power();
