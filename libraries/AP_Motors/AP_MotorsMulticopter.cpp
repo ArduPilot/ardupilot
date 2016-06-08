@@ -116,6 +116,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _spin_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
 
+    // @Param: BAT_CURR_TC
+    // @DisplayName: Motor Current Max Time Constant
+    // @Description: Time constant used to limit the maximum current
+    // @Range: 0 10
+    // @Units: Seconds
+    // @User: Advanced
+    AP_GROUPINFO("BAT_CURR_TC", 20, AP_MotorsMulticopter, _batt_current_time_constant, AP_MOTORS_BAT_CURR_TC_DEFAULT),
+
     // @Param: THST_HOVER
     // @DisplayName: Thrust Hover Value
     // @Description: Motor thrust needed to hover expressed as a number from 0 to 1
@@ -207,7 +215,6 @@ void AP_MotorsMulticopter::update_throttle_filter()
 }
 
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
-//todo: replace this with a variable P term
 float AP_MotorsMulticopter::get_current_limit_max_throttle()
 {
     // return maximum if current limiting is disabled
@@ -224,7 +231,8 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
 
     float batt_current_ratio = _batt_current/_batt_current_max;
 
-    _throttle_limit += AP_MOTORS_CURRENT_LIMIT_P*(1.0f - batt_current_ratio)/_loop_rate;
+    float loop_interval = 1.0f/_loop_rate;
+    _throttle_limit += (loop_interval/(loop_interval+_batt_current_time_constant))*(1.0f - batt_current_ratio);
 
     // throttle limit drops to 20% between hover and full throttle
     _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
