@@ -704,7 +704,9 @@ void NavEKF2::getTiltError(int8_t instance, float &ang)
 void NavEKF2::resetGyroBias(void)
 {
     if (core) {
-        core[primary].resetGyroBias();
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].resetGyroBias();
+        }
     }
 }
 
@@ -715,10 +717,17 @@ void NavEKF2::resetGyroBias(void)
 // If using a range finder for height no reset is performed and it returns false
 bool NavEKF2::resetHeightDatum(void)
 {
-    if (!core) {
-        return false;
+    bool status = true;
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            if (!core[i].resetHeightDatum()) {
+                status = false;
+            }
+        }
+    } else {
+        status = false;
     }
-    return core[primary].resetHeightDatum();
+    return status;
 }
 
 // Commands the EKF to not use GPS.
