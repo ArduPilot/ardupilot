@@ -17,26 +17,6 @@ Vector3f Sub::pv_location_to_vector(const Location& loc)
     return Vector3f((loc.lat-origin.lat) * LATLON_TO_CM, (loc.lng-origin.lng) * LATLON_TO_CM * scaleLongDown, alt_above_origin);
 }
 
-// pv_location_to_vector_with_default - convert lat/lon coordinates to a position vector,
-//     defaults to the default_posvec's lat/lon and alt if the provided lat/lon or alt are zero
-Vector3f Sub::pv_location_to_vector_with_default(const Location& loc, const Vector3f& default_posvec)
-{
-    Vector3f pos = pv_location_to_vector(loc);
-
-    // set target altitude to default if not provided
-    if (loc.alt == 0) {
-        pos.z = default_posvec.z;
-    }
-
-    // set target position to default if not provided
-    if (loc.lat == 0 && loc.lng == 0) {
-        pos.x = default_posvec.x;
-        pos.y = default_posvec.y;
-    }
-
-    return pos;
-}
-
 // pv_alt_above_origin - convert altitude above home to altitude above EKF origin
 float Sub::pv_alt_above_origin(float alt_above_home_cm)
 {

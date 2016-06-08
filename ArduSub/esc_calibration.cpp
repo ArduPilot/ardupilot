@@ -97,8 +97,7 @@ void Sub::esc_calibration_passthrough()
         delay(10);
 
         // pass through to motors
-        motors.throttle_pass_through(channel_throttle->get_radio_in());
-    }
+        motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);    }
 }
 
 // esc_calibration_auto - calibrate the ESCs automatically using a timer and no pilot input
@@ -121,7 +120,7 @@ void Sub::esc_calibration_auto()
 
     // raise throttle to maximum
     delay(10);
-    motors.throttle_pass_through(channel_throttle->get_radio_max());
+    motors.set_throttle_passthrough_for_esc_calibration(1.0f);
 
     // wait for safety switch to be pressed
     while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
@@ -136,7 +135,7 @@ void Sub::esc_calibration_auto()
     delay(5000);
 
     // reduce throttle to minimum
-    motors.throttle_pass_through(channel_throttle->get_radio_min());
+    motors.set_throttle_passthrough_for_esc_calibration(0.0f);
 
     // clear esc parameter
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
