@@ -5,9 +5,11 @@
 
 enum bebop_bldc_motor {
     BEBOP_BLDC_MOTOR_1 = 0,
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_DISCO
     BEBOP_BLDC_MOTOR_2,
     BEBOP_BLDC_MOTOR_3,
     BEBOP_BLDC_MOTOR_4,
+#endif
     BEBOP_BLDC_MOTORS_NUM,
 };
 
@@ -78,6 +80,7 @@ private:
     uint16_t _frequency;
     uint16_t _min_pwm;
     uint16_t _max_pwm;
+    uint8_t _n_motors=4;
     uint8_t  _state;
     bool     _corking = false;
     uint16_t _max_rpm;

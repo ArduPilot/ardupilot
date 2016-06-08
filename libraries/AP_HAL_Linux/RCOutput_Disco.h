@@ -9,9 +9,12 @@ public:
     RCOutput_Disco(void) {}
     ~RCOutput_Disco() {}
 
-    static RCOutput_Disco *from(AP_HAL::RCOutput *rcoutput)
+    static RCOutput_Bebop *from(AP_HAL::RCOutput *rcoutput)
     {
-        return static_cast<RCOutput_Disco *>(rcoutput);
+        // this is used by AP_BattMonitor_Bebop to get obs data. We
+        // need to return the Bebop output, not ourselves
+        RCOutput_Disco *d = static_cast<RCOutput_Disco *>(rcoutput);
+        return static_cast<RCOutput_Bebop *>(&d->bebop_out);
     }
 
     void init() override;
@@ -27,8 +30,8 @@ public:
 
 private:
     // Disco RC output combines methods from Sysfs and Bebop
-    RCOutput_Sysfs sysfs_out{0, 1, 6};
     RCOutput_Bebop bebop_out;
+    RCOutput_Sysfs sysfs_out{0, 1, 6};
 
     /*
       use a table to provide the mapping to channel numbers in each

@@ -25,6 +25,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <stdio.h>
 
 namespace Linux {
 
@@ -32,6 +33,7 @@ void RCOutput_Disco::init()
 {
     sysfs_out.init();
     bebop_out.init();
+    printf("RCOutput_Disco: initialised\n");
 }
 
 void RCOutput_Disco::set_freq(uint32_t chmask, uint16_t freq_hz)
