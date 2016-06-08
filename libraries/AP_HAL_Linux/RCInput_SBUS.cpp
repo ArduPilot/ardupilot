@@ -26,8 +26,9 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <termios.h>
 #include <errno.h>
+#include <sys/ioctl.h>
+#include <asm/termbits.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -62,27 +63,36 @@ void RCInput_SBUS::_timer_tick(void)
         if (fd != -1) {
             printf("Opened SBUS input %s fd=%d\n", device_path, (int)fd);
             fflush(stdout);
-            struct termios t;
-            memset(&t, 0, sizeof(t));
-            tcgetattr(fd, &t);
-            t.c_ispeed = B100000;
-            t.c_ospeed = B100000;
-            t.c_cc[VTIME] = 0;
-            t.c_cflag |= (CSTOPB | PARENB);
-            t.c_cflag &= ~(BRKINT | PARODD);
-            t.c_iflag &= ~(INLCR | ICRNL | IMAXBEL | IXON | IXOFF | ICANON | IEXTEN | ECHO);
-            tcsetattr(fd, TCSANOW, &t);
+            struct termios2 tio {};
+
+            int ret = ioctl(fd, TCGETS2, &tio);
+            printf("ret1=%d\n", ret);
+
+            tio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR
+                             | IGNCR | ICRNL | IXON);
+            tio.c_iflag |= (INPCK | IGNPAR);
+            tio.c_oflag &= ~OPOST;
+            tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+            tio.c_ispeed = B100000;
+            tio.c_ospeed = B100000;
+            tio.c_cflag &= ~(CSIZE | CRTSCTS | PARODD | CBAUD);
+            tio.c_cflag |= (CS8 | CSTOPB | CLOCAL | PARENB | BOTHER | CREAD);
+            tio.c_cc[VMIN] = 25;
+            tio.c_cc[VTIME] = 0;
+            ret = ioctl(fd, TCSETS2, &tio);
+            printf("SBUS ret=%d %s\n", ret, strerror(errno));
         }
     }
     if (fd != -1) {
         uint8_t bytes[25];
         int32_t nread;
+        uint8_t counter = 100;
         do {
             nread = ::read(fd, bytes, sizeof(bytes));
-            if (nread > 0) {
+            if (nread > 0 && bytes[0] == 0x0f) {
                 add_sbus_input(bytes, nread);
             }
-        } while (nread == 25);
+        } while (nread == 25 && counter--);
     }
 }
 #endif // CONFIG_HAL_BOARD_SUBTYPE
