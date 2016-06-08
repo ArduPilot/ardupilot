@@ -40,7 +40,7 @@ bool Plane::parachute_manual_release()
     }
 
     if (parachute.alt_min() > 0 && relative_ground_altitude(false) < parachute.alt_min() &&
-            auto_state.started_flying_in_auto_ms > 0 && auto_state.takeoff_complete) {
+            auto_state.last_flying_ms > 0) {
         // Allow manual ground tests by only checking if flying too low if we've taken off
         gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Parachute: Too low");
         return false;
