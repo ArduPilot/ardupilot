@@ -304,15 +304,6 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GUIDED_MODE", 40, QuadPlane, guided_mode, 0),
 
-    // @Param: THR_MIN
-    // @DisplayName: Throttle Minimum
-    // @Description: The minimum throttle that will be sent to the motors to keep them spinning
-    // @Units: Percent*10
-    // @Range: 0 300
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("THR_MIN", 41, QuadPlane, throttle_min,  100),
-
     // @Param: ESC_CAL
     // @DisplayName: ESC Calibration
     // @Description: This is used to calibrate the throttle range of the VTOL motors. Please read http://ardupilot.org/plane/docs/quadplane-esc-calibration.html before using. This parameter is automatically set back to 0 on every boot. This parameter only takes effect in QSTABILIZE mode. When set to 1 the output of all motors will come directly from the throttle stick when armed, and will be zero when disarmed. When set to 2 the output of all motors will be maximum when armed and zero when disarmed. Make sure you remove all properllers before using.
@@ -442,8 +433,8 @@ bool QuadPlane::setup(void)
 
     motors->set_frame_orientation(frame_type);
     motors->Init();
-    motors->set_throttle_range(throttle_min, thr_min_pwm, thr_max_pwm);
     motors->set_hover_throttle(throttle_mid);
+    motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     pid_accel_z.set_dt(loop_delta_t);

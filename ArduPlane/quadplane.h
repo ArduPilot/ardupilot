@@ -194,7 +194,6 @@ private:
     AP_Int16 thr_min_pwm;
     AP_Int16 thr_max_pwm;
     AP_Int16 throttle_mid;
-    AP_Int16 throttle_min;
 
     // speed below which quad assistance is given
     AP_Float assist_speed;
