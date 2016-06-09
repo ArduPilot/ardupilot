@@ -62,11 +62,43 @@ float AC_AttitudeControl::control_monitor_rms_output_roll(void) const
 }
 
 /*
+  return current controller RMS filter value for roll_P
+ */
+float AC_AttitudeControl::control_monitor_rms_output_roll_P(void) const
+{
+    return sqrtf(_control_monitor.rms_roll_P);
+}
+
+/*
+  return current controller RMS filter value for roll_D
+ */
+float AC_AttitudeControl::control_monitor_rms_output_roll_D(void) const
+{
+    return sqrtf(_control_monitor.rms_roll_D);
+}
+
+/*
   return current controller RMS filter value for pitch
  */
 float AC_AttitudeControl::control_monitor_rms_output_pitch(void) const
 {
     return sqrtf(_control_monitor.rms_pitch_P + _control_monitor.rms_pitch_D);
+}
+
+/*
+  return current controller RMS filter value for pitch_P
+ */
+float AC_AttitudeControl::control_monitor_rms_output_pitch_P(void) const
+{
+    return sqrtf(_control_monitor.rms_pitch_P);
+}
+
+/*
+  return current controller RMS filter value for pitch_D
+ */
+float AC_AttitudeControl::control_monitor_rms_output_pitch_D(void) const
+{
+    return sqrtf(_control_monitor.rms_pitch_D);
 }
 
 /*
