@@ -131,7 +131,7 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
 
     // log vehicle as GPS2
     if (should_log(MASK_LOG_GPS)) {
-        DataFlash.Log_Write_GPS(gps, 1);
+        Log_Write_Vehicle_Pos(vehicle.location.lat, vehicle.location.lng, vehicle.location.alt, vehicle.heading, vehicle.ground_speed);
     }
 }
 
@@ -158,8 +158,8 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 		}
     }
 
-    // log altitude difference
-    Log_Write_Vehicle_Baro(local_pressure, alt_diff);
+    // log vehicle baro data
+    Log_Write_Vehicle_Baro(aircraft_pressure, alt_diff);
 }
 
 /**
