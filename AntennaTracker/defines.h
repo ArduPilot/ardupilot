@@ -35,3 +35,4 @@ enum ServoType {
 
 //  Logging messages
 #define LOG_V_BAR_MSG                   0x04
+#define LOG_V_POS_MSG                   0x05
