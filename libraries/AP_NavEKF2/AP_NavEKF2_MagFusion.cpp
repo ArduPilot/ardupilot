@@ -20,42 +20,68 @@ extern const AP_HAL::HAL& hal;
 // Control reset of yaw and magnetic field states
 void NavEKF2_core::controlMagYawReset()
 {
-    // Use a quaternion division to calcualte the delta quaternion between the rotation at the current and last time
-    Quaternion deltaQuat = stateStruct.quat / prevQuatMagReset;
-    prevQuatMagReset = stateStruct.quat;
+    // Quaternion and delta rotation vector that are re-used for different calculations
+    Vector3f deltaRotVecTemp;
+    Quaternion deltaQuatTemp;
 
-    // convert the quaternion to a rotation vector and find its length
-    Vector3f deltaRotVec;
-    deltaQuat.to_axis_angle(deltaRotVec);
+    bool flightResetAllowed = false;
+    bool initialResetAllowed = false;
+    if (!finalInflightYawInit) {
+        // Use a quaternion division to calculate the delta quaternion between the rotation at the current and last time
+        deltaQuatTemp = stateStruct.quat / prevQuatMagReset;
+        prevQuatMagReset = stateStruct.quat;
 
-    // check if the spin rate is OK - high spin rates can cause angular alignment errors
-    bool angRateOK = deltaRotVec.length() < 0.1745f;
+        // convert the quaternion to a rotation vector and find its length
+        deltaQuatTemp.to_axis_angle(deltaRotVecTemp);
 
-    // a flight reset is allowed if we are not spinning too fast and are in flight
-    bool flightResetAllowed = angRateOK && inFlight;
+        // check if the spin rate is OK - high spin rates can cause angular alignment errors
+        bool angRateOK = deltaRotVecTemp.length() < 0.1745f;
+
+        initialResetAllowed = angRateOK;
+        flightResetAllowed = angRateOK && !onGround;
+
+    }
 
     // check that we have reached a height where ground magnetic interference effects are insignificant
-    bool hgtCheckPassed = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
+    // and can perform a final reset of the yaw and field states
+    bool finalResetRequest = false;
+    if (flightResetAllowed && !assume_zero_sideslip()) {
+        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
+    }
 
-    // check for 'toilet bowling' which is characterised by large yaw and velocity innovations and caused by bad yaw alignment
-    // this can occur if there is severe magnetic interference on the ground
-    bool toiletBowling = (yawTestRatio > 1.0f) && (velTestRatio > 1.0f);
+    // Check for bad yaw casued by ground based magnetic anomaly
+    bool interimResetRequest = false;
+    if (flightResetAllowed && !assume_zero_sideslip()) {
+        // check for increasing height
+        bool hgtIncreasing = (posDownAtLastMagReset-stateStruct.position.z) > 0.5f;
+        float yawInnovIncrease = fabsf(innovYaw) - fabsf(yawInnovAtLastMagReset);
 
-    // calculate if an in flight reset is required
-    bool flightResetRequired = (!firstInflightYawInit && (hgtCheckPassed || toiletBowling));
+        // check for increasing yaw innovations
+        bool yawInnovIncreasing = yawInnovIncrease > 0.25f;
+
+        // check that the yaw innovations haven't been caused by a large change in attitude
+        deltaQuatTemp = quatAtLastMagReset / stateStruct.quat;
+        deltaQuatTemp.to_axis_angle(deltaRotVecTemp);
+        bool largeAngleChange = deltaRotVecTemp.length() > yawInnovIncrease;
+
+        // if yaw innovations and height have increased and we haven't rotated much
+        // then we are climbing away from a ground based magnetic anomaly and need to reset
+        interimResetRequest = hgtIncreasing && yawInnovIncreasing && !largeAngleChange;
+    }
 
     // an initial reset is required if we have not yet aligned the yaw angle
-    bool initialResetRequired = !yawAlignComplete;
+    bool initialResetRequest = initialResetAllowed && !yawAlignComplete;
 
     // a combined yaw angle and magnetic field reset can be initiated by:
     magYawResetRequest = magYawResetRequest || // an external request
-            (initialResetRequired && angRateOK) || // we need to do an initial alignment and aren't rotating too fast
-            (flightResetRequired && flightResetAllowed && !assume_zero_sideslip()); // conditions are right to do the in-flight re-alignment
+            initialResetRequest || // an initial alignment performed by all vehicle types using magnetometer
+            interimResetRequest || // an interim alignment required to recover from ground based magnetic anomaly
+            finalResetRequest; // the final reset when we have acheived enough height to be in stable magnetic field environment
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
     if (magYawResetRequest || magStateResetRequest) {
 
-        // gett he eeruler angles from the current state estimate
+        // get the euler angles from the current state estimate
         Vector3f eulerAngles;
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
 
@@ -80,9 +106,11 @@ void NavEKF2_core::controlMagYawReset()
                 hal.console->printf("EKF2 IMU%u initial yaw alignment complete\n",(unsigned)imu_index);
             }
 
-            // send initial in-flight yaw alignment status to console
-            if (!firstInflightYawInit && inFlight) {
+            // send in-flight yaw alignment status to console
+            if (finalResetRequest) {
                 hal.console->printf("EKF2 IMU%u in-flight yaw alignment complete\n",(unsigned)imu_index);
+            } else if (interimResetRequest) {
+                hal.console->printf("EKF2 IMU%u ground mag anomaly, yaw re-aligned\n",(unsigned)imu_index);
             }
 
             // update the yaw reset completed status
@@ -90,13 +118,20 @@ void NavEKF2_core::controlMagYawReset()
 
             // clear the yaw reset request flag
             magYawResetRequest = false;
+
+            // clear the complete flags if an interim reset has been performed to allow subsequent
+            // and final reset to occur
+            if (interimResetRequest) {
+                finalInflightYawInit = false;
+                finalInflightMagInit = false;
+            }
         }
-}
+    }
 
     // Request an in-flight check of heading against GPS and reset if necessary
     // this can only be used by vehicles that can use a zero sideslip assumption (Planes)
     // this allows recovery for heading alignment errors due to compass faults
-    if (!firstInflightYawInit && inFlight && assume_zero_sideslip()) {
+    if (!finalInflightYawInit && inFlight && assume_zero_sideslip()) {
         gpsYawResetRequest = true;
     }
 
@@ -1044,8 +1079,13 @@ void NavEKF2_core::recordMagReset()
 {
     magStateInitComplete = true;
     if (inFlight) {
-        firstInflightMagInit = true;
+        finalInflightMagInit = true;
     }
+    // take a snap-shot of the vertical position, quaternion  and yaw innovation to use as a reference
+    // for post alignment checks
+    posDownAtLastMagReset = stateStruct.position.z;
+    quatAtLastMagReset = stateStruct.quat;
+    yawInnovAtLastMagReset = innovYaw;
 }
 
 
