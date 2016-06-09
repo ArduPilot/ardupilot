@@ -76,6 +76,7 @@ void HeatPwm::set_imu_temp(float current)
 
     _pwm->set_duty_cycle(output);
     _last_temp_update = AP_HAL::millis();
+    // printf("target %.1f current %.1f out %.2f\n", _target, current, output);
 }
 
 void HeatPwm::set_imu_target_temp(int8_t *target)
