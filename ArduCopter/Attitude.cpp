@@ -143,8 +143,8 @@ float Copter::get_pilot_desired_throttle(int16_t throttle_control)
 
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
+
     // ensure mid throttle is set within a reasonable range
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
     float thr_mid = constrain_float(motors.get_throttle_hover(), 0.1f, 0.9f);
 
     // check throttle is above, below or in the deadband
@@ -203,8 +203,6 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
 float Copter::get_non_takeoff_throttle()
 {
-    // ensure mid throttle is set within a reasonable range
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
     return MAX(0,motors.get_throttle_hover()/2.0f);
 }
 
