@@ -177,7 +177,7 @@ void AP_MotorsCoax::output_armed_stabilizing()
     float   thrust_min_rpy;             // the minimum throttle setting that will not limit the roll and pitch output
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
     float   thrust_out;                 //
-    float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
+    float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   actuator_allowed = 0.0f;    // amount of yaw we can fit in
 
     // apply voltage and air pressure compensation
@@ -202,22 +202,22 @@ void AP_MotorsCoax::output_armed_stabilizing()
 
     // calculate how much roll and pitch must be scaled to leave enough range for the minimum yaw
     if (is_zero(rp_thrust_max)) {
-        rpy_scale = 1.0f;
+        rp_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), 0.5f*(float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
-        if (rpy_scale < 1.0f) {
+        rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), 0.5f*(float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
+        if (rp_scale < 1.0f) {
             limit.roll_pitch = true;
         }
     }
 
-    actuator_allowed = 2.0f * (1.0f - rpy_scale * rp_thrust_max);
+    actuator_allowed = 2.0f * (1.0f - rp_scale * rp_thrust_max);
     if (fabsf(yaw_thrust) > actuator_allowed) {
         yaw_thrust = constrain_float(yaw_thrust, -actuator_allowed, actuator_allowed);
         limit.yaw = true;
     }
 
     // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
-    thrust_min_rpy = MAX(fabsf(rpy_scale * rp_thrust_max), fabsf(yaw_thrust));
+    thrust_min_rpy = MAX(fabsf(rp_scale * rp_thrust_max), fabsf(yaw_thrust));
 
     thr_adj = throttle_thrust - _throttle_ave_max;
     if (thr_adj < (thrust_min_rpy - _throttle_ave_max)) {
