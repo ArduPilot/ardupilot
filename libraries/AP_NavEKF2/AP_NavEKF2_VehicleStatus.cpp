@@ -184,7 +184,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
     bool yawFail;
-    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) && (frontend->_gpsCheck & MASK_GPS_YAW_ERR)) {
+    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f || yawTestRatio > 1.0f) && (frontend->_gpsCheck & MASK_GPS_YAW_ERR)) {
         yawFail = true;
     } else {
         yawFail = false;
@@ -365,6 +365,13 @@ void NavEKF2_core::detectFlight()
         posDownAtTakeoff = stateStruct.position.z;
         // store the range finder measurement which will be used as a reference to detect when we have taken off
         rngAtStartOfFlight = rangeDataNew.rng;
+        // if the magnetic field states have been set, then continue to update the vertical position
+        // quaternion and yaw innovation snapshots to use as a reference when we start to fly.
+        if (magStateInitComplete) {
+            posDownAtLastMagReset = stateStruct.position.z;
+            quatAtLastMagReset = stateStruct.quat;
+            yawInnovAtLastMagReset = innovYaw;
+        }
     }
 
 }

@@ -153,8 +153,8 @@ void NavEKF2_core::InitialiseVariables()
     tasTimeout = true;
     badMagYaw = false;
     badIMUdata = false;
-    firstInflightYawInit = false;
-    firstInflightMagInit = false;
+    finalInflightYawInit = false;
+    finalInflightMagInit = false;
     dtIMUavg = 0.0025f;
     dtEkfAvg = 0.01f;
     dt = 0;
@@ -258,6 +258,9 @@ void NavEKF2_core::InitialiseVariables()
     magStateInitComplete = false;
     magYawResetRequest = false;
     gpsYawResetRequest = false;
+    posDownAtLastMagReset = stateStruct.position.z;
+    yawInnovAtLastMagReset = 0.0f;
+    quatAtLastMagReset = stateStruct.quat;
 
     // zero data buffers
     storedIMU.reset();
@@ -1387,6 +1390,7 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 
         // record the fact we have initialised the magnetic field states
         recordMagReset();
+
     } else {
         // this function should not be called if there is no compass data but if is is, return the
         // current attitude

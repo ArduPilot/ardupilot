@@ -98,7 +98,7 @@ void NavEKF2_core::setWindMagStateLearningMode()
     bool magCalRequested =
             ((magCal == 0) && inFlight) || // when flying
             ((magCal == 1) && manoeuvring)  || // when manoeuvring
-            ((magCal == 3) && firstInflightYawInit && firstInflightMagInit) || // when initial in-air yaw and mag field reset is complete
+            ((magCal == 3) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
             (magCal == 4); // all the time
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
@@ -116,7 +116,7 @@ void NavEKF2_core::setWindMagStateLearningMode()
             P[index][index] = sq(frontend->_magNoise);
         }
         // request a reset of the yaw and magnetic field states if not done before
-        if (!magStateInitComplete || (!firstInflightMagInit && inFlight)) {
+        if (!magStateInitComplete || (!finalInflightMagInit && inFlight)) {
             magYawResetRequest = true;
         }
     }
@@ -124,8 +124,8 @@ void NavEKF2_core::setWindMagStateLearningMode()
     // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
     // because we want it re-done for each takeoff
     if (onGround) {
-        firstInflightYawInit = false;
-        firstInflightMagInit = false;
+        finalInflightYawInit = false;
+        finalInflightMagInit = false;
     }
 
     // Adjust the indexing limits used to address the covariance, states and other EKF arrays to avoid unnecessary operations
@@ -304,7 +304,7 @@ void NavEKF2_core::recordYawReset()
 {
     yawAlignComplete = true;
     if (inFlight) {
-        firstInflightYawInit = true;
+        finalInflightYawInit = true;
     }
 }
 
