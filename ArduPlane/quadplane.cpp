@@ -199,15 +199,6 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LAND_FINAL_ALT", 27, QuadPlane, land_final_alt, 6),
 
-    // @Param: THR_MID
-    // @DisplayName: Throttle Mid Position
-    // @Description: The throttle output (0 ~ 1000) when throttle stick is in mid position.  Used to scale the manual throttle so that the mid throttle stick position is close to the throttle required to hover
-    // @User: Standard
-    // @Range: 300 700
-    // @Units: Percent*10
-    // @Increment: 10
-    AP_GROUPINFO("THR_MID", 28, QuadPlane, throttle_mid, 500),
-
     // @Param: TRAN_PIT_MAX
     // @DisplayName: Transition max pitch
     // @Description: Maximum pitch during transition to auto fixed wing flight
@@ -433,7 +424,6 @@ bool QuadPlane::setup(void)
 
     motors->set_frame_orientation(frame_type);
     motors->Init();
-    motors->set_hover_throttle(throttle_mid);
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
