@@ -158,8 +158,8 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 		}
     }
 
-    // log altitude difference
-    Log_Write_Vehicle_Baro(local_pressure, alt_diff);
+    // log vehicle baro data
+    Log_Write_Vehicle_Baro(aircraft_pressure, alt_diff);
 }
 
 /**
