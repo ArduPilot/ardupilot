@@ -642,7 +642,7 @@ bool QuadPlane::is_flying(void)
 // crude landing detector to prevent tipover
 bool QuadPlane::should_relax(void)
 {
-    bool motor_at_lower_limit = motors->limit.throttle_lower && motors->is_throttle_mix_min();
+    bool motor_at_lower_limit = motors->limit.throttle_lower && attitude_control->is_throttle_mix_min();
     if (motors->get_throttle() < 0.01) {
         motor_at_lower_limit = true;
     }
