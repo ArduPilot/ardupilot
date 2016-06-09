@@ -42,17 +42,43 @@ void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude)
         time_us         : AP_HAL::micros64(),
         press           : pressure,
         alt_diff        : altitude
-
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+struct PACKED log_Vehicle_Pos {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int32_t vehicle_lat;
+    int32_t vehicle_lng;
+    int32_t vehicle_alt;
+    float vehicle_heading;
+    float vehicle_speed;
+};
+
+// Write a vehicle pos packet
+void Tracker::Log_Write_Vehicle_Pos(int32_t lat,int32_t lng,int32_t alt,float heading,float ground_speed){
+
+    struct log_Vehicle_Pos pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_V_POS_MSG),
+        time_us         : AP_HAL::micros64(),
+        vehicle_lat		: lat,
+        vehicle_lng		: lng,
+        vehicle_alt		: alt,
+        vehicle_heading	: heading,
+        vehicle_speed	: ground_speed,
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
 
 const struct LogStructure Tracker::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     {LOG_V_BAR_MSG, sizeof(log_Vehicle_Baro),
     	      "VBAR", "Qff", "TimeUS,Press,AltDiff" },
+    {LOG_V_POS_MSG, sizeof(log_Vehicle_Pos),
+    	      "VPOS", "QLLeff", "TimeUS,Lat,Lng,Alt,Heading,Speed" }
 };
+
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()
 {

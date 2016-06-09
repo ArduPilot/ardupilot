@@ -255,6 +255,7 @@ private:
     void compass_cal_update();
     void Log_Write_Attitude();
     void Log_Write_Baro(void);
+    void Log_Write_Vehicle_Pos(int32_t lat,int32_t lng,int32_t alt,float heading,float ground_speed);
     void Log_Write_Vehicle_Baro(float pressure, float altitude);
     void Log_Write_Vehicle_Startup_Messages();
     void start_logging();
