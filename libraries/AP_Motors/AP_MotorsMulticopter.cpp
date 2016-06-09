@@ -115,6 +115,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_HOVER", 21, AP_MotorsMulticopter, _throttle_hover, AP_MOTORS_THST_HOVER_DEFAULT),
 
+    // @Param: HOVER_LEARN
+    // @DisplayName: Hover Value Learning
+    // @Description: Enable/Disable automatic learning of hover throttle
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("HOVER_LEARN", 22, AP_MotorsMulticopter, _throttle_hover_learn, 1),
+
     AP_GROUPEND
 };
 
@@ -341,7 +348,9 @@ void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t rad
 // update the throttle input filter.  should be called at 100hz
 void AP_MotorsMulticopter::update_throttle_hover(float dt)
 {
+    if (_throttle_hover_learn > 0) {
         _throttle_hover = _throttle_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC))*(_throttle_in-_throttle_hover);
+    }
 }
 
 void AP_MotorsMulticopter::output_logic()
@@ -528,4 +537,13 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask)
         }
     }
     hal.rcout->push();
+}
+
+// save parameters as part of disarming
+void AP_MotorsMulticopter::save_params_on_disarm()
+{
+    // save hover throttle
+    if (_throttle_hover_learn > 0) {
+        _throttle_hover.save();
+    }
 }

@@ -147,6 +147,9 @@ protected:
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;
 
+    // save parameters as part of disarming
+    virtual void save_params_on_disarm() {}
+
     // convert input in -1 to +1 range to pwm output
     int16_t calc_pwm_output_1to1(float input, const RC_Channel& servo);
 
