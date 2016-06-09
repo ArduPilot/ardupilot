@@ -149,6 +149,7 @@ public:
 private:
     AP_Float        _offset;
     AP_Float        _ratio;
+    AP_Float        _psi_range;
     AP_Int8         _use;
     AP_Int8         _enable;
     AP_Int8         _pin;
@@ -180,10 +181,10 @@ private:
     float get_pressure(void);
     void update_calibration(float raw_pressure);
 
-    AP_Airspeed_Analog analog;
+    AP_Airspeed_Analog analog{_pin, _psi_range};
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    AP_Airspeed_PX4    digital;
+    AP_Airspeed_PX4    digital{_psi_range};
 #else
-    AP_Airspeed_I2C    digital;
+    AP_Airspeed_I2C    digital{_psi_range};
 #endif
 };
