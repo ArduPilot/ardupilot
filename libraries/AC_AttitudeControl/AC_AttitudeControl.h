@@ -42,6 +42,12 @@
 
 #define AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ   1.0f    // filter (in hz) of throttle filter used to limit lean angle so that vehicle does not lose altitude
 
+#define AC_ATTITUDE_CONTROL_MIN_DEFAULT   0.1f    // minimum throttle mix
+#define AC_ATTITUDE_CONTROL_MID_DEFAULT   0.5f    // manual throttle mix
+#define AC_ATTITUDE_CONTROL_MAX_DEFAULT   0.5f    // maximum throttle mix default
+
+#define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT 0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
+
 class AC_AttitudeControl {
 public:
     AC_AttitudeControl( AP_AHRS &ahrs,
@@ -55,6 +61,8 @@ public:
         _angle_boost(0),
         _att_ctrl_use_accel_limit(true),
         _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ),
+        _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+        _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
         _aparm(aparm),
         _motors(motors)
@@ -345,6 +353,9 @@ protected:
 
     // Filtered throttle input - used to limit lean angle when throttle is saturated
     LowPassFilterFloat  _throttle_in_filt;
+
+    float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
+    float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
 
     // References to external libraries
     const AP_AHRS&      _ahrs;

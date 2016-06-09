@@ -120,6 +120,20 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Units: Hz
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Multi, AC_PID),
 
+    // @Param: THR_MIX_MIN
+    // @DisplayName: Throttle Mix Minimum
+    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
+    // @Range: 0.1 0.25
+    // @User: Advanced
+    AP_GROUPINFO("THR_MIX_MIN", 4, AC_AttitudeControl_Multi, _thr_mix_min, AC_ATTITUDE_CONTROL_MIN_DEFAULT),
+
+    // @Param: THR_MIX_MAX
+    // @DisplayName: Throttle Mix Maximum
+    // @Description: Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
+    // @Range: 0.5 0.9
+    // @User: Advanced
+    AP_GROUPINFO("THR_MIX_MAX", 5, AC_AttitudeControl_Multi, _thr_mix_max, AC_ATTITUDE_CONTROL_MAX_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -153,12 +167,14 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
     _throttle_in_filt.apply(throttle_in, _dt);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     if (apply_angle_boost) {
-        _motors.set_throttle(get_throttle_boosted(throttle_in));
+        // Apply angle boost
+        throttle_in = get_throttle_boosted(throttle_in);
     }else{
-        _motors.set_throttle(throttle_in);
         // Clear angle_boost for logging purposes
         _angle_boost = 0.0f;
     }
+    _motors.set_throttle(throttle_in);
+    _motors.set_throttle_ave_max(get_throttle_ave_max(throttle_in));
 }
 
 // returns a throttle including compensation for roll/pitch angle
@@ -179,4 +195,25 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
     float throttle_out = throttle_in*inverted_factor*boost_factor;
     _angle_boost = constrain_float(throttle_out - throttle_in,-1.0f,1.0f);
     return throttle_out;
+}
+
+// returns a throttle including compensation for roll/pitch angle
+// throttle value should be 0 ~ 1
+float AC_AttitudeControl_Multi::get_throttle_ave_max(float throttle_in)
+{
+    return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_motors.get_throttle_hover()*_throttle_rpy_mix);
+}
+
+// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
+void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
+{
+    // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
+    if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
+        // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
+        _throttle_rpy_mix += MIN(2.0f*_dt, _throttle_rpy_mix_desired-_throttle_rpy_mix);
+    } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
+        // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
+        _throttle_rpy_mix -= MIN(0.5f*_dt, _throttle_rpy_mix-_throttle_rpy_mix_desired);
+    }
+    _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
 }

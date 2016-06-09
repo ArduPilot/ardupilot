@@ -52,7 +52,7 @@ public:
     AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
 
-    // get lean angle max for pilot input that prioritises altitude hold over lean angle
+    // get lean angle max for pilot input that prioritizes altitude hold over lean angle
     float get_althold_lean_angle_max() const;
 
     // Set output throttle
@@ -61,13 +61,33 @@ public:
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_throttle_boosted(float throttle_in);
 
+    // calculate total body frame throttle required to produce the given earth frame throttle
+    float get_throttle_ave_max(float throttle_in);
+
+    // set desired throttle vs attitude mixing (actual mix is slewed towards this value over 1~2 seconds)
+    //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
+    //  has no effect when throttle is above hover throttle
+    void set_throttle_mix_min() { _throttle_rpy_mix_desired = _thr_mix_min; }
+    void set_throttle_mix_mid() { _throttle_rpy_mix_desired = AC_ATTITUDE_CONTROL_MID_DEFAULT; }
+    void set_throttle_mix_max() { _throttle_rpy_mix_desired = _thr_mix_max; }
+
+    // get_throttle_rpy_mix - get low throttle compensation value
+    bool is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
+
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
+    // update_throttle_rpy_mix - updates thr_low_comp value towards the target
+    void update_throttle_rpy_mix();
+
     AP_MotorsMulticopter& _motors_multi;
     AC_PID                _pid_rate_roll;
     AC_PID                _pid_rate_pitch;
     AC_PID                _pid_rate_yaw;
+
+    AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
+    AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
 };
