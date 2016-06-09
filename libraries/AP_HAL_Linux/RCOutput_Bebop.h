@@ -59,17 +59,17 @@ public:
         return static_cast<RCOutput_Bebop*>(rcout);
     }
 
-    void     init();
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
-    uint16_t get_freq(uint8_t ch);
-    void     enable_ch(uint8_t ch);
-    void     disable_ch(uint8_t ch);
-    void     write(uint8_t ch, uint16_t period_us);
+    void     init() override;
+    void     set_freq(uint32_t chmask, uint16_t freq_hz) override;
+    uint16_t get_freq(uint8_t ch) override;
+    void     enable_ch(uint8_t ch) override;
+    void     disable_ch(uint8_t ch) override;
+    void     write(uint8_t ch, uint16_t period_us) override;
     void     cork() override;
     void     push() override;
-    uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_us, uint8_t len);
-    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm);
+    uint16_t read(uint8_t ch) override;
+    void     read(uint16_t* period_us, uint8_t len) override;
+    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override;
     int      read_obs_data(BebopBLDC_ObsData &data);
 
 private:
