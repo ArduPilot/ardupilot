@@ -61,9 +61,6 @@ public:
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_throttle_boosted(float throttle_in);
 
-    // calculate total body frame throttle required to produce the given earth frame throttle
-    float get_throttle_avg_max(float throttle_in);
-
     // set desired throttle vs attitude mixing (actual mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
     //  has no effect when throttle is above hover throttle
@@ -84,6 +81,9 @@ protected:
 
     // update_throttle_rpy_mix - updates thr_low_comp value towards the target
     void update_throttle_rpy_mix();
+
+    // get maximum value throttle can be raised to based on throttle vs attitude prioritisation
+    float get_throttle_avg_max(float throttle_in);
 
     AP_MotorsMulticopter& _motors_multi;
     AC_PID                _pid_rate_roll;
