@@ -59,7 +59,6 @@ void Copter::init_rc_out()
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
     motors.Init();                                              // motor initialisation
 #if FRAME_CONFIG != HELI_FRAME
-    motors.set_hover_throttle(g.throttle_mid);
     motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
 
