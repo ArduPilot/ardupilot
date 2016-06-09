@@ -554,7 +554,6 @@
 #ifndef THR_MIN_DEFAULT
  # define THR_MIN_DEFAULT       130             // minimum throttle sent to the motors when armed and pilot throttle above zero
 #endif
-#define THR_MAX                 1000            // maximum throttle input and output sent to the motors
 
 #ifndef THR_DZ_DEFAULT
 # define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
