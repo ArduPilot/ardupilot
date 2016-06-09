@@ -102,6 +102,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 0),
 
+    // @Param: SPIN_MIN
+    // @DisplayName: Motor Spin minimum
+    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range
+    // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @User: Advanced
+    AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, _thrust_curve_min, AP_MOTORS_SPIN_MIN_DEFAULT),
+
     // @Param: SPIN_ARM
     // @DisplayName: Motor Spin armed
     // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range
@@ -145,8 +152,8 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
 
-    // default throttle ranges (i.e. _min_throttle, _throttle_radio_min, _throttle_radio_max)
-    set_throttle_range(130, 1100, 1900);
+    // default throttle ranges (i.e. _throttle_radio_min, _throttle_radio_max)
+    set_throttle_range(1100, 1900);
 };
 
 // output - sends commands to the motors
@@ -309,8 +316,8 @@ float AP_MotorsMulticopter::get_compensation_gain() const
 int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
 {
     thrust_in = constrain_float(thrust_in, 0, 1);
-    return constrain_int16((get_pwm_output_min() + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
-            (get_pwm_output_max() - (get_pwm_output_min() + _min_throttle))), get_pwm_output_min() + _min_throttle, get_pwm_output_max());
+    return get_pwm_output_min() + (get_pwm_output_max()-get_pwm_output_min()) * (_thrust_curve_min + (_thrust_curve_max-_thrust_curve_min)*apply_thrust_curve_and_volt_scaling(thrust_in));
+}
 
 int16_t AP_MotorsMulticopter::calc_spin_up_to_pwm() const
 {
@@ -338,15 +345,13 @@ int16_t AP_MotorsMulticopter::get_pwm_output_max() const
 
 // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 // also sets throttle channel minimum and maximum pwm
-void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t radio_min, int16_t radio_max)
+void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_max)
 {
     // sanity check
-    if ((radio_max > radio_min) && (min_throttle < (radio_max - radio_min))) {
+    if ((radio_max > radio_min)) {
         _throttle_radio_min = radio_min;
         _throttle_radio_max = radio_max;
     }
-    // update _min_throttle
-    _min_throttle = (float)min_throttle * ((get_pwm_output_max() - get_pwm_output_min()) / 1000.0f);
 }
 
 // update the throttle input filter.  should be called at 100hz
@@ -415,8 +420,8 @@ void AP_MotorsMulticopter::output_logic()
                 }
             } else {    // _spool_desired == SPIN_WHEN_ARMED
                 float spin_up_armed_ratio = 0.0f;
-                if (_min_throttle > 0) {
-                    spin_up_armed_ratio = _thrust_curve_arm / _min_throttle;
+                if (_thrust_curve_min > 0.0f) {
+                    spin_up_armed_ratio = _thrust_curve_arm / _thrust_curve_min;
                 }
                 _spin_up_ratio += constrain_float(spin_up_armed_ratio-_spin_up_ratio, -spool_step, spool_step);
             }
