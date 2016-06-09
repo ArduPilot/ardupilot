@@ -29,13 +29,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // 0 was used by TB_RATIO
     // 1,2,3 were used by throttle curve
-
-    // @Param: SPIN_ARMED
-    // @DisplayName: Motors always spin when armed
-    // @Description: Controls whether motors always spin when armed (must be below THR_MIN)
-    // @Values: 0:Do Not Spin,70:VerySlow,100:Slow,130:Medium,150:Fast
-    // @User: Standard
-    AP_GROUPINFO("SPIN_ARMED", 5, AP_MotorsMulticopter, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
+    // 5 was SPIN_ARMED
 
     // @Param: YAW_HEADROOM
     // @DisplayName: Matrix Yaw Min
@@ -107,6 +101,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Range: 0 2000
     // @User: Advanced
     AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 0),
+
+    // @Param: SPIN_ARM
+    // @DisplayName: Motor Spin armed
+    // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range
+    // @Values: 0.0:Low, 0.1:Default, 0.2:High
+    // @User: Advanced
+    AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _thrust_curve_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
 
     // @Param: THST_HOVER
     // @DisplayName: Thrust Hover Value
@@ -415,7 +416,7 @@ void AP_MotorsMulticopter::output_logic()
             } else {    // _spool_desired == SPIN_WHEN_ARMED
                 float spin_up_armed_ratio = 0.0f;
                 if (_min_throttle > 0) {
-                    spin_up_armed_ratio = (float)_spin_when_armed / _min_throttle;
+                    spin_up_armed_ratio = _thrust_curve_arm / _min_throttle;
                 }
                 _spin_up_ratio += constrain_float(spin_up_armed_ratio-_spin_up_ratio, -spool_step, spool_step);
             }
