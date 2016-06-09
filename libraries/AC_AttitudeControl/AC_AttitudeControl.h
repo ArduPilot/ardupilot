@@ -359,13 +359,15 @@ private:
       state of control monitoring
     */
     struct {
-        float rms_roll;
-        float rms_pitch;
+        float rms_roll_P;
+        float rms_roll_D;
+        float rms_pitch_P;
+        float rms_pitch_D;
         float rms_yaw;
     } _control_monitor;
 
     // update state in ControlMonitor
-    void control_monitor_filter_pid(const DataFlash_Class::PID_Info &pid_info, float &rms);
+    void control_monitor_filter_pid(float value, float &rms_P);
     void control_monitor_update(void);
 
 public:
