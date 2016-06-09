@@ -177,9 +177,9 @@ void AP_MotorsSingle::output_armed_stabilizing()
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
     float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
     float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
-    float   thrust_min_rp;              // the minimum throttle setting that will not limit the roll and pitch output
+    float   thrust_min_rpy;              // the minimum throttle setting that will not limit the roll and pitch output
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
-    float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
+    float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   actuator_allowed = 0.0f;    // amount of yaw we can fit in
     float   actuator[NUM_ACTUATORS];    // combined roll, pitch and yaw thrusts for each actuator
     float   actuator_max = 0.0f;        // maximum actuator value
@@ -205,16 +205,16 @@ void AP_MotorsSingle::output_armed_stabilizing()
     float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
 
     // calculate how much roll and pitch must be scaled to leave enough range for the minimum yaw
-    if (is_zero(roll_thrust) && is_zero(pitch_thrust)) {
-        rpy_scale = 1.0f;
+    if (is_zero(rp_thrust_max)) {
+        rp_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
-        if (rpy_scale < 1.0f) {
+        rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
+        if (rp_scale < 1.0f) {
             limit.roll_pitch = true;
         }
     }
 
-    actuator_allowed = 1.0f - rpy_scale * rp_thrust_max;
+    actuator_allowed = 1.0f - rp_scale * rp_thrust_max;
     if (fabsf(yaw_thrust) > actuator_allowed) {
         yaw_thrust = constrain_float(yaw_thrust, -actuator_allowed, actuator_allowed);
         limit.yaw = true;
@@ -223,22 +223,22 @@ void AP_MotorsSingle::output_armed_stabilizing()
     // combine roll, pitch and yaw on each actuator
     // front servo
 
-    actuator[0] = rpy_scale * roll_thrust - yaw_thrust;
+    actuator[0] = rp_scale * roll_thrust - yaw_thrust;
     // right servo
-    actuator[1] = rpy_scale * pitch_thrust - yaw_thrust;
+    actuator[1] = rp_scale * pitch_thrust - yaw_thrust;
     // rear servo
-    actuator[2] = -rpy_scale * roll_thrust - yaw_thrust;
+    actuator[2] = -rp_scale * roll_thrust - yaw_thrust;
     // left servo
-    actuator[3] = -rpy_scale * pitch_thrust - yaw_thrust;
+    actuator[3] = -rp_scale * pitch_thrust - yaw_thrust;
 
     // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
-    thrust_min_rp = MAX(MAX(fabsf(actuator[0]), fabsf(actuator[1])), MAX(fabsf(actuator[2]), fabsf(actuator[3])));
+    thrust_min_rpy = MAX(MAX(fabsf(actuator[0]), fabsf(actuator[1])), MAX(fabsf(actuator[2]), fabsf(actuator[3])));
 
     thr_adj = throttle_thrust - _throttle_ave_max;
-    if (thr_adj < (thrust_min_rp - _throttle_ave_max)) {
+    if (thr_adj < (thrust_min_rpy - _throttle_ave_max)) {
         // Throttle can't be reduced to the desired level because this would mean roll or pitch control
         // would not be able to reach the desired level because of lack of thrust.
-        thr_adj = MIN(thrust_min_rp, _throttle_ave_max) - _throttle_ave_max;
+        thr_adj = MIN(thrust_min_rpy, _throttle_ave_max) - _throttle_ave_max;
     }
 
     // calculate the throttle setting for the lift fan
@@ -268,9 +268,9 @@ void AP_MotorsSingle::output_armed_stabilizing()
             // reduce roll, pitch and yaw to reduce the requested defection to maximum
             limit.roll_pitch = true;
             limit.yaw = true;
-            rpy_scale = _thrust_out/actuator_max;
+            rp_scale = _thrust_out/actuator_max;
         } else {
-            rpy_scale = 1.0f;
+            rp_scale = 1.0f;
         }
 
         // limit thrust out for calculation of actuator gains
@@ -281,7 +281,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
         // therefore the torque of the roll and pitch actuators should be approximately proportional to
         // the angle of attack multiplied by the static thrust.
         for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
-            _actuator_out[i] = constrain_float(rpy_scale*actuator[i]/thrust_out_actuator, -1.0f, 1.0f);
+            _actuator_out[i] = constrain_float(rp_scale*actuator[i]/thrust_out_actuator, -1.0f, 1.0f);
         }
     }
 }
