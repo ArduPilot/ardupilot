@@ -715,8 +715,6 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
-    bool firstInflightYawInit;      // true when the first post takeoff initialisation of yaw angle has been performed
-    bool firstInflightMagInit;      // true when the first post takeoff initialisation of magnetic field states been performed
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     bool isAiding;                  // true when the filter is fusing position, velocity or flow measurements
     bool prevIsAiding;              // isAiding from previous frame
@@ -789,9 +787,6 @@ private:
     bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
     float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
-    bool magStateResetRequest;      // true if magnetic field states need to be reset using the magneteomter measurements
-    bool magYawResetRequest;        // true if the vehicle yaw and magnetic field states need to be reset using the magnetometer measurements
-    bool gpsYawResetRequest;        // true if the vehicle yaw needs to be reset to the GPS course
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
@@ -886,6 +881,16 @@ private:
     bool expectGndEffectTouchdown;    // external state from ArduCopter - touchdown expected
     uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
+
+    // control of post takeoff magentic field and heading resets
+    bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed
+    bool finalInflightMagInit;      // true when the final post takeoff initialisation of magnetic field states been performed
+    bool magStateResetRequest;      // true if magnetic field states need to be reset using the magneteomter measurements
+    bool magYawResetRequest;        // true if the vehicle yaw and magnetic field states need to be reset using the magnetometer measurements
+    bool gpsYawResetRequest;        // true if the vehicle yaw needs to be reset to the GPS course
+    float posDownAtLastMagReset;    // vertical position last time the mag states were reset (m)
+    float yawInnovAtLastMagReset;   // magnetic yaw innovation last time the yaw and mag field states were reset (rad)
+    Quaternion quatAtLastMagReset;  // quaternion states last time the mag states were reset
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
