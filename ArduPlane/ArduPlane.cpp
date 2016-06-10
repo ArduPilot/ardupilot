@@ -26,7 +26,6 @@
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros)
 
-
 /*
   scheduler table - all regular tasks are listed here, along with how
   often they should be called (in Hz) and the maximum time
@@ -563,7 +562,80 @@ void Plane::update_flight_mode(void)
         calc_nav_pitch();
         calc_throttle();
         break;
-        
+
+        //UWAFSL START
+		case UW_MODE_1:{
+			//Start playing a LOUD tone so the user can locate the aircraft
+			AP_Notify::events.lost_aircraft = true;
+			break;
+		}
+		case UW_MODE_2:{
+			//dt used for ILCintegrator
+			int dt = 0.02; //Seconds
+			//Set next waypoint to the guided waypoint
+			next_WP_loc = guided_WP_loc;
+			//radius
+			double rad_act = get_distance(current_loc, next_WP_loc); //(m)
+			double rad_ref = g.uw_radius; //(m)
+			//altitude
+			double alt = relative_altitude(); //(m)
+			double alt_ref = g.uw_altitude; //(m)
+			//speed
+			double uB = airspeed.get_airspeed(); //(m/s)
+			double vB = 0;         //(m/s)
+			double wB = 0;         //(m/s)
+			//angles
+			double p = ahrs.get_gyro().x;
+			double q = ahrs.get_gyro().y;
+			double r = ahrs.get_gyro().z;
+			//roll and pitch
+			double phi = ahrs.roll;
+			double theta = ahrs.pitch;
+
+			double psiDotErr = uw_mode_2_state.OLC.computeOuterLoopSignal(rad_act, rad_ref)*g.uw_gain_outer;
+
+			ControlSurfaceDeflections CSD = uw_mode_2_state.ILC.computeControl(psiDotErr, p, q, r, phi, theta, uB, vB, wB, rad_ref, alt_ref, alt, dt);
+
+			calc_throttle();
+			channel_roll->servo_out = -g.uw_gain_aileron*CSD.GetAileron()*100*180/3.14; //Units: centi-degrees
+			channel_pitch->servo_out = -g.uw_gain_elevator*CSD.GetElevator()*100*180/3.14; //Units: centi-degrees
+			channel_rudder->servo_out = -g.uw_gain_rudder*CSD.GetRudder()*100*180/3.14; //Units: centi-degrees
+			break;
+		}
+
+		case UW_MODE_3:{
+			//dt used for ILCintegrator
+			int dt = 0.02; //Seconds
+			//radius
+			double rad_act = g.uw_act_radius; //(m)
+			double rad_ref = g.uw_radius; //(m)
+			//altitude
+			double alt = relative_altitude(); //(m)
+			double alt_ref = g.uw_altitude; //(m)
+			//speed
+			double uB = airspeed.get_airspeed(); //(m/s)
+			double vB = 0;         //(m/s)
+			double wB = 0;         //(m/s)
+			//angles
+			double p = ahrs.get_gyro().x;
+			double q = ahrs.get_gyro().y;
+			double r = ahrs.get_gyro().z;
+			//roll and pitch
+			double phi = ahrs.roll;
+			double theta = ahrs.pitch;
+
+			double psiDotErr = uw_mode_2_state.OLC.computeOuterLoopSignal(rad_act, rad_ref)*g.uw_gain_outer;
+
+			ControlSurfaceDeflections CSD = uw_mode_2_state.ILC.computeControl(psiDotErr, p, q, r, phi, theta, uB, vB, wB, rad_ref, alt_ref, alt, dt);
+
+			calc_throttle();
+			channel_roll->servo_out = -g.uw_gain_aileron*CSD.GetAileron()*100*180/3.14; //Units: centi-degrees
+			channel_pitch->servo_out = -g.uw_gain_elevator*CSD.GetElevator()*100*180/3.14; //Units: centi-degrees
+			channel_rudder->servo_out = -g.uw_gain_rudder*CSD.GetRudder()*100*180/3.14; //Units: centi-degrees
+			break;
+		}
+		//UWAFSL END
+
     case TRAINING: {
         training_manual_roll = false;
         training_manual_pitch = false;
@@ -770,6 +842,12 @@ void Plane::update_navigation()
     case GUIDED:
         update_loiter(radius);
         break;
+
+	//UWAFSL START
+	case UW_MODE_1:
+	case UW_MODE_2:
+	case UW_MODE_3:
+	//UWAFSL END
 
     case CRUISE:
         update_cruise();

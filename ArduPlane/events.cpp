@@ -52,6 +52,11 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     case CIRCLE:
     case RTL:
     case QLAND:
+	//UWAFSL START
+	case UW_MODE_1:
+	case UW_MODE_2:
+	case UW_MODE_3:
+	//UWAFSL END
     default:
         break;
     }
@@ -109,6 +114,11 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
 
     case RTL:
     case QLAND:
+	//UWAFSL START
+	case UW_MODE_1:
+	case UW_MODE_2:
+	case UW_MODE_3:
+	//UWAFSL END
     default:
         break;
     }

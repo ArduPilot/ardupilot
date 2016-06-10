@@ -79,6 +79,9 @@ public:
         uint16_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
         uint16_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
         uint16_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
+        //UWAFSL START
+		uint16_t lost_aircraft          : 1;    // 1 when user lost visual of aircraft
+		//UWAFSL END
     };
 
     // the notify flags are static to allow direct class access

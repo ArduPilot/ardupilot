@@ -291,6 +291,13 @@ void ToneAlarm_PX4::update()
             stop_cont_tone();
         }
     }
+
+    //UWAFSL START
+    // play tone so user can find aircraft
+    if (AP_Notify::events.lost_aircraft) {
+        play_tone(AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED);
+    }
+    //UWAFSL END
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

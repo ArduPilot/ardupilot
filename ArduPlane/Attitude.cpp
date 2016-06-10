@@ -358,6 +358,22 @@ void Plane::stabilize()
         // nothing to do
         return;
     }
+    //UWAFSL START
+    if (control_mode == UW_MODE_1) {
+        // nothing to do
+        return;
+    }
+    if (control_mode == UW_MODE_2) {
+        // nothing to do
+        //float speed_scaler = get_speed_scaler();
+        //stabilize_roll(speed_scaler);
+        return;
+    }
+    if (control_mode == UW_MODE_3) {
+        // nothing to do
+        return;
+    }
+    //UWAFSL END
     float speed_scaler = get_speed_scaler();
 
     if (control_mode == TRAINING) {

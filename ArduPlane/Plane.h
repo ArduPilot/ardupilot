@@ -34,6 +34,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+//UWAFSL START
+#include <OrbitControl/OrbitControl.h>
+//UWAFSL END
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Menu/AP_Menu.h>
@@ -403,6 +407,16 @@ private:
         int32_t locked_heading_cd;
         uint32_t lock_timer_ms;
     } cruise_state;
+
+    //UWAFSL START
+    ////////////////////////////////////////////////////////////////////////////////
+    // UW controller state
+    ////////////////////////////////////////////////////////////////////////////////
+    struct {
+        InnerLoopController ILC;
+        OuterLoopController OLC;
+    } uw_mode_2_state;
+    //UWAFSL END
 
     // ground steering controller state
     struct {

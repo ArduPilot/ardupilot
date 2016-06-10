@@ -449,6 +449,60 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     ASCALAR(stall_prevention, "STALL_PREVENTION",  1),
 
+    //UWAFSL START
+       //Adding Parameters
+
+       // @Param: UW_RADIUS
+       // @DisplayName: Radius of Orbit
+       // @Description: Sets the radius of orbit for visual anchoring flight mode (meters)
+       // @Values: 50 500
+       // @User: Standard
+       GSCALAR(uw_radius, "UW_RADIUS",  100),
+
+       // @Param: UW_ALTITUDE
+       // @DisplayName: Altitide of Orbit
+       // @Description: Sets the altitude of orbit for visual anchoring flight mode (meters)
+       // @Values: 50 500
+       // @User: Standard
+       GSCALAR(uw_altitude, "UW_ALTITUDE",  100),
+
+       // @Param: UW_ACT_RADIUS
+       // @DisplayName: Actual Radius of Orbit
+       // @Description: The actual radius of the orbit for visual anchoring flight mode (meters)
+       // @Values: 0 1000
+       // @User: Standard
+       GSCALAR(uw_act_radius, "UW_ACT_RADIUS",  100),
+
+       // @Param: UW_OUTER_GAIN
+       // @DisplayName: Outer Loop Gain
+       // @Description: Sets the proportional gain for PsiDotError
+       // @Values: 0 1000
+       // @User: Standard
+       GSCALAR(uw_gain_outer, "UW_GAIN_OUTER",  1),
+
+       // @Param: UW_ELEVATOR_GAIN
+       // @DisplayName: Elevator Gain
+       // @Description: The proportion gain on the elevator output signal
+       // @Values: 0 1000
+       // @User: Standard
+       GSCALAR(uw_gain_elevator, "UW_GAIN_ELEVATOR",  1),
+
+       // @Param: UW_RUDDER_GAIN
+       // @DisplayName: Rudder Gain
+       // @Description: The proportion gain on the rudder output signal
+       // @Values: 0 1000
+       // @User: Standard
+       GSCALAR(uw_gain_rudder, "UW_GAIN_RUDDER",  1),
+
+       // @Param: UW_AILERON_GAIN
+       // @DisplayName: Aileron Gain
+       // @Description: The proportion gain on the aileron output signal
+       // @Values: 0 1000
+       // @User: Standard
+       GSCALAR(uw_gain_aileron, "UW_GAIN_AILERON",  1),
+
+       //UWAFSL END
+
     // @Param: ARSPD_FBW_MIN
     // @DisplayName: Minimum Airspeed
     // @Description: This is the minimum airspeed you want to fly at in modes where the autopilot controls the airspeed. This should be set to a value around 20% higher than the level flight stall speed for the airframe. This value is also used in the STALL_PREVENTION code.

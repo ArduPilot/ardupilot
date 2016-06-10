@@ -400,6 +400,11 @@ void Plane::set_mode(enum FlightMode mode)
     case MANUAL:
     case STABILIZE:
     case TRAINING:
+	//UWAFSL START
+	case UW_MODE_1:
+	case UW_MODE_2:
+	case UW_MODE_3:
+	//UWAFSL END
     case FLY_BY_WIRE_A:
         auto_throttle_mode = false;
         break;
@@ -507,6 +512,11 @@ bool Plane::mavlink_set_mode(uint8_t mode)
     case GUIDED:
     case AUTO:
     case RTL:
+	//UWAFSL START
+	case UW_MODE_1:
+	case UW_MODE_2:
+	case UW_MODE_3:
+	//UWAFSL END
     case LOITER:
     case QSTABILIZE:
     case QHOVER:
@@ -702,6 +712,17 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case GUIDED:
         port->print("Guided");
         break;
+	//UWAFSL START
+	case UW_MODE_1:
+		port->print("UW_Mode_1");
+		break;
+	case UW_MODE_2:
+		port->print("UW_Mode_2");
+		break;
+	case UW_MODE_3:
+		port->print("UW_Mode_3");
+		break;
+	//UWAFSL END
     case QSTABILIZE:
         port->print("QStabilize");
         break;

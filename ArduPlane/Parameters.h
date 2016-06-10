@@ -153,6 +153,12 @@ public:
         k_param_fence_autoenable,
         k_param_fence_ret_rally,
 
+        //UWAFSL START
+		//Visual Anchoring
+		k_param_uw_radius = 108,  //108
+		k_param_uw_altitude,      //109
+		//UWAFSL END
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110,         // stream rates for uartA
@@ -284,6 +290,12 @@ public:
         k_param_rtl_radius,
         k_param_land_then_servos_neutral,
 
+        //UWAFSL START
+		//Visual Anchoring
+		k_param_uw_act_radius = 208, //208
+		k_param_uw_gain_outer,       //209
+		//UWAFSL END
+
         //
         // 210: flight modes
         //
@@ -295,6 +307,12 @@ public:
         k_param_flight_mode5,
         k_param_flight_mode6,
         k_param_initial_mode,
+
+        //UWAFSL START
+		//Visual Anchoring
+		k_param_uw_gain_elevator = 218, //218
+		k_param_uw_gain_rudder,         //219
+		//UWAFSL END
 
         //
         // 220: Waypoint data
@@ -332,6 +350,11 @@ public:
         k_param_pidTeThrottle, // unused
         k_param_pidNavPitchAltitude, // unused
         k_param_pidWheelSteer, // unused
+
+        //UWAFSL START
+		//Visual Anchoring
+		k_param_uw_gain_aileron = 248, //248
+		//UWAFSL END
 
         k_param_DataFlash = 253, // Logging Group
 
@@ -527,6 +550,17 @@ public:
     RC_Channel_aux rc_13;
     RC_Channel_aux rc_14;
     uint8_t _dummy;
+
+    //UWAFSL START
+    //Adding Parameters
+    AP_Float uw_radius;
+    AP_Float uw_altitude;
+    AP_Float uw_act_radius;
+    AP_Float uw_gain_outer;
+    AP_Float uw_gain_elevator;
+    AP_Float uw_gain_rudder;
+    AP_Float uw_gain_aileron;
+    //UWAFSL END
 
     Parameters() :
         // variable				default
