@@ -937,7 +937,8 @@ void QuadPlane::update_transition(void)
             transition_state = TRANSITION_DONE;
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition done");
         }
-        float throttle_scaled = last_throttle * (transition_time_ms - (millis() - transition_start_ms)) / (float)transition_time_ms;
+        float trans_time_ms = (float)transition_time_ms.get();
+        float throttle_scaled = last_throttle * (trans_time_ms - (millis() - transition_start_ms)) / trans_time_ms;
         if (throttle_scaled < 0) {
             throttle_scaled = 0;
         }
