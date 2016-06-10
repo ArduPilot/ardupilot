@@ -11,6 +11,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #include "AP_InertialSensor.h"
+#include "AP_InertialSensor_BMI160.h"
 #include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_L3G4200D.h"
