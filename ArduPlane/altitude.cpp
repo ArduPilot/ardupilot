@@ -145,7 +145,9 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 
 #if AP_TERRAIN_AVAILABLE
     float altitude;
-    if (terrain.status() == AP_Terrain::TerrainStatusOK && terrain.height_above_terrain(altitude, true)) {
+    if (target_altitude.terrain_following &&
+        terrain.status() == AP_Terrain::TerrainStatusOK &&
+        terrain.height_above_terrain(altitude, true)) {
         return altitude;
     }
 #endif
