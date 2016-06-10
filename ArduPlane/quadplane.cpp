@@ -1625,8 +1625,8 @@ bool QuadPlane::verify_vtol_land(void)
     }
 
     // at land_final_alt begin final landing
-    if (poscontrol.state == QPOS_LAND_DESCEND &&
-        plane.current_loc.alt < plane.next_WP_loc.alt+land_final_alt*100) {
+    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    if (poscontrol.state == QPOS_LAND_DESCEND && height_above_ground < land_final_alt) {
         poscontrol.state = QPOS_LAND_FINAL;
         pos_control->set_alt_target(inertial_nav.get_altitude());
         plane.gcs_send_text(MAV_SEVERITY_INFO,"Land final started");
