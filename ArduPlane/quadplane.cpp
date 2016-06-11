@@ -1353,7 +1353,7 @@ void QuadPlane::vtol_position_controller(void)
         break;
 
     case QPOS_LAND_DESCEND: {
-        float height_above_ground = (plane.current_loc.alt - loc.alt)*0.01;
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         pos_control->set_alt_target_from_climb_rate(-landing_descent_rate_cms(height_above_ground),
                                                     plane.G_Dt, true);
         break;
