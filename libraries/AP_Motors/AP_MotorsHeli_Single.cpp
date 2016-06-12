@@ -432,7 +432,11 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     // feed power estimate into main rotor controller
     // ToDo: include tail rotor power?
     // ToDo: add main rotor cyclic power?
-    _main_rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
+    if (collective_out > _collective_mid_pct) {
+        _main_rotor.set_motor_load((collective_out - _collective_mid_pct) / (1.0f - _collective_mid_pct));
+    } else {
+        _main_rotor.set_motor_load((_collective_mid_pct - collective_out) / _collective_mid_pct);
+    }
 
     // swashplate servos
     float collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
