@@ -218,10 +218,8 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                                      enum bus_type type,
-                                                     bool use_fifo,
-                                                     uint8_t read_flag)
+                                                     bool use_fifo)
     : AP_InertialSensor_Backend(imu)
-    , _read_flag(read_flag)
     , _use_fifo(use_fifo)
     , _bus_type(type)
     , _temp_filter(1000, 1)
@@ -238,7 +236,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_InertialSensor_MPU6000 *sensor =
-        new AP_InertialSensor_MPU6000(imu, std::move(dev), BUS_TYPE_I2C, true, 0);
+        new AP_InertialSensor_MPU6000(imu, std::move(dev), BUS_TYPE_I2C, true);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -252,8 +250,14 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
 AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &imu,
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
 {
-    AP_InertialSensor_MPU6000 *sensor =
-        new AP_InertialSensor_MPU6000(imu, std::move(dev), BUS_TYPE_SPI, false, 0x80);
+    AP_InertialSensor_MPU6000 *sensor;
+
+    dev->set_read_flag(0x80);
+
+    sensor = new AP_InertialSensor_MPU6000(imu,
+                                           std::move(dev),
+                                           BUS_TYPE_SPI,
+                                           false);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -543,17 +547,13 @@ void AP_InertialSensor_MPU6000::_read_sample()
 bool AP_InertialSensor_MPU6000::_block_read(uint8_t reg, uint8_t *buf,
                                             uint32_t size)
 {
-    reg |= _read_flag;
     return _dev->read_registers(reg, buf, size);
 }
 
 uint8_t AP_InertialSensor_MPU6000::_register_read(uint8_t reg)
 {
     uint8_t val = 0;
-
-    reg |= _read_flag;
     _dev->read_registers(reg, &val, 1);
-
     return val;
 }
 
