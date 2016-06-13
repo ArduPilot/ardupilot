@@ -456,22 +456,6 @@ void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
     _dev->write_register(reg, val);
 }
 
-/*
-  useful when debugging SPI bus errors
- */
-void AP_InertialSensor_MPU9250::_register_write_check(uint8_t reg, uint8_t val)
-{
-    uint8_t readed;
-    _register_write(reg, val);
-    readed = _register_read(reg);
-    if (readed != val){
-        hal.console->printf("Values doesn't match; written: %02x; read: %02x ", val, readed);
-    }
-#if MPU9250_DEBUG
-    hal.console->printf("Values written: %02x; readed: %02x ", val, readed);
-#endif
-}
-
 bool AP_InertialSensor_MPU9250::_hardware_init(void)
 {
     if (!_dev->get_semaphore()->take(100)) {
