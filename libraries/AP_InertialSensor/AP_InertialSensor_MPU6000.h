@@ -99,7 +99,6 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    const uint8_t _read_flag;
     const bool _use_fifo;
     const enum bus_type _bus_type;
 

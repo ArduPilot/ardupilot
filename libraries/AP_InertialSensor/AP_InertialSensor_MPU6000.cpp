@@ -221,12 +221,12 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                                                      bool use_fifo,
                                                      uint8_t read_flag)
     : AP_InertialSensor_Backend(imu)
-    , _read_flag(read_flag)
     , _use_fifo(use_fifo)
     , _bus_type(type)
     , _temp_filter(1000, 1)
     , _dev(std::move(dev))
 {
+    _dev->set_read_flag(read_flag);
 }
 
 AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
@@ -543,17 +543,13 @@ void AP_InertialSensor_MPU6000::_read_sample()
 bool AP_InertialSensor_MPU6000::_block_read(uint8_t reg, uint8_t *buf,
                                             uint32_t size)
 {
-    reg |= _read_flag;
     return _dev->read_registers(reg, buf, size);
 }
 
 uint8_t AP_InertialSensor_MPU6000::_register_read(uint8_t reg)
 {
     uint8_t val = 0;
-
-    reg |= _read_flag;
     _dev->read_registers(reg, &val, 1);
-
     return val;
 }
 
