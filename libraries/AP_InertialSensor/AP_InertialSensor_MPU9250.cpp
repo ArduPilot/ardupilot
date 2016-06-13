@@ -202,10 +202,8 @@ static const float GYRO_SCALE = 0.0174532f / 16.4f;
  */
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                                     enum bus_type type)
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_InertialSensor_Backend(imu)
-    , _bus_type(type)
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     , _default_rotation(ROTATION_ROLL_180_YAW_270)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
@@ -235,7 +233,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_InertialSensor_MPU9250 *sensor =
-        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_I2C);
+        new AP_InertialSensor_MPU9250(imu, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -253,7 +251,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
 
     dev->set_read_flag(0x80);
 
-    sensor = new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_SPI);
+    sensor = new AP_InertialSensor_MPU9250(imu, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -278,7 +276,7 @@ bool AP_InertialSensor_MPU9250::_init()
 
 bool AP_InertialSensor_MPU9250::_has_auxiliary_bus()
 {
-    return _bus_type != BUS_TYPE_I2C;
+    return _dev->bus_type != AP_HAL::Device::I2C;
 }
 
 void AP_InertialSensor_MPU9250::start()
@@ -486,7 +484,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
         hal.scheduler->delay(100);
 
         /* bus-dependent initialization */
-        if (_bus_type == BUS_TYPE_SPI) {
+        if (_dev->bus_type == AP_HAL::Device::SPI) {
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
             _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
