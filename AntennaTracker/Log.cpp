@@ -51,12 +51,13 @@ struct PACKED log_Vehicle_Pos {
     int32_t vehicle_lat;
     int32_t vehicle_lng;
     int32_t vehicle_alt;
-    float vehicle_heading;
-    float vehicle_speed;
+    float vehicle_vel_x;
+    float vehicle_vel_y;
+    float vehicle_vel_z;
 };
 
 // Write a vehicle pos packet
-void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, float heading, float ground_speed)
+void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, const Vector3f& vel)
 {
     struct log_Vehicle_Pos pkt = {
         LOG_PACKET_HEADER_INIT(LOG_V_POS_MSG),
@@ -64,8 +65,9 @@ void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, float
         vehicle_lat     : lat,
         vehicle_lng     : lng,
         vehicle_alt     : alt,
-        vehicle_heading : heading,
-        vehicle_speed   : ground_speed,
+        vehicle_vel_x   : vel.x,
+        vehicle_vel_y   : vel.y,
+        vehicle_vel_z   : vel.z,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -75,7 +77,7 @@ const struct LogStructure Tracker::log_structure[] = {
     {LOG_V_BAR_MSG, sizeof(log_Vehicle_Baro),
         "VBAR", "Qff", "TimeUS,Press,AltDiff" },
     {LOG_V_POS_MSG, sizeof(log_Vehicle_Pos),
-        "VPOS", "QLLeff", "TimeUS,Lat,Lng,Alt,Heading,Speed" }
+        "VPOS", "QLLefff", "TimeUS,Lat,Lng,Alt,VelX,VelY,VelZ" }
 };
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()
