@@ -1727,8 +1727,9 @@ int8_t QuadPlane::forward_throttle_pct(void)
     // integrator as throttle percentage (-100 to 100)
     vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
 
-    // constrain to throttle range. This allows for reverse throttle if configured
-    vel_forward.integrator = constrain_float(vel_forward.integrator, MIN(0,plane.aparm.throttle_min), plane.aparm.throttle_max);
+    // inhibit reverse throttle and allow petrol engines with min > 0
+    int8_t fwd_throttle_min = (plane.aparm.throttle_min <= 0) ? 0 : plane.aparm.throttle_min;
+    vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_max);
     
     // If we are below alt_cutoff then scale down the effect until it turns off at alt_cutoff and decay the integrator
     float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
