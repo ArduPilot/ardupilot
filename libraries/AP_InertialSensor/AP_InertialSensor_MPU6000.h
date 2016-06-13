@@ -92,7 +92,6 @@ private:
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val );
-    void _register_write_check(uint8_t reg, uint8_t val);
 
     void _accumulate(uint8_t *samples, uint8_t n_samples);
 
