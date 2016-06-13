@@ -217,11 +217,9 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                                     enum bus_type type,
                                                      bool use_fifo)
     : AP_InertialSensor_Backend(imu)
     , _use_fifo(use_fifo)
-    , _bus_type(type)
     , _temp_filter(1000, 1)
     , _dev(std::move(dev))
 {
@@ -236,7 +234,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_InertialSensor_MPU6000 *sensor =
-        new AP_InertialSensor_MPU6000(imu, std::move(dev), BUS_TYPE_I2C, true);
+        new AP_InertialSensor_MPU6000(imu, std::move(dev), true);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -254,10 +252,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
 
     dev->set_read_flag(0x80);
 
-    sensor = new AP_InertialSensor_MPU6000(imu,
-                                           std::move(dev),
-                                           BUS_TYPE_SPI,
-                                           false);
+    sensor = new AP_InertialSensor_MPU6000(imu, std::move(dev), false);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -302,7 +297,7 @@ void AP_InertialSensor_MPU6000::_fifo_enable()
 
 bool AP_InertialSensor_MPU6000::_has_auxiliary_bus()
 {
-    return _bus_type != BUS_TYPE_I2C;
+    return _dev->bus_type != AP_HAL::Device::I2C;
 }
 
 void AP_InertialSensor_MPU6000::start()
@@ -615,7 +610,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         hal.scheduler->delay(100);
 
         /* bus-dependent initialization */
-        if (_bus_type == BUS_TYPE_SPI) {
+        if (_dev->bus_type == AP_HAL::Device::SPI) {
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
             _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
