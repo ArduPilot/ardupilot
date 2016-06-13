@@ -25,7 +25,8 @@
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
 #define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define MAGB_P_NSE_DEFAULT      5.0E-04f
+#define MAGE_P_NSE_DEFAULT      5.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -49,7 +50,8 @@
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
 #define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define MAGB_P_NSE_DEFAULT      5.0E-04f
+#define MAGE_P_NSE_DEFAULT      5.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -73,7 +75,8 @@
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
 #define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define MAGB_P_NSE_DEFAULT      5.0E-04f
+#define MAGE_P_NSE_DEFAULT      5.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -97,7 +100,8 @@
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
 #define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define MAGB_P_NSE_DEFAULT      5.0E-04f
+#define MAGE_P_NSE_DEFAULT      5.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -373,13 +377,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
-    // @Param: MAG_P_NSE
-    // @DisplayName: Magnetic field process noise (gauss/s)
-    // @Description: This state process noise controls the growth of magnetic field state error estimates. Increasing it makes magnetic field bias estimation faster and noisier.
-    // @Range: 0.0001 0.01
-    // @User: Advanced
-    // @Units: gauss/s
-    AP_GROUPINFO("MAG_P_NSE", 29, NavEKF2, _magProcessNoise, MAG_P_NSE_DEFAULT),
+    // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK2_MAGE_P_NSE and EK2_MAGB_P_NSE
 
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
@@ -461,6 +459,22 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Increment: 10
     // @User: Advanced
     AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, -1),
+
+    // @Param: MAGE_P_NSE
+    // @DisplayName: Earth magnetic field process noise (gauss/s)
+    // @Description: This state process noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field estimation faster and noisier.
+    // @Range: 0.00001 0.01
+    // @User: Advanced
+    // @Units: gauss/s
+    AP_GROUPINFO("MAGE_P_NSE", 40, NavEKF2, _magEarthProcessNoise, MAGE_P_NSE_DEFAULT),
+
+    // @Param: MAGB_P_NSE
+    // @DisplayName: Body magnetic field process noise (gauss/s)
+    // @Description: This state process noise controls the growth of body magnetic field state error estimates. Increasing it makes magnetometer bias error estimation faster and noisier.
+    // @Range: 0.00001 0.01
+    // @User: Advanced
+    // @Units: gauss/s
+    AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF2, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
 
 
     AP_GROUPEND
