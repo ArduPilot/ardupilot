@@ -91,7 +91,6 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    const uint8_t _read_flag;
     const enum bus_type _bus_type;
 
     // The default rotation for the IMU, its value depends on how the IMU is

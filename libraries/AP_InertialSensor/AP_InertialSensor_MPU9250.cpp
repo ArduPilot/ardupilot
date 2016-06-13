@@ -206,7 +206,6 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
                                                      enum bus_type type,
                                                      uint8_t read_flag)
     : AP_InertialSensor_Backend(imu)
-    , _read_flag(read_flag)
     , _bus_type(type)
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     , _default_rotation(ROTATION_ROLL_180_YAW_270)
@@ -226,6 +225,7 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
 #endif
     , _dev(std::move(dev))
 {
+    _dev->set_read_flag(read_flag);
 }
 
 AP_InertialSensor_MPU9250::~AP_InertialSensor_MPU9250()
@@ -437,17 +437,13 @@ void AP_InertialSensor_MPU9250::_read_sample()
 bool AP_InertialSensor_MPU9250::_block_read(uint8_t reg, uint8_t *buf,
                                             uint32_t size)
 {
-    reg |= _read_flag;
     return _dev->read_registers(reg, buf, size);
 }
 
 uint8_t AP_InertialSensor_MPU9250::_register_read(uint8_t reg)
 {
     uint8_t val = 0;
-
-    reg |= _read_flag;
     _dev->read_registers(reg, &val, 1);
-
     return val;
 }
 
