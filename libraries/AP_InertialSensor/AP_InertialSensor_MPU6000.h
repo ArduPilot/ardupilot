@@ -59,8 +59,7 @@ private:
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
                               enum bus_type bus_type,
-                              bool use_fifo,
-                              uint8_t read_flag);
+                              bool use_fifo);
 
 #if MPU6000_DEBUG
     void _dump_registers();
