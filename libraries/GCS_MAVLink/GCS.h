@@ -350,6 +350,9 @@ private:
     // bitmask of what mavlink channels are active
     static uint8_t mavlink_active;
 
+    // bitmask of what mavlink channels are streaming
+    static uint8_t chan_is_streaming;
+
     // mavlink routing object
     static MAVLink_routing routing;
 
