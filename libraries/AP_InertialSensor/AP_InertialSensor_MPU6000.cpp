@@ -217,17 +217,18 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                                     enum bus_type type,
                                                      bool use_fifo)
     : AP_InertialSensor_Backend(imu)
     , _use_fifo(use_fifo)
-    , _bus_type(type)
     , _temp_filter(1000, 1)
     , _dev(std::move(dev))
 {
-    if (_bus_type == BUS_TYPE_SPI) {
+    if (dynamic_cast<AP_HAL::SPIDevice *>(_dev.get()) != nullptr) {
+        _bus_type = BUS_TYPE_SPI;
         _dev->set_read_flag(0x80);
+        return;
     }
+    _bus_type = BUS_TYPE_I2C;
 }
 
 AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
@@ -239,7 +240,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_InertialSensor_MPU6000 *sensor =
-        new AP_InertialSensor_MPU6000(imu, std::move(dev), BUS_TYPE_I2C, true);
+        new AP_InertialSensor_MPU6000(imu, std::move(dev), true);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -254,7 +255,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
 {
     AP_InertialSensor_MPU6000 *sensor =
-        new AP_InertialSensor_MPU6000(imu, std::move(dev), BUS_TYPE_SPI, false);
+        new AP_InertialSensor_MPU6000(imu, std::move(dev), false);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

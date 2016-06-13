@@ -58,7 +58,6 @@ private:
 
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              enum bus_type bus_type,
                               bool use_fifo);
 
 #if MPU6000_DEBUG
@@ -99,7 +98,7 @@ private:
     uint8_t _accel_instance;
 
     const bool _use_fifo;
-    const enum bus_type _bus_type;
+    enum bus_type _bus_type;
 
     uint16_t _error_count;
 
