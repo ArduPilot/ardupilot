@@ -56,8 +56,7 @@ private:
 
     AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              enum bus_type bus_type,
-                              uint8_t read_flag);
+                              enum bus_type bus_type);
 
 #if MPU9250_DEBUG
     static void _dump_registers();
@@ -91,7 +90,6 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    const uint8_t _read_flag;
     const enum bus_type _bus_type;
 
     // The default rotation for the IMU, its value depends on how the IMU is
