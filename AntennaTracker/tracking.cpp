@@ -17,8 +17,8 @@ void Tracker::update_vehicle_pos_estimate()
         vehicle.location_estimate = vehicle.location;
         float east_offset = vehicle.vel.x * dt;
         float north_offset = vehicle.vel.y * dt;
-        //location_update(vehicle.location_estimate, vehicle.heading, vehicle.ground_speed * dt);
         location_offset(vehicle.location_estimate, north_offset, east_offset);
+    	vehicle.location_estimate.alt += vehicle.vel.z * dt;
         // set valid_location flag
         vehicle.location_valid = true;
     } else {
@@ -61,7 +61,7 @@ void Tracker::update_bearing_and_distance()
     nav_status.distance = get_distance(current_loc, vehicle.location_estimate);
 
     // calculate altitude difference to vehicle using gps
-    nav_status.alt_difference_gps = (vehicle.location.alt - current_loc.alt) / 100.0f;
+    nav_status.alt_difference_gps = (vehicle.location_estimate.alt - current_loc.alt) / 100.0f;
 
     // calculate pitch to vehicle
     // To-Do: remove need for check of control_mode
@@ -128,9 +128,8 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.location.lng = msg.lon;
     vehicle.location.alt = msg.alt/10;
     vehicle.vel = Vector3f(msg.vx/100.0f, msg.vy/100.0f, msg.vz/100.0f);
-    vehicle.last_update_us = AP_HAL::micros();    
+    vehicle.last_update_us = AP_HAL::micros();
     vehicle.last_update_ms = AP_HAL::millis();
-
     // log vehicle as GPS2
     if (should_log(MASK_LOG_GPS)) {
         Log_Write_Vehicle_Pos(vehicle.location.lat, vehicle.location.lng, vehicle.location.alt, vehicle.vel);
