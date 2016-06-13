@@ -203,8 +203,7 @@ static const float GYRO_SCALE = 0.0174532f / 16.4f;
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
                                                      AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                                     enum bus_type type,
-                                                     uint8_t read_flag)
+                                                     enum bus_type type)
     : AP_InertialSensor_Backend(imu)
     , _bus_type(type)
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
@@ -225,7 +224,9 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
 #endif
     , _dev(std::move(dev))
 {
-    _dev->set_read_flag(read_flag);
+    if (_bus_type == BUS_TYPE_SPI) {
+        _dev->set_read_flag(0x80);
+    }
 }
 
 AP_InertialSensor_MPU9250::~AP_InertialSensor_MPU9250()
@@ -237,7 +238,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_InertialSensor_MPU9250 *sensor =
-        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_I2C, 0);
+        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_I2C);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -252,7 +253,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
 {
     AP_InertialSensor_MPU9250 *sensor =
-        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_SPI, 0x80);
+        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_SPI);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

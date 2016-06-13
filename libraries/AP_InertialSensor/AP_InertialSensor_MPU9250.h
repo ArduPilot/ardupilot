@@ -56,8 +56,7 @@ private:
 
     AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              enum bus_type bus_type,
-                              uint8_t read_flag);
+                              enum bus_type bus_type);
 
 #if MPU9250_DEBUG
     static void _dump_registers();
