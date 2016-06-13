@@ -717,7 +717,7 @@ void NavEKF2_core::fuseEulerYaw()
     float q3 = stateStruct.quat[3];
 
     // compass measurement error variance (rad^2)
-    const float R_YAW = 0.25f;
+    const float R_YAW = sq(frontend->_yawNoise);
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
     // determine if a 321 or 312 Euler sequence is best
@@ -853,7 +853,7 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
+    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_yawInnovGate, 1.0f)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {

@@ -434,6 +434,26 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Values: 0:Disabled,1:FirstIMU,3:FirstAndSecondIMU,7:AllIMUs
     // @User: Advanced
     AP_GROUPINFO("LOG_MASK", 36, NavEKF2, _logging_mask, 1),
+
+    // control of magentic yaw angle fusion
+
+    // @Param: YAW_M_NSE
+    // @DisplayName: Yaw measurement noise (rad)
+    // @Description: This is the RMS value of noise in yaw measurements from the magnetometer. Increasing it reduces the weighting on these measurements.
+    // @Range: 0.05 1.0
+    // @Increment: 0.05
+    // @User: Advanced
+    // @Units: gauss
+    AP_GROUPINFO("YAW_M_NSE", 37, NavEKF2, _yawNoise, 0.5f),
+
+    // @Param: YAW_I_GATE
+    // @DisplayName: Yaw measurement gate size
+    // @Description: This sets the percentage number of standard deviations applied to the magnetometer yaw measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
+    // @User: Advanced
+    AP_GROUPINFO("YAW_I_GATE", 38, NavEKF2, _yawInnovGate, 300),
+
     
     AP_GROUPEND
 };
