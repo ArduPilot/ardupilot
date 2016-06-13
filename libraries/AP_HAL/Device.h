@@ -58,6 +58,12 @@ public:
         return transfer(&first_reg, 1, recv, recv_len);
     }
 
+    /**
+     * Wrapper function over #transfer() to write a byte to the register reg.
+     * The transaction is done by sending reg and val in that order.
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
     bool write_register(uint8_t reg, uint8_t val)
     {
         uint8_t buf[2] = { reg, val };
