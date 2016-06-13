@@ -24,10 +24,9 @@ enum ServoType {
     SERVO_TYPE_CR=2
 };
 
-enum AltSource{
+enum AltSource {
 	ALT_SOURCE_BARO=0,
 	ALT_SOURCE_GPS=1
-
 };
 
 //  Logging parameters
