@@ -61,6 +61,8 @@ AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav, float 
     _inav(inav),
     _pi_vel_xy(PRECLAND_P, PRECLAND_I, PRECLAND_IMAX, PRECLAND_FILT_HZ, dt),
     _dt(dt),
+    _last_updated(0),
+    _last_consumed(0),
     _have_estimate(false),
     _backend(NULL)
 {
@@ -127,7 +129,7 @@ Vector3f AC_PrecLand::get_target_shift(const Vector3f &orig_target)
     Vector3f shift; // default shift initialised to zero
 
     // do not shift target if not enabled or no position estimate
-    if (_backend == NULL || !_have_estimate) {
+    if (!_enabled || _backend == NULL || !_have_estimate || _last_consumed > _last_updated) {
         return shift;
     }
 
@@ -136,8 +138,8 @@ Vector3f AC_PrecLand::get_target_shift(const Vector3f &orig_target)
     shift = _target_pos_offset - curr_offset_from_target;
     shift.z = 0.0f;
 
-    // record we have consumed this reading (perhaps there is a cleaner way to do this using timestamps)
-    _have_estimate = false;
+    // record we have consumed this reading using timestamps
+    _last_consumed = AP_HAL::millis();
 
     // return adjusted target
     return shift;
@@ -187,6 +189,7 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     _target_pos_offset.z = alt;  // not used
 
     _have_estimate = true;
+    _last_updated = AP_HAL::millis();
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message
@@ -201,16 +204,10 @@ void AC_PrecLand::handle_msg(mavlink_message_t* msg)
 // send landing target mavlink message to ground station
 void AC_PrecLand::send_landing_target(mavlink_channel_t chan) const
 {
-    float angle_x = _ef_angle_to_target.x, angle_y = _ef_angle_to_target.y, distance = _target_pos_offset.z;
-    if (!_have_estimate) {
-        angle_x = 0;
-        angle_y = 0;
-        distance = 0;
-    }
     mavlink_msg_landing_target_send(chan,
-        AP_HAL::micros64(),
+        _last_updated,
         _have_estimate,
         MAV_FRAME_GLOBAL_TERRAIN_ALT,
-        angle_x, angle_y, distance, 0.0, 0.0);
+        _ef_angle_to_target.x, _ef_angle_to_target.y, _target_pos_offset.z, 0.0, 0.0);
 
 }
