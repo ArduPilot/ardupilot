@@ -824,6 +824,14 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         result = MAV_MISSION_INVALID_SEQUENCE;
         goto mission_ack;
     }
+
+    // sanity check for DO_JUMP command
+    if (cmd.id == MAV_CMD_DO_JUMP) {
+        if ((cmd.content.jump.target >= mission.num_commands() && cmd.content.jump.target >= waypoint_request_last) || cmd.content.jump.target == 0) {
+            result = MAV_MISSION_ERROR;
+            goto mission_ack;
+        }
+    }
     
     // if command index is within the existing list, replace the command
     if (seq < mission.num_commands()) {
