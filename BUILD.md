@@ -63,8 +63,10 @@ waf list
 ## Program groups ##
 
 Program groups are used to represent a class of programs. They can be used to
-build all programs of a certain class without having to specify each program. A
-program can belong to more than one group.
+build all programs of a certain class without having to specify each program.
+It's possible for two groups to overlap, except when both groups are main
+groups. In other words, a program can belong to more than one group, but only
+to one main group.
 
 There's a special group, called "all", that comprises all programs.
 
