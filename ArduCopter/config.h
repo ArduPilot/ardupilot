@@ -311,7 +311,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Precision Landing with companion computer or IRLock sensor
 #ifndef PRECISION_LANDING
- # define PRECISION_LANDING DISABLED
+ # define PRECISION_LANDING ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -390,7 +390,7 @@
  # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
 #endif
 #ifndef LAND_START_ALT
- # define LAND_START_ALT 1000         // altitude in cm where land controller switches to slow rate of descent
+ # define LAND_START_ALT 60000         // altitude in cm where land controller switches to slow rate of descent
 #endif
 #ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM
  # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM DISABLED  // we do not require pilot to reduce throttle to minimum before vehicle will disarm in AUTO, LAND or RTL
