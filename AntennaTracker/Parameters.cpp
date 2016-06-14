@@ -228,7 +228,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Increment: 1
     // @Range: 1 10
     // @User: Standard
-    GSCALAR(mavlink_update_rate,	"MAVLINK_UPDATE_RATE",	1),
+    GSCALAR(mavlink_update_rate,	"MAV_UPDATE_RATE",	1),
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane

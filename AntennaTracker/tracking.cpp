@@ -15,10 +15,10 @@ void Tracker::update_vehicle_pos_estimate()
     if (dt < TRACKING_TIMEOUT_SEC) {
         // project the vehicle position to take account of lost radio packets
         vehicle.location_estimate = vehicle.location;
-        float east_offset = vehicle.vel.x * dt;
-        float north_offset = vehicle.vel.y * dt;
+        float north_offset = vehicle.vel.x * dt;
+        float east_offset = vehicle.vel.y * dt;
         location_offset(vehicle.location_estimate, north_offset, east_offset);
-    	vehicle.location_estimate.alt += vehicle.vel.z * dt;
+    	vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
         // set valid_location flag
         vehicle.location_valid = true;
     } else {
