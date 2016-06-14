@@ -149,6 +149,20 @@ waf --targets bin/arducopter-quad
 waf --targets tests/test_vectors
 ```
 
+## Uploading ##
+
+There's a build option `--upload` that can be used to tell the build that it
+must upload the program(s) addressed by `--targets` arguments. The
+implementation is board-specific and not all boards may have that implemented.
+Example:
+
+```bash
+# PX4 supports uploading the program through a USB connection
+waf configure --board px4-v2
+# Build arducopter-quad and upload it to my board
+waf --targets bin/arducopter-quad --upload
+```
+
 ## Checking ##
 
 The command `check` builds all programs and then run the relevant tests. In
