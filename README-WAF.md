@@ -134,6 +134,9 @@ waf bin
 
 # Build all examples
 waf examples
+
+# Build arducopter binaries
+waf copter
 ```
 
 ## Building a specific program ##
