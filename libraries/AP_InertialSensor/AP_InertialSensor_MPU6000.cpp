@@ -315,8 +315,7 @@ void AP_InertialSensor_MPU6000::start()
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     // only used for wake-up in accelerometer only low power mode
-    _register_write(MPUREG_PWR_MGMT_2, 0x00);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_PWR_MGMT_2, 0x00, 1);
 
     if (_use_fifo) {
         _fifo_enable();
@@ -330,12 +329,10 @@ void AP_InertialSensor_MPU6000::start()
     // Therefore the sample rate value is 8kHz/(SMPLRT_DIV + 1)
     // So we have to set it to 7 to have a 1kHz sampling
     // rate on the gyro
-    _register_write(MPUREG_SMPLRT_DIV, 7);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_SMPLRT_DIV, 7, 1);
 
     // Gyro scale 2000º/s
-    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS, 1);
 
     // read the product ID rev c has 1/2 the sensitivity of rev d
     _product_id = _register_read(MPUREG_PRODUCT_ID);
@@ -349,16 +346,14 @@ void AP_InertialSensor_MPU6000::start()
         (_product_id == MPU6000_REV_C5)) {
         // Accel scale 8g (4096 LSB/g)
         // Rev C has different scaling than rev D
-        _register_write(MPUREG_ACCEL_CONFIG,1<<3);
+        _register_write(MPUREG_ACCEL_CONFIG, 1<<3, 1);
     } else {
         // Accel scale 8g (4096 LSB/g)
-        _register_write(MPUREG_ACCEL_CONFIG,2<<3);
+        _register_write(MPUREG_ACCEL_CONFIG, 2<<3, 1);
     }
-    hal.scheduler->delay(1);
 
     // configure interrupt to fire when new data arrives
-    _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN, 1);
 
     // clear interrupt on any read, and hold the data ready pin high
     // until we clear the interrupt
@@ -560,6 +555,13 @@ void AP_InertialSensor_MPU6000::_register_write(uint8_t reg, uint8_t val)
     _dev->write_register(reg, val);
 }
 
+void AP_InertialSensor_MPU6000::_register_write(uint8_t reg,
+                                                uint8_t val,
+                                                uint16_t delay_ms)
+{
+    _dev->write_register(reg, val, delay_ms);
+}
+
 /*
   set the DLPF filter frequency. Assumes caller has taken semaphore
  */
@@ -604,13 +606,13 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
          * aulixiliar I2C bus - it will be enabled again if the AuxiliaryBus
          * is used */
         if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
-            _register_write(MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
-            hal.scheduler->delay(10);
+            _register_write(MPUREG_USER_CTRL,
+                            user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN,
+                            10);
         }
 
         /* reset device */
-        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
-        hal.scheduler->delay(100);
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET, 100);
 
         /* bus-dependent initialization */
         if (_bus_type == BUS_TYPE_SPI) {
@@ -622,8 +624,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         // Wake up device and select GyroZ clock. Note that the
         // MPU6000 starts up in sleep mode, and it can take some time
         // for it to come out of sleep
-        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
-        hal.scheduler->delay(5);
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO, 5);
 
         // check it has woken up
         if (_register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {

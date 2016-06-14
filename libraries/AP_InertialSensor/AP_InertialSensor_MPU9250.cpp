@@ -294,20 +294,17 @@ void AP_InertialSensor_MPU9250::start()
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     // only used for wake-up in accelerometer only low power mode
-    _register_write(MPUREG_PWR_MGMT_2, 0x00);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_PWR_MGMT_2, 0x00, 1);
 
     // disable sensor filtering
     _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_256HZ_NOLPF2);
 
     // set sample rate to 1kHz, and use the 2 pole filter to give the
     // desired rate
-    _register_write(MPUREG_SMPLRT_DIV, DEFAULT_SMPLRT_DIV);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_SMPLRT_DIV, DEFAULT_SMPLRT_DIV, 1);
 
     // Gyro scale 2000º/s
-    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS, 1);
 
     _product_id = AP_PRODUCT_ID_MPU9250;
 
@@ -454,6 +451,13 @@ void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
     _dev->write_register(reg, val);
 }
 
+void AP_InertialSensor_MPU9250::_register_write(uint8_t reg,
+                                                uint8_t val,
+                                                uint16_t delay_ms)
+{
+    _dev->write_register(reg, val, delay_ms);
+}
+
 bool AP_InertialSensor_MPU9250::_hardware_init(void)
 {
     if (!_dev->get_semaphore()->take(100)) {
@@ -478,13 +482,13 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
          * aulixiliar I2C bus - it will be enabled again if the AuxiliaryBus
          * is used */
         if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
-            _register_write(MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
-            hal.scheduler->delay(10);
+            _register_write(MPUREG_USER_CTRL,
+                            user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN,
+                            10);
         }
 
         // reset device
-        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
-        hal.scheduler->delay(100);
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET, 100);
 
         /* bus-dependent initialization */
         if (_bus_type == BUS_TYPE_SPI) {
@@ -496,8 +500,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
         // Wake up device and select GyroZ clock. Note that the
         // MPU9250 starts up in sleep mode, and it can take some time
         // for it to come out of sleep
-        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
-        hal.scheduler->delay(5);
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO, 5);
 
         // check it has woken up
         if (_register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {

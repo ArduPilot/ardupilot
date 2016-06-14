@@ -533,10 +533,23 @@ void AP_InertialSensor_LSM9DS0::_register_write_xm(uint8_t reg, uint8_t val)
 {
     _dev_accel->write_register(reg, val);
 }
+void AP_InertialSensor_LSM9DS0::_register_write_xm(uint8_t reg,
+                                                   uint8_t val,
+                                                   uint16_t delay_ms)
+{
+    _dev_accel->write_register(reg, val, delay_ms);
+}
 
 void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val)
 {
     _dev_gyro->write_register(reg, val);
+}
+
+void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg,
+                                                  uint8_t val,
+                                                  uint16_t delay_ms)
+{
+    _dev_gyro->write_register(reg, val, delay_ms);
 }
 
 void AP_InertialSensor_LSM9DS0::_gyro_disable_i2c()
@@ -575,26 +588,23 @@ void AP_InertialSensor_LSM9DS0::_gyro_init()
                       CTRL_REG1_G_PD |
                       CTRL_REG1_G_ZEN |
                       CTRL_REG1_G_YEN |
-                      CTRL_REG1_G_XEN);
-    hal.scheduler->delay(1);
+                      CTRL_REG1_G_XEN,
+                      1);
 
-    _register_write_g(CTRL_REG2_G, 0x00);
-    hal.scheduler->delay(1);
+    _register_write_g(CTRL_REG2_G, 0x00, 1);
 
     /*
      * Gyro data ready on DRDY_G
      */
-    _register_write_g(CTRL_REG3_G, CTRL_REG3_G_I2_DRDY);
-    hal.scheduler->delay(1);
+    _register_write_g(CTRL_REG3_G, CTRL_REG3_G_I2_DRDY, 1);
 
     _register_write_g(CTRL_REG4_G,
                       CTRL_REG4_G_BDU |
-                      CTRL_REG4_G_FS_2000DPS);
+                      CTRL_REG4_G_FS_2000DPS,
+                      1);
     _set_gyro_scale(G_SCALE_2000DPS);
-    hal.scheduler->delay(1);
 
-    _register_write_g(CTRL_REG5_G, 0x00);
-    hal.scheduler->delay(1);
+    _register_write_g(CTRL_REG5_G, 0x00, 1);
 }
 
 void AP_InertialSensor_LSM9DS0::_accel_init()
@@ -602,26 +612,24 @@ void AP_InertialSensor_LSM9DS0::_accel_init()
     _accel_disable_i2c();
     hal.scheduler->delay(1);
 
-    _register_write_xm(CTRL_REG0_XM, 0x00);
-    hal.scheduler->delay(1);
+    _register_write_xm(CTRL_REG0_XM, 0x00, 1);
 
     _register_write_xm(CTRL_REG1_XM,
                        CTRL_REG1_XM_AODR_800Hz |
                        CTRL_REG1_XM_BDU |
                        CTRL_REG1_XM_AZEN |
                        CTRL_REG1_XM_AYEN |
-                       CTRL_REG1_XM_AXEN);
-    hal.scheduler->delay(1);
+                       CTRL_REG1_XM_AXEN,
+                       1);
 
     _register_write_xm(CTRL_REG2_XM,
                        CTRL_REG2_XM_ABW_50Hz |
-                       CTRL_REG2_XM_AFS_16G);
+                       CTRL_REG2_XM_AFS_16G,
+                       1);
     _set_accel_scale(A_SCALE_16G);
-    hal.scheduler->delay(1);
 
     /* Accel data ready on INT1 */
-    _register_write_xm(CTRL_REG3_XM, CTRL_REG3_XM_P1_DRDYA);
-    hal.scheduler->delay(1);
+    _register_write_xm(CTRL_REG3_XM, CTRL_REG3_XM_P1_DRDYA, 1);
 }
 
 void AP_InertialSensor_LSM9DS0::_set_gyro_scale(gyro_scale scale)

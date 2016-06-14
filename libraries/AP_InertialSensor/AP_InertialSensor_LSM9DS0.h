@@ -64,7 +64,9 @@ private:
     uint8_t _register_read_xm(uint8_t reg);
     uint8_t _register_read_g(uint8_t reg);
     void _register_write_xm(uint8_t reg, uint8_t val);
+    void _register_write_xm(uint8_t reg, uint8_t val, uint16_t delay_ms);
     void _register_write_g(uint8_t reg, uint8_t val);
+    void _register_write_g(uint8_t reg, uint8_t val, uint16_t delay_ms);
 
     void _read_data_transaction_a();
     void _read_data_transaction_g();
