@@ -100,6 +100,9 @@ public:
     void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
         msg_snoop = _msg_snoop;
     }
+    // packetReceived is called on any successful decode of a mavlink message
+    virtual void packetReceived(const mavlink_status_t &status,
+                                mavlink_message_t &msg);
 
     struct statustext_t {
         uint8_t                 bitmask;
