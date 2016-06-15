@@ -24,7 +24,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_ADSB.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLINK/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
