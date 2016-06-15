@@ -944,6 +944,35 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     }
 }
 
+void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
+                                 mavlink_message_t &msg)
+{
+    // we exclude radio packets to make it possible to use the
+    // CLI over the radio
+    if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
+        mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
+    }
+    if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
+        (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
+        serialmanager_p &&
+        serialmanager_p->get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2) {
+        // if we receive any MAVLink2 packets on a connection
+        // currently sending MAVLink1 then switch to sending
+        // MAVLink2
+        mavlink_status_t *cstatus = mavlink_get_channel_status(chan);
+        if (cstatus != NULL) {
+            cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+        }
+    }
+    // if a snoop handler has been setup then use it
+    if (msg_snoop != NULL) {
+        msg_snoop(&msg);
+    }
+    if (routing.check_and_forward(chan, &msg)) {
+        handleMessage(&msg);
+    }
+}
+
 void
 GCS_MAVLINK::update(run_cli_fn run_cli)
 {
@@ -976,30 +1005,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
 
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
-            // we exclude radio packets to make it possible to use the
-            // CLI over the radio
-            if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-                mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
-            }
-            if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
-                (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
-                serialmanager_p &&
-                serialmanager_p->get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2) {
-                // if we receive any MAVLink2 packets on a connection
-                // currently sending MAVLink1 then switch to sending
-                // MAVLink2
-                mavlink_status_t *cstatus = mavlink_get_channel_status(chan);
-                if (cstatus != NULL) {
-                    cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-                }
-            }
-            // if a snoop handler has been setup then use it
-            if (msg_snoop != NULL) {
-                msg_snoop(&msg);
-            }
-            if (routing.check_and_forward(chan, &msg)) {
-                handleMessage(&msg);
-            }
+            packetReceived(status, msg);
         }
     }
 
