@@ -299,17 +299,18 @@ void NavEKF2_core::readIMUData()
         framesSincePredict = 0;
         // set the flag to let the filter know it has new IMU data nad needs to run
         runUpdates = true;
+        // extract the oldest available data from the FIFO buffer
+        imuDataDelayed = storedIMU.pop_oldest_element();
+        float minDT = 0.1f*dtEkfAvg;
+        imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
+        imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
+        // correct the extracted IMU data for sensor errors
+        correctDeltaAngle(imuDataDelayed.delAng, imuDataDelayed.delAngDT);
+        correctDeltaVelocity(imuDataDelayed.delVel, imuDataDelayed.delVelDT);
     } else {
         // we don't have new IMU data in the buffer so don't run filter updates on this time step
         runUpdates = false;
     }
-
-    // extract the oldest available data from the FIFO buffer
-    imuDataDelayed = storedIMU.pop_oldest_element();
-    float minDT = 0.1f*dtEkfAvg;
-    imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
-    imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
-
 }
 
 // read the delta velocity and corresponding time interval from the IMU
