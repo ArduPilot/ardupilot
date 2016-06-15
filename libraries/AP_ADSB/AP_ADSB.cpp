@@ -242,7 +242,7 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
         // found, update it
         set_vehicle(index, vehicle);
 
-    } else if (_vehicle_count < VEHICLE_LIST_LENGTH-1) {
+    } else if (_vehicle_count < VEHICLE_LIST_LENGTH) {
 
         // not found and there's room, add it to the end of the list
         set_vehicle(_vehicle_count, vehicle);
