@@ -114,6 +114,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         return true;
     }
 
+    if (msg->msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
+        // ADSB packets are not forwarded, they have their own stream rate
+        return true;
+    }
+
     // extract the targets for this packet
     int16_t target_system = -1;
     int16_t target_component = -1;
