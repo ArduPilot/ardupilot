@@ -57,7 +57,7 @@ private:
     ADSB_Vehicle vehicles[num_vehicles_MAX];
     
     // reporting period in ms
-    const float reporting_period_ms = 500;
+    const float reporting_period_ms = 1000;
     uint32_t last_report_us = 0;
     uint32_t last_update_us = 0;
     

@@ -187,7 +187,7 @@ void ADSB::send_report(void)
       send a ADSB_VEHICLE messages
      */
     uint32_t now_us = AP_HAL::micros();
-    if (now_us - last_report_us > reporting_period_ms*1000UL) {
+    if (now_us - last_report_us >= reporting_period_ms*1000UL) {
         for (uint8_t i=0; i<num_vehicles; i++) {
             ADSB_Vehicle &vehicle = vehicles[i];
             Location loc = home;
