@@ -22,8 +22,9 @@
 class Linux::HeatPwm : public Linux::Heat {
 public:
     HeatPwm(uint8_t pwm_num, float Kp, float Ki,
-            uint32_t period_ns, float target);
-    void set_imu_temp(float current)override;
+            uint32_t period_ns);
+    void set_imu_temp(float current) override;
+    void set_imu_target_temp(int8_t *target) override;
 
 private:
     PWM_Sysfs_Base *_pwm;
@@ -32,5 +33,5 @@ private:
     float _Ki;
     uint32_t _period_ns;
     float _sum_error;
-    float _target;
+    int8_t *_target = nullptr;
 };

@@ -46,7 +46,8 @@ public:
     void set_custom_terrain_directory(const char *_custom_terrain_directory) { custom_terrain_directory = _custom_terrain_directory; }
 
     bool is_chardev_node(const char *path);
-    void set_imu_temp(float current);
+    void set_imu_temp(float current) override;
+    void set_imu_target_temp(int8_t *target) override;
 
     uint32_t available_memory(void) override;
 
