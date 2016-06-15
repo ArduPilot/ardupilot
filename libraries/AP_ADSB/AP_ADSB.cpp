@@ -23,6 +23,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_ADSB.h"
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLINK/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -287,6 +289,47 @@ void AP_ADSB::set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle)
     if (index < VEHICLE_LIST_LENGTH) {
         _vehicle_list[index] = vehicle;
         _vehicle_list[index].last_update_ms = AP_HAL::millis();
+    }
+}
+
+void AP_ADSB::send_adsb_vehicle(mavlink_channel_t chan)
+{
+    if (_vehicle_list == NULL || !_enabled || _vehicle_count == 0) {
+        return;
+    }
+
+    uint32_t now = AP_HAL::millis();
+
+    if (send_index[chan] >= _vehicle_count) {
+        // we've finished a list
+        if (now - send_start_ms[chan] < 1000) {
+            // too soon to start a new one
+            return;
+        } else {
+            // start new list
+            send_start_ms[chan] = now;
+            send_index[chan] = 0;
+        }
+    }
+
+    if (send_index[chan] < _vehicle_count) {
+        mavlink_adsb_vehicle_t vehicle = _vehicle_list[send_index[chan]].info;
+        send_index[chan]++;
+
+        mavlink_msg_adsb_vehicle_send(chan,
+            vehicle.ICAO_address,
+            vehicle.lat,
+            vehicle.lon,
+            vehicle.altitude_type,
+            vehicle.altitude,
+            vehicle.heading,
+            vehicle.hor_velocity,
+            vehicle.ver_velocity,
+            vehicle.callsign,
+            vehicle.emitter_type,
+            vehicle.tslc,
+            vehicle.flags,
+            vehicle.squawk);
     }
 }
 

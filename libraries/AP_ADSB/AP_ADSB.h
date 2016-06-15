@@ -75,6 +75,9 @@ public:
     void set_is_evading_threat(bool is_evading) { if (_enabled) { _is_evading_threat = is_evading; } }
     uint16_t get_vehicle_count() { return _vehicle_count; }
 
+    // send ADSB_VEHICLE mavlink message, usually as a StreamRate
+    void send_adsb_vehicle(mavlink_channel_t chan);
+
 private:
 
     // initialize _vehicle_list
@@ -115,4 +118,9 @@ private:
     // index of and distance to vehicle with highest threat
     uint16_t    _highest_threat_index = 0;
     float       _highest_threat_distance = 0;
+
+    // streamrate stuff
+    uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
+    uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
+
 };
