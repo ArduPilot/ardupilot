@@ -197,7 +197,7 @@ void AP_ADSB::delete_vehicle(uint16_t index)
             _highest_threat_distance = 0;
         }
 
-        if (index != _vehicle_count-1) {
+        if (index != (_vehicle_count-1)) {
             _vehicle_list[index] = _vehicle_list[_vehicle_count-1];
         }
         // TODO: is memset needed? When we decrement the index we essentially forget about it
