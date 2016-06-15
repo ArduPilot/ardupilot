@@ -113,6 +113,11 @@ public:
     AP_Int16  mag_delay; // magnetometer data delay in ms
     AP_Int16  wind_delay; // windspeed data delay in ms
 
+    // ADSB related run-time options
+    AP_Int16 adsb_plane_count;
+    AP_Float adsb_radius_m;
+    AP_Float adsb_altitude_m;
+
     void simstate_send(mavlink_channel_t chan);
 
     void Log_Write_SIMSTATE(DataFlash_Class *dataflash);
