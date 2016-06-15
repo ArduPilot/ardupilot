@@ -425,8 +425,8 @@ private:
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // Turn counter
-    int32_t turn_count;
-    float last_turn_count_yaw;
+    int32_t quarter_turn_count;
+    uint8_t last_turn_state;
 
     // filtered pilot's throttle input used to cancel landing if throttle held high
     LowPassFilterFloat rc_throttle_control_in_filter;
