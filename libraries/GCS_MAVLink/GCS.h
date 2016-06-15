@@ -75,6 +75,7 @@ enum ap_message {
     MSG_RPM,
     MSG_MISSION_ITEM_REACHED,
     MSG_POSITION_TARGET_GLOBAL_INT,
+    MSG_ADSB_VEHICLE,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -127,6 +128,7 @@ public:
                   STREAM_EXTRA2,
                   STREAM_EXTRA3,
                   STREAM_PARAMS,
+                  STREAM_ADSB,
                   NUM_STREAMS};
 
     // see if we should send a stream now. Called at 50Hz
