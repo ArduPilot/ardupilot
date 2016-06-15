@@ -244,7 +244,7 @@ double Aircraft::rand_normal(double mean, double stddev)
 
             r = x*x + y*y;
         }
-        while (r == 0.0 || r > 1.0);
+        while (is_zero(r) || r > 1.0);
         {
             double d = sqrt(-2.0*log(r)/r);
             double n1 = x*d;
