@@ -508,7 +508,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
                     msg->sysid,
                     msg->compid,
                     MAV_DATA_STREAM_POSITION,
-                    g.mavlink_update_rate,  // 1hz
+                    g.mavlink_update_rate,
                     1); // start streaming
             }
             // request air pressure
@@ -518,7 +518,7 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
                     msg->sysid,
                     msg->compid,
                     MAV_DATA_STREAM_RAW_SENSORS,
-                    g.mavlink_update_rate,  // 1hz
+                    g.mavlink_update_rate,
                     1); // start streaming
             }
         }

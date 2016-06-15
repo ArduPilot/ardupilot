@@ -224,7 +224,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: MAV_UPDATE_RATE
     // @DisplayName: Mavlink Update Rate
     // @Description: The rate at which Mavlink updates position and baro data
-    // @Units: hertz
+    // @Units: Hz
     // @Increment: 1
     // @Range: 1 10
     // @User: Standard
