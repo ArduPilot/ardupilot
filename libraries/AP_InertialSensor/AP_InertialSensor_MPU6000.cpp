@@ -387,9 +387,6 @@ bool AP_InertialSensor_MPU6000::update()
 
     _publish_temperature(_accel_instance, _temp_filtered);
 
-    /* give the temperature to the control loop in order to keep it constant*/
-    hal.util->set_imu_temp(_temp_filtered);
-
     return true;
 }
 
