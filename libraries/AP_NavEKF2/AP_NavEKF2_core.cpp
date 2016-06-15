@@ -493,10 +493,6 @@ void NavEKF2_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT)
 */
 void NavEKF2_core::UpdateStrapdownEquationsNED()
 {
-    // apply corrections to the IMU data
-    correctDeltaAngle(imuDataDelayed.delAng, imuDataDelayed.delAngDT);
-    correctDeltaVelocity(imuDataDelayed.delVel, imuDataDelayed.delVelDT);
-
     // apply correction for earth's rotation rate
     // % * - and + operators have been overloaded
     imuDataDelayed.delAng -= prevTnb * earthRateNED*imuDataDelayed.delAngDT;
