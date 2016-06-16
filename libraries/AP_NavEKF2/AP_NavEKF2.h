@@ -319,6 +319,7 @@ private:
     AP_Int8 _logging_mask;          // mask of IMUs to log
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
+    AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration

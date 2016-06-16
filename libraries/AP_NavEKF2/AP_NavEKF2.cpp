@@ -454,7 +454,15 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("YAW_I_GATE", 38, NavEKF2, _yawInnovGate, 300),
 
-    
+    // @Param: TAU_OUTPUT
+    // @DisplayName: Output complementary filter time constant (centi-sec)
+    // @Description: Sets the time constant of the output complementary filter/predictor in centi-seconds. Set to a negative number to use a computationally cheaper and less accurate method with an automatically calculated time constant.
+    // @Range: -1 100
+    // @Increment: 10
+    // @User: Advanced
+    AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, -1),
+
+
     AP_GROUPEND
 };
 
