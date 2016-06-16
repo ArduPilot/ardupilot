@@ -62,7 +62,9 @@ void AP_Motors::armed(bool arm)
     if (_flags.armed != arm) {
         _flags.armed = arm;
         AP_Notify::flags.armed = arm;
-        save_params_on_disarm();
+        if (!arm) {
+            save_params_on_disarm();
+        }
     }
 };
 
