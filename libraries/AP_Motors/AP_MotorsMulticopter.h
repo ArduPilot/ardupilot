@@ -140,6 +140,13 @@ protected:
     // save parameters as part of disarming
     void save_params_on_disarm();
 
+    // enum values for HOVER_LEARN parameter
+    enum HoverLearn {
+        HOVER_LEARN_DISABLED = 0,
+        HOVER_LEARN_ONLY = 1,
+        HOVER_LEARN_AND_SAVE = 2
+    };
+
     // parameters
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
     AP_Float            _thrust_curve_expo;     // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
