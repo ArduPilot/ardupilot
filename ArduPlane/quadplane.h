@@ -264,8 +264,12 @@ private:
     // true when quad is assisting a fixed wing mode
     bool assisted_flight;
 
-    // time when motors reached lower limit
-    uint32_t motors_lower_limit_start_ms;
+    struct {
+        // time when motors reached lower limit
+        uint32_t lower_limit_start_ms;
+        uint32_t land_start_ms;
+        float vpos_start_m;
+    } landing_detect;
 
     // time we last set the loiter target
     uint32_t last_loiter_ms;

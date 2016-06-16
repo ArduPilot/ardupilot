@@ -632,7 +632,7 @@ void QuadPlane::init_land(void)
     init_loiter();
     throttle_wait = false;
     poscontrol.state = QPOS_LAND_DESCEND;
-    motors_lower_limit_start_ms = 0;
+    landing_detect.lower_limit_start_ms = 0;
 }
 
 
@@ -656,19 +656,20 @@ bool QuadPlane::should_relax(void)
         motor_at_lower_limit = true;
     }
     if (!motor_at_lower_limit) {
-        motors_lower_limit_start_ms = 0;
+        landing_detect.lower_limit_start_ms = 0;
     }
-    if (motor_at_lower_limit && motors_lower_limit_start_ms == 0) {
-        motors_lower_limit_start_ms = millis();
+    if (motor_at_lower_limit && landing_detect.lower_limit_start_ms == 0) {
+        landing_detect.lower_limit_start_ms = millis();
     }
-    bool relax_loiter = motors_lower_limit_start_ms != 0 && (millis() - motors_lower_limit_start_ms) > 1000;
+    bool relax_loiter = landing_detect.lower_limit_start_ms != 0 &&
+        (millis() - landing_detect.lower_limit_start_ms) > 1000;
     return relax_loiter;
 }
 
 // see if we are flying in vtol
 bool QuadPlane::is_flying_vtol(void)
 {
-    if (in_vtol_mode() && millis() - motors_lower_limit_start_ms > 5000) {
+    if (in_vtol_mode() && millis() - landing_detect.lower_limit_start_ms > 5000) {
         return true;
     }
     return false;
@@ -1564,7 +1565,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     wp_nav->init_loiter_target();
 
     throttle_wait = false;
-    motors_lower_limit_start_ms = 0;
+    landing_detect.lower_limit_start_ms = 0;
     Location origin = inertial_nav.get_origin();
     Vector2f diff2d;
     Vector3f target;
@@ -1595,17 +1596,49 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     return true;
 }
 
+/*
+  check if a landing is complete
+ */
 void QuadPlane::check_land_complete(void)
 {
-    if (poscontrol.state == QPOS_LAND_FINAL &&
-        (motors_lower_limit_start_ms != 0 &&
-         millis() - motors_lower_limit_start_ms > 5000)) {
-        plane.disarm_motors();
-        poscontrol.state = QPOS_LAND_COMPLETE;
-        plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
-        // reload target airspeed which could have been modified by the mission
-        plane.g.airspeed_cruise_cm.load();
+    if (poscontrol.state != QPOS_LAND_FINAL) {
+        // only apply to final landing phase
+        return;
     }
+    uint32_t now = AP_HAL::millis();
+    bool might_be_landed =  (landing_detect.lower_limit_start_ms != 0 &&
+                             now - landing_detect.lower_limit_start_ms > 1000);
+    if (!might_be_landed) {
+        landing_detect.land_start_ms = 0;
+        return;
+    }
+    float height = inertial_nav.get_altitude()*0.01f;
+    if (landing_detect.land_start_ms == 0) {
+        landing_detect.land_start_ms = now;
+        landing_detect.vpos_start_m = height;
+    }
+    // we only consider the vehicle landed when the motors have been
+    // at minimum for 5s and the vertical position estimate has not
+    // changed by more than 20cm for 4s
+    if (fabsf(height - landing_detect.vpos_start_m > 0.2)) {
+        // height has changed, call off landing detection
+        landing_detect.land_start_ms = 0;
+        return;
+    }
+           
+    if ((now - landing_detect.land_start_ms) < 4000 ||
+        (now - landing_detect.lower_limit_start_ms) < 5000) {
+        // not landed yet
+        return;
+    }
+    landing_detect.land_start_ms = 0;
+    // motors have been at zero for 5s, and we have had less than 0.3m
+    // change in altitude for last 4s. We are landed.
+    plane.disarm_motors();
+    poscontrol.state = QPOS_LAND_COMPLETE;
+    plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
+    // reload target airspeed which could have been modified by the mission
+    plane.g.airspeed_cruise_cm.load();
 }
 
 /*
