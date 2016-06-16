@@ -119,6 +119,7 @@ public:
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     void input_euler_angle_roll_pitch_euler_rate_yaw_smooth(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
+    void input_euler_angle_roll_pitch_euler_rate_yaw_smooth_old(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
 
     // Command an euler roll and pitch angle and an euler yaw rate
     void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
@@ -131,6 +132,7 @@ public:
 
     // Command an angular velocity
     virtual void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+    virtual void input_rate_bf_roll_pitch_yaw_old(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // Command a quaternion attitude and a body-frame angular velocity
     void input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
@@ -222,8 +224,20 @@ public:
     // Proportional controller with piecewise sqrt sections to constrain second derivative
     static float sqrt_controller(float error, float p, float second_ord_lim);
 
+    // Proportional controller with piecewise sqrt sections to constrain second derivative
+    static float stopping_point(float first_ord_mag, float p, float second_ord_lim);
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+
+    void input_shaping_angle(float& target_rate_rads, float error_angle_rad, float smoothing_gain, float accel_max_radss);
+    void input_shaping_ang_vel(float& target_rate_rads, float _rate_rads, float accel_max_radss);
+    Vector3f euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel);
+    void thrust_heading_rotation_angles(Quaternion att_to_quat, Quaternion att_from_quat, Vector3f &att_diff_angle, float &thrust_angle);
+
+    // Command an euler attitude and a body-frame angular velocity
+    void attitude_controller_run_quat2(Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
+
 
 protected:
     // Retrieve a rotation matrix from the vehicle body frame to NED earth frame
@@ -366,6 +380,17 @@ protected:
     const AP_AHRS&      _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
+
+    Quaternion          _attitude_desired_quat;
+
+    Quaternion          _attitude_target_quat;
+
+    // This represents the angular velocity of the reference (setpoint) attitude used in
+    // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
+    // second. Formerly _rate_ef_desired.
+    Vector3f            _attitude_target_ang_vel;
+
+    Vector3f            _angular_velocity_target;
 
 protected:
     /*
