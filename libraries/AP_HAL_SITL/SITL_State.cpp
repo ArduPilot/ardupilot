@@ -97,7 +97,10 @@ void SITL_State::_sitl_setup(const char *home_str)
             gimbal = new SITL::Gimbal(_sitl->state);
         }
 
-        adsb = new SITL::ADSB(_sitl->state, home_str);
+        if (_sitl->adsb_plane_count >= 0) {
+            adsb = new SITL::ADSB(_sitl->state, home_str);
+        }
+
         fg_socket.connect("127.0.0.1", 5503);
     }
 
