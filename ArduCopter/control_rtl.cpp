@@ -454,15 +454,8 @@ void Copter::rtl_build_path(bool terrain_following_allowed)
     rtl_path.origin_point = Location_Class(stopping_point);
     rtl_path.origin_point.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME);
 
-    // set return target to nearest rally point or home position
-#if AC_RALLY == ENABLED
-    rtl_path.return_target = rally.calc_best_rally_or_home_location(current_loc, ahrs.get_home().alt);
-#else
-    rtl_path.return_target = ahrs.get_home();
-#endif
-
-    // compute return altitude
-    rtl_compute_return_alt(terrain_following_allowed);
+    // compute return target
+    rtl_compute_return_target(terrain_following_allowed);
 
     // climb target is above our origin point at the return altitude
     rtl_path.climb_target = Location_Class(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
@@ -474,10 +467,26 @@ void Copter::rtl_build_path(bool terrain_following_allowed)
     rtl_path.land = g.rtl_alt_final <= 0;
 }
 
-// return altitude in cm above home at which vehicle should return home
+// compute the return target - home or rally point
+//   return altitude in cm above home at which vehicle should return home
 //   return target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
-void Copter::rtl_compute_return_alt(bool terrain_following_allowed)
+void Copter::rtl_compute_return_target(bool terrain_following_allowed)
 {
+    // set return target to nearest rally point or home position
+#if AC_RALLY == ENABLED
+    RallyLocation rallyLoc;
+    Location_Class home(ahrs.get_home());
+    bool use_home = !rally.find_nearest_rally_point(current_loc, rallyLoc);
+
+    if (!use_home) {
+        rtl_path.return_target = Location_Class(rallyLoc.lat, rallyLoc.lng, home.alt, home.get_alt_frame());
+    } else {
+        rtl_path.return_target = home;
+    }
+#else
+    rtl_path.return_target = ahrs.get_home();
+#endif
+
     float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
 
     // curr_alt is current altitude above home or above terrain depending upon use_terrain
@@ -503,6 +512,12 @@ void Copter::rtl_compute_return_alt(bool terrain_following_allowed)
     if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
         ret = MAX(curr_alt, MIN(ret, MAX(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
     }
+
+#if AC_RALLY == ENABLED
+    if (!use_home) {
+        ret = rallyLoc.alt * 100.0f;
+    }
+#endif
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
