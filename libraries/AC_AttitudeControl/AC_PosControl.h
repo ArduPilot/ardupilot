@@ -77,7 +77,7 @@ public:
     /// z position controller
     ///
 
-    /// set_alt_max - sets maximum altitude above home in cm
+    /// set_alt_max - sets maximum altitude above the ekf origin in cm
     ///   only enforced when set_alt_target_from_climb_rate is used
     ///   set to zero to disable limit
     void set_alt_max(float alt) { _alt_max = alt; }
