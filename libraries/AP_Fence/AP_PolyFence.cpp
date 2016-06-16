@@ -339,10 +339,21 @@ bool AP_PolyFence::should_revert_flight_mode() const
         g.fence_action != FENCE_ACTION_RTL) {
         return false;
     }
-    // only change from guided mode:
-    if (!vehicle_in_mode_guided()) {
+    // only change from guided or RTL modes:
+    if (vehicle_in_mode_guided()) {
+        if (g.fence_action != FENCE_ACTION_GUIDED &&
+            g.fence_action != FENCE_ACTION_GUIDED_THR_PASS) {
+            return false;
+        }
+    } else if (vehicle_in_mode_rtl()) {
+        if (g.fence_action != FENCE_ACTION_RTL) {
+            return false;
+        }
+    } else {
+        // we're not in guided or RTL - so *we* didn't change to this mode...
         return false;
     }
+
     // if the geofence is not present we probably didn't set the flight mode:
     if (!geofence_present()) {
         return false;
