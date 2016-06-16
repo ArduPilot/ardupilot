@@ -604,7 +604,7 @@ private:
 
     // Propagate PVA solution forward from the fusion time horizon to the current time horizon
     // using a simple observer
-    void calcOutputStatesFast();
+    void calcOutputStates();
 
     // calculate a filtered offset between baro height measurement and EKF height estimate
     void calcFiltBaroOffset();

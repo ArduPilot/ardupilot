@@ -462,7 +462,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
     }
 
     // Wind output forward from the fusion to output time horizon
-    calcOutputStatesFast();
+    calcOutputStates();
 
     // stop the timer used for load measurement
     hal.util->perf_end(_perf_UpdateFilter);
@@ -561,10 +561,8 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
  * “Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements”
  * A Khosravian, J Trumpf, R Mahony, T Hamel, Australian National University
 */
-void  NavEKF2_core::calcOutputStatesFast() {
-
-    // Calculate strapdown solution at the current time horizon
-
+void NavEKF2_core::calcOutputStates()
+{
     // apply corrections to the IMU data
     Vector3f delAngNewCorrected = imuDataNew.delAng;
     Vector3f delVelNewCorrected = imuDataNew.delVel;
@@ -588,8 +586,6 @@ void  NavEKF2_core::calcOutputStatesFast() {
     outputDataNew.quat.rotation_matrix(Tbn_temp);
 
     // transform body delta velocities to delta velocities in the nav frame
-    // Add the earth frame correction required to track the EKF states
-    // * and + operators have been overloaded
     Vector3f delVelNav  = Tbn_temp*delVelNewCorrected + delVelCorrection;
     delVelNav.z += GRAVITY_MSS*imuDataNew.delVelDT;
 
@@ -599,52 +595,98 @@ void  NavEKF2_core::calcOutputStatesFast() {
     // sum delta velocities to get velocity
     outputDataNew.velocity += delVelNav;
 
-    // apply a trapezoidal integration to velocities to calculate position, applying correction required to track EKF solution
+    // apply a trapezoidal integration to velocities to calculate position
     outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f) + velCorrection * imuDataNew.delVelDT;
 
-    // store the output in the FIFO buffer if this is a filter update step
+    // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
     if (runUpdates) {
+        // store the states at the output time horizon
         storedOutput[storedIMU.get_youngest_index()] = outputDataNew;
+
+        // recall the states from the fusion time horizon
+        outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
+
+        // compare quaternion data with EKF quaternion at the fusion time horizon and calculate correction
+
+        // divide the demanded quaternion by the estimated to get the error
+        Quaternion quatErr = stateStruct.quat / outputDataDelayed.quat;
+
+        // Convert to a delta rotation using a small angle approximation
+        quatErr.normalize();
+        Vector3f deltaAngErr;
+        float scaler;
+        if (quatErr[0] >= 0.0f) {
+            scaler = 2.0f;
+        } else {
+            scaler = -2.0f;
+        }
+        deltaAngErr.x = scaler * quatErr[1];
+        deltaAngErr.y = scaler * quatErr[2];
+        deltaAngErr.z = scaler * quatErr[3];
+
+        // calculate a gain that provides tight tracking of the estimator states and
+        // adjust for changes in time delay to maintain consistent damping ratio of ~0.7
+        float timeDelay = 1e-3f * (float)(imuDataNew.time_ms - imuDataDelayed.time_ms);
+        timeDelay = fmaxf(timeDelay, dtIMUavg);
+        float errorGain = 0.5f / timeDelay;
+
+        // calculate a corrrection to the delta angle
+        // that will cause the INS to track the EKF quaternions
+        delAngCorrection = deltaAngErr * errorGain * dtIMUavg;
+
+        // If the user specifes a time constant for the position and velocity states then calculate and apply the position
+        // and velocity corrections immediately to the whole output history which takes longer to process but enables smaller
+        // time constants to be used. Else apply the corrections to the current state only using the same time constant
+        // used for the quaternion corrections.
+        if (frontend->_tauVelPosOutput > 0) {
+            // convert time constant from centi-seconds to seconds
+            float tauPosVel = 0.01f*(float)frontend->_tauVelPosOutput;
+
+            // calculate a position correction that will be applied to the output state history
+            // to track the EKF position states with the specified time constant
+            float velPosGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
+            Vector3f posDelta = (stateStruct.position - outputDataDelayed.position) * velPosGain;
+
+            // calculate a velocity correction that will be applied to the output state history
+            // to track the EKF velocity states with the specified time constant
+            Vector3f velDelta;
+            float velGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
+            velDelta = (stateStruct.velocity - outputDataDelayed.velocity) * velGain;
+
+            // loop through the output filter state history and apply the corrections to the velocity and position states
+            // this method is too expensive to use for the attitude states due to the quaternion operations required
+            // but does not introduce a time delay in the 'correction loop' and allows smaller tracking time constants
+            // to be used
+            output_elements outputStates;
+            for (unsigned index=0; index < imu_buffer_length; index++) {
+                outputStates = storedOutput[index];
+
+                // a constant  velocity correction is applied
+                outputStates.velocity += velDelta;
+
+                // a constant position correction is applied
+                outputStates.position += posDelta;
+
+                // push the updated data to the buffer
+                storedOutput[index] = outputStates;
+            }
+
+            // update output state to corrected values
+            //outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
+            outputDataNew = storedOutput[storedIMU.get_youngest_index()];
+
+            // set un-used corrections to zero
+            delVelCorrection.zero();
+            velCorrection.zero();
+
+        } else {
+            // multiply velocity and position error by a gain to calculate the delta velocity correction required to track the EKF solution
+            delVelCorrection = (stateStruct.velocity - outputDataDelayed.velocity) * errorGain * dtIMUavg;
+            velCorrection = (stateStruct.position - outputDataDelayed.position) * errorGain;
+
+        }
+
     }
-
-    // extract data at the fusion time horizon from the FIFO buffer
-    outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
-
-    // compare quaternion data with EKF quaternion at the fusion time horizon and calculate correction
-
-    // divide the demanded quaternion by the estimated to get the error
-    Quaternion quatErr = stateStruct.quat / outputDataDelayed.quat;
-
-    // Convert to a delta rotation using a small angle approximation
-    quatErr.normalize();
-    Vector3f deltaAngErr;
-    float scaler;
-    if (quatErr[0] >= 0.0f) {
-        scaler = 2.0f;
-    } else {
-        scaler = -2.0f;
-    }
-    deltaAngErr.x = scaler * quatErr[1];
-    deltaAngErr.y = scaler * quatErr[2];
-    deltaAngErr.z = scaler * quatErr[3];
-
-    // multiply the angle error vector by a gain to calculate the delta angle correction required to track the EKF solution
-    const float Kang = 1.0f;
-    delAngCorrection = deltaAngErr * imuDataNew.delAngDT * Kang;
-
-    // multiply velocity error by a gain to calculate the delta velocity correction required to track the EKF solution
-    const float Kvel = 1.0f;
-    delVelCorrection = (stateStruct.velocity - outputDataDelayed.velocity) * imuDataNew.delVelDT * Kvel;
-
-    // multiply position error by a gain to calculate the velocity correction required to track the EKF solution
-    const float Kpos = 1.0f;
-    velCorrection = (stateStruct.position - outputDataDelayed.position) * Kpos;
-
-    // update vertical velocity and position states used to provide a vertical position derivative output
-    // using a simple complementary filter
-    float lastPosDownDerivative = posDownDerivative;
-    posDownDerivative = 2.0f * (outputDataNew.position.z - posDown);
-    posDown += (posDownDerivative + lastPosDownDerivative + 2.0f*delVelNav.z) * (imuDataNew.delVelDT*0.5f);
 }
 
 /*
