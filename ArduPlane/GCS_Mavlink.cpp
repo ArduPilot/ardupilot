@@ -1066,6 +1066,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
 
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
+        send_message(MSG_ALTITUDE);
         send_message(MSG_SIMSTATE);
         send_message(MSG_RPM);
         if (plane.control_mode != MANUAL) {
