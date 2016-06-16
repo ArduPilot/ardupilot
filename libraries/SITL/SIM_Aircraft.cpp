@@ -57,6 +57,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     min_sleep_time(5000)
 #endif
 {
+    // make the SIM_* variables available to simulator backends
+    sitl = (SITL *)AP_Param::find_object("SIM_");
     parse_home(home_str, home, home_yaw);
     location = home;
     ground_level = home.alt*0.01;
