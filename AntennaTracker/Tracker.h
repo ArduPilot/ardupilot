@@ -46,7 +46,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
-#include <PID/PID.h>
+#include <AC_PID/AC_PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>

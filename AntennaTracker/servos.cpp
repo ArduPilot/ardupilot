@@ -78,11 +78,8 @@ void Tracker::update_pitch_position_servo(float pitch)
     // PITCH2SRV_IMAX   4000.000000
 
     // calculate new servo position
-    int32_t new_servo_out = channel_pitch.get_servo_out() + g.pidPitch2Srv.get_pid(angle_err);
-
-    // initialise limit flags
-    servo_limit.pitch_lower = false;
-    servo_limit.pitch_upper = false;
+    g.pidPitch2Srv.set_input_filter_all(angle_err);
+    int32_t new_servo_out = channel_pitch.get_servo_out() + g.pidPitch2Srv.get_pid();
 
     // rate limit pitch servo
     if (g.pitch_slew_time > 0.02f) {
@@ -92,11 +89,9 @@ void Tracker::update_pitch_position_servo(float pitch)
         }
         if (new_servo_out <= channel_pitch.get_servo_out() - max_change) {
             new_servo_out = channel_pitch.get_servo_out() - max_change;
-            servo_limit.pitch_lower = true;
         }
         if (new_servo_out >= channel_pitch.get_servo_out() + max_change) {
             new_servo_out = channel_pitch.get_servo_out() + max_change;
-            servo_limit.pitch_upper = true;
         }
     }
     channel_pitch.set_servo_out(new_servo_out);
@@ -104,11 +99,11 @@ void Tracker::update_pitch_position_servo(float pitch)
     // position limit pitch servo
     if (channel_pitch.get_servo_out() <= -pitch_limit_cd) {
         channel_pitch.set_servo_out(-pitch_limit_cd);
-        servo_limit.pitch_lower = true;
+        g.pidPitch2Srv.reset_I();
     }
     if (channel_pitch.get_servo_out() >= pitch_limit_cd) {
         channel_pitch.set_servo_out(pitch_limit_cd);
-        servo_limit.pitch_upper = true;
+        g.pidPitch2Srv.reset_I();
     }
 }
 
@@ -146,7 +141,8 @@ void Tracker::update_pitch_cr_servo(float pitch)
 {
     float ahrs_pitch = degrees(ahrs.pitch);
     float err_cd = (pitch - ahrs_pitch) * 100.0f;
-    channel_pitch.set_servo_out(g.pidPitch2Srv.get_pid(err_cd));
+    g.pidPitch2Srv.set_input_filter_all(err_cd);
+    channel_pitch.set_servo_out(g.pidPitch2Srv.get_pid());
 }
 
 /**
@@ -256,17 +252,13 @@ void Tracker::update_yaw_position_servo(float yaw)
     }
 
     slew_dir = new_slew_dir;
-
-    // initialise limit flags
-    servo_limit.yaw_lower = false;
-    servo_limit.yaw_upper = false;
-
     int16_t new_servo_out;
     if (slew_dir != 0) {
         new_servo_out = slew_dir * 18000;
         g.pidYaw2Srv.reset_I();
     } else {
-        float servo_change = g.pidYaw2Srv.get_pid(angle_err);
+        g.pidYaw2Srv.set_input_filter_all(angle_err);
+        float servo_change = g.pidYaw2Srv.get_pid();
         servo_change = constrain_float(servo_change, -18000, 18000);
         new_servo_out = constrain_float(channel_yaw.get_servo_out() - servo_change, -18000, 18000);
     }
@@ -279,23 +271,21 @@ void Tracker::update_yaw_position_servo(float yaw)
         }
         if (new_servo_out <= channel_yaw.get_servo_out() - max_change) {
             new_servo_out = channel_yaw.get_servo_out() - max_change;
-            servo_limit.yaw_lower = true;
         }
         if (new_servo_out >= channel_yaw.get_servo_out() + max_change) {
             new_servo_out = channel_yaw.get_servo_out() + max_change;
-            servo_limit.yaw_upper = true;
         }
     }
     channel_yaw.set_servo_out(new_servo_out);
 
-    // position limit pitch servo
+    // position limit yaw servo
     if (channel_yaw.get_servo_out() <= -yaw_limit_cd) {
         channel_yaw.set_servo_out(-yaw_limit_cd);
-        servo_limit.yaw_lower = true;
+        g.pidYaw2Srv.reset_I();
     }
     if (channel_yaw.get_servo_out() >= yaw_limit_cd) {
         channel_yaw.set_servo_out(yaw_limit_cd);
-        servo_limit.yaw_upper = true;
+        g.pidYaw2Srv.reset_I();
     }
 }
 
@@ -335,5 +325,6 @@ void Tracker::update_yaw_cr_servo(float yaw)
     float yaw_cd = wrap_180_cd(yaw*100.0f);
     float err_cd = wrap_180_cd(yaw_cd - (float)ahrs_yaw_cd);
 
-    channel_yaw.set_servo_out(g.pidYaw2Srv.get_pid(err_cd));
+    g.pidYaw2Srv.set_input_filter_all(err_cd);
+    channel_yaw.set_servo_out(g.pidYaw2Srv.get_pid());
 }
