@@ -230,7 +230,11 @@ void ADSB::send_report(void)
                                                   &msg, &adsb_vehicle);
             chan0_status->current_tx_seq = saved_seq;
             
-            mav_socket.send(&msg.magic, len);
+            uint8_t msgbuf[len];
+            len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+            if (len > 0) {
+                mav_socket.send(msgbuf, len);
+            }
         }
     }
     
