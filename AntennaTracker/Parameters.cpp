@@ -337,7 +337,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 0.001 0.1
     // @Increment: 0.001
     // @User: Standard
-	GGROUP(pidPitch2Srv,       "PITCH2SRV_", PID),
+	GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
 
     // @Param: YAW2SRV_P
     // @DisplayName: Yaw axis controller P gain
@@ -367,7 +367,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 0.001 0.1
     // @Increment: 0.001
     // @User: Standard
-	GGROUP(pidYaw2Srv,         "YAW2SRV_", PID),
+	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
     // @Param: CMD_TOTAL
     // @DisplayName: Number of loaded mission items

@@ -63,8 +63,8 @@ public:
         k_param_scheduler,
         k_param_ins,
         k_param_sitl,
-        k_param_pidPitch2Srv,
-        k_param_pidYaw2Srv,
+        k_param_pidPitch_old,   // deprecated
+        k_param_pidYaw_old,     // deprecated
         k_param_gcs2,               // stream rates for uartD
         k_param_serial2_baud,       // deprecated
 
@@ -107,6 +107,8 @@ public:
         //
         k_param_channel_yaw = 200,
         k_param_channel_pitch,
+        k_param_pidPitch2Srv,
+        k_param_pidYaw2Srv,
 
         //
         // 220: Waypoint data
@@ -156,13 +158,13 @@ public:
 
     AP_Int32 log_bitmask;
 
-    // PID controllers
-    PID         pidPitch2Srv;
-    PID         pidYaw2Srv;
+    // AC_PID controllers
+    AC_PID         pidPitch2Srv;
+    AC_PID         pidYaw2Srv;
 
     Parameters() :
-        pidPitch2Srv(0.2, 0, 0.05f, 4000.0f),
-        pidYaw2Srv  (0.2, 0, 0.05f, 4000.0f)
+        pidPitch2Srv(0.2, 0, 0.05f, 4000.0f, 0.1, 0.02f),
+        pidYaw2Srv  (0.2, 0, 0.05f, 4000.0f, 0.1, 0.02f)
         {}
 };
 
