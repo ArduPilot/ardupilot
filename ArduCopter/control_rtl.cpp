@@ -462,7 +462,7 @@ void Copter::rtl_build_path(bool terrain_following_allowed)
 #endif
 
     // compute return altitude
-    rtl_compute_return_alt(rtl_path.origin_point, rtl_path.return_target, terrain_following_allowed);
+    rtl_compute_return_alt(terrain_following_allowed);
 
     // climb target is above our origin point at the return altitude
     rtl_path.climb_target = Location_Class(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
@@ -475,12 +475,10 @@ void Copter::rtl_build_path(bool terrain_following_allowed)
 }
 
 // return altitude in cm above home at which vehicle should return home
-//   rtl_origin_point is the stopping point of the vehicle when rtl is initiated
-//   rtl_return_target is the home or rally point that the vehicle is returning to.  It's lat, lng and alt values must already have been filled in before this function is called
-//   rtl_return_target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
-void Copter::rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target, bool terrain_following_allowed)
+//   return target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
+void Copter::rtl_compute_return_alt(bool terrain_following_allowed)
 {
-    float rtl_return_dist_cm = rtl_return_target.get_distance(rtl_origin_point) * 100.0f;
+    float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
 
     // curr_alt is current altitude above home or above terrain depending upon use_terrain
     int32_t curr_alt = current_loc.alt;
@@ -490,8 +488,8 @@ void Copter::rtl_compute_return_alt(const Location_Class &rtl_origin_point, Loca
     if (rtl_path.terrain_used) {
         // attempt to retrieve terrain alt for current location, stopping point and origin
         int32_t origin_terr_alt, return_target_terr_alt;
-        if (!rtl_origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, origin_terr_alt) ||
-            !rtl_origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, return_target_terr_alt) ||
+        if (!rtl_path.origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, origin_terr_alt) ||
+            !rtl_path.return_target.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, return_target_terr_alt) ||
             !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_alt)) {
             rtl_path.terrain_used = false;
             Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
@@ -518,13 +516,13 @@ void Copter::rtl_compute_return_alt(const Location_Class &rtl_origin_point, Loca
     ret = MAX(ret, curr_alt);
 
     // convert return-target to alt-above-home or alt-above-terrain
-    if (!rtl_path.terrain_used || !rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
-        if (!rtl_return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
+    if (!rtl_path.terrain_used || !rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
+        if (!rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
             // this should never happen but just in case
-            rtl_return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
+            rtl_path.return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
         }
     }
 
     // add ret to altitude
-    rtl_return_target.alt += ret;
+    rtl_path.return_target.alt += ret;
 }

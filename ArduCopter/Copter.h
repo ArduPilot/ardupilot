@@ -840,7 +840,7 @@ private:
     void rtl_land_start();
     void rtl_land_run();
     void rtl_build_path(bool terrain_following_allowed);
-    void rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target, bool terrain_following_allowed);
+    void rtl_compute_return_alt(bool terrain_following_allowed);
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
