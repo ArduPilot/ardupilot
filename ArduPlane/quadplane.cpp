@@ -199,6 +199,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LAND_FINAL_ALT", 27, QuadPlane, land_final_alt, 6),
 
+    // 28 was used by THR_MID
+
     // @Param: TRAN_PIT_MAX
     // @DisplayName: Transition max pitch
     // @Description: Maximum pitch during transition to auto fixed wing flight
@@ -294,6 +296,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("GUIDED_MODE", 40, QuadPlane, guided_mode, 0),
+
+    // 41 was used by THR_MIN
 
     // @Param: ESC_CAL
     // @DisplayName: ESC Calibration
