@@ -15,8 +15,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
 
-#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP) && \
-defined(HAVE_LIBIIO)
+#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
+     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) &&      \
+    defined(HAVE_LIBIIO)
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -34,7 +35,6 @@ defined(HAVE_LIBIIO)
 #include "AP_RangeFinder_Bebop.h"
 #include <AP_HAL_Linux/Thread.h>
 #include <AP_HAL_Linux/GPIO.h>
-#include <AP_HAL_Linux/GPIO_Bebop.h>
 
 /*
  * this mode is used at low altitude

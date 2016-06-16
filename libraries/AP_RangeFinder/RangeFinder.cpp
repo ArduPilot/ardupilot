@@ -530,7 +530,8 @@ void RangeFinder::detect_instance(uint8_t instance)
             return;
         }
     }
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP && defined(HAVE_LIBIIO)
+#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
+     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
     if (type == RangeFinder_TYPE_BEBOP) {
         if (AP_RangeFinder_Bebop::detect(*this, instance)) {
             state[instance].instance = instance;
