@@ -60,7 +60,7 @@ public:
         _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
         _dt(dt),
         _angle_boost(0),
-        _att_ctrl_use_accel_limit(true),
+        _use_input_shaping(true),
         _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
@@ -143,7 +143,7 @@ public:
     bool ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads);
 
     // Configures whether the attitude controller should limit the rate demand to constrain angular acceleration
-    void limit_angle_to_rate_request(bool limit_request) { _att_ctrl_use_accel_limit = limit_request; }
+    void use_input_shaping(bool use_shaping) { _use_input_shaping = use_shaping; }
 
     // Return 321-intrinsic euler angles in centidegrees representing the rotation from NED earth frame to the
     // attitude controller's reference attitude.
@@ -292,7 +292,6 @@ protected:
 
     // Angle limit time constant (to maintain altitude)
     AP_Float            _angle_limit_tc;
-// todo: check for this in quaternions
 
     // Intersampling period in seconds
     float               _dt;
@@ -300,13 +299,6 @@ protected:
     // This represents a 321-intrinsic rotation from NED frame to the reference (setpoint)
     // attitude used in the attitude controller, in radians. Formerly _angle_ef_target.
     Vector3f            _att_target_euler_rad;
-
-    // This represents an euler axis-angle rotation vector from the vehicle’s
-    // estimated attitude to the reference (setpoint) attitude used in the attitude
-    // controller, in radians in the vehicle body frame of reference. Formerly
-    // _angle_bf_error.
-    Vector3f            _att_error_rot_vec_rad;
-//todo: include this in quert controllers
 
     float _thrust_error_angle;
 
@@ -331,9 +323,9 @@ protected:
     // Used only for logging.
     float               _angle_boost;
 
-    // Specifies whether the attitude controller should use the acceleration limit
-    bool                _att_ctrl_use_accel_limit;
-// todo: rename to something like use feedforward and input shaping
+    // Specifies whether the attitude controller should use the input shaping and feedforward
+    bool                _use_input_shaping;
+
     // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
     float               _althold_lean_angle_max = 0.0f;
 
