@@ -331,7 +331,7 @@ protected:
 
     // Specifies whether the attitude controller should use the acceleration limit
     bool                _att_ctrl_use_accel_limit;
-
+// todo: rename to something like use feedforward and input shaping
     // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
     float               _althold_lean_angle_max = 0.0f;
 
