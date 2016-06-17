@@ -36,7 +36,6 @@ namespace SITL {
 #pragma GCC diagnostic ignored "-Wunused-result"
 
 #define DEBUG_JSBSIM 1
-#define FEET_TO_METERS 0.3048f
 
 JSBSim::JSBSim(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),

@@ -144,6 +144,9 @@ protected:
     const char *frame;
     bool use_time_sync = true;
 
+    const float FEET_TO_METERS = 0.3048f;
+    const float KNOTS_TO_METERS_PER_SECOND = 0.51444f;
+    
     bool on_ground(const Vector3f &pos) const;
 
     /* update location from position */
