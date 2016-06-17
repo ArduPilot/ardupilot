@@ -141,6 +141,13 @@ private:
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim
 
+
+    // This represents an euler axis-angle rotation vector from the vehicle’s
+    // estimated attitude to the reference (setpoint) attitude used in the attitude
+    // controller, in radians in the vehicle body frame of reference. Formerly
+    // _angle_bf_error.
+    Vector3f            _att_error_rot_vec_rad;
+
     // parameters
     AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _hover_roll_trim;               // Angle in centi-degrees used to counter tail rotor thrust in hover

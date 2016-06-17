@@ -199,6 +199,7 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
 
     // add desired target to yaw
     _ang_vel_target_rads.z += _att_target_ang_vel_rads.z;
+    _thrust_error_angle = norm(_att_error_rot_vec_rad.x, _att_error_rot_vec_rad.y);
 }
 
 void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()

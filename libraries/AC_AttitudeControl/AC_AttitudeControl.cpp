@@ -318,11 +318,7 @@ void AC_AttitudeControl::attitude_controller_run_quat(const Vector3f& att_target
 
     // Compute attitude error
     Vector3f attitude_error_vector;
-    float thrust_error_angle;
-    thrust_heading_rotation_angles(att_target_quat, att_vehicle_quat, attitude_error_vector, thrust_error_angle);
-
-// todo: remove _att_error_rot_vec_rad and replace with thrust_error_angle
-    _att_error_rot_vec_rad = attitude_error_vector;
+    thrust_heading_rotation_angles(att_target_quat, att_vehicle_quat, attitude_error_vector, _thrust_error_angle);
 
     // Compute the angular velocity target from the attitude error
     ang_vel_target_rads = update_ang_vel_target_from_att_error(attitude_error_vector);
@@ -337,10 +333,10 @@ void AC_AttitudeControl::attitude_controller_run_quat(const Vector3f& att_target
     Quaternion _ang_vel_target_quat = att_error_quat.inverse()*_att_target_ang_vel_quat*att_error_quat;
 
     // Correct the thrust vector and smoothly add feedforward and yaw input
-    if(thrust_error_angle > radians(60.0f)){
+    if(_thrust_error_angle > radians(60.0f)){
         ang_vel_target_rads.z = 0.0f;
-    }else if(thrust_error_angle > radians(30.0f)){
-        float flip_scalar = (1.0f - (thrust_error_angle-radians(30.0f))/radians(30.0f));
+    }else if(_thrust_error_angle > radians(30.0f)){
+        float flip_scalar = (1.0f - (_thrust_error_angle-radians(30.0f))/radians(30.0f));
         ang_vel_target_rads.x += _ang_vel_target_quat.q2*flip_scalar;
         ang_vel_target_rads.y += _ang_vel_target_quat.q3*flip_scalar;
         ang_vel_target_rads.z += _ang_vel_target_quat.q4;

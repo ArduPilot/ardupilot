@@ -151,7 +151,7 @@ public:
 
     // Return a rotation vector in centidegrees representing the rotation from vehicle body frame to the
     // attitude controller's reference attitude.
-    Vector3f get_att_error_rot_vec_cd() const { return _att_error_rot_vec_rad*degrees(100.0f); }
+    float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
     // Set x-axis angular velocity reference in centidegrees/s
     void rate_bf_roll_target(float rate_cds) { _ang_vel_target_rads.x = radians(rate_cds*0.01f); }
@@ -307,6 +307,8 @@ protected:
     // _angle_bf_error.
     Vector3f            _att_error_rot_vec_rad;
 //todo: include this in quert controllers
+
+    float _thrust_error_angle;
 
     // This represents the angular velocity of the reference (setpoint) attitude used in
     // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
