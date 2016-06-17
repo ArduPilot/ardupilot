@@ -346,6 +346,9 @@ void FlightAxis::update(const struct sitl_input &input)
     last_time_s = state.m_currentPhysicsTime_SEC;
 
     last_velocity_ef = velocity_ef;
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

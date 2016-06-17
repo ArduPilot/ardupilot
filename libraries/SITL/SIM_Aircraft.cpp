@@ -153,6 +153,39 @@ void Aircraft::update_position(void)
 #endif
 }
 
+/*
+   update body magnetic field from position and rotation
+*/
+void Aircraft::update_mag_field_bf()
+{
+    // assume a earth field strength of 450 mGauss
+    Vector3f mag_ef(450, 0, 0);
+
+    // rotate _Bearth for inclination and declination. -66 degrees
+    // is the inclination in Canberra, Australia
+    // TODO implement inclination and declination lookup
+    Matrix3f R;
+    R.from_euler(0, ToRad(66), ToRad(11));
+    mag_ef = R * mag_ef;
+
+    // calculate height of frame above ground
+    float frame_height_agl = fmaxf((-position.z) + home.alt*0.01f - ground_level, 0.0f);
+
+    // calculate scaling factor that varies from 1 at ground level to 1/8 at sitl->mag_anomaly_hgt
+    // Assume magnetic anomaly strength scales with 1/R**3
+    float anomaly_scaler = (sitl->mag_anomaly_hgt / (frame_height_agl + sitl->mag_anomaly_hgt));
+    anomaly_scaler = anomaly_scaler * anomaly_scaler * anomaly_scaler;
+
+    // add scaled anomaly to earth field
+    mag_ef += sitl->mag_anomaly_ned.get() * anomaly_scaler;
+
+    // Rotate into body frame
+    mag_bf = dcm.transposed() * mag_ef;
+
+    // add motor interference
+    mag_bf += sitl->mag_mot.get() * battery_current;
+}
+
 /* advance time by deltat in seconds */
 void Aircraft::time_advance(float deltat)
 {
@@ -297,6 +330,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.rpm2 = rpm2;
     fdm.rcin_chan_count = rcin_chan_count;
     memcpy(fdm.rcin, rcin, rcin_chan_count*sizeof(float));
+    fdm.bodyMagField = mag_bf;
 }
 
 uint64_t Aircraft::get_wall_time_us() const
