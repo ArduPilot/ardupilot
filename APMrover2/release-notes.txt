@@ -1,7 +1,7 @@
 Release 3.0.1, 17 June 2016
 ===========================
 The ArduPilot development team is proud to announce the release of
-version 3.0.0 of APM:Rover. This is a minor release with small but
+version 3.0.1 of APM:Rover. This is a minor release with small but
 important bug fix changes.
 
 The two main motivations for this release
