@@ -97,6 +97,35 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     AP_GROUPEND
 };
 
+void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
+{
+    _throttle_in = throttle_in;
+    _motors.set_throttle_filter_cutoff(filter_cutoff);
+    if (reset_attitude_control) {
+        relax_attitude_controllers();
+        set_yaw_target_to_current_heading();
+    }
+    _motors.set_throttle(throttle_in);
+    _angle_boost = 0.0f;
+}
+
+void AC_AttitudeControl::relax_attitude_controllers()
+{
+    // TODO add _ahrs.get_quaternion()
+    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _attitude_target_quat.to_euler(_att_target_euler_rad.x, _att_target_euler_rad.y, _att_target_euler_rad.z);
+    _att_target_ang_vel_rads = Vector3f(0.0f, 0.0f, 0.0f);
+    _att_target_euler_rad = Vector3f(0.0f, 0.0f, 0.0f);
+
+    // Set reference angular velocity used in angular velocity controller equal
+    // to the input angular velocity and reset the angular velocity integrators.
+    // This zeros the output of the angular velocity controller.
+    _ang_vel_target_rads = _ahrs.get_gyro();
+    get_rate_roll_pid().reset_I();
+    get_rate_pitch_pid().reset_I();
+    get_rate_yaw_pid().reset_I();
+}
+
 void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain)
 {
     // Convert from centidegrees on public interface to radians
@@ -134,7 +163,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     }
 
     // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads, _att_target_ang_vel_rads);
+    _att_target_ang_vel_rads = euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads);
 
     // Compute quaternion target attitude
     _attitude_target_quat.from_euler(_att_target_euler_rad.x, _att_target_euler_rad.y, _att_target_euler_rad.z);
@@ -172,7 +201,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     _att_target_euler_rate_rads.z = 0;
 
     // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads, _att_target_ang_vel_rads);
+    _att_target_ang_vel_rads = euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads);
 
     // Compute quaternion target attitude
     _attitude_target_quat.from_euler(_att_target_euler_rad.x, _att_target_euler_rad.y, _att_target_euler_rad.z);
@@ -204,7 +233,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
     }
 
     // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads, _att_target_ang_vel_rads);
+    _att_target_ang_vel_rads = euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads);
 
     // Compute quaternion target attitude
     _attitude_target_quat.from_euler(_att_target_euler_rad.x, _att_target_euler_rad.y, _att_target_euler_rad.z);
@@ -252,6 +281,9 @@ void AC_AttitudeControl::attitude_controller_run_quat(const Vector3f& att_target
     Vector3f attitude_error_vector;
     float thrust_error_angle;
     thrust_heading_rotation_angles(att_target_quat, att_vehicle_quat, attitude_error_vector, thrust_error_angle);
+
+// todo: remove _att_error_rot_vec_rad and replace with thrust_error_angle
+    _att_error_rot_vec_rad = attitude_error_vector;
 
     // Compute the angular velocity target from the attitude error
     update_ang_vel_target_from_att_error(attitude_error_vector, ang_vel_target_rads);
@@ -369,36 +401,23 @@ Vector3f AC_AttitudeControl::euler_accel_limit(Vector3f euler_rad, Vector3f eule
     return rot_accel;
 }
 
-void AC_AttitudeControl::relax_bf_rate_controller()
-{
-    // Set reference angular velocity used in angular velocity controller equal
-    // to the input angular velocity and reset the angular velocity integrators.
-    // This zeros the output of the angular velocity controller.
-    _ang_vel_target_rads = _ahrs.get_gyro();
-    get_rate_roll_pid().reset_I();
-    get_rate_pitch_pid().reset_I();
-    get_rate_yaw_pid().reset_I();
-
-    // Write euler derivatives derived from vehicle angular velocity to
-    // _att_target_euler_rate_rads. This resets the state of the input shapers.
-    ang_vel_to_euler_rate(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _ang_vel_target_rads, _att_target_euler_rate_rads);
-}
-
 void AC_AttitudeControl::shift_ef_yaw_target(float yaw_shift_cd)
 {
     _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + radians(yaw_shift_cd*0.01f));
 }
 
-void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads)
+Vector3f AC_AttitudeControl::euler_rate_to_ang_vel(Vector3f euler_rad, Vector3f euler_rate_rads)
 {
     float sin_theta = sinf(euler_rad.y);
     float cos_theta = cosf(euler_rad.y);
     float sin_phi = sinf(euler_rad.x);
     float cos_phi = cosf(euler_rad.x);
 
+    Vector3f ang_vel_rads;
     ang_vel_rads.x = euler_rate_rads.x - sin_theta * euler_rate_rads.z;
     ang_vel_rads.y = cos_phi  * euler_rate_rads.y + sin_phi * cos_theta * euler_rate_rads.z;
     ang_vel_rads.z = -sin_phi * euler_rate_rads.y + cos_theta * cos_phi * euler_rate_rads.z;
+    return ang_vel_rads;
 }
 
 bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads)
@@ -530,18 +549,6 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
         _accel_pitch_max = 0.0f;
         _accel_yaw_max = 0.0f;
     }
-}
-
-void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
-{
-    _throttle_in = throttle_in;
-    _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (reset_attitude_control) {
-        relax_bf_rate_controller();
-        set_yaw_target_to_current_heading();
-    }
-    _motors.set_throttle(throttle_in);
-    _angle_boost = 0.0f;
 }
 
 // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle

@@ -109,7 +109,7 @@ public:
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; _accel_yaw_max.save(); }
 
     // Ensure body-frame rate controller has zero errors to relax rate controller output
-    void relax_bf_rate_controller();
+    void relax_attitude_controllers();
 
     // Sets yaw target to vehicle heading
     void set_yaw_target_to_current_heading() { _att_target_euler_rad.z = _ahrs.yaw; }
@@ -133,7 +133,7 @@ public:
     virtual void rate_controller_run() = 0;
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
-    void euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
+    Vector3f euler_rate_to_ang_vel(Vector3f euler_rad, Vector3f euler_rate_rads);
 
     // Convert an angular velocity vector to a 321-intrinsic euler angle derivative
     // Returns false if the vehicle is pitched 90 degrees up or down
@@ -289,6 +289,7 @@ protected:
 
     // Angle limit time constant (to maintain altitude)
     AP_Float            _angle_limit_tc;
+// todo: check for this in quaternions
 
     // Intersampling period in seconds
     float               _dt;
@@ -302,6 +303,7 @@ protected:
     // controller, in radians in the vehicle body frame of reference. Formerly
     // _angle_bf_error.
     Vector3f            _att_error_rot_vec_rad;
+//todo: include this in quert controllers
 
     // This represents the angular velocity of the reference (setpoint) attitude used in
     // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
@@ -338,16 +340,16 @@ protected:
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
 
-    Quaternion          _attitude_desired_quat;
+//    Quaternion          _attitude_desired_quat;
 
     Quaternion          _attitude_target_quat;
 
     // This represents the angular velocity of the reference (setpoint) attitude used in
     // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
     // second. Formerly _rate_ef_desired.
-    Vector3f            _attitude_target_ang_vel;
+//    Vector3f            _attitude_target_ang_vel;
 
-    Vector3f            _angular_velocity_target;
+//    Vector3f            _angular_velocity_target;
 
 protected:
     /*
