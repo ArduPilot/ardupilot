@@ -72,6 +72,9 @@ void MultiCopter::update(const struct sitl_input &input)
     
     // update lat/lon/altitude
     update_position();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 
