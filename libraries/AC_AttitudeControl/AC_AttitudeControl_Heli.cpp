@@ -191,7 +191,7 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     }
 
     // convert body-frame angle errors to body-frame rate targets
-    update_ang_vel_target_from_att_error(_att_error_rot_vec_rad, _ang_vel_target_rads);
+    _ang_vel_target_rads = update_ang_vel_target_from_att_error(_att_error_rot_vec_rad);
 
     // set body-frame roll/pitch rate target to current desired rates which are the vehicle's actual rates
     _ang_vel_target_rads.x = _att_target_ang_vel_rads.x;

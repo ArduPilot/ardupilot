@@ -117,6 +117,9 @@ public:
     // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
     void shift_ef_yaw_target(float yaw_shift_cd);
 
+    // Command a Quaternion attitude with feedforward and smoothing
+    void input_quaternion(Quaternion attitude_desired_quat, float smoothing_gain);
+
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
 
@@ -222,7 +225,7 @@ public:
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-    void input_shaping_angle(float desired_angle, float target_angle, float smoothing_gain, float accel_max, float& target_ang_vel);
+    void input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float& target_ang_vel);
     float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max);
     Vector3f euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel);
     void thrust_heading_rotation_angles(Quaternion att_to_quat, Quaternion att_from_quat, Vector3f &att_diff_angle, float &thrust_angle);
@@ -234,7 +237,7 @@ public:
 protected:
 
     // Update _ang_vel_target_rads using _att_error_rot_vec_rad
-    void update_ang_vel_target_from_att_error(Vector3f att_error_rot_vec_rad, Vector3f& ang_vel_target_rads);
+    Vector3f update_ang_vel_target_from_att_error(Vector3f att_error_rot_vec_rad);
 
     // Run the roll angular velocity PID controller and return the output
     float rate_bf_to_motor_roll(float rate_target_rads);
