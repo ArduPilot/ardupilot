@@ -122,7 +122,7 @@ private:
 	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
     void rate_bf_to_motor_roll_pitch(float rate_roll_target_rads, float rate_pitch_target_rads);
-    float rate_bf_to_motor_yaw(float rate_yaw_rads);
+    float rate_target_to_motor_yaw(float rate_yaw_rads);
 
     //
     // throttle methods
@@ -142,10 +142,9 @@ private:
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim
 
 
-    // This represents an euler axis-angle rotation vector from the vehicle’s
+    // This represents an euler axis-angle rotation vector from the vehicles
     // estimated attitude to the reference (setpoint) attitude used in the attitude
-    // controller, in radians in the vehicle body frame of reference. Formerly
-    // _angle_bf_error.
+    // controller, in radians in the vehicle body frame of reference.
     Vector3f            _att_error_rot_vec_rad;
 
     // parameters
