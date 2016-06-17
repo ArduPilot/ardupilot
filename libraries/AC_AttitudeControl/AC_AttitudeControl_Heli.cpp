@@ -191,7 +191,7 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     }
 
     // convert body-frame angle errors to body-frame rate targets
-    update_ang_vel_target_from_att_error();
+    update_ang_vel_target_from_att_error(_att_error_rot_vec_rad, _ang_vel_target_rads);
 
     // set body-frame roll/pitch rate target to current desired rates which are the vehicle's actual rates
     _ang_vel_target_rads.x = _att_target_ang_vel_rads.x;
@@ -199,6 +199,17 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
 
     // add desired target to yaw
     _ang_vel_target_rads.z += _att_target_ang_vel_rads.z;
+}
+
+void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
+{
+    // Integrate the angular velocity error into the attitude error
+    _att_error_rot_vec_rad += (_att_target_ang_vel_rads - _ahrs.get_gyro()) * _dt;
+
+    // Constrain attitude error
+    _att_error_rot_vec_rad.x = constrain_float(_att_error_rot_vec_rad.x, -AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
+    _att_error_rot_vec_rad.y = constrain_float(_att_error_rot_vec_rad.y, -AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
+    _att_error_rot_vec_rad.z = constrain_float(_att_error_rot_vec_rad.z, -AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
 }
 
 // subclass non-passthrough too, for external gyro, no flybar

@@ -118,11 +118,7 @@ public:
     void shift_ef_yaw_target(float yaw_shift_cd);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-    void input_euler_angle_roll_pitch_euler_rate_yaw_smooth(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
-    void input_euler_angle_roll_pitch_euler_rate_yaw_smooth_old(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
-
-    // Command an euler roll and pitch angle and an euler yaw rate
-    void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
+    void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
 
     // Command an euler roll, pitch and yaw angle
     void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
@@ -132,10 +128,6 @@ public:
 
     // Command an angular velocity
     virtual void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
-    virtual void input_rate_bf_roll_pitch_yaw_old(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
-
-    // Command a quaternion attitude and a body-frame angular velocity
-    void input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
 
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run() = 0;
@@ -230,54 +222,19 @@ public:
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-    void input_shaping_angle(float& target_rate_rads, float error_angle_rad, float smoothing_gain, float accel_max_radss);
-    void input_shaping_ang_vel(float& target_rate_rads, float _rate_rads, float accel_max_radss);
+    void input_shaping_angle(float desired_angle, float target_angle, float smoothing_gain, float accel_max, float& target_ang_vel);
+    float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max);
     Vector3f euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel);
     void thrust_heading_rotation_angles(Quaternion att_to_quat, Quaternion att_from_quat, Vector3f &att_diff_angle, float &thrust_angle);
 
     // Command an euler attitude and a body-frame angular velocity
-    void attitude_controller_run_quat2(Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
+    void attitude_controller_run_quat(const Vector3f& att_target_ang_vel_rads, Quaternion& att_target_quat, Vector3f& ang_vel_target_rads);
 
 
 protected:
-    // Retrieve a rotation matrix from the vehicle body frame to NED earth frame
-    void get_rotation_vehicle_to_ned(Matrix3f& m);
-
-    // Retrieve a rotation matrix from NED earth frame to the vehicle body frame
-    void get_rotation_ned_to_vehicle(Matrix3f& m);
-
-    // Retrieve a rotation matrix from reference (setpoint) body frame to NED earth frame
-    void get_rotation_reference_to_ned(Matrix3f& m);
-
-    // Retrieve a rotation matrix from NED earth frame to reference (setpoint) body frame
-    void get_rotation_ned_to_reference(Matrix3f& m);
-
-    // Retrieve a rotation matrix from vehicle body frame to reference (setpoint) body frame
-    void get_rotation_vehicle_to_reference(Matrix3f& m);
-
-    // Retrieve a rotation matrix from reference (setpoint) body frame to vehicle body frame
-    void get_rotation_reference_to_vehicle(Matrix3f& m);
-
-    // Command an euler attitude and a body-frame angular velocity
-    void attitude_controller_run_euler(const Vector3f& att_target_euler_rad, const Vector3f& att_target_ang_vel_rads);
-
-    // Command a quaternion attitude and a body-frame angular velocity
-    void attitude_controller_run_quat(const Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
-
-    // Update _att_target_euler_rad.x by integrating a 321-intrinsic euler roll angle derivative
-    void update_att_target_roll(float euler_roll_rate_rads, float overshoot_max_rad);
-
-    // Update _att_target_euler_rad.y by integrating a 321-intrinsic euler pitch angle derivative
-    void update_att_target_pitch(float euler_pitch_rate_rads, float overshoot_max_rad);
-
-    // Update _att_target_euler_rad.z by integrating a 321-intrinsic euler yaw angle derivative
-    void update_att_target_yaw(float euler_yaw_rate_rads, float overshoot_max_rad);
-
-    // Integrate vehicle rate into _att_error_rot_vec_rad
-    void integrate_bf_rate_error_to_angle_errors();
 
     // Update _ang_vel_target_rads using _att_error_rot_vec_rad
-    void update_ang_vel_target_from_att_error();
+    void update_ang_vel_target_from_att_error(Vector3f att_error_rot_vec_rad, Vector3f& ang_vel_target_rads);
 
     // Run the roll angular velocity PID controller and return the output
     float rate_bf_to_motor_roll(float rate_target_rads);
