@@ -197,7 +197,7 @@ def _build_common_taskgens(bld):
         use='mavlink',
     )
 
-    bld.libgtest()
+    bld.libgtest(cxxflags=['-include', 'ap_config.h'])
 
     if bld.env.HAS_GBENCHMARK:
         bld.libbenchmark()

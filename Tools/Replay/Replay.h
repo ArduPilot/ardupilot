@@ -97,6 +97,7 @@ public:
 
     bool check_solution = false;
     const char *log_filename = NULL;
+    bool generate_fpe = true;
 
     /*
       information about a log from find_log_info

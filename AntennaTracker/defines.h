@@ -24,6 +24,11 @@ enum ServoType {
     SERVO_TYPE_CR=2
 };
 
+enum AltSource {
+	ALT_SOURCE_BARO=0,
+	ALT_SOURCE_GPS=1
+};
+
 //  Logging parameters
 #define MASK_LOG_ATTITUDE               (1<<0)
 #define MASK_LOG_GPS                    (1<<1)
@@ -35,3 +40,4 @@ enum ServoType {
 
 //  Logging messages
 #define LOG_V_BAR_MSG                   0x04
+#define LOG_V_POS_MSG                   0x05

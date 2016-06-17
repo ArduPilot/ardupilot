@@ -15,7 +15,7 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
       - george-edison55-precise-backports
-      - llvm-toolchain-precise-3.7
+#      - llvm-toolchain-precise-3.7
     packages:
       - build-essential
       - gawk
@@ -29,8 +29,8 @@ addons:
       - g++-4.9
       - cmake
       - cmake-data
-      - clang-3.7
-      - llvm-3.7
+#      - clang-3.7
+#      - llvm-3.7
 
 cache:
   ccache: true
@@ -58,7 +58,7 @@ notifications:
 
 compiler:
   - gcc
-  - clang
+#  - clang
 
 env:
   global:

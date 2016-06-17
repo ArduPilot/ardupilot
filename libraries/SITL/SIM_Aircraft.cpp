@@ -29,6 +29,8 @@
 #include <Mmsystem.h>
 #endif
 
+#include <DataFlash/DataFlash.h>
+
 namespace SITL {
 
 /*
@@ -55,6 +57,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     min_sleep_time(5000)
 #endif
 {
+    // make the SIM_* variables available to simulator backends
+    sitl = (SITL *)AP_Param::find_object("SIM_");
     parse_home(home_str, home, home_yaw);
     location = home;
     ground_level = home.alt*0.01;
@@ -123,11 +127,8 @@ bool Aircraft::on_ground(const Vector3f &pos) const
 */
 void Aircraft::update_position(void)
 {
-    float bearing = degrees(atan2f(position.y, position.x));
-    float distance = sqrtf(sq(position.x) + sq(position.y));
-
     location = home;
-    location_update(location, bearing, distance);
+    location_offset(location, position.x, position.y);
 
     location.alt  = home.alt - position.z*100.0f;
 
@@ -140,6 +141,16 @@ void Aircraft::update_position(void)
     if (use_time_sync) {
         sync_frame_time();
     }
+
+#if 0
+    // logging of raw sitl data
+    Vector3f accel_ef = dcm * accel_body;
+    DataFlash_Class::instance()->Log_Write("SITL", "TimeUS,VN,VE,VD,AN,AE,AD,PN,PE,PD", "Qfffffffff",
+                                           AP_HAL::micros64(),
+                                           velocity_ef.x, velocity_ef.y, velocity_ef.z,
+                                           accel_ef.x, accel_ef.y, accel_ef.z,
+                                           position.x, position.y, position.z);
+#endif
 }
 
 /* advance time by deltat in seconds */
@@ -235,7 +246,7 @@ double Aircraft::rand_normal(double mean, double stddev)
 
             r = x*x + y*y;
         }
-        while (r == 0.0 || r > 1.0);
+        while (is_zero(r) || r > 1.0);
         {
             double d = sqrt(-2.0*log(r)/r);
             double n1 = x*d;

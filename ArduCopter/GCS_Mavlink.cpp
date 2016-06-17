@@ -1129,7 +1129,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 // y : lon
                 // z : alt
                 // sanity check location
-                if (labs(packet.x) >= 900000000l || labs(packet.y) >= 1800000000l) {
+                if (!check_latlng(packet.x, packet.y)) {
                     break;
                 }
                 Location roi_loc;
@@ -1244,7 +1244,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 }
             } else {
                 // sanity check location
-                if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+                if (!check_latlng(packet.param5, packet.param6)) {
                     break;
                 }
                 Location new_home_loc;
@@ -1274,7 +1274,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             // param6 : y / lon
             // param7 : z / alt
             // sanity check location
-            if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+            if (!check_latlng(packet.param5, packet.param6)) {
                 break;
             }
             Location roi_loc;
@@ -1784,6 +1784,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         Vector3f pos_ned;
 
         if(!pos_ignore) {
+            // sanity check location
+            if (!check_latlng(packet.lat_int, packet.lon_int)) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
             Location loc;
             loc.lat = packet.lat_int;
             loc.lng = packet.lon_int;
@@ -1837,6 +1842,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     {
         mavlink_hil_state_t packet;
         mavlink_msg_hil_state_decode(msg, &packet);
+
+        // sanity check location
+        if (!check_latlng(packet.lat, packet.lon)) {
+            break;
+        }
 
         // set gps hil sensor
         Location loc;
@@ -1961,6 +1971,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        // sanity check location
+        if (!check_latlng(packet.lat, packet.lng)) {
+            break;
+        }
+
         RallyLocation rally_point;
         rally_point.lat = packet.lat;
         rally_point.lng = packet.lng;
@@ -2022,7 +2037,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             copter.set_home_to_current_location_and_lock();
         } else {
             // sanity check location
-            if (labs(packet.latitude) > 90*10e7 || labs(packet.longitude) > 180 * 10e7) {
+            if (!check_latlng(packet.latitude, packet.longitude)) {
                 break;
             }
             Location new_home_loc;

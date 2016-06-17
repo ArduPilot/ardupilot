@@ -907,11 +907,11 @@ void AP_AHRS_DCM::estimate_wind(void)
         // estimate airspeed it using equation 6
         V = velocityDiff.length() / diff_length;
 
-        _last_fuse = fuselageDirection;
-        _last_vel = velocity;
-
         Vector3f fuselageDirectionSum = fuselageDirection + _last_fuse;
         Vector3f velocitySum = velocity + _last_vel;
+
+        _last_fuse = fuselageDirection;
+        _last_vel = velocity;
 
         float theta = atan2f(velocityDiff.y, velocityDiff.x) - atan2f(fuselageDirectionDiff.y, fuselageDirectionDiff.x);
         float sintheta = sinf(theta);

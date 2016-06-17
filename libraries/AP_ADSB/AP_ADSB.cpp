@@ -197,7 +197,7 @@ void AP_ADSB::delete_vehicle(uint16_t index)
             _highest_threat_distance = 0;
         }
 
-        if (index != _vehicle_count-1) {
+        if (index != (_vehicle_count-1)) {
             _vehicle_list[index] = _vehicle_list[_vehicle_count-1];
         }
         // TODO: is memset needed? When we decrement the index we essentially forget about it
@@ -242,7 +242,7 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
         // found, update it
         set_vehicle(index, vehicle);
 
-    } else if (_vehicle_count < VEHICLE_LIST_LENGTH-1) {
+    } else if (_vehicle_count < VEHICLE_LIST_LENGTH) {
 
         // not found and there's room, add it to the end of the list
         set_vehicle(_vehicle_count, vehicle);

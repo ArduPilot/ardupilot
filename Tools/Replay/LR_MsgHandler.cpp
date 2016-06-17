@@ -445,6 +445,14 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
     }
 }
 
+void LR_MsgHandler_PM::process_message(uint8_t *msg)
+{
+    uint32_t new_logdrop;
+    if (field_value(msg, "LogDrop", new_logdrop) &&
+        new_logdrop != 0) {
+        printf("PM.LogDrop: %u dropped at timestamp %lu\n", new_logdrop, last_timestamp_usec);
+    }
+}
 
 void LR_MsgHandler_SIM::process_message(uint8_t *msg)
 {

@@ -1,3 +1,97 @@
+Release 3.6.0, 6th June 2016
+----------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.6.0 of APM:Plane. This is a major update so please read the
+notes carefully.
+
+The biggest changes in this release are:
+
+ - major update to PX4Firmware code
+ - major update to QuadPlane code
+ - addition of MAVLink2 support
+
+The updated PX4Firmware tree greatly improves support for the new
+Pixracer boards as well as improving scheduling performance and UAVCAN
+support.
+
+The QuadPlane changes are very extensive in this release. A lot of new
+features have been added, including:
+
+ - improved automatic weathervaning
+ - greatly improved support for mixed fixed wing and VTOL missions
+ - automatic RTL with VTOL land
+ - VTOL GUIDED mode support
+ - greatly improved transition code
+ - new tuning system for VTOL motors
+ - extensive upgrade to logging system for much better flight analysis
+ 
+The new QuadPlane features are documented at:
+
+  http://ardupilot.org/plane/docs/quadplane-support.html
+
+There is also a prototype implementation supporting tiltrotors and
+tiltwings, but so far it has only been flown in simulations and it
+should be considered very experimental.
+
+Detailed changes include:
+
+ - added motortest for all quad motors in sequence
+ - merge upstream PX4Firmware changes
+ - new AC_AttitudeControl library from copter for quadplane
+ - modified default gains for quadplanes
+ - new velocity controller for initial quadplane landing
+ - smooth out final descent for VTOL landing
+ - changed default loop rate for quadplanes to 300Hz
+ - support up to 16 output channels (two via SBUS output only)
+ - fixed bug with landing flare for high values of LAND_FLARE_SEC
+ - improved crash detection logic
+ - added in-flight transmitter tuning
+ - fix handling of SET_HOME_POSITION
+ - added Q_VFWD_GAIN for forward motor in VTOL modes
+ - added Q_WVANE_GAIN for active weathervaning
+ - log the number of lost log messages
+ - Move position update to 50hz loop rather then the 10hz
+ - Suppress throttle when parachute release initiated, not after release.
+ - support Y6 frame class in quadplane
+ - log L1 xtrack error integrator and remove extra yaw logging
+ - limit roll before calculating load factor
+ - simplify landing flare logic
+ - smooth-out the end of takeoff pitch by reducing takeoff pitch min via TKOFF_PLIM_SEC
+ - added support for DO_VTOL_TRANSITION as a mission item
+ - fixed is_flying() for VTOL flight
+ - added Q_ENABLE=2 for starting AUTO in VTOL
+ - reload airspeed after VTOL landing
+ - lower default VTOL ANGLE_MAX to 30 degrees
+ - Change mode to RTL on end of mission rather then staying in auto
+ - implemented QRTL for quadplane RTL
+ - added Q_RTL_MODE parameter for QRTL after RTL approach
+ - reduced the rate of EKF and attitude logging to 25Hz
+ - added CHUTE_DELAY_MS parameter
+ - allow remapping of any input channel to any output channel
+ - numerous waf build improvements
+ - support fast timer capture for camera trigger feedback
+ - numerous improvements for Pixracer support
+ - added more general tiltrotor support to SITL
+ - only save learned compass offsets when disarmed
+ - support MISSION_ITEM_INT for more accurate waypoint positions
+ - change parachute deployment altitude to above ground not home
+ - added AP_Tuning system for QuadPlane tuning
+ - added initial support for tiltrotors and tiltwings
+ - added LOG_REPLAY and LOG_DISARMED parameters
+ - added Q_GUIDED_MODE parameter
+ - major update to QuadPlane documentation
+ - added MAVLink2 support
+ - fixed origin vs home altitude discrepancy
+ - improved Lidar based landing glide slope
+ - fixed throttle failsafe with THR_PASS_STAB=1
+ - prevent EKF blocking during baro and airspeed cal
+ - allow for ground testing of parachutes with CHUTE_MINALT=0
+ - fixed elevator stick mixing for above 50% input
+ - added QuadPlane ESC calibration
+ 
+
+
 Release 3.6.0beta1, 30th April 2016
 -----------------------------------
 

@@ -147,10 +147,9 @@ private:
         bool location_valid;    // true if we have a valid location for the vehicle
         Location location;      // lat, long in degrees * 10^7; alt in meters * 100
         Location location_estimate; // lat, long in degrees * 10^7; alt in meters * 100
-        uint32_t last_update_us;    // last position update in micxroseconds
+        uint32_t last_update_us;    // last position update in microseconds
         uint32_t last_update_ms;    // last position update in milliseconds
-        float heading;          // last known direction vehicle is moving
-        float ground_speed;     // vehicle's last known ground speed in m/s
+        Vector3f vel;           // the vehicle's velocity in m/s
     } vehicle;
 
     // Navigation controller state
@@ -255,6 +254,7 @@ private:
     void compass_cal_update();
     void Log_Write_Attitude();
     void Log_Write_Baro(void);
+    void Log_Write_Vehicle_Pos(int32_t lat,int32_t lng,int32_t alt, const Vector3f& vel);
     void Log_Write_Vehicle_Baro(float pressure, float altitude);
     void Log_Write_Vehicle_Startup_Messages();
     void start_logging();

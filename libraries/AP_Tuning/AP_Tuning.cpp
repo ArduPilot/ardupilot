@@ -331,9 +331,9 @@ void AP_Tuning::check_controller_error(void)
     float err = controller_error(current_parm);
     if (err > error_threshold) {
         uint32_t now = AP_HAL::millis();
-        if (now - last_controller_error_ms > 2000) {
+        if (now - last_controller_error_ms > 2000 && hal.util->get_soft_armed()) {
             AP_Notify::events.tune_error = 1;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Tuning: error %.2f", err);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Tuning: error %.2f", (double)err);
             last_controller_error_ms = now;
         }
     }

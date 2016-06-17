@@ -406,7 +406,7 @@ struct PACKED log_Arm_Disarm {
 
 void Plane::Log_Write_Current()
 {
-    DataFlash.Log_Write_Current(battery, channel_throttle->get_control_in());
+    DataFlash.Log_Write_Current(battery);
 
     // also write power status
     DataFlash.Log_Write_Power();

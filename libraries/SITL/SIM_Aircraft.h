@@ -98,6 +98,7 @@ public:
     }
     
 protected:
+    SITL *sitl;
     Location home;
     Location location;
 

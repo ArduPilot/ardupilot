@@ -128,6 +128,9 @@ public:
     // pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle
     void                set_radio_passthrough(float roll_input, float pitch_input, float throttle_input, float yaw_input);
 
+    // set loop rate. Used to support loop rate as a parameter
+    void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
+    
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
@@ -156,7 +159,7 @@ protected:
     } _flags;
 
     // internal variables
-    uint16_t            _loop_rate;                 // rate at which output() function is called (normally 400hz)
+    uint16_t            _loop_rate;                 // rate in Hz at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1

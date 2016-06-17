@@ -439,6 +439,9 @@ private:
         // Flag to indicate if we have triggered pre-flare. This occurs when we have reached LAND_PF_ALT
         bool land_pre_flare:1;
 
+        // are we in auto and flight mode is approach || pre-flare || final (flare)
+        bool land_in_progress:1;
+
         // should we fly inverted?
         bool inverted_flight:1;
 
@@ -823,7 +826,7 @@ private:
     int32_t get_RTL_altitude();
     float relative_altitude(void);
     int32_t relative_altitude_abs_cm(void);
-    float relative_ground_altitude(void);
+    float relative_ground_altitude(bool use_rangefinder_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);

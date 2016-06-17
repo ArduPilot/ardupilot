@@ -87,10 +87,10 @@ void Copter::update_heli_control_dynamics(void)
         // if we are not landed and motor power is demanded, increment slew scalar
         hover_roll_trim_scalar_slew++;
     }
-    hover_roll_trim_scalar_slew = constrain_int16(hover_roll_trim_scalar_slew, 0, MAIN_LOOP_RATE);
+    hover_roll_trim_scalar_slew = constrain_int16(hover_roll_trim_scalar_slew, 0, scheduler.get_loop_rate_hz());
 
     // set hover roll trim scalar, will ramp from 0 to 1 over 1 second after we think helicopter has taken off
-    attitude_control.set_hover_roll_trim_scalar((float)(hover_roll_trim_scalar_slew/MAIN_LOOP_RATE));
+    attitude_control.set_hover_roll_trim_scalar((float)(hover_roll_trim_scalar_slew/scheduler.get_loop_rate_hz()));
 }
 
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing
@@ -143,7 +143,7 @@ void Copter::heli_update_rotor_speed_targets()
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
 
-    float rsc_control_deglitched = rotor_speed_deglitch_filter.apply((float)g.rc_8.get_control_in()/1000.0f);
+    float rsc_control_deglitched = rotor_speed_deglitch_filter.apply((float)g.rc_8.get_control_in()) * 0.001f;
 
     switch (rsc_control_mode) {
         case ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH:

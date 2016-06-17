@@ -1,4 +1,61 @@
-Release 3.0.0, 5 April 2015
+Release 3.0.1, 17 June 2016
+===========================
+The ArduPilot development team is proud to announce the release of
+version 3.0.1 of APM:Rover. This is a minor release with small but
+important bug fix changes.
+
+The two main motivations for this release
+1. Fixing the arming for skid steering Rovers
+2. Fix to the rover steering that should really improve steering of
+all rovers.
+
+Skid Steering Arming
+--------------------
+Fixed arming for Skid Steering rovers. You should now be able to arm
+your skid steering rover using the steering stick. NOTE skid steering
+Rovers - you will not be able to disarm. The reason for this is zero
+throttle full left turn is a perfectly valid move for a skid steering
+rover as it can turn on the spot. You don't want to be executing this
+and have the rover disarm part way through your turn so we have
+disabled disarming via the steering stick. You can still disarm from
+the GCS.  Thanks to Pierre Kancir for working on this.
+
+Improved Steering Control
+-------------------------
+For historical reason's the steering controller was using the raw GPS
+data for ground speed without any filtering. If you have every graphed
+this data you will see on a rover its very spiky and all over the
+place. This spiky'ness was feeding into the lateral accel demand and
+causing inaccuracies/jitters. Now we using the EKF GPS filtered data
+which is much smoother and accurate and the steering control has
+greatly improved.
+
+Improved Cornering
+------------------
+Previously when corning we didn't take into account any "lean or tilt"
+in the rover - we assumed the turns were always flat. We have changed
+this to now take into account any lean so turning should be more
+accurate. Boat users should really benefit from this too.
+
+MAVLink2 support has been added
+-------------------------------
+See this post by Tridge -
+http://discuss.ardupilot.org/t/mavlink2-is-in-ardupilot-master/9188/1
+
+
+The other changes in this release are:
+
+ - setting your sonar_trigger_cm to 0 will now log the sonar data but
+   not use it for vehicle avoidance.
+ - the throttle PID is now being logged
+ - range finder input is now being captured (thanks to Allan Matthew)
+ - added LOG_DISARMED parameter
+ - merge upstream PX4Firmware changes
+ - numerous waf build improvements
+ - numerous EKF2 improvements
+
+
+Release 3.0.0, 5 April 2016
 ===========================
 The ArduPilot development team is proud to announce the release of
 version 3.0.0 of APM:Rover. This is a major release with a lot of
