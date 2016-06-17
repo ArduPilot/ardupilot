@@ -97,7 +97,7 @@ void Copter::loiter_run()
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
 
         // force descent rate and call position controller
         pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
@@ -116,7 +116,7 @@ void Copter::loiter_run()
         wp_nav.init_loiter_target();
 #if FRAME_CONFIG == HELI_FRAME
         // Helicopters always stabilize roll/pitch/yaw
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         // Multicopters do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
@@ -145,7 +145,7 @@ void Copter::loiter_run()
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
 
         // update altitude target and call position controller
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
@@ -157,7 +157,7 @@ void Copter::loiter_run()
 
         wp_nav.init_loiter_target();
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
         attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
         // if throttle zero reset attitude and exit immediately
@@ -178,7 +178,7 @@ void Copter::loiter_run()
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
 
         // adjust climb rate using rangefinder
         if (rangefinder_alt_ok()) {
