@@ -304,15 +304,6 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GUIDED_MODE", 40, QuadPlane, guided_mode, 0),
 
-    // @Param: THR_MIN
-    // @DisplayName: Throttle Minimum
-    // @Description: The minimum throttle that will be sent to the motors to keep them spinning
-    // @Units: Percent*10
-    // @Range: 0 300
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("THR_MIN", 41, QuadPlane, throttle_min,  100),
-
     // @Param: ESC_CAL
     // @DisplayName: ESC Calibration
     // @Description: This is used to calibrate the throttle range of the VTOL motors. Please read http://ardupilot.org/plane/docs/quadplane-esc-calibration.html before using. This parameter is automatically set back to 0 on every boot. This parameter only takes effect in QSTABILIZE mode. When set to 1 the output of all motors will come directly from the throttle stick when armed, and will be zero when disarmed. When set to 2 the output of all motors will be maximum when armed and zero when disarmed. Make sure you remove all properllers before using.
@@ -442,8 +433,7 @@ bool QuadPlane::setup(void)
 
     motors->set_frame_orientation(frame_type);
     motors->Init();
-    motors->set_throttle_range(throttle_min, thr_min_pwm, thr_max_pwm);
-    motors->set_hover_throttle(throttle_mid);
+    motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     pid_accel_z.set_dt(loop_delta_t);
@@ -530,7 +520,7 @@ void QuadPlane::init_stabilize(void)
 void QuadPlane::hold_stabilize(float throttle_in)
 {    
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
                                                                          get_desired_yaw_rate_cds(),
                                                                          smoothing_gain);
@@ -586,7 +576,7 @@ void QuadPlane::hold_hover(float target_climb_rate)
     pos_control->set_accel_z(pilot_accel_z);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
                                                                          get_desired_yaw_rate_cds(),
                                                                          smoothing_gain);
@@ -651,7 +641,7 @@ bool QuadPlane::is_flying(void)
 // crude landing detector to prevent tipover
 bool QuadPlane::should_relax(void)
 {
-    bool motor_at_lower_limit = motors->limit.throttle_lower && motors->is_throttle_mix_min();
+    bool motor_at_lower_limit = motors->limit.throttle_lower && attitude_control->is_throttle_mix_min();
     if (motors->get_throttle() < 0.01) {
         motor_at_lower_limit = true;
     }
@@ -727,10 +717,11 @@ void QuadPlane::control_loiter()
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-    // call attitude controller
+    // call attitude controller with conservative smoothing gain of 4.0f
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(),
                                                                   wp_nav->get_pitch(),
-                                                                  get_desired_yaw_rate_cds());
+                                                                  get_desired_yaw_rate_cds(),
+                                                                  4.0f);
 
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
@@ -1200,7 +1191,7 @@ void QuadPlane::vtol_position_controller(void)
         // run loiter controller
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
@@ -1287,7 +1278,7 @@ void QuadPlane::vtol_position_controller(void)
         }
         
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
@@ -1320,7 +1311,7 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_pitch_cd = wp_nav->get_pitch();
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
@@ -1418,7 +1409,7 @@ void QuadPlane::takeoff_controller(void)
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
     
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
                                                                          get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                          smoothing_gain);

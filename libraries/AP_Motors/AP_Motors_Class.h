@@ -35,6 +35,9 @@
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
+// hover throttle
+#define AP_MOTORS_THST_HOVER_TC_DEFAULT 10.0f   // Time constant used to update estimated hover throttle, 0 ~ 1
+
 /// @class      AP_Motors
 class AP_Motors {
 public:
@@ -63,6 +66,7 @@ public:
     void                set_pitch(float pitch_in) { _pitch_in = pitch_in; };    // range -1 ~ +1
     void                set_yaw(float yaw_in) { _yaw_in = yaw_in; };            // range -1 ~ +1
     void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
+    void                set_throttle_ave_max(float throttle_ave_max) { _throttle_ave_max = constrain_float(throttle_ave_max,0.0f,1.0f); };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
@@ -70,6 +74,7 @@ public:
     float               get_pitch() const { return _pitch_in; }
     float               get_yaw() const { return _yaw_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
+    virtual float       get_throttle_hover() const = 0;
 
     // spool up states
     enum spool_up_down_desired {
@@ -145,6 +150,9 @@ protected:
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;
 
+    // save parameters as part of disarming
+    virtual void save_params_on_disarm() {}
+
     // convert input in -1 to +1 range to pwm output
     int16_t calc_pwm_output_1to1(float input, const RC_Channel& servo);
 
@@ -165,6 +173,7 @@ protected:
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
+    float               _throttle_ave_max;          // last throttle input from set_throttle_ave_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
 
