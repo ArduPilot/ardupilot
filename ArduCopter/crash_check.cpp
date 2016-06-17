@@ -4,7 +4,7 @@
 
 // Code to detect a crash main ArduCopter code
 #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
-#define CRASH_CHECK_ANGLE_DEVIATION_CD  3000.0f // 30 degrees beyond angle max is signal we are inverted
+#define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond angle max is signal we are inverted
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
 
 // crash_check - disarms motors if a crash has been detected
@@ -33,8 +33,8 @@ void Copter::crash_check()
     }
 
     // check for angle error over 30 degrees
-    const Vector3f angle_error = attitude_control.get_att_error_rot_vec_cd();
-    if (norm(angle_error.x, angle_error.y) <= CRASH_CHECK_ANGLE_DEVIATION_CD) {
+    const float angle_error = attitude_control.get_att_error_angle_deg();
+    if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
         crash_counter = 0;
         return;
     }
@@ -99,8 +99,8 @@ void Copter::parachute_check()
     }
 
     // check for angle error over 30 degrees
-    const Vector3f angle_error = attitude_control.get_att_error_rot_vec_cd();
-    if (norm(angle_error.x, angle_error.y) <= CRASH_CHECK_ANGLE_DEVIATION_CD) {
+    const float angle_error = attitude_control.get_att_error_angle_deg();
+    if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
         control_loss_count = 0;
         return;
     }
