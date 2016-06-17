@@ -75,19 +75,19 @@ bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
     // check rc has been calibrated
     arming.pre_arm_rc_checks(true);
     if(check_rc && !ap.pre_arm_rc_check) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
+        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
         return false;
     }
 
     // ensure we are landed
     if (!ap.land_complete) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: vehicle not landed");
+        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: vehicle not landed");
         return false;
     }
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
+        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
         return false;
     }
 
