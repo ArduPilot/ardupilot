@@ -439,6 +439,9 @@ private:
     // heading when in yaw_look_ahead_bearing
     float yaw_look_ahead_bearing;
 
+    // heading when in yaw_look_at_target_bearing
+    float yaw_look_at_target_bearing;
+
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
@@ -620,6 +623,7 @@ private:
     void check_ekf_yaw_reset();
     float get_roi_yaw();
     float get_look_ahead_yaw();
+    float get_look_at_target_yaw();
     void update_thr_average();
     void set_throttle_takeoff();
     float get_pilot_desired_throttle(int16_t throttle_control);
