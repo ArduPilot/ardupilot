@@ -134,6 +134,9 @@ protected:
     // apply_thrust_curve_and_volt_scaling - returns throttle in the range 0 ~ 1
     float               apply_thrust_curve_and_volt_scaling(float thrust) const;
 
+    // apply_thrust_curve_and_volt_scaling - thrust curve and voltage adjusted pwm value (i.e. 1000 ~ 2000)
+    int16_t             apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t pwm_min, int16_t pwm_max) const;
+
     // update_lift_max_from_batt_voltage - used for voltage compensation
     void                update_lift_max_from_batt_voltage();
 
