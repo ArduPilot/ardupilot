@@ -138,7 +138,7 @@ void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, floa
     Vector3f attitude_error_angle;
     attitude_error_quat.to_axis_angle(attitude_error_angle);
 
-    if (_rate_bf_ff_enabled & !_att_ctrl_use_accel_limit) {
+    if (_rate_bf_ff_enabled & !_use_input_shaping) {
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
         // and an exponential decay specified by smoothing_gain at the end.
@@ -169,7 +169,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     // Add roll trim to compensate tail rotor thrust in heli (will return zero on multirotors)
     euler_roll_angle_rad += get_roll_trim_rad();
 
-    if (_rate_bf_ff_enabled & _att_ctrl_use_accel_limit) {
+    if (_rate_bf_ff_enabled & _use_input_shaping) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
         Vector3f euler_accel = euler_accel_limit(_att_target_euler_rad, Vector3f(get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()));
 
@@ -477,21 +477,21 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f att_e
 {
     Vector3f ang_vel_target_rads;
     // Compute the roll angular velocity demand from the roll angle error
-    if (_att_ctrl_use_accel_limit) {
+    if (_use_input_shaping) {
         ang_vel_target_rads.x = sqrt_controller(att_error_rot_vec_rad.x, _p_angle_roll.kP(), constrain_float(get_accel_roll_max_radss()/2.0f,  AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS));
     }else{
         ang_vel_target_rads.x = _p_angle_roll.kP() * att_error_rot_vec_rad.x;
     }
 
     // Compute the pitch angular velocity demand from the roll angle error
-    if (_att_ctrl_use_accel_limit) {
+    if (_use_input_shaping) {
         ang_vel_target_rads.y = sqrt_controller(att_error_rot_vec_rad.y, _p_angle_pitch.kP(), constrain_float(get_accel_pitch_max_radss()/2.0f,  AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS));
     }else{
         ang_vel_target_rads.y = _p_angle_pitch.kP() * att_error_rot_vec_rad.y;
     }
 
     // Compute the yaw angular velocity demand from the roll angle error
-    if (_att_ctrl_use_accel_limit) {
+    if (_use_input_shaping) {
         ang_vel_target_rads.z = sqrt_controller(att_error_rot_vec_rad.z, _p_angle_yaw.kP(), constrain_float(get_accel_yaw_max_radss()/2.0f,  AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS));
     }else{
         ang_vel_target_rads.z = _p_angle_yaw.kP() * att_error_rot_vec_rad.z;
