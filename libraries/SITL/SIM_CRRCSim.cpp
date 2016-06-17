@@ -152,6 +152,9 @@ void CRRCSim::update(const struct sitl_input &input)
     send_servos(input);
     recv_fdm(input);
     update_position();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

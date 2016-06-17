@@ -96,6 +96,10 @@ public:
     const Matrix3f &get_dcm(void) const {
         return dcm;
     }
+
+    const Vector3f &get_mag_field_bf(void) const {
+        return mag_bf;
+    }
     
 protected:
     SITL *sitl;
@@ -123,6 +127,8 @@ protected:
     uint8_t rcin_chan_count = 0;
     float rcin[8];
 
+    Vector3f mag_bf; // local earth magnetic field vector in Gauss, earth frame
+
     uint64_t time_now_us;
 
     const float gyro_noise;
@@ -142,6 +148,9 @@ protected:
 
     /* update location from position */
     void update_position(void);
+
+    /* update body frame magnetic field */
+    void update_mag_field_bf(void);
 
     /* advance time by deltat in seconds */
     void time_advance(float deltat);

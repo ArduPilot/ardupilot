@@ -46,6 +46,9 @@ void SITL::Calibration::update(const struct sitl_input& input)
     accel_body(0, 0, 0);
     update_dynamics(rot_accel);
     update_position();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 void SITL::Calibration::_stop_control(const struct sitl_input& input,
