@@ -145,7 +145,7 @@ void Copter::update_throttle_thr_mix()
 
         // check for large external disturbance - angle error over 30 degrees
         const float angle_error = attitude_control.get_att_error_angle_deg();
-        bool large_angle_error = (angle_error) > 30.0f);
+        bool large_angle_error = (angle_error > 30.0f);
 
         // check for large acceleration - falling or high turbulence
         Vector3f accel_ef = ahrs.get_accel_ef_blended();
