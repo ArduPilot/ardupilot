@@ -27,6 +27,7 @@
 #include <SITL/SIM_Balloon.h>
 #include <SITL/SIM_FlightAxis.h>
 #include <SITL/SIM_Calibration.h>
+#include <SITL/SIM_XPlane.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -66,6 +67,7 @@ static const struct {
     Aircraft *(*constructor)(const char *home_str, const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
+    { "xplane",             XPlane::create },
     { "firefly",            QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
