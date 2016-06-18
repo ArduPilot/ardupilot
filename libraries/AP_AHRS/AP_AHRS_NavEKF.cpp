@@ -1290,12 +1290,14 @@ bool AP_AHRS_NavEKF::getGpsGlitchStatus()
 void AP_AHRS_NavEKF::getPosVelInnovations(Vector3f& velInnov, Vector3f& posInnov)
 {
     switch (ekf_type()) {
+#if AP_AHRS_WITH_EKF1
         case EKF_TYPE1: {
             Vector3f magInnov;
             float tasInnov;
             EKF1.getInnovations(velInnov, posInnov, magInnov, tasInnov);
             break;
         }
+#endif
         case EKF_TYPE2: {
             Vector3f magInnov;
             float tasInnov;
