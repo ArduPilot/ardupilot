@@ -13,27 +13,21 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 
-// TODO: change the name or move to AP_Math? eliminate in favor of degrees(100)?
-#define AC_ATTITUDE_CONTROL_DEGX100                           5729.57795f      // constant to convert from radians to centidegrees
-
 #define AC_ATTITUDE_CONTROL_ANGLE_P                           4.5f             // default angle P gain for roll, pitch and yaw
 
-#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS             radians(40.0f)   // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
-#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS             radians(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
-#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS              radians(10.0f)   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS              radians(360.0f)  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS              1000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
-#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS         110000.0f // default maximum acceleration for roll/pitch axis in centidegrees/sec/sec
-#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS          27000.0f  // default maximum acceleration for yaw axis in centidegrees/sec/sec
+#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS       ToRad(40.0f)   // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
+#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS       ToRad(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
+#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS        ToRad(10.0f)   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
+#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS        ToRad(120.0f)  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
+#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS        1000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
+#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS   110000.0f // default maximum acceleration for roll/pitch axis in centidegrees/sec/sec
+#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS    27000.0f  // default maximum acceleration for yaw axis in centidegrees/sec/sec
 
 #define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT             1.0f    // body-frame rate controller timeout in seconds
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          1.0f    // body-frame rate controller maximum output (for roll-pitch axis)
 #define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX         1.0f    // body-frame rate controller maximum output (for yaw axis)
 
-#define AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX_RAD  radians(300.0f) // earth-frame rate stabilize controller's maximum overshoot angle (never limited)
-#define AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX_RAD radians(300.0f) // earth-frame rate stabilize controller's maximum overshoot angle (never limited)
-#define AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX_RAD   radians(10.0f)  // earth-frame rate stabilize controller's maximum overshoot angle
-#define AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD  radians(30.0f)  // earth-frame rate stabilize controller's maximum overshoot angle
+#define AC_ATTITUDE_THRUST_ERROR_ANGLE                  ToRad(30.0f) // Thrust angle error above which yaw corrections are limited
 
 #define AC_ATTITUDE_100HZ_DT                            0.0100f // delta time in seconds for 100hz update rate
 #define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
@@ -179,8 +173,8 @@ public:
     // Return yaw step size in centidegrees that results in maximum output after 4 time steps
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw()/_p_angle_yaw.kP(); }
 
-    // Return angular velocity in centidegrees used in the angular velocity controller
-    Vector3f rate_bf_targets() const { return _rate_target_ang_vel*degrees(100.0f); }
+    // Return angular velocity in radians used in the angular velocity controller
+    Vector3f rate_bf_targets() const { return _rate_target_ang_vel; }
 
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
@@ -301,9 +295,6 @@ protected:
     // Angle limit time constant (to maintain altitude)
     AP_Float            _angle_limit_tc;
 
-    // Specifies whether the attitude controller should use the input shaping and feedforward
-    bool                _use_input_shaping;
-
     // Intersampling period in seconds
     float               _dt;
 
@@ -338,6 +329,9 @@ protected:
     // This represents the throttle increase applied for tilt compensation.
     // Used only for logging.
     float               _angle_boost;
+
+    // Specifies whether the attitude controller should use the input shaping and feedforward
+    bool                _use_input_shaping;
 
     // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
     float               _althold_lean_angle_max = 0.0f;
