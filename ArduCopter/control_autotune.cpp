@@ -360,7 +360,7 @@ void Copter::autotune_attitude_control()
         attitude_control.use_input_shaping(true);
 
         // hold level attitude
-        attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, autotune_desired_yaw, true);
+        attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, autotune_desired_yaw, true, get_smoothing_gain());
 
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
@@ -447,7 +447,7 @@ void Copter::autotune_attitude_control()
                 break;
             case AUTOTUNE_AXIS_YAW:
                 // request pitch to 20deg
-                attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, wrap_180_cd(direction_sign * autotune_target_angle + autotune_start_angle), false);
+                attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, wrap_180_cd(direction_sign * autotune_target_angle + autotune_start_angle), false, get_smoothing_gain());
                 break;
             }
         } else {
@@ -730,7 +730,7 @@ void Copter::autotune_attitude_control()
         autotune_state.positive_direction = !autotune_state.positive_direction;
 
         if (autotune_state.axis == AUTOTUNE_AXIS_YAW) {
-            attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, ahrs.yaw_sensor, false);
+            attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, ahrs.yaw_sensor, false, get_smoothing_gain());
         }
 
         // set gains to their intra-test values (which are very close to the original gains)
