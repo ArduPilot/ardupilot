@@ -124,7 +124,7 @@ public:
     void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
 
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
-    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
+    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw, float smoothing_gain);
 
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
     void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
@@ -226,7 +226,7 @@ public:
 
     // calculates the velocity correction form an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
-    void input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float& target_ang_vel);
+    float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel);
 
     // limits the acceleration and deceleration of a velocity request
     float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max);
