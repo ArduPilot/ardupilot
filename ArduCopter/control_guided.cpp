@@ -399,7 +399,7 @@ void Copter::guided_pos_control_run()
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
+        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
 }
 
@@ -450,7 +450,7 @@ void Copter::guided_vel_control_run()
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate, get_smoothing_gain());
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true);
+        attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
 }
 
@@ -524,7 +524,7 @@ void Copter::guided_posvel_control_run()
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate, get_smoothing_gain());
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true);
+        attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
 }
 
@@ -577,7 +577,7 @@ void Copter::guided_angle_control_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
+    attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true, get_smoothing_gain());
 
     // call position controller
     pos_control.set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false);
