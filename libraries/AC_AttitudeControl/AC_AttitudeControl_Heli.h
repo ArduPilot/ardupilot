@@ -27,6 +27,7 @@
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
+#define AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD   ToRad(30.0f)
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:

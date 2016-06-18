@@ -349,13 +349,11 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     // Compute attitude error
     Vector3f attitude_error_vector;
     thrust_heading_rotation_angles(_attitude_target_quat, attitude_vehicle_quat, attitude_error_vector, _thrust_error_angle);
-//    attitude_error_vector.z = constrain_float(attitude_error_vector.z, -radians(10.0f), radians(10.0f));
 
     // Compute the angular velocity target from the attitude error
     _rate_target_ang_vel = update_ang_vel_target_from_att_error(attitude_error_vector);
 
     // Add feedforward term that attempts to ensure that roll and pitch errors rotate with the body frame rather than the reference frame.
-    // NOTE: This is a small-angle approximation.
     _rate_target_ang_vel.x += attitude_error_vector.y * _ahrs.get_gyro().z;
     _rate_target_ang_vel.y += -attitude_error_vector.x * _ahrs.get_gyro().z;
 
@@ -365,10 +363,10 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     Quaternion target_ang_vel_quat = attitude_error_quat.inverse()*attitude_target_ang_vel_quat*attitude_error_quat;
 
     // Correct the thrust vector and smoothly add feedforward and yaw input
-    if(_thrust_error_angle > radians(60.0f)){
+    if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE*2){
         _rate_target_ang_vel.z = _ahrs.get_gyro().z;
-    }else if(_thrust_error_angle > radians(30.0f)){
-        float flip_scalar = (1.0f - (_thrust_error_angle-radians(30.0f))/radians(30.0f));
+    }else if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE){
+        float flip_scalar = (1.0f - (_thrust_error_angle-AC_ATTITUDE_THRUST_ERROR_ANGLE)/AC_ATTITUDE_THRUST_ERROR_ANGLE);
         _rate_target_ang_vel.x += target_ang_vel_quat.q2*flip_scalar;
         _rate_target_ang_vel.y += target_ang_vel_quat.q3*flip_scalar;
         _rate_target_ang_vel.z += target_ang_vel_quat.q4;
@@ -426,7 +424,7 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
 
     heading_quat.to_axis_angle(rotation);
     att_diff_angle.z = rotation.z;
-    if(fabs(att_diff_angle.z) > radians(30.0f)){
+    if(fabsf(att_diff_angle.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP()){
         att_diff_angle.z = constrain_float(wrap_PI(att_diff_angle.z), -radians(30.0f), radians(30.0f));
         heading_quat.from_axis_angle(Vector3f(0.0f,0.0f,att_diff_angle.z));
         att_to_quat = att_from_quat*thrust_vec_correction_quat*heading_quat;
@@ -461,9 +459,9 @@ float AC_AttitudeControl::input_shaping_ang_vel(float target_ang_vel, float desi
 // translates body frame acceleration limits to the euler axis
 Vector3f AC_AttitudeControl::euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel)
 {
-    float sin_phi = constrain_float(fabs(sinf(euler_rad.x)), 0.1f, 1.0f);
-    float cos_phi = constrain_float(fabs(cosf(euler_rad.x)), 0.1f, 1.0f);
-    float sin_theta = constrain_float(fabs(sinf(euler_rad.y)), 0.1f, 1.0f);
+    float sin_phi = constrain_float(fabsf(sinf(euler_rad.x)), 0.1f, 1.0f);
+    float cos_phi = constrain_float(fabsf(cosf(euler_rad.x)), 0.1f, 1.0f);
+    float sin_theta = constrain_float(fabsf(sinf(euler_rad.y)), 0.1f, 1.0f);
 
     Vector3f rot_accel;
     if(is_zero(euler_accel.x) || is_zero(euler_accel.y) || is_zero(euler_accel.z) || (euler_accel.x < 0.0f) || (euler_accel.y < 0.0f) || (euler_accel.z < 0.0f)) {
