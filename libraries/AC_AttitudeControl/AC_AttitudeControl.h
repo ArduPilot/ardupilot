@@ -236,10 +236,10 @@ public:
 
     // get_thrust_heading_rotation - calculates two ordered rotations to move the att_from_quat quaternion to the att_to_quat quaternion.
     // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
-    void thrust_heading_rotation_angles(Quaternion att_to_quat, Quaternion att_from_quat, Vector3f &att_diff_angle, float &thrust_angle);
+    void thrust_heading_rotation_angles(Quaternion& att_to_quat, Quaternion att_from_quat, Vector3f &att_diff_angle, float &thrust_angle);
 
     // Calculates the body frame angular velocities to follow the target attitude
-    void attitude_controller_run_quat(const Vector3f& att_target_ang_vel_rads, Quaternion& att_target_quat, Vector3f& ang_vel_target_rads);
+    void attitude_controller_run_quat();
 
 
 protected:
