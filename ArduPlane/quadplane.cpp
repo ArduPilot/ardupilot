@@ -1431,7 +1431,7 @@ void QuadPlane::waypoint_controller(void)
     attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
                                                        wp_nav->get_pitch(),
                                                        wp_nav->get_yaw(),
-                                                       true);
+                                                       true, 4.0f);
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
