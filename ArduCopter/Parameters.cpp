@@ -960,6 +960,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(throw_motor_start, "THROW_MOT_START", 0),
 
+    // @Param: AIRDROP_ENABLE
+    // @DisplayName: Enable Airdrop Startup of Copter 
+    // @Description: Used by THROW mode. Allows Copter to startup when dropped from altitude.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(throw_mode_airdrop_enable, "AIRDROP_ENABLE", AIRDROP_DEFAULT),
+
     // @Param: TERRAIN_FOLLOW
     // @DisplayName: Terrain Following use control
     // @Description: This enables terrain following for RTL and LAND flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.

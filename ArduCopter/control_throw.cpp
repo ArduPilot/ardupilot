@@ -97,7 +97,15 @@ void Copter::throw_run()
 
         // initialise the demanded height to 3m above the throw height
         // we want to rapidly clear surrounding obstacles
-        pos_control.set_alt_target(inertial_nav.get_altitude() + 300);
+        // or 1 meter below if using AirDrop mode
+        if (g.throw_mode_airdrop_enable==1){
+            pos_control.set_alt_target(inertial_nav.get_altitude() - 100);
+        }
+        else {
+            pos_control.set_alt_target(inertial_nav.get_altitude() + 300);
+        }
+
+
 
         // set the initial velocity of the height controller demand to the measured velocity if it is going up
         // if it is going down, set it to zero to enforce a very hard stop
@@ -175,6 +183,7 @@ void Copter::throw_run()
 
 bool Copter::throw_detected()
 {
+
     // Check that we have a valid navigation solution
     nav_filter_status filt_status = inertial_nav.get_filter_status();
     if (!filt_status.flags.attitude || !filt_status.flags.horiz_pos_abs || !filt_status.flags.vert_pos) {
@@ -185,7 +194,14 @@ bool Copter::throw_detected()
     bool high_speed = inertial_nav.get_velocity().length() > 500.0f;
 
     // check for upwards trajectory
-    bool gaining_height = inertial_nav.get_velocity().z > 50.0f;
+    //bool gaining_height = inertial_nav.get_velocity().z > 50.0f;
+    bool changing_height;
+    if (g.throw_mode_airdrop_enable==1) {
+        changing_height = inertial_nav.get_velocity().z < -50.0f;
+    }
+    else{
+        changing_height = inertial_nav.get_velocity().z > 50.0f;
+    }
 
     // Check the vertical acceleraton is greater than 0.25g
     bool free_falling = ahrs.get_accel_ef().z > -0.25 * GRAVITY_MSS;
@@ -194,7 +210,9 @@ bool Copter::throw_detected()
     bool no_throw_action = ins.get_accel().length() < 1.0f * GRAVITY_MSS;
 
     // High velocity or free-fall combined with incresing height indicate a possible throw release
-    bool possible_throw_detected = (free_falling || high_speed) && gaining_height && no_throw_action;
+    //bool possible_throw_detected = (free_falling || high_speed) && gaining_height && no_throw_action;
+    bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
+
 
     // Record time and vertical velocity when we detect the possible throw
     if (possible_throw_detected && ((AP_HAL::millis() - throw_free_fall_start_ms) > 500)) {
