@@ -45,6 +45,44 @@ XPlane::XPlane(const char *home_str, const char *frame_str) :
 }
 
 /*
+ change what data is requested from XPlane  
+ */
+void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
+{
+    struct PACKED {
+        uint8_t  marker[5] { 'D', 'S', 'E', 'L', '0' };
+        uint32_t data[8] {};
+    } dsel;
+    uint8_t count = 0;
+    for (uint8_t i=0; i<64 && count<8; i++) {
+        if ((((uint64_t)1)<<i) & sel_mask) {
+            dsel.data[count++] = i;
+            printf("i=%u\n", (unsigned)i);
+        }
+    }
+    if (count != 0) {
+        socket_out.send(&dsel, sizeof(dsel));
+        printf("Selecting %u data types 0x%llx\n", (unsigned)count, (unsigned long long)sel_mask);
+    }
+
+    struct PACKED {
+        uint8_t  marker[5] { 'U', 'S', 'E', 'L', '0' };
+        uint32_t data[8] {};
+    } usel;
+    count = 0;
+    for (uint8_t i=0; i<64 && count<8; i++) {
+        if ((((uint64_t)1)<<i) & usel_mask) {
+            usel.data[count++] = i;
+            printf("i=%u\n", (unsigned)i);
+        }
+    }
+    if (count != 0) {
+        socket_out.send(&usel, sizeof(usel));
+        printf("De-selecting %u data types 0x%llx\n", (unsigned)count, (unsigned long long)usel_mask);
+    }
+}
+    
+/*
   receive data from X-Plane via UDP
 */
 bool XPlane::receive_data(void)
@@ -53,7 +91,9 @@ bool XPlane::receive_data(void)
     uint8_t *p = &pkt[5];
     const uint8_t pkt_len = 36;
     uint64_t data_mask = 0;
-    const uint64_t required_mask = (1U<<Times | 1U<<LatLonAlt | 1U<<PitchRollHeading | 1U<<LocVelDistTraveled | 1U<<AngularVelocities);
+    const uint64_t required_mask = (1U<<Times | 1U<<LatLonAlt | 1U<<Speed | 1U<<PitchRollHeading |
+                                    1U<<LocVelDistTraveled | 1U<<AngularVelocities | 1U<<Gload |
+                                    1U << Joystick1 | 1U << ThrottleCommand);
     Location loc {};
     Vector3f pos;
     ssize_t len = socket_in.recv(pkt, sizeof(pkt), 1);
@@ -64,12 +104,21 @@ bool XPlane::receive_data(void)
     }
     len -= 5;
 
+    if (!connected) {
+        // we now know the IP X-Plane is using
+        uint16_t port;
+        socket_in.last_recv_address(xplane_ip, port);
+        socket_out.connect(xplane_ip, xplane_port);
+        connected = true;
+        printf("Connected to %s:%u\n", xplane_ip, (unsigned)xplane_port);
+    }
+    
     while (len >= pkt_len) {
         const float *data = (const float *)p;
         uint8_t code = p[0];
         // keep a mask of what codes we have received
         if (code < 64) {
-            data_mask |= (1U << code);
+            data_mask |= (((uint64_t)1) << code);
         }
         switch (code) {
         case Times: {
@@ -165,8 +214,9 @@ bool XPlane::receive_data(void)
         p += pkt_len;
     }
 
-    if ((data_mask & required_mask) != required_mask) {
-        printf("Not receiving all required data, missing 0x%08lx\n", (unsigned long)(required_mask & ~data_mask));
+    if (data_mask != required_mask) {
+        // ask XPlane to change what data it sends
+        select_data(data_mask & ~required_mask, required_mask & ~data_mask);
         goto failed;
     }
     position = pos + position_zero;
@@ -232,14 +282,6 @@ failed:
 */
 void XPlane::send_data(const struct sitl_input &input)
 {
-    if (!connected) {
-        uint16_t port;
-        socket_in.last_recv_address(xplane_ip, port);
-        socket_out.connect(xplane_ip, xplane_port);
-        connected = true;
-        printf("Connected to %s:%u\n", xplane_ip, (unsigned)xplane_port);
-    }
-
     float aileron  = (input.servos[0]-1500)/500.0f;
     float elevator = (input.servos[1]-1500)/500.0f;
     float throttle = (input.servos[2]-1000)/1000.0;

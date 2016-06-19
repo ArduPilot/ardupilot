@@ -43,6 +43,7 @@ public:
 private:
     bool receive_data(void);
     void send_data(const struct sitl_input &input);
+    void select_data(uint64_t usel_mask, uint64_t sel_mask);
 
     const char *xplane_ip = "127.0.0.1";
     uint16_t xplane_port = 49000;
