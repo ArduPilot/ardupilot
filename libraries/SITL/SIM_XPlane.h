@@ -59,6 +59,7 @@ private:
     float throttle_sent = -1;
     bool connected = false;
 
+    // throttle joystick input is very weird. See comments in the main code
     const uint32_t throttle_magic = 123;
     
     // DATA@ frame types. Thanks to TauLabs xplanesimulator.h

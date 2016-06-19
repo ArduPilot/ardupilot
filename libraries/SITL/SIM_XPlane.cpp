@@ -45,7 +45,8 @@ XPlane::XPlane(const char *home_str, const char *frame_str) :
 }
 
 /*
- change what data is requested from XPlane  
+ change what data is requested from XPlane. This saves the user from
+ having to setup the data screen correctly
  */
 void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
 {
@@ -197,6 +198,16 @@ bool XPlane::receive_data(void)
             break;
 
         case ThrottleCommand: {
+            /* getting joystick throttle input is very weird. The
+             * problem is that XPlane sends the ThrottleCommand packet
+             * both for joystick throttle input and for throttle that
+             * we have provided over the link. So we need some way to
+             * detect when we get our own values back. The trick used
+             * is to add throttle_magic * 1.0e-6 to the values we
+             * send, then detect this offset in the data coming
+             * back. Very ugly, but I can't find a better way of
+             * allowing joystick input from XPlane10
+             */
             if (data[1] < 0 ||
                 data[1] == throttle_sent ||
                 ((uint32_t)(data[1] * 1e6)) % 1000 == throttle_magic) {
@@ -292,6 +303,8 @@ void XPlane::send_data(const struct sitl_input &input)
         float    data[8];
     } d {};
 
+    // we add the throttle_magic to the throttle value we send so we
+    // can detect when we get it back
     throttle += throttle_magic * 1e-6f;
     
     d.code = 11;
