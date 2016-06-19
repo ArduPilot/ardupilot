@@ -99,3 +99,4 @@ Thumbs.db
 cscope.in.out
 cscope.out
 cscope.po.out
+*.generated.h
