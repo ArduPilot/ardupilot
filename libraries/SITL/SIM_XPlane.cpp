@@ -44,6 +44,9 @@ XPlane::XPlane(const char *home_str, const char *frame_str) :
     socket_in.bind("0.0.0.0", bind_port);
     printf("Waiting for XPlane data on UDP port %u and sending to port %u\n",
            (unsigned)bind_port, (unsigned)xplane_port);
+
+    // XPlane sensor data is not good enough for EKF. Use fake EKF by default
+    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
 }
 
 /*

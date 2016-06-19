@@ -48,6 +48,8 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     if (colon) {
         controller_ip = colon+1;
     }
+    // FlightAxis sensor data is not good enough for EKF. Use fake EKF by default
+    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
 }
 
 /*
