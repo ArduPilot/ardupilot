@@ -431,7 +431,7 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
     }
 }
 
-// calculates the velocity correction form an angle error. The angular velocity has acceleration and
+// calculates the velocity correction from an angle error. The angular velocity has acceleration and
 // deceleration limits including basic jerk limiting using smoothing_gain
 float AC_AttitudeControl::input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel)
 {
