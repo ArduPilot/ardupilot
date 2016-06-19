@@ -42,6 +42,8 @@ XPlane::XPlane(const char *home_str, const char *frame_str) :
         xplane_ip = colon+1;
     }
     socket_in.bind("0.0.0.0", bind_port);
+    printf("Waiting for XPlane data on UDP port %u and sending to port %u\n",
+           (unsigned)bind_port, (unsigned)xplane_port);
 }
 
 /*
