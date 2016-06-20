@@ -97,7 +97,7 @@ void Copter::throw_run()
 
         // initialise the demanded height to 3m above the throw height
         // we want to rapidly clear surrounding obstacles
-        // or 1 meter below if using AirDrop mode
+        // or initialize the demanded height to 1 meter below the AirDrop height
         if (g.throw_mode_airdrop_enable==1){
             pos_control.set_alt_target(inertial_nav.get_altitude() - 100);
         }
@@ -193,11 +193,13 @@ bool Copter::throw_detected()
     // Check for high speed (note get_inertial_nav methods use a cm length scale)
     bool high_speed = inertial_nav.get_velocity().length() > 500.0f;
 
-    // check for upwards trajectory
-    //bool gaining_height = inertial_nav.get_velocity().z > 50.0f;
+    // check for upwards or downwards trajectory (airdrop)
     bool changing_height;
     if (g.throw_mode_airdrop_enable==1) {
         changing_height = inertial_nav.get_velocity().z < -50.0f;
+        if (changing_height) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL, "AirDrop Detected");
+        }
     }
     else{
         changing_height = inertial_nav.get_velocity().z > 50.0f;
@@ -209,8 +211,7 @@ bool Copter::throw_detected()
     // Check if the accel length is < 1.0g indicating that any throw action is complete and the copter has been released
     bool no_throw_action = ins.get_accel().length() < 1.0f * GRAVITY_MSS;
 
-    // High velocity or free-fall combined with incresing height indicate a possible throw release
-    //bool possible_throw_detected = (free_falling || high_speed) && gaining_height && no_throw_action;
+    // High velocity or free-fall combined with increasing height indicate a possible throw release
     bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
 
 
