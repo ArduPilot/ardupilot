@@ -396,8 +396,9 @@ def fly_fence_test(mavproxy, mav, timeout=180):
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
 
-    # enable fence
+    # enable fence, disable avoidance
     mavproxy.send('param set FENCE_ENABLE 1\n')
+    mavproxy.send('param set AVOID_ENABLE 0\n')
 
     # first east
     print("turn east")
@@ -435,8 +436,11 @@ def fly_fence_test(mavproxy, mav, timeout=180):
             wait_mode(mav, 'STABILIZE')
             print("Reached home OK")
             return True
-    # disable fence
+
+    # disable fence, enable avoidance
     mavproxy.send('param set FENCE_ENABLE 0\n')
+    mavproxy.send('param set AVOID_ENABLE 1\n')
+
     # reduce throttle
     mavproxy.send('rc 3 1000\n')
     # switch mode to stabilize
