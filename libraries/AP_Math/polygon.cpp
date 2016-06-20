@@ -35,7 +35,8 @@
  *  expect that to be very small over the distances involved in the
  *  fence boundary
  */
-bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
+template <typename T>
+bool Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n)
 {
     unsigned i, j;
     bool outside = true;
@@ -85,7 +86,14 @@ bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
  *  and the first point is the same as the last point. That is the
  *  minimum requirement for the Polygon_outside function to work
  */
-bool Polygon_complete(const Vector2l *V, unsigned n)
+template <typename T>
+bool Polygon_complete(const Vector2<T> *V, unsigned n)
 {
     return (n >= 4 && V[n-1].x == V[0].x && V[n-1].y == V[0].y);
 }
+
+// Necessary to avoid linker errors
+template bool Polygon_outside<int32_t>(const Vector2l &P, const Vector2l *V, unsigned n);
+template bool Polygon_complete<int32_t>(const Vector2l *V, unsigned n);
+template bool Polygon_outside<float>(const Vector2f &P, const Vector2f *V, unsigned n);
+template bool Polygon_complete<float>(const Vector2f *V, unsigned n);

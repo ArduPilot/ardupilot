@@ -20,6 +20,8 @@
 
 #include "vector2.h"
 
-bool        Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n);
-bool        Polygon_complete(const Vector2l *V, unsigned n);
+template <typename T>
+bool        Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n);
+template <typename T>
+bool        Polygon_complete(const Vector2<T> *V, unsigned n);
 
