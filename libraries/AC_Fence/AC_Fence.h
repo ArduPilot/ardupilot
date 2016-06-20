@@ -75,6 +75,12 @@ public:
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
     float get_safe_alt() const { return _alt_max - _margin; }
 
+    /// get_radius - returns the fence radius in meters
+    float get_radius() const { return _circle_radius.get(); }
+
+    /// get_margin - returns the fence margin in meters
+    float get_margin() const { return _margin.get(); }
+
     /// manual_recovery_start - caller indicates that pilot is re-taking manual control so fence should be disabled for 10 seconds
     ///     should be called whenever the pilot changes the flight mode
     ///     has no effect if no breaches have occurred
