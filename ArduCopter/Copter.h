@@ -76,6 +76,7 @@
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
+#include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify/AP_Notify.h>          // Notify library
@@ -458,6 +459,7 @@ private:
     AC_AttitudeControl_Multi attitude_control;
 #endif
     AC_PosControl pos_control;
+    AC_Avoid avoid;
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
 
