@@ -20,23 +20,39 @@
 #include "GPIO.h"
 #include "Util_RPI.h"
 
+// Raspberry Pi GPIO memory
+#define BCM2708_PERI_BASE   0x20000000
+#define BCM2709_PERI_BASE   0x3F000000
+#define GPIO_BASE(address)  (address + 0x200000)
+
+// GPIO setup. Always use INP_GPIO(x) before OUT_GPIO(x) or SET_GPIO_ALT(x,y)
+#define GPIO_MODE_IN(g)     *(_gpio+((g)/10)) &= ~(7<<(((g)%10)*3))
+#define GPIO_MODE_OUT(g)    *(_gpio+((g)/10)) |=  (1<<(((g)%10)*3))
+#define GPIO_MODE_ALT(g,a)  *(_gpio+(((g)/10))) |= (((a)<=3?(a)+4:(a)==4?3:2)<<(((g)%10)*3))
+#define GPIO_SET_HIGH       *(_gpio+7)  // sets   bits which are 1
+#define GPIO_SET_LOW        *(_gpio+10) // clears bits which are 1
+#define GPIO_GET(g)         (*(_gpio+13)&(1<<g)) // 0 if LOW, (1<<g) if HIGH
+
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+
 GPIO_RPI::GPIO_RPI()
-{}
+{
+}
 
 void GPIO_RPI::init()
 {
     int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
     uint32_t gpio_address = rpi_version == 1 ? GPIO_BASE(BCM2708_PERI_BASE)   : GPIO_BASE(BCM2709_PERI_BASE);
-    // open /dev/mem
-    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
+
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    if (mem_fd < 0) {
         AP_HAL::panic("Can't open /dev/mem");
     }
 
     // mmap GPIO
-    gpio_map = mmap(
+    void *gpio_map = mmap(
         NULL,                 // Any adddress in our space will do
         BLOCK_SIZE,           // Map length
         PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
@@ -51,7 +67,7 @@ void GPIO_RPI::init()
         AP_HAL::panic("Can't open /dev/mem");
     }
 
-    gpio = (volatile uint32_t *)gpio_map; // Always use volatile pointer!
+    _gpio = (volatile uint32_t *)gpio_map;
 }
 
 void GPIO_RPI::pinMode(uint8_t pin, uint8_t output)
@@ -103,7 +119,8 @@ void GPIO_RPI::toggle(uint8_t pin)
 }
 
 /* Alternative interface: */
-AP_HAL::DigitalSource* GPIO_RPI::channel(uint16_t n) {
+AP_HAL::DigitalSource* GPIO_RPI::channel(uint16_t n)
+{
     return new DigitalSource(n);
 }
 
