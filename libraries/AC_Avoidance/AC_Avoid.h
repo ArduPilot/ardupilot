@@ -8,7 +8,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
 
-#define AC_AVOID_ACCEL_CMSS_MAX         250.0f  // maximum acceleration/deceleration in cm/s/s used to avoid hitting fence
+#define AC_AVOID_ACCEL_CMSS_MAX         100.0f  // maximum acceleration/deceleration in cm/s/s used to avoid hitting fence
 
 // bit masks for enabled fence types.
 #define AC_AVOID_DISABLED               0       // avoidance disabled
