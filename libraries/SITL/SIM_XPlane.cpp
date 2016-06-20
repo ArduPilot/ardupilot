@@ -102,7 +102,15 @@ bool XPlane::receive_data(void)
                                     1U << Joystick1 | 1U << ThrottleCommand);
     Location loc {};
     Vector3f pos;
-    ssize_t len = socket_in.recv(pkt, sizeof(pkt), 1);
+    uint32_t wait_time_ms = 1;
+    uint32_t now = AP_HAL::millis();
+
+    // if we are about to get another frame from X-Plane then wait longer
+    if (xplane_frame_time > wait_time_ms &&
+        now+1 >= last_data_time_ms + xplane_frame_time) {
+        wait_time_ms = 10;
+    }
+    ssize_t len = socket_in.recv(pkt, sizeof(pkt), wait_time_ms);
     
     if (len < pkt_len+5 || memcmp(pkt, "DATA@", 5) != 0) {
         // not a data packet we understand
@@ -131,7 +139,7 @@ bool XPlane::receive_data(void)
             uint64_t tus = data[3] * 1.0e6f;
             if (tus + time_base_us <= time_now_us) {
                 uint64_t tdiff = time_now_us - (tus + time_base_us);
-                if (tdiff > 1e6) {
+                if (tdiff > 1e6f) {
                     printf("X-Plane time reset %lu\n", (unsigned long)tdiff);
                 }
                 time_base_us = time_now_us - tus;
@@ -257,7 +265,13 @@ bool XPlane::receive_data(void)
 
     update_mag_field_bf();
 
+    if (now > last_data_time_ms && now - last_data_time_ms < 100) {
+        xplane_frame_time = now - last_data_time_ms;
+    }
     last_data_time_ms = AP_HAL::millis();
+
+    report.data_count++;
+    report.frame_count++;
     return true;
         
 failed:
@@ -289,6 +303,7 @@ failed:
 
     update_position();
     update_mag_field_bf();
+    report.frame_count++;
     return false;
 }
     
@@ -338,7 +353,19 @@ void XPlane::update(const struct sitl_input &input)
     if (receive_data()) {
         send_data(input);
     }
-    
+
+    uint32_t now = AP_HAL::millis();
+    if (report.last_report_ms == 0) {
+        report.last_report_ms = now;
+    }
+    if (now - report.last_report_ms > 5000) {
+        float dt = (now - report.last_report_ms) * 1.0e-3f;
+        printf("Data rate: %.1f FPS  Frame rate: %.1f FPS\n",
+               report.data_count/dt, report.frame_count/dt);
+        report.last_report_ms = now;
+        report.data_count = 0;
+        report.frame_count = 0;
+    }
 }
 
 } // namespace SITL

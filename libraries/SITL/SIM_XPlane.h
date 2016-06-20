@@ -58,6 +58,12 @@ private:
     Vector3f accel_earth;
     float throttle_sent = -1;
     bool connected = false;
+    uint32_t xplane_frame_time;
+    struct {
+        uint32_t last_report_ms;
+        uint32_t data_count;
+        uint32_t frame_count;
+    } report;
 
     // throttle joystick input is very weird. See comments in the main code
     const uint32_t throttle_magic = 123;
