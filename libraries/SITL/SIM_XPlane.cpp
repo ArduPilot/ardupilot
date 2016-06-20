@@ -155,7 +155,7 @@ bool XPlane::receive_data(void)
             loc.lat = data[1] * 1e7;
             loc.lng = data[2] * 1e7;
             loc.alt = data[3] * FEET_TO_METERS * 100.0f;
-            float hagl = data[3] * FEET_TO_METERS;
+            float hagl = data[4] * FEET_TO_METERS;
             ground_level = loc.alt * 0.01f - hagl;
             break;
         }
@@ -184,7 +184,7 @@ bool XPlane::receive_data(void)
 
         case LocVelDistTraveled:
             pos.y = data[1];
-            pos.z = data[2];
+            pos.z = -data[2];
             pos.x = -data[3];
             velocity_ef.y = data[4];
             velocity_ef.z = -data[5];
@@ -244,22 +244,23 @@ bool XPlane::receive_data(void)
         goto failed;
     }
     position = pos + position_zero;
-    position.z = -loc.alt * 0.01f;
     update_position();
 
     accel_earth = dcm * accel_body;
     accel_earth.z += GRAVITY_MSS;
     
     // the position may slowly deviate due to float accuracy and longitude scaling
-    if (get_distance(loc, location) > 4) {
-        printf("X-Plane home reset dist=%f alt=%f\n", get_distance(loc, location), pos.z);
+    if (get_distance(loc, location) > 4 || fabsf(loc.alt - location.alt)*0.01 > 2) {
+        printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
+               get_distance(loc, location), loc.alt*0.01f, location.alt*0.01f);
         // reset home location
-        position_zero(-pos.x, -pos.y, 0);
+        position_zero(-pos.x, -pos.y, -pos.z);
         home.lat = loc.lat;
         home.lng = loc.lng;
-        home.alt = 0;
+        home.alt = loc.alt;
         position.x = 0;
         position.y = 0;
+        position.z = 0;
         update_position();
     }
 
