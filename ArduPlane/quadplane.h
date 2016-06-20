@@ -6,6 +6,8 @@
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_WPNav/AC_WPNav.h>
+#include <AC_Fence/AC_Fence.h>
+#include <AC_Avoidance/AC_Avoid.h>
 
 /*
   frame types for quadplane build. Most case be set with
