@@ -482,9 +482,15 @@ if len(args) > 0:
     # allow a wildcard list of steps
     matched = []
     for a in args:
+        arg_matched = False
         for s in steps:
             if fnmatch.fnmatch(s.lower(), a.lower()):
                 matched.append(s)
+                arg_matched = True
+        if not arg_matched:
+            print("No steps matched argument ({})".format(a))
+            sys.exit(1)
+
     steps = matched
 
 try:
