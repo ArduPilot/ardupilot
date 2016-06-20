@@ -13,7 +13,7 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 
-#define AC_ATTITUDE_CONTROL_ANGLE_P                           4.5f             // default angle P gain for roll, pitch and yaw
+#define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 
 #define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS       ToRad(40.0f)   // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
 #define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS       ToRad(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
@@ -37,11 +37,11 @@
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT      1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX    0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
 
-#define AC_ATTITUDE_CONTROL_MIN_DEFAULT   0.1f    // minimum throttle mix
-#define AC_ATTITUDE_CONTROL_MID_DEFAULT   0.5f    // manual throttle mix
-#define AC_ATTITUDE_CONTROL_MAX_DEFAULT   0.5f    // maximum throttle mix default
+#define AC_ATTITUDE_CONTROL_MIN_DEFAULT                 0.1f    // minimum throttle mix
+#define AC_ATTITUDE_CONTROL_MID_DEFAULT                 0.5f    // manual throttle mix
+#define AC_ATTITUDE_CONTROL_MAX_DEFAULT                 0.5f    // maximum throttle mix default
 
-#define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT 0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
+#define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 
 class AC_AttitudeControl {
 public:
@@ -230,7 +230,7 @@ public:
 
     // get_thrust_heading_rotation - calculates two ordered rotations to move the att_from_quat quaternion to the att_to_quat quaternion.
     // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
-    void thrust_heading_rotation_angles(Quaternion& att_to_quat, Quaternion att_from_quat, Vector3f &att_diff_angle, float &thrust_angle);
+    void thrust_heading_rotation_angles(Quaternion& att_to_quat, const Quaternion& att_from_quat, Vector3f& att_diff_angle, float& thrust_vec_dot);
 
     // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
