@@ -167,7 +167,7 @@ void Aircraft::update_mag_field_bf()
     // create a field vector and rotate to the required orientation
     Vector3f mag_ef(1e3f * intensity, 0, 0);
     Matrix3f R;
-    R.from_euler(0, ToRad(inclination), ToRad(declination));
+    R.from_euler(0, -ToRad(inclination), ToRad(declination));
     mag_ef = R * mag_ef;
 
     // calculate frame height above ground
