@@ -67,13 +67,7 @@ class Linux::GPIO_RPI : public AP_HAL::GPIO {
 private:
     int  mem_fd;
     void *gpio_map;
-    void *pwm_map;
-    void *clk_map;
     volatile uint32_t *gpio;
-    volatile uint32_t *pwm;
-    volatile uint32_t *clk;
-    void setPWM0Period(uint32_t time_us);
-    void setPWM0Duty(uint8_t percent);
 
 public:
     GPIO_RPI();
@@ -84,8 +78,6 @@ public:
     uint8_t read(uint8_t pin);
     void    write(uint8_t pin, uint8_t value);
     void    toggle(uint8_t pin);
-    void    setPWMPeriod(uint8_t pin, uint32_t time_us);
-    void    setPWMDuty(uint8_t pin, uint8_t percent);
 
     /* Alternative interface: */
     AP_HAL::DigitalSource* channel(uint16_t n);
