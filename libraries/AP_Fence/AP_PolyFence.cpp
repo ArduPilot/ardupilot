@@ -479,9 +479,9 @@ void AP_PolyFence::check(bool altitude_check_only)
 
     // we are outside the fence
     if (geofence_state->fence_triggered &&
-        vehicle_in_mode_guided() ||
-        vehicle_in_mode_rtl() ||
-        g.fence_action == FENCE_ACTION_REPORT) {
+        (vehicle_in_mode_guided() ||
+         vehicle_in_mode_rtl() ||
+         g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
