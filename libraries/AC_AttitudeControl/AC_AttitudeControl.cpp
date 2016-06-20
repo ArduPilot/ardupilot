@@ -126,6 +126,30 @@ void AC_AttitudeControl::relax_attitude_controllers()
     get_rate_yaw_pid().reset_I();
 }
 
+// The attitude controller works around the concept of the desired attitude, target attitude
+// and measured attitude. The desired attitude is the attitude input into the attitude controller
+// that expresses where the higher level code would like the aircraft to move to. The target attitude is moved
+// to the desired attitude with jerk, acceleration, and velocity limits. The target angular velocities are fed
+// directly into the rate controllers. The angular error between the measured attitude and the target attitude is
+// fed into the angle controller and the output of the angle controller summed at the input of the rate controllers.
+// By feeding the target angular velocity directly into the rate controllers the measured and target attitudes
+// remain very close together.
+//
+// All input functions below follow the same procedure
+// 1. define the desired attitude the aircraft should attempt to achieve using the input variables
+// 2. using the desired attitude and input variables define the target angular velocity to that should
+//    move the target attitude towards the desired attitude
+// 3. if _rate_bf_ff_enabled & _use_input_shaping are not being used then make the target attitude
+//    and target angular velocities equal to the desired attitude and desired angular velocities.
+// 4. ensure _attitude_target_quat, _attitude_target_euler_angle, _attitude_target_euler_rate and
+// _attitude_target_ang_vel have been defined. This ensures input modes can be changed without discontinuity.
+// 5. attitude_controller_run_quat is then run to pass the target angular velocities to the rate controllers and
+// integrate them into the target attitude. Any errors between the target attitude and the measured attitude are
+// corrected by first correcting the thrust vector until the angle between the target thrust vector measured
+// trust vector droppes below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE. At this point the heading is also corrected.
+
+
+
 // Command a Quaternion attitude with feedforward and smoothing
 void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, float smoothing_gain)
 {
@@ -150,6 +174,10 @@ void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, floa
         _attitude_target_quat = attitude_desired_quat;
         _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
     }
+
+    // Convert body-frame angular velocity into euler angle derivative of desired attitude
+    ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
+
     // Call quaternion attitude controller
     attitude_controller_run_quat();
 }
@@ -198,7 +226,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     }
 
     // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    _attitude_target_ang_vel = euler_rate_to_ang_vel(_attitude_target_euler_angle, _attitude_target_euler_rate);
+    euler_rate_to_ang_vel(_attitude_target_euler_angle, _attitude_target_euler_rate, _attitude_target_ang_vel);
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
@@ -256,7 +284,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     }
 
     // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    _attitude_target_ang_vel = euler_rate_to_ang_vel(_attitude_target_euler_angle, _attitude_target_euler_rate);
+    euler_rate_to_ang_vel(_attitude_target_euler_angle, _attitude_target_euler_rate, _attitude_target_ang_vel);
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
@@ -289,10 +317,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
     }
 
     // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    _attitude_target_ang_vel = euler_rate_to_ang_vel(_attitude_target_euler_angle, _attitude_target_euler_rate);
-
-    // Compute quaternion target attitude
-    _attitude_target_quat.from_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
+    euler_rate_to_ang_vel(_attitude_target_euler_angle, _attitude_target_euler_rate, _attitude_target_ang_vel);
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
@@ -323,6 +348,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
         _attitude_target_ang_vel.y = pitch_rate_rads;
         _attitude_target_ang_vel.z = yaw_rate_rads;
     }
+
+    // Convert body-frame angular velocity into euler angle derivative of desired attitude
+    ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
@@ -414,10 +442,12 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
 
     heading_quat.to_axis_angle(rotation);
     att_diff_angle.z = rotation.z;
-    if(fabsf(att_diff_angle.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP()){
-        att_diff_angle.z = constrain_float(wrap_PI(att_diff_angle.z), -radians(30.0f), radians(30.0f));
-        heading_quat.from_axis_angle(Vector3f(0.0f,0.0f,att_diff_angle.z));
-        att_to_quat = att_from_quat*thrust_vec_correction_quat*heading_quat;
+    if(!is_zero(_p_angle_yaw.kP())){
+        if(fabsf(att_diff_angle.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP()){
+            att_diff_angle.z = constrain_float(wrap_PI(att_diff_angle.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP());
+            heading_quat.from_axis_angle(Vector3f(0.0f,0.0f,att_diff_angle.z));
+            att_to_quat = att_from_quat*thrust_vec_correction_quat*heading_quat;
+        }
     }
 }
 
@@ -477,7 +507,7 @@ void AC_AttitudeControl::shift_ef_yaw_target(float yaw_shift_cd)
 }
 
 // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
-Vector3f AC_AttitudeControl::euler_rate_to_ang_vel(Vector3f euler_rad, Vector3f euler_rate_rads)
+void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads)
 {
     float sin_theta = sinf(euler_rad.y);
     float cos_theta = cosf(euler_rad.y);
@@ -488,7 +518,6 @@ Vector3f AC_AttitudeControl::euler_rate_to_ang_vel(Vector3f euler_rad, Vector3f 
     ang_vel_rads.x = euler_rate_rads.x - sin_theta * euler_rate_rads.z;
     ang_vel_rads.y = cos_phi  * euler_rate_rads.y + sin_phi * cos_theta * euler_rate_rads.z;
     ang_vel_rads.z = -sin_phi * euler_rate_rads.y + cos_theta * cos_phi * euler_rate_rads.z;
-    return ang_vel_rads;
 }
 
 // Convert an angular velocity vector to a 321-intrinsic euler angle derivative

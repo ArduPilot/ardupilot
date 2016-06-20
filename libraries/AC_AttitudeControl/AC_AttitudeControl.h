@@ -130,7 +130,7 @@ public:
     virtual void rate_controller_run() = 0;
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
-    Vector3f euler_rate_to_ang_vel(Vector3f euler_rad, Vector3f euler_rate_rads);
+    void euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
 
     // Convert an angular velocity vector to a 321-intrinsic euler angle derivative
     // Returns false if the vehicle is pitched 90 degrees up or down
