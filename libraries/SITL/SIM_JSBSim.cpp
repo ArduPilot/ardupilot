@@ -423,6 +423,9 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     airspeed = fdm.vcas * FEET_TO_METERS;
     airspeed_pitot = airspeed;
 
+    // update magnetic field
+    update_mag_field_bf();
+    
     rpm1 = fdm.rpm[0];
     rpm2 = fdm.rpm[1];
     
