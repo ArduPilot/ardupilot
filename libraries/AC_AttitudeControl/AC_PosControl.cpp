@@ -306,7 +306,7 @@ void AC_PosControl::init_takeoff()
     freeze_ff_z();
 
     // shift difference between last motor out and hover throttle into accelerometer I
-    _pid_accel_z.set_integrator(_motors.get_throttle()-_motors.get_throttle_hover());
+    _pid_accel_z.set_integrator((_motors.get_throttle()-_motors.get_throttle_hover())*1000.0f);
 }
 
 // is_active_z - returns true if the z-axis position controller has been run very recently
