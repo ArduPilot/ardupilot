@@ -88,7 +88,7 @@ void AP_MotorsMatrix::output_to_motors()
     int8_t i;
     int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final pwm values sent to the motor
 
-    switch (_multicopter_flags.spool_mode) {
+    switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
             // set motor output based on thrust requests
@@ -102,7 +102,7 @@ void AP_MotorsMatrix::output_to_motors()
             // sends output to motors when armed but not flying
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    motor_out[i] = constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle);
+                    motor_out[i] = calc_spin_up_to_pwm();
                 }
             }
             break;
@@ -152,14 +152,12 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
     float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
     float   throttle_thrust_best_rpy;   // throttle providing maximum roll, pitch and yaw range without climbing
-    float   throttle_thrust_rpy_mix;    // partial calculation of throttle_thrust_best_rpy
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   rpy_low = 0.0f;             // lowest motor value
     float   rpy_high = 0.0f;            // highest motor value
     float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   unused_range;               // amount of yaw we can fit in the current channel
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
-    float   throttle_thrust_hover = get_hover_throttle_as_high_end_pct();   // throttle hover thrust value, 0.0 - 1.0
 
     // apply voltage and air pressure compensation
     roll_thrust = _roll_in * get_compensation_gain();
@@ -177,7 +175,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    throttle_thrust_rpy_mix = MAX(throttle_thrust, throttle_thrust*MAX(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
+    _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
     // calculate throttle that gives most possible room for yaw which is the lower of:
     //      1. 0.5f - (rpy_low+rpy_high)/2.0 - this would give the maximum possible margin above the highest motor and below the lowest
@@ -192,7 +190,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // calculate amount of yaw we can fit into the throttle range
     // this is always equal to or less than the requested yaw from the pilot or rate controller
 
-    throttle_thrust_best_rpy = MIN(0.5f, throttle_thrust_rpy_mix);
+    throttle_thrust_best_rpy = MIN(0.5f, _throttle_avg_max);
 
     // calculate roll and pitch for each motor
     // calculate the amount of yaw input that each motor can accept
@@ -242,7 +240,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     // check everything fits
-    throttle_thrust_best_rpy = MIN(0.5f - (rpy_low+rpy_high)/2.0, throttle_thrust_rpy_mix);
+    throttle_thrust_best_rpy = MIN(0.5f - (rpy_low+rpy_high)/2.0, _throttle_avg_max);
     if (is_zero(rpy_low)){
         rpy_scale = 1.0f;
     } else {

@@ -83,9 +83,6 @@ public:
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
 
-    // voltage2 - returns the voltage of the second battery (helper function to send 2nd voltage to GCS)
-    float voltage2() const;
-
     /// current_amps - returns the instantaneous current draw in amperes
     float current_amps(uint8_t instance) const;
     float current_amps() const { return current_amps(AP_BATT_PRIMARY_INSTANCE); }

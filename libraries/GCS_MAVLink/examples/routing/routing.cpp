@@ -10,8 +10,29 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+class GCS_MAVLINK_routing : public GCS_MAVLINK
+{
+
+public:
+
+    void data_stream_send(void) override { };
+
+protected:
+
+    uint32_t telem_delay() const override { return 0; };
+
+private:
+
+    void handleMessage(mavlink_message_t * msg) { }
+    bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return false ; }
+    void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override { }
+    bool try_send_message(enum ap_message id) override { return false; }
+
+};
+
+
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+static GCS_MAVLINK_routing gcs[MAVLINK_COMM_NUM_BUFFERS];
 
 extern mavlink_system_t mavlink_system;
 

@@ -83,10 +83,11 @@ private:
         TUNING_SET_AZ =                      7,
     };
 
-    AP_Float *get_param_pointer(uint8_t parm);
-    void save_value(uint8_t parm);
-    void reload_value(uint8_t parm);
-    void set_value(uint8_t parm, float value);
+    AP_Float *get_param_pointer(uint8_t parm) override;
+    void save_value(uint8_t parm) override;
+    void reload_value(uint8_t parm) override;
+    void set_value(uint8_t parm, float value) override;
+    float controller_error(uint8_t parm) override;
 
     // tuning set arrays
     static const uint8_t tuning_set_rate_roll_pitch[];

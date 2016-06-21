@@ -23,7 +23,7 @@ Please see our [wiki article](http://dev.ardupilot.org/wiki/submitting-patches-b
 
 # Development Team
 
-The ArduPilot project is open source and [maintained](MAINTAINERS.md) by a team of volunteers.
+The ArduPilot project is open source and [maintained](https://github.com/ArduPilot/ardupilot#maintainers) by a team of volunteers.
 
 To contribute, you can send a pull request on Github. You can also
 join the [development discussion on Google

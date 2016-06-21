@@ -20,25 +20,39 @@
 #include "GPIO.h"
 #include "Util_RPI.h"
 
+// Raspberry Pi GPIO memory
+#define BCM2708_PERI_BASE   0x20000000
+#define BCM2709_PERI_BASE   0x3F000000
+#define GPIO_BASE(address)  (address + 0x200000)
+
+// GPIO setup. Always use INP_GPIO(x) before OUT_GPIO(x) or SET_GPIO_ALT(x,y)
+#define GPIO_MODE_IN(g)     *(_gpio+((g)/10)) &= ~(7<<(((g)%10)*3))
+#define GPIO_MODE_OUT(g)    *(_gpio+((g)/10)) |=  (1<<(((g)%10)*3))
+#define GPIO_MODE_ALT(g,a)  *(_gpio+(((g)/10))) |= (((a)<=3?(a)+4:(a)==4?3:2)<<(((g)%10)*3))
+#define GPIO_SET_HIGH       *(_gpio+7)  // sets   bits which are 1
+#define GPIO_SET_LOW        *(_gpio+10) // clears bits which are 1
+#define GPIO_GET(g)         (*(_gpio+13)&(1<<g)) // 0 if LOW, (1<<g) if HIGH
+
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+
 GPIO_RPI::GPIO_RPI()
-{}
+{
+}
 
 void GPIO_RPI::init()
 {
     int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
     uint32_t gpio_address = rpi_version == 1 ? GPIO_BASE(BCM2708_PERI_BASE)   : GPIO_BASE(BCM2709_PERI_BASE);
-    uint32_t pwm_address  = rpi_version == 1 ? PWM_BASE(BCM2708_PERI_BASE)    : PWM_BASE(BCM2709_PERI_BASE);
-    uint32_t clk_address  = rpi_version == 1 ? CLOCK_BASE(BCM2708_PERI_BASE)  : CLOCK_BASE(BCM2709_PERI_BASE);
-    // open /dev/mem
-    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
+
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    if (mem_fd < 0) {
         AP_HAL::panic("Can't open /dev/mem");
     }
 
     // mmap GPIO
-    gpio_map = mmap(
+    void *gpio_map = mmap(
         NULL,                 // Any adddress in our space will do
         BLOCK_SIZE,           // Map length
         PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
@@ -47,33 +61,13 @@ void GPIO_RPI::init()
         gpio_address          // Offset to GPIO peripheral
     );
 
-    pwm_map = mmap(
-        NULL,                 // Any adddress in our space will do
-        BLOCK_SIZE,           // Map length
-        PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
-        MAP_SHARED,           // Shared with other processes
-        mem_fd,               // File to map
-        pwm_address           // Offset to GPIO peripheral
-    );
-
-    clk_map = mmap(
-        NULL,                 // Any adddress in our space will do
-        BLOCK_SIZE,           // Map length
-        PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
-        MAP_SHARED,           // Shared with other processes
-        mem_fd,               // File to map
-        clk_address           // Offset to GPIO peripheral
-    );
-
     close(mem_fd); // No need to keep mem_fd open after mmap
 
-    if (gpio_map == MAP_FAILED || pwm_map == MAP_FAILED || clk_map == MAP_FAILED) {
+    if (gpio_map == MAP_FAILED) {
         AP_HAL::panic("Can't open /dev/mem");
     }
 
-    gpio = (volatile uint32_t *)gpio_map; // Always use volatile pointer!
-    pwm  = (volatile uint32_t *)pwm_map;
-    clk  = (volatile uint32_t *)clk_map;
+    _gpio = (volatile uint32_t *)gpio_map;
 }
 
 void GPIO_RPI::pinMode(uint8_t pin, uint8_t output)
@@ -124,70 +118,9 @@ void GPIO_RPI::toggle(uint8_t pin)
     write(pin, !read(pin));
 }
 
-void GPIO_RPI::setPWMPeriod(uint8_t pin, uint32_t time_us)
-{
-    setPWM0Period(time_us);
-}
-
-void GPIO_RPI::setPWMDuty(uint8_t pin, uint8_t percent)
-{
-    setPWM0Duty(percent);
-}
-
-void GPIO_RPI::setPWM0Period(uint32_t time_us)
-{
-    // stop clock and waiting for busy flag doesn't work, so kill clock
-    *(clk + PWMCLK_CNTL) = 0x5A000000 | (1 << 5);
-    usleep(10);
-
-    // set frequency
-    // DIVI is the integer part of the divisor
-    // the fractional part (DIVF) drops clock cycles to get the output frequency, bad for servo motors
-    // 320 bits for one cycle of 20 milliseconds = 62.5 us per bit = 16 kHz
-    int idiv = (int) (19200000.0f / (320000000.0f / time_us));
-    if (idiv < 1 || idiv > 0x1000) {
-      return;
-    }
-    *(clk + PWMCLK_DIV)  = 0x5A000000 | (idiv<<12);
-
-    // source=osc and enable clock
-    *(clk + PWMCLK_CNTL) = 0x5A000011;
-
-    // disable PWM
-    *(pwm + PWM_CTL) = 0;
-
-    // needs some time until the PWM module gets disabled, without the delay the PWM module crashs
-    usleep(10);
-
-    // filled with 0 for 20 milliseconds = 320 bits
-    *(pwm + PWM_RNG1) = 320;
-
-    // init with 0%
-    setPWM0Duty(0);
-
-    // start PWM1 in serializer mode
-    *(pwm + PWM_CTL) = 3;
-}
-
-void GPIO_RPI::setPWM0Duty(uint8_t percent)
-{
-    int bitCount;
-    unsigned int bits = 0;
-
-    bitCount = 320 * percent / 100;
-    if (bitCount > 320) bitCount = 320;
-    if (bitCount < 0) bitCount = 0;
-    bits = 0;
-    while (bitCount) {
-      bits <<= 1;
-      bits |= 1;
-      bitCount--;
-    }
-    *(pwm + PWM_DAT1) = bits;
-}
-
 /* Alternative interface: */
-AP_HAL::DigitalSource* GPIO_RPI::channel(uint16_t n) {
+AP_HAL::DigitalSource* GPIO_RPI::channel(uint16_t n)
+{
     return new DigitalSource(n);
 }
 

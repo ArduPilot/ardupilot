@@ -85,6 +85,8 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     { "MFT100L20>C#D#", false},
     #define AP_NOTIFY_PX4_TONE_TUNING_SAVE 24
     { "MFT100L10DBDB>", false},
+    #define AP_NOTIFY_PX4_TONE_TUNING_ERROR 25
+    { "MFT100L10>BBBBBBBB", false},
 };
 
 bool ToneAlarm_PX4::init()
@@ -327,6 +329,10 @@ void ToneAlarm_PX4::update()
     if (AP_Notify::events.tune_save) {
         play_tone(AP_NOTIFY_PX4_TONE_TUNING_SAVE);
         AP_Notify::events.tune_save = 0;
+    }
+    if (AP_Notify::events.tune_error) {
+        play_tone(AP_NOTIFY_PX4_TONE_TUNING_ERROR);
+        AP_Notify::events.tune_error = 0;
     }
 }
 

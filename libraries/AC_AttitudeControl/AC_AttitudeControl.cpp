@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
@@ -86,6 +86,13 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Range: 3.000 6.000
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_yaw, "ANG_YAW_", 15, AC_AttitudeControl, AC_P),
+
+    // @Param: ANG_LIM_TC
+    // @DisplayName: Angle Limit (to maintain altitude) Time Constant
+    // @Description: Angle Limit (to maintain altitude) Time Constant
+    // @Range: 0.5 10.0
+    // @User: Advanced
+    AP_GROUPINFO("ANG_LIM_TC", 16, AC_AttitudeControl, _angle_limit_tc, AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT),
 
     AP_GROUPEND
 };
@@ -393,13 +400,6 @@ void AC_AttitudeControl::attitude_controller_run_quat(const Quaternion& att_targ
     _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
-void AC_AttitudeControl::rate_controller_run()
-{
-    _motors.set_roll(rate_bf_to_motor_roll(_ang_vel_target_rads.x));
-    _motors.set_pitch(rate_bf_to_motor_pitch(_ang_vel_target_rads.y));
-    _motors.set_yaw(rate_bf_to_motor_yaw(_ang_vel_target_rads.z));
-}
-
 void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads)
 {
     float sin_theta = sinf(euler_rad.y);
@@ -599,24 +599,9 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
     }
 }
 
-void AC_AttitudeControl::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
-{
-    _throttle_in = throttle_in;
-    _throttle_in_filt.apply(throttle_in, _dt);
-    _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (apply_angle_boost) {
-        _motors.set_throttle(get_boosted_throttle(throttle_in));
-    }else{
-        _motors.set_throttle(throttle_in);
-        // Clear angle_boost for logging purposes
-        _angle_boost = 0.0f;
-    }
-}
-
 void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
 {
     _throttle_in = throttle_in;
-    _throttle_in_filt.apply(throttle_in, _dt);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     if (reset_attitude_control) {
         relax_bf_rate_controller();
@@ -624,6 +609,13 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
     }
     _motors.set_throttle(throttle_in);
     _angle_boost = 0.0f;
+}
+
+// Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
+float AC_AttitudeControl::get_althold_lean_angle_max() const
+{
+    // convert to centi-degrees for public interface
+    return ToDeg(_althold_lean_angle_max) * 100.0f;
 }
 
 float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord_lim)

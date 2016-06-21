@@ -23,10 +23,10 @@ enum RotorControlMode {
 
 class AP_MotorsHeli_RSC {
 public:
+    friend class AP_MotorsHeli_Single;
+    
     AP_MotorsHeli_RSC(RC_Channel_aux::Aux_servo_function_t aux_fn,
-                      uint8_t default_channel,
-                      uint16_t loop_rate) :
-        _loop_rate(loop_rate),
+                      uint8_t default_channel) :
         _aux_fn(aux_fn),
         _default_channel(default_channel)
     {};
@@ -69,7 +69,7 @@ public:
     void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
 
     // set_power_output_range
-    void        set_power_output_range(uint16_t power_low, uint16_t power_high);
+    void        set_power_output_range(float power_low, float power_high);
 
     // set_motor_load
     void        set_motor_load(float load) { _load_feedforward = load; }
@@ -78,10 +78,8 @@ public:
     void        output(RotorControlState state);
 
 private:
-
-    // external variables
-    float           _loop_rate;                 // main loop rate
-
+    uint64_t        _last_update_us;
+    
     // channel setup for aux function
     RC_Channel_aux::Aux_servo_function_t _aux_fn;
     uint8_t         _default_channel;
@@ -102,11 +100,15 @@ private:
     float           _power_output_range = 0.0f; // maximum range of output power
     float           _load_feedforward = 0.0f;   // estimate of motor load, range 0-1.0f
 
+    AP_Int16        _pwm_min;
+    AP_Int16        _pwm_max;
+    AP_Int8         _pwm_rev;
+    
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
-    void            update_rotor_ramp(float rotor_ramp_input);
+    void            update_rotor_ramp(float rotor_ramp_input, float dt);
 
     // update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
-    void            update_rotor_runup();
+    void            update_rotor_runup(float dt);
 
     // write_rsc - outputs pwm onto output rsc channel. servo_out parameter is of the range 0 ~ 1
     void            write_rsc(float servo_out);

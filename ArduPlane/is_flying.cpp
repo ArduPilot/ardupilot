@@ -26,9 +26,12 @@ void Plane::update_is_flying_5Hz(void)
     // airspeed at least 75% of stall speed?
     bool airspeed_movement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= (aparm.airspeed_min*0.75f));
 
-    if(arming.is_armed()) {
-        // when armed assuming flying and we need overwhelming evidence that we ARE NOT flying
 
+    if (quadplane.is_flying()) {
+        is_flying_bool = true;
+
+    } else if(arming.is_armed()) {
+        // when armed assuming flying and we need overwhelming evidence that we ARE NOT flying
         // short drop-outs of GPS are common during flight due to banking which points the antenna in different directions
         bool gps_lost_recently = (gps.last_fix_time_ms() > 0) && // we have locked to GPS before
                         (gps.status() < AP_GPS::GPS_OK_FIX_2D) && // and it's lost now
@@ -126,10 +129,6 @@ void Plane::update_is_flying_5Hz(void)
         isFlyingProbability = (0.85f * isFlyingProbability) + (0.15f * (float)is_flying_bool);
     }
 
-    if (quadplane.is_flying()) {
-        is_flying_bool = true;
-    }
-    
     /*
       update last_flying_ms so we always know how long we have not
       been flying for. This helps for crash detection and auto-disarm

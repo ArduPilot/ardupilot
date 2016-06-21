@@ -354,6 +354,10 @@ case $FRAME in
         MODEL="$FRAME"
         SITLRCIN=0
 	;;
+    xplane*)
+        MODEL="$FRAME"
+        SITLRCIN=0
+	;;
     *-heli)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"

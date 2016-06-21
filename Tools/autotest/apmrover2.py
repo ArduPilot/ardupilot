@@ -79,7 +79,7 @@ def drive_mission(mavproxy, mav, filename):
     return True
 
 
-def drive_APMrover2(viewerip=None, map=False, valgrind=False):
+def drive_APMrover2(binary, viewerip=None, map=False, valgrind=False):
     '''drive APMrover2 in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -94,7 +94,7 @@ def drive_APMrover2(viewerip=None, map=False, valgrind=False):
         options += ' --map'
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sil = util.start_SIL('APMrover2', wipe=True, model='rover', home=home, speedup=10)
+    sil = util.start_SIL(binary, wipe=True, model='rover', home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
 
     print("WAITING FOR PARAMETERS")
@@ -103,12 +103,15 @@ def drive_APMrover2(viewerip=None, map=False, valgrind=False):
     # setup test parameters
     mavproxy.send("param load %s/Rover.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
+    mavproxy.send("param set LOG_REPLAY 1\n")
+    mavproxy.send("param set LOG_DISARMED 1\n")
+    time.sleep(3)
 
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('APMrover2', model='rover', home=home, speedup=10, valgrind=valgrind)
+    sil = util.start_SIL(binary, model='rover', home=home, speedup=10, valgrind=valgrind)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
@@ -175,9 +178,10 @@ def drive_APMrover2(viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    if os.path.exists('APMrover2-valgrind.log'):
-        os.chmod('APMrover2-valgrind.log', 0644)
-        shutil.copy("APMrover2-valgrind.log", util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
+    valgrind_log = sil.valgrind_log_filepath()
+    if os.path.exists(valgrind_log):
+        os.chmod(valgrind_log, 0644)
+        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % e)

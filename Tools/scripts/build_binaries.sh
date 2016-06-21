@@ -81,6 +81,17 @@ checkout() {
     return 1
 }
 
+# check if we should skip this build because we don't
+# support the board in this release
+skip_board() {
+    b="$1"
+    if grep -q "$b" ../mk/targets.mk ../Tools/ardupilotwaf/boards.py; then
+        return 1
+    fi
+    echo "Skipping unsupported board $b"
+    return 0
+}
+
 # check if we should skip this build because we have already
 # built this version
 skip_build() {
@@ -161,6 +172,7 @@ build_arduplane() {
             error_count=$((error_count+1))
             continue
         }
+        skip_board $b && continue
         echo "Building ArduPlane $b binaries"
         ddir=$binaries/Plane/$hdate/$b
         skip_build $tag $ddir && continue
@@ -219,6 +231,7 @@ build_arducopter() {
                 error_count=$((error_count+1))
                 continue
             }
+            skip_board $b && continue
             echo "Building ArduCopter $b binaries $f"
             ddir=$binaries/Copter/$hdate/$b-$f
             skip_build $tag $ddir && continue
@@ -266,6 +279,7 @@ build_rover() {
     for b in apm1 apm2 erlebrain2 navio navio2 pxf pxfmini; do
         echo "Building APMrover2 $b binaries"
         checkout APMrover2 $tag $b "" || continue
+        skip_board $b && continue
         ddir=$binaries/Rover/$hdate/$b
         skip_build $tag $ddir && continue
         make clean || continue

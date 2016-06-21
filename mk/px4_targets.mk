@@ -122,6 +122,7 @@ px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/src/modules/uORB/topics $(PX4_ROOT)/src/platforms/nuttx/px4_messages
 
 px4-cleandep: clean
+	$(v) mkdir -p $(PX4_ROOT)/Build
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
 	$(v) find $(UAVCAN_DIRECTORY) -type f -name '*.d' | xargs rm -f
 	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f

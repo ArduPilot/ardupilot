@@ -41,6 +41,10 @@ const AP_Tuning_Plane::tuning_set AP_Tuning_Plane::tuning_sets[] = {
     { TUNING_SET_RATE_ROLL_PITCH, TUNING_ARRAY(tuning_set_rate_roll_pitch) },
     { TUNING_SET_RATE_ROLL,       TUNING_ARRAY(tuning_set_rate_roll) },
     { TUNING_SET_RATE_PITCH,      TUNING_ARRAY(tuning_set_rate_pitch) },
+    { TUNING_SET_RATE_YAW,        TUNING_ARRAY(tuning_set_rate_yaw) },
+    { TUNING_SET_ANG_ROLL_PITCH,  TUNING_ARRAY(tuning_set_ang_roll_pitch) },
+    { TUNING_SET_VXY,             TUNING_ARRAY(tuning_set_vxy) },
+    { TUNING_SET_AZ,              TUNING_ARRAY(tuning_set_az) },
     { 0, 0, nullptr }
 };
 
@@ -262,5 +266,64 @@ void AP_Tuning_Plane::reload_value(uint8_t parm)
             f->load();
         }
         break;
+    }
+}
+
+/*
+  return current controller error
+ */
+float AP_Tuning_Plane::controller_error(uint8_t parm)
+{
+    if (!plane.quadplane.available()) {
+        return 0;
+    }
+
+    // in general a good tune will have rmsP significantly greater
+    // than rmsD. Otherwise it is too easy to push D too high while
+    // tuning a quadplane and end up with D dominating
+    const float max_P_D_ratio = 3.0f;
+    
+    switch(parm) {
+    // special handling of dual-parameters
+    case TUNING_RATE_ROLL_PI:
+    case TUNING_RATE_ROLL_P:
+    case TUNING_RATE_ROLL_I:
+        return plane.quadplane.attitude_control->control_monitor_rms_output_roll();
+
+    case TUNING_RATE_ROLL_D: {
+        // special case for D term to keep it well below P
+        float rms_P = plane.quadplane.attitude_control->control_monitor_rms_output_roll_P();
+        float rms_D = plane.quadplane.attitude_control->control_monitor_rms_output_roll_D();
+        if (rms_P < rms_D * max_P_D_ratio) {
+            return max_P_D_ratio;
+        }
+        return rms_P+rms_D;
+    }
+        
+        
+    case TUNING_RATE_PITCH_PI:
+    case TUNING_RATE_PITCH_P:
+    case TUNING_RATE_PITCH_I:
+        return plane.quadplane.attitude_control->control_monitor_rms_output_pitch();
+
+    case TUNING_RATE_PITCH_D: {
+        // special case for D term to keep it well below P
+        float rms_P = plane.quadplane.attitude_control->control_monitor_rms_output_pitch_P();
+        float rms_D = plane.quadplane.attitude_control->control_monitor_rms_output_pitch_D();
+        if (rms_P < rms_D * max_P_D_ratio) {
+            return max_P_D_ratio;
+        }
+        return rms_P+rms_D;
+    }
+        
+    case TUNING_RATE_YAW_PI:
+    case TUNING_RATE_YAW_P:
+    case TUNING_RATE_YAW_I:
+    case TUNING_RATE_YAW_D:
+        return plane.quadplane.attitude_control->control_monitor_rms_output_yaw();
+
+    default:
+        // no special handler
+        return 0;
     }
 }

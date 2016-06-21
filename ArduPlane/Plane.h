@@ -56,7 +56,6 @@
 #include <APM_OBC/APM_OBC.h>
 #include <APM_Control/APM_Control.h>
 #include <APM_Control/AP_AutoTune.h>
-#include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
@@ -90,6 +89,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
 
+#include "GCS_Mavlink.h"
 #include "quadplane.h"
 #include "tuning.h"
 
@@ -129,7 +129,7 @@ protected:
  */
 class Plane : public AP_HAL::HAL::Callbacks {
 public:
-    friend class GCS_MAVLINK;
+    friend class GCS_MAVLINK_Plane;
     friend class Parameters;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
@@ -254,7 +254,7 @@ private:
     // GCS selection
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Plane gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
@@ -438,6 +438,9 @@ private:
 
         // Flag to indicate if we have triggered pre-flare. This occurs when we have reached LAND_PF_ALT
         bool land_pre_flare:1;
+
+        // are we in auto and flight mode is approach || pre-flare || final (flare)
+        bool land_in_progress:1;
 
         // should we fly inverted?
         bool inverted_flight:1;
@@ -823,7 +826,7 @@ private:
     int32_t get_RTL_altitude();
     float relative_altitude(void);
     int32_t relative_altitude_abs_cm(void);
-    float relative_ground_altitude(void);
+    float relative_ground_altitude(bool use_rangefinder_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);

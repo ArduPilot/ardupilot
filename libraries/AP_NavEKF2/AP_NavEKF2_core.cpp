@@ -153,7 +153,8 @@ void NavEKF2_core::InitialiseVariables()
     tasTimeout = true;
     badMagYaw = false;
     badIMUdata = false;
-    firstMagYawInit = false;
+    firstInflightYawInit = false;
+    firstInflightMagInit = false;
     dtIMUavg = 0.0025f;
     dtEkfAvg = 0.01f;
     dt = 0;
@@ -253,6 +254,10 @@ void NavEKF2_core::InitialiseVariables()
     runUpdates = false;
     framesSincePredict = 0;
     lastMagOffsetsValid = false;
+    magStateResetRequest = false;
+    magStateInitComplete = false;
+    magYawResetRequest = false;
+    gpsYawResetRequest = false;
 
     // zero data buffers
     storedIMU.reset();
@@ -1317,7 +1322,7 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
-        yawAlignComplete = true;
+
         // calculate initial filter quaternion states using yaw from magnetometer if mag heading healthy
         // otherwise use existing heading
         if (!badMagYaw) {
@@ -1360,8 +1365,15 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 
         // clear bad magnetic yaw status
         badMagYaw = false;
+
+        // clear mag state reset request
+        magStateResetRequest = false;
+
+        // record the fact we have initialised the magnetic field states
+        recordMagReset();
     } else {
-        // no magnetoemter data so there is nothing we can do
+        // this function should not be called if there is no compass data but if is is, return the
+        // current attitude
         initQuat = stateStruct.quat;
     }
 

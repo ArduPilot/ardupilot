@@ -102,9 +102,20 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     // learn new routes
     learn_route(in_channel, msg);
 
+    if (msg->msgid == MAVLINK_MSG_ID_RADIO ||
+        msg->msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
+        // don't forward RADIO packets
+        return true;
+    }
+    
     if (msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
         // heartbeat needs special handling
         handle_heartbeat(in_channel, msg);
+        return true;
+    }
+
+    if (msg->msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
+        // ADSB packets are not forwarded, they have their own stream rate
         return true;
     }
 

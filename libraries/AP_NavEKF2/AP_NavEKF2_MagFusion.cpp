@@ -23,43 +23,81 @@ void NavEKF2_core::controlMagYawReset()
     // Use a quaternion division to calcualte the delta quaternion between the rotation at the current and last time
     Quaternion deltaQuat = stateStruct.quat / prevQuatMagReset;
     prevQuatMagReset = stateStruct.quat;
+
     // convert the quaternion to a rotation vector and find its length
     Vector3f deltaRotVec;
     deltaQuat.to_axis_angle(deltaRotVec);
-    float deltaRot = deltaRotVec.length();
 
-    // In-Flight reset for vehicle that cannot use a zero sideslip assumption
-    // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
-    // Perform the reset earlier if high yaw and velocity innovations indicate that 'toilet bowling' is occurring
-    // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
-    // Delay if rotated too far since the last check as rapid rotations will produce errors in the magnetic field states
-    if (!firstMagYawInit && !assume_zero_sideslip() && inFlight && deltaRot < 0.1745f) {
-        // check that we have reached a height where ground magnetic interference effects are insignificant
-        bool hgtCheckPassed = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
+    // check if the spin rate is OK - high spin rates can cause angular alignment errors
+    bool angRateOK = deltaRotVec.length() < 0.1745f;
 
-        // check for 'toilet bowling' which is characterised by large yaw and velocity innovations and caused by bad yaw alignment
-        // this can occur if there is severe magnetic interference on the ground
-        bool toiletBowling = (yawTestRatio > 1.0f) && (velTestRatio > 1.0f);
+    // a flight reset is allowed if we are not spinning too fast and are in flight
+    bool flightResetAllowed = angRateOK && inFlight;
 
-        if (hgtCheckPassed || toiletBowling) {
-            firstMagYawInit = true;
-            // Update the yaw  angle and earth field states using the magnetic field measurements
-            Quaternion tempQuat;
-            Vector3f eulerAngles;
-            stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-            tempQuat = stateStruct.quat;
-            stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+    // check that we have reached a height where ground magnetic interference effects are insignificant
+    bool hgtCheckPassed = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
+
+    // check for 'toilet bowling' which is characterised by large yaw and velocity innovations and caused by bad yaw alignment
+    // this can occur if there is severe magnetic interference on the ground
+    bool toiletBowling = (yawTestRatio > 1.0f) && (velTestRatio > 1.0f);
+
+    // calculate if an in flight reset is required
+    bool flightResetRequired = (!firstInflightYawInit && (hgtCheckPassed || toiletBowling));
+
+    // an initial reset is required if we have not yet aligned the yaw angle
+    bool initialResetRequired = !yawAlignComplete;
+
+    // a combined yaw angle and magnetic field reset can be initiated by:
+    magYawResetRequest = magYawResetRequest || // an external request
+            (initialResetRequired && angRateOK) || // we need to do an initial alignment and aren't rotating too fast
+            (flightResetRequired && flightResetAllowed && !assume_zero_sideslip()); // conditions are right to do the in-flight re-alignment
+
+    // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
+    if (magYawResetRequest || magStateResetRequest) {
+
+        // gett he eeruler angles from the current state estimate
+        Vector3f eulerAngles;
+        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+
+        // Use the Euler angles and magnetometer measurement to update the magnetic field states
+        // and get an updated quaternion
+        Quaternion newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+
+        // if a yaw reset has been requested, apply the updated quaterniont the current state
+        if (magYawResetRequest) {
+            // previous value used to calculate a reset delta
+            Quaternion prevQuat = stateStruct.quat;
+
+            // update the quaternion states using the new yaw angle
+            stateStruct.quat = newQuat;
+
             // calculate the change in the quaternion state and apply it to the ouput history buffer
-            tempQuat = stateStruct.quat/tempQuat;
-            StoreQuatRotate(tempQuat);
-        }
-    }
+            prevQuat = stateStruct.quat/prevQuat;
+            StoreQuatRotate(prevQuat);
 
-    // In-Flight reset for vehicles that can use a zero sideslip assumption (Planes)
-    // this is done to protect against unrecoverable heading alignment errors due to compass faults
-    if (!firstMagYawInit && assume_zero_sideslip() && inFlight) {
-        realignYawGPS();
-        firstMagYawInit = true;
+            // send initial alignment status to console
+            if (!yawAlignComplete) {
+                hal.console->printf("EKF2 IMU%u initial yaw alignment complete\n",(unsigned)imu_index);
+            }
+
+            // send initial in-flight yaw alignment status to console
+            if (!firstInflightYawInit && inFlight) {
+                hal.console->printf("EKF2 IMU%u in-flight yaw alignment complete\n",(unsigned)imu_index);
+            }
+
+            // update the yaw reset completed status
+            recordYawReset();
+
+            // clear the yaw reset request flag
+            magYawResetRequest = false;
+        }
+}
+
+    // Request an in-flight check of heading against GPS and reset if necessary
+    // this can only be used by vehicles that can use a zero sideslip assumption (Planes)
+    // this allows recovery for heading alignment errors due to compass faults
+    if (!firstInflightYawInit && inFlight && assume_zero_sideslip()) {
+        gpsYawResetRequest = true;
     }
 
 }
@@ -78,23 +116,13 @@ void NavEKF2_core::realignYawGPS()
         float velYaw = atan2f(stateStruct.velocity.y,stateStruct.velocity.x);
 
         // calculate course yaw angle from GPS velocity
-        float gpsYaw = atan2f(gpsDataNew.vel.y,gpsDataNew.vel.x);
-
-        // check if this is our first alignment and we are not using the compass
-        if (!yawAlignComplete && !use_compass()) {
-            // calculate new filter quaternion states from Euler angles
-            stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
-            yawAlignComplete = true;
-
-            // zero the attitude covariances becasue the corelations will now be invalid
-            zeroAttCovOnly();
-        }
+        float gpsYaw = atan2f(gpsDataDelayed.vel.y,gpsDataDelayed.vel.x);
 
         // Check the yaw angles for consistency
         float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),MAX(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
 
-        // If the angles disagree by more than 45 degrees and GPS innovations are large or no compass, we declare the magnetic yaw as bad
-        badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && !(PV_AidingMode == AID_NONE)) || !use_compass();
+        // If the angles disagree by more than 45 degrees and GPS innovations are large or no previous yaw alignment, we declare the magnetic yaw as bad
+        badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && (PV_AidingMode == AID_ABSOLUTE)) || !yawAlignComplete;
 
         // correct yaw angle using GPS ground course if compass yaw bad
         if (badMagYaw) {
@@ -102,18 +130,27 @@ void NavEKF2_core::realignYawGPS()
             // calculate new filter quaternion states from Euler angles
             stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
 
+            // send yaw alignment information to console
+            hal.console->printf("EKF2 IMU%u yaw aligned to GPS velocity\n",(unsigned)imu_index);
+
             // zero the attitude covariances becasue the corelations will now be invalid
             zeroAttCovOnly();
 
             // reset tposition fusion timer to cause the states to be reset to the GPS on the next GPS fusion cycle
             lastPosPassTime_ms = 0;
         }
+
+        // record the yaw reset event
+        recordYawReset();
+
+        // clear any GPS yaw requests
+        gpsYawResetRequest = false;
     }
 
     // fix magnetic field states and clear any compass fault conditions
     if (use_compass()) {
-        // reset the magnetometer field states - we could have got bad external interference when initialising on-ground
-        calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+        // submit a request to reset the magnetic field states
+        magStateResetRequest = true;
 
         // We shoud retry the primary magnetometer if previously switched or failed
         magSelectIndex = 0;
@@ -149,8 +186,8 @@ void NavEKF2_core::SelectMagFusion()
     // check for availability of magnetometer data to fuse
     magDataToFuse = storedMag.recall(magDataDelayed,imuDataDelayed.time_ms);
 
-    if (magDataToFuse) {
-        // Control reset of yaw and magnetic field states
+    // Control reset of yaw and magnetic field states if we are using compass data
+    if (magDataToFuse && use_compass()) {
         controlMagYawReset();
     }
 
@@ -158,8 +195,8 @@ void NavEKF2_core::SelectMagFusion()
     // wait until the EKF time horizon catches up with the measurement
     bool dataReady = (magDataToFuse && statesInitialised && use_compass() && yawAlignComplete);
     if (dataReady) {
-        // If we haven't performed the first airborne magnetic field update or have inhibited magnetic field learning, then we use the simple method of declination to maintain heading
-        if(inhibitMagStates) {
+        // use the simple method of declination to maintain heading if we cannot use the magnetic field states
+        if(inhibitMagStates || magStateResetRequest || !magStateInitComplete) {
             fuseEulerYaw();
             // zero the test ratio output from the inactive 3-axis magneteometer fusion
             magTestRatio.zero();
@@ -192,12 +229,6 @@ void NavEKF2_core::SelectMagFusion()
             magTestRatio.zero();
             yawTestRatio = 0.0f;
             lastSynthYawTime_ms = imuSampleTime_ms;
-        }
-        // In-Flight yaw alignment for vehicles that can use a zero sideslip assumption (Planes)
-        // and are not using a compass
-        if (!yawAlignComplete && assume_zero_sideslip() && inFlight) {
-            realignYawGPS();
-            firstMagYawInit = yawAlignComplete;
         }
     }
 
@@ -739,8 +770,9 @@ void NavEKF2_core::fuseEulerYaw()
 
     // Use the difference between the horizontal projection and declination to give the measured yaw
     // If we can't use compass data, set the  meaurement to the predicted
+    // to prevent uncontrolled variance growth whilst on ground without magnetometer
     float measured_yaw;
-    if (use_compass()) {
+    if (use_compass() && yawAlignComplete && magStateInitComplete) {
         measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
     } else {
         measured_yaw = predicted_yaw;
@@ -1005,6 +1037,15 @@ void NavEKF2_core::alignMagStateDeclination()
     float magLengthNE = norm(initMagNED.x,initMagNED.y);
     stateStruct.earth_magfield.x = magLengthNE * cosf(magDecAng);
     stateStruct.earth_magfield.y = magLengthNE * sinf(magDecAng);
+}
+
+// record a magentic field state reset event
+void NavEKF2_core::recordMagReset()
+{
+    magStateInitComplete = true;
+    if (inFlight) {
+        firstInflightMagInit = true;
+    }
 }
 
 
