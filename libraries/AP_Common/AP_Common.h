@@ -64,6 +64,27 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 
 #define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
 
+/*
+ * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
+ * be used for its internal variable.
+ *
+ * @uniq_: a unique name to use for variable name
+ * @expr_: the expression to be evaluated
+ */
+#define _UNUSED_RESULT(uniq_, expr_)                      \
+    do {                                                  \
+        decltype(expr_) uniq_ __attribute__((unused));    \
+        uniq_ = expr_;                                    \
+    } while (0)
+
+/*
+ * Allow to call a function annotated with warn_unused_result attribute
+ * without getting a warning, because sometimes this is what we want to do.
+ *
+ * @expr_: the expression to be evaluated
+ */
+#define UNUSED_RESULT(expr_) _UNUSED_RESULT(__unique_name_##__COUNTER__, expr_)
+
 // @}
 
 
