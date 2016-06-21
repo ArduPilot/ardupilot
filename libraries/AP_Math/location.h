@@ -79,3 +79,12 @@ void        wgsllh2ecef(const Vector3d &llh, Vector3d &ecef);
 // coordinates (lat, lon, height)
 void        wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
 
+// return true when lat and lng are within range
+bool        check_lat(float lat);
+bool        check_lng(float lng);
+bool        check_lat(int32_t lat);
+bool        check_lng(int32_t lng);
+bool        check_latlng(float lat, float lng);
+bool        check_latlng(int32_t lat, int32_t lng);
+bool        check_latlng(Location loc);
+

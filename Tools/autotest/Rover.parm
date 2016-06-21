@@ -7,9 +7,10 @@ CRUISE_THROTTLE  30
 THR_MAX		100
 RC3_MAX         2000
 RC3_MIN         1000
-RC1_MAX         2000
-RC2_MIN         1000
 RC3_TRIM        1500
+RC1_MAX         2000
+RC1_MIN         1000
+RC1_TRIM        1500
 MODE1        0
 MODE2        0
 MODE3        11

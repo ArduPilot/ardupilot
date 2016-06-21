@@ -18,12 +18,15 @@
 */
 
 #include "SIM_ADSB.h"
+#include "SITL.h"
 
 #include <stdio.h>
 
 #include "SIM_Aircraft.h"
 
 namespace SITL {
+
+SITL *_sitl;
 
 ADSB::ADSB(const struct sitl_fdm &_fdm, const char *_home_str) :
     fdm(_fdm)
@@ -42,11 +45,20 @@ void ADSB_Vehicle::update(float delta_t)
         initialised = true;
         ICAO_address = (uint32_t)(rand() % 10000);
         snprintf(callsign, sizeof(callsign), "SIM%u", ICAO_address);
-        position.x = Aircraft::rand_normal(0, 1000);
-        position.y = Aircraft::rand_normal(0, 1000);
-        position.z = -fabsf(Aircraft::rand_normal(3000, 1000));
-        velocity_ef.x = Aircraft::rand_normal(5, 20);
-        velocity_ef.y = Aircraft::rand_normal(5, 20);
+        position.x = Aircraft::rand_normal(0, _sitl->adsb_radius_m);
+        position.y = Aircraft::rand_normal(0, _sitl->adsb_radius_m);
+        position.z = -fabsf(_sitl->adsb_altitude_m);
+
+        double vel_min = 5, vel_max = 20;
+        if (position.length() > 500) {
+            vel_min *= 3;
+            vel_max *= 3;
+        } else if (position.length() > 10000) {
+            vel_min *= 10;
+            vel_max *= 10;
+        }
+        velocity_ef.x = Aircraft::rand_normal(vel_min, vel_max);
+        velocity_ef.y = Aircraft::rand_normal(vel_min, vel_max);
         velocity_ef.z = Aircraft::rand_normal(0, 3);
     }
 
@@ -62,6 +74,22 @@ void ADSB_Vehicle::update(float delta_t)
 */
 void ADSB::update(void)
 {
+    if (_sitl == nullptr) {
+        _sitl = (SITL *)AP_Param::find_object("SIM_");
+        return;
+    } else if (_sitl->adsb_plane_count <= 0) {
+        return;
+    } else if (_sitl->adsb_plane_count >= num_vehicles_MAX) {
+        _sitl->adsb_plane_count.set_and_save(0);
+        num_vehicles = 0;
+        return;
+    } else if (num_vehicles != _sitl->adsb_plane_count) {
+        num_vehicles = _sitl->adsb_plane_count;
+        for (uint8_t i=0; i<num_vehicles_MAX; i++) {
+            vehicles[i].initialised = false;
+        }
+    }
+
     // calculate delta time in seconds
     uint32_t now_us = AP_HAL::micros();
 
@@ -159,15 +187,15 @@ void ADSB::send_report(void)
       send a ADSB_VEHICLE messages
      */
     uint32_t now_us = AP_HAL::micros();
-    if (now_us - last_report_us > reporting_period_ms*1000UL) {
+    if (now_us - last_report_us >= reporting_period_ms*1000UL) {
         for (uint8_t i=0; i<num_vehicles; i++) {
             ADSB_Vehicle &vehicle = vehicles[i];
             Location loc = home;
 
             location_offset(loc, vehicle.position.x, vehicle.position.y);
 
-            // re-init when over 50km from home
-            if (get_distance(home, loc) > 1000) {
+            // re-init when exceeding radius range
+            if (get_distance(home, loc) > _sitl->adsb_radius_m) {
                 vehicle.initialised = false;
             }
             
@@ -202,7 +230,11 @@ void ADSB::send_report(void)
                                                   &msg, &adsb_vehicle);
             chan0_status->current_tx_seq = saved_seq;
             
-            mav_socket.send(&msg.magic, len);
+            uint8_t msgbuf[len];
+            len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+            if (len > 0) {
+                mav_socket.send(msgbuf, len);
+            }
         }
     }
     

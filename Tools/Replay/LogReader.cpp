@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 
 #include "MsgHandler.h"
+#include "Replay.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -28,9 +29,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+const struct LogStructure log_structure[] = {
+    LOG_COMMON_STRUCTURES,
+    { LOG_CHEK_MSG, sizeof(log_Chek),
+      "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
+};
+
 LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
-                     AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *_structure, 
-                     uint8_t _num_types, const char **&_nottypes):
+                     AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const char **&_nottypes):
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
@@ -39,8 +45,6 @@ LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Co
     gps(_gps),
     airspeed(_airspeed),
     dataflash(_dataflash),
-    structure(_structure),
-    num_types(_num_types),
     accel_mask(7),
     gyro_mask(7),
     last_timestamp_usec(0),
@@ -121,9 +125,9 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
         return mapped_msgid[intype];
     }
     // see if it is in our structure list
-    for (uint8_t i=0; i<num_types; i++) {
-        if (strcmp(name, structure[i].name) == 0) {
-            mapped_msgid[intype] = structure[i].msg_type;
+    for (uint8_t i=0; i<ARRAY_SIZE(log_structure); i++) {
+        if (strcmp(name, log_structure[i].name) == 0) {
+            mapped_msgid[intype] = log_structure[i].msg_type;
             return mapped_msgid[intype];
         }
     }
@@ -262,6 +266,9 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	  msgparser[f.type] = new LR_MsgHandler_CHEK(formats[f.type], dataflash,
                                                      last_timestamp_usec,
                                                      check_state);
+	} else if (streq(name, "PM")) {
+	  msgparser[f.type] = new LR_MsgHandler_PM(formats[f.type], dataflash,
+                                                   last_timestamp_usec);
 	} else {
             debug("  No parser for (%s)\n", name);
 	}
@@ -332,9 +339,9 @@ void LogReader::end_format_msgs(void)
 {
     // write out any formats we will be producing
     for (uint8_t i=0; generated_names[i]; i++) {
-        for (uint8_t n=0; n<num_types; n++) {
-            if (strcmp(generated_names[i], structure[n].name) == 0) {
-                const struct LogStructure *s = &structure[n];
+        for (uint8_t n=0; n<ARRAY_SIZE(log_structure); n++) {
+            if (strcmp(generated_names[i], log_structure[n].name) == 0) {
+                const struct LogStructure *s = &log_structure[n];
                 struct log_Format pkt {};
                 pkt.head1 = HEAD_BYTE1;
                 pkt.head2 = HEAD_BYTE2;

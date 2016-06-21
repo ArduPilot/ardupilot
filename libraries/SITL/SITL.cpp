@@ -76,6 +76,11 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("ACC2_RND",      42, SITL,  accel2_noise, 0),
     AP_GROUPINFO("ARSPD_FAIL",    43, SITL,  arspd_fail, 0),
     AP_GROUPINFO("GYR_SCALE",     44, SITL,  gyro_scale, 0),
+    AP_GROUPINFO("ADSB_COUNT",    45, SITL,  adsb_plane_count, -1),
+    AP_GROUPINFO("ADSB_RADIUS",   46, SITL,  adsb_radius_m, 1000),
+    AP_GROUPINFO("ADSB_ALT",      47, SITL,  adsb_altitude_m, 1000),
+    AP_GROUPINFO("MAG_ALY",       48, SITL,  mag_anomaly_ned, 0),
+    AP_GROUPINFO("MAG_ALY_HGT",   49, SITL,  mag_anomaly_hgt, 1.0f),
     AP_GROUPEND
 };
 

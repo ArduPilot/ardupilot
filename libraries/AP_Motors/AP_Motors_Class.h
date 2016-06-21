@@ -63,6 +63,7 @@ public:
     void                set_pitch(float pitch_in) { _pitch_in = pitch_in; };    // range -1 ~ +1
     void                set_yaw(float yaw_in) { _yaw_in = yaw_in; };            // range -1 ~ +1
     void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
+    void                set_throttle_avg_max(float throttle_avg_max) { _throttle_avg_max = constrain_float(throttle_avg_max,0.0f,1.0f); };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
@@ -70,6 +71,7 @@ public:
     float               get_pitch() const { return _pitch_in; }
     float               get_yaw() const { return _yaw_in; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
+    virtual float       get_throttle_hover() const = 0;
 
     // spool up states
     enum spool_up_down_desired {
@@ -128,6 +130,9 @@ public:
     // pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle
     void                set_radio_passthrough(float roll_input, float pitch_input, float throttle_input, float yaw_input);
 
+    // set loop rate. Used to support loop rate as a parameter
+    void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
+    
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
@@ -142,6 +147,9 @@ protected:
     // update the throttle input filter
     virtual void        update_throttle_filter() = 0;
 
+    // save parameters as part of disarming
+    virtual void save_params_on_disarm() {}
+
     // convert input in -1 to +1 range to pwm output
     int16_t calc_pwm_output_1to1(float input, const RC_Channel& servo);
 
@@ -151,18 +159,18 @@ protected:
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
-        uint8_t stabilizing        : 1;    // 0 if not controlling attitude, 1 if controlling attitude
         uint8_t frame_orientation  : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
         uint8_t interlock          : 1;    // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
     } _flags;
 
     // internal variables
-    uint16_t            _loop_rate;                 // rate at which output() function is called (normally 400hz)
+    uint16_t            _loop_rate;                 // rate in Hz at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
+    float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
 

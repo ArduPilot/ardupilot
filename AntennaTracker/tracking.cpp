@@ -15,7 +15,10 @@ void Tracker::update_vehicle_pos_estimate()
     if (dt < TRACKING_TIMEOUT_SEC) {
         // project the vehicle position to take account of lost radio packets
         vehicle.location_estimate = vehicle.location;
-        location_update(vehicle.location_estimate, vehicle.heading, vehicle.ground_speed * dt);
+        float north_offset = vehicle.vel.x * dt;
+        float east_offset = vehicle.vel.y * dt;
+        location_offset(vehicle.location_estimate, north_offset, east_offset);
+    	vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
         // set valid_location flag
         vehicle.location_valid = true;
     } else {
@@ -57,10 +60,17 @@ void Tracker::update_bearing_and_distance()
     // calculate distance to vehicle
     nav_status.distance = get_distance(current_loc, vehicle.location_estimate);
 
+    // calculate altitude difference to vehicle using gps
+    nav_status.alt_difference_gps = (vehicle.location_estimate.alt - current_loc.alt) / 100.0f;
+
     // calculate pitch to vehicle
     // To-Do: remove need for check of control_mode
     if (control_mode != SCAN && !nav_status.manual_control_pitch) {
-        nav_status.pitch    = degrees(atan2f(nav_status.altitude_difference, nav_status.distance));
+    	if (g.alt_source == ALT_SOURCE_BARO) {
+    	    nav_status.pitch = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
+    	} else {
+            nav_status.pitch = degrees(atan2f(nav_status.alt_difference_gps, nav_status.distance));
+    	}
     }
 }
 
@@ -117,14 +127,12 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.location.lat = msg.lat;
     vehicle.location.lng = msg.lon;
     vehicle.location.alt = msg.alt/10;
-    vehicle.heading      = msg.hdg * 0.01f;
-    vehicle.ground_speed = norm(msg.vx, msg.vy) * 0.01f;
-    vehicle.last_update_us = AP_HAL::micros();    
+    vehicle.vel = Vector3f(msg.vx/100.0f, msg.vy/100.0f, msg.vz/100.0f);
+    vehicle.last_update_us = AP_HAL::micros();
     vehicle.last_update_ms = AP_HAL::millis();
-
     // log vehicle as GPS2
     if (should_log(MASK_LOG_GPS)) {
-        DataFlash.Log_Write_GPS(gps, 1);
+        Log_Write_Vehicle_Pos(vehicle.location.lat, vehicle.location.lng, vehicle.location.alt, vehicle.vel);
     }
 }
 
@@ -139,20 +147,20 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 
     // calculate altitude difference based on difference in barometric pressure
     float alt_diff = barometer.get_altitude_difference(local_pressure, aircraft_pressure);
-    if (!isnan(alt_diff)) {
-        nav_status.altitude_difference = alt_diff + nav_status.altitude_offset;
+    if (!isnan(alt_diff) && !isinf(alt_diff)) {
+        nav_status.alt_difference_baro = alt_diff + nav_status.altitude_offset;
+
+		if (nav_status.need_altitude_calibration) {
+			// we have done a baro calibration - zero the altitude
+			// difference to the aircraft
+			nav_status.altitude_offset = -alt_diff;
+			nav_status.alt_difference_baro = 0;
+			nav_status.need_altitude_calibration = false;
+		}
     }
 
-    if (nav_status.need_altitude_calibration) {
-        // we have done a baro calibration - zero the altitude
-        // difference to the aircraft
-        nav_status.altitude_offset = -nav_status.altitude_difference;
-        nav_status.altitude_difference = 0;
-        nav_status.need_altitude_calibration = false;
-    }
-
-    // log altitude difference
-    Log_Write_Vehicle_Baro(local_pressure, alt_diff);
+    // log vehicle baro data
+    Log_Write_Vehicle_Baro(aircraft_pressure, alt_diff);
 }
 
 /**

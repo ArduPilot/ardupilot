@@ -2,7 +2,7 @@
 # git submodule support
 
 define echowarning
-@echo -e "\e[31mWARNING:\e[0m $1" >&2
+@echo "WARNING: $1" >&2
 endef
 
 define echoallwarnings
@@ -15,7 +15,6 @@ define echoallwarnings
 	$(call echowarning,The make build system will soon be removed)
 	$(call echowarning)
 	$(call echowarning)
-	@sleep 3
 endef
 
 CHECK_MODULES:

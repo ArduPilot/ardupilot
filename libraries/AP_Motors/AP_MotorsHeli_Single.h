@@ -49,9 +49,9 @@ public:
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
         _servo_aux(servo_aux),
-        _main_rotor(RC_Channel_aux::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC, loop_rate),
-        _tail_rotor(RC_Channel_aux::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX, loop_rate),
-        _swash_servo_1(CH_1), _swash_servo_2(CH_2), _swash_servo_3(CH_3), _yaw_servo(CH_4)
+        _main_rotor(RC_Channel_aux::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
+        _tail_rotor(RC_Channel_aux::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX),
+        _swash_servo_1(CH_NONE), _swash_servo_2(CH_NONE), _swash_servo_3(CH_NONE), _yaw_servo(CH_NONE)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };

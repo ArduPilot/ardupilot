@@ -28,7 +28,9 @@ extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
+uint8_t GCS_MAVLINK::chan_is_streaming = 0;
 ObjectArray<GCS_MAVLINK::statustext_t> GCS_MAVLINK::_statustext_queue(GCS_MAVLINK_PAYLOAD_STATUS_CAPACITY);
+uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 
 GCS_MAVLINK::GCS_MAVLINK()
 {
@@ -239,7 +241,8 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
                                loc.lng);
     }
     AP_AHRS_NavEKF &_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
-    if (_ahrs.get_NavEKF2().activeCores() > 0) {
+    if (_ahrs.get_NavEKF2().activeCores() > 0 &&
+        HAVE_PAYLOAD_SPACE(chan, AHRS3)) {
         _ahrs.get_NavEKF2().getLLH(loc);
         _ahrs.get_NavEKF2().getEulerAngles(-1,euler);
         mavlink_msg_ahrs3_send(chan,
@@ -578,6 +581,18 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(msg, &packet);
 
+    /*
+      we reserve some space for sending parameters if the client ever
+      fails to get a parameter due to lack of space
+     */
+    uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
+    reserve_param_space_start_ms = 0;
+    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+        reserve_param_space_start_ms = AP_HAL::millis();
+        return;
+    }
+    reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
+    
     enum ap_var_type p_type;
     AP_Param *vp;
     char param_name[AP_MAX_NAME_SIZE+1];
@@ -659,7 +674,23 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
     rate *= adjust_rate_for_stream_trigger(stream_num);
 
     if (rate <= 0) {
+        if (chan_is_streaming | (1U<<(chan-MAVLINK_COMM_0))) {
+            // if currently streaming then check if all streams are disabled
+            // to allow runtime detection of user disabling streaming
+            bool is_streaming = false;
+            for (uint8_t i=0; i<stream_num; i++) {
+                if (streamRates[stream_num] > 0) {
+                    is_streaming = true;
+                }
+            }
+            if (!is_streaming) {
+                // all streams have been turned off, clear the bit flag
+                chan_is_streaming &= ~(1U<<(chan-MAVLINK_COMM_0));
+            }
+        }
         return false;
+    } else {
+        chan_is_streaming |= (1U<<(chan-MAVLINK_COMM_0));
     }
 
     if (stream_ticks[stream_num] == 0) {
@@ -1124,6 +1155,9 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         compass.get_count() <= 1) {
         return;
     }
+    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU2)) {
+        return;
+    }
     const Vector3f &accel2 = ins.get_accel(1);
     const Vector3f &gyro2 = ins.get_gyro(1);
     if (compass.get_count() >= 2) {
@@ -1147,6 +1181,9 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     if (ins.get_gyro_count() <= 2 &&
         ins.get_accel_count() <= 2 &&
         compass.get_count() <= 2) {
+        return;
+    }
+    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU3)) {
         return;
     }
     const Vector3f &accel3 = ins.get_accel(2);
@@ -1181,7 +1218,8 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
         (pressure - barometer.get_ground_pressure(0))*0.01f, // hectopascal
         barometer.get_temperature(0)*100); // 0.01 degrees C
 
-    if (barometer.num_instances() > 1) {
+    if (barometer.num_instances() > 1 &&
+        HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE2)) {
         pressure = barometer.get_pressure(1);
         mavlink_msg_scaled_pressure2_send(
             chan,
@@ -1191,7 +1229,8 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
             barometer.get_temperature(1)*100); // 0.01 degrees C        
     }
 
-    if (barometer.num_instances() > 2) {
+    if (barometer.num_instances() > 2 &&
+        HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE3)) {
         pressure = barometer.get_pressure(2);
         mavlink_msg_scaled_pressure3_send(
             chan,
@@ -1256,7 +1295,7 @@ void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ..
     hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
     va_end(arg_list);
     text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
-    send_statustext(severity, mavlink_active, text);
+    send_statustext(severity, mavlink_active | chan_is_streaming, text);
 }
 
 /*
@@ -1284,7 +1323,7 @@ void GCS_MAVLINK::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, c
 
     // filter destination ports to only allow active ports.
     statustext_t statustext{};
-    statustext.bitmask = mavlink_active & dest_bitmask;
+    statustext.bitmask = (mavlink_active | chan_is_streaming) & dest_bitmask;
     if (!statustext.bitmask) {
         // nowhere to send
         return;
@@ -1379,7 +1418,13 @@ void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type p
 void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
 {
     if (battery.num_instances() > 1) {
-        mavlink_msg_battery2_send(chan, battery.voltage2()*1000, -1);
+        int16_t current;
+        if (battery.has_current(1)) {
+            current = battery.current_amps(1) * 100; // 10*mA
+        } else {
+            current = -1;
+        }
+        mavlink_msg_battery2_send(chan, battery.voltage(1)*1000, current);
     }
 }
 
@@ -1594,3 +1639,33 @@ void GCS_MAVLINK::send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custo
         custom_mode,
         system_status);
 }
+
+float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
+{
+    // send at a much lower rate while handling waypoints and
+    // parameter sends
+    if ((stream_num != STREAM_PARAMS) && 
+        (waypoint_receiving || _queued_parameter != NULL)) {
+        return 0.25f;
+    }
+
+    return 1.0f;
+}
+
+// are we still delaying telemetry to try to avoid Xbee bricking?
+bool GCS_MAVLINK::telemetry_delayed(mavlink_channel_t _chan)
+{
+    uint32_t tnow = AP_HAL::millis() >> 10;
+    if (tnow > telem_delay()) {
+        return false;
+    }
+    if (_chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
+        // this is USB telemetry, so won't be an Xbee
+        return false;
+    }
+    // we're either on the 2nd UART, or no USB cable is connected
+    // we need to delay telemetry by the TELEM_DELAY time
+    return true;
+}
+
+

@@ -978,8 +978,9 @@ bool AP_Param::save(bool force_save)
             GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
             return true;
         }
-        if (phdr.type != AP_PARAM_INT32 &&
-            (fabsf(v1-v2) < 0.0001f*fabsf(v1))) {
+        if (!force_save &&
+            (phdr.type != AP_PARAM_INT32 &&
+             (fabsf(v1-v2) < 0.0001f*fabsf(v1)))) {
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
             GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);

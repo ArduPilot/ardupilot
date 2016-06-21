@@ -16,7 +16,6 @@ import random
 testdir=os.path.dirname(os.path.realpath(__file__))
 
 FRAME='+'
-TARGET='sitl'
 HOME=mavutil.location(-35.362938,149.165085,584,270)
 AVCHOME=mavutil.location(40.072842,-105.230575,1586,0)
 
@@ -24,7 +23,7 @@ homeloc = None
 num_wp = 0
 speedup_default = 5
 
-def hover(mavproxy, mav, hover_throttle=1450):
+def hover(mavproxy, mav, hover_throttle=1500):
     mavproxy.send('rc 3 %u\n' % hover_throttle)
     return True
 
@@ -159,7 +158,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     save_wp(mavproxy, mav)
 
     # switch back to stabilize mode
-    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 3 1500\n')
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
 
@@ -254,6 +253,9 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
     if not wait_heading(mav, 135):
         return False
     mavproxy.send('rc 4 1500\n')
+
+    # raise throttle slightly to avoid hitting the ground
+    mavproxy.send('rc 3 1600\n')
 
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
@@ -648,7 +650,7 @@ def fly_simple(mavproxy, mav, side=50, timeout=120):
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 3 1500\n')
 
     # fly south 50m
     print("# Flying south %u meters" % side)
@@ -713,7 +715,7 @@ def fly_super_simple(mavproxy, mav, timeout=45):
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 3 1500\n')
 
     # start copter yawing slowly
     mavproxy.send('rc 4 1550\n')
@@ -908,7 +910,7 @@ def setup_rc(mavproxy):
     # zero throttle
     mavproxy.send('rc 3 1000\n')
 
-def fly_ArduCopter(viewerip=None, map=False, valgrind=False):
+def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False):
     '''fly ArduCopter in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -916,23 +918,23 @@ def fly_ArduCopter(viewerip=None, map=False, valgrind=False):
     '''
     global homeloc
 
-    if TARGET != 'sitl':
-        util.build_SIL('ArduCopter', target=TARGET)
-
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sil = util.start_SIL('ArduCopter', wipe=True, model='+', home=home, speedup=speedup_default)
+    sil = util.start_SIL(binary, wipe=True, model='+', home=home, speedup=speedup_default)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
     mavproxy.send("param load %s/copter_params.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
+    mavproxy.send("param set LOG_REPLAY 1\n")
+    mavproxy.send("param set LOG_DISARMED 1\n")
+    time.sleep(3)
 
     # reboot with new parameters
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduCopter', model='+', home=home, speedup=speedup_default, valgrind=valgrind)
+    sil = util.start_SIL(binary, model='+', home=home, speedup=speedup_default, valgrind=valgrind)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
@@ -1243,9 +1245,10 @@ def fly_ArduCopter(viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    if os.path.exists('ArduCopter-valgrind.log'):
-        os.chmod('ArduCopter-valgrind.log', 0644)
-        shutil.copy("ArduCopter-valgrind.log", util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
+    valgrind_log = sil.valgrind_log_filepath()
+    if os.path.exists(valgrind_log):
+        os.chmod(valgrind_log, 0644)
+        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
 
     # [2014/05/07] FC Because I'm doing a cross machine build (source is on host, build is on guest VM) I cannot hard link
     # This flag tells me that I need to copy the data out
@@ -1258,28 +1261,28 @@ def fly_ArduCopter(viewerip=None, map=False, valgrind=False):
     return True
 
 
-def fly_CopterAVC(viewerip=None, map=False, valgrind=False):
+def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False):
     '''fly ArduCopter in SIL for AVC2013 mission
     '''
     global homeloc
 
-    if TARGET != 'sitl':
-        util.build_SIL('ArduCopter', target=TARGET)
-
     home = "%f,%f,%u,%u" % (AVCHOME.lat, AVCHOME.lng, AVCHOME.alt, AVCHOME.heading)
-    sil = util.start_SIL('ArduCopter', wipe=True, model='heli', home=home, speedup=speedup_default)
+    sil = util.start_SIL(binary, wipe=True, model='heli', home=home, speedup=speedup_default)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
     mavproxy.send("param load %s/Helicopter.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
+    mavproxy.send("param set LOG_REPLAY 1\n")
+    mavproxy.send("param set LOG_DISARMED 1\n")
+    time.sleep(3)
 
     # reboot with new parameters
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduCopter', model='heli', home=home, speedup=speedup_default, valgrind=valgrind)
+    sil = util.start_SIL(binary, model='heli', home=home, speedup=speedup_default, valgrind=valgrind)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
@@ -1370,6 +1373,11 @@ def fly_CopterAVC(viewerip=None, map=False, valgrind=False):
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
+
+    valgrind_log = sil.valgrind_log_filepath()
+    if os.path.exists(valgrind_log):
+        os.chmod(valgrind_log, 0644)
+        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/Helicopter-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % failed_test_msg)

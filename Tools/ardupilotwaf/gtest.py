@@ -11,7 +11,7 @@ from waflib.Configure import conf
 import boards
 
 def configure(cfg):
-    board = boards.get_board(cfg.env.BOARD)
+    board = cfg.get_board()
     if isinstance(board, boards.px4):
         # toolchain is currently broken for gtest
         cfg.msg(

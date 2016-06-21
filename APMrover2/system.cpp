@@ -149,7 +149,7 @@ void Rover::init_ardupilot()
     init_sonar();
 
     // and baro for EKF
-    init_barometer();
+    init_barometer(true);
 
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
@@ -528,6 +528,9 @@ bool Rover::disarm_motors(void)
     }
     if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
         channel_throttle->disable_out();
+        if (g.skid_steer_out) {
+            channel_steer->disable_out();
+        }
     }
     if (control_mode != AUTO) {
         // reset the mission on disarm if we are not in auto

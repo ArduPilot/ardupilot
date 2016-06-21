@@ -435,6 +435,18 @@ public:
     virtual void process_message(uint8_t *msg);
 };
 
+class LR_MsgHandler_PM : public LR_MsgHandler
+{
+public:
+    LR_MsgHandler_PM(log_Format &_f, DataFlash_Class &_dataflash,
+                     uint64_t &_last_timestamp_usec)
+        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
+
+    virtual void process_message(uint8_t *msg);
+
+private:
+
+};
 
 class LR_MsgHandler_SIM : public LR_MsgHandler
 {

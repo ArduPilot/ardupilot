@@ -20,6 +20,7 @@
 #include "SIM_Rover.h"
 
 #include <string.h>
+#include <stdio.h>
 
 namespace SITL {
 
@@ -37,6 +38,7 @@ SimRover::SimRover(const char *home_str, const char *frame_str) :
     skid_steering = strstr(frame_str, "skid") != NULL;
 
     if (skid_steering) {
+        printf("SKID Steering Rover Simulation Started\n");
         // these are taken from a 6V wild thumper with skid steering,
         // with a sabertooth controller
         max_accel = 14;
@@ -153,6 +155,9 @@ void SimRover::update(const struct sitl_input &input)
 
     // update lat/lon/altitude
     update_position();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

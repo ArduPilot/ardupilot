@@ -60,7 +60,7 @@ void Balloon::update(const struct sitl_input &input)
     }
 
     accel_body = Vector3f(0, 0, -lift_accel);
-    accel_body += dcm * air_resistance;
+    accel_body += dcm.transposed() * air_resistance;
     
     update_dynamics(rot_accel);
 
@@ -71,6 +71,9 @@ void Balloon::update(const struct sitl_input &input)
     
     // update lat/lon/altitude
     update_position();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

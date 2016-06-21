@@ -5,6 +5,7 @@ from __future__ import print_function
 from waflib import Logs, Options, Utils
 from waflib.Build import BuildContext
 from waflib.Configure import conf
+from waflib.TaskGen import before_method, feature
 import os.path, os
 from collections import OrderedDict
 
@@ -186,6 +187,24 @@ def ap_stlib(bld, **kw):
 
     bld.stlib(**kw)
 
+_created_program_dirs = set()
+@feature('cxxstlib', 'cxxprogram')
+@before_method('process_rule')
+def ap_create_program_dir(self):
+    if not hasattr(self, 'program_dir'):
+        return
+    if self.program_dir in _created_program_dirs:
+        return
+    self.bld.bldnode.make_node(self.program_dir).mkdir()
+    _created_program_dirs.add(self.program_dir)
+
+@feature('cxxstlib')
+@before_method('process_rule')
+def ap_stlib_target(self):
+    if self.target.startswith('#'):
+        self.target = self.target[1:]
+    self.target = '#%s' % os.path.join('lib', self.target)
+
 @conf
 def ap_find_tests(bld, use=[]):
     if not bld.env.HAS_GTEST:
@@ -347,25 +366,29 @@ def _select_programs_from_group(bld):
 
 def options(opt):
     g = opt.ap_groups['build']
+
     g.add_option('--program-group',
         action='append',
         default=[],
-        help='Select all programs that go in <PROGRAM_GROUP>/ for the ' +
-             'build. Example: `waf --program-group examples` builds all ' +
-             'examples. The special group "all" selects all programs.',
-    )
+        help='''
+Select all programs that go in <PROGRAM_GROUP>/ for the build. Example: `waf
+--program-group examples` builds all examples. The special group "all" selects
+all programs.
+''')
 
     g.add_option('--upload',
         action='store_true',
-        help='Upload applicable targets to a connected device. Not all ' +
-             'platforms may support this. Example: `waf copter --upload` ' +
-             'means "build arducopter and upload it to my board".',
-    )
+        help='''
+Upload applicable targets to a connected device. Not all platforms may support
+this. Example: `waf copter --upload` means "build arducopter and upload it to
+my board".
+''')
 
     g = opt.ap_groups['check']
+
     g.add_option('--check-verbose',
-                 action='store_true',
-                 help='Output all test programs')
+        action='store_true',
+        help='Output all test programs.')
 
 
 def build(bld):

@@ -34,16 +34,20 @@ def reltopdir(path):
     return os.path.normpath(os.path.join(topdir(), path))
 
 
-def run_cmd(cmd, dir=".", show=False, output=False, checkfail=True):
+def run_cmd(cmd, dir=".", show=True, output=False, checkfail=True):
     '''run a shell command'''
+    shell = False
+    if not isinstance(cmd, list):
+        cmd = [cmd]
+        shell = True
     if show:
-        print("Running: '%s' in '%s'" % (cmd, dir))
+        print("Running: (%s) in (%s)" % (cmd_as_shell(cmd), dir,))
     if output:
-        return Popen([cmd], shell=True, stdout=PIPE, cwd=dir).communicate()[0]
+        return Popen(cmd, shell=shell, stdout=PIPE, cwd=dir).communicate()[0]
     elif checkfail:
-        return check_call(cmd, shell=True, cwd=dir)
+        return check_call(cmd, shell=shell, cwd=dir)
     else:
-        return call(cmd, shell=True, cwd=dir)
+        return call(cmd, shell=shell, cwd=dir)
 
 def rmfile(path):
     '''remove a file if it exists'''
@@ -57,16 +61,49 @@ def deltree(path):
     run_cmd('rm -rf %s' % path)
 
 
+def relwaf():
+    return "./modules/waf/waf-light"
 
-def build_SIL(atype, target='sitl', j=1):
+def waf_configure(board, j=None, debug=False):
+    cmd_configure = [relwaf(), "configure", "--board", board]
+    if debug:
+        cmd_configure.append('--debug')
+    if j is not None:
+        cmd_configure.extend(['-j', str(j)])
+    run_cmd(cmd_configure, dir=topdir(), checkfail=True)
+
+def waf_clean():
+    run_cmd([relwaf(), "clean"], dir=topdir(), checkfail=True)
+
+def build_SIL(build_target, j=None, debug=False, board='sitl'):
     '''build desktop SIL'''
-    run_cmd("make clean",
-            dir=reltopdir(atype),
-            checkfail=True)
-    run_cmd("make -j%u %s" % (j, target),
-            dir=reltopdir(atype),
-            checkfail=True)
+
+    # first configure
+    waf_configure(board, j=j, debug=debug)
+
+    # then clean
+    waf_clean()
+
+    # then build
+    cmd_make = [relwaf(), "build", "--target", build_target]
+    if j is not None:
+        cmd_make.extend(['-j', str(j)])
+    run_cmd(cmd_make, dir=topdir(), checkfail=True, show=True)
     return True
+
+def build_examples(board, j=None, debug=False, clean=False):
+    # first configure
+    waf_configure(board, j=j, debug=debug)
+
+    # then clean
+    if clean:
+        waf_clean()
+
+    # then build
+    cmd_make = [relwaf(), "examples"]
+    run_cmd(cmd_make, dir=topdir(), checkfail=True, show=True)
+    return True
+
 
 # list of pexpect children to close on exit
 close_list = []
@@ -105,41 +142,63 @@ def pexpect_drain(p):
     except pexpect.TIMEOUT:
         pass
 
-def start_SIL(atype, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
+def cmd_as_shell(cmd):
+    return (" ".join([ '"%s"' % x for x in cmd ]))
+
+import re
+def make_safe_filename(text):
+    '''return a version of text safe for use as a filename'''
+    r = re.compile("([^a-zA-Z0-9_.+-])")
+    text.replace('/','-')
+    filename = r.sub(lambda m : "%" + str(hex(ord(str(m.group(1))))).upper(), text)
+    return filename
+
+import pexpect
+class SIL(pexpect.spawn):
+
+    def __init__(self, binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None):
+        self.binary = binary
+        self.model = model
+
+        cmd=[]
+        if valgrind and os.path.exists('/usr/bin/valgrind'):
+            cmd.extend(['valgrind', '-q', '--log-file=%s' % self.valgrind_log_filepath()])
+        if gdb:
+            f = open("/tmp/x.gdb", "w")
+            f.write("r\n");
+            f.close()
+            cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+
+        cmd.append(binary)
+        if wipe:
+            cmd.append('-w')
+        if synthetic_clock:
+            cmd.append('-S')
+        if home is not None:
+            cmd.extend(['--home', home])
+        if model is not None:
+            cmd.extend(['--model', model])
+        if speedup != 1:
+            cmd.extend(['--speedup', str(speedup)])
+        if defaults_file is not None:
+            cmd.extend(['--defaults', defaults_file])
+        print("Running: %s" % cmd_as_shell(cmd))
+        first = cmd[0]
+        rest = cmd[1:]
+        super(SIL,self).__init__(first, rest, logfile=sys.stdout, timeout=5)
+        delaybeforesend = 0
+        pexpect_autoclose(self)
+        # give time for parameters to properly setup
+        time.sleep(3)
+        self.expect('Waiting for connection',timeout=300)
+
+
+    def valgrind_log_filepath(self):
+        return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(self.binary),self.model,))
+
+def start_SIL(binary, **kwargs):
     '''launch a SIL instance'''
-    import pexpect
-    cmd=""
-    if valgrind and os.path.exists('/usr/bin/valgrind'):
-        cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
-    if gdb:
-        f = open("/tmp/x.gdb", "w")
-        f.write("r\n");
-        f.close()
-        cmd += 'xterm -e gdb -x /tmp/x.gdb --args '
-    executable = reltopdir('tmp/%s.build/%s.elf' % (atype, atype))
-    if not os.path.exists(executable):
-        executable = '/tmp/%s.build/%s.elf' % (atype, atype)
-    cmd += executable
-    if wipe:
-        cmd += ' -w'
-    if synthetic_clock:
-        cmd += ' -S'
-    if home is not None:
-        cmd += ' --home=%s' % home
-    if model is not None:
-        cmd += ' --model=%s' % model
-    if speedup != 1:
-        cmd += ' --speedup=%f' % speedup
-    if defaults_file is not None:
-        cmd += ' --defaults=%s' % defaults_file
-    print("Running: %s" % cmd)
-    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
-    ret.delaybeforesend = 0
-    pexpect_autoclose(ret)
-    # give time for parameters to properly setup
-    time.sleep(3)
-    ret.expect('Waiting for connection',timeout=300)
-    return ret
+    return SIL(binary, **kwargs)
 
 def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
                        options=None, logfile=sys.stdout):

@@ -15,7 +15,7 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
       - george-edison55-precise-backports
-      - llvm-toolchain-precise-3.7
+#      - llvm-toolchain-precise-3.7
     packages:
       - build-essential
       - gawk
@@ -29,21 +29,24 @@ addons:
       - g++-4.9
       - cmake
       - cmake-data
-      - clang-3.7
-      - llvm-3.7
+#      - clang-3.7
+#      - llvm-3.7
 
 cache:
   ccache: true
   directories:
-    - $HOME/.cache/pip
     - $HOME/opt
 
 before_install:
   - Tools/scripts/configure-ci.sh
+  - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
 
 script:
   - python Tools/autotest/param_metadata/param_parse.py
   - Tools/scripts/build_ci.sh
+
+before_cache:
+  - ccache -z
 
 notifications:
   webhooks:
@@ -53,25 +56,23 @@ notifications:
     on_failure: always  # options: [always|never|change] default: always
     on_start: false     # default: false
 
+compiler:
+  - gcc
+#  - clang
+
 env:
   global:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
-
-# Note: while https://github.com/travis-ci/travis-ci/issues/4393 isn't solved we need to hack compiler name to have cache work properly
+  matrix:
+    - CI_BUILD_TARGET="sitl minlure raspilot"
+    - CI_BUILD_TARGET="linux navio2 bebop"
 
 matrix:
+  fast_finish: true
   include:
-    - compiler: "gcc PX4"
+    - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v2 px4-v4"
-    - compiler: "gcc Native"
-      env: CI_BUILD_TARGET="sitl linux minlure"
-    - compiler: "gcc Linux"
-      env: CI_BUILD_TARGET="navio2 raspilot bebop"
-    - compiler: "gcc SITL Test"
+    - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"
-    - compiler: "clang Native"
-      env: CI_BUILD_TARGET="sitl linux minlure"
-    - compiler: "clang Linux"
-      env: CI_BUILD_TARGET="navio2 raspilot bebop"

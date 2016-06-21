@@ -15,6 +15,7 @@
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
+#include <SITL/SIM_SingleCopter.h>
 #include <SITL/SIM_Plane.h>
 #include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
@@ -26,6 +27,7 @@
 #include <SITL/SIM_Balloon.h>
 #include <SITL/SIM_FlightAxis.h>
 #include <SITL/SIM_Calibration.h>
+#include <SITL/SIM_XPlane.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -50,7 +52,6 @@ void SITL_State::_usage(void)
            "\t--instance N       set instance of SITL (adds 10*instance to all port numbers)\n"
            "\t--speedup SPEEDUP  set simulation speedup\n"
            "\t--gimbal           enable simulated MAVLink gimbal\n"
-           "\t--adsb             enable simulated ADSB peripheral\n"
            "\t--autotest-dir DIR set directory for additional files\n"
            "\t--uartA device     set device string for UARTA\n"
            "\t--uartB device     set device string for UARTB\n"
@@ -66,6 +67,7 @@ static const struct {
     Aircraft *(*constructor)(const char *home_str, const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
+    { "xplane",             XPlane::create },
     { "firefly",            QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
@@ -78,6 +80,8 @@ static const struct {
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
+    { "singlecopter",       SingleCopter::create },
+    { "coaxcopter",         SingleCopter::create },
     { "rover",              SimRover::create },
     { "crrcsim",            CRRCSim::create },
     { "jsbsim",             JSBSim::create },
@@ -128,7 +132,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTD,
         CMDLINE_UARTE,
         CMDLINE_UARTF,
-        CMDLINE_ADSB,
         CMDLINE_RTSCTS,
         CMDLINE_DEFAULTS
     };
@@ -151,7 +154,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartE",           true,   0, CMDLINE_UARTE},
         {"client",          true,   0, CMDLINE_CLIENT},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
-        {"adsb",            false,  0, CMDLINE_ADSB},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
@@ -203,9 +205,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
-            break;
-        case CMDLINE_ADSB:
-            enable_ADSB = true;
             break;
         case CMDLINE_RTSCTS:
             _use_rtscts = true;

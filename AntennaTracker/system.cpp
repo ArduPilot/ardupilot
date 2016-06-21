@@ -77,7 +77,7 @@ void Tracker::init_tracker()
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
-    init_barometer();
+    init_barometer(true);
 
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
@@ -112,8 +112,6 @@ void Tracker::init_tracker()
         prepare_servos();
     }
 
-    // calibrate pressure on startup by default
-    nav_status.need_altitude_calibration = true;
 }
 
 // updates the status of the notify objects

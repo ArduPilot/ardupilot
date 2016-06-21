@@ -157,7 +157,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
         read_radio();
         
         // pass through throttle to motors
-        motors.throttle_pass_through(channel_throttle->get_radio_in());
+        motors.set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
         
         // read some compass values
         compass.read();

@@ -154,7 +154,7 @@ void Helicopter::update(const struct sitl_input &input)
     thrust *= thrust_scale;
 
     accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, -thrust / mass);
-    accel_body += dcm * air_resistance;
+    accel_body += dcm.transposed() * air_resistance;
 
     bool was_on_ground = on_ground(position);
     
@@ -173,6 +173,9 @@ void Helicopter::update(const struct sitl_input &input)
 
     // update lat/lon/altitude
     update_position();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

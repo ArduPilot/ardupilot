@@ -131,7 +131,7 @@ void GCS_MAVLINK::load_signing_key(void)
     signing.accept_unsigned_callback = accept_unsigned_callback;
 
     // if timestamp and key are all zero then we disable signing
-    bool all_zero = (signing.timestamp == 0);
+    bool all_zero = (key.timestamp == 0);
     for (uint8_t i=0; i<sizeof(key.secret_key); i++) {
         if (signing.secret_key[i] != 0) {
             all_zero = false;
@@ -234,10 +234,23 @@ bool GCS_MAVLINK::signing_enabled(void) const
  */
 uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
 {
+    /*
+      reserve 100 bytes for parameters when a GCS fails to fetch a
+      parameter due to lack of buffer space. The reservation lasts 2
+      seconds
+     */
+    uint8_t reserved_space = 0;
+    if (reserve_param_space_start_ms != 0 &&
+        AP_HAL::millis() - reserve_param_space_start_ms < 2000) {
+        reserved_space = 100;
+    } else {
+        reserve_param_space_start_ms = 0;
+    }
+    
     const mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
-        return MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_SIGNATURE_BLOCK_LEN;
+        return MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_SIGNATURE_BLOCK_LEN + reserved_space;
     }
-    return MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    return MAVLINK_NUM_NON_PAYLOAD_BYTES + reserved_space;
 }
 
