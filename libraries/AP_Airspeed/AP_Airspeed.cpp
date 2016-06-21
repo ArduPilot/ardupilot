@@ -284,11 +284,11 @@ bool AP_Airspeed::self_check(bool airspeed_data_validity)
                 now - _self_check.hysteresis_timer_ms > 3000) { // require a few seconds of bad airspeed
 
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ALERT, "Airspeed sensor data invalid");
-            if (_fail_action_mask & AP_AIRSPEED_FAILURE_ACTION_BIT_DISABLE) {
+            if (_fail_action_mask & FAILURE_ACTION_BIT_DISABLE) {
                 // turn off airspeed sensor
                 _use = 0;
                 _self_check.hysteresis_timer_ms = now;
-                if (_fail_action_mask & AP_AIRSPEED_FAILURE_ACTION_BIT_SAVE) {
+                if (_fail_action_mask & FAILURE_ACTION_BIT_SAVE) {
                     // save param in non-volatile memory
                     _use.save(true);
                 }
@@ -299,16 +299,16 @@ bool AP_Airspeed::self_check(bool airspeed_data_validity)
             return true;
         }
     }
-#ifdef AIRSPEED_FAILURE_ACTION_BIT_ALLOW_REENABLE // NOT SUPPORTED YET
+#ifdef FAILURE_ACTION_BIT_ALLOW_REENABLE // NOT SUPPORTED YET
     else if (_self_check.hysteresis_timer_ms > 0 && // if we've ever used it in the past
-            (_fail_action_mask & AP_AIRSPEED_FAILURE_ACTION_BIT_ALLOW_REENABLE) ) { // willing to turn it back on
+            (_fail_action_mask & FAILURE_ACTION_BIT_ALLOW_REENABLE) ) { // willing to turn it back on
 
         if (!_self_check.trustable) {
             _self_check.hysteresis_timer_ms = now;
         }  else if (now - _self_check.hysteresis_timer_ms > 20000) { // a few seconds of good airspeed
             _self_check.hysteresis_timer_ms = now;
             _use = 1;
-            if (_fail_action_mask & AP_AIRSPEED_FAILURE_ACTION_BIT_SAVE) {
+            if (_fail_action_mask & FAILURE_ACTION_BIT_SAVE) {
                 // save param in non-volatile memory
                 _use.save(true);
             }

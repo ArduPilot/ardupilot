@@ -35,11 +35,7 @@ private:
     const AP_Vehicle::FixedWing &aparm;
 };
 
-#define AP_AIRSPEED_FAILURE_ACTION_BIT_DISABLE               0x01
-//#define AP_AIRSPEED_FAILURE_ACTION_BIT_ALLOW_REENABLE      0x02 // NOT SUPPORTED YET
-#define AP_AIRSPEED_FAILURE_ACTION_BIT_SAVE                  0x04
-
-#define AP_AIRSPEED_FAILURE_ACTION_BIT_DEFAULT               0
+#define AP_AIRSPEED_FAILURE_ACTION_BIT_DEFAULT               (AP_Airspeed::FAILURE_ACTION_NONE)
 
 class AP_Airspeed
 {
@@ -165,6 +161,16 @@ public:
         uint32_t    hysteresis_timer_ms;
         bool        trustable;
     } _self_check;
+
+    int8_t get_fail_action_mask() { return _fail_action_mask; }
+
+    enum failure_action {
+        FAILURE_ACTION_NONE                  = 0,
+        FAILURE_ACTION_BIT_DISABLE           = 0x01,
+        //FAILURE_ACTION_BIT_ALLOW_REENABLE  = 0x02, // NOT SUPPORTED YET
+        FAILURE_ACTION_BIT_SAVE              = 0x04,
+        FAILURE_ACTION_RTL                   = 0x08,
+    };
 
 private:
     AP_Float        _offset;
