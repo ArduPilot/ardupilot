@@ -19,71 +19,35 @@
 
 #include <string.h>
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_HAL_Linux.h"
 #include "Perf_Lttng_TracePoints.h"
 #include "Perf_Lttng.h"
-#include "Util.h"
-
-#pragma GCC diagnostic ignored "-Wcast-align"
 
 using namespace Linux;
 
-Perf_Lttng::Perf_Lttng(AP_HAL::Util::perf_counter_type type, const char *name)
-    : _type(type)
+void Perf_Lttng::begin(const char *name)
 {
-    strncpy(_name, name, MAX_TRACEPOINT_NAME_LEN);
+    tracepoint(ardupilot, begin, name);
 }
 
-void Perf_Lttng::begin()
+void Perf_Lttng::end(const char *name)
 {
-    if (_type != AP_HAL::Util::PC_ELAPSED) {
-        return;
-    }
-    tracepoint(ardupilot, begin, _name);
+    tracepoint(ardupilot, end, name);
 }
 
-void Perf_Lttng::end()
+void Perf_Lttng::count(const char *name, uint64_t val)
 {
-    if (_type != AP_HAL::Util::PC_ELAPSED) {
-        return;
-    }
-    tracepoint(ardupilot, end, _name);
+    tracepoint(ardupilot, count, name, val);
 }
 
-void Perf_Lttng::count()
-{
-    if (_type != AP_HAL::Util::PC_COUNT) {
-        return;
-    }
-    tracepoint(ardupilot, count, _name, ++_count);
-}
+#else
 
-Util::perf_counter_t Util::perf_alloc(perf_counter_type type, const char *name)
-{
-    return new Linux::Perf_Lttng(type, name);
-}
+#include "Perf_Lttng.h"
 
-void Util::perf_begin(perf_counter_t perf)
-{
-    Linux::Perf_Lttng *perf_lttng = (Linux::Perf_Lttng *)perf;
+using namespace Linux;
 
-    perf_lttng->begin();
-}
-
-void Util::perf_end(perf_counter_t perf)
-{
-    Linux::Perf_Lttng *perf_lttng = (Linux::Perf_Lttng *)perf;
-
-    perf_lttng->end();
-}
-
-void Util::perf_count(perf_counter_t perf)
-{
-    Linux::Perf_Lttng *perf_lttng = (Linux::Perf_Lttng *)perf;
-
-    perf_lttng->count();
-}
+void Perf_Lttng::begin(const char *name) { }
+void Perf_Lttng::end(const char *name) { }
+void Perf_Lttng::count(const char *name, uint64_t val) { }
 
 #endif
