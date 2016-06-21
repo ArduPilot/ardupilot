@@ -537,7 +537,7 @@ bool Plane::verify_takeoff()
         next_WP_loc = prev_WP_loc = current_loc;
 
 #if GEOFENCE_ENABLED == ENABLED
-        if (g.fence_autoenable > 0) {
+        if (geofence.g.fence_autoenable > 0) {
             if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
                 gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
             } else {

@@ -1819,9 +1819,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_FENCE_POINT: {
         mavlink_fence_point_t packet;
         mavlink_msg_fence_point_decode(msg, &packet);
-        if (plane.g.fence_action != FENCE_ACTION_NONE) {
+        if (plane.geofence.g.fence_action != FENCE_ACTION_NONE) {
             send_text(MAV_SEVERITY_WARNING,"Fencing must be disabled");
-        } else if (packet.count != plane.g.fence_total) {
+        } else if (packet.count != plane.geofence.g.fence_total) {
             send_text(MAV_SEVERITY_WARNING,"Bad fence point");
         } else if (!check_latlng(packet.lat,packet.lng)) {
             send_text(MAV_SEVERITY_WARNING,"Invalid fence point, lat or lng too large");
@@ -1838,11 +1838,11 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_FENCE_FETCH_POINT: {
         mavlink_fence_fetch_point_t packet;
         mavlink_msg_fence_fetch_point_decode(msg, &packet);
-        if (packet.idx >= plane.g.fence_total) {
+        if (packet.idx >= plane.geofence.g.fence_total) {
             send_text(MAV_SEVERITY_WARNING,"Bad fence point");
         } else {
             Vector2l point = plane.get_fence_point_with_index(packet.idx);
-            mavlink_msg_fence_point_send_buf(msg, chan, msg->sysid, msg->compid, packet.idx, plane.g.fence_total,
+            mavlink_msg_fence_point_send_buf(msg, chan, msg->sysid, msg->compid, packet.idx, plane.geofence.g.fence_total,
                                              point.x*1.0e-7f, point.y*1.0e-7f);
         }
         break;

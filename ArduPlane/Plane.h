@@ -105,6 +105,8 @@
 #include <SITL/SITL.h>
 #endif
 
+#include "geofence.h" // for AP_PolyFence_Plane
+
 /*
   a plane specific arming class
  */
@@ -134,6 +136,7 @@ public:
     friend class AP_Arming_Plane;
     friend class QuadPlane;
     friend class AP_Tuning_Plane;
+    friend class AP_PolyFence_Plane;
 
     Plane(void);
 
@@ -171,6 +174,11 @@ private:
 
     // has a log download started?
     bool in_log_download;
+
+    // the geofence implementation:
+#if GEOFENCE_ENABLED == ENABLED
+    class AP_PolyFence_Plane geofence{*this};
+#endif
 
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
@@ -881,17 +889,12 @@ private:
     void failsafe_short_off_event();
     void low_battery_event(void);
     void update_events(void);
-    uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
     void set_fence_point_with_index(Vector2l &point, unsigned i);
-    void geofence_load(void);
     bool geofence_present(void);
-    void geofence_update_pwm_enabled_state();
     bool geofence_set_enabled(bool enable, GeofenceEnableReason r);
     bool geofence_enabled(void);
     bool geofence_set_floor_enabled(bool floor_enable);
-    bool geofence_check_minalt(void);
-    bool geofence_check_maxalt(void);
     void geofence_check(bool altitude_check_only);
     bool geofence_stickmixing(void);
     void geofence_send_status(mavlink_channel_t chan);

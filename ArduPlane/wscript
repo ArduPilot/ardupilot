@@ -26,7 +26,8 @@ def build(bld):
             'AC_WPNav',
             'AC_AttitudeControl',
             'AP_Motors',
-            'AC_PID'
+            'AC_PID',
+            'AP_Fence'
         ],
         use='mavlink',
     )
