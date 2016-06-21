@@ -2282,7 +2282,7 @@ void Plane::gcs_update(void)
 
 void Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
-    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    GCS::instance()->send_statustext(severity, 0xFF, str);
 }
 
 /*
@@ -2297,7 +2297,7 @@ void Plane::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     va_start(arg_list, fmt);
     hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     va_end(arg_list);
-    GCS_MAVLINK::send_statustext(severity, 0xFF, str);
+    GCS::instance()->send_statustext(severity, 0xFF, str);
 }
 
 /*
@@ -2320,5 +2320,5 @@ void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
 void Plane::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
-    GCS_MAVLINK::service_statustext();
+    GCS::instance()->service_statustext();
 }

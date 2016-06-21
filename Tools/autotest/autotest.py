@@ -471,9 +471,10 @@ def run_tests(steps):
 
 util.mkdir_p(util.reltopdir('../buildlogs'))
 
-lck = util.lock_file(util.reltopdir('../buildlogs/autotest.lck'))
+lck_filepath = '../buildlogs/autotest.lck'
+lck = util.lock_file(util.reltopdir(lck_filepath))
 if lck is None:
-    print("autotest is locked - exiting")
+    print("%s exists - exiting" % (lck_filepath,))
     sys.exit(0)
 
 atexit.register(util.pexpect_close_all)

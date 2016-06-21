@@ -115,7 +115,7 @@ void Plane::init_ardupilot()
     // initialise serial ports
     serial_manager.init();
 
-    GCS_MAVLINK::set_dataflash(&DataFlash);
+    GCS::instance()->set_dataflash(&DataFlash);
 
     // allow servo set on all channels except first 4
     ServoRelayEvents.set_channel_mask(0xFFF0);
