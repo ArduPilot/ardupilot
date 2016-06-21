@@ -82,6 +82,23 @@ revisions.
         default=False,
         help='Configure as debug variant.')
 
+def _collect_autoconfig_files(cfg):
+    for m in sys.modules.values():
+        paths = []
+        if hasattr(m, '__file__'):
+            paths.append(m.__file__)
+        elif hasattr(m, '__path__'):
+            for p in m.__path__:
+                paths.append(p)
+
+        for p in paths:
+            if p in cfg.files or not os.path.isfile(p):
+                continue
+
+            with open(p, 'rb') as f:
+                cfg.hash = Utils.h_list((cfg.hash, f.read()))
+                cfg.files.append(p)
+
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
@@ -141,6 +158,8 @@ def configure(cfg):
     cfg.define('_GNU_SOURCE', 1)
 
     cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'))
+
+    _collect_autoconfig_files(cfg)
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
