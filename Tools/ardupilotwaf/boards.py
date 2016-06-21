@@ -148,9 +148,15 @@ class Board:
                 '-O0',
             ]
 
-        env.LINKFLAGS += [
-            '-Wl,--gc-sections',
-        ]
+        if cfg.env.DEST_OS == 'darwin':
+            env.LINKFLAGS += [
+                '-Wl,-dead_strip',
+            ]
+        else:
+            env.LINKFLAGS += [
+                '-Wl,--gc-sections',
+            ]
+
 
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
