@@ -5,7 +5,7 @@
 #ifndef WAF_BUILD
 #  ifdef __GNUG__
 #    define _GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-#    if _GCC_VERSION >= 50300
+#    if _GCC_VERSION >= 40900
 #      ifndef HAVE_CMATH_ISFINITE
 #        define HAVE_CMATH_ISFINITE
 #        define NEED_CMATH_ISFINITE_STD_NAMESPACE
