@@ -77,10 +77,6 @@ public:
     /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
     void init_loiter_target();
 
-    /// shift_loiter_target - shifts the loiter target by the given pos_adjustment
-    ///     used by precision landing to adjust horizontal position target
-    void shift_loiter_target(const Vector3f &pos_adjustment);
-
     /// loiter_soften_for_landing - reduce response for landing
     void loiter_soften_for_landing();
 
