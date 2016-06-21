@@ -126,6 +126,9 @@ def ap_common_checks(cfg):
 
 @conf
 def check_librt(cfg, env):
+    if cfg.env.DEST_OS == 'darwin':
+        return True
+
     ret = cfg.check(
         compiler='cxx',
         fragment='''
