@@ -420,10 +420,15 @@ void Copter::auto_land_run()
 
     // process roll, pitch inputs
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
+
 #if PRECISION_LANDING == ENABLED
     // run precision landing
-    if (!ap.land_repo_active) {
-        wp_nav.shift_loiter_target(precland.get_target_shift(wp_nav.get_loiter_target()));
+    if (!ap.land_repo_active && precland.target_acquired() && precland_last_update_ms != precland.last_update_ms()) {
+        Vector3f target_pos;
+        precland.get_target_position(target_pos);
+        pos_control.set_xy_target(target_pos.x, target_pos.y);
+        pos_control.freeze_ff_xy();
+        precland_last_update_ms = precland.last_update_ms();
     }
 #endif
 

@@ -269,6 +269,8 @@ private:
         uint32_t start_ms;
     } takeoff_state;
 
+    uint32_t precland_last_update_ms;
+
     RCMapper rcmap;
 
     // board specific config
