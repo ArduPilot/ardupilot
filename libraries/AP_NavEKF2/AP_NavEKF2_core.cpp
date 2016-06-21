@@ -628,7 +628,7 @@ void NavEKF2_core::calcOutputStates()
         // adjust for changes in time delay to maintain consistent damping ratio of ~0.7
         float timeDelay = 1e-3f * (float)(imuDataNew.time_ms - imuDataDelayed.time_ms);
         timeDelay = fmaxf(timeDelay, dtIMUavg);
-        float errorGain = 0.5f / timeDelay;
+        float errorGain = 0.45f / timeDelay;
 
         // calculate a corrrection to the delta angle
         // that will cause the INS to track the EKF quaternions
