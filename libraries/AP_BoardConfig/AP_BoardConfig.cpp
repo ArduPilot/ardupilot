@@ -103,14 +103,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    // @Param: SMBUS_EN
-    // @DisplayName:  Enable use of SMBUS batteries
-    // @Description: Enabling this option on a Pixhawk enables SMBUS batteries, e.g. 3DR Solo's battery
-    // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO("SMBUS_EN", 7, AP_BoardConfig, _smbus_enable, 0),
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // @Param: OREOLED_EN
     // @DisplayName:  Enable use of OREOLED devices
     // @Description: Enabling this option on a Pixhawk enables OREOLED devices, e.g. 3DR Solo's LEDs
@@ -126,6 +118,14 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Bitmask: 0:Ch1,1:Ch2,2:Ch3,3:Ch4,4:Ch5,5:Ch6,6:Ch7,7:Ch8
     // @RebootRequired: True
     AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, _ignore_safety_channels, 0),
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    // @Param: SMBUS_EN
+    // @DisplayName:  Enable use of SMBUS batteries
+    // @Description: Enabling this option on a Pixhawk enables SMBUS batteries, e.g. 3DR Solo's battery
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("SMBUS_EN", 9, AP_BoardConfig, _smbus_enable, 0),
 #endif
 
     AP_GROUPEND
