@@ -222,6 +222,8 @@ private:
     const char *_client_address;
 
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
+
+    const char *_home_str;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
