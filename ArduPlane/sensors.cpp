@@ -123,7 +123,13 @@ void Plane::read_airspeed(void)
                 const float error_threshold = target_airspeed_cm * 0.002f; // cmd to m conversion * 20% error.
                 airspeed_data_validity = fabsf(airspeed_error) < error_threshold;
             }
-            airspeed.self_check(airspeed_data_validity);
+
+            bool is_failure_detected = airspeed.self_check(airspeed_data_validity);
+            if (is_failure_detected &&
+                (airspeed.get_fail_action_mask() & AP_Airspeed::FAILURE_ACTION_RTL)) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ALERT, "Airspeed failure: setting mode to RTL");
+                set_mode(RTL);
+            }
         }
     }
 
