@@ -27,7 +27,9 @@ void panic(const char *errormsg, ...)
     va_start(ap, errormsg);
     vdprintf(1, errormsg, ap);
     va_end(ap);
-    write(1, "\n", 1);
+    if (write(1, "\n", 1) != 1) {
+        // don't panic, there's enough of that happening already
+    }
 
     hal.rcin->deinit();
     hal.scheduler->delay_microseconds(10000);
