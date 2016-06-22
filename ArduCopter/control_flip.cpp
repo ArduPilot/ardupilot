@@ -105,7 +105,7 @@ void Copter::flip_run()
     }
 
     // get pilot's desired throttle
-    throttle_out = get_pilot_desired_throttle(channel_throttle->get_control_in());
+    throttle_out = get_pilot_desired_throttle(channel_throttle->get_control_in(), 0.0f);
 
     // get corrected angle based on direction and axis of rotation
     // we flip the sign of flip_angle to minimize the code repetition
