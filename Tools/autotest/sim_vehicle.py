@@ -202,6 +202,7 @@ group_sim.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type=
 group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help='wipe EEPROM and reload parameters')
 group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help='additional arguments to pass to mavproxy.py')
 group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
+group_sim.add_option("", "--model", type='string', default=None, help='Override simulation model to use')
 parser.add_option_group(group_sim)
 
 
@@ -421,6 +422,9 @@ def options_for_frame(frame, vehicle, opts):
 
     if not ret.has_key("model"):
         ret["model"] = frame
+
+    if opts.model is not None:
+        ret["model"] = opts.model
 
     if not ret.has_key("make_target"):
         ret["make_target"] = "sitl"
