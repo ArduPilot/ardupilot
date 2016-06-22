@@ -167,14 +167,6 @@ private:
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
     } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
-    // Servo state
-    struct {
-        bool yaw_lower      : 1;    // true if yaw servo has been limited from moving to a lower position (i.e. position or rate limited)
-        bool yaw_upper      : 1;    // true if yaw servo has been limited from moving to a higher position (i.e. position or rate limited)
-        bool pitch_lower    : 1;    // true if pitch servo has been limited from moving to a lower position (i.e. position or rate limited)
-        bool pitch_upper    : 1;    // true if pitch servo has been limited from moving to a higher position (i.e. position or rate limited)
-    } servo_limit = {true, true, true, true};
-
     // setup the var_info table
     AP_Param param_loader{var_info};
 
