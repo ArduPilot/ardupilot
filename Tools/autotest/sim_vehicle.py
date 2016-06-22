@@ -423,8 +423,14 @@ def options_for_frame(frame, vehicle, opts):
     if not ret.has_key("model"):
         ret["model"] = frame
 
+    if not ret.has_key("sitl-port"):
+        ret["sitl-port"] = True
+
     if opts.model is not None:
         ret["model"] = opts.model
+        if (ret["model"].find("xplane") != -1 or
+            ret["model"].find("flightaxis") != -1):
+            ret["sitl-port"] = False
 
     if not ret.has_key("make_target"):
         ret["make_target"] = "sitl"
@@ -616,7 +622,10 @@ def start_mavproxy(opts, stuff):
     if opts.hil:
         cmd.extend(["--load-module", "HIL"])
     else:
-        cmd.extend(["--master", mavlink_port, "--sitl", simout_port])
+        cmd.extend(["--master", mavlink_port])
+        if stuff["sitl-port"]:
+            cmd.extend(["--sitl", simout_port])
+
     # If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
     if getpass.getuser() == "vagrant":
         cmd.extend(["--out", "10.0.2.2:14550"])
