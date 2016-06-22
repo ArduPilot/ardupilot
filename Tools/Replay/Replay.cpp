@@ -399,9 +399,7 @@ bool Replay::find_log_info(struct log_information &info)
         if (streq(type, "PARM") && streq(reader.last_parm_name, "SCHED_LOOP_RATE")) {
             // get rate directly from parameters
             info.update_rate = reader.last_parm_value;
-            return true;
         }
-        
         if (strlen(clock_source) == 0) {
             // If you want to add a clock source, also add it to
             // handle_msg and handle_log_format_msg, above.  Note that
