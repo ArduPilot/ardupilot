@@ -1010,17 +1010,15 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
     uint32_t tnow = AP_HAL::millis();
     uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
 
-    if (waypoint_receiving &&
-        waypoint_request_i <= waypoint_request_last &&
-        tnow - waypoint_timelast_request > wp_recv_time) {
+    // stop waypoint receiving if timeout
+    if (waypoint_receiving && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
+        waypoint_receiving = false;
+    } else if (waypoint_receiving &&
+               (tnow - waypoint_timelast_request) > wp_recv_time) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
     }
 
-    // stop waypoint receiving if timeout
-    if (waypoint_receiving && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
-        waypoint_receiving = false;
-    }
 }
 
 
