@@ -25,7 +25,7 @@ fi
 
 # If CI_BUILD_TARGET is not set, build 3 different ones
 if [ -z "$CI_BUILD_TARGET" ]; then
-    CI_BUILD_TARGET="sitl linux px4-v2"
+    CI_BUILD_TARGET="sitl linux px4-v2-solo"
 fi
 
 if [[ "$CI_BUILD_TARGET" == *"px4"* ]]; then
@@ -45,8 +45,8 @@ if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
     unset BUILDROOT
     echo "Running SITL QuadCopter test"
     Tools/autotest/autotest.py -j2 build.ArduCopter fly.ArduCopter
-    echo "Running SITL QuadPlane test"
-    Tools/autotest/autotest.py -j2 build.ArduPlane fly.QuadPlane
+    #echo "Running SITL QuadPlane test"
+    #Tools/autotest/autotest.py -j2 build.ArduPlane fly.QuadPlane
     exit 0
 fi
 
@@ -66,7 +66,7 @@ for t in $CI_BUILD_TARGET; do
     # only do make-based builds for GCC when target is PX4 or when launched by a scheduled job
     if [[ "$cxx_compiler" != "clang++" && ( $t == "px4"* || -n ${CI_CRON_JOB+1} ) ]]; then
         echo "Starting make based build for target ${t}..."
-        for v in "ArduPlane" "ArduCopter" "APMrover2" "AntennaTracker"; do
+        for v in "ArduCopter"; do
             echo "Building $v for ${t}..."
 
             pushd $v
