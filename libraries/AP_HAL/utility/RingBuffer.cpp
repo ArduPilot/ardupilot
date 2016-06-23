@@ -67,6 +67,7 @@ uint32_t ByteBuffer::write(const uint8_t *data, uint32_t len)
         ret += vec[i].len;
     }
 
+    commit(ret);
     return ret;
 }
 
@@ -145,36 +146,46 @@ uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
     return ret;
 }
 
-int ByteBuffer::reserve(ByteBuffer::IoVec iovec[2], uint32_t len)
+uint8_t ByteBuffer::reserve(ByteBuffer::IoVec iovec[2], uint32_t len)
 {
-    if (len > space()) {
-        len = space();
+    uint32_t n = space();
+
+    if (len > n) {
+        len = n;
     }
+
     if (!len) {
         return 0;
     }
 
     iovec[0].data = &buf[tail];
-    if (tail+len <= size) {
-        iovec[0].len = len;
-    } else {
-        auto n = size - tail;
-        if (n > len) {
-            n = len;
-        }
 
+    n = size - tail;
+    if (len > n) {
         iovec[0].len = n;
 
-        tail = (tail + n) & (size - 1);
-        n = len - n;
-        if (n > 0) {
-            iovec[1].data = &buf[tail];
-            iovec[1].len = n;
-            return 2;
-        }
+        iovec[1].data = buf;
+        iovec[1].len = len - n;
+
+        return 2;
     }
 
+    iovec[0].len = len;
+
     return 1;
+}
+
+/*
+ * Advance the writer pointer by 'len'
+ */
+bool ByteBuffer::commit(uint32_t len)
+{
+    if (len > space()) {
+        return false; //Someone break the agreement
+    }
+
+    tail = (tail + len) & (size - 1);
+    return true;
 }
 
 uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)

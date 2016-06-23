@@ -86,8 +86,17 @@ public:
     // ring buffer (if wraparound is happening), or just one contiguous
     // part. Returns the number of `vec` elements filled out. Can be used
     // with system calls such as `readv()`.
-    int reserve(IoVec vec[2], uint32_t len);
-    
+    //
+    // After a call to 'reserve()', 'write()' should never be called
+    // until 'commit()' is called!
+    uint8_t reserve(IoVec vec[2], uint32_t len);
+
+    /*
+     * "Releases" the memory previously reserved by 'reserve()' to be read.
+     * Committer must inform how many bytes were actually written in 'len'.
+     */
+    bool commit(uint32_t len);
+
 private:
     uint8_t *buf = nullptr;
     uint32_t size = 0;
