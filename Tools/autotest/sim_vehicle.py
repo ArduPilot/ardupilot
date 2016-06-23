@@ -106,7 +106,6 @@ def kill_tasks_psutil(victims):
 
 def kill_tasks_pkill(victims):
     '''shell out to pkill(1) to kill processed by name'''
-    progress("Killing tasks")
     for victim in victims: # pkill takes a single pattern, so iterate
         cmd = ["pkill"]
         cmd.append(victim)
@@ -117,26 +116,30 @@ class BobException(Exception):
 
 def kill_tasks():
     '''clean up stray processes by name.  This is a somewhat shotgun approach'''
-    victim_names = [
-        'JSBSim',
-        'lt-JSBSim',
-        'ArduPlane.elf',
-        'ArduCopter.elf',
-        'APMrover2.elf',
-        'AntennaTracker.elf',
-        'JSBSIm.exe',
-        'MAVProxy.exe',
-        'runsim.py',
-        'AntennaTracker.elf',
-    ]
-
-    if under_cygwin():
-        return kill_tasks_cygwin(victim_names)
-
+    progress("Killing tasks")
     try:
-        kill_tasks_psutil(victim_names)
-    except ImportError as e:
-        kill_tasks_pkill(victim_names)
+        victim_names = [
+            'JSBSim',
+            'lt-JSBSim',
+            'ArduPlane.elf',
+            'ArduCopter.elf',
+            'APMrover2.elf',
+            'AntennaTracker.elf',
+            'JSBSIm.exe',
+            'MAVProxy.exe',
+            'runsim.py',
+            'AntennaTracker.elf',
+        ]
+
+        if under_cygwin():
+            return kill_tasks_cygwin(victim_names)
+
+        try:
+            kill_tasks_psutil(victim_names)
+        except ImportError as e:
+            kill_tasks_pkill(victim_names)
+    except Exception as e:
+        progress("kill_tasks failed: {}".format(str(e)))
 
 # clean up processes at exit:
 atexit.register(kill_tasks)
