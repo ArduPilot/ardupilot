@@ -61,7 +61,7 @@ public:
     // advance the read pointer (discarding bytes)
     bool advance(uint32_t n);
 
-    // return a pointer to the next available data
+    // Returns the pointer and size to a contiguous read of the next available data
     const uint8_t *readptr(uint32_t &available_bytes);
 
     // peek one byte without advancing read pointer. Return byte
