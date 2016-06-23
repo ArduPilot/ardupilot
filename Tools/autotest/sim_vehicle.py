@@ -15,6 +15,10 @@ import getpass
 import time
 import signal
 
+# List of open terminal windows for macosx
+windowID = []
+
+
 class CompatError(Exception):
     '''a custom exception class to hold state if we encounter the parse error we are looking for'''
     def __init__(self,error, opts, rargs):
@@ -131,6 +135,10 @@ def kill_tasks():
             'AntennaTracker.elf',
         ]
 
+        # will only run to close terminal windows in macosx platform
+        for window in windowID:
+            cmd = "osascript -e \'tell application \"Terminal\" to close (window(get index of window id %s))\'" % window
+            os.system(cmd)
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
 
@@ -583,10 +591,17 @@ def run_cmd_blocking(what, cmd, quiet=False, **kw):
 
 def run_in_terminal_window(autotest, name, cmd):
     '''execute the run_in_terminal_window.sh command for cmd'''
+    global windowID
     runme = [os.path.join(autotest, "run_in_terminal_window.sh"), name]
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
-    p = subprocess.Popen(runme) # bg this explicitly?!
+
+    # bg this explicitly?!
+    out = subprocess.Popen(runme,stdout=subprocess.PIPE).communicate()[0]
+    if sys.platform == 'darwin':
+        import re
+        p = re.compile('tab 1 of window id (.*)')
+        windowID.append(p.findall(out)[0])
 
 tracker_uarta = None # blemish
 
