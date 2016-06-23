@@ -40,6 +40,21 @@ private:
     void adjust_velocity_circle(const float kP, const float accel_cmss, Vector2f &desired_vel);
 
     /*
+     * Adjusts the desired velocity for the polygon fence.
+     */
+    void adjust_velocity_poly(const float kP, const float accel_cmss, Vector2f &desired_vel);
+
+
+    /*
+     * Limits the component of desired_vel in the direction of the unit vector
+     * limit_direction to be at most the maximum speed permitted by the limit_distance.
+     *
+     * Uses velocity adjustment idea from Randy's second email on this thread:
+     * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
+     */
+    void limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float limit_distance) const;
+
+    /*
      * Gets the current position, relative to home (not relative to EKF origin)
      */
     Vector2f get_position();
@@ -59,6 +74,11 @@ private:
      * Gets the fence margin in cm
      */
     float get_margin() const { return _fence.get_margin() * 100.0f; }
+
+    /*
+     * returns the point closest to p on the line segment (v,w)
+     */
+    Vector2f closest_point(Vector2f p, Vector2f v, Vector2f w) const;
 
     // external references
     const AP_AHRS& _ahrs;
