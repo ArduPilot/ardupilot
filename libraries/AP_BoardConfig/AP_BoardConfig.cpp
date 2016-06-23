@@ -102,12 +102,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 extern "C" int uavcan_main(int argc, const char *argv[]);
-
-#define _UAVCAN_IOCBASE             (0x4000)                        // IOCTL base for module UAVCAN
-#define _UAVCAN_IOC(_n)             (_IOC(_UAVCAN_IOCBASE, _n))
-
-#define UAVCAN_IOCG_NODEID_INPROGRESS  _UAVCAN_IOC(1)               // query if node identification is in progress
-
 #endif
 
 void AP_BoardConfig::init()
@@ -203,9 +197,9 @@ void AP_BoardConfig::init()
             hal.console->printf("UAVCAN: failed to start servers\n");
         } else {
             uint32_t start_wait_ms = AP_HAL::millis();
-            int fd = open("/dev/uavcan/esc", 0); // design flaw of uavcan driver, this should be /dev/uavcan/node one day
+            int fd = open(UAVCAN_NODE_FILE, 0);
             if (fd == -1) {
-                AP_HAL::panic("Configuration invalid - unable to open /dev/uavcan/esc");
+                AP_HAL::panic("Configuration invalid - unable to open " UAVCAN_NODE_FILE);
             }
 
             // delay startup, UAVCAN still discovering nodes
