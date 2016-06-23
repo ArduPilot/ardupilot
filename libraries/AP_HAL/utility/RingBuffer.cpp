@@ -176,18 +176,14 @@ uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
 }
 
 /*
-  return a pointer to a contiguous read buffer
+ * Returns the pointer and size to a contiguous read in the buffer
  */
 const uint8_t *ByteBuffer::readptr(uint32_t &available_bytes)
 {
-    available_bytes = available();
-    if (available_bytes == 0) {
-        return nullptr;
-    }
-    if (head+available_bytes > size) {
-        available_bytes = size - head;
-    }
-    return &buf[head];
+    uint32_t _tail = tail;
+    available_bytes = (head > _tail) ? size - head : _tail - head;
+
+    return available_bytes ? &buf[head] : nullptr;
 }
 
 int16_t ByteBuffer::peek(uint32_t ofs) const
