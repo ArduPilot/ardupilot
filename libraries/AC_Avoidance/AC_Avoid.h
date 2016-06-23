@@ -48,17 +48,17 @@ private:
      * Computes the speed such that the stopping distance
      * of the vehicle will be exactly the input distance.
      */
-    float get_max_speed(const float kP, const float accel_cmss, const float distance);
+    float get_max_speed(const float kP, const float accel_cmss, const float distance) const;
 
     /*
      * Computes distance required to stop, given current speed.
      */
-    float get_stopping_distance(const float kP, const float accel_cmss, const float speed);
+    float get_stopping_distance(const float kP, const float accel_cmss, const float speed) const;
 
     /*
      * Gets the fence margin in cm
      */
-    float get_margin() { return _fence.get_margin() * 100.0f; }
+    float get_margin() const { return _fence.get_margin() * 100.0f; }
 
     // external references
     const AP_AHRS& _ahrs;

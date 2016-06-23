@@ -87,7 +87,7 @@ Vector2f AC_Avoid::get_position()
  * Computes the speed such that the stopping distance
  * of the vehicle will be exactly the input distance.
  */
-float AC_Avoid::get_max_speed(const float kP, const float accel_cmss, const float distance)
+float AC_Avoid::get_max_speed(const float kP, const float accel_cmss, const float distance) const
 {
     return AC_AttitudeControl::sqrt_controller(distance, kP, accel_cmss);
 }
@@ -97,7 +97,7 @@ float AC_Avoid::get_max_speed(const float kP, const float accel_cmss, const floa
  *
  * Implementation copied from AC_PosControl.
  */
-float AC_Avoid::get_stopping_distance(const float kP, const float accel_cmss, const float speed)
+float AC_Avoid::get_stopping_distance(const float kP, const float accel_cmss, const float speed) const
 {
     // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
     if (kP <= 0.0f || accel_cmss <= 0.0f || is_zero(speed)) {
