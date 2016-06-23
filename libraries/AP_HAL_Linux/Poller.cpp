@@ -150,7 +150,8 @@ void BufferedPollable::on_can_read(int max_time_ms) {
             iovec[i].iov_len = static_cast<size_t>(vec[i].len);
         }
 
-        (void) readv(_fd, iovec, n_vec);
+        auto r = readv(_fd, iovec, n_vec);
+        _read_buffer.commit(static_cast<uint32_t>(r));
     }
 
     _read_sem.give();
