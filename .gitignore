@@ -63,6 +63,7 @@ ArduCopter/terrain/*.DAT
 ArduCopter/test.ArduCopter/
 ArduCopter/test/*
 ArduCopter/way.txt
+ArduCopter/fence.txt
 ArduPlane/logs/
 ArduPlane/test/*
 ArduPlane/terrain/*.DAT
