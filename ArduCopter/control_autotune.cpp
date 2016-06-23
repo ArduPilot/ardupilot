@@ -215,7 +215,7 @@ void Copter::autotune_stop()
     autotune_load_orig_gains();
 
     // re-enable angle-to-rate request limits
-    attitude_control.use_input_shaping(true);
+    attitude_control.use_ff_and_input_shaping(true);
 
     // log off event and send message to ground station
     autotune_update_gcs(AUTOTUNE_MESSAGE_STOPPED);
@@ -312,7 +312,7 @@ void Copter::autotune_run()
                 autotune_state.pilot_override = true;
                 // set gains to their original values
                 autotune_load_orig_gains();
-                attitude_control.use_input_shaping(true);
+                attitude_control.use_ff_and_input_shaping(true);
             }
             // reset pilot override time
             autotune_override_time = millis();
@@ -357,7 +357,7 @@ void Copter::autotune_attitude_control()
     case AUTOTUNE_STEP_WAITING_FOR_LEVEL:
         // Note: we should be using intra-test gains (which are very close to the original gains but have lower I)
         // re-enable rate limits
-        attitude_control.use_input_shaping(true);
+        attitude_control.use_ff_and_input_shaping(true);
 
         // hold level attitude
         attitude_control.input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, autotune_desired_yaw, true, get_smoothing_gain());
@@ -432,7 +432,7 @@ void Copter::autotune_attitude_control()
         // Note: we should be using intra-test gains (which are very close to the original gains but have lower I)
 
         // disable rate limits
-        attitude_control.use_input_shaping(false);
+        attitude_control.use_ff_and_input_shaping(false);
 
         if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
             // Testing increasing stabilize P gain so will set lean angle target
@@ -531,7 +531,7 @@ void Copter::autotune_attitude_control()
     case AUTOTUNE_STEP_UPDATE_GAINS:
 
         // re-enable rate limits
-        attitude_control.use_input_shaping(true);
+        attitude_control.use_ff_and_input_shaping(true);
 
         // log the latest gains
         if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
