@@ -88,15 +88,36 @@ def under_cygwin():
     return os.path.exists("/usr/bin/cygstart")
 
 def kill_tasks_cygwin(victims):
+    '''shell out to ps -ea to find processes to kill'''
     for victim in list(victims):
         pids = cygwin_pidof(victim)
 #        progress("pids for (%s): %s" % (victim,",".join([ str(p) for p in pids])))
         for apid in pids:
             os.kill(apid, signal.SIGKILL)
 
+def kill_tasks_psutil(victims):
+    '''use the psutil module to kill tasks by name.  Sadly, this module is not available on Windows, but when it is we should be able to *just* use this routine'''
+    import psutil
+    for proc in psutil.process_iter():
+        if proc.status == psutil.STATUS_ZOMBIE:
+            continue
+        if proc.name in victims:
+            proc.kill()
+
+def kill_tasks_pkill(victims):
+    '''shell out to pkill(1) to kill processed by name'''
+    progress("Killing tasks")
+    for victim in victims: # pkill takes a single pattern, so iterate
+        cmd = ["pkill"]
+        cmd.append(victim)
+        run_cmd_blocking("pkill", cmd, quiet=True)
+
+class BobException(Exception):
+    pass
+
 def kill_tasks():
     '''clean up stray processes by name.  This is a somewhat shotgun approach'''
-    victim_names = set([
+    victim_names = [
         'JSBSim',
         'lt-JSBSim',
         'ArduPlane.elf',
@@ -107,17 +128,15 @@ def kill_tasks():
         'MAVProxy.exe',
         'runsim.py',
         'AntennaTracker.elf',
-    ])
+    ]
 
     if under_cygwin():
-        return kill_tasks_cygwin(list(victim_names))
+        return kill_tasks_cygwin(victim_names)
 
-    import psutil
-    for proc in psutil.process_iter():
-        if proc.status == psutil.STATUS_ZOMBIE:
-            continue
-        if proc.name in victim_names:
-            proc.kill()
+    try:
+        kill_tasks_psutil(victim_names)
+    except ImportError as e:
+        kill_tasks_pkill(victim_names)
 
 # clean up processes at exit:
 atexit.register(kill_tasks)
@@ -534,8 +553,9 @@ def progress_cmd(what, cmd):
     shell_text = "%s" % (" ".join([ '"%s"' % x for x in cmd ]))
     progress(shell_text)
 
-def run_cmd_blocking(what, cmd, **kw):
-    progress_cmd(what, cmd)
+def run_cmd_blocking(what, cmd, quiet=False, **kw):
+    if not quiet:
+        progress_cmd(what, cmd)
     p = subprocess.Popen(cmd, **kw)
     return os.waitpid(p.pid,0)
 
