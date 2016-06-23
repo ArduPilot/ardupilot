@@ -99,7 +99,11 @@
 #define BMI160_READ_FLAG 0x80
 #define BMI160_HARDWARE_INIT_MAX_TRIES 5
 
-#define BMI160_INT1_GPIO -1
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
+#    define BMI160_INT1_GPIO AERO_GPIO_BMI160_INT1
+#else
+#    define BMI160_INT1_GPIO -1
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -383,6 +387,11 @@ read_fifo_read_data:
         Vector3f gyro{(float)(int16_t)le16toh(raw_data[i].gyro.x),
                       (float)(int16_t)le16toh(raw_data[i].gyro.y),
                       (float)(int16_t)le16toh(raw_data[i].gyro.z)};
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
+        accel.rotate(ROTATION_ROLL_180);
+        gyro.rotate(ROTATION_ROLL_180);
+#endif
 
         accel *= _accel_scale;
         gyro *= _gyro_scale;

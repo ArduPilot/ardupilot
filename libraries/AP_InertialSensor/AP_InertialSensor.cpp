@@ -567,6 +567,14 @@ AP_InertialSensor::detect_backends(void)
     } else {
         hal.console->printf("MPU9250: External IMU not detected\n");
     }
+#elif HAL_INS_DEFAULT == HAL_INS_AERO
+    auto *backend = AP_InertialSensor_BMI160::probe(*this,
+                                                    hal.spi->get_device("bmi160"));
+    if (backend) {
+        _add_backend(backend);
+    } else {
+        hal.console->printf("aero: onboard IMU not detected\n");
+    }
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
