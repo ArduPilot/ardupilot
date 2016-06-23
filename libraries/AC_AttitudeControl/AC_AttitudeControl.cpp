@@ -170,6 +170,9 @@ void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, floa
         _attitude_target_ang_vel.x = input_shaping_angle(attitude_error_angle.x, smoothing_gain, get_accel_roll_max_radss(), _attitude_target_ang_vel.x);
         _attitude_target_ang_vel.y = input_shaping_angle(attitude_error_angle.y, smoothing_gain, get_accel_pitch_max_radss(), _attitude_target_ang_vel.y);
         _attitude_target_ang_vel.z = input_shaping_angle(attitude_error_angle.z, smoothing_gain, get_accel_yaw_max_radss(), _attitude_target_ang_vel.z);
+
+        // Convert body-frame angular velocity into euler angle derivative of desired attitude
+        ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
     } else {
         _attitude_target_quat = attitude_desired_quat;
 
@@ -177,9 +180,6 @@ void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, floa
         _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
         _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
     }
-
-    // Convert body-frame angular velocity into euler angle derivative of desired attitude
-    ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
