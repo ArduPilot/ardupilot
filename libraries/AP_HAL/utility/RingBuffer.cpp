@@ -19,15 +19,19 @@ ByteBuffer::~ByteBuffer(void)
 }
 
 /*
-  caller is responsible for locking in set_size()
+ * Caller is responsible for locking in set_size()
  */
 void ByteBuffer::set_size(uint32_t _size)
 {
-    uint8_t *oldbuf = buf;
+    uint8_t *oldbuf;
+
     head = tail = 0;
-    size = _size;
-    buf = new uint8_t[size];
-    delete [] oldbuf;
+    if (_size != size) {
+        size = _size;
+        oldbuf = buf;
+        buf = new uint8_t[size];
+        delete[] oldbuf;
+    }
 }
 
 uint32_t ByteBuffer::available(void) const
