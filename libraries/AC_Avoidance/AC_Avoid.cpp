@@ -46,6 +46,11 @@ void AC_Avoid::adjust_velocity_circle(const float kP, const float accel_cmss, Ve
         return;
     }
 
+    // exit if the circular fence has already been breached
+    if ((_fence.get_breaches() & AC_FENCE_TYPE_CIRCLE) != 0) {
+        return;
+    }
+
     // get position as a 2D offset in cm from ahrs home
     const Vector2f position_xy = get_position();
 
