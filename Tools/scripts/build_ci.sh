@@ -97,7 +97,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Starting waf build for board ${t}..."
         $waf configure --board $t --enable-benchmarks --check-c-compiler="$c_compiler" --check-cxx-compiler="$cxx_compiler"
         $waf clean
-        $waf all
+        $waf copter
         ccache -s && ccache -z
 
         if [[ $t == linux ]]; then
