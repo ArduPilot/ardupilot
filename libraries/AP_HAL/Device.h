@@ -26,12 +26,23 @@
  */
 class AP_HAL::Device {
 public:
+    enum BusType {
+        I2C,
+        SPI,
+    };
+
     enum Speed {
         SPEED_HIGH,
         SPEED_LOW,
     };
 
     typedef void PeriodicHandle;
+
+    const enum BusType bus_type;
+
+    Device(enum BusType type)
+        : bus_type(type)
+    { }
 
     virtual ~Device() { }
 
