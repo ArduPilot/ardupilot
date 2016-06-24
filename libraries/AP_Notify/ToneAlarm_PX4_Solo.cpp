@@ -164,29 +164,22 @@ void ToneAlarm_PX4_Solo::update()
     }
     flags.compass_cal_running = AP_Notify::flags.compass_cal_running;
 
-    /*if (!hal.util->get_test_mode()) {    //don't notify for GPS disconnection when under Jig
-        //play tone if UBLOX gps not detected : Solo Specific
-        if(AP_Notify::flags.initialising || AP_HAL::millis()-_init_time < 10000) {
-            _gps_disconnected_time = AP_HAL::millis();
-        }
-        if(!AP_Notify::flags.initialising && (AP_HAL::millis() - _gps_disconnected_time) > 10000){
-            if (AP_Notify::flags.gps_connected != flags.gps_connected) {
-                if(!AP_Notify::flags.gps_connected) {
-                    play_tone(AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED);
-                } else {
-                    if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED) {
-                        stop_cont_tone();
-                    }
-                }
-            }
-            flags.gps_connected = AP_Notify::flags.gps_connected;
+    // Wait 10 seconds before enabling GPS check logic
+    if(AP_Notify::flags.gps_status == 0 && (AP_HAL::millis() - _init_time) > 10000) {
+        if(flags.gps_connected == true) {
+            flags.gps_connected = false;
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED);
         }
     } else {
-        if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED) {
-            stop_cont_tone();
+        if(flags.gps_connected == false) {
+            flags.gps_connected = true;
+            if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED) {
+                stop_cont_tone();
+            }
         }
     }
 
+    /*
    if (flags.test_mode != hal.util->get_test_mode()) {
         flags.test_mode = hal.util->get_test_mode();
         if (hal.util->get_test_mode()) {
