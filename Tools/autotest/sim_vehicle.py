@@ -277,6 +277,18 @@ default_frame_for_vehicle = {
     "AntennaTracker": "tracker"
 }
 
+if not default_frame_for_vehicle.has_key(opts.vehicle):
+    # try in parent directories, useful for having config in subdirectories
+    cwd = os.getcwd()
+    while cwd:
+        bname = os.path.basename(cwd)
+        if not bname:
+            break
+        if bname in default_frame_for_vehicle:
+            opts.vehicle = bname
+            break
+        cwd = os.path.dirname(cwd)
+    
 # try to validate vehicle
 if not default_frame_for_vehicle.has_key(opts.vehicle):
     progress("** Is (%s) really your vehicle type?  Try  -v VEHICLETYPE  if not, or be in the e.g. ArduCopter subdirectory" %  (opts.vehicle,))
