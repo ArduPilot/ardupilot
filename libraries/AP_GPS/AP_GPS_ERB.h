@@ -85,12 +85,12 @@ private:
 
     // Receive buffer
     union PACKED {
+        ARRAY_SUBSCRIPT(uint8_t)
         erb_ver ver;
         erb_pos pos;
         erb_stat stat;
         erb_dops dops;
         erb_vel vel;
-        uint8_t bytes[0];
     } _buffer;
 
     enum erb_protocol_bytes {

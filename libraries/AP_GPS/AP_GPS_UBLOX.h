@@ -360,6 +360,7 @@ private:
 
     // Receive buffer
     union PACKED {
+        ARRAY_SUBSCRIPT(uint8_t)
         ubx_nav_posllh posllh;
         ubx_nav_status status;
         ubx_nav_dop dop;
@@ -384,7 +385,6 @@ private:
         ubx_rxm_rawx rxm_rawx;
 #endif
         ubx_ack_ack ack;
-        uint8_t bytes[0];
     } _buffer;
 
     enum ubs_protocol_bytes {
