@@ -57,6 +57,7 @@ void Copter::check_ekf_yaw_reset()
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
         attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
         ekfYawReset_ms = new_ekfYawReset_ms;
+        Log_Write_Event(DATA_EKF_YAW_RESET);
     }
 }
 
