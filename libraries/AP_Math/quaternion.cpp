@@ -35,13 +35,13 @@ void Quaternion::rotation_matrix(Matrix3f &m) const
     float q4q4 = q4 * q4;
 
     m.a.x = 1.0f-2.0f*(q3q3 + q4q4);
-    m.a.y =   2.0f*(q2q3 - q1q4);
-    m.a.z =   2.0f*(q2q4 + q1q3);
-    m.b.x =   2.0f*(q2q3 + q1q4);
+    m.a.y = 2.0f*(q2q3 - q1q4);
+    m.a.z = 2.0f*(q2q4 + q1q3);
+    m.b.x = 2.0f*(q2q3 + q1q4);
     m.b.y = 1.0f-2.0f*(q2q2 + q4q4);
-    m.b.z =   2.0f*(q3q4 - q1q2);
-    m.c.x =   2.0f*(q2q4 - q1q3);
-    m.c.y =   2.0f*(q3q4 + q1q2);
+    m.b.z = 2.0f*(q3q4 - q1q2);
+    m.c.x = 2.0f*(q2q4 - q1q3);
+    m.c.y = 2.0f*(q3q4 + q1q2);
     m.c.z = 1.0f-2.0f*(q2q2 + q3q3);
 }
 
