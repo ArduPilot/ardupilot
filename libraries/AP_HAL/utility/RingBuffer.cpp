@@ -6,9 +6,14 @@
   implement a simple ringbuffer of bytes
  */
 
+static inline uint32_t align_power2(uint32_t u)
+{
+    return 1U << ((sizeof(u) * 8) - __builtin_clz(u - 1));
+}
+
 ByteBuffer::ByteBuffer(uint32_t _size)
 {
-    size = _size;
+    size = align_power2(_size);
     buf = new uint8_t[size];
     head = tail = 0;
 }
@@ -25,7 +30,7 @@ void ByteBuffer::set_size(uint32_t _size)
 {
     uint8_t *oldbuf = buf;
     head = tail = 0;
-    size = _size;
+    size = align_power2(_size);
     buf = new uint8_t[size];
     delete [] oldbuf;
 }
@@ -49,33 +54,16 @@ bool ByteBuffer::empty(void) const
 
 uint32_t ByteBuffer::write(const uint8_t *data, uint32_t len)
 {
-    if (len > space()) {
-        len = space();
-    }
-    if (len == 0) {
-        return 0;
-    }
-    if (tail+len <= size) {
-        // perform as single memcpy
-        memcpy(&buf[tail], data, len);
-        tail = (tail + len) % size;
-        return len;
+    ByteBuffer::IoVec vec[2];
+    const auto n_vec = reserve(vec, len);
+    uint32_t ret = 0;
+
+    for (int i = 0; i < n_vec; i++) {
+        memcpy(vec[i].data, data + ret, vec[i].len);
+        ret += vec[i].len;
     }
 
-    // perform as two memcpy calls
-    uint32_t n = size - tail;
-    if (n > len) {
-        n = len;
-    }
-    memcpy(&buf[tail], data, n);
-    tail = (tail + n) % size;
-    data += n;
-    n = len - n;
-    if (n > 0) {
-        memcpy(&buf[tail], data, n);
-        tail = (tail + n) % size;
-    }
-    return len;
+    return ret;
 }
 
 /*
@@ -105,14 +93,11 @@ bool ByteBuffer::advance(uint32_t n)
     if (n > available()) {
         return false;
     }
-    head = (head + n) % size;
+    head = (head + n) & (size - 1);
     return true;
 }
 
-/*
-  read len bytes without advancing the read pointer
- */
-uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
+int ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
 {
     if (len > available()) {
         len = available();
@@ -121,20 +106,71 @@ uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
         return 0;
     }
     uint32_t n;
-    const uint8_t *b = readptr(n);
+    auto b = readptr(n);
     if (n > len) {
         n = len;
     }
 
-    // perform first memcpy
-    memcpy(data, b, n);
-    data += n;
+    iovec[0].data = const_cast<uint8_t *>(b);
+    iovec[0].len = n;
 
     if (len > n) {
-        // possible second memcpy, must be from front of buffer
-        memcpy(data, buf, len-n);
+        iovec[1].data = buf;
+        iovec[1].len = len - n;
+
+        return 2;
     }
-    return len;
+
+    return 1;
+}
+
+/*
+  read len bytes without advancing the read pointer
+ */
+uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
+{
+    ByteBuffer::IoVec vec[2];
+    const auto n_vec = peekiovec(vec, len);
+    uint32_t ret = 0;
+
+    for (int i = 0; i < n_vec; i++) {
+        memcpy(data + ret, vec[i].data, vec[i].len);
+        ret += vec[i].len;
+    }
+
+    return ret;
+}
+
+int ByteBuffer::reserve(ByteBuffer::IoVec iovec[2], uint32_t len)
+{
+    if (len > space()) {
+        len = space();
+    }
+    if (!len) {
+        return 0;
+    }
+
+    iovec[0].data = &buf[tail];
+    if (tail+len <= size) {
+        iovec[0].len = len;
+    } else {
+        auto n = size - tail;
+        if (n > len) {
+            n = len;
+        }
+
+        iovec[0].len = n;
+
+        tail = (tail + n) & (size - 1);
+        n = len - n;
+        if (n > 0) {
+            iovec[1].data = &buf[tail];
+            iovec[1].len = n;
+            return 2;
+        }
+    }
+
+    return 1;
 }
 
 uint32_t ByteBuffer::read(uint8_t *data, uint32_t len)
@@ -164,5 +200,5 @@ int16_t ByteBuffer::peek(uint32_t ofs) const
     if (ofs >= available()) {
         return -1;
     }
-    return buf[(head+ofs)%size];
+    return buf[(head+ofs) & (size - 1)];
 }

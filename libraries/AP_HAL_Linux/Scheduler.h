@@ -5,6 +5,7 @@
 #include "AP_HAL_Linux.h"
 #include "Semaphores.h"
 #include "Thread.h"
+#include "Poller.h"
 
 #define LINUX_SCHEDULER_MAX_TIMER_PROCS 10
 #define LINUX_SCHEDULER_MAX_TIMESLICED_PROCS 10
@@ -29,6 +30,9 @@ public:
     void     register_io_process(AP_HAL::MemberProc);
     void     suspend_timer_procs();
     void     resume_timer_procs();
+
+    bool     register_pollable(Linux::Pollable *p, const Linux::Poller::Event ev);
+    void     unregister_pollable(const Linux::Pollable *p);
 
     bool     in_timerprocess();
 
@@ -56,6 +60,27 @@ private:
         bool _run() override;
 
         Scheduler &_sched;
+    };
+    class PollerThread : public Thread {
+    public:
+        PollerThread(Scheduler &sched)
+            : Thread(FUNCTOR_BIND_MEMBER(&PollerThread::task, void))
+            , _sched(sched)
+        { }
+
+        bool register_pollable(Linux::Pollable *p, const Linux::Poller::Event ev) {
+            return _poller.register_pollable(p, ev);
+        }
+        void unregister_pollable(const Linux::Pollable *p) {
+            _poller.unregister_pollable(p);
+        }
+
+    private:
+        void task();
+
+    protected:
+        Scheduler &_sched;
+        Poller _poller;
     };
 
     void _wait_all_threads();
@@ -92,6 +117,7 @@ private:
     SchedulerThread _rcin_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_rcin_task, void), *this};
     SchedulerThread _uart_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_uart_task, void), *this};
     SchedulerThread _tonealarm_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_tonealarm_task, void), *this};
+    PollerThread _poll_thread{*this};
 
     void _timer_task();
     void _io_task();
