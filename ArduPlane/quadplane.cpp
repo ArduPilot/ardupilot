@@ -1215,6 +1215,15 @@ void QuadPlane::vtol_position_controller(void)
             // max_speed will control how fast we will fly. It will always decrease
             poscontrol.max_speed = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
             poscontrol.speed_scale = poscontrol.max_speed / MAX(distance, 1);
+
+            // start with low integrator. The alt_hold controller will
+            // add hover throttle to initial integrator. By starting
+            // without it we end up with a smoother startup when
+            // transitioning from fixed wing flight
+            float aspeed;
+            if (ahrs.airspeed_estimate(&aspeed) && aspeed > 6) {
+                pid_accel_z.set_integrator((-motors->get_throttle_hover())*1000.0f);
+            }
         }
 
         // run fixed wing navigation
