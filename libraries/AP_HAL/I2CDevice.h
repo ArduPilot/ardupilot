@@ -27,6 +27,8 @@ namespace AP_HAL {
 
 class I2CDevice : public Device {
 public:
+    I2CDevice() : Device(I2C) { }
+
     virtual ~I2CDevice() { }
 
     /*
