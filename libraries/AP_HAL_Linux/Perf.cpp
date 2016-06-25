@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
 #include <vector>
@@ -72,15 +73,15 @@ void Perf::_debug_counters()
                     "(no events)\n", c.name);
         } else if (c.type == Util::PC_ELAPSED) {
             fprintf(stderr, "%-30s\t"
-                    "count: %llu\t"
-                    "min: %llu\t"
-                    "max: %llu\t"
+                    "count: %" PRIu64 "\t"
+                    "min: %" PRIu64 "\t"
+                    "max: %" PRIu64 "\t"
                     "avg: %.4f\t"
                     "stddev: %.4f\n",
                     c.name, c.count, c.min, c.max, c.avg, sqrt(c.m2));
         } else {
             fprintf(stderr, "%-30s\t"
-                    "count: %llu\n",
+                    "count: %" PRIu64 "\n",
                     c.name, c.count);
         }
     }
