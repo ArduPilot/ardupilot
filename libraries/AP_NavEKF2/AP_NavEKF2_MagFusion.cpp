@@ -42,16 +42,14 @@ void NavEKF2_core::controlMagYawReset()
 
     }
 
-    // check that we have reached a height where ground magnetic interference effects are insignificant
-    // and can perform a final reset of the yaw and field states
+    // Check if conditions for a interim or final yaw/mag reset are met
     bool finalResetRequest = false;
-    if (flightResetAllowed && !assume_zero_sideslip()) {
-        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
-    }
-
-    // Check for bad yaw casued by ground based magnetic anomaly
     bool interimResetRequest = false;
     if (flightResetAllowed && !assume_zero_sideslip()) {
+        // check that we have reached a height where ground magnetic interference effects are insignificant
+        // and can perform a final reset of the yaw and field states
+        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
+
         // check for increasing height
         bool hgtIncreasing = (posDownAtLastMagReset-stateStruct.position.z) > 0.5f;
         float yawInnovIncrease = fabsf(innovYaw) - fabsf(yawInnovAtLastMagReset);
