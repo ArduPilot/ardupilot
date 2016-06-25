@@ -27,8 +27,9 @@
 #include <GCS_MAVLink/GCS.h>
 
 #define VEHICLE_THREAT_RADIUS_M         1000
-#define VEHICLE_LIST_LENGTH             25      // # of ADS-B vehicles to remember at any given time
 #define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
+#define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
+#define ADSB_VEHICLE_LIST_SIZE_MAX      100
 
 class AP_ADSB
 {
@@ -106,6 +107,8 @@ private:
 
     AP_Int8     _enabled;
     AP_Int8     _behavior;
+    AP_Int16    _list_size_param;
+    uint16_t    _list_size = 1; // start with tiny list, then change to param-defined size. This ensures it doesn't fail on start
     adsb_vehicle_t *_vehicle_list;
     uint16_t    _vehicle_count = 0;
     bool        _another_vehicle_within_radius = false;
