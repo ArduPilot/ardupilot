@@ -7,7 +7,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
-#include <AP_Fence/AP_PolyFence_loader.h>
+#include <AC_Fence/AC_PolyFence_loader.h>
 
 // bit masks for enabled fence types.  Used for TYPE parameter
 #define AC_FENCE_TYPE_NONE                          0       // fence disabled
@@ -153,7 +153,7 @@ private:
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
 
     // polygon fence variables
-    AP_PolyFence_loader _poly_loader;               // helper for loading/saving polygon points
+    AC_PolyFence_loader _poly_loader;               // helper for loading/saving polygon points
     Vector2f        *_boundary = NULL;              // array of boundary points.  Note: point 0 is the return point
     uint8_t         _boundary_num_points = 0;       // number of points in the boundary array (should equal _total parameter after load has completed)
     bool            _boundary_create_attempted = false; // true if we have attempted to create the boundary array
