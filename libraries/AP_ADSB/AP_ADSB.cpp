@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @DisplayName: Enable ADSB
     // @Description: Enable ADS-B
     // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
+    // @User: Standard
     AP_GROUPINFO("ENABLE",     0, AP_ADSB, _enabled,    0),
 
     // @Param: BEHAVIOR
@@ -43,6 +43,13 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BEHAVIOR",   1, AP_ADSB, _behavior, ADSB_BEHAVIOR_NONE),
 
+    // @Param: LIST_MAX
+    // @DisplayName: ADSB vehicle list size
+    // @Description: ADSB list size of nearest vehicles. Longer lists take longer to refresh with lower SRx_ADSB values.
+    // @Range: 1 100
+    // @User: Advanced
+    AP_GROUPINFO("LIST_MAX",   2, AP_ADSB, _list_size_param, ADSB_VEHICLE_LIST_SIZE_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -51,16 +58,21 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
  */
 void AP_ADSB::init(void)
 {
-    if (_vehicle_list == NULL) {
-        _vehicle_list = new adsb_vehicle_t[VEHICLE_LIST_LENGTH];
+    _vehicle_count = 0;
+    if (_vehicle_list == nullptr) {
+        if (_list_size_param != constrain_int16(_list_size_param, 1, ADSB_VEHICLE_LIST_SIZE_MAX)) {
+            _list_size_param.set_and_notify(ADSB_VEHICLE_LIST_SIZE_DEFAULT);
+            _list_size_param.save();
+        }
+        _list_size = _list_size_param;
+        _vehicle_list = new adsb_vehicle_t[_list_size];
 
-        if (_vehicle_list == NULL) {
+        if (_vehicle_list == nullptr) {
             // dynamic RAM allocation of _vehicle_list[] failed, disable gracefully
             hal.console->printf("Unable to initialize ADS-B vehicle list\n");
-            _enabled.set(0);
+            _enabled.set_and_notify(0);
         }
     }
-    _vehicle_count = 0;
     _lowest_threat_distance = 0;
     _highest_threat_distance = 0;
     _another_vehicle_within_radius = false;
@@ -72,11 +84,11 @@ void AP_ADSB::init(void)
  */
 void AP_ADSB::deinit(void)
 {
-    if (_vehicle_list != NULL) {
-        delete [] _vehicle_list;
-        _vehicle_list = NULL;
-    }
     _vehicle_count = 0;
+    if (_vehicle_list != nullptr) {
+        delete [] _vehicle_list;
+        _vehicle_list = nullptr;
+    }
 }
 
 /*
@@ -85,13 +97,16 @@ void AP_ADSB::deinit(void)
 void AP_ADSB::update(void)
 {
     if (!_enabled) {
-        if (_vehicle_list != NULL) {
+        if (_vehicle_list != nullptr) {
             deinit();
         }
         // nothing to do
         return;
-    } else if (_vehicle_list == NULL)  {
+    } else if (_vehicle_list == nullptr)  {
         init();
+        return;
+    } else if (_list_size != _list_size_param) {
+        deinit();
         return;
     }
 
@@ -229,7 +244,7 @@ bool AP_ADSB::find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const
  */
 void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
 {
-    if (_vehicle_list == NULL) {
+    if (_vehicle_list == nullptr) {
         // We are only null when disabled. Updating is inhibited.
         return;
     }
@@ -243,7 +258,7 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
         // found, update it
         set_vehicle(index, vehicle);
 
-    } else if (_vehicle_count < VEHICLE_LIST_LENGTH) {
+    } else if (_vehicle_count < _list_size) {
 
         // not found and there's room, add it to the end of the list
         set_vehicle(_vehicle_count, vehicle);
@@ -285,7 +300,7 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
  */
 void AP_ADSB::set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle)
 {
-    if (index < VEHICLE_LIST_LENGTH) {
+    if (index < _list_size) {
         _vehicle_list[index] = vehicle;
         _vehicle_list[index].last_update_ms = AP_HAL::millis();
     }
@@ -293,7 +308,7 @@ void AP_ADSB::set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle)
 
 void AP_ADSB::send_adsb_vehicle(mavlink_channel_t chan)
 {
-    if (_vehicle_list == NULL || !_enabled || _vehicle_count == 0) {
+    if (_vehicle_list == nullptr || _vehicle_count == 0) {
         return;
     }
 
