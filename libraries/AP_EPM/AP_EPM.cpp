@@ -48,16 +48,16 @@ const AP_Param::GroupInfo AP_EPM::var_info[] = {
 
     // @Param: REGRAB
     // @DisplayName: EPM Regrab interval
-    // @Description: Time in seconds that gripper will regrab the cargo to ensure grip has not weakend
+    // @Description: Time in seconds that gripper will regrab the cargo to ensure grip has not weakened; 0 to disable
     // @User: Advanced
-    // @Values: 0:Never, 15:every 15 seconds, 30:every 30 seconds, 60:once per minute
+    // @Values: 0 255
     AP_GROUPINFO("REGRAB",  4, AP_EPM, _regrab_interval, EPM_REGRAB_DEFAULT),
 
     // @Param: REGRAB
     // @DisplayName: EPM UAVCAN Hardpoint ID
     // @Description: Refer to https://docs.zubax.com/opengrab_epm_v3#UAVCAN_interface
     // @User: Standard
-    // @Range: 0 to 255
+    // @Range: 0 255
     AP_GROUPINFO("UAVCAN_ID", 5, AP_EPM, _uavcan_hardpoint_id, 0),
 
     AP_GROUPEND
