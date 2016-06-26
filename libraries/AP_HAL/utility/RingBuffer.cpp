@@ -96,7 +96,7 @@ bool ByteBuffer::advance(uint32_t n)
     return true;
 }
 
-int ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
+uint8_t ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
 {
     if (len > available()) {
         len = available();
@@ -113,14 +113,14 @@ int ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
     iovec[0].data = const_cast<uint8_t *>(b);
     iovec[0].len = n;
 
-    if (len > n) {
-        iovec[1].data = buf;
-        iovec[1].len = len - n;
-
-        return 2;
+    if (len <= n) {
+        return 1;
     }
 
-    return 1;
+    iovec[1].data = buf;
+    iovec[1].len = len - n;
+
+    return 2;
 }
 
 /*
