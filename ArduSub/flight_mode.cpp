@@ -95,6 +95,10 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         	success = throw_init(ignore_checks);
         	break;
 
+        case MANUAL:
+        	success = manual_init(ignore_checks);
+        	break;
+
         default:
             success = false;
             break;
@@ -207,6 +211,11 @@ void Sub::update_flight_mode()
         case THROW:
         	throw_run();
         	break;
+
+        case MANUAL:
+        	manual_run();
+        	break;
+
         default:
         	break;
     }
