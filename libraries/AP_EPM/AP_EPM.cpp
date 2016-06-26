@@ -105,11 +105,15 @@ void AP_EPM::grab()
     // capture time
     _last_grab_or_release = AP_HAL::millis();
 
+#ifdef UAVCAN_IOCS_HARDPOINT_SET
     if (should_use_uavcan()) {
         ::printf("EPM: UAVCAN GRAB\n");
         const UAVCANCommand cmd = make_uavcan_command(1);
         (void)ioctl(_uavcan_fd, UAVCAN_IOCS_HARDPOINT_SET, reinterpret_cast<unsigned long>(&cmd));
-    } else {
+    }
+    else
+#endif
+    {
         // move the servo to the release position
         RC_Channel_aux::set_radio(RC_Channel_aux::k_epm, _grab_pwm);
     }
@@ -130,11 +134,15 @@ void AP_EPM::release()
     // capture time
     _last_grab_or_release = AP_HAL::millis();
 
+#ifdef UAVCAN_IOCS_HARDPOINT_SET
     if (should_use_uavcan()) {
         ::printf("EPM: UAVCAN RELEASE\n");
         const UAVCANCommand cmd = make_uavcan_command(0);
         (void)ioctl(_uavcan_fd, UAVCAN_IOCS_HARDPOINT_SET, reinterpret_cast<unsigned long>(&cmd));
-    } else {
+    }
+    else
+#endif
+    {
         // move the servo to the release position
         RC_Channel_aux::set_radio(RC_Channel_aux::k_epm, _release_pwm);
     }
