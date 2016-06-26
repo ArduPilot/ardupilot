@@ -826,6 +826,8 @@ private:
     void sport_run();
     bool stabilize_init(bool ignore_checks);
     void stabilize_run();
+    bool manual_init(bool ignore_checks);
+    void manual_run();
     void crash_check();
     void parachute_check();
     void parachute_release();
