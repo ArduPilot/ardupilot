@@ -192,7 +192,7 @@ void AP_Airspeed::update_calibration(float raw_pressure)
 {
     if (AP_HAL::millis() - _cal.start_ms >= 1000) {
         if (_cal.count == 0) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor calibrating");
         } else {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor calibrated");
             _offset.set_and_save(_cal.sum / _cal.count);
