@@ -74,13 +74,13 @@ public:
     uint32_t peekbytes(uint8_t *data, uint32_t len);
 
     // Similar to peekbytes(), but will fill out IoVec struct with
-    // both parts of the ring buffer if wraparound is happpening, or
+    // both parts of the ring buffer if wraparound is happening, or
     // just one part. Returns the number of parts written to.
     struct IoVec {
         uint8_t *data;
         uint32_t len;
     };
-    int peekiovec(IoVec vec[2], uint32_t len);
+    uint8_t peekiovec(IoVec vec[2], uint32_t len);
 
     // Reserve `len` bytes and fills out `vec` with both parts of the
     // ring buffer (if wraparound is happening), or just one contiguous
