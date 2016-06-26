@@ -101,7 +101,7 @@ bool ByteBuffer::advance(uint32_t n)
     return true;
 }
 
-int ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
+uint8_t ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
 {
     if (len > available()) {
         len = available();
