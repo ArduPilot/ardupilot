@@ -49,15 +49,8 @@ public:
     void start() override;
 
 private:
-    enum bus_type {
-        BUS_TYPE_I2C = 0,
-        BUS_TYPE_SPI,
-    };
-
     AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
-                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              enum bus_type bus_type,
-                              uint8_t read_flag);
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
 #if MPU9250_DEBUG
     static void _dump_registers();
@@ -84,16 +77,12 @@ private:
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val);
-    void _register_write_check(uint8_t reg, uint8_t val);
 
     void _accumulate(uint8_t *sample);
 
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
-
-    const uint8_t _read_flag;
-    const enum bus_type _bus_type;
 
     // The default rotation for the IMU, its value depends on how the IMU is
     // placed by default on the system
