@@ -27,8 +27,8 @@
 class AP_HAL::Device {
 public:
     enum BusType {
-        I2C,
-        SPI,
+        BUS_TYPE_I2C,
+        BUS_TYPE_SPI,
     };
 
     enum Speed {

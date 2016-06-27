@@ -297,7 +297,7 @@ void AP_InertialSensor_MPU6000::_fifo_enable()
 
 bool AP_InertialSensor_MPU6000::_has_auxiliary_bus()
 {
-    return _dev->bus_type != AP_HAL::Device::I2C;
+    return _dev->bus_type != AP_HAL::Device::BUS_TYPE_I2C;
 }
 
 void AP_InertialSensor_MPU6000::start()
@@ -610,7 +610,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         hal.scheduler->delay(100);
 
         /* bus-dependent initialization */
-        if (_dev->bus_type == AP_HAL::Device::SPI) {
+        if (_dev->bus_type == AP_HAL::Device::BUS_TYPE_SPI) {
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
             _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);

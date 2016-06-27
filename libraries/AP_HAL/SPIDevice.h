@@ -27,7 +27,7 @@ namespace AP_HAL {
 
 class SPIDevice : public Device {
 public:
-    SPIDevice() : Device(SPI) { }
+    SPIDevice() : Device(BUS_TYPE_SPI) { }
 
     virtual ~SPIDevice() { }
     /* Device implementation */
