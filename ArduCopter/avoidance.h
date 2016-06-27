@@ -32,4 +32,7 @@ private:
     // out of trouble
     AvoidanceHandler &handler_for_action(MAV_COLLISION_ACTION action) override;
 
+    // returns true if taking control of the aircraft would be a bad idea
+    bool active_actions_prohibited() const;
+
 };

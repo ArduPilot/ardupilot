@@ -9,10 +9,26 @@ void Copter::avoidance_update(void)
 
 #include <stdio.h>
 
-AvoidanceHandler &AP_Avoidance_Copter::handler_for_action(MAV_COLLISION_ACTION action)
+bool AP_Avoidance_Copter::active_actions_prohibited() const
 {
     if (copter.ap.land_complete) {
-        // do nothing if we are not flying
+        return true;
+    }
+
+    if (copter.control_mode == LAND ||
+        copter.control_mode == THROW ||
+        copter.control_mode == FLIP) {
+        return true;
+    }
+
+    return false;
+}
+
+
+AvoidanceHandler &AP_Avoidance_Copter::handler_for_action(MAV_COLLISION_ACTION action)
+{
+    if (active_actions_prohibited()) {
+        // do nothing except possibly report
         if (action == MAV_COLLISION_ACTION_REPORT) {
             return avoidance_handler_report;
         }
