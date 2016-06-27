@@ -190,7 +190,15 @@ class SIL(pexpect.spawn):
         pexpect_autoclose(self)
         # give time for parameters to properly setup
         time.sleep(3)
-        self.expect('Waiting for connection',timeout=300)
+        if gdb:
+            # if we run GDB we do so in an xterm.  "Waiting for
+            # connection" is never going to appear on xterm's output.
+            #... so let's give it another magic second.
+            time.sleep(1)
+            # TODO: have a SITL-compiled ardupilot able to have its
+            # console on an output fd.
+        else:
+            self.expect('Waiting for connection',timeout=300)
 
 
     def valgrind_log_filepath(self):
