@@ -14,7 +14,7 @@ public:
 
 protected:
 
-    control_mode_t mode() const override { return RTL; }
+    control_mode_t mode() const override { return LOITER; }
 
 private:
 
