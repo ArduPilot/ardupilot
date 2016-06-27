@@ -144,6 +144,7 @@ parser.add_option("--map", action='store_true', default=False, help='show map')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
 parser.add_option("--valgrind", default=False, action='store_true', help='run ArduPilot binaries under valgrind')
+parser.add_option("--gdb", default=False, action='store_true', help='run ArduPilot binaries under gdb')
 parser.add_option("--debug", default=False, action='store_true', help='make built binaries debug binaries')
 parser.add_option("-j", default=None, type='int', help='build CPUs')
 
@@ -265,19 +266,19 @@ def run_step(step):
         return get_default_params('APMrover2', binary)
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
 
     if step == 'fly.CopterAVC':
-        return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
 
     if step == 'fly.QuadPlane':
-        return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind)
+        return apmrover2.drive_APMrover2(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
 
     if step == 'build.All':
         return build_all()
