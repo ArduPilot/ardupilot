@@ -42,21 +42,22 @@ bool AvoidanceHandler__ModeChange::update()
 
 void AvoidanceHandler__ModeChange::exit_revert_flight_mode()
 {
-    if (copter.control_mode_reason != MODE_REASON_AVOIDANCE) {
+    if (copter.control_mode_reason != MODE_REASON_AVOIDANCE &&
+        copter.control_mode_reason != MODE_REASON_AVOIDANCE_RECOVERY) {
         // we did not set the current flight mode (e.g. the user
         // switched away from us to Stabilize and resolved the issue
         // themselves).  Leave them in that mode:
         return;
     }
 
-    if (copter.set_mode(_old_flight_mode, MODE_REASON_AVOIDANCE)) { // should we revert the reason?
+    if (copter.set_mode(_old_flight_mode, MODE_REASON_AVOIDANCE_RECOVERY)) {
         // All good, Copter returned to what it was doing.
         return;
     }
 
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "AVOID: Failed to revert flight mode");
 
-    copter.set_mode_RTL_or_land_with_pause(MODE_REASON_AVOIDANCE);
+    copter.set_mode_RTL_or_land_with_pause(MODE_REASON_AVOIDANCE_RECOVERY);
 }
 
 void AvoidanceHandler__ModeChange::exit()
