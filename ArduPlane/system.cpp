@@ -264,13 +264,6 @@ void Plane::startup_ground(void)
     delay(GROUND_START_DELAY * 1000);
 #endif
 
-    // Makes the servos wiggle
-    // step 1 = 1 wiggle
-    // -----------------------
-    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        demo_servos(1);
-    }
-
     //INS ground start
     //------------------------
     //
@@ -288,12 +281,6 @@ void Plane::startup_ground(void)
 
     // initialise mission library
     mission.init();
-
-    // Makes the servos wiggle - 3 times signals ready to fly
-    // -----------------------
-    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        demo_servos(3);
-    }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup

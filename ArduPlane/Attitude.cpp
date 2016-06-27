@@ -1305,22 +1305,6 @@ bool Plane::allow_reverse_thrust(void)
     return allow;
 }
 
-void Plane::demo_servos(uint8_t i) 
-{
-    while(i > 0) {
-        gcs_send_text(MAV_SEVERITY_INFO,"Demo servos");
-        demoing_servos = true;
-        servo_write(1, 1400);
-        hal.scheduler->delay(400);
-        servo_write(1, 1600);
-        hal.scheduler->delay(200);
-        servo_write(1, 1500);
-        demoing_servos = false;
-        hal.scheduler->delay(400);
-        i--;
-    }
-}
-
 /*
   adjust nav_pitch_cd for STAB_PITCH_DOWN_CD. This is used to make
   keeping up good airspeed in FBWA mode easier, as the plane will
