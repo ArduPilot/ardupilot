@@ -34,7 +34,7 @@ void loop(void)
         }
     }
     if (changed) {
-        for (uint8_t i=0; i<max_channels; i++) {
+        for (uint8_t i=0; i<=max_channels; i++) {
             hal.console->printf("%2u:%04u ", (unsigned)i+1, (unsigned)last_value[i]);
         }
         hal.console->println();
