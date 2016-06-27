@@ -176,6 +176,7 @@ private:
         uint32_t        start_ms;
         uint16_t        count;
         float           sum;
+        uint16_t        read_count;
     } _cal;
 
     Airspeed_Calibration _calibration;
