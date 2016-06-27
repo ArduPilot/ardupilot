@@ -131,23 +131,18 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
         AP_HAL::panic("AP_InertialSensor_L3G4200D: could not find ADXL345 accelerometer sensor");
     }
 
-    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_POWER_CTL, 0x00);
-    hal.scheduler->delay(5);
-    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_POWER_CTL, 0xff);
-    hal.scheduler->delay(5);
+    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_POWER_CTL, 0x00, 5);
+    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_POWER_CTL, 0xff, 5);
     // Measure mode:
-    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_POWER_CTL, 0x08);
-    hal.scheduler->delay(5);
+    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_POWER_CTL, 0x08, 5);
 
     // Full resolution, 8g:
     // Caution, this must agree with ADXL345_ACCELEROMETER_SCALE_1G
     // In full resoution mode, the scale factor need not change
-    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_DATA_FORMAT, 0x08);
-    hal.scheduler->delay(5);
+    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_DATA_FORMAT, 0x08, 5);
 
     // Normal power, 800Hz Output Data Rate, 400Hz bandwidth:
-    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_BW_RATE, 0x0d);
-    hal.scheduler->delay(5);
+    _dev->write_register(ADXL345_ACCELEROMETER_ADXLREG_BW_RATE, 0x0d, 5);
 
     // enable FIFO in stream mode. This will allow us to read the accelerometers
     // much less frequently
@@ -165,35 +160,35 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
     _dev->write_register(L3G4200D_REG_CTRL_REG1,
                          L3G4200D_REG_CTRL_REG1_DRBW_800_110 |
                          L3G4200D_REG_CTRL_REG1_PD |
-                         L3G4200D_REG_CTRL_REG1_XYZ_ENABLE);
-    hal.scheduler->delay(1);
+                         L3G4200D_REG_CTRL_REG1_XYZ_ENABLE,
+                         1);
 
     _dev->write_register(L3G4200D_REG_CTRL_REG1,
                          L3G4200D_REG_CTRL_REG1_DRBW_800_110 |
                          L3G4200D_REG_CTRL_REG1_PD |
-                         L3G4200D_REG_CTRL_REG1_XYZ_ENABLE);
-    hal.scheduler->delay(1);
+                         L3G4200D_REG_CTRL_REG1_XYZ_ENABLE,
+                         1);
 
     _dev->write_register(L3G4200D_REG_CTRL_REG1,
                          L3G4200D_REG_CTRL_REG1_DRBW_800_110 |
                          L3G4200D_REG_CTRL_REG1_PD |
-                         L3G4200D_REG_CTRL_REG1_XYZ_ENABLE);
-    hal.scheduler->delay(1);
+                         L3G4200D_REG_CTRL_REG1_XYZ_ENABLE,
+                         1);
 
     // setup for 2000 degrees/sec full range
     _dev->write_register(L3G4200D_REG_CTRL_REG4,
-                         L3G4200D_REG_CTRL_REG4_FS_2000);
-    hal.scheduler->delay(1);
+                         L3G4200D_REG_CTRL_REG4_FS_2000,
+                         1);
 
     // enable FIFO
     _dev->write_register(L3G4200D_REG_CTRL_REG5,
-                         L3G4200D_REG_CTRL_REG5_FIFO_EN);
-    hal.scheduler->delay(1);
+                         L3G4200D_REG_CTRL_REG5_FIFO_EN,
+                         1);
 
     // enable FIFO in stream mode. This will allow us to read the gyros much less frequently
     _dev->write_register(L3G4200D_REG_FIFO_CTL,
-                         L3G4200D_REG_FIFO_CTL_STREAM);
-    hal.scheduler->delay(1);
+                         L3G4200D_REG_FIFO_CTL_STREAM,
+                         1);
 
     _dev->get_semaphore()->give();
 

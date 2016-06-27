@@ -4,10 +4,8 @@
 // Simple test for the AP_InertialSensor driver.
 //
 
-#include <AP_ADC/AP_ADC.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Math/AP_Math.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 

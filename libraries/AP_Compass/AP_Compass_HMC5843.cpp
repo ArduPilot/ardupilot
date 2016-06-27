@@ -408,25 +408,26 @@ bool AP_Compass_HMC5843::_calibrate()
     uint8_t old_config = _base_config & ~(HMC5843_OPMODE_MASK);
 
     while (success == 0 && numAttempts < 25 && good_count < 5) {
+        bool r;
         numAttempts++;
 
         // force positiveBias (compass should return 715 for all channels)
-        if (!_bus->register_write(HMC5843_REG_CONFIG_A,
-                                  old_config | HMC5843_OPMODE_POSITIVE_BIAS)) {
+        r = _bus->register_write(HMC5843_REG_CONFIG_A,
+                                 old_config | HMC5843_OPMODE_POSITIVE_BIAS,
+                                 50);
+        if (!r) {
             // compass not responding on the bus
             continue;
         }
 
-        hal.scheduler->delay(50);
-
         // set gains
-        if (!_bus->register_write(HMC5843_REG_CONFIG_B, calibration_gain) ||
-            !_bus->register_write(HMC5843_REG_MODE, HMC5843_MODE_SINGLE)) {
+        r = _bus->register_write(HMC5843_REG_CONFIG_B, calibration_gain) &&
+            _bus->register_write(HMC5843_REG_MODE, HMC5843_MODE_SINGLE, 50);
+        if (!r) {
             continue;
         }
 
         // read values from the compass
-        hal.scheduler->delay(50);
         if (!_read_sample()) {
             // we didn't read valid values
             continue;
@@ -508,6 +509,13 @@ bool AP_HMC5843_BusDriver_HALDevice::register_write(uint8_t reg, uint8_t val)
     return _dev->write_register(reg, val);
 }
 
+bool AP_HMC5843_BusDriver_HALDevice::register_write(uint8_t reg,
+                                                    uint8_t val,
+                                                    uint16_t delay_ms)
+{
+    return _dev->write_register(reg, val, delay_ms);
+}
+
 AP_HAL::Semaphore *AP_HMC5843_BusDriver_HALDevice::get_semaphore()
 {
     return _dev->get_semaphore();
@@ -563,6 +571,17 @@ bool AP_HMC5843_BusDriver_Auxiliary::register_read(uint8_t reg, uint8_t *val)
 bool AP_HMC5843_BusDriver_Auxiliary::register_write(uint8_t reg, uint8_t val)
 {
     return _slave->passthrough_write(reg, val) == 1;
+}
+
+bool AP_HMC5843_BusDriver_Auxiliary::register_write(uint8_t reg,
+                                                    uint8_t val,
+                                                    uint16_t delay_ms)
+{
+    bool r = _slave->passthrough_write(reg, val) == 1;
+    if (r) {
+        hal.scheduler->delay(delay_ms);
+    }
+    return r;
 }
 
 AP_HAL::Semaphore *AP_HMC5843_BusDriver_Auxiliary::get_semaphore()

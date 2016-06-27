@@ -35,6 +35,41 @@ class DataFlash_Class;
 class AP_InertialSensor_Backend
 {
 public:
+    /**
+     * Data sampling mode. It tells the backend which method to use for
+     * sampling data. Some backends might not implement all modes.
+     */
+    enum SamplingMode {
+        /**
+         * Use the sensor's internal FIFO.
+         */
+        FIFO = 0,
+        /**
+         * Check if there's a new sample available and read it.
+         */
+        DATA_READY,
+    } mode;
+
+    /**
+     * Struct to instruct backends on how to sample a sensor. Since backends
+     * can export different numbers of accelerometer or gyroscope sensors, the
+     * management of sampling configurations is left for each backend to
+     * implement.
+     */
+    struct SamplingConfig {
+        /**
+         * Sampling mode.
+         */
+        enum SamplingMode mode;
+
+        /**
+         * Data ready GPIO pin, valid only for DATA_READY polling mode. If
+         * that's a non-negative value, it tells the backend to use the
+         * #drdy_pin GPIO pin to check if sensor data is ready.
+         */
+        int32_t drdy_pin;
+    };
+
     AP_InertialSensor_Backend(AP_InertialSensor &imu);
     AP_InertialSensor_Backend(const AP_InertialSensor_Backend &that) = delete;
 

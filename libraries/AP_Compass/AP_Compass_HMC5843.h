@@ -76,6 +76,7 @@ public:
     virtual bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) = 0;
     virtual bool register_read(uint8_t reg, uint8_t *val) = 0;
     virtual bool register_write(uint8_t reg, uint8_t val) = 0;
+    virtual bool register_write(uint8_t reg, uint8_t val, uint16_t delay_ms) = 0;
 
     virtual AP_HAL::Semaphore *get_semaphore() = 0;
 
@@ -91,6 +92,7 @@ public:
     bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) override;
     bool register_read(uint8_t reg, uint8_t *val) override;
     bool register_write(uint8_t reg, uint8_t val) override;
+    bool register_write(uint8_t reg, uint8_t val, uint16_t delay_ms) override;
 
     AP_HAL::Semaphore *get_semaphore() override;
 
@@ -108,6 +110,7 @@ public:
     bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) override;
     bool register_read(uint8_t reg, uint8_t *val) override;
     bool register_write(uint8_t reg, uint8_t val) override;
+    bool register_write(uint8_t reg, uint8_t val, uint16_t delay_ms) override;
 
     AP_HAL::Semaphore *get_semaphore() override;
 

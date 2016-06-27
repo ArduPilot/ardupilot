@@ -202,12 +202,8 @@ static const float GYRO_SCALE = 0.0174532f / 16.4f;
  */
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                                     enum bus_type type,
-                                                     uint8_t read_flag)
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_InertialSensor_Backend(imu)
-    , _read_flag(read_flag)
-    , _bus_type(type)
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     , _default_rotation(ROTATION_ROLL_180_YAW_270)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
@@ -226,6 +222,12 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
 #endif
     , _dev(std::move(dev))
 {
+    if (dynamic_cast<AP_HAL::SPIDevice *>(_dev.get()) != nullptr) {
+        _bus_type = BUS_TYPE_SPI;
+        _dev->set_read_flag(0x80);
+        return;
+    }
+    _bus_type = BUS_TYPE_I2C;
 }
 
 AP_InertialSensor_MPU9250::~AP_InertialSensor_MPU9250()
@@ -237,7 +239,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_InertialSensor_MPU9250 *sensor =
-        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_I2C, 0);
+        new AP_InertialSensor_MPU9250(imu, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -252,7 +254,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
 {
     AP_InertialSensor_MPU9250 *sensor =
-        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_SPI, 0x80);
+        new AP_InertialSensor_MPU9250(imu, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -292,20 +294,17 @@ void AP_InertialSensor_MPU9250::start()
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     // only used for wake-up in accelerometer only low power mode
-    _register_write(MPUREG_PWR_MGMT_2, 0x00);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_PWR_MGMT_2, 0x00, 1);
 
     // disable sensor filtering
     _register_write(MPUREG_CONFIG, BITS_DLPF_CFG_256HZ_NOLPF2);
 
     // set sample rate to 1kHz, and use the 2 pole filter to give the
     // desired rate
-    _register_write(MPUREG_SMPLRT_DIV, DEFAULT_SMPLRT_DIV);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_SMPLRT_DIV, DEFAULT_SMPLRT_DIV, 1);
 
     // Gyro scale 2000º/s
-    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);
-    hal.scheduler->delay(1);
+    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS, 1);
 
     _product_id = AP_PRODUCT_ID_MPU9250;
 
@@ -437,17 +436,13 @@ void AP_InertialSensor_MPU9250::_read_sample()
 bool AP_InertialSensor_MPU9250::_block_read(uint8_t reg, uint8_t *buf,
                                             uint32_t size)
 {
-    reg |= _read_flag;
     return _dev->read_registers(reg, buf, size);
 }
 
 uint8_t AP_InertialSensor_MPU9250::_register_read(uint8_t reg)
 {
     uint8_t val = 0;
-
-    reg |= _read_flag;
     _dev->read_registers(reg, &val, 1);
-
     return val;
 }
 
@@ -456,20 +451,11 @@ void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
     _dev->write_register(reg, val);
 }
 
-/*
-  useful when debugging SPI bus errors
- */
-void AP_InertialSensor_MPU9250::_register_write_check(uint8_t reg, uint8_t val)
+void AP_InertialSensor_MPU9250::_register_write(uint8_t reg,
+                                                uint8_t val,
+                                                uint16_t delay_ms)
 {
-    uint8_t readed;
-    _register_write(reg, val);
-    readed = _register_read(reg);
-    if (readed != val){
-        hal.console->printf("Values doesn't match; written: %02x; read: %02x ", val, readed);
-    }
-#if MPU9250_DEBUG
-    hal.console->printf("Values written: %02x; readed: %02x ", val, readed);
-#endif
+    _dev->write_register(reg, val, delay_ms);
 }
 
 bool AP_InertialSensor_MPU9250::_hardware_init(void)
@@ -496,13 +482,13 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
          * aulixiliar I2C bus - it will be enabled again if the AuxiliaryBus
          * is used */
         if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
-            _register_write(MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
-            hal.scheduler->delay(10);
+            _register_write(MPUREG_USER_CTRL,
+                            user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN,
+                            10);
         }
 
         // reset device
-        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
-        hal.scheduler->delay(100);
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET, 100);
 
         /* bus-dependent initialization */
         if (_bus_type == BUS_TYPE_SPI) {
@@ -514,8 +500,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
         // Wake up device and select GyroZ clock. Note that the
         // MPU9250 starts up in sleep mode, and it can take some time
         // for it to come out of sleep
-        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
-        hal.scheduler->delay(5);
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO, 5);
 
         // check it has woken up
         if (_register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
