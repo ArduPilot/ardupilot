@@ -415,6 +415,9 @@ void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *m
     waypoint_request_i = 0;                 // reset the next expected command number to zero
     waypoint_request_last = packet.count;   // record how many commands we expect to receive
     waypoint_timelast_request = 0;          // set time we last requested commands to zero
+
+    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who has requested the commands
+    waypoint_dest_compid = msg->compid;     // record component id of GCS who has requested the commands
 }
 
 /*
