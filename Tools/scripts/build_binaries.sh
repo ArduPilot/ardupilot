@@ -321,7 +321,7 @@ build_antennatracker() {
     tag="$1"
     echo "Building AntennaTracker $tag binaries from $(pwd)"
     pushd AntennaTracker
-    for b in apm2; do
+    for b in apm2 navio navio2; do
         echo "Building AntennaTracker $b binaries"
         checkout AntennaTracker $tag $b "" || continue
         ddir=$binaries/AntennaTracker/$hdate/$b
