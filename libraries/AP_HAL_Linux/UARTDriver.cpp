@@ -312,6 +312,10 @@ void UARTDriver::_udp_start_connection(void)
  */
 void UARTDriver::_udpin_start_connection(void)
 {
+    bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
+    if (bcast) {
+        AP_HAL::panic("Can't combine udpin with bcast");
+    }
     _device = new UDPDevice(_ip, _base_port, false, true);
     _connected = _device->open();
     _device->set_blocking(false);
