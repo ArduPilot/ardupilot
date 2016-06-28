@@ -67,7 +67,8 @@ enum aux_sw_func {
 	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
     AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
-    AUXSW_THROW =               37  // change to THROW flight mode
+    AUXSW_THROW =               37,  // change to THROW flight mode
+    AUXSW_AVOID =               38,  // enable AP_Avoidance library
 };
 
 // Frame types
@@ -354,6 +355,8 @@ enum ThrowModeState {
 #define DATA_EKF_ALT_RESET                  60
 #define DATA_LAND_CANCELLED_BY_PILOT        61
 #define DATA_EKF_YAW_RESET                  62
+#define DATA_AVOIDANCE_ENABLE               63
+#define DATA_AVOIDANCE_DISABLE              64
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
