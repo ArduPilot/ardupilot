@@ -6,7 +6,7 @@
 #include "GCS_Mavlink.h"
 
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
-#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
+#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_AHRS)
 
 void Copter::gcs_send_heartbeat(void)
 {
@@ -159,8 +159,7 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
-                                                         ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
-                                                         ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS);
+                                                         ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL);
 
     switch (control_mode) {
     case ALT_HOLD:
@@ -182,8 +181,11 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
         break;
     }
 
-    // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+    // set motors outputs as enabled if safety switch is armed
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_NONE) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
+    }
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_ARMED) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     }
 
