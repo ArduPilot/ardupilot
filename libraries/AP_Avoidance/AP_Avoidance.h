@@ -77,6 +77,9 @@ public:
         return _instance;
     }
 
+    void enable() { _enabled = true; };
+    void disable() { _enabled = false; };
+
     // add obstacles into the Avoidance system from MAVLink messages
     void MAVLink_packetReceived(const mavlink_message_t &msg);
 
