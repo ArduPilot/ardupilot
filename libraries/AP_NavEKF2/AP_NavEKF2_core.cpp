@@ -642,16 +642,11 @@ void NavEKF2_core::calcOutputStates()
             // convert time constant from centi-seconds to seconds
             float tauPosVel = 0.01f*(float)frontend->_tauVelPosOutput;
 
-            // calculate a position correction that will be applied to the output state history
+            // calculate a position and velocity correction that will be applied to the output state history
             // to track the EKF position states with the specified time constant
             float velPosGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
             Vector3f posDelta = (stateStruct.position - outputDataDelayed.position) * velPosGain;
-
-            // calculate a velocity correction that will be applied to the output state history
-            // to track the EKF velocity states with the specified time constant
-            Vector3f velDelta;
-            float velGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
-            velDelta = (stateStruct.velocity - outputDataDelayed.velocity) * velGain;
+            Vector3f velDelta = (stateStruct.velocity - outputDataDelayed.velocity) * velPosGain;
 
             // loop through the output filter state history and apply the corrections to the velocity and position states
             // this method is too expensive to use for the attitude states due to the quaternion operations required

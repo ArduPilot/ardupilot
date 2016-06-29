@@ -458,7 +458,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: -1 100
     // @Increment: 10
     // @User: Advanced
-    AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 50),
+    AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 10),
 
     // @Param: MAGE_P_NSE
     // @DisplayName: Earth magnetic field process noise (gauss/s)
