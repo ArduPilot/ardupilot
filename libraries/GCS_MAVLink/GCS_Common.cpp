@@ -416,8 +416,8 @@ void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *m
     waypoint_request_last = packet.count;   // record how many commands we expect to receive
     waypoint_timelast_request = 0;          // set time we last requested commands to zero
 
-    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who has requested the commands
-    waypoint_dest_compid = msg->compid;     // record component id of GCS who has requested the commands
+    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who wants to upload
+    waypoint_dest_compid = msg->compid;     // record component id of GCS who wants to upload
 }
 
 /*
@@ -461,6 +461,9 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     waypoint_receiving   = true;
     waypoint_request_i   = packet.start_index;
     waypoint_request_last= packet.end_index;
+
+    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who wants to upload
+    waypoint_dest_compid = msg->compid;     // record component id of GCS who wants to upload
 }
 
 
