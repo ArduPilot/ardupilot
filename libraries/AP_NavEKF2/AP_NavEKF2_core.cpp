@@ -493,13 +493,11 @@ void NavEKF2_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT)
 */
 void NavEKF2_core::UpdateStrapdownEquationsNED()
 {
-    // apply correction for earth's rotation rate
-    // % * - and + operators have been overloaded
-    imuDataDelayed.delAng -= prevTnb * earthRateNED*imuDataDelayed.delAngDT;
-
     // update the quaternion states by rotating from the previous attitude through
     // the delta angle rotation quaternion and normalise
-    stateStruct.quat.rotate(imuDataDelayed.delAng);
+    // apply correction for earth's rotation rate
+    // % * - and + operators have been overloaded
+    stateStruct.quat.rotate(delAngCorrected - prevTnb * earthRateNED*imuDataDelayed.delAngDT);
     stateStruct.quat.normalize();
 
     // transform body delta velocities to delta velocities in the nav frame
@@ -507,7 +505,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     // have been rotated into that frame
     // * and + operators have been overloaded
     Vector3f delVelNav;  // delta velocity vector in earth axes
-    delVelNav  = prevTnb.mul_transpose(imuDataDelayed.delVel);
+    delVelNav  = prevTnb.mul_transpose(delVelCorrected);
     delVelNav.z += GRAVITY_MSS*imuDataDelayed.delVelDT;
 
     // calculate the body to nav cosine matrix
@@ -542,7 +540,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     stateStruct.position += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
 
     // accumulate the bias delta angle and time since last reset by an OF measurement arrival
-    delAngBodyOF += imuDataDelayed.delAng - stateStruct.gyro_bias;
+    delAngBodyOF += delAngCorrected;
     delTimeOF += imuDataDelayed.delAngDT;
 
     // limit states to protect against divergence
