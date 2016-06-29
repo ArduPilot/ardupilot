@@ -238,39 +238,24 @@ void AP_MotorsCoax::output_armed_stabilizing()
     _thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
 
     // limit thrust out for calculation of actuator gains
-    float thrust_out_actuator = MAX(_throttle_hover*0.5f,thrust_out);
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,thrust_out), 0.1f, 1.0f);
 
-    if (is_zero(thrust_out_actuator)) {
+    if (is_zero(thrust_out)) {
         limit.roll_pitch = true;
-        if (roll_thrust < 0.0f) {
-            _actuator_out[0] = -1.0f;
-        } else if (roll_thrust > 0.0f) {
-            _actuator_out[0] = 1.0f;
-        } else {
-            _actuator_out[0] = 0.0f;
-        }
-        if (roll_thrust < 0.0f) {
-            _actuator_out[1] = -1.0f;
-        } else if (roll_thrust > 0.0f) {
-            _actuator_out[1] = 1.0f;
-        } else {
-            _actuator_out[1] = 0.0f;
-        }
-    } else {
-        // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
-        // static thrust is proportional to the airflow velocity squared
-        // therefore the torque of the roll and pitch actuators should be approximately proportional to
-        // the angle of attack multiplied by the static thrust.
-        _actuator_out[0] = roll_thrust/thrust_out_actuator;
-        _actuator_out[1] = pitch_thrust/thrust_out_actuator;
-        if (fabsf(_actuator_out[0]) > 1.0f) {
-            limit.roll_pitch = true;
-            _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
-        }
-        if (fabsf(_actuator_out[1]) > 1.0f) {
-            limit.roll_pitch = true;
-            _actuator_out[1] = constrain_float(_actuator_out[1], -1.0f, 1.0f);
-        }
+    }
+    // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
+    // static thrust is proportional to the airflow velocity squared
+    // therefore the torque of the roll and pitch actuators should be approximately proportional to
+    // the angle of attack multiplied by the static thrust.
+    _actuator_out[0] = roll_thrust/thrust_out_actuator;
+    _actuator_out[1] = pitch_thrust/thrust_out_actuator;
+    if (fabsf(_actuator_out[0]) > 1.0f) {
+        limit.roll_pitch = true;
+        _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
+    }
+    if (fabsf(_actuator_out[1]) > 1.0f) {
+        limit.roll_pitch = true;
+        _actuator_out[1] = constrain_float(_actuator_out[1], -1.0f, 1.0f);
     }
     _actuator_out[2] = -_actuator_out[0];
     _actuator_out[3] = -_actuator_out[1];
