@@ -787,6 +787,8 @@ private:
     bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
     float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
+    Vector3f delAngCorrected;       // corrected IMU delta angle vector at the EKF time horizon (rad)
+    Vector3f delVelCorrected;       // corrected IMU delta velocity vector at the EKF time horizon (m/s)
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.

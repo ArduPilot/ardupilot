@@ -346,7 +346,7 @@ void NavEKF2_core::FuseMagnetometer()
         }
 
         // scale magnetometer observation error with total angular rate to allow for timing errors
-        R_MAG = sq(constrain_float(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*imuDataDelayed.delAng.length() / imuDataDelayed.delAngDT);
+        R_MAG = sq(constrain_float(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*delAngCorrected.length() / imuDataDelayed.delAngDT);
 
         // calculate common expressions used to calculate observation jacobians an innovation variance for each component
         SH_MAG[0] = sq(q0) - sq(q1) + sq(q2) - sq(q3);
