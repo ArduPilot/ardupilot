@@ -258,6 +258,9 @@ public:
     // this is used by other instances to level load
     uint8_t getFramesSincePredict(void) const;
 
+    // publish output observer angular, velocity and position tracking error
+    void getOutputTrackingError(Vector3f &error) const;
+
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;
@@ -789,6 +792,8 @@ private:
     float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
     Vector3f delAngCorrected;       // corrected IMU delta angle vector at the EKF time horizon (rad)
     Vector3f delVelCorrected;       // corrected IMU delta velocity vector at the EKF time horizon (m/s)
+
+    Vector3f outputTrackError;
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
