@@ -250,7 +250,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     }
 
     // limit thrust out for calculation of actuator gains
-    float thrust_out_actuator = MAX(_throttle_hover*0.5,_thrust_out);
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5,_thrust_out), 0.1f, 1.0f);
 
     // calculate the maximum allowed actuator output and maximum requested actuator output
     for (uint8_t i=0; i<NUM_ACTUATORS; i++) {

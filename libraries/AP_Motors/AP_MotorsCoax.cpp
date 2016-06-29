@@ -238,7 +238,7 @@ void AP_MotorsCoax::output_armed_stabilizing()
     _thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
 
     // limit thrust out for calculation of actuator gains
-    float thrust_out_actuator = MAX(_throttle_hover*0.5f,thrust_out);
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5,thrust_out), 0.1f, 1.0f);
 
     if (is_zero(thrust_out)) {
         limit.roll_pitch = true;
