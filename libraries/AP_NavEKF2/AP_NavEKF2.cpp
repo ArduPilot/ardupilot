@@ -940,6 +940,15 @@ void NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posI
     }
 }
 
+// publish output observer angular, velocity and position tracking error
+void NavEKF2::getOutputTrackingError(int8_t instance, Vector3f &error) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        core[instance].getOutputTrackingError(error);
+    }
+}
+
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
 void NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset)
 {

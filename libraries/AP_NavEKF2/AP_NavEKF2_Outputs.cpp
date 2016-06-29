@@ -578,4 +578,10 @@ uint8_t NavEKF2_core::getFramesSincePredict(void) const
     return framesSincePredict;
 }
 
+// publish output observer angular, velocity and position tracking error
+void NavEKF2_core::getOutputTrackingError(Vector3f &error) const
+{
+    error = outputTrackError;
+}
+
 #endif // HAL_CPU_CLASS
