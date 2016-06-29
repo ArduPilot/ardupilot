@@ -61,7 +61,7 @@ public:
     // advance the read pointer (discarding bytes)
     bool advance(uint32_t n);
 
-    // return a pointer to the next available data
+    // Returns the pointer and size to a contiguous read of the next available data
     const uint8_t *readptr(uint32_t &available_bytes);
 
     // peek one byte without advancing read pointer. Return byte
@@ -72,7 +72,31 @@ public:
       read len bytes without advancing the read pointer
     */
     uint32_t peekbytes(uint8_t *data, uint32_t len);
-    
+
+    // Similar to peekbytes(), but will fill out IoVec struct with
+    // both parts of the ring buffer if wraparound is happening, or
+    // just one part. Returns the number of parts written to.
+    struct IoVec {
+        uint8_t *data;
+        uint32_t len;
+    };
+    uint8_t peekiovec(IoVec vec[2], uint32_t len);
+
+    // Reserve `len` bytes and fills out `vec` with both parts of the
+    // ring buffer (if wraparound is happening), or just one contiguous
+    // part. Returns the number of `vec` elements filled out. Can be used
+    // with system calls such as `readv()`.
+    //
+    // After a call to 'reserve()', 'write()' should never be called
+    // until 'commit()' is called!
+    uint8_t reserve(IoVec vec[2], uint32_t len);
+
+    /*
+     * "Releases" the memory previously reserved by 'reserve()' to be read.
+     * Committer must inform how many bytes were actually written in 'len'.
+     */
+    bool commit(uint32_t len);
+
 private:
     uint8_t *buf = nullptr;
     uint32_t size = 0;
