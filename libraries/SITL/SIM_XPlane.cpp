@@ -100,7 +100,7 @@ bool XPlane::receive_data(void)
     uint64_t data_mask = 0;
     const uint64_t required_mask = (1U<<Times | 1U<<LatLonAlt | 1U<<Speed | 1U<<PitchRollHeading |
                                     1U<<LocVelDistTraveled | 1U<<AngularVelocities | 1U<<Gload |
-                                    1U << Joystick1 | 1U << ThrottleCommand);
+                                    1U << Joystick1 | 1U << ThrottleCommand | 1U << Trim);
     Location loc {};
     Vector3f pos;
     uint32_t wait_time_ms = 1;
@@ -167,6 +167,7 @@ bool XPlane::receive_data(void)
             break;
 
         case AoA:
+        case Trim:
             // ignored
             break;
 
@@ -329,6 +330,16 @@ void XPlane::send_data(const struct sitl_input &input)
     // can detect when we get it back
     throttle += throttle_magic * 1e-6f;
     
+    uint8_t flap_chan;
+    if (RC_Channel_aux::find_channel(RC_Channel_aux::k_flap, flap_chan) ||
+        RC_Channel_aux::find_channel(RC_Channel_aux::k_flap_auto, flap_chan)) {
+        float flap = (input.servos[flap_chan]-1000)/1000.0;
+        if (flap != last_flap) {
+            send_dref("sim/flightmodel/controls/flaprqst", flap);
+            send_dref("sim/aircraft/overflow/acf_flap_arm", flap>0?1:0);
+        }
+    }
+
     d.code = 11;
     d.data[0] = elevator;
     d.data[1] = aileron;
@@ -345,6 +356,22 @@ void XPlane::send_data(const struct sitl_input &input)
     socket_out.send(&d, sizeof(d));
 
     throttle_sent = throttle;
+}
+
+
+/*
+  send DREF to X-Plane via UDP
+*/
+void XPlane::send_dref(const char *name, float value)
+{
+    struct PACKED {
+        uint8_t  marker[5] { 'D', 'R', 'E', 'F', '0' };
+        float value;
+        char name[500];
+    } d {};
+    d.value = value;
+    strcpy(d.name, name);
+    socket_out.send(&d, sizeof(d));        
 }
     
 /*
