@@ -29,11 +29,12 @@ void AP_MotorsHeli_RSC::init_servo()
 }
 
 // set_power_output_range
-void AP_MotorsHeli_RSC::set_power_output_range(float power_low, float power_high)
+void AP_MotorsHeli_RSC::set_power_output_range(float power_low, float power_high, float power_negc, uint16_t slewrate)
 {
     _power_output_low = power_low;
     _power_output_high = power_high;
-    _power_output_range = _power_output_high - _power_output_low;
+    _power_output_negc = power_negc;
+    _power_slewrate = slewrate;
 }
 
 // output - update value to send to ESC/Servo
@@ -41,6 +42,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 {
     float dt;
     uint64_t now = AP_HAL::micros64();
+    float last_control_output = _control_output;
     
     if (_last_update_us == 0) {
         _last_update_us = now;
@@ -75,8 +77,15 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 // set control rotor speed to ramp slewed value between idle and desired speed
                 _control_output = _idle_output + (_rotor_ramp_output * (_desired_speed - _idle_output));
             } else if (_control_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
-                // throttle output depending on estimated power demand. Output is ramped up from idle speed during rotor runup.
-                _control_output = _idle_output + (_rotor_ramp_output * ((_power_output_low - _idle_output) + (_power_output_range * _load_feedforward)));
+                // throttle output depending on estimated power demand. Output is ramped up from idle speed during rotor runup. A negative load
+                // is for the left side of the V-curve (-ve collective) A positive load is for the right side (+ve collective)
+                if (_load_feedforward >= 0) {
+                    float range = _power_output_high - _power_output_low;
+                    _control_output = _idle_output + (_rotor_ramp_output * ((_power_output_low - _idle_output) + (range * _load_feedforward)));
+                } else {
+                    float range = _power_output_negc - _power_output_low;
+                    _control_output = _idle_output + (_rotor_ramp_output * ((_power_output_low - _idle_output) - (range * _load_feedforward)));
+                }
             }
             break;
     }
@@ -84,6 +93,12 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
     // update rotor speed run-up estimate
     update_rotor_runup(dt);
 
+    if (_power_slewrate > 0) {
+        // implement slew rate for throttle
+        float max_delta = dt * _power_slewrate * 0.01f;
+        _control_output = constrain_float(_control_output, last_control_output-max_delta, last_control_output+max_delta);
+    }
+    
     // output to rsc servo
     write_rsc(_control_output);
 }

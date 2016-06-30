@@ -199,6 +199,8 @@ protected:
     AP_Int16        _rsc_idle_output;           // Rotor control output while at idle
     AP_Int16        _rsc_power_low;             // throttle value sent to throttle servo at zero collective pitch
     AP_Int16        _rsc_power_high;            // throttle value sent to throttle servo at maximum collective pitch
+    AP_Int16        _rsc_power_negc;            // throttle value sent to throttle servo at full negative collective pitch
+    AP_Int16        _rsc_slewrate;              // throttle slew rate (percentage per second)
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
 
     // internal variables
