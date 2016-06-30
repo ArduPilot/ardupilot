@@ -527,12 +527,15 @@ private:
     } auto_state;
 
     struct {
-        // roll commanded from external controller in centidegrees
-        int32_t roll_cd;
-        
+        // roll pitch yaw commanded from external controller in centidegrees
+        Vector3l forced_rpy_cd;
         // last time we heard from the external controller
-        uint32_t last_roll_ms;
-    } guided_state;
+        Vector3l last_forced_rpy_ms;
+
+        // throttle  commanded from external controller in percent
+        float forced_throttle;
+        uint32_t last_forced_throttle_ms;
+} guided_state;
 
     struct {
         // on hard landings, only check once after directly a landing so you
