@@ -108,6 +108,7 @@ public:
     void        output() const;
     void        output_trim() const;
     static void output_trim_all();
+    static void setup_failsafe_trim_mask(uint16_t chmask);
     static void setup_failsafe_trim_all();
     uint16_t    read() const;
     void        input();
