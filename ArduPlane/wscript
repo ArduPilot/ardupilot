@@ -38,3 +38,10 @@ def build(bld):
         program_groups=['bin', 'plane'],
         use=vehicle + '_libs',
     )
+
+    bld.ap_program(
+        program_name='arduplane-tri',
+        program_groups=['bin', 'plane'],
+        use=vehicle + '_libs',
+        defines=['FRAME_CONFIG=TRI_FRAME'],
+    )
