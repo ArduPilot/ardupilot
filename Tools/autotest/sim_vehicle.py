@@ -468,9 +468,10 @@ def options_for_frame(frame, vehicle, opts):
 
     if opts.model is not None:
         ret["model"] = opts.model
-        if (ret["model"].find("xplane") != -1 or
-            ret["model"].find("flightaxis") != -1):
-            ret["sitl-port"] = False
+
+    if (ret["model"].find("xplane") != -1 or
+        ret["model"].find("flightaxis") != -1):
+        ret["sitl-port"] = False
 
     if not ret.has_key("make_target"):
         ret["make_target"] = "sitl"
