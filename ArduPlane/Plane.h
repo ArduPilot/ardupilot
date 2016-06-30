@@ -527,13 +527,11 @@ private:
     } auto_state;
 
     struct {
-        // guiding roll from an external controller? (e.g., companion computer)
-        bool guiding_roll:1;
         // roll commanded from external controller in centidegrees
-        int32_t guided_roll_cd;
+        int32_t roll_cd;
         
         // last time we heard from the external controller
-        uint32_t last_guided_ms;
+        uint32_t last_roll_ms;
     } guided_state;
 
     struct {

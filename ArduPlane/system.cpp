@@ -337,7 +337,7 @@ void Plane::set_mode(enum FlightMode mode)
     crash_state.impact_detected = false;
 
     // reset external attitude guidance
-    guided_state.guiding_roll = false;
+    guided_state.last_roll_ms = 0;
 
     // always reset this because we don't know who called set_mode. In evasion
     // behavior you should set this flag after set_mode so you know the evasion

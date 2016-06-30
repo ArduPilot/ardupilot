@@ -2105,20 +2105,20 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
     {
-        //Only allow companion computer (or other external controller) to 
-        //control attitude in GUIDED mode.  We DON'T want external control
-        //in e.g., RTL, CICLE. Specifying a single mode for companion 
-        //computer control is more safe (even more so when using
-        //FENCE_ACTION = 4 for geofence failures).
+        // Only allow companion computer (or other external controller) to
+        // control attitude in GUIDED mode.  We DON'T want external control
+        // in e.g., RTL, CICLE. Specifying a single mode for companion
+        // computer control is more safe (even more so when using
+        // FENCE_ACTION = 4 for geofence failures).
         if (plane.control_mode != GUIDED) { //don't screw up failsafes
             break; 
         }
 
         mavlink_set_attitude_target_t att_target;
         mavlink_msg_set_attitude_target_decode(msg, &att_target);
-        //Unexepectedly, the mask is expecting "ones" for dimensions that should
-        //be IGNORNED rather than INCLUDED.  See mavlink documentation of the
-        //SET_ATTITUDE_TARGET message, type_mask field. 
+        // Unexepectedly, the mask is expecting "ones" for dimensions that should
+        // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
+        // SET_ATTITUDE_TARGET message, type_mask field.
         const uint16_t roll_mask = 0b11111110; // (roll mask at bit 1)
 
         if (att_target.type_mask & roll_mask) {           
@@ -2127,13 +2127,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     att_target.q[2], att_target.q[3]);
             float roll_rad = q.get_euler_roll();
 
-            plane.guided_state.guided_roll_cd = degrees(roll_rad) * 100.f;
+            plane.guided_state.roll_cd = degrees(roll_rad) * 100.0f;
 
-            // Set the flag for external roll to the nav control
-            plane.guided_state.guiding_roll = true;
-            // Update timer:
-            plane.guided_state.last_guided_ms = AP_HAL::millis(); 
-
+            // Update timer for external roll to the nav control
+            plane.guided_state.last_roll_ms = AP_HAL::millis();
         }
         break;
     }

@@ -531,10 +531,10 @@ void Plane::calc_nav_roll()
 {
     int32_t commanded_roll = nav_controller->nav_roll_cd();
 
-    //Received an external msg that guides roll in the last 3 seconds?
-    if(plane.guided_state.guiding_roll &&
-       AP_HAL::millis() - plane.guided_state.last_guided_ms < 3000) {
-        commanded_roll = plane.guided_state.guided_roll_cd;        
+    // Received an external msg that guides roll in the last 3 seconds?
+    if (plane.guided_state.last_roll_ms > 0 &&
+       AP_HAL::millis() - plane.guided_state.last_roll_ms < 3000) {
+        commanded_roll = plane.guided_state.roll_cd;
     }
 
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);
