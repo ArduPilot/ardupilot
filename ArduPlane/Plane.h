@@ -917,7 +917,8 @@ private:
     bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
-    void init_rc_out();
+    void init_rc_out_main();
+    void init_rc_out_aux();
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);

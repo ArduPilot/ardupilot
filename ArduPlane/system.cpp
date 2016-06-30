@@ -99,6 +99,9 @@ void Plane::init_ardupilot()
     }
 #endif
 
+    set_control_channels();
+    init_rc_out_main();
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // this must be before BoardConfig.init() so if
     // BRD_SAFETYENABLE==0 then we don't have safety off yet
@@ -119,8 +122,6 @@ void Plane::init_ardupilot()
 
     // allow servo set on all channels except first 4
     ServoRelayEvents.set_channel_mask(0xFFF0);
-
-    set_control_channels();
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -230,9 +231,9 @@ void Plane::init_ardupilot()
 
     startup_ground();
 
-    // don't initialise rc output until after quadplane is setup as
+    // don't initialise aux rc output until after quadplane is setup as
     // that can change initial values of channels
-    init_rc_out();
+    init_rc_out_aux();
     
     // choose the nav controller
     set_nav_controller();
