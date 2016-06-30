@@ -32,6 +32,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <StorageManager/StorageManager.h>
+#include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -1213,7 +1214,14 @@ bool AP_Param::load_all(void)
       if the HAL specifies a defaults parameter file then override
       defaults using that file
      */
-    load_defaults_file(hal.util->get_custom_defaults_file());
+    const char *default_file = hal.util->get_custom_defaults_file();
+    if (default_file) {
+        if (load_defaults_file(default_file)) {
+            printf("Loaded defaults from %s\n", default_file);
+        } else {
+            printf("Failed to load defaults from %s\n", default_file);
+        }
+    }
 #endif
 
     while (ofs < _storage.size()) {
