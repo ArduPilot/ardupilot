@@ -367,6 +367,9 @@ void UARTDriver::_check_connection(void)
  */
 bool UARTDriver::_select_check(int fd)
 {
+    if (fd == -1) {
+        return false;
+    }
     fd_set fds;
     struct timeval tv;
 
