@@ -352,6 +352,9 @@ struct PACKED log_EKF5 {
     int16_t RI;
     uint16_t meaRng;
     uint16_t errHAGL;
+    float angErr;
+    float velErr;
+    float posErr;
 };
 
 struct PACKED log_Cmd {
@@ -795,7 +798,7 @@ Format characters in the format string for binary log messages
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
       "EKF4","QcccccccbbHBHH","TimeUS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,OFE,FS,TS,SS,GPS" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
+      "EKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,_,_,_" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
       "NKF1","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
@@ -805,7 +808,7 @@ Format characters in the format string for binary log messages
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
       "NKF4","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_NKF5_MSG, sizeof(log_EKF5), \
-      "NKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
+      "NKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos" }, \
     { LOG_NKF6_MSG, sizeof(log_EKF1), \
       "NKF6","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_NKF7_MSG, sizeof(log_NKF2), \
