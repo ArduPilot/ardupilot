@@ -52,5 +52,5 @@ public:
     virtual void clear_overrides() = 0;
 
     /* execute receiver bind */
-    virtual bool rc_bind(int dsmMode) { return false; };
+    virtual bool rc_bind(int dsmMode) { return false; }
 };
