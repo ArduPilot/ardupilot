@@ -207,8 +207,8 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Altitude Source
-    // @Description: What provides altitude information for vehicle
-    // @Values: 0:Barometer,1:GPS
+    // @Description: What provides altitude information for vehicle. Vehicle only assumes tracker has same altitude as vehicle's home
+    // @Values: 0:Barometer,1:GPS ,2:GPS vehicle only
     // @User: Standard
     GSCALAR(alt_source,				"ALT_SOURCE",	0),
 

@@ -44,6 +44,7 @@
 #endif
 #ifndef PITCH_MIN_DEFAULT
  # define PITCH_MIN_DEFAULT -90
+#endif
 #ifndef PITCH_MAX_DEFAULT
  # define PITCH_MAX_DEFAULT 90
 #endif
