@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -103,8 +104,8 @@ private:
 
     // head is where the next available data is. tail is where new
     // data is written
-    volatile uint32_t head = 0;
-    volatile uint32_t tail = 0;
+    std::atomic<uint32_t> head{0};
+    std::atomic<uint32_t> tail{0};
 };
 
 /*
