@@ -10,7 +10,6 @@ ByteBuffer::ByteBuffer(uint32_t _size)
 {
     size = _size;
     buf = new uint8_t[size];
-    head = tail = 0;
 }
 
 ByteBuffer::~ByteBuffer(void)
