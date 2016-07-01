@@ -43,20 +43,20 @@ public:
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // set update rate to motors - a value in hertz
-    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; };
+    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
 
     // set frame orientation (normally + or X)
-    virtual void        set_frame_orientation( uint8_t new_orientation ) { _flags.frame_orientation = new_orientation; };
+    virtual void        set_frame_orientation( uint8_t new_orientation ) { _flags.frame_orientation = new_orientation; }
 
     // arm, disarm or check status status of motors
-    bool                armed() const { return _flags.armed; };
+    bool                armed() const { return _flags.armed; }
     void                armed(bool arm);
 
     // set motor interlock status
     void                set_interlock(bool set) { _flags.interlock = set;}
 
     // get motor interlock status.  true means motors run, false motors don't run
-    bool                get_interlock() const { return _flags.interlock; };
+    bool                get_interlock() const { return _flags.interlock; }
 
     // set_roll, set_pitch, set_yaw, set_throttle
     void                set_roll(float roll_in) { _roll_in = roll_in; };        // range -1 ~ +1

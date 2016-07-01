@@ -125,7 +125,7 @@ public:
     // supports_yaw_passthrough
     virtual bool supports_yaw_passthrough() const { return false; }
 
-    float get_throttle_hover() const { return 0.5f; };
+    float get_throttle_hover() const { return 0.5f; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
