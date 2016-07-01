@@ -213,8 +213,8 @@ void NavEKF2_core::InitialiseVariables()
     tasStoreIndex = 0;
     ofStoreIndex = 0;
     delAngCorrection.zero();
-    delVelCorrection.zero();
     velCorrection.zero();
+    posCorrection.zero();
     gpsGoodToAlign = false;
     gpsNotAvailable = true;
     motorsArmed = false;
@@ -584,7 +584,7 @@ void NavEKF2_core::calcOutputStates()
     outputDataNew.quat.rotation_matrix(Tbn_temp);
 
     // transform body delta velocities to delta velocities in the nav frame
-    Vector3f delVelNav  = Tbn_temp*delVelNewCorrected + delVelCorrection;
+    Vector3f delVelNav  = Tbn_temp*delVelNewCorrected;
     delVelNav.z += GRAVITY_MSS*imuDataNew.delVelDT;
 
     // save velocity for use in trapezoidal integration for position calcuation
@@ -594,7 +594,7 @@ void NavEKF2_core::calcOutputStates()
     outputDataNew.velocity += delVelNav;
 
     // apply a trapezoidal integration to velocities to calculate position
-    outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f) + velCorrection * imuDataNew.delVelDT;
+    outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f);
 
     // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
     if (runUpdates) {
@@ -622,18 +622,24 @@ void NavEKF2_core::calcOutputStates()
         deltaAngErr.y = scaler * quatErr[2];
         deltaAngErr.z = scaler * quatErr[3];
 
-        // collect magnitude tracking error for diagnostics
-        outputTrackError.x = deltaAngErr.length();
-
         // calculate a gain that provides tight tracking of the estimator states and
         // adjust for changes in time delay to maintain consistent damping ratio of ~0.7
         float timeDelay = 1e-3f * (float)(imuDataNew.time_ms - imuDataDelayed.time_ms);
         timeDelay = fmaxf(timeDelay, dtIMUavg);
-        float errorGain = 0.45f / timeDelay;
+        float errorGain = 0.5f / timeDelay;
 
         // calculate a corrrection to the delta angle
         // that will cause the INS to track the EKF quaternions
         delAngCorrection = deltaAngErr * errorGain * dtIMUavg;
+
+        // calculate velocity and position tracking errors
+        Vector3f velDelta = (stateStruct.velocity - outputDataDelayed.velocity);
+        Vector3f posDelta = (stateStruct.position - outputDataDelayed.position);
+
+        // collect magnitude tracking error for diagnostics
+        outputTrackError.x = deltaAngErr.length();
+        outputTrackError.y = velDelta.length();
+        outputTrackError.z = posDelta.length();
 
         // If the user specifes a time constant for the position and velocity states then calculate and apply the position
         // and velocity corrections immediately to the whole output history which takes longer to process but enables smaller
@@ -641,22 +647,16 @@ void NavEKF2_core::calcOutputStates()
         // used for the quaternion corrections.
         if (frontend->_tauVelPosOutput > 0) {
             // convert time constant from centi-seconds to seconds
-            float tauPosVel = 0.01f*(float)frontend->_tauVelPosOutput;
+            float tauPosVel = constrain_float(0.01f*(float)frontend->_tauVelPosOutput, 0.1f, 0.5f);
 
             // calculate a gain to track the EKF position states with the specified time constant
             float velPosGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
 
-            // calculate tracking errors
-            Vector3f velDelta = (stateStruct.velocity - outputDataDelayed.velocity);
-            Vector3f posDelta = (stateStruct.position - outputDataDelayed.position);
-
-            // collect magnitude of tracking errors for diagnostics
-            outputTrackError.y = velDelta.length();
-            outputTrackError.z = posDelta.length();
-
-            // multiply error vectors by gain to calculate a correction that will be applied to the output state history
-            velDelta *= velPosGain;
-            posDelta *= velPosGain;
+            // use a PI feedback to calculate a correction that will be applied to the output state history
+            posCorrection += posDelta * velPosGain; // I term
+            velCorrection += velDelta * velPosGain; //  I term
+            velDelta *= velPosGain; // P term
+            posDelta *= velPosGain; // P term
 
             // loop through the output filter state history and apply the corrections to the velocity and position states
             // this method is too expensive to use for the attitude states due to the quaternion operations required
@@ -667,10 +667,10 @@ void NavEKF2_core::calcOutputStates()
                 outputStates = storedOutput[index];
 
                 // a constant  velocity correction is applied
-                outputStates.velocity += velDelta;
+                outputStates.velocity += velDelta + velCorrection;
 
                 // a constant position correction is applied
-                outputStates.position += posDelta;
+                outputStates.position += posDelta + posCorrection;
 
                 // push the updated data to the buffer
                 storedOutput[index] = outputStates;
@@ -680,17 +680,7 @@ void NavEKF2_core::calcOutputStates()
             //outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
             outputDataNew = storedOutput[storedIMU.get_youngest_index()];
 
-            // set un-used corrections to zero
-            delVelCorrection.zero();
-            velCorrection.zero();
-
-        } else {
-            // multiply velocity and position error by a gain to calculate the delta velocity correction required to track the EKF solution
-            delVelCorrection = (stateStruct.velocity - outputDataDelayed.velocity) * errorGain * dtIMUavg;
-            velCorrection = (stateStruct.position - outputDataDelayed.position) * errorGain;
-
         }
-
     }
 }
 
