@@ -622,6 +622,9 @@ void NavEKF2_core::calcOutputStates()
         deltaAngErr.y = scaler * quatErr[2];
         deltaAngErr.z = scaler * quatErr[3];
 
+        // collect magnitude tracking error for diagnostics
+        outputTrackError.x = deltaAngErr.length();
+
         // calculate a gain that provides tight tracking of the estimator states and
         // adjust for changes in time delay to maintain consistent damping ratio of ~0.7
         float timeDelay = 1e-3f * (float)(imuDataNew.time_ms - imuDataDelayed.time_ms);
@@ -640,11 +643,20 @@ void NavEKF2_core::calcOutputStates()
             // convert time constant from centi-seconds to seconds
             float tauPosVel = 0.01f*(float)frontend->_tauVelPosOutput;
 
-            // calculate a position and velocity correction that will be applied to the output state history
-            // to track the EKF position states with the specified time constant
+            // calculate a gain to track the EKF position states with the specified time constant
             float velPosGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
-            Vector3f posDelta = (stateStruct.position - outputDataDelayed.position) * velPosGain;
-            Vector3f velDelta = (stateStruct.velocity - outputDataDelayed.velocity) * velPosGain;
+
+            // calculate tracking errors
+            Vector3f velDelta = (stateStruct.velocity - outputDataDelayed.velocity);
+            Vector3f posDelta = (stateStruct.position - outputDataDelayed.position);
+
+            // collect magnitude of tracking errors for diagnostics
+            outputTrackError.y = velDelta.length();
+            outputTrackError.z = posDelta.length();
+
+            // multiply error vectors by gain to calculate a correction that will be applied to the output state history
+            velDelta *= velPosGain;
+            posDelta *= velPosGain;
 
             // loop through the output filter state history and apply the corrections to the velocity and position states
             // this method is too expensive to use for the attitude states due to the quaternion operations required
