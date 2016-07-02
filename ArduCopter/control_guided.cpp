@@ -177,7 +177,8 @@ bool Copter::guided_set_destination(const Vector3f& destination)
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    if (!fence.check_destination_within_fence(pv_alt_above_home(destination.z)*0.01f, pv_distance_to_home_cm(destination)*0.01f)) {
+    Location_Class dest_loc(destination);
+    if (!fence.check_destination_within_fence(dest_loc)) {
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -205,13 +206,10 @@ bool Copter::guided_set_destination(const Location_Class& dest_loc)
 #if AC_FENCE == ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
-    int32_t alt_target_cm;
-    if (dest_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_target_cm)) {
-        if (!fence.check_destination_within_fence(alt_target_cm*0.01f, get_distance_cm(ahrs.get_home(), dest_loc)*0.01f)) {
-            Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
-            // failure is propagated to GCS with NAK
-            return false;
-        }
+    if (!fence.check_destination_within_fence(dest_loc)) {
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
+        // failure is propagated to GCS with NAK
+        return false;
     }
 #endif
 
