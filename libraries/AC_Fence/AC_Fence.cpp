@@ -65,7 +65,8 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 };
 
 /// Default constructor.
-AC_Fence::AC_Fence(const AP_InertialNav& inav) :
+AC_Fence::AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
+    _ahrs(ahrs),
     _inav(inav),
     _alt_max_backup(0),
     _circle_radius_backup(0),
@@ -233,16 +234,36 @@ uint8_t AC_Fence::check_fence(float curr_alt)
 }
 
 // returns true if the destination is within fence (used to reject waypoints outside the fence)
-bool AC_Fence::check_destination_within_fence(float dest_alt, float dest_distance_to_home)
+bool AC_Fence::check_destination_within_fence(const Location_Class& loc)
 {
     // Altitude fence check
-    if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) && (dest_alt >= _alt_max)) {
-        return false;
+    if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
+        int32_t alt_above_home_cm;
+        if (loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_above_home_cm)) {
+            if ((alt_above_home_cm * 0.01f) > _alt_max) {
+                return false;
+            }
+        }
     }
 
     // Circular fence check
-    if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) && (dest_distance_to_home >= _circle_radius)) {
-        return false;
+    if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE)) {
+        if ((get_distance_cm(_ahrs.get_home(), loc) * 0.01f) > _circle_radius) {
+            return false;
+        }
+    }
+
+    // polygon fence check
+    if ((get_enabled_fences() & AC_FENCE_TYPE_POLYGON) && _boundary_num_points > 0) {
+        // check ekf has a good location
+        Location temp_loc;
+        if (_inav.get_location(temp_loc)) {
+            const struct Location &ekf_origin = _inav.get_origin();
+            Vector2f position = location_diff(ekf_origin, loc) * 100.0f;
+            if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary, true)) {
+                return false;
+            }
+        }
     }
 
     return true;

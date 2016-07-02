@@ -6,8 +6,10 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence/AC_PolyFence_loader.h>
+#include <AP_Common/Location.h>
 
 // bit masks for enabled fence types.  Used for TYPE parameter
 #define AC_FENCE_TYPE_NONE                          0       // fence disabled
@@ -35,7 +37,7 @@ class AC_Fence
 public:
 
     /// Constructor
-    AC_Fence(const AP_InertialNav& inav);
+    AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav);
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool true_false) { _enabled = true_false; }
@@ -58,7 +60,7 @@ public:
     uint8_t check_fence(float curr_alt);
 
     // returns true if the destination is within fence (used to reject waypoints outside the fence)
-    bool check_destination_within_fence(float dest_alt, float dest_distance_to_home);
+    bool check_destination_within_fence(const Location_Class& loc);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
     uint8_t get_breaches() const { return _breached_fences; }
@@ -123,6 +125,7 @@ private:
     bool load_polygon_from_eeprom(bool force_reload = false);
 
     // pointers to other objects we depend upon
+    const AP_AHRS& _ahrs;
     const AP_InertialNav& _inav;
 
     // parameters
