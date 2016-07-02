@@ -320,7 +320,6 @@ class bebop(linux):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
         )
-        env.STATIC_LINKING = True
 
 class raspilot(linux):
     toolchain = 'arm-linux-gnueabihf'
