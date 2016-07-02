@@ -20,6 +20,15 @@ extern const AP_HAL::HAL& hal;
 // Control reset of yaw and magnetic field states
 void NavEKF2_core::controlMagYawReset()
 {
+
+    // Vehicles that can use a zero sideslip assumption (Planes) are a special case
+    // They can use the GPS velocity to recover from bad initial compass data
+    // This allows recovery for heading alignment errors due to compass faults
+    if (assume_zero_sideslip() && !finalInflightYawInit && inFlight ) {
+        gpsYawResetRequest = true;
+        return;
+    }
+
     // Quaternion and delta rotation vector that are re-used for different calculations
     Vector3f deltaRotVecTemp;
     Quaternion deltaQuatTemp;
@@ -125,14 +134,6 @@ void NavEKF2_core::controlMagYawReset()
             }
         }
     }
-
-    // Request an in-flight check of heading against GPS and reset if necessary
-    // this can only be used by vehicles that can use a zero sideslip assumption (Planes)
-    // this allows recovery for heading alignment errors due to compass faults
-    if (!finalInflightYawInit && inFlight && assume_zero_sideslip()) {
-        gpsYawResetRequest = true;
-    }
-
 }
 
 // this function is used to do a forced re-alignment of the yaw angle to align with the horizontal velocity
@@ -144,7 +145,6 @@ void NavEKF2_core::realignYawGPS()
     stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
 
     if ((sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y)) > 25.0f) {
-
         // calculate course yaw angle
         float velYaw = atan2f(stateStruct.velocity.y,stateStruct.velocity.x);
 
@@ -152,7 +152,7 @@ void NavEKF2_core::realignYawGPS()
         float gpsYaw = atan2f(gpsDataDelayed.vel.y,gpsDataDelayed.vel.x);
 
         // Check the yaw angles for consistency
-        float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),MAX(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
+        float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),fabsf(wrap_PI(gpsYaw - eulerAngles.z)));
 
         // If the angles disagree by more than 45 degrees and GPS innovations are large or no previous yaw alignment, we declare the magnetic yaw as bad
         badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && (PV_AidingMode == AID_ABSOLUTE)) || !yawAlignComplete;
@@ -169,15 +169,17 @@ void NavEKF2_core::realignYawGPS()
             // zero the attitude covariances becasue the corelations will now be invalid
             zeroAttCovOnly();
 
-            // reset tposition fusion timer to cause the states to be reset to the GPS on the next GPS fusion cycle
+            // reset the position and velocity fusion timers to cause the states to be reset to the GPS on the next GPS fusion cycle
             lastPosPassTime_ms = 0;
+            lastVelPassTime_ms = 0;
+
+            // record the yaw reset event
+            recordYawReset();
+
+            // clear any GPS yaw requests
+            gpsYawResetRequest = false;
+
         }
-
-        // record the yaw reset event
-        recordYawReset();
-
-        // clear any GPS yaw requests
-        gpsYawResetRequest = false;
     }
 
     // fix magnetic field states and clear any compass fault conditions
