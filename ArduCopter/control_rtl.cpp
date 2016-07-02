@@ -437,8 +437,6 @@ void Copter::rtl_compute_return_target(bool terrain_following_allowed)
     rtl_path.return_target = ahrs.get_home();
 #endif
 
-    float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
-
     // curr_alt is current altitude above home or above terrain depending upon use_terrain
     int32_t curr_alt = current_loc.alt;
 
@@ -455,39 +453,48 @@ void Copter::rtl_compute_return_target(bool terrain_following_allowed)
         }
     }
 
-    // maximum of current altitude + climb_min and rtl altitude
-    float ret = MAX(curr_alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN));
-
-    // don't allow really shallow slopes
-    if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
-        ret = MAX(curr_alt, MIN(ret, MAX(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
-    }
-
-#if AC_RALLY == ENABLED
-    if (!use_home) {
-        ret = rallyLoc.alt * 100.0f;
-    }
-#endif
-
-#if AC_FENCE == ENABLED
-    // ensure not above fence altitude if alt fence is enabled
-    // Note: we are assuming the fence alt is the same frame as ret
-    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        ret = MIN(ret, fence.get_safe_alt()*100.0f);
-    }
-#endif
-
-    // ensure we do not descend
-    ret = MAX(ret, curr_alt);
-
-    // convert return-target to alt-above-home or alt-above-terrain
+    // convert return-target alt to alt-above-home or alt-above-terrain
     if (!rtl_path.terrain_used || !rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
         if (!rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
             // this should never happen but just in case
             rtl_path.return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
         }
+        rtl_path.terrain_used = false;
     }
 
-    // add ret to altitude
-    rtl_path.return_target.alt += ret;
+    // set new target altitude to return target altitude
+    // Note: this is alt-above-home or terrain-alt depending upon use_terrain
+    // Note: ignore negative altitudes which could happen if user enters negative altitude for rally point or terrain is higher at rally point compared to home
+    int32_t target_alt = MAX(rtl_path.return_target.alt, 0);
+
+    // increase target to maximum of current altitude + climb_min and rtl altitude
+    target_alt = MAX(target_alt, curr_alt + MAX(0, g.rtl_climb_min));
+    target_alt = MAX(target_alt, MAX(g.rtl_altitude, RTL_ALT_MIN));
+
+    // reduce climb if close to return target
+    float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
+    // don't allow really shallow slopes
+    if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
+        target_alt = MAX(curr_alt, MIN(target_alt, MAX(rtl_return_dist_cm*g.rtl_cone_slope, curr_alt+RTL_ABS_MIN_CLIMB)));
+    }
+
+    // set returned target alt to new target_alt
+    rtl_path.return_target.set_alt_cm(target_alt, rtl_path.terrain_used ? Location_Class::ALT_FRAME_ABOVE_TERRAIN : Location_Class::ALT_FRAME_ABOVE_HOME);
+
+#if AC_FENCE == ENABLED
+    // ensure not above fence altitude if alt fence is enabled
+    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        // get return target as alt-above-home so it can be compared to fence's alt
+        if (rtl_path.return_target.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, target_alt)) {
+            float fence_alt = fence.get_safe_alt()*100.0f;
+            if (target_alt > fence_alt) {
+                // reduce target alt to the fence alt
+                rtl_path.return_target.alt -= (target_alt - fence_alt);
+            }
+        }
+    }
+#endif
+
+    // ensure we do not descend
+    rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
 }
