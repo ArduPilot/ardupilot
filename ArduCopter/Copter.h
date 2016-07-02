@@ -913,6 +913,7 @@ private:
     void pre_arm_rc_checks();
     bool pre_arm_gps_checks(bool display_failure);
     bool pre_arm_ekf_attitude_check();
+    bool pre_arm_rallypoint_check();
     bool pre_arm_terrain_check(bool display_failure);
     bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();

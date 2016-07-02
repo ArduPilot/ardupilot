@@ -174,6 +174,14 @@ bool Copter::pre_arm_checks(bool display_failure)
     }
     #endif
 
+    // check rally points
+    if (!pre_arm_rallypoint_check()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: rallypoints outside fence");
+        }
+        return false;
+    }
+
     // check INS
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         // check accelerometers have been calibrated
@@ -491,6 +499,25 @@ bool Copter::pre_arm_ekf_attitude_check()
     return filt_status.flags.attitude;
 }
 
+// check rally points are within fences
+bool Copter::pre_arm_rallypoint_check()
+{
+#if AC_RALLY == ENABLED && AC_FENCE == ENABLED
+    for (uint8_t i=0; i<rally.get_rally_total(); i++) {
+        RallyLocation rally_loc;
+        if (rally.get_rally_point_with_index(i, rally_loc)) {
+            Location_Class rally_point(rally.rally_location_to_location(rally_loc));
+            if (!fence.check_destination_within_fence(rally_point)) {
+                return false;
+            }
+        }
+    }
+    return true;
+#else
+    return true;
+#endif
+}
+
 // check we have required terrain data
 bool Copter::pre_arm_terrain_check(bool display_failure)
 {
@@ -649,6 +676,14 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
     #endif
+
+    // check rally points
+    if (!pre_arm_rallypoint_check()) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: rallypoints outside fence");
+        }
+        return false;
+    }
 
     // check lean angle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
