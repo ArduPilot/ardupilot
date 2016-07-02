@@ -795,6 +795,9 @@ private:
     float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
     Vector3f delAngCorrected;       // corrected IMU delta angle vector at the EKF time horizon (rad)
     Vector3f delVelCorrected;       // corrected IMU delta velocity vector at the EKF time horizon (m/s)
+    bool magFieldLearned;           // true when the magnetic field has been learned
+    Vector3f earthMagFieldVar;      // NED earth mag field variances for last learned field (mGauss^2)
+    Vector3f bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
 
     Vector3f outputTrackError;
 

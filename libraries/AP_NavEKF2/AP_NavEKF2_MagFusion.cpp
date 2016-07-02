@@ -265,6 +265,26 @@ void NavEKF2_core::SelectMagFusion()
         }
     }
 
+    // If the final yaw reset has been performed and the state variances are sufficiently low
+    // record that the earth field has been learned.
+    bool earthMagFieldConverged = false;
+    if (!magFieldLearned && finalInflightMagInit) {
+        earthMagFieldConverged = (P[16][16] < sq(0.01f)) && (P[17][17] < sq(0.01f)) && (P[18][18] < sq(0.01f));
+    }
+    if (magFieldLearned || earthMagFieldConverged) {
+        magFieldLearned = true;
+    }
+
+    // record the last learned field variances
+    if (magFieldLearned && !inhibitMagStates) {
+        earthMagFieldVar.x = P[16][16];
+        earthMagFieldVar.y = P[17][17];
+        earthMagFieldVar.z = P[18][18];
+        bodyMagFieldVar.x = P[19][19];
+        bodyMagFieldVar.y = P[20][20];
+        bodyMagFieldVar.z = P[21][21];
+    }
+
     // stop performance timer
     hal.util->perf_end(_perf_FuseMagnetometer);
 }
@@ -1062,6 +1082,11 @@ void NavEKF2_core::FuseDeclination(float declErr)
 // align the NE earth magnetic field states with the published declination
 void NavEKF2_core::alignMagStateDeclination()
 {
+    // don't do this if we already have a learned magnetic field
+    if (magFieldLearned) {
+        return;
+    }
+
     // get the magnetic declination
     float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
