@@ -97,7 +97,7 @@ void Copter::throw_run()
 
         // initialise the demanded height to 3m above the throw height or 1 meter below the drop height
          // we want to rapidly clear surrounding obstacles
-        if (g.throw_type==1){
+        if (g.throw_type==THROW_TYPE_DOWN) {
             pos_control.set_alt_target(inertial_nav.get_altitude() - 100);
         } else {
             pos_control.set_alt_target(inertial_nav.get_altitude() + 300);

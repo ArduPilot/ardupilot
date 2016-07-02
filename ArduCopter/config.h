@@ -310,8 +310,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // THROW MODE
 //
-#ifndef THROW_MODE_DEFAULT  // Throw Type -- allow for an upward throw or downward drop startup in Throw Mode
- # define THROW_MODE_DEFAULT      0     // upward throw enabled by default
+#ifndef THROW_TYPE_DEFAULT  // Throw Type -- allow for an upward throw or downward drop startup in Throw Mode
+ # define THROW_TYPE_DEFAULT             THROW_TYPE_UP     // upward throw enabled by default
 #endif
 #ifndef THROW_NEXT_MODE_DEFAULT
  # define THROW_NEXT_MODE_DEFAULT        GUIDED  //Flight Mode to enter following a Throw Action, default is GUIDED

@@ -86,6 +86,10 @@ enum aux_sw_func {
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1
 
+// Throw Mode Type enumerations
+#define THROW_TYPE_UP                   0
+#define THROW_TYPE_DOWN                 1
+
 // Auto Pilot Modes enumeration
 enum control_mode_t {
     STABILIZE =     0,  // manual airframe angle with manual throttle
