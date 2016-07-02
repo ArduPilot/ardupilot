@@ -202,6 +202,10 @@ uint8_t AC_Fence::check_fence(float curr_alt)
 
     // polygon fence check
     if ((_enabled_fences & AC_FENCE_TYPE_POLYGON) != 0 ) {
+        // check consistency of number of points
+        if (_boundary_num_points != _total) {
+            _boundary_loaded = false;
+        }
         // load fence if necessary
         if (!_boundary_loaded) {
             load_polygon_from_eeprom();
@@ -338,6 +342,9 @@ void AC_Fence::handle_msg(mavlink_channel_t chan, mavlink_message_t* msg)
                 point.y = packet.lng*1.0e7f;
                 if (!_poly_loader.save_point_to_eeprom(packet.idx, point)) {
                     GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_WARNING, chan, "Failed to save polygon point, too many points?");
+                } else {
+                    // trigger reload of points
+                    _boundary_loaded = false;
                 }
             }
             break;
