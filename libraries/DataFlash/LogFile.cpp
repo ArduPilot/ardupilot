@@ -1270,9 +1270,6 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
                 RI : (int16_t)(100*rngInnov),
                 meaRng : (uint16_t)(100*range),
                 errHAGL : (uint16_t)(100*gndOffsetErr),
-                angErr : 0.0f,
-                velErr : 0.0f,
-                posErr : 0.0f
             };
             WriteBlock(&pkt5, sizeof(pkt5));
         }
@@ -1425,7 +1422,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f predictorErrors; // output predictor angle, velocity and position tracking error
     ahrs.get_NavEKF2().getFlowDebug(-1,normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
     ahrs.get_NavEKF2().getOutputTrackingError(-1,predictorErrors);
-    struct log_EKF5 pkt5 = {
+    struct log_NKF5 pkt5 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF5_MSG),
         time_us : time_us,
         normInnov : (uint8_t)(MIN(100*normInnov,255)),
