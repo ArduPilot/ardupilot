@@ -57,6 +57,10 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         elevons = true;
         // fwd motor gives zero thrust
         thrust_scale = 0;
+    } else if (strstr(frame_str, "cl84")) {
+        frame_type = "tilttri";
+        // fwd motor gives zero thrust
+        thrust_scale = 0;
     }
     frame = Frame::find_frame(frame_type);
     if (frame == nullptr) {
@@ -64,6 +68,14 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         exit(1);
     }
 
+    if (strstr(frame_str, "cl84")) {
+        // setup retract servos at front
+        frame->motors[0].servo_type = Motor::SERVO_RETRACT;
+        frame->motors[0].servo_rate = 4*60.0/90; // 4 seconds to change
+        frame->motors[1].servo_type = Motor::SERVO_RETRACT;
+        frame->motors[1].servo_rate = 4*60.0/90; // 4 seconds to change
+    }
+    
     // leave first 4 servos free for plane
     frame->motor_offset = 4;
 
