@@ -1424,7 +1424,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     float gndOffsetErr=0; // filter ground offset state error
     Vector3f predictorErrors; // output predictor angle, velocity and position tracking error
     ahrs.get_NavEKF2().getFlowDebug(-1,normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
-    ahrs.get_NavEKF2().getOutputTrackingError(0,predictorErrors);
+    ahrs.get_NavEKF2().getOutputTrackingError(-1,predictorErrors);
     struct log_EKF5 pkt5 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF5_MSG),
         time_us : time_us,
