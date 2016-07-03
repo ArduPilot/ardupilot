@@ -10,6 +10,7 @@ static float current_depth = 0;
 
 // checks if we have have hit bottom or surface and updates the ap.at_bottom and ap.at_surface flags
 // called at MAIN_LOOP_RATE
+// ToDo: doesn't need to be called this fast
 void Sub::update_surface_and_bottom_detector()
 {
 	Vector3f velocity;
@@ -19,9 +20,15 @@ void Sub::update_surface_and_bottom_detector()
 	bool vel_stationary = velocity.z > -0.05 && velocity.z < 0.05;
 
 	if (ap.depth_sensor_present) { // we can use the external pressure sensor for a very accurate and current measure of our z axis position
-		current_depth = barometer.get_altitude();
+		current_depth = barometer.get_altitude(); // cm
 
-		set_surfaced(current_depth > g.surface_depth/100.0); // If we are above surface depth, we are surfaced
+
+		if(ap.at_surface) {
+			set_surfaced(current_depth > g.surface_depth/100.0 - 0.05); // add a 5cm buffer so it doesn't trigger too often
+		} else {
+			set_surfaced(current_depth > g.surface_depth/100.0); // If we are above surface depth, we are surfaced
+		}
+
 
 		if(motors.limit.throttle_lower && vel_stationary) {
 			// bottom criteria met - increment the counter and check if we've triggered
@@ -37,8 +44,8 @@ void Sub::update_surface_and_bottom_detector()
 
 	// with no external baro, the only thing we have to go by is a vertical velocity estimate
 	} else if (vel_stationary) {
-
 		if(motors.limit.throttle_upper) {
+
 			// surface criteria met, increment counter and see if we've triggered
 			if( surface_detector_count < ((float)SURFACE_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
 				surface_detector_count++;
@@ -66,6 +73,8 @@ void Sub::update_surface_and_bottom_detector()
 }
 
 void Sub::set_surfaced(bool at_surface) {
+
+
 	if(ap.at_surface == at_surface) { // do nothing if state unchanged
 		return;
 	}
@@ -73,16 +82,17 @@ void Sub::set_surfaced(bool at_surface) {
 	ap.at_surface = at_surface;
 
 	if(!ap.at_surface) {
-		surface_detector_count = 0;
 	    Log_Write_Event(DATA_SURFACED);
 		gcs_send_text(MAV_SEVERITY_INFO, "Off Surface");
 	} else {
+		surface_detector_count = 0;
 		Log_Write_Event(DATA_NOT_SURFACED);
 		gcs_send_text(MAV_SEVERITY_INFO, "Surfaced");
 	}
 }
 
 void Sub::set_bottomed(bool at_bottom) {
+
 	if(ap.at_bottom == at_bottom) { // do nothing if state unchanged
 		return;
 	}
@@ -90,10 +100,10 @@ void Sub::set_bottomed(bool at_bottom) {
 	ap.at_bottom = at_bottom;
 
 	if(!ap.at_bottom) {
-		bottom_detector_count = 0;
 		Log_Write_Event(DATA_BOTTOMED);
 		gcs_send_text(MAV_SEVERITY_INFO, "Off Bottom");
 	} else {
+		bottom_detector_count = 0;
 		Log_Write_Event(DATA_NOT_BOTTOMED);
 		gcs_send_text(MAV_SEVERITY_INFO, "Bottomed");
 	}

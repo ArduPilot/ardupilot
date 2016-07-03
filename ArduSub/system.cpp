@@ -236,22 +236,37 @@ void Sub::init_ardupilot()
     ins.set_hil_mode();
 #endif
 
-    if(barometer.num_instances() > 1) {
-	//We have an external MS58XX pressure sensor connected
+    if(barometer.num_instances() > 1) { // We have an external MS58XX pressure sensor connected
+
+		barometer.set_primary_baro(1); // Set the primary baro to external MS58XX !!Changes and saves parameter value!!
+
+
     	ap.depth_sensor_present = true;
 		for(int i = 1; i < barometer.num_instances(); i++) {
-			barometer.set_type(i, BARO_TYPE_WATER); //Altitude (depth) is calculated differently underwater
-			barometer.set_precision_multiplier(i, 40); //The MS58XX values reported need to be multiplied by 10 to match units everywhere else
+			barometer.set_type(i, BARO_TYPE_WATER); // Altitude (depth) is calculated differently underwater
+			barometer.set_precision_multiplier(i, 40); // The MS58XX values reported need to be multiplied by 10 to match units everywhere else
 		}
-		barometer.set_primary_baro(1); //Set the primary baro to external MS58XX
 
-		EKF.set_baro_alt_noise(0.1f);
+
+		EKF.set_baro_alt_noise(0.1f); // Depth readings are very accurate and up-to-date
 		EKF2.set_baro_alt_noise(0.1f);
+
 	} else { //We only have onboard baro
+
+		// No external underwater depth sensor detected
+		barometer.set_primary_baro(0); // Set the primary baro to default board baro !!Changes and saves parameter value!!
+
 		ap.depth_sensor_present = false;
-		EKF.set_baro_alt_noise(10.0f);
+		for(int i = 1; i < barometer.num_instances(); i++) {
+			barometer.set_type(i, BARO_TYPE_AIR); // Default fcu air baro
+			barometer.set_precision_multiplier(i, 1); // Use default valuse
+		}
+		EKF.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
 		EKF2.set_baro_alt_noise(10.0f);
+
+
 	}
+
 	// read Baro pressure at ground
 	//-----------------------------
 	init_barometer(true);
