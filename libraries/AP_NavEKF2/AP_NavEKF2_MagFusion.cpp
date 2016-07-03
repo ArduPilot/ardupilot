@@ -231,13 +231,13 @@ void NavEKF2_core::SelectMagFusion()
         // use the simple method of declination to maintain heading if we cannot use the magnetic field states
         if(inhibitMagStates || magStateResetRequest || !magStateInitComplete) {
             fuseEulerYaw();
-            // zero the test ratio output from the inactive 3-axis magneteometer fusion
+            // zero the test ratio output from the inactive 3-axis magnetometer fusion
             magTestRatio.zero();
         } else {
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
             // maintained by fusing declination as a synthesised observation
             if (PV_AidingMode != AID_ABSOLUTE || (imuSampleTime_ms - lastPosPassTime_ms) > 4000) {
-                FuseDeclination();
+                FuseDeclination(0.34f);
             }
             // fuse the three magnetometer componenents sequentially
             for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) {
@@ -935,10 +935,10 @@ void NavEKF2_core::fuseEulerYaw()
  * This is used to prevent the declination of the EKF earth field states from drifting during operation without GPS
  * or some other absolute position or velocity reference
 */
-void NavEKF2_core::FuseDeclination()
+void NavEKF2_core::FuseDeclination(float declErr)
 {
     // declination error variance (rad^2)
-    const float R_DECL = 1e-2f;
+    const float R_DECL = sq(declErr);
 
     // copy required states to local variables
     float magN = stateStruct.earth_magfield.x;
@@ -1070,6 +1070,17 @@ void NavEKF2_core::alignMagStateDeclination()
     float magLengthNE = norm(initMagNED.x,initMagNED.y);
     stateStruct.earth_magfield.x = magLengthNE * cosf(magDecAng);
     stateStruct.earth_magfield.y = magLengthNE * sinf(magDecAng);
+
+    // zero the corresponding state covariances
+    float var_16 = P[16][16];
+    float var_17 = P[17][17];
+    zeroRows(P,16,17);
+    zeroCols(P,16,17);
+    P[16][16] = var_16;
+    P[17][17] = var_17;
+
+    // fuse the declination angle to re-establish valid covariances
+    FuseDeclination(0.1f);
 }
 
 // record a magentic field state reset event

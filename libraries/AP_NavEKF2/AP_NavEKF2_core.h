@@ -603,7 +603,8 @@ private:
     void fuseEulerYaw();
 
     // Fuse declination angle to keep earth field declination from changing when we don't have earth relative observations.
-    void FuseDeclination();
+    // Input is 1-sigma uncertainty in published declination
+    void FuseDeclination(float declErr);
 
     // Propagate PVA solution forward from the fusion time horizon to the current time horizon
     // using a simple observer
