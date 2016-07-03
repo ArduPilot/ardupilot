@@ -299,12 +299,16 @@ private:
 
     // time of last control log message
     uint32_t last_ctrl_log_ms;
+
+    // types of tilt mechanisms
+    enum {TILT_TYPE_CONTINUOUS=0, TILT_TYPE_BINARY=1};
     
     // tiltrotor control variables
     struct {
         AP_Int16 tilt_mask;
         AP_Int16 max_rate_dps;
         AP_Int8  max_angle_deg;
+        AP_Int8  tilt_type;
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
@@ -314,7 +318,10 @@ private:
     uint32_t last_motors_active_ms;
     
     void tiltrotor_slew(float tilt);
+    void tiltrotor_binary_slew(bool forward);
     void tiltrotor_update(void);
+    void tiltrotor_continuous_update(void);
+    void tiltrotor_binary_update(void);
     void tilt_compensate(float *thrust, uint8_t num_motors);
 
     void afs_terminate(void);
