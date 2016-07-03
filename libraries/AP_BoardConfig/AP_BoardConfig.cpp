@@ -102,15 +102,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
 #endif
 
-#if HAL_HAVE_IMU_HEATER
-    // @Param: IMU_TARGTEMP
-    // @DisplayName: Target IMU temperature
-    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. A value of -1 disables heating.
-    // @Range: -1 80
-    // @Units: degreesC
-    AP_GROUPINFO("IMU_TARGTEMP", 7, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
-#endif
-    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SAFETY_MASK
     // @DisplayName: Channels to which ignore the safety switch state
@@ -121,6 +112,15 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, _ignore_safety_channels, 0),
 #endif
 
+#if HAL_HAVE_IMU_HEATER
+    // @Param: IMU_TARGTEMP
+    // @DisplayName: Target IMU temperature
+    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. A value of -1 disables heating.
+    // @Range: -1 80
+    // @Units: degreesC
+    AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
+#endif
+        
     AP_GROUPEND
 };
 
