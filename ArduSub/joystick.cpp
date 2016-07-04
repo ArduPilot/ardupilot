@@ -8,7 +8,9 @@
 // Anonymous namespace to hold variables used only in this file
 namespace {
 	int16_t mode = 1100;
-	int16_t camTilt = 1500;
+	int16_t cam_tilt = 1500;
+	int16_t cam_tilt_goal = 1500;
+	float cam_tilt_alpha = 0.9;
 	int16_t lights1 = 1100;
 	int16_t lights2 = 1100;
 	int16_t rollTrim = 0;
@@ -57,6 +59,9 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 		buttons_prev = buttons;
 	}
 
+	// Camera tilt low pass filter
+	cam_tilt = cam_tilt*cam_tilt_alpha+cam_tilt_goal*(1-cam_tilt_alpha);
+
 	// Set channels to override
 	channels[0] = 1500 + pitchTrim;                           // pitch
 	channels[1] = 1500 + rollTrim;                            // roll
@@ -65,7 +70,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	channels[4] = mode;                                       // for testing only
 	channels[5] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900);           // forward for ROV
 	channels[6] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900);           // lateral for ROV
-	channels[7] = camTilt;                                    // camera tilt
+	channels[7] = cam_tilt;                                    // camera tilt
 	channels[8] = lights1;                                    // lights 1
 	channels[9] = lights2;                                    // lights 2
 	channels[10] = video_switch;                              // video switch
@@ -117,13 +122,13 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			mode = 1900;
 			break;
 		case JSButton::button_function_t::k_mount_center:
-			camTilt = 1500;
+			cam_tilt_goal = 1500;
 			break;
 		case JSButton::button_function_t::k_mount_tilt_up:
-			camTilt = constrain_float(camTilt-30,800,2200);
+			cam_tilt_goal = constrain_float(cam_tilt_goal-30,800,2200);
 			break;
 		case JSButton::button_function_t::k_mount_tilt_down:
-			camTilt = constrain_float(camTilt+30,800,2200);
+			cam_tilt_goal = constrain_float(cam_tilt_goal+30,800,2200);
 			break;
 		case JSButton::button_function_t::k_camera_trigger:
 			break;
