@@ -455,10 +455,10 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: TAU_OUTPUT
     // @DisplayName: Output complementary filter time constant (centi-sec)
     // @Description: Sets the time constant of the output complementary filter/predictor in centi-seconds.
-    // @Range: 5 30
+    // @Range: 10 50
     // @Increment: 5
     // @User: Advanced
-    AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 20),
+    AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 25),
 
     // @Param: MAGE_P_NSE
     // @DisplayName: Earth magnetic field process noise (gauss/s)
