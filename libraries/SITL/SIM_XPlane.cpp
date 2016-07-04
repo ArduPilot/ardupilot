@@ -218,14 +218,15 @@ bool XPlane::receive_data(void)
              * both for joystick throttle input and for throttle that
              * we have provided over the link. So we need some way to
              * detect when we get our own values back. The trick used
-             * is to add throttle_magic * 1.0e-6 to the values we
-             * send, then detect this offset in the data coming
-             * back. Very ugly, but I can't find a better way of
-             * allowing joystick input from XPlane10
+             * is to add throttle_magic to the values we send, then
+             * detect this offset in the data coming back. Very ugly,
+             * but I can't find a better way of allowing joystick
+             * input from XPlane10
              */
+            bool has_magic = ((uint32_t)(data[1] * throttle_magic_scale) % 1000U) == (uint32_t)(throttle_magic * throttle_magic_scale);
             if (data[1] < 0 ||
                 data[1] == throttle_sent ||
-                ((uint32_t)(data[1] * 1e6)) % 1000 == throttle_magic) {
+                has_magic) {
                 break;
             }
             rcin[2] = data[1];
@@ -326,9 +327,22 @@ void XPlane::send_data(const struct sitl_input &input)
         float    data[8];
     } d {};
 
+    if (input.servos[0] == 0) {
+        aileron = 0;
+    }
+    if (input.servos[1] == 0) {
+        elevator = 0;
+    }
+    if (input.servos[2] == 0) {
+        throttle = 0;
+    }
+    if (input.servos[3] == 0) {
+        rudder = 0;
+    }
+    
     // we add the throttle_magic to the throttle value we send so we
     // can detect when we get it back
-    throttle += throttle_magic * 1e-6f;
+    throttle = ((uint32_t)(throttle * 1000)) * 1.0e-3f + throttle_magic;
     
     uint8_t flap_chan;
     if (RC_Channel_aux::find_channel(RC_Channel_aux::k_flap, flap_chan) ||

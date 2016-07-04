@@ -68,7 +68,8 @@ private:
     float last_flap;
 
     // throttle joystick input is very weird. See comments in the main code
-    const uint32_t throttle_magic = 123;
+    const float throttle_magic = 0.000123f;
+    const float throttle_magic_scale = 1.0e6;
     
     // DATA@ frame types. Thanks to TauLabs xplanesimulator.h
     // (which strangely enough acknowledges APM as a source!)
