@@ -750,7 +750,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Heli),
 #else
     // @Group: ATC_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
+    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Multi),
 #endif
 
@@ -841,18 +841,12 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
 
 #elif FRAME_CONFIG == SINGLE_FRAME
-    // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsSingle.cpp
     GOBJECT(motors, "MOT_",           AP_MotorsSingle),
 
 #elif FRAME_CONFIG == COAX_FRAME
-    // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsCoax.cpp
     GOBJECT(motors, "MOT_",           AP_MotorsCoax),
 
 #elif FRAME_CONFIG == TRI_FRAME
-    // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsTri.cpp
     GOBJECT(motors, "MOT_",           AP_MotorsTri),
 
 #else

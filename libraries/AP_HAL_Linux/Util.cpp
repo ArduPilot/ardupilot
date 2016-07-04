@@ -31,10 +31,9 @@ void Util::init(int argc, char * const *argv) {
 #ifdef HAL_UTILS_HEAT
 #if HAL_UTILS_HEAT == HAL_LINUX_HEAT_PWM
     _heat = new Linux::HeatPwm(HAL_LINUX_HEAT_PWM_NUM,
-                            HAL_LINUX_HEAT_KP,
-                            HAL_LINUX_HEAT_KI,
-                            HAL_LINUX_HEAT_PERIOD_NS,
-                            HAL_LINUX_HEAT_TARGET_TEMP);
+                               HAL_LINUX_HEAT_KP,
+                               HAL_LINUX_HEAT_KI,
+                               HAL_LINUX_HEAT_PERIOD_NS);
 #else
     #error Unrecognized Heat
 #endif // #if
@@ -43,9 +42,16 @@ void Util::init(int argc, char * const *argv) {
 #endif // #ifdef
 }
 
+// set current IMU temperatue in degrees C
 void Util::set_imu_temp(float current)
 {
     _heat->set_imu_temp(current);
+}
+
+// set target IMU temperatue in degrees C
+void Util::set_imu_target_temp(int8_t *target)
+{
+    _heat->set_imu_target_temp(target);
 }
 
 /**

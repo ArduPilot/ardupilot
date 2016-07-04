@@ -26,12 +26,23 @@
  */
 class AP_HAL::Device {
 public:
+    enum BusType {
+        BUS_TYPE_I2C,
+        BUS_TYPE_SPI,
+    };
+
     enum Speed {
         SPEED_HIGH,
         SPEED_LOW,
     };
 
     typedef void PeriodicHandle;
+
+    const enum BusType bus_type;
+
+    Device(enum BusType type)
+        : bus_type(type)
+    { }
 
     virtual ~Device() { }
 
@@ -53,11 +64,26 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) = 0;
 
+    /**
+     * Wrapper function over #transfer() to read recv_len registers, starting
+     * by first_reg, into the array pointed by recv. The read flag passed to
+     * #set_read_flag(uint8_t) is ORed with first_reg before performing the
+     * transfer.
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
     bool read_registers(uint8_t first_reg, uint8_t *recv, uint32_t recv_len)
     {
+        first_reg |= _read_flag;
         return transfer(&first_reg, 1, recv, recv_len);
     }
 
+    /**
+     * Wrapper function over #transfer() to write a byte to the register reg.
+     * The transfer is done by sending reg and val in that order.
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
     bool write_register(uint8_t reg, uint8_t val)
     {
         uint8_t buf[2] = { reg, val };
@@ -91,4 +117,17 @@ public:
      * allowing to convert old drivers to this new interface
      */
     virtual int get_fd() = 0;
+
+    /**
+     * Some devices connected on the I2C or SPI bus require a bit to be set on
+     * the register address in order to perform a read operation. This sets a
+     * flag to be used by #read_registers(). The flag's default value is zero.
+     */
+    void set_read_flag(uint8_t flag)
+    {
+        _read_flag = flag;
+    }
+
+protected:
+    uint8_t _read_flag = 0;
 };

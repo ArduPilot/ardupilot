@@ -51,7 +51,7 @@ public:
 
     // update estimated throttle required to hover
     void                update_throttle_hover(float dt);
-    virtual float       get_throttle_hover() const { return _throttle_hover; };
+    virtual float       get_throttle_hover() const { return _throttle_hover; }
 
     // spool up states
     enum spool_up_down_mode {

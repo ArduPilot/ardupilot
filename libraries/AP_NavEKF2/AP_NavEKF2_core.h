@@ -474,6 +474,10 @@ private:
     bool readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
     bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng);
 
+    // helper functions for correcting IMU data
+    void correctDeltaAngle(Vector3f &delAng, float delAngDT);
+    void correctDeltaVelocity(Vector3f &delVel, float delVelDT);
+
     // update IMU delta angle and delta velocity measurements
     void readIMUData();
 
@@ -600,7 +604,7 @@ private:
 
     // Propagate PVA solution forward from the fusion time horizon to the current time horizon
     // using a simple observer
-    void calcOutputStatesFast();
+    void calcOutputStates();
 
     // calculate a filtered offset between baro height measurement and EKF height estimate
     void calcFiltBaroOffset();
@@ -651,9 +655,6 @@ private:
     obs_ring_buffer_t<tas_elements> storedTAS;      // TAS data buffer
     obs_ring_buffer_t<range_elements> storedRange;
     imu_ring_buffer_t<output_elements> storedOutput;// output state buffer
-    Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
-    Quaternion correctedDelAngQuat; // quaternion representation of correctedDelAng
-    Vector3f correctedDelVel;       // delta velocities along the XYZ body axes for weighted average of IMU1 and IMU2 corrected for errors (m/s)
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
     ftype accNavMagHoriz;           // magnitude of navigation accel in horizontal plane (m/s^2)
@@ -714,8 +715,6 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
-    bool firstInflightYawInit;      // true when the first post takeoff initialisation of yaw angle has been performed
-    bool firstInflightMagInit;      // true when the first post takeoff initialisation of magnetic field states been performed
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     bool isAiding;                  // true when the filter is fusing position, velocity or flow measurements
     bool prevIsAiding;              // isAiding from previous frame
@@ -725,7 +724,7 @@ private:
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
     uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
-    float posDownAtTakeoff;         // flight vehicle vertical position at arming used as a reference point
+    float posDownAtTakeoff;         // flight vehicle vertical position sampled at transition from on-ground to in-air and used as a reference (m)
     bool useGpsVertVel;             // true if GPS vertical velocity should be used
     float yawResetAngle;            // Change in yaw angle due to last in-flight yaw reset in radians. A positive value means the yaw angle has increased.
     uint32_t lastYawReset_ms;       // System time at which the last yaw reset occurred. Returned by getLastYawResetAngle
@@ -788,9 +787,6 @@ private:
     bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
     float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
-    bool magStateResetRequest;      // true if magnetic field states need to be reset using the magneteomter measurements
-    bool magYawResetRequest;        // true if the vehicle yaw and magnetic field states need to be reset using the magnetometer measurements
-    bool gpsYawResetRequest;        // true if the vehicle yaw needs to be reset to the GPS course
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
@@ -885,6 +881,16 @@ private:
     bool expectGndEffectTouchdown;    // external state from ArduCopter - touchdown expected
     uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
+
+    // control of post takeoff magentic field and heading resets
+    bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed
+    bool finalInflightMagInit;      // true when the final post takeoff initialisation of magnetic field states been performed
+    bool magStateResetRequest;      // true if magnetic field states need to be reset using the magneteomter measurements
+    bool magYawResetRequest;        // true if the vehicle yaw and magnetic field states need to be reset using the magnetometer measurements
+    bool gpsYawResetRequest;        // true if the vehicle yaw needs to be reset to the GPS course
+    float posDownAtLastMagReset;    // vertical position last time the mag states were reset (m)
+    float yawInnovAtLastMagReset;   // magnetic yaw innovation last time the yaw and mag field states were reset (rad)
+    Quaternion quatAtLastMagReset;  // quaternion states last time the mag states were reset
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {

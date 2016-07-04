@@ -914,7 +914,7 @@ def setup_rc(mavproxy):
     # zero throttle
     mavproxy.send('rc 3 1000\n')
 
-def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False):
+def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     '''fly ArduCopter in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -938,7 +938,7 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL(binary, model='+', home=home, speedup=speedup_default, valgrind=valgrind)
+    sil = util.start_SIL(binary, model='+', home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
@@ -1265,7 +1265,7 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False):
     return True
 
 
-def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False):
+def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     '''fly ArduCopter in SIL for AVC2013 mission
     '''
     global homeloc
@@ -1286,7 +1286,7 @@ def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL(binary, model='heli', home=home, speedup=speedup_default, valgrind=valgrind)
+    sil = util.start_SIL(binary, model='heli', home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip

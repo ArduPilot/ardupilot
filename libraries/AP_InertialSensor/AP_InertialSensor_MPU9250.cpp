@@ -202,12 +202,8 @@ static const float GYRO_SCALE = 0.0174532f / 16.4f;
  */
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                                     enum bus_type type,
-                                                     uint8_t read_flag)
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_InertialSensor_Backend(imu)
-    , _read_flag(read_flag)
-    , _bus_type(type)
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     , _default_rotation(ROTATION_ROLL_180_YAW_270)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
@@ -237,7 +233,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_InertialSensor_MPU9250 *sensor =
-        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_I2C, 0);
+        new AP_InertialSensor_MPU9250(imu, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -251,8 +247,11 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &i
 AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::probe(AP_InertialSensor &imu,
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
 {
-    AP_InertialSensor_MPU9250 *sensor =
-        new AP_InertialSensor_MPU9250(imu, std::move(dev), BUS_TYPE_SPI, 0x80);
+    AP_InertialSensor_MPU9250 *sensor;
+
+    dev->set_read_flag(0x80);
+
+    sensor = new AP_InertialSensor_MPU9250(imu, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -277,7 +276,7 @@ bool AP_InertialSensor_MPU9250::_init()
 
 bool AP_InertialSensor_MPU9250::_has_auxiliary_bus()
 {
-    return _bus_type != BUS_TYPE_I2C;
+    return _dev->bus_type != AP_HAL::Device::BUS_TYPE_I2C;
 }
 
 void AP_InertialSensor_MPU9250::start()
@@ -437,39 +436,19 @@ void AP_InertialSensor_MPU9250::_read_sample()
 bool AP_InertialSensor_MPU9250::_block_read(uint8_t reg, uint8_t *buf,
                                             uint32_t size)
 {
-    reg |= _read_flag;
     return _dev->read_registers(reg, buf, size);
 }
 
 uint8_t AP_InertialSensor_MPU9250::_register_read(uint8_t reg)
 {
     uint8_t val = 0;
-
-    reg |= _read_flag;
     _dev->read_registers(reg, &val, 1);
-
     return val;
 }
 
 void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
 {
     _dev->write_register(reg, val);
-}
-
-/*
-  useful when debugging SPI bus errors
- */
-void AP_InertialSensor_MPU9250::_register_write_check(uint8_t reg, uint8_t val)
-{
-    uint8_t readed;
-    _register_write(reg, val);
-    readed = _register_read(reg);
-    if (readed != val){
-        hal.console->printf("Values doesn't match; written: %02x; read: %02x ", val, readed);
-    }
-#if MPU9250_DEBUG
-    hal.console->printf("Values written: %02x; readed: %02x ", val, readed);
-#endif
 }
 
 bool AP_InertialSensor_MPU9250::_hardware_init(void)
@@ -505,7 +484,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
         hal.scheduler->delay(100);
 
         /* bus-dependent initialization */
-        if (_bus_type == BUS_TYPE_SPI) {
+        if (_dev->bus_type == AP_HAL::Device::BUS_TYPE_SPI) {
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
             _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);

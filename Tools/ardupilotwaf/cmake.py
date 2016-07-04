@@ -173,6 +173,9 @@ cmake_configure_task.run = _cmake_configure_task_run
 class cmake_build_task(Task.Task):
     run_str = '${CMAKE} --build ${CMAKE_BLD_DIR} --target ${CMAKE_TARGET}'
     color = 'BLUE'
+    # the cmake-generated build system is responsible of managing its own
+    # dependencies
+    always_run = True
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
@@ -210,10 +213,6 @@ def _cmake_build_task_post_run(self):
         self.set_outputs(node)
     return self.original_post_run()
 cmake_build_task.post_run = _cmake_build_task_post_run
-
-# the cmake-generated build system is responsible of managing its own
-# dependencies
-cmake_build_task = Task.always_run(cmake_build_task)
 
 class CMakeConfig(object):
     '''
@@ -253,9 +252,8 @@ class CMakeConfig(object):
         if self._config_task and self._config_task.cmake_config_sig == sig:
             return self._config_task
 
-        # NOTE: we'll probably need to use the full class name in waf 1.9
-        self._config_task = taskgen.create_task('cmake_configure')
-        self._config_task.cwd = self.bldnode.abspath()
+        self._config_task = taskgen.create_task('cmake_configure_task')
+        self._config_task.cwd = self.bldnode
         self._config_task.cmake = self
         self._config_task.cmake_config_sig = sig
 
@@ -349,8 +347,7 @@ def cmake_build(bld, cmake_config, cmake_target, **kw):
 def create_cmake_build_task(self, cmake_config, cmake_target):
     cmake = get_cmake(cmake_config)
 
-    # NOTE: we'll probably need to use the full class name in waf 1.9
-    tsk = self.create_task('cmake_build')
+    tsk = self.create_task('cmake_build_task')
     tsk.cmake = cmake
     tsk.cmake_target = cmake_target
     tsk.output_patterns = []

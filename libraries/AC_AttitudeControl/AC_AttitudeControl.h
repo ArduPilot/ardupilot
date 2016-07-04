@@ -13,27 +13,21 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 
-// TODO: change the name or move to AP_Math? eliminate in favor of degrees(100)?
-#define AC_ATTITUDE_CONTROL_DEGX100                           5729.57795f      // constant to convert from radians to centidegrees
+#define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 
-#define AC_ATTITUDE_CONTROL_ANGLE_P                           4.5f             // default angle P gain for roll, pitch and yaw
-
-#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS             radians(40.0f)   // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
-#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS             radians(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
-#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS              radians(10.0f)   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS              radians(360.0f)  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS              1000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
-#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS         110000.0f // default maximum acceleration for roll/pitch axis in centidegrees/sec/sec
-#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS          27000.0f  // default maximum acceleration for yaw axis in centidegrees/sec/sec
+#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS       radians(40.0f)   // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
+#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS       radians(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
+#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS        radians(10.0f)   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
+#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS        radians(120.0f)  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
+#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS        6000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
+#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS   110000.0f // default maximum acceleration for roll/pitch axis in centidegrees/sec/sec
+#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS    27000.0f  // default maximum acceleration for yaw axis in centidegrees/sec/sec
 
 #define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT             1.0f    // body-frame rate controller timeout in seconds
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          1.0f    // body-frame rate controller maximum output (for roll-pitch axis)
 #define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX         1.0f    // body-frame rate controller maximum output (for yaw axis)
 
-#define AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX_RAD  radians(300.0f) // earth-frame rate stabilize controller's maximum overshoot angle (never limited)
-#define AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX_RAD radians(300.0f) // earth-frame rate stabilize controller's maximum overshoot angle (never limited)
-#define AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX_RAD   radians(10.0f)  // earth-frame rate stabilize controller's maximum overshoot angle
-#define AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD  radians(30.0f)  // earth-frame rate stabilize controller's maximum overshoot angle
+#define AC_ATTITUDE_THRUST_ERROR_ANGLE                  radians(30.0f) // Thrust angle error above which yaw corrections are limited
 
 #define AC_ATTITUDE_100HZ_DT                            0.0100f // delta time in seconds for 100hz update rate
 #define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
@@ -43,11 +37,11 @@
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT      1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX    0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
 
-#define AC_ATTITUDE_CONTROL_MIN_DEFAULT   0.1f    // minimum throttle mix
-#define AC_ATTITUDE_CONTROL_MID_DEFAULT   0.5f    // manual throttle mix
-#define AC_ATTITUDE_CONTROL_MAX_DEFAULT   0.5f    // maximum throttle mix default
+#define AC_ATTITUDE_CONTROL_MIN_DEFAULT                 0.1f    // minimum throttle mix
+#define AC_ATTITUDE_CONTROL_MID_DEFAULT                 0.5f    // manual throttle mix
+#define AC_ATTITUDE_CONTROL_MAX_DEFAULT                 0.5f    // maximum throttle mix default
 
-#define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT 0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
+#define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 
 class AC_AttitudeControl {
 public:
@@ -60,7 +54,7 @@ public:
         _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
         _dt(dt),
         _angle_boost(0),
-        _att_ctrl_use_accel_limit(true),
+        _use_ff_and_input_shaping(true),
         _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
@@ -108,32 +102,29 @@ public:
     // Sets and saves the yaw acceleration limit in centidegrees/s/s
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; _accel_yaw_max.save(); }
 
-    // Ensure body-frame rate controller has zero errors to relax rate controller output
-    void relax_bf_rate_controller();
+    // Ensure attitude controller have zero errors to relax rate controller output
+    void relax_attitude_controllers();
 
     // Sets yaw target to vehicle heading
-    void set_yaw_target_to_current_heading() { _att_target_euler_rad.z = _ahrs.yaw; }
+    void set_yaw_target_to_current_heading() { _attitude_target_euler_angle.z = _ahrs.yaw; }
 
     // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
     void shift_ef_yaw_target(float yaw_shift_cd);
 
+    // Command a Quaternion attitude with feedforward and smoothing
+    void input_quaternion(Quaternion attitude_desired_quat, float smoothing_gain);
+
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-    void input_euler_angle_roll_pitch_euler_rate_yaw_smooth(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
+    void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
 
-    // Command an euler roll and pitch angle and an euler yaw rate
-    void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
+    // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw, float smoothing_gain);
 
-    // Command an euler roll, pitch and yaw angle
-    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
-
-    // Command an euler roll, pitch, and yaw rate
+    // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
     void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
 
-    // Command an angular velocity
+    // Command an angular velocity with angular velocity feedforward and smoothing
     virtual void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
-
-    // Command a quaternion attitude and a body-frame angular velocity
-    void input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
 
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run() = 0;
@@ -146,24 +137,23 @@ public:
     bool ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads);
 
     // Configures whether the attitude controller should limit the rate demand to constrain angular acceleration
-    void limit_angle_to_rate_request(bool limit_request) { _att_ctrl_use_accel_limit = limit_request; }
+    void use_ff_and_input_shaping(bool use_shaping) { _use_ff_and_input_shaping = use_shaping; }
 
     // Return 321-intrinsic euler angles in centidegrees representing the rotation from NED earth frame to the
-    // attitude controller's reference attitude.
-    Vector3f get_att_target_euler_cd() const { return _att_target_euler_rad*degrees(100.0f); }
+    // attitude controller's target attitude.
+    Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle*degrees(100.0f); }
 
-    // Return a rotation vector in centidegrees representing the rotation from vehicle body frame to the
-    // attitude controller's reference attitude.
-    Vector3f get_att_error_rot_vec_cd() const { return _att_error_rot_vec_rad*degrees(100.0f); }
+    // Return the angle between the target thrust vector and the current thrust vector.
+    float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
-    // Set x-axis angular velocity reference in centidegrees/s
-    void rate_bf_roll_target(float rate_cds) { _ang_vel_target_rads.x = radians(rate_cds*0.01f); }
+    // Set x-axis angular velocity in centidegrees/s
+    void rate_bf_roll_target(float rate_cds) { _rate_target_ang_vel.x = radians(rate_cds*0.01f); }
 
-    // Set y-axis angular velocity reference in centidegrees/s
-    void rate_bf_pitch_target(float rate_cds) { _ang_vel_target_rads.y = radians(rate_cds*0.01f); }
+    // Set y-axis angular velocity in centidegrees/s
+    void rate_bf_pitch_target(float rate_cds) { _rate_target_ang_vel.y = radians(rate_cds*0.01f); }
 
-    // Set z-axis angular velocity reference in centidegrees/s
-    void rate_bf_yaw_target(float rate_cds) { _ang_vel_target_rads.z = radians(rate_cds*0.01f); }
+    // Set z-axis angular velocity in centidegrees/s
+    void rate_bf_yaw_target(float rate_cds) { _rate_target_ang_vel.z = radians(rate_cds*0.01f); }
 
     // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps
     float max_rate_step_bf_roll();
@@ -183,8 +173,8 @@ public:
     // Return yaw step size in centidegrees that results in maximum output after 4 time steps
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw()/_p_angle_yaw.kP(); }
 
-    // Return reference angular velocity used in the angular velocity controller
-    Vector3f rate_bf_targets() const { return _ang_vel_target_rads*degrees(100.0f); }
+    // Return angular velocity in radians used in the angular velocity controller
+    Vector3f rate_bf_targets() const { return _rate_target_ang_vel; }
 
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
@@ -222,57 +212,43 @@ public:
     // Proportional controller with piecewise sqrt sections to constrain second derivative
     static float sqrt_controller(float error, float p, float second_ord_lim);
 
+    // Inverse proportional controller with piecewise sqrt sections to constrain second derivative
+    static float stopping_point(float first_ord_mag, float p, float second_ord_lim);
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    // calculates the velocity correction from an angle error. The angular velocity has acceleration and
+    // deceleration limits including basic jerk limiting using smoothing_gain
+    float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel);
+
+    // limits the acceleration and deceleration of a velocity request
+    float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max);
+
+    // translates body frame acceleration limits to the euler axis
+    Vector3f euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel);
+
+    // thrust_heading_rotation_angles - calculates two ordered rotations to move the att_from_quat quaternion to the att_to_quat quaternion.
+    // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
+    void thrust_heading_rotation_angles(Quaternion& att_to_quat, const Quaternion& att_from_quat, Vector3f& att_diff_angle, float& thrust_vec_dot);
+
+    // Calculates the body frame angular velocities to follow the target attitude
+    void attitude_controller_run_quat();
+
+
 protected:
-    // Retrieve a rotation matrix from the vehicle body frame to NED earth frame
-    void get_rotation_vehicle_to_ned(Matrix3f& m);
 
-    // Retrieve a rotation matrix from NED earth frame to the vehicle body frame
-    void get_rotation_ned_to_vehicle(Matrix3f& m);
-
-    // Retrieve a rotation matrix from reference (setpoint) body frame to NED earth frame
-    void get_rotation_reference_to_ned(Matrix3f& m);
-
-    // Retrieve a rotation matrix from NED earth frame to reference (setpoint) body frame
-    void get_rotation_ned_to_reference(Matrix3f& m);
-
-    // Retrieve a rotation matrix from vehicle body frame to reference (setpoint) body frame
-    void get_rotation_vehicle_to_reference(Matrix3f& m);
-
-    // Retrieve a rotation matrix from reference (setpoint) body frame to vehicle body frame
-    void get_rotation_reference_to_vehicle(Matrix3f& m);
-
-    // Command an euler attitude and a body-frame angular velocity
-    void attitude_controller_run_euler(const Vector3f& att_target_euler_rad, const Vector3f& att_target_ang_vel_rads);
-
-    // Command a quaternion attitude and a body-frame angular velocity
-    void attitude_controller_run_quat(const Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
-
-    // Update _att_target_euler_rad.x by integrating a 321-intrinsic euler roll angle derivative
-    void update_att_target_roll(float euler_roll_rate_rads, float overshoot_max_rad);
-
-    // Update _att_target_euler_rad.y by integrating a 321-intrinsic euler pitch angle derivative
-    void update_att_target_pitch(float euler_pitch_rate_rads, float overshoot_max_rad);
-
-    // Update _att_target_euler_rad.z by integrating a 321-intrinsic euler yaw angle derivative
-    void update_att_target_yaw(float euler_yaw_rate_rads, float overshoot_max_rad);
-
-    // Integrate vehicle rate into _att_error_rot_vec_rad
-    void integrate_bf_rate_error_to_angle_errors();
-
-    // Update _ang_vel_target_rads using _att_error_rot_vec_rad
-    void update_ang_vel_target_from_att_error();
+    // Update rate_target_ang_vel using attitude_error_rot_vec_rad
+    Vector3f update_ang_vel_target_from_att_error(Vector3f attitude_error_rot_vec_rad);
 
     // Run the roll angular velocity PID controller and return the output
-    float rate_bf_to_motor_roll(float rate_target_rads);
+    float rate_target_to_motor_roll(float rate_target_rads);
 
     // Run the pitch angular velocity PID controller and return the output
-    float rate_bf_to_motor_pitch(float rate_target_rads);
+    float rate_target_to_motor_pitch(float rate_target_rads);
 
     // Run the yaw angular velocity PID controller and return the output
-    virtual float rate_bf_to_motor_yaw(float rate_target_rads);
+    virtual float rate_target_to_motor_yaw(float rate_target_rads);
 
     // Return angle in radians to be added to roll angle. Used by heli to counteract
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
@@ -322,29 +298,30 @@ protected:
     // Intersampling period in seconds
     float               _dt;
 
-    // This represents a 321-intrinsic rotation from NED frame to the reference (setpoint)
-    // attitude used in the attitude controller, in radians. Formerly _angle_ef_target.
-    Vector3f            _att_target_euler_rad;
+    // This represents a 321-intrinsic rotation from NED frame to the target (setpoint)
+    // attitude used in the attitude controller, in radians.
+    Vector3f            _attitude_target_euler_angle;
 
-    // This represents an euler axis-angle rotation vector from the vehicle’s
-    // estimated attitude to the reference (setpoint) attitude used in the attitude
-    // controller, in radians in the vehicle body frame of reference. Formerly
-    // _angle_bf_error.
-    Vector3f            _att_error_rot_vec_rad;
-
-    // This represents the angular velocity of the reference (setpoint) attitude used in
+    // This represents the angular velocity of the target (setpoint) attitude used in
     // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
-    // second. Formerly _rate_ef_desired.
-    Vector3f            _att_target_euler_rate_rads;
+    // second.
+    Vector3f            _attitude_target_euler_rate;
 
-    // This represents the angular velocity of the reference (setpoint) attitude used in
+    // This represents a quaternion rotation from NED frame to the target (setpoint)
+    // attitude used in the attitude controller.
+    Quaternion          _attitude_target_quat;
+
+    // This represents the angular velocity of the target (setpoint) attitude used in
     // the attitude controller as an angular velocity vector, in radians per second in
-    // the reference attitude frame. Formerly _rate_bf_desired.
-    Vector3f            _att_target_ang_vel_rads;
+    // the target attitude frame.
+    Vector3f            _attitude_target_ang_vel;
 
-    // This represents the reference (setpoint) angular velocity used in the angular
-    // velocity controller, in radians per second. Formerly _rate_bf_target.
-    Vector3f            _ang_vel_target_rads;
+    // This represents the angular velocity in radians per second, used in the angular
+    // velocity controller.
+    Vector3f            _rate_target_ang_vel;
+
+    // The angle between the target thrust vector and the current thrust vector.
+    float               _thrust_error_angle;
 
     // throttle provided as input to attitude controller.  This does not include angle boost.
     float               _throttle_in = 0.0f;
@@ -353,14 +330,17 @@ protected:
     // Used only for logging.
     float               _angle_boost;
 
-    // Specifies whether the attitude controller should use the acceleration limit
-    bool                _att_ctrl_use_accel_limit;
+    // Specifies whether the attitude controller should use the input shaping and feedforward
+    bool                _use_ff_and_input_shaping;
 
     // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
     float               _althold_lean_angle_max = 0.0f;
 
-    float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
-    float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
+    // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
+    float               _throttle_rpy_mix_desired;
+
+    // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
+    float               _throttle_rpy_mix;
 
     // References to external libraries
     const AP_AHRS&      _ahrs;

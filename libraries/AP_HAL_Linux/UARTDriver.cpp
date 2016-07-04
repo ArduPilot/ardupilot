@@ -87,6 +87,13 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             break;
         }
 
+        case DEVICE_UDPIN:
+        {
+            _udpin_start_connection();
+            _flow_control = FLOW_CONTROL_ENABLE;
+            break;
+        }
+        
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
         case DEVICE_QFLIGHT:
         {
@@ -206,7 +213,8 @@ UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
         return DEVICE_QFLIGHT;
 #endif
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
-               strncmp(arg, "udp:", 4) != 0) {
+               strncmp(arg, "udp:", 4) != 0 &&
+               strncmp(arg, "udpin:", 6)) {
         return DEVICE_UNKNOWN;
     }
 
@@ -251,6 +259,8 @@ UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
 
     if (strcmp(protocol, "udp") == 0) {
         type = DEVICE_UDP;
+    } else if (strcmp(protocol, "udpin") == 0) {
+        type = DEVICE_UDPIN;
     } else {
         type = DEVICE_TCP;
     }
@@ -289,7 +299,24 @@ bool UARTDriver::_qflight_start_connection()
 void UARTDriver::_udp_start_connection(void)
 {
     bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
-    _device = new UDPDevice(_ip, _base_port, bcast);
+    _device = new UDPDevice(_ip, _base_port, bcast, false);
+    _connected = _device->open();
+    _device->set_blocking(false);
+
+    /* try to write on MAVLink packet boundaries if possible */
+    _packetise = true;
+}
+
+/*
+  start a UDP connection for the serial port
+ */
+void UARTDriver::_udpin_start_connection(void)
+{
+    bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
+    if (bcast) {
+        AP_HAL::panic("Can't combine udpin with bcast");
+    }
+    _device = new UDPDevice(_ip, _base_port, false, true);
     _connected = _device->open();
     _device->set_blocking(false);
 

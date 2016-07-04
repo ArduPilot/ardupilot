@@ -53,6 +53,8 @@ extern const AP_HAL::HAL& hal;
 
 #define SAMPLE_UNIT 1
 
+#define GYRO_INIT_MAX_DIFF_DPS 0.1f
+
 // Class level parameters
 const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: PRODUCT_ID
@@ -803,7 +805,7 @@ AP_InertialSensor::_init_gyro()
     for (uint8_t k=0; k<num_gyros; k++) {
         _gyro_offset[k].set(Vector3f());
         new_gyro_offset[k].zero();
-        best_diff[k] = 0;
+        best_diff[k] = -1.f;
         last_average[k].zero();
         converged[k] = false;
     }
@@ -859,10 +861,10 @@ AP_InertialSensor::_init_gyro()
         }
 
         for (uint8_t k=0; k<num_gyros; k++) {
-            if (j == 0) {
+            if (best_diff[k] < 0) {
                 best_diff[k] = diff_norm[k];
                 best_avg[k] = gyro_avg[k];
-            } else if (gyro_diff[k].length() < ToRad(0.1f)) {
+            } else if (gyro_diff[k].length() < ToRad(GYRO_INIT_MAX_DIFF_DPS)) {
                 // we want the average to be within 0.1 bit, which is 0.04 degrees/s
                 last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
                 if (!converged[k] || last_average[k].length() < new_gyro_offset[k].length()) {
@@ -885,8 +887,10 @@ AP_InertialSensor::_init_gyro()
     hal.console->println();
     for (uint8_t k=0; k<num_gyros; k++) {
         if (!converged[k]) {
-            hal.console->printf("gyro[%u] did not converge: diff=%f dps\n",
-                                  (unsigned)k, (double)ToDeg(best_diff[k]));
+            hal.console->printf("gyro[%u] did not converge: diff=%f dps (expected < %f)\n",
+                                (unsigned)k,
+                                (double)ToDeg(best_diff[k]),
+                                (double)GYRO_INIT_MAX_DIFF_DPS);
             _gyro_offset[k] = best_avg[k];
             // flag calibration as failed for this gyro
             _gyro_cal_ok[k] = false;

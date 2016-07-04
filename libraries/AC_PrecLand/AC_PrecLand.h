@@ -4,6 +4,8 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_InertialNav/AP_InertialNav.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <stdint.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
@@ -33,42 +35,57 @@ public:
         PRECLAND_TYPE_IRLOCK
     };
 
-    // Constructor
+    // constructor
     AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav);
 
-    // init - perform any required initialisation of landing controllers
+    // perform any required initialisation of landing controllers
     void init();
 
-    // healthy - returns true if precision landing is healthy
+    // returns true if precision landing is healthy
     bool healthy() { return _backend_state.healthy; }
 
-    // update - give chance to driver to get updates from sensor
+    // returns time of last update
+    uint32_t last_update_ms() { return _last_update_ms; }
+
+    // give chance to driver to get updates from sensor
     void update(float alt_above_terrain_cm);
 
-    // get_target_shift - returns 3D vector of earth-frame position adjustments to target
+    // returns 3D vector of earth-frame position adjustments to target
     Vector3f get_target_shift(const Vector3f& orig_target);
 
-    // handle_msg - Process a LANDING_TARGET mavlink message
+    // returns target position relative to origin
+    bool get_target_position(Vector3f& ret);
+
+    // returns target position relative to vehicle
+    bool get_target_position_relative(Vector3f& ret);
+
+    // returns target velocity relative to vehicle
+    bool get_target_velocity_relative(Vector3f& ret);
+
+    // returns true when the landing target has been detected
+    bool target_acquired();
+
+    // process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
 
     // accessors for logging
     bool enabled() const { return _enabled; }
     const Vector2f& last_bf_angle_to_target() const { return _angle_to_target; }
     const Vector2f& last_ef_angle_to_target() const { return _ef_angle_to_target; }
-    const Vector3f& last_target_pos_offset() const { return _target_pos_offset; }
+    const Vector3f& last_target_pos_offset() const { return _target_pos_rel; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
-    // calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
+    // converts sensor's body-frame angles to earth-frame angles and position estimate
     //  angles stored in _angle_to_target
     //  earth-frame angles stored in _ef_angle_to_target
     //  position estimate is stored in _target_pos
     void calc_angles_and_pos(float alt_above_terrain_cm);
 
-    // get_behaviour - returns enabled parameter as an behaviour
+    // returns enabled parameter as an behaviour
     enum PrecLandBehaviour get_behaviour() const { return (enum PrecLandBehaviour)(_enabled.get()); }
 
     // references to inertial nav and ahrs libraries
@@ -79,13 +96,15 @@ private:
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
     AP_Int8                     _type;              // precision landing controller type
 
+    uint32_t                    _last_update_ms;      // epoch time in millisecond when update is called
+
     // output from sensor (stored for logging)
     Vector2f                    _angle_to_target;   // last raw sensor angle to target
     Vector2f                    _ef_angle_to_target;// last earth-frame angle to target
 
-    // output from controller
-    bool                        _have_estimate;     // true if we have a recent estimated position offset
-    Vector3f                    _target_pos_offset; // estimate target position offset from vehicle in earth-frame
+    // estimator output
+    Vector3f                    _target_pos_rel;    // estimate target position relative to vehicle in NEU cm
+    Vector3f                    _target_pos;        // estimate target position in NEU cm
 
     // backend state
     struct precland_state {

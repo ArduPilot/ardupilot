@@ -527,6 +527,17 @@ private:
     } auto_state;
 
     struct {
+        // roll pitch yaw commanded from external controller in centidegrees
+        Vector3l forced_rpy_cd;
+        // last time we heard from the external controller
+        Vector3l last_forced_rpy_ms;
+
+        // throttle  commanded from external controller in percent
+        float forced_throttle;
+        uint32_t last_forced_throttle_ms;
+} guided_state;
+
+    struct {
         // on hard landings, only check once after directly a landing so you
         // don't trigger a crash when picking up the aircraft
         bool checkedHardLanding:1;
@@ -553,7 +564,7 @@ private:
 
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
-
+	
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
@@ -769,7 +780,6 @@ private:
     int32_t last_mixer_crc = -1;
 #endif // CONFIG_HAL_BOARD
     
-    void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_heartbeat(mavlink_channel_t chan);
@@ -918,7 +928,8 @@ private:
     bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
-    void init_rc_out();
+    void init_rc_out_main();
+    void init_rc_out_aux();
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);

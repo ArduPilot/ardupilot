@@ -35,4 +35,7 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #endif
+
+    // target temperarure for IMU in Celsius, or -1 to disable
+    AP_Int8 _imu_target_temperature;
 };

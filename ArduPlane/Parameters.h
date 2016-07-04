@@ -449,7 +449,6 @@ public:
 
     // Navigational maneuvering limits
     //
-    AP_Int16 roll_limit_cd;
     AP_Int16 alt_offset;
     AP_Int16 acro_roll_rate;
     AP_Int16 acro_pitch_rate;

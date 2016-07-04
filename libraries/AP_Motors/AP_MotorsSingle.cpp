@@ -247,42 +247,33 @@ void AP_MotorsSingle::output_armed_stabilizing()
     if (is_zero(_thrust_out)) {
         limit.roll_pitch = true;
         limit.yaw = true;
-        for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
-            if (actuator[i] < 0.0f) {
-                _actuator_out[i] = -1.0f;
-            } else if (actuator[i] > 0.0f) {
-                _actuator_out[i] = 1.0f;
-            } else {
-                _actuator_out[i] = 0.0f;
-            }
+    }
+
+    // limit thrust out for calculation of actuator gains
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,_thrust_out), 0.1f, 1.0f);
+
+    // calculate the maximum allowed actuator output and maximum requested actuator output
+    for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
+        if (actuator_max > fabsf(actuator[i])) {
+            actuator_max = fabsf(actuator[i]);
         }
+    }
+    if (actuator_max > thrust_out_actuator && !is_zero(actuator_max)) {
+        // roll, pitch and yaw request can not be achieved at full servo defection
+        // reduce roll, pitch and yaw to reduce the requested defection to maximum
+        limit.roll_pitch = true;
+        limit.yaw = true;
+        rp_scale = thrust_out_actuator/actuator_max;
     } else {
-        // calculate the maximum allowed actuator output and maximum requested actuator output
-        for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
-            if (actuator_max > fabsf(actuator[i])) {
-                actuator_max = fabsf(actuator[i]);
-            }
-        }
-        if (actuator_max > _thrust_out && !is_zero(actuator_max)) {
-            // roll, pitch and yaw request can not be achieved at full servo defection
-            // reduce roll, pitch and yaw to reduce the requested defection to maximum
-            limit.roll_pitch = true;
-            limit.yaw = true;
-            rp_scale = _thrust_out/actuator_max;
-        } else {
-            rp_scale = 1.0f;
-        }
+        rp_scale = 1.0f;
+    }
 
-        // limit thrust out for calculation of actuator gains
-        float thrust_out_actuator = MAX(_throttle_hover*0.5,_thrust_out);
-
-        // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
-        // static thrust is proportional to the airflow velocity squared
-        // therefore the torque of the roll and pitch actuators should be approximately proportional to
-        // the angle of attack multiplied by the static thrust.
-        for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
-            _actuator_out[i] = constrain_float(rp_scale*actuator[i]/thrust_out_actuator, -1.0f, 1.0f);
-        }
+    // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
+    // static thrust is proportional to the airflow velocity squared
+    // therefore the torque of the roll and pitch actuators should be approximately proportional to
+    // the angle of attack multiplied by the static thrust.
+    for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
+        _actuator_out[i] = constrain_float(rp_scale*actuator[i]/thrust_out_actuator, -1.0f, 1.0f);
     }
 }
 

@@ -50,6 +50,7 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     }
     // FlightAxis sensor data is not good enough for EKF. Use fake EKF by default
     AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
+    AP_Param::set_default_by_name("INS_GYR_CAL", 0);
 }
 
 /*

@@ -186,11 +186,18 @@ void AP_Airspeed::calibrate(bool in_startup)
     _cal.start_ms = AP_HAL::millis();
     _cal.count = 0;
     _cal.sum = 0;
+    _cal.read_count = 0;
 }
 
+/*
+  update async airspeed calibration
+*/
 void AP_Airspeed::update_calibration(float raw_pressure)
 {
-    if (AP_HAL::millis() - _cal.start_ms >= 1000) {
+    // consider calibration complete when we have at least 10 samples
+    // over at least 1 second
+    if (AP_HAL::millis() - _cal.start_ms >= 1000 &&
+        _cal.read_count > 10) {
         if (_cal.count == 0) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
         } else {
@@ -204,6 +211,7 @@ void AP_Airspeed::update_calibration(float raw_pressure)
         _cal.sum += raw_pressure;
         _cal.count++;
     }
+    _cal.read_count++;
 }
 
 // read the airspeed sensor

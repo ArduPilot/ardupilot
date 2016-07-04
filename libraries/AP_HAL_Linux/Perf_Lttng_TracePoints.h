@@ -28,7 +28,7 @@ TRACEPOINT_EVENT(
     ardupilot,
     begin,
     TP_ARGS(
-        char*, name_arg
+        const char*, name_arg
     ),
     TP_FIELDS(
         ctf_string(name_field, name_arg)
@@ -39,7 +39,7 @@ TRACEPOINT_EVENT(
     ardupilot,
     end,
     TP_ARGS(
-        char*, name_arg
+        const char*, name_arg
     ),
     TP_FIELDS(
         ctf_string(name_field, name_arg)
@@ -50,7 +50,7 @@ TRACEPOINT_EVENT(
     ardupilot,
     count,
     TP_ARGS(
-        char*, name_arg,
+        const char*, name_arg,
         int, count_arg
     ),
     TP_FIELDS(
@@ -62,4 +62,3 @@ TRACEPOINT_EVENT(
 #endif
 
 #include <lttng/tracepoint-event.h>
-

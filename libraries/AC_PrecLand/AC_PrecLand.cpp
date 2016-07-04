@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
 AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
     _ahrs(ahrs),
     _inav(inav),
-    _have_estimate(false),
+    _last_update_ms(0),
     _backend(NULL)
 {
     // set parameters to defaults
@@ -92,29 +92,37 @@ void AC_PrecLand::update(float alt_above_terrain_cm)
     }
 }
 
-// get_target_shift - returns 3D vector of earth-frame position adjustments to target
-Vector3f AC_PrecLand::get_target_shift(const Vector3f &orig_target)
+bool AC_PrecLand::target_acquired()
 {
-    Vector3f shift; // default shift initialised to zero
-
-    // do not shift target if not enabled or no position estimate
-    if (_backend == NULL || !_have_estimate) {
-        return shift;
-    }
-
-    // shift is target_offset - (original target - current position)
-    Vector3f curr_offset_from_target = orig_target - _inav.get_position();
-    shift = _target_pos_offset - curr_offset_from_target;
-    shift.z = 0.0f;
-
-    // record we have consumed this reading (perhaps there is a cleaner way to do this using timestamps)
-    _have_estimate = false;
-
-    // return adjusted target
-    return shift;
+    return (AP_HAL::millis()-_last_update_ms) < 1000;
 }
 
-// calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
+bool AC_PrecLand::get_target_position(Vector3f& ret)
+{
+    if (!target_acquired()) {
+        return false;
+    }
+
+    ret = _target_pos;
+    return true;
+}
+
+bool AC_PrecLand::get_target_position_relative(Vector3f& ret)
+{
+    if (!target_acquired()) {
+        return false;
+    }
+
+    ret = _target_pos_rel;
+    return true;
+}
+
+bool AC_PrecLand::get_target_velocity_relative(Vector3f& ret)
+{
+    return false;
+}
+
+// converts sensor's body-frame angles to earth-frame angles and position estimate
 //  raw sensor angles stored in _angle_to_target (might be in earth frame, or maybe body frame)
 //  earth-frame angles stored in _ef_angle_to_target
 //  position estimate is stored in _target_pos
@@ -122,42 +130,56 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
 {
     // exit immediately if not enabled
     if (_backend == NULL) {
-        _have_estimate = false;
         return;
     }
 
     // get angles to target from backend
     if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y)) {
-        _have_estimate = false;
         return;
     }
 
-    float x_rad;
-    float y_rad;
+    _angle_to_target.x = -_angle_to_target.x;
+    _angle_to_target.y = -_angle_to_target.y;
 
-    if(_backend->get_frame_of_reference() == MAV_FRAME_LOCAL_NED){
-        //don't subtract vehicle lean angles
-        x_rad = _angle_to_target.x;
-        y_rad = -_angle_to_target.y;
-    }else{ // assume MAV_FRAME_BODY_NED (i.e. a hard-mounted sensor)
-        // subtract vehicle lean angles
-        x_rad = _angle_to_target.x - _ahrs.roll;
-        y_rad = -_angle_to_target.y + _ahrs.pitch;
+    // compensate for delay
+    _angle_to_target.x -= _ahrs.get_gyro().x*4.0e-2f;
+    _angle_to_target.y -= _ahrs.get_gyro().y*4.0e-2f;
+
+    Vector3f target_vec_ned;
+
+    if (_angle_to_target.is_zero()) {
+        target_vec_ned = Vector3f(0.0f,0.0f,1.0f);
+    } else {
+        float theta = _angle_to_target.length();
+        Vector3f axis = Vector3f(_angle_to_target.x, _angle_to_target.y, 0.0f)/theta;
+        float sin_theta = sinf(theta);
+        float cos_theta = cosf(theta);
+
+        target_vec_ned.x = axis.y*sin_theta;
+        target_vec_ned.y = -axis.x*sin_theta;
+        target_vec_ned.z = cos_theta;
     }
 
-    // rotate to earth-frame angles
-    _ef_angle_to_target.x = y_rad*_ahrs.cos_yaw() - x_rad*_ahrs.sin_yaw();
-    _ef_angle_to_target.y = y_rad*_ahrs.sin_yaw() + x_rad*_ahrs.cos_yaw();
+    // rotate into NED frame
+    target_vec_ned = _ahrs.get_rotation_body_to_ned()*target_vec_ned;
 
-    // get current altitude (constrained to no lower than 50cm)
-    float alt = MAX(alt_above_terrain_cm, 50.0f);
+    // extract the angles to target (logging only)
+    _ef_angle_to_target.x = atan2f(target_vec_ned.z,target_vec_ned.x);
+    _ef_angle_to_target.y = atan2f(target_vec_ned.z,target_vec_ned.y);
 
-    // convert earth-frame angles to earth-frame position offset
-    _target_pos_offset.x = alt*tanf(_ef_angle_to_target.x);
-    _target_pos_offset.y = alt*tanf(_ef_angle_to_target.y);
-    _target_pos_offset.z = 0;  // not used
+    // ensure that the angle to target is no more than 70 degrees
+    if (target_vec_ned.z > 0.26f) {
+        // get current altitude (constrained to be positive)
+        float alt = MAX(alt_above_terrain_cm, 0.0f);
+        float dist = alt/target_vec_ned.z;
+        //
+        _target_pos_rel.x = target_vec_ned.x*dist;
+        _target_pos_rel.y = target_vec_ned.y*dist;
+        _target_pos_rel.z = alt;  // not used
+        _target_pos = _inav.get_position()+_target_pos_rel;
 
-    _have_estimate = true;
+        _last_update_ms = AP_HAL::millis();
+    }
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message

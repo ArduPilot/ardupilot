@@ -105,7 +105,7 @@ restart:
         // Receive message data
         //
         case 3:
-            _buffer.bytes[_payload_counter++] = data;
+            _buffer[_payload_counter++] = data;
             _ck_b += (_ck_a += data);
             if (_payload_counter == sizeof(_buffer)) {
                 _step++;

@@ -71,8 +71,8 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, _ser2_rtscts, 2),
 
     // @Param: SAFETYENABLE
-    // @DisplayName:  Enable use of safety arming switch
-    // @Description: Disabling this option will disable the use of the safety switch on PX4 for arming. Use of the safety switch is highly recommended, so you should leave this option set to 1 except in unusual circumstances.
+    // @DisplayName: Enable use of safety arming switch
+    // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
@@ -101,7 +101,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
 #endif
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SAFETY_MASK
     // @DisplayName: Channels to which ignore the safety switch state
@@ -112,6 +112,15 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, _ignore_safety_channels, 0),
 #endif
 
+#if HAL_HAVE_IMU_HEATER
+    // @Param: IMU_TARGTEMP
+    // @DisplayName: Target IMU temperature
+    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. A value of -1 disables heating.
+    // @Range: -1 80
+    // @Units: degreesC
+    AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
+#endif
+        
     AP_GROUPEND
 };
 
@@ -246,5 +255,10 @@ void AP_BoardConfig::init()
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */
 
-#endif    
+#endif
+
+    // let the HAL know the target temperature. We pass a pointer as
+    // we want the user to be able to change the parameter without
+    // rebooting
+    hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
 }

@@ -289,7 +289,8 @@ private:
     AP_Float _easNoise;             // equivalent airspeed measurement noise : m/s
     AP_Float _windVelProcessNoise;  // wind velocity state process noise : m/s^2
     AP_Float _wndVarHgtRateScale;   // scale factor applied to wind process noise due to height rate
-    AP_Float _magProcessNoise;      // magnetic field process noise : gauss/sec
+    AP_Float _magEarthProcessNoise; // Earth magnetic field process noise : gauss/sec
+    AP_Float _magBodyProcessNoise;  // Body magnetic field process noise : gauss/sec
     AP_Float _gyrNoise;             // gyro process noise : rad/s
     AP_Float _accNoise;             // accelerometer process noise : m/s^2
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s
@@ -317,6 +318,9 @@ private:
     AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
     AP_Float _noaidHorizNoise;      // horizontal position measurement noise assumed when synthesised zero position measurements are used to constrain attitude drift : m
     AP_Int8 _logging_mask;          // mask of IMUs to log
+    AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
+    AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
+    AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration

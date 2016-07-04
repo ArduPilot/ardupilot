@@ -99,6 +99,9 @@ void Plane::init_ardupilot()
     }
 #endif
 
+    set_control_channels();
+    init_rc_out_main();
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // this must be before BoardConfig.init() so if
     // BRD_SAFETYENABLE==0 then we don't have safety off yet
@@ -119,8 +122,6 @@ void Plane::init_ardupilot()
 
     // allow servo set on all channels except first 4
     ServoRelayEvents.set_channel_mask(0xFFF0);
-
-    set_control_channels();
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -230,9 +231,9 @@ void Plane::init_ardupilot()
 
     startup_ground();
 
-    // don't initialise rc output until after quadplane is setup as
+    // don't initialise aux rc output until after quadplane is setup as
     // that can change initial values of channels
-    init_rc_out();
+    init_rc_out_aux();
     
     // choose the nav controller
     set_nav_controller();
@@ -264,13 +265,6 @@ void Plane::startup_ground(void)
     delay(GROUND_START_DELAY * 1000);
 #endif
 
-    // Makes the servos wiggle
-    // step 1 = 1 wiggle
-    // -----------------------
-    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        demo_servos(1);
-    }
-
     //INS ground start
     //------------------------
     //
@@ -288,12 +282,6 @@ void Plane::startup_ground(void)
 
     // initialise mission library
     mission.init();
-
-    // Makes the servos wiggle - 3 times signals ready to fly
-    // -----------------------
-    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        demo_servos(3);
-    }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
@@ -347,6 +335,10 @@ void Plane::set_mode(enum FlightMode mode)
     // reset crash detection
     crash_state.is_crashed = false;
     crash_state.impact_detected = false;
+
+    // reset external attitude guidance
+    guided_state.last_forced_rpy_ms.zero();
+    guided_state.last_forced_throttle_ms = 0;
 
     // always reset this because we don't know who called set_mode. In evasion
     // behavior you should set this flag after set_mode so you know the evasion

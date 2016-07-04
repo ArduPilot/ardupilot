@@ -515,7 +515,7 @@ void QuadPlane::init_stabilize(void)
 void QuadPlane::hold_stabilize(float throttle_in)
 {    
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
                                                                          get_desired_yaw_rate_cds(),
                                                                          smoothing_gain);
@@ -571,7 +571,7 @@ void QuadPlane::hold_hover(float target_climb_rate)
     pos_control->set_accel_z(pilot_accel_z);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
                                                                          get_desired_yaw_rate_cds(),
                                                                          smoothing_gain);
@@ -712,10 +712,11 @@ void QuadPlane::control_loiter()
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-    // call attitude controller
+    // call attitude controller with conservative smoothing gain of 4.0f
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(),
                                                                   wp_nav->get_pitch(),
-                                                                  get_desired_yaw_rate_cds());
+                                                                  get_desired_yaw_rate_cds(),
+                                                                  4.0f);
 
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
@@ -1185,7 +1186,7 @@ void QuadPlane::vtol_position_controller(void)
         // run loiter controller
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
@@ -1214,6 +1215,15 @@ void QuadPlane::vtol_position_controller(void)
             // max_speed will control how fast we will fly. It will always decrease
             poscontrol.max_speed = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
             poscontrol.speed_scale = poscontrol.max_speed / MAX(distance, 1);
+
+            // start with low integrator. The alt_hold controller will
+            // add hover throttle to initial integrator. By starting
+            // without it we end up with a smoother startup when
+            // transitioning from fixed wing flight
+            float aspeed;
+            if (ahrs.airspeed_estimate(&aspeed) && aspeed > 6) {
+                pid_accel_z.set_integrator((-motors->get_throttle_hover())*1000.0f);
+            }
         }
 
         // run fixed wing navigation
@@ -1272,7 +1282,7 @@ void QuadPlane::vtol_position_controller(void)
         }
         
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
@@ -1305,7 +1315,7 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_pitch_cd = wp_nav->get_pitch();
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                              smoothing_gain);
@@ -1403,7 +1413,7 @@ void QuadPlane::takeoff_controller(void)
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
     
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
                                                                          get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
                                                                          smoothing_gain);
@@ -1433,7 +1443,7 @@ void QuadPlane::waypoint_controller(void)
     attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
                                                        wp_nav->get_pitch(),
                                                        wp_nav->get_yaw(),
-                                                       true);
+                                                       true, 4.0f);
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();

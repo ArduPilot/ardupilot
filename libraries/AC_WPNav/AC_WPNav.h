@@ -77,10 +77,6 @@ public:
     /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
     void init_loiter_target();
 
-    /// shift_loiter_target - shifts the loiter target by the given pos_adjustment
-    ///     used by precision landing to adjust horizontal position target
-    void shift_loiter_target(const Vector3f &pos_adjustment);
-
     /// loiter_soften_for_landing - reduce response for landing
     void loiter_soften_for_landing();
 
@@ -244,8 +240,8 @@ public:
     ///
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_roll() const { return _pos_control.get_roll(); };
-    int32_t get_pitch() const { return _pos_control.get_pitch(); };
+    int32_t get_roll() const { return _pos_control.get_roll(); }
+    int32_t get_pitch() const { return _pos_control.get_pitch(); }
 
     /// get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     float get_desired_alt() const { return _pos_control.get_alt_target(); }

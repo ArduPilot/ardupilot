@@ -64,7 +64,7 @@ public:
     uint16_t    get_dead_zone(void) const { return _dead_zone; }
     
     // get the channel number
-    uint8_t     get_ch_out(void) const { return _ch_out; };
+    uint8_t     get_ch_out(void) const { return _ch_out; }
 
     // get the center stick position expressed as a control_in value
     int16_t     get_control_mid() const;
@@ -108,6 +108,7 @@ public:
     void        output() const;
     void        output_trim() const;
     static void output_trim_all();
+    static void setup_failsafe_trim_mask(uint16_t chmask);
     static void setup_failsafe_trim_all();
     uint16_t    read() const;
     void        input();

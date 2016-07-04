@@ -686,6 +686,16 @@ struct PACKED log_SbpRAW2 {
     uint8_t data2[192];
 };
 
+struct PACKED log_Rally {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t total;
+    uint8_t sequence;
+    int32_t latitude;
+    int32_t longitude;
+    int16_t altitude;
+};
+
 // #endif // SBP_HW_LOGGING
 
 /*
@@ -821,7 +831,7 @@ Format characters in the format string for binary log messages
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
       "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk" }, \
     { LOG_GPS_SBF_EVENT_MSG, sizeof(log_GPS_SBF_EVENT), \
-      "SBFE", "QIHBBdddfffff", "TimeUS,TOW,WN,Mode,Err,Lat,Long,Height,Undul,Vn,Ve,Vu,COG" }, \
+      "SBFE", "QIHBBdddfffff", "TimeUS,TOW,WN,Mode,Err,Lat,Lng,Height,Undul,Vn,Ve,Vu,COG" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
       "ESC1",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
@@ -887,7 +897,9 @@ Format characters in the format string for binary log messages
     { LOG_GIMBAL3_MSG, sizeof(log_Gimbal3), \
       "GMB3", "Ihhh", "TimeMS,rl_torque_cmd,el_torque_cmd,az_torque_cmd" }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" }
+      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" }, \
+    { LOG_RALLY_MSG, sizeof(log_Rally), \
+      "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1002,6 +1014,7 @@ enum LogMessages {
     LOG_GIMBAL2_MSG,
     LOG_GIMBAL3_MSG,
     LOG_RATE_MSG,
+    LOG_RALLY_MSG,
 };
 
 enum LogOriginType {

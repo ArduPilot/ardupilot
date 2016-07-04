@@ -69,9 +69,9 @@ public:
     void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
 
     // set_power_output_range
-    void        set_power_output_range(float power_low, float power_high);
+    void        set_power_output_range(float power_low, float power_high, float power_negc, uint16_t slewrate);
 
-    // set_motor_load
+    // set_motor_load. +ve numbers for +ve collective. -ve numbers for negative collective
     void        set_motor_load(float load) { _load_feedforward = load; }
 
     // output - update value to send to ESC/Servo
@@ -97,7 +97,8 @@ private:
     bool            _runup_complete = false;    // flag for determining if runup is complete
     float           _power_output_low = 0.0f;   // setpoint for power output at minimum rotor power
     float           _power_output_high = 0.0f;  // setpoint for power output at maximum rotor power
-    float           _power_output_range = 0.0f; // maximum range of output power
+    float           _power_output_negc = 0.0f;  // setpoint for power output at full negative collective
+    uint16_t        _power_slewrate = 0;        // slewrate for throttle (percentage per second)
     float           _load_feedforward = 0.0f;   // estimate of motor load, range 0-1.0f
 
     AP_Int16        _pwm_min;

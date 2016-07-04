@@ -260,34 +260,21 @@ void NavEKF2_core::readIMUData()
     // Get current time stamp
     imuDataNew.time_ms = imuSampleTime_ms;
 
-    // remove gyro scale factor errors
-    imuDataNew.delAng.x = imuDataNew.delAng.x * stateStruct.gyro_scale.x;
-    imuDataNew.delAng.y = imuDataNew.delAng.y * stateStruct.gyro_scale.y;
-    imuDataNew.delAng.z = imuDataNew.delAng.z * stateStruct.gyro_scale.z;
-
-    // remove sensor bias errors
-    imuDataNew.delAng -= stateStruct.gyro_bias * (imuDataNew.delAngDT / dtEkfAvg);
-    imuDataNew.delVel.z -= stateStruct.accel_zbias * (imuDataNew.delVelDT / dtEkfAvg);
-
     // Accumulate the measurement time interval for the delta velocity and angle data
     imuDataDownSampledNew.delAngDT += imuDataNew.delAngDT;
     imuDataDownSampledNew.delVelDT += imuDataNew.delVelDT;
 
     // Rotate quaternon atitude from previous to new and normalise.
     // Accumulation using quaternions prevents introduction of coning errors due to downsampling
-    Quaternion deltaQuat;
-    deltaQuat.rotate(imuDataNew.delAng);
-    imuQuatDownSampleNew = imuQuatDownSampleNew*deltaQuat;
+    imuQuatDownSampleNew.rotate(imuDataNew.delAng);
     imuQuatDownSampleNew.normalize();
 
-    // Rotate the accumulated delta velocity into the new frame of reference created by the latest delta angle
-    // This prevents introduction of sculling errors due to downsampling
+    // Rotate the latest delta velocity into body frame at the start of accumulation
     Matrix3f deltaRotMat;
-    deltaQuat.inverse().rotation_matrix(deltaRotMat);
-    imuDataDownSampledNew.delVel = deltaRotMat*imuDataDownSampledNew.delVel;
+    imuQuatDownSampleNew.rotation_matrix(deltaRotMat);
 
-    // accumulate the latest delta velocity
-    imuDataDownSampledNew.delVel += imuDataNew.delVel;
+    // Apply the delta velocity to the delta velocity accumulator
+    imuDataDownSampledNew.delVel += deltaRotMat*imuDataNew.delVel;
 
     // Keep track of the number of IMU frames since the last state prediction
     framesSincePredict++;
@@ -312,17 +299,18 @@ void NavEKF2_core::readIMUData()
         framesSincePredict = 0;
         // set the flag to let the filter know it has new IMU data nad needs to run
         runUpdates = true;
+        // extract the oldest available data from the FIFO buffer
+        imuDataDelayed = storedIMU.pop_oldest_element();
+        float minDT = 0.1f*dtEkfAvg;
+        imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
+        imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
+        // correct the extracted IMU data for sensor errors
+        correctDeltaAngle(imuDataDelayed.delAng, imuDataDelayed.delAngDT);
+        correctDeltaVelocity(imuDataDelayed.delVel, imuDataDelayed.delVelDT);
     } else {
         // we don't have new IMU data in the buffer so don't run filter updates on this time step
         runUpdates = false;
     }
-
-    // extract the oldest available data from the FIFO buffer
-    imuDataDelayed = storedIMU.pop_oldest_element();
-    float minDT = 0.1f*dtEkfAvg;
-    imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
-    imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
-
 }
 
 // read the delta velocity and corresponding time interval from the IMU
@@ -411,10 +399,10 @@ void NavEKF2_core::readGpsData()
             if (PV_AidingMode != AID_ABSOLUTE) {
                 // Pre-alignment checks
                 gpsGoodToAlign = calcGpsGoodToAlign();
-            } else {
-                // Post-alignment checks
-                calcGpsGoodForFlight();
             }
+
+            // Post-alignment checks
+            calcGpsGoodForFlight();
 
             // Read the GPS locaton in WGS-84 lat,long,height coordinates
             const struct Location &gpsloc = _ahrs->get_gps().location();

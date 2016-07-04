@@ -58,7 +58,19 @@ public:
     // create a new semaphore
     AP_HAL::Semaphore *new_semaphore(void) override { return new PX4::Semaphore; }
 
+    void set_imu_temp(float current) override;
+    void set_imu_target_temp(int8_t *target) override;
+    
 private:
     int _safety_handle;
     PX4::NSHShellStream _shell_stream;
+
+    struct {
+        int8_t *target;
+        float integrator;
+        uint16_t count;
+        float sum;
+        uint32_t last_update_ms;
+        int fd = -1;
+    } _heater;
 };

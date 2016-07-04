@@ -778,6 +778,7 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
     // only 200(?) bytes are guaranteed by DataFlash
     DataFlash.Log_Write_Message("Frame: " FRAME_CONFIG_STRING);
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+    DataFlash.Log_Write_Rally(rally);
 }
 
 
@@ -834,7 +835,6 @@ void Copter::Log_Write_Control_Tuning() {}
 void Copter::Log_Write_Performance() {}
 void Copter::Log_Write_Attitude(void) {}
 void Copter::Log_Write_MotBatt() {}
-void Copter::Log_Write_Startup() {}
 void Copter::Log_Write_Event(uint8_t id) {}
 void Copter::Log_Write_Data(uint8_t id, int32_t value) {}
 void Copter::Log_Write_Data(uint8_t id, uint32_t value) {}
@@ -846,7 +846,7 @@ void Copter::Log_Write_Baro(void) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
 void Copter::Log_Write_Home_And_Origin() {}
 void Copter::Log_Sensor_Health() {}
-void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {};
+void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 
 #if FRAME_CONFIG == HELI_FRAME
 void Copter::Log_Write_Heli() {}

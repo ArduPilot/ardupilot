@@ -88,36 +88,58 @@ def under_cygwin():
     return os.path.exists("/usr/bin/cygstart")
 
 def kill_tasks_cygwin(victims):
+    '''shell out to ps -ea to find processes to kill'''
     for victim in list(victims):
         pids = cygwin_pidof(victim)
 #        progress("pids for (%s): %s" % (victim,",".join([ str(p) for p in pids])))
         for apid in pids:
             os.kill(apid, signal.SIGKILL)
 
-def kill_tasks():
-    '''clean up stray processes by name.  This is a somewhat shotgun approach'''
-    victim_names = set([
-        'JSBSim',
-        'lt-JSBSim',
-        'ArduPlane.elf',
-        'ArduCopter.elf',
-        'APMrover2.elf',
-        'AntennaTracker.elf',
-        'JSBSIm.exe',
-        'MAVProxy.exe',
-        'runsim.py',
-        'AntennaTracker.elf',
-    ])
-
-    if under_cygwin():
-        return kill_tasks_cygwin(list(victim_names))
-
+def kill_tasks_psutil(victims):
+    '''use the psutil module to kill tasks by name.  Sadly, this module is not available on Windows, but when it is we should be able to *just* use this routine'''
     import psutil
     for proc in psutil.process_iter():
         if proc.status == psutil.STATUS_ZOMBIE:
             continue
-        if proc.name in victim_names:
+        if proc.name in victims:
             proc.kill()
+
+def kill_tasks_pkill(victims):
+    '''shell out to pkill(1) to kill processed by name'''
+    for victim in victims: # pkill takes a single pattern, so iterate
+        cmd = ["pkill"]
+        cmd.append(victim)
+        run_cmd_blocking("pkill", cmd, quiet=True)
+
+class BobException(Exception):
+    pass
+
+def kill_tasks():
+    '''clean up stray processes by name.  This is a somewhat shotgun approach'''
+    progress("Killing tasks")
+    try:
+        victim_names = [
+            'JSBSim',
+            'lt-JSBSim',
+            'ArduPlane.elf',
+            'ArduCopter.elf',
+            'APMrover2.elf',
+            'AntennaTracker.elf',
+            'JSBSIm.exe',
+            'MAVProxy.exe',
+            'runsim.py',
+            'AntennaTracker.elf',
+        ]
+
+        if under_cygwin():
+            return kill_tasks_cygwin(victim_names)
+
+        try:
+            kill_tasks_psutil(victim_names)
+        except ImportError as e:
+            kill_tasks_pkill(victim_names)
+    except Exception as e:
+        progress("kill_tasks failed: {}".format(str(e)))
 
 # clean up processes at exit:
 atexit.register(kill_tasks)
@@ -255,6 +277,18 @@ default_frame_for_vehicle = {
     "AntennaTracker": "tracker"
 }
 
+if not default_frame_for_vehicle.has_key(opts.vehicle):
+    # try in parent directories, useful for having config in subdirectories
+    cwd = os.getcwd()
+    while cwd:
+        bname = os.path.basename(cwd)
+        if not bname:
+            break
+        if bname in default_frame_for_vehicle:
+            opts.vehicle = bname
+            break
+        cwd = os.path.dirname(cwd)
+    
 # try to validate vehicle
 if not default_frame_for_vehicle.has_key(opts.vehicle):
     progress("** Is (%s) really your vehicle type?  Try  -v VEHICLETYPE  if not, or be in the e.g. ArduCopter subdirectory" %  (opts.vehicle,))
@@ -348,8 +382,14 @@ _options_for_frame = {
     },
     # PLANE
     "quadplane-tilttri" : {
-        "build_target" : "sitl-tri",
+        "make_target" : "sitl-tri",
+        "waf_target" : "bin/arduplane-tri",
         "default_params_filename": "quadplane-tilttri.parm",
+    },
+    "quadplane-tri" : {
+        "make_target" : "sitl-tri",
+        "waf_target" : "bin/arduplane-tri",
+        "default_params_filename": "quadplane-tri.parm",
     },
     "quadplane": {
         "waf_target": "bin/arduplane",
@@ -428,9 +468,10 @@ def options_for_frame(frame, vehicle, opts):
 
     if opts.model is not None:
         ret["model"] = opts.model
-        if (ret["model"].find("xplane") != -1 or
-            ret["model"].find("flightaxis") != -1):
-            ret["sitl-port"] = False
+
+    if (ret["model"].find("xplane") != -1 or
+        ret["model"].find("flightaxis") != -1):
+        ret["sitl-port"] = False
 
     if not ret.has_key("make_target"):
         ret["make_target"] = "sitl"
@@ -534,8 +575,9 @@ def progress_cmd(what, cmd):
     shell_text = "%s" % (" ".join([ '"%s"' % x for x in cmd ]))
     progress(shell_text)
 
-def run_cmd_blocking(what, cmd, **kw):
-    progress_cmd(what, cmd)
+def run_cmd_blocking(what, cmd, quiet=False, **kw):
+    if not quiet:
+        progress_cmd(what, cmd)
     p = subprocess.Popen(cmd, **kw)
     return os.waitpid(p.pid,0)
 

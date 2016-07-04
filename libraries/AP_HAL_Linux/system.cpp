@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 #include <AP_HAL_Linux/Scheduler.h>
@@ -27,7 +28,7 @@ void panic(const char *errormsg, ...)
     va_start(ap, errormsg);
     vdprintf(1, errormsg, ap);
     va_end(ap);
-    write(1, "\n", 1);
+    UNUSED_RESULT(write(1, "\n", 1));
 
     hal.rcin->deinit();
     hal.scheduler->delay_microseconds(10000);

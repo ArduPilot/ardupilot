@@ -232,6 +232,10 @@ class linux(Board):
             'AP_HAL_Linux',
         ]
 
+        # We always want to use PRI format macros
+        cfg.define('__STDC_FORMAT_MACROS', 1)
+
+
 class minlure(linux):
     def configure_env(self, cfg, env):
         super(minlure, self).configure_env(cfg, env)

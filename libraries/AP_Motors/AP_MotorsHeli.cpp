@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: RSC_POWER_LOW
     // @DisplayName: Throttle Servo Low Power Position
-    // @Description: Throttle output at zero collective pitch.
+    // @Description: Throttle output at zero collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX. Zero collective pitch is defined by H_COL_MID.
     // @Range: 0 1000
     // @Increment: 10
     // @User: Standard
@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     
     // @Param: RSC_POWER_HIGH
     // @DisplayName: Throttle Servo High Power Position
-    // @Description: Throttle output at max collective pitch.
+    // @Description: Throttle output at maximum collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX.
     // @Range: 0 1000
     // @Increment: 10
     // @User: Standard
@@ -156,6 +156,22 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SV_TEST",  17, AP_MotorsHeli, _servo_test, 0),
 
+    // @Param: RSC_POWER_NEGC
+    // @DisplayName: Throttle servo negative collective power position
+    // @Description: Throttle output at full negative collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX. If this is equal to H_RSC_POWER_HIGH then you will have a symmetric V-curve for the throttle response.
+    // @Range: 1 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_POWER_NEGC", 18, AP_MotorsHeli, _rsc_power_negc, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
+
+    // @Param: RSC_SLEWRATE
+    // @DisplayName: Throttle servo slew rate
+    // @Description: This controls the maximum rate at which the throttle output can change, as a percentage per second. A value of 100 means the throttle can change over its full range in one second. A value of zero gives unlimited slew rate.
+    // @Range: 0 500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
+    
     AP_GROUPEND
 };
 
