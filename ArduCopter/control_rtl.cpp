@@ -422,7 +422,7 @@ void Copter::rtl_build_path(bool terrain_following_allowed)
 //   return target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
 void Copter::rtl_compute_return_target(bool terrain_following_allowed)
 {
-    // set return target to nearest rally point or home position
+    // set return target to nearest rally point or home position (Note: alt is absolute)
 #if AC_RALLY == ENABLED
     rtl_path.return_target = rally.calc_best_rally_or_home_location(current_loc, ahrs.get_home().alt);
 #else
@@ -445,7 +445,7 @@ void Copter::rtl_compute_return_target(bool terrain_following_allowed)
         }
     }
 
-    // convert return-target alt to alt-above-home or alt-above-terrain
+    // convert return-target alt (which is an absolute alt) to alt-above-home or alt-above-terrain
     if (!rtl_path.terrain_used || !rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
         if (!rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
             // this should never happen but just in case
@@ -475,6 +475,10 @@ void Copter::rtl_compute_return_target(bool terrain_following_allowed)
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
+    // Note: because the rtl_path.climb_target's altitude is simply copied from the return_target's altitude,
+    //       if terrain altitudes are being used, the code below which reduces the return_target's altitude can lead to
+    //       the vehicle not climbing at all as RTL begins.  This can be overly conservative and it might be better
+    //       to apply the fence alt limit independently on the origin_point and return_target
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
         // get return target as alt-above-home so it can be compared to fence's alt
         if (rtl_path.return_target.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, target_alt)) {
