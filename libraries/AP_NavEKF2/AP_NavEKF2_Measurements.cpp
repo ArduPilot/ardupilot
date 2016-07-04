@@ -281,7 +281,7 @@ void NavEKF2_core::readIMUData()
 
     // If 10msec has elapsed, and the frontend has allowed us to start a new predict cycle, then store the accumulated IMU data
     // to be used by the state prediction, ignoring the frontend permission if more than 20msec has lapsed
-    if ((dtIMUavg*(float)framesSincePredict >= 0.01f && startPredictEnabled) || (dtIMUavg*(float)framesSincePredict >= 0.02f)) {
+    if ((dtIMUavg*(float)framesSincePredict >= EKF_TARGET_DT && startPredictEnabled) || (dtIMUavg*(float)framesSincePredict >= 2.0f*EKF_TARGET_DT)) {
 
         // convert the accumulated quaternion to an equivalent delta angle
         imuQuatDownSampleNew.to_axis_angle(imuDataDownSampledNew.delAng);
@@ -291,6 +291,10 @@ void NavEKF2_core::readIMUData()
 
         // Write data to the FIFO IMU buffer
         storedIMU.push_youngest_element(imuDataDownSampledNew);
+
+        // calculate the achieved average time step rate for the EKF
+        float dtNow = constrain_float(0.5f*(imuDataDownSampledNew.delAngDT+imuDataDownSampledNew.delVelDT),0.0f,10.0f*EKF_TARGET_DT);
+        dtEkfAvg = 0.98f * dtEkfAvg + 0.02f * dtNow;
 
         // zero the accumulated IMU data and quaternion
         imuDataDownSampledNew.delAng.zero();
