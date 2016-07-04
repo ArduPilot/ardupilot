@@ -646,6 +646,8 @@ private:
     bool badMagYaw;                 // boolean true if the magnetometer is declared to be producing bad data
     bool badIMUdata;                // boolean true if the bad IMU data is detected
 
+    const float EKF_TARGET_DT = 0.01f;    // target EKF update time step
+
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector28 Kfusion;               // Kalman gain vector
     Matrix24 KH;                    // intermediate result used for covariance updates
