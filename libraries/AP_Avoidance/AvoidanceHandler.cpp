@@ -60,6 +60,25 @@ bool AvoidanceHandler::new_destination_perpendicular(Vector3f &newdest_neu, cons
         // we know if there are any threats, for starters!
         return false;
     }
+    
+    // if their velocity is moving around close to zero then flying
+    // perpendicular to that velocity may mean we do weird things.
+    // Instead, we will fly directly away from them:
+    if (_threat->_velocity.length() < _low_velocity_threshold) {
+        Vector2f delta_pos_xy =  location_diff(_threat->_location, my_abs_pos);
+        float delta_pos_z = my_abs_pos.alt - _threat->_location.alt;
+        delta_pos_xy.normalize();
+        newdest_neu[0] = my_pos_ned[0]*100 + delta_pos_xy[0] * wp_speed_xy * 10; // 10 second
+        newdest_neu[1] = my_pos_ned[1]*100 + delta_pos_xy[1] * wp_speed_xy * 10; // 10 second
+        newdest_neu[2] = -my_pos_ned[2]*100 + delta_pos_z * wp_speed_z * 10; // 10 seconds
+        if(newdest_neu[2] < _minimum_avoid_height*100) {
+            ::fprintf(stderr, "Doing 2D velocity-based avoidance\n");
+            newdest_neu[0] = my_pos_ned[0]*100 + delta_pos_xy[0] * wp_speed_xy * 10; // 10 second
+            newdest_neu[1] = my_pos_ned[1]*100 + delta_pos_xy[1] * wp_speed_xy * 10; // 10 second
+            newdest_neu[2] = -my_pos_ned[2]*100;
+        }
+        return true;
+    }
 
     {
         Vector3f perp_xyz = perpendicular_xyz(_threat->_location, _threat->_velocity, my_abs_pos);
