@@ -429,6 +429,10 @@ private:
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
+    // Turn counter
+    int32_t quarter_turn_count;
+    uint8_t last_turn_state;
+
     // filtered pilot's throttle input used to cancel landing if throttle held high
     LowPassFilterFloat rc_throttle_control_in_filter;
 
@@ -588,6 +592,7 @@ private:
     void three_hz_loop();
     void one_hz_loop();
     void update_GPS(void);
+    void update_turn_counter();
     void init_simple_bearing();
     void update_simple_mode(void);
     void update_super_simple_bearing(bool force_update);
