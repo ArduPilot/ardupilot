@@ -105,7 +105,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SAFETY_MASK
     // @DisplayName: Channels to which ignore the safety switch state
-    // @Description: A bitmask which controls what channels can move while the safety witch has not been pressed
+    // @Description: A bitmask which controls what channels can move while the safety switch has not been pressed - 0:Ch1,1:Ch2,2:Ch3,3:Ch4,4:Ch5,5:Ch6,6:Ch7,7:Ch8
     // @Values: 0:Disabled,1:Enabled
     // @Bitmask: 0:Ch1,1:Ch2,2:Ch3,3:Ch4,4:Ch5,5:Ch6,6:Ch7,7:Ch8
     // @RebootRequired: True
