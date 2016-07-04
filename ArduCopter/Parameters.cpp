@@ -941,7 +941,7 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(throw_motor_start, "THROW_MOT_START", 0),
 
     // @Param: THROW_TYPE
-    // @DisplayName: Type of Type
+    // @DisplayName: Type of Throw
     // @Description: Used by THROW mode. Specifies whether Copter is thrown upward or dropped.
     // @Values: 0:Upward Throw,1:Downward
     // @User: Standard

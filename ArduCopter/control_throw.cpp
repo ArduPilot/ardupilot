@@ -198,7 +198,7 @@ bool Copter::throw_detected()
 
     // check for upwards or downwards trajectory (airdrop)
     bool changing_height;
-    if (g.throw_type==1) {
+    if (g.throw_type==THROW_TYPE_DOWN) {
         changing_height = inertial_nav.get_velocity().z < -50.0f;
         if (changing_height) {
             gcs_send_text(MAV_SEVERITY_CRITICAL, "AirDrop Detected");
