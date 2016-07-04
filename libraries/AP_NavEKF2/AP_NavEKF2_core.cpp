@@ -652,8 +652,8 @@ void NavEKF2_core::calcOutputStates()
             float velPosGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
 
             // use a PI feedback to calculate a correction that will be applied to the output state history
-            posCorrection += posDelta * velPosGain; // I term
-            velCorrection += velDelta * velPosGain; //  I term
+            posCorrection += posDelta * velPosGain * 0.9f; // I term
+            velCorrection += velDelta * velPosGain * 0.9f; //  I term
             velDelta *= velPosGain; // P term
             posDelta *= velPosGain; // P term
 
