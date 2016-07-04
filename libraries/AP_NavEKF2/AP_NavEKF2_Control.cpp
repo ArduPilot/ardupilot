@@ -160,13 +160,17 @@ void NavEKF2_core::setAidingMode()
     // Determine when to commence aiding for inertial navigation
     // Save the previous status so we can detect when it has changed
     prevIsAiding = isAiding;
-    // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
-    bool filterIsStable = tiltAlignComplete && yawAlignComplete;
-    // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
-    bool useFlowAiding = (frontend->_fusionModeGPS == 3) && optFlowDataPresent();
-    // Start aiding if we have a source of aiding data and the filter attitude algnment is complete
-    // Latch to on
-    isAiding = ((readyToUseGPS() || useFlowAiding) && filterIsStable) || isAiding;
+    // perform aiding checks if not aiding
+     if (!isAiding) {
+        // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
+        // and IMU gyro bias estimates have stabilised
+        bool filterIsStable = tiltAlignComplete && yawAlignComplete && imuCalCompleted();
+        // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
+        bool useFlowAiding = (frontend->_fusionModeGPS == 3) && optFlowDataPresent();
+        // Start aiding if we have a source of aiding data and the filter attitude algnment is complete
+        // Latch to on
+        isAiding = (readyToUseGPS() || useFlowAiding) && filterIsStable;
+    }
 
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (isAiding != prevIsAiding) {
@@ -321,6 +325,19 @@ void NavEKF2_core::recordYawReset()
     if (inFlight) {
         finalInflightYawInit = true;
     }
+}
+
+// return true when IMU calibration completed
+bool NavEKF2_core::imuCalCompleted(void)
+{
+    // check delta angle bias variances
+    const float delAngBiasVarMax = sq(radians(0.1f * dtEkfAvg));
+    bool gyroCalComplete =  (P[9][9] <= delAngBiasVarMax) &&
+                            (P[10][10] <= delAngBiasVarMax) &&
+                            (P[11][11] <= delAngBiasVarMax);
+
+    return gyroCalComplete;
+
 }
 
 // Commands the EKF to not use GPS.
