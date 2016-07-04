@@ -424,15 +424,7 @@ void Copter::rtl_compute_return_target(bool terrain_following_allowed)
 {
     // set return target to nearest rally point or home position
 #if AC_RALLY == ENABLED
-    RallyLocation rallyLoc;
-    Location_Class home(ahrs.get_home());
-    bool use_home = !rally.find_nearest_rally_point(current_loc, rallyLoc);
-
-    if (!use_home) {
-        rtl_path.return_target = Location_Class(rallyLoc.lat, rallyLoc.lng, home.alt, home.get_alt_frame());
-    } else {
-        rtl_path.return_target = home;
-    }
+    rtl_path.return_target = rally.calc_best_rally_or_home_location(current_loc, ahrs.get_home().alt);
 #else
     rtl_path.return_target = ahrs.get_home();
 #endif
