@@ -1877,3 +1877,23 @@ void DataFlash_Class::Log_Write_Rate(const AP_AHRS &ahrs,
     };
     WriteBlock(&pkt_rate, sizeof(pkt_rate));
 }
+
+// Write rally points
+void DataFlash_Class::Log_Write_Rally(const AP_Rally &rally)
+{
+    RallyLocation rally_point;
+    for (uint8_t i=0; i<rally.get_rally_total(); i++) {
+        if (rally.get_rally_point_with_index(i, rally_point)) {
+            struct log_Rally pkt_rally = {
+                LOG_PACKET_HEADER_INIT(LOG_RALLY_MSG),
+                time_us         : AP_HAL::micros64(),
+                total           : rally.get_rally_total(),
+                sequence        : i,
+                latitude        : rally_point.lat,
+                longitude       : rally_point.lng,
+                altitude        : rally_point.alt
+            };
+            WriteBlock(&pkt_rally, sizeof(pkt_rally));
+        }
+    }
+}
