@@ -1098,16 +1098,20 @@ void NavEKF2_core::alignMagStateDeclination()
     stateStruct.earth_magfield.x = magLengthNE * cosf(magDecAng);
     stateStruct.earth_magfield.y = magLengthNE * sinf(magDecAng);
 
-    // zero the corresponding state covariances
-    float var_16 = P[16][16];
-    float var_17 = P[17][17];
-    zeroRows(P,16,17);
-    zeroCols(P,16,17);
-    P[16][16] = var_16;
-    P[17][17] = var_17;
+    if (!inhibitMagStates) {
+        // zero the corresponding state covariances if magnetic field state learning is active
+        float var_16 = P[16][16];
+        float var_17 = P[17][17];
+        zeroRows(P,16,17);
+        zeroCols(P,16,17);
+        P[16][16] = var_16;
+        P[17][17] = var_17;
 
-    // fuse the declination angle to re-establish valid covariances
-    FuseDeclination(0.1f);
+        // fuse the declination angle to establish covariances and prevent large swings in declination
+        // during initial fusion
+        FuseDeclination(0.1f);
+
+    }
 }
 
 // record a magentic field state reset event

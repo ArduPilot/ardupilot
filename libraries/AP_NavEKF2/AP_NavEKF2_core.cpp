@@ -1397,20 +1397,17 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
             initQuat.rotation_matrix(Tbn);
             stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
 
-            // align the NE earth magnetic field states with the published declination
+            // set the NE earth magnetic field states using the published declination
+            // and set the corresponding variances and covariances
             alignMagStateDeclination();
 
-            // zero the magnetic field state associated covariances
-            zeroRows(P,16,21);
-            zeroCols(P,16,21);
-            // set initial earth magnetic field variances
-            P[16][16] = sq(frontend->_magNoise);
-            P[17][17] = P[16][16];
-            P[18][18] = P[16][16];
-            // set initial body magnetic field variances
-            P[19][19] = sq(frontend->_magNoise);
-            P[20][20] = P[19][19];
-            P[21][21] = P[19][19];
+            // set the remaining variances and covariances
+            zeroRows(P,18,21);
+            zeroCols(P,18,21);
+            P[18][18] = sq(frontend->_magNoise);
+            P[19][19] = P[18][18];
+            P[20][20] = P[18][18];
+            P[21][21] = P[18][18];
 
         }
 
