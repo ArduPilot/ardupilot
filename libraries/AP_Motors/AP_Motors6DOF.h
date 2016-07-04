@@ -22,6 +22,7 @@ public:
         AP_MotorsMatrix(loop_rate, speed_hz)
     {
     	AP_Param::setup_object_defaults(this, var_info);
+    	_gain = (_gain_min + _gain_max)/2;
     };
 
     void output_min() override;
@@ -30,6 +31,12 @@ public:
 
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
+
+    // gain control to scale motor outputs
+    void set_gain(float gain);
+	float get_gain();
+	void increase_gain();
+	void decrease_gain();
 
     // var_info for holding Parameter information
 	static const struct AP_Param::GroupInfo        var_info[];
@@ -44,10 +51,15 @@ protected:
     // Parameters
     AP_Int8             _motor_reverse[8];
     AP_Float			_forwardVerticalCouplingFactor;
+    AP_Float            _gain_min;
+    AP_Float            _gain_max;
+    AP_Int8             _gain_steps;
 
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
     float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
+
+    float               _gain;
 };
 
 #endif  // AP_MOTORS6DOF
