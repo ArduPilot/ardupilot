@@ -372,6 +372,9 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case THROW:
         port->print("THROW");
         break;
+    case MANUAL:
+    	port->print("MANUAL");
+    	break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
         break;

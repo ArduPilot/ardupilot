@@ -244,8 +244,10 @@ void Sub::fast_loop()
     // --------------------
     read_AHRS();
 
-    // run low level rate controllers that only require IMU data
-    attitude_control.rate_controller_run();
+    if(control_mode != MANUAL) { //don't run rate controller in manual mode
+		// run low level rate controllers that only require IMU data
+		attitude_control.rate_controller_run();
+    }
 
     // send outputs to the motors library
     motors_output();
