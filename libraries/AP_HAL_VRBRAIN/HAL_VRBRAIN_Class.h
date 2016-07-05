@@ -15,4 +15,6 @@ public:
     void run(int argc, char* const argv[], Callbacks* callbacks) const override;
 };
 
+void hal_vrbrain_set_priority(uint8_t priority);
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
