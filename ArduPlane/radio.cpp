@@ -231,8 +231,11 @@ void Plane::read_radio()
         // in rudder only mode we discard rudder input and get target
         // attitude from the roll channel.
         rudder_input = 0;
-    } else {
+    } else if (stick_mixing_enabled()) {
         rudder_input = channel_rudder->get_control_in();
+    } else {
+        // no stick mixing
+        rudder_input = 0;
     }
 
     // check for transmitter tuning changes
