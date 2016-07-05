@@ -255,10 +255,10 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 void AP_TECS::update_50hz(void)
 {
     // Implement third order complementary filter for height and height rate
-    // estimted height rate = _climb_rate
+    // estimated height rate = _climb_rate
     // estimated height above field elevation  = _height
     // Reference Paper :
-    // Optimising the Gains of the Baro-Inertial Vertical Channel
+    // Optimizing the Gains of the Baro-Inertial Vertical Channel
     // Widnall W.S, Sinha P.K,
     // AIAA Journal of Guidance and Control, 78-1307R
 
