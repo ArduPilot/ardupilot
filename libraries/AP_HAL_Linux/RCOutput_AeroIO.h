@@ -26,149 +26,131 @@ class RCOutput_AeroIO : public AP_HAL::RCOutput {
 public:
     RCOutput_AeroIO();
     ~RCOutput_AeroIO();
-    void init();
+
+    void init() override;
 
     /**
-     * @brief Reseal all channels to default value (0 of dutycicle)
-     *
-     * @return void
+     * Enable channel
      */
-    void reset_all_channels();
+    void enable_ch(uint8_t ch) override;
 
     /**
-     * @brief Not implemented
-     *
-     * @param ch ...
-     * @return void
+     * Disable channel (0 of duty cycle)
      */
-    void enable_ch(uint8_t ch);
+    void disable_ch(uint8_t ch) override;
 
     /**
-     * @brief Disable channel (0 of dutycicle)
+     * Set all channels in the same frequency
      *
-     * @param ch channel
-     * @return void
+     * @chmask Bitmask
+     * @freq_hz Frequency
      */
-    void disable_ch(uint8_t ch);
+    void set_freq(uint32_t chmask, uint16_t freq_hz) override;
 
     /**
-     * @brief Set all channels in the same frequency
+     * Get frequency of channel
      *
-     * @param chmask Bitmask
-     * @param freq_hz Frequency
-     * @return void
+     * @ch channel
+     *
+     * Return: frequency of this channel
      */
-    void set_freq(uint32_t chmask, uint16_t freq_hz);
+    uint16_t get_freq(uint8_t ch) override;
 
     /**
-     * @brief Get frequency of channel
+     * Set period in µs
      *
-     * @param ch channel
-     * @return uint16_t
+     * @ch channel
+     * @period_us time in µs
      */
-    uint16_t get_freq(uint8_t ch);
-
-    /**
-     * @brief Set period in µS
-     *
-     * @param ch channel
-     * @param period_us time in µS
-     * @return void
-     */
-    void write(uint8_t ch, uint16_t period_us);
+    void write(uint8_t ch, uint16_t period_us) override;
 
     void cork() override;
+
     void push() override;
 
     /**
-     * @brief Return frequency
-     *
-     * @param ch channel
-     * @return uint16_t
+     * Get period of the duty cycle in µs
      */
-    uint16_t read(uint8_t ch);
+    uint16_t read(uint8_t ch) override;
 
     /**
-     * @brief Set period_us with the values in µS of each channel
+     * Set @period_us with the values in µs of each channel
      *
-     * @param period_us Vector that will be filled with µS of each channel
-     * @param len Size of period_us vector
-     * @return void
+     * @period_us vector that will be filled with duty cycle periods of
+     *            each channel
+     * @len size of period_us vector
      */
-    void read(uint16_t* period_us, uint8_t len);
+    void read(uint16_t *period_us, uint8_t len) override;
 
 private:
-    void reset();
+    /**
+     * Convert from µs to hw units, 16bits percentage of
+     * the frequency, where 0xFFFF is 1/Freq seconds in high
+     *
+     * @freq Frequency
+     * @usec Time in µseconds
+     *
+     * Return: conversion from µs in a specific frequency to 16bits
+     */
+    static uint16_t _usec_to_hw(uint16_t freq, uint16_t usec);
+
+    /**
+     * Convert from hw units, 16bits percentage of the frequency, to
+     * time in µs
+     *
+     * @freq Frequency
+     * @hw_val 16b percentage
+     */
+    static uint16_t _hw_to_usec(uint16_t freq, uint16_t hw_val);
+
+    /**
+     * Low-level spi write
+     *
+     * @address register address
+     * @data value to be written
+     *
+     * Return: true on success, false otherwise
+     */
+    bool _hw_write(uint16_t address, uint16_t data);
+
+    /**
+     * Low-level spi read
+     *
+     * @address register address
+     *
+     * Return: value read from @address
+     */
+    uint16_t _hw_read(uint16_t address);
 
     AP_HAL::OwnPtr<AP_HAL::Device> _spi;
 
     /**
-     * @brief Low-level spi write
-     *
-     * @param address
-     * @param data
-     * @return bool, return false if fail
-     */
-    bool fpga_write(uint16_t address, uint16_t data);
-
-    /**
-     * @brief Low-level spi read
-     *
-     * @param address
-     * @return uint16_t, return data
-     */
-    uint16_t fpga_read(uint16_t address);
-
-    /**
-     * @brief Convert from µS (1E-6 seconds) to 16bits percentage of the frequency,
-     * where 0xFFFF is 1/Freq Seconds in high
-     *
-     * @param freq Frequency
-     * @param us Time in µseconds
-     * @return uint16_t, return the convertion from us in a specific frequency to 16bits percentage
-     */
-    uint16_t us2perc(uint16_t freq, uint16_t us);
-
-    /**
-     * @brief Convert from percentage to time in µS (1E-6 seconds)
-     *
-     * @param freq Frequency
-     * @param perc 16b percentage
-     * @return uint16_t
-     */
-    uint16_t perc2us(uint16_t freq, uint16_t perc);
-
-    /**
-     * @brief Frequency buffer of last written values
-     *
+     * Frequency buffer of last written values
      */
     uint16_t *_freq_buffer;
 
     /**
-     * @brief Dutycicle buffer of last written values
-     *
+     * Duty cycle buffer of last written values
      */
     uint16_t *_duty_buffer;
 
-    uint32_t _enabled_channels_mask = 0;
-
     /**
-     * @brief If <B>true</B> the push must be called to perform the writing, otherwise will be not necessary.
-     *
-     */
-    bool _corking = false;
-
-    /**
-     * @brief Save information about the channel that will be write in the next @RCOutput_AeroIO#push call.
+     * Save information about the channel that will be write in the
+     * next @RCOutput_AeroIO#push call.
      *
      * 0b...101
-     *      ││└── 1º Channel (Pending operation)
-     *      │└─── 2º Channel (No pending operation)
-     *      └──── 3º Channel (Pending operation)
-     *
+     *      ││└── 1st channel (Pending operation)
+     *      │└─── 2nd Channel (No pending operation)
+     *      └──── 3rd Channel (Pending operation)
      */
     uint32_t _pending_duty_write_mask = 0;
     uint32_t _pending_freq_write_mask = 0;
+
+    /**
+     * If <B>true</B> the push must be called to perform the writing,
+     * otherwise will be not necessary.
+     */
+    bool _corking = false;
 };
 
 }
