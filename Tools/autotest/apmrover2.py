@@ -14,8 +14,8 @@ HOME=mavutil.location(40.071374969556928,-105.22978898137808,1583.702759,246)
 homeloc = None
 
 def arm_rover(mavproxy, mav):
-    # wait for EKF to settle
-    wait_seconds(mav, 15)
+    # wait for EKF and GPS checks to pass
+    wait_seconds(mav, 30)
 
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')

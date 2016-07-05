@@ -101,8 +101,8 @@ def fly_QuadPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
 
-        # wait for EKF to settle
-        wait_seconds(mav, 15)
+        # wait for EKF and GPS checks to pass
+        wait_seconds(mav, 30)
 
         mavproxy.send('arm throttle\n')
         mavproxy.expect('ARMED')
