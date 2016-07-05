@@ -23,8 +23,5 @@ void Copter::update_precland()
     }
 
     copter.precland.update(final_alt);
-
-    // log output
-    Log_Write_Precland();
 }
 #endif
