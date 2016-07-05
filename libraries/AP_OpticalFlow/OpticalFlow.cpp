@@ -61,7 +61,7 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
 void OpticalFlow::init(void)
 {
     if (!backend) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         backend = new AP_OpticalFlow_PX4(*this);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
         backend = new AP_OpticalFlow_HIL(*this);
