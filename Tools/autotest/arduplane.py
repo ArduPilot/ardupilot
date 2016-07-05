@@ -17,8 +17,8 @@ homeloc = None
 def takeoff(mavproxy, mav):
     '''takeoff get to 30m altitude'''
 
-    # wait for EKF to settle
-    wait_seconds(mav, 15)
+    # wait for EKF and GPS checks to pass
+    wait_seconds(mav, 30)
 
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
