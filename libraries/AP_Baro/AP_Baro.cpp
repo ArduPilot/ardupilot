@@ -80,15 +80,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 /*
   AP_Baro constructor
  */
-AP_Baro::AP_Baro() :
-        _num_drivers(0),
-        _num_sensors(0),
-        _primary(0),
-        _last_altitude_EAS2TAS(0.0f),
-        _EAS2TAS(0.0f),
-        _external_temperature(0.0f),
-        _last_external_temperature_ms(0),
-        _hil_mode(false)
+AP_Baro::AP_Baro()
 {
     memset(sensors, 0, sizeof(sensors));
 
