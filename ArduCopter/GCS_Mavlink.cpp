@@ -740,6 +740,11 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_MAG_CAL_REPORT:
         copter.compass.send_mag_cal_report(chan);
         break;
+
+    case MSG_ADSB_VEHICLE:
+        CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
+        copter.adsb.send_adsb_vehicle(chan);
+        break;
     }
 
     return true;
@@ -827,7 +832,16 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  0),
-    AP_GROUPEND
+
+    // @Param: ADSB
+    // @DisplayName: ADSB stream rate to ground station
+    // @Description: ADSB stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ADSB",   9, GCS_MAVLINK, streamRates[9],  5),
+AP_GROUPEND
 };
 
 void
@@ -932,6 +946,12 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_VIBRATION);
         send_message(MSG_RPM);
+    }
+
+    if (copter.gcs_out_of_time) return;
+
+    if (stream_trigger(STREAM_ADSB)) {
+        send_message(MSG_ADSB_VEHICLE);
     }
 }
 
@@ -1923,6 +1943,14 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         copter.precland.handle_msg(msg);
         break;
 #endif
+
+#if AC_FENCE == ENABLED
+    // send or receive fence points with GCS
+    case MAVLINK_MSG_ID_FENCE_POINT:            // MAV ID: 160
+    case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
+        copter.fence.handle_msg(chan, msg);
+        break;
+#endif // AC_FENCE == ENABLED
 
 #if CAMERA == ENABLED
     //deprecated.  Use MAV_CMD_DO_DIGICAM_CONFIGURE

@@ -6,7 +6,7 @@ BASE_PKGS="gawk make git arduino-core curl"
 PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          zip genromfs python-empy"
+          zip genromfs python-empy libc6-i386"
 BEBOP_PKGS="g++-arm-linux-gnueabihf"
 SITL_PKGS="g++ python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
 ASSUME_YES=false

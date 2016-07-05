@@ -99,6 +99,7 @@ float AnalogIn_Navio2::board_voltage(void)
 {
     return _board_voltage_pin->voltage_average();
 }
+
 float AnalogIn_Navio2::servorail_voltage(void)
 {
     return _servorail_pin->voltage_average();

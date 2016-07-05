@@ -53,7 +53,7 @@ ln -fs /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
 # build JSB sim
 pushd /tmp
 rm -rf jsbsim
-git clone git://github.com/tridge/jsbsim.git
+git clone https://github.com/tridge/jsbsim.git
 sudo apt-get install -y libtool automake autoconf libexpat1-dev
 cd jsbsim
 ./autogen.sh

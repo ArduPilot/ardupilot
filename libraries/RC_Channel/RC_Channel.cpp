@@ -497,15 +497,23 @@ void RC_Channel::output_trim_all()
 }
 
 /*
+  setup the failsafe value to the trim value for all channels in chmask
+ */
+void RC_Channel::setup_failsafe_trim_mask(uint16_t chmask)
+{
+    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
+        if (_rc_ch[i] != NULL && ((1U<<i)&chmask)) {
+            hal.rcout->set_failsafe_pwm(1U<<i, _rc_ch[i]->_radio_trim);
+        }
+    }
+}
+
+/*
   setup the failsafe value to the trim value for all channels
  */
 void RC_Channel::setup_failsafe_trim_all()
 {
-    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (_rc_ch[i] != NULL) {
-            hal.rcout->set_failsafe_pwm(1U<<i, _rc_ch[i]->_radio_trim);
-        }
-    }
+    setup_failsafe_trim_mask(0xFFFF);
 }
 
 void

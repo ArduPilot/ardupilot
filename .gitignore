@@ -62,6 +62,8 @@ ArduCopter/logs/
 ArduCopter/terrain/*.DAT
 ArduCopter/test.ArduCopter/
 ArduCopter/test/*
+ArduCopter/fence.txt
+ArduCopter/ral.txt
 ArduCopter/way.txt
 ArduPlane/logs/
 ArduPlane/test/*
@@ -100,3 +102,4 @@ Thumbs.db
 cscope.in.out
 cscope.out
 cscope.po.out
+*.generated.h

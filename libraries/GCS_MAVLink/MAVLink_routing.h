@@ -55,7 +55,7 @@ private:
     } routes[MAVLINK_MAX_ROUTES];
     
     // a channel mask to block routing as required
-    uint8_t no_route_mask;
+    uint8_t no_route_mask = 0;
     
     // learn new routes
     void learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg);

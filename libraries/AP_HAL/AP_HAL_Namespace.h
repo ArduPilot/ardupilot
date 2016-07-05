@@ -29,7 +29,7 @@ namespace AP_HAL {
     class Scheduler;
     class Semaphore;
     class OpticalFlow;
-    
+
     class Util;
 
     /* Utility Classes */
@@ -37,7 +37,7 @@ namespace AP_HAL {
     class Stream;
     class BetterStream;
 
-    /* Typdefs for function pointers (Procedure, Member Procedure) 
+    /* Typdefs for function pointers (Procedure, Member Procedure)
 
        For member functions we use the FastDelegate delegates class
        which allows us to encapculate a member function as a type

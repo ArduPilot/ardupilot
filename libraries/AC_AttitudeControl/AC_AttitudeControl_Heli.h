@@ -27,6 +27,7 @@
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
+#define AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD   ToRad(30.0f)
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
@@ -68,6 +69,9 @@ public:
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds);
 
+    // Integrate vehicle rate into _att_error_rot_vec_rad
+    void integrate_bf_rate_error_to_angle_errors();
+
     // subclass non-passthrough too, for external gyro, no flybar
     void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) override;
 
@@ -75,9 +79,8 @@ public:
 	// should be called at 100hz or more
 	virtual void rate_controller_run();
 
-    // get lean angle max for pilot input that prioritises altitude hold over lean angle
-    // NOTE: returns centi-degrees
-    float get_althold_lean_angle_max() const;
+    // Update Alt_Hold angle maximum
+    void update_althold_lean_angle_max(float throttle_in) override;
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
@@ -94,6 +97,9 @@ public:
 
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
     void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
+
+    // Set output throttle
+    void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -117,14 +123,11 @@ private:
 	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
     void rate_bf_to_motor_roll_pitch(float rate_roll_target_rads, float rate_pitch_target_rads);
-    float rate_bf_to_motor_yaw(float rate_yaw_rads);
+    float rate_target_to_motor_yaw(float rate_yaw_rads);
 
     //
     // throttle methods
     //
-
-    // calculate total body frame throttle required to produce the given earth frame throttle
-    float get_boosted_throttle(float throttle_in);
     
     // pass through for roll and pitch
     int16_t _passthrough_roll;
@@ -138,6 +141,12 @@ private:
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim
+
+
+    // This represents an euler axis-angle rotation vector from the vehicles
+    // estimated attitude to the reference (setpoint) attitude used in the attitude
+    // controller, in radians in the vehicle body frame of reference.
+    Vector3f            _att_error_rot_vec_rad;
 
     // parameters
     AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode

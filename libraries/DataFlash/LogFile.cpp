@@ -1862,18 +1862,38 @@ void DataFlash_Class::Log_Write_Rate(const AP_AHRS &ahrs,
     struct log_Rate pkt_rate = {
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
         time_us         : AP_HAL::micros64(),
-        control_roll    : (float)rate_targets.x,
-        roll            : (float)(ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100),
+        control_roll    : degrees(rate_targets.x),
+        roll            : degrees(ahrs.get_gyro().x),
         roll_out        : motors.get_roll(),
-        control_pitch   : (float)rate_targets.y,
-        pitch           : (float)(ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100),
+        control_pitch   : degrees(rate_targets.y),
+        pitch           : degrees(ahrs.get_gyro().y),
         pitch_out       : motors.get_pitch(),
-        control_yaw     : (float)rate_targets.z,
-        yaw             : (float)(ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100),
+        control_yaw     : degrees(rate_targets.z),
+        yaw             : degrees(ahrs.get_gyro().z),
         yaw_out         : motors.get_yaw(),
         control_accel   : (float)accel_target.z,
         accel           : (float)(-(ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
         accel_out       : motors.get_throttle()
     };
     WriteBlock(&pkt_rate, sizeof(pkt_rate));
+}
+
+// Write rally points
+void DataFlash_Class::Log_Write_Rally(const AP_Rally &rally)
+{
+    RallyLocation rally_point;
+    for (uint8_t i=0; i<rally.get_rally_total(); i++) {
+        if (rally.get_rally_point_with_index(i, rally_point)) {
+            struct log_Rally pkt_rally = {
+                LOG_PACKET_HEADER_INIT(LOG_RALLY_MSG),
+                time_us         : AP_HAL::micros64(),
+                total           : rally.get_rally_total(),
+                sequence        : i,
+                latitude        : rally_point.lat,
+                longitude       : rally_point.lng,
+                altitude        : rally_point.alt
+            };
+            WriteBlock(&pkt_rally, sizeof(pkt_rally));
+        }
+    }
 }

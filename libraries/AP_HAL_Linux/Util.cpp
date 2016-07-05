@@ -31,10 +31,9 @@ void Util::init(int argc, char * const *argv) {
 #ifdef HAL_UTILS_HEAT
 #if HAL_UTILS_HEAT == HAL_LINUX_HEAT_PWM
     _heat = new Linux::HeatPwm(HAL_LINUX_HEAT_PWM_NUM,
-                            HAL_LINUX_HEAT_KP,
-                            HAL_LINUX_HEAT_KI,
-                            HAL_LINUX_HEAT_PERIOD_NS,
-                            HAL_LINUX_HEAT_TARGET_TEMP);
+                               HAL_LINUX_HEAT_KP,
+                               HAL_LINUX_HEAT_KI,
+                               HAL_LINUX_HEAT_PERIOD_NS);
 #else
     #error Unrecognized Heat
 #endif // #if
@@ -43,9 +42,16 @@ void Util::init(int argc, char * const *argv) {
 #endif // #ifdef
 }
 
+// set current IMU temperatue in degrees C
 void Util::set_imu_temp(float current)
 {
     _heat->set_imu_temp(current);
+}
+
+// set target IMU temperatue in degrees C
+void Util::set_imu_target_temp(int8_t *target)
+{
+    _heat->set_imu_target_temp(target);
 }
 
 /**
@@ -67,19 +73,19 @@ void Util::toneAlarm_set_tune(uint8_t tone)
     _toneAlarm.set_tune(tone);
 }
 
-void Util::_toneAlarm_timer_tick(){
-    if(state == 0){
+void Util::_toneAlarm_timer_tick() {
+    if(state == 0) {
         state = state + _toneAlarm.init_tune();
-    }else if(state == 1){
+    } else if (state == 1) {
         state = state + _toneAlarm.set_note();
     }
-    if(state == 2){
+    if (state == 2) {
         state = state + _toneAlarm.play();
-    }else if(state == 3){
+    } else if (state == 3) {
         state = 1;
     }
     
-    if(_toneAlarm.is_tune_comp()){
+    if (_toneAlarm.is_tune_comp()) {
         state = 0;
     }
     
@@ -99,8 +105,9 @@ bool Util::is_chardev_node(const char *path)
 {
     struct stat st;
 
-    if (!path || lstat(path, &st) < 0)
+    if (!path || lstat(path, &st) < 0) {
         return false;
+    }
 
     return S_ISCHR(st.st_mode);
 }
@@ -120,7 +127,7 @@ int Util::write_file(const char *path, const char *fmt, ...)
 {
     errno = 0;
 
-    int fd = ::open(path, O_WRONLY | O_CLOEXEC);
+    int fd = open(path, O_WRONLY | O_CLOEXEC);
     if (fd == -1) {
         return -errno;
     }
@@ -128,9 +135,9 @@ int Util::write_file(const char *path, const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    int ret = ::vdprintf(fd, fmt, args);
+    int ret = vdprintf(fd, fmt, args);
     int errno_bkp = errno;
-    ::close(fd);
+    close(fd);
 
     va_end(args);
 
@@ -145,21 +152,23 @@ int Util::read_file(const char *path, const char *fmt, ...)
 {
     errno = 0;
 
-    FILE *file = ::fopen(path, "re");
-    if (!file)
+    FILE *file = fopen(path, "re");
+    if (!file) {
         return -errno;
+    }
 
     va_list args;
     va_start(args, fmt);
 
-    int ret = ::vfscanf(file, fmt, args);
+    int ret = vfscanf(file, fmt, args);
     int errno_bkp = errno;
-    ::fclose(file);
+    fclose(file);
 
     va_end(args);
 
-    if (ret < 1)
+    if (ret < 1) {
         return -errno_bkp;
+    }
 
     return ret;
 }
@@ -174,33 +183,25 @@ const char *Linux::Util::_hw_names[UTIL_NUM_HARDWARES] = {
 #define MAX_SIZE_LINE 50
 int Util::get_hw_arm32()
 {
-    int ret = -ENOENT;
-    char buffer[MAX_SIZE_LINE];
-    const char* hardware_description_entry = "Hardware";
-    char* flag;
-    FILE* f;
-
-    f = fopen("/proc/cpuinfo", "r");
-
+    char buffer[MAX_SIZE_LINE] = { 0 };
+    FILE *f = fopen("/proc/cpuinfo", "r");
     if (f == NULL) {
-        ret = -errno;
-        goto end;
+        return -errno;
     }
 
     while (fgets(buffer, MAX_SIZE_LINE, f) != NULL) {
-        flag = strstr(buffer, hardware_description_entry);
-        if (flag != NULL) {
-            for (uint8_t i = 0; i < UTIL_NUM_HARDWARES; i++) {
-                if (strstr(buffer, _hw_names[i]) != 0) {
-                     ret = i;
-                     goto close_end;
-                }
+        if (strstr(buffer, "Hardware") == NULL) {
+            continue;
+        }
+        for (uint8_t i = 0; i < UTIL_NUM_HARDWARES; i++) {
+            if (strstr(buffer, _hw_names[i]) == NULL) {
+                continue;
             }
+            fclose(f);
+            return i;
         }
     }
 
-close_end:
     fclose(f);
-end:
-    return ret;
+    return -ENOENT;
 }

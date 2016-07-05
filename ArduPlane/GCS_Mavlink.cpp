@@ -873,6 +873,11 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(MAG_CAL_REPORT);
         plane.compass.send_mag_cal_report(chan);
         break;
+
+    case MSG_ADSB_VEHICLE:
+        CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
+        plane.adsb.send_adsb_vehicle(chan);
+        break;
     }
     return true;
 }
@@ -962,6 +967,15 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  10),
+
+    // @Param: ADSB
+    // @DisplayName: ADSB stream rate to ground station
+    // @Description: ADSB stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ADSB",   9, GCS_MAVLINK, streamRates[9],  5),
     AP_GROUPEND
 };
 
@@ -1080,6 +1094,12 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_GIMBAL_REPORT);
         send_message(MSG_VIBRATION);
+    }
+
+    if (plane.gcs_out_of_time) return;
+
+    if (stream_trigger(STREAM_ADSB)) {
+        send_message(MSG_ADSB_VEHICLE);
     }
 }
 
@@ -2082,6 +2102,76 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         plane.DataFlash.remote_log_block_status_msg(chan, msg);
         break;
+
+    case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
+    {
+        // Only allow companion computer (or other external controller) to
+        // control attitude in GUIDED mode.  We DON'T want external control
+        // in e.g., RTL, CICLE. Specifying a single mode for companion
+        // computer control is more safe (even more so when using
+        // FENCE_ACTION = 4 for geofence failures).
+        if (plane.control_mode != GUIDED) { // don't screw up failsafes
+            break; 
+        }
+
+        mavlink_set_attitude_target_t att_target;
+        mavlink_msg_set_attitude_target_decode(msg, &att_target);
+
+        // Mappings: If any of these bits are set, the corresponding input should be ignored.
+        // NOTE, when parsing the bits we invert them for easier interpretation but transport has them inverted
+        // bit 1: body roll rate
+        // bit 2: body pitch rate
+        // bit 3: body yaw rate
+        // bit 4: unknown
+        // bit 5: unknown
+        // bit 6: reserved
+        // bit 7: throttle
+        // bit 8: attitude
+
+        // if not setting all Quaternion values, use _rate flags to indicate which fields.
+
+        // Extract the Euler roll angle from the Quaternion.
+        Quaternion q(att_target.q[0], att_target.q[1],
+                att_target.q[2], att_target.q[3]);
+
+        // NOTE: att_target.type_mask is inverted for easier interpretation
+        att_target.type_mask = att_target.type_mask ^ 0xFF;
+
+        uint8_t attitude_mask = att_target.type_mask & 0b10000111; // q plus rpy
+
+        uint32_t now = AP_HAL::millis();
+        if ((attitude_mask & 0b10000001) ||    // partial, including roll
+                (attitude_mask == 0b10000000)) { // all angles
+            plane.guided_state.forced_rpy_cd.x = degrees(q.get_euler_roll()) * 100.0f;
+
+            // Update timer for external roll to the nav control
+            plane.guided_state.last_forced_rpy_ms.x = now;
+        }
+
+        if ((attitude_mask & 0b10000010) ||    // partial, including pitch
+                (attitude_mask == 0b10000000)) { // all angles
+            plane.guided_state.forced_rpy_cd.y = degrees(q.get_euler_pitch()) * 100.0f;
+
+            // Update timer for external pitch to the nav control
+            plane.guided_state.last_forced_rpy_ms.y = now;
+        }
+
+        if ((attitude_mask & 0b10000100) ||    // partial, including yaw
+                (attitude_mask == 0b10000000)) { // all angles
+            plane.guided_state.forced_rpy_cd.z = degrees(q.get_euler_yaw()) * 100.0f;
+
+            // Update timer for external yaw to the nav control
+            plane.guided_state.last_forced_rpy_ms.z = now;
+        }
+        if (att_target.type_mask & 0b01000000) { // throttle
+            plane.guided_state.forced_throttle = att_target.thrust * 100.0f;
+
+            // Update timer for external throttle
+            plane.guided_state.last_forced_throttle_ms = now;
+        }
+
+        break;
+    }
 
     case MAVLINK_MSG_ID_SET_HOME_POSITION:
     {

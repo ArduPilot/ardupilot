@@ -51,7 +51,6 @@ Copter::Copter(void) :
     super_simple_cos_yaw(1.0),
     super_simple_sin_yaw(0.0f),
     initial_armed_bearing(0),
-    throttle_average(0.0f),
     desired_climb_rate(0),
     loiter_time_max(0),
     loiter_time(0),
@@ -77,6 +76,7 @@ Copter::Copter(void) :
     pos_control(ahrs, inertial_nav, motors, attitude_control,
                 g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                 g.p_pos_xy, g.pi_vel_xy),
+    avoid(ahrs, inertial_nav, fence),
     wp_nav(inertial_nav, ahrs, pos_control, attitude_control),
     circle_nav(inertial_nav, ahrs, pos_control),
     pmTest1(0),
@@ -92,7 +92,7 @@ Copter::Copter(void) :
     camera_mount(ahrs, current_loc),
 #endif
 #if AC_FENCE == ENABLED
-    fence(inertial_nav),
+    fence(ahrs, inertial_nav),
 #endif
 #if AC_RALLY == ENABLED
     rally(ahrs),

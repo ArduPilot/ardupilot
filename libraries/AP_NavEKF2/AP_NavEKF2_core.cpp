@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.5f
 
 // maximum allowed gyro bias (rad/sec)
-#define GYRO_BIAS_LIMIT 0.349066f
+#define GYRO_BIAS_LIMIT 0.5f
 
 // constructor
 NavEKF2_core::NavEKF2_core(void) :
@@ -153,8 +153,8 @@ void NavEKF2_core::InitialiseVariables()
     tasTimeout = true;
     badMagYaw = false;
     badIMUdata = false;
-    firstInflightYawInit = false;
-    firstInflightMagInit = false;
+    finalInflightYawInit = false;
+    finalInflightMagInit = false;
     dtIMUavg = 0.0025f;
     dtEkfAvg = 0.01f;
     dt = 0;
@@ -258,6 +258,9 @@ void NavEKF2_core::InitialiseVariables()
     magStateInitComplete = false;
     magYawResetRequest = false;
     gpsYawResetRequest = false;
+    posDownAtLastMagReset = stateStruct.position.z;
+    yawInnovAtLastMagReset = 0.0f;
+    quatAtLastMagReset = stateStruct.quat;
 
     // zero data buffers
     storedIMU.reset();
@@ -412,10 +415,6 @@ void NavEKF2_core::UpdateFilter(bool predict)
     // Set the flag to indicate to the filter that the front-end has given permission for a new state prediction cycle to be started
     startPredictEnabled = predict;
 
-    // zero the delta quaternion used by the strapdown navigation because it is published
-    // and we need to return a zero rotation of the INS fails to update it
-    correctedDelAngQuat.initialise();
-
     // don't run filter updates if states have not been initialised
     if (!statesInitialised) {
         return;
@@ -463,13 +462,26 @@ void NavEKF2_core::UpdateFilter(bool predict)
     }
 
     // Wind output forward from the fusion to output time horizon
-    calcOutputStatesFast();
+    calcOutputStates();
 
     // stop the timer used for load measurement
     hal.util->perf_end(_perf_UpdateFilter);
 #if EK2_DISABLE_INTERRUPTS
     irqrestore(istate);
 #endif
+}
+
+void NavEKF2_core::correctDeltaAngle(Vector3f &delAng, float delAngDT)
+{
+    delAng.x = delAng.x * stateStruct.gyro_scale.x;
+    delAng.y = delAng.y * stateStruct.gyro_scale.y;
+    delAng.z = delAng.z * stateStruct.gyro_scale.z;
+    delAng -= stateStruct.gyro_bias * (delAngDT / dtEkfAvg);
+}
+
+void NavEKF2_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT)
+{
+    delVel.z -= stateStruct.accel_zbias * (delVelDT / dtEkfAvg);
 }
 
 /*
@@ -481,28 +493,25 @@ void NavEKF2_core::UpdateFilter(bool predict)
 */
 void NavEKF2_core::UpdateStrapdownEquationsNED()
 {
-    // apply correction for earths rotation rate
+    // apply correction for earth's rotation rate
     // % * - and + operators have been overloaded
-    correctedDelAng   = imuDataDelayed.delAng - prevTnb * earthRateNED*imuDataDelayed.delAngDT;
-
-    // convert the rotation vector to its equivalent quaternion
-    correctedDelAngQuat.from_axis_angle(correctedDelAng);
+    imuDataDelayed.delAng -= prevTnb * earthRateNED*imuDataDelayed.delAngDT;
 
     // update the quaternion states by rotating from the previous attitude through
     // the delta angle rotation quaternion and normalise
-    stateStruct.quat *= correctedDelAngQuat;
+    stateStruct.quat.rotate(imuDataDelayed.delAng);
     stateStruct.quat.normalize();
 
-    // calculate the body to nav cosine matrix
-    Matrix3f Tbn_temp;
-    stateStruct.quat.rotation_matrix(Tbn_temp);
-    prevTnb = Tbn_temp.transposed();
-
     // transform body delta velocities to delta velocities in the nav frame
+    // use the nav frame from previous time step as the delta velocities
+    // have been rotated into that frame
     // * and + operators have been overloaded
     Vector3f delVelNav;  // delta velocity vector in earth axes
-    delVelNav  = Tbn_temp*imuDataDelayed.delVel;
+    delVelNav  = prevTnb.mul_transpose(imuDataDelayed.delVel);
     delVelNav.z += GRAVITY_MSS*imuDataDelayed.delVelDT;
+
+    // calculate the body to nav cosine matrix
+    stateStruct.quat.inverse().rotation_matrix(prevTnb);
 
     // calculate the rate of change of velocity (used for launch detect and other functions)
     velDotNED = delVelNav / imuDataDelayed.delVelDT;
@@ -552,12 +561,16 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
  * “Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements”
  * A Khosravian, J Trumpf, R Mahony, T Hamel, Australian National University
 */
-void  NavEKF2_core::calcOutputStatesFast() {
-
-    // Calculate strapdown solution at the current time horizon
+void NavEKF2_core::calcOutputStates()
+{
+    // apply corrections to the IMU data
+    Vector3f delAngNewCorrected = imuDataNew.delAng;
+    Vector3f delVelNewCorrected = imuDataNew.delVel;
+    correctDeltaAngle(delAngNewCorrected, imuDataNew.delAngDT);
+    correctDeltaVelocity(delVelNewCorrected, imuDataNew.delVelDT);
 
     // apply corections to track EKF solution
-    Vector3f delAng = imuDataNew.delAng + delAngCorrection;
+    Vector3f delAng = delAngNewCorrected + delAngCorrection;
 
     // convert the rotation vector to its equivalent quaternion
     Quaternion deltaQuat;
@@ -573,9 +586,7 @@ void  NavEKF2_core::calcOutputStatesFast() {
     outputDataNew.quat.rotation_matrix(Tbn_temp);
 
     // transform body delta velocities to delta velocities in the nav frame
-    // Add the earth frame correction required to track the EKF states
-    // * and + operators have been overloaded
-    Vector3f delVelNav  = Tbn_temp*imuDataNew.delVel + delVelCorrection;
+    Vector3f delVelNav  = Tbn_temp*delVelNewCorrected + delVelCorrection;
     delVelNav.z += GRAVITY_MSS*imuDataNew.delVelDT;
 
     // save velocity for use in trapezoidal integration for position calcuation
@@ -584,52 +595,98 @@ void  NavEKF2_core::calcOutputStatesFast() {
     // sum delta velocities to get velocity
     outputDataNew.velocity += delVelNav;
 
-    // apply a trapezoidal integration to velocities to calculate position, applying correction required to track EKF solution
+    // apply a trapezoidal integration to velocities to calculate position
     outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f) + velCorrection * imuDataNew.delVelDT;
 
-    // store the output in the FIFO buffer if this is a filter update step
+    // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
     if (runUpdates) {
+        // store the states at the output time horizon
         storedOutput[storedIMU.get_youngest_index()] = outputDataNew;
+
+        // recall the states from the fusion time horizon
+        outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
+
+        // compare quaternion data with EKF quaternion at the fusion time horizon and calculate correction
+
+        // divide the demanded quaternion by the estimated to get the error
+        Quaternion quatErr = stateStruct.quat / outputDataDelayed.quat;
+
+        // Convert to a delta rotation using a small angle approximation
+        quatErr.normalize();
+        Vector3f deltaAngErr;
+        float scaler;
+        if (quatErr[0] >= 0.0f) {
+            scaler = 2.0f;
+        } else {
+            scaler = -2.0f;
+        }
+        deltaAngErr.x = scaler * quatErr[1];
+        deltaAngErr.y = scaler * quatErr[2];
+        deltaAngErr.z = scaler * quatErr[3];
+
+        // calculate a gain that provides tight tracking of the estimator states and
+        // adjust for changes in time delay to maintain consistent damping ratio of ~0.7
+        float timeDelay = 1e-3f * (float)(imuDataNew.time_ms - imuDataDelayed.time_ms);
+        timeDelay = fmaxf(timeDelay, dtIMUavg);
+        float errorGain = 0.45f / timeDelay;
+
+        // calculate a corrrection to the delta angle
+        // that will cause the INS to track the EKF quaternions
+        delAngCorrection = deltaAngErr * errorGain * dtIMUavg;
+
+        // If the user specifes a time constant for the position and velocity states then calculate and apply the position
+        // and velocity corrections immediately to the whole output history which takes longer to process but enables smaller
+        // time constants to be used. Else apply the corrections to the current state only using the same time constant
+        // used for the quaternion corrections.
+        if (frontend->_tauVelPosOutput > 0) {
+            // convert time constant from centi-seconds to seconds
+            float tauPosVel = 0.01f*(float)frontend->_tauVelPosOutput;
+
+            // calculate a position correction that will be applied to the output state history
+            // to track the EKF position states with the specified time constant
+            float velPosGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
+            Vector3f posDelta = (stateStruct.position - outputDataDelayed.position) * velPosGain;
+
+            // calculate a velocity correction that will be applied to the output state history
+            // to track the EKF velocity states with the specified time constant
+            Vector3f velDelta;
+            float velGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
+            velDelta = (stateStruct.velocity - outputDataDelayed.velocity) * velGain;
+
+            // loop through the output filter state history and apply the corrections to the velocity and position states
+            // this method is too expensive to use for the attitude states due to the quaternion operations required
+            // but does not introduce a time delay in the 'correction loop' and allows smaller tracking time constants
+            // to be used
+            output_elements outputStates;
+            for (unsigned index=0; index < imu_buffer_length; index++) {
+                outputStates = storedOutput[index];
+
+                // a constant  velocity correction is applied
+                outputStates.velocity += velDelta;
+
+                // a constant position correction is applied
+                outputStates.position += posDelta;
+
+                // push the updated data to the buffer
+                storedOutput[index] = outputStates;
+            }
+
+            // update output state to corrected values
+            //outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
+            outputDataNew = storedOutput[storedIMU.get_youngest_index()];
+
+            // set un-used corrections to zero
+            delVelCorrection.zero();
+            velCorrection.zero();
+
+        } else {
+            // multiply velocity and position error by a gain to calculate the delta velocity correction required to track the EKF solution
+            delVelCorrection = (stateStruct.velocity - outputDataDelayed.velocity) * errorGain * dtIMUavg;
+            velCorrection = (stateStruct.position - outputDataDelayed.position) * errorGain;
+
+        }
+
     }
-
-    // extract data at the fusion time horizon from the FIFO buffer
-    outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
-
-    // compare quaternion data with EKF quaternion at the fusion time horizon and calculate correction
-
-    // divide the demanded quaternion by the estimated to get the error
-    Quaternion quatErr = stateStruct.quat / outputDataDelayed.quat;
-
-    // Convert to a delta rotation using a small angle approximation
-    quatErr.normalize();
-    Vector3f deltaAngErr;
-    float scaler;
-    if (quatErr[0] >= 0.0f) {
-        scaler = 2.0f;
-    } else {
-        scaler = -2.0f;
-    }
-    deltaAngErr.x = scaler * quatErr[1];
-    deltaAngErr.y = scaler * quatErr[2];
-    deltaAngErr.z = scaler * quatErr[3];
-
-    // multiply the angle error vector by a gain to calculate the delta angle correction required to track the EKF solution
-    const float Kang = 1.0f;
-    delAngCorrection = deltaAngErr * imuDataNew.delAngDT * Kang;
-
-    // multiply velocity error by a gain to calculate the delta velocity correction required to track the EKF solution
-    const float Kvel = 1.0f;
-    delVelCorrection = (stateStruct.velocity - outputDataDelayed.velocity) * imuDataNew.delVelDT * Kvel;
-
-    // multiply position error by a gain to calculate the velocity correction required to track the EKF solution
-    const float Kpos = 1.0f;
-    velCorrection = (stateStruct.position - outputDataDelayed.position) * Kpos;
-
-    // update vertical velocity and position states used to provide a vertical position derivative output
-    // using a simple complementary filter
-    float lastPosDownDerivative = posDownDerivative;
-    posDownDerivative = 2.0f * (outputDataNew.position.z - posDown);
-    posDown += (posDownDerivative + lastPosDownDerivative + 2.0f*delVelNav.z) * (imuDataNew.delVelDT*0.5f);
 }
 
 /*
@@ -684,8 +741,8 @@ void NavEKF2_core::CovariancePrediction()
     dAngBiasSigma = sq(dt) * constrain_float(frontend->_gyroBiasProcessNoise, 0.0f, 1.0f);
     dVelBiasSigma = sq(dt) * constrain_float(frontend->_accelBiasProcessNoise, 0.0f, 1.0f);
     dAngScaleSigma = dt * constrain_float(frontend->_gyroScaleProcessNoise, 0.0f, 1.0f);
-    magEarthSigma = dt * constrain_float(frontend->_magProcessNoise, 0.0f, 1.0f);
-    magBodySigma  = dt * constrain_float(frontend->_magProcessNoise, 0.0f, 1.0f);
+    magEarthSigma = dt * constrain_float(frontend->_magEarthProcessNoise, 0.0f, 1.0f);
+    magBodySigma  = dt * constrain_float(frontend->_magBodyProcessNoise, 0.0f, 1.0f);
     for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 0.0f;
     for (uint8_t i=9; i<=11; i++) processNoise[i] = dAngBiasSigma;
     for (uint8_t i=12; i<=14; i++) processNoise[i] = dAngScaleSigma;
@@ -1371,6 +1428,7 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 
         // record the fact we have initialised the magnetic field states
         recordMagReset();
+
     } else {
         // this function should not be called if there is no compass data but if is is, return the
         // current attitude

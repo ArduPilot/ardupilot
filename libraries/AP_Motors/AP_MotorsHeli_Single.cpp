@@ -261,7 +261,7 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
     _main_rotor.set_runup_time(_rsc_runup_time);
     _main_rotor.set_critical_speed(_rsc_critical/1000.0f);
     _main_rotor.set_idle_output(_rsc_idle_output/1000.0f);
-    _main_rotor.set_power_output_range(_rsc_power_low/1000.0f, _rsc_power_high/1000.0f);
+    _main_rotor.set_power_output_range(_rsc_power_low/1000.0f, _rsc_power_high/1000.0f, _rsc_power_negc/1000.0f, (uint16_t)_rsc_slewrate.get());
 }
 
 
@@ -432,7 +432,13 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     // feed power estimate into main rotor controller
     // ToDo: include tail rotor power?
     // ToDo: add main rotor cyclic power?
-    _main_rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
+    if (collective_out > _collective_mid_pct) {
+        // +ve motor load for +ve collective
+        _main_rotor.set_motor_load((collective_out - _collective_mid_pct) / (1.0f - _collective_mid_pct));
+    } else {
+        // -ve motor load for -ve collective
+        _main_rotor.set_motor_load((collective_out - _collective_mid_pct) / _collective_mid_pct);
+    }
 
     // swashplate servos
     float collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;

@@ -1117,6 +1117,13 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
         return EKF1.send_status_report(chan);
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+        // send zero status report
+        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0);
+        break;
+#endif
+        
     case EKF_TYPE2:
     default:
         return EKF2.send_status_report(chan);

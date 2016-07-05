@@ -55,24 +55,42 @@ void Plane::init_rc_in()
 }
 
 /*
-  initialise RC output channels
+  initialise RC output for main channels. This is done early to allow
+  for BRD_SAFETYENABLE=0 and early servo control
  */
-void Plane::init_rc_out()
+void Plane::init_rc_out_main()
 {
-    channel_roll->enable_out();
-    channel_pitch->enable_out();
-
+    // setup failsafe for bottom 4 channels. We don't do all channels
+    // yet as some may be for VTOL motors in a quadplane
+    RC_Channel::setup_failsafe_trim_mask(0x000F);
+    
     /*
       change throttle trim to minimum throttle. This prevents a
       configuration error where the user sets CH3_TRIM incorrectly and
       the motor may start on power up
      */
     channel_throttle->set_radio_trim(throttle_min());
+
+    channel_roll->enable_out();
+    channel_pitch->enable_out();
     
     if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
         channel_throttle->enable_out();
     }
     channel_rudder->enable_out();
+
+    // setup PX4 to output the min throttle when safety off if arming
+    // is setup for min on disarm
+    if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
+    }
+}
+
+/*
+  initialise RC output channels for aux channels
+ */
+void Plane::init_rc_out_aux()
+{
     update_aux();
     RC_Channel_aux::enable_aux_servos();
 
@@ -81,12 +99,6 @@ void Plane::init_rc_out()
 
     // setup PWM values to send if the FMU firmware dies
     RC_Channel::setup_failsafe_trim_all();  
-
-    // setup PX4 to output the min throttle when safety off if arming
-    // is setup for min on disarm
-    if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
-    }
 }
 
 /*
@@ -219,8 +231,11 @@ void Plane::read_radio()
         // in rudder only mode we discard rudder input and get target
         // attitude from the roll channel.
         rudder_input = 0;
-    } else {
+    } else if (stick_mixing_enabled()) {
         rudder_input = channel_rudder->get_control_in();
+    } else {
+        // no stick mixing
+        rudder_input = 0;
     }
 
     // check for transmitter tuning changes

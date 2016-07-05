@@ -19,7 +19,7 @@ public:
 
 protected:
 
-    uint32_t telem_delay() const override { return 0; };
+    uint32_t telem_delay() const override { return 0; }
 
 private:
 

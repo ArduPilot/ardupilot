@@ -51,16 +51,9 @@ public:
     void start() override;
 
 private:
-    enum bus_type {
-        BUS_TYPE_I2C = 0,
-        BUS_TYPE_SPI,
-    };
-
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                              enum bus_type bus_type,
-                              bool use_fifo,
-                              uint8_t read_flag);
+                              bool use_fifo);
 
 #if MPU6000_DEBUG
     void _dump_registers();
@@ -92,7 +85,6 @@ private:
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val );
-    void _register_write_check(uint8_t reg, uint8_t val);
 
     void _accumulate(uint8_t *samples, uint8_t n_samples);
 
@@ -100,9 +92,7 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    const uint8_t _read_flag;
     const bool _use_fifo;
-    const enum bus_type _bus_type;
 
     uint16_t _error_count;
 

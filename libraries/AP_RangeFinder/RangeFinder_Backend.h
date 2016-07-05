@@ -37,7 +37,7 @@ public:
         return ranger._powersave_range > 0 && ranger.estimated_terrain_height > ranger._powersave_range;
     }
 
-    virtual void handle_msg(mavlink_message_t *msg) { return; };
+    virtual void handle_msg(mavlink_message_t *msg) { return; }
 
 protected:
 

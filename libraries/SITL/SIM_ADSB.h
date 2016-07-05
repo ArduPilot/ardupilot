@@ -52,11 +52,12 @@ private:
     const uint16_t target_port = 5762;
 
     Location home;
-    static const uint8_t num_vehicles = 6;
-    ADSB_Vehicle vehicles[num_vehicles];
+    uint8_t num_vehicles = 0;
+    static const uint8_t num_vehicles_MAX = 200;
+    ADSB_Vehicle vehicles[num_vehicles_MAX];
     
     // reporting period in ms
-    const float reporting_period_ms = 500;
+    const float reporting_period_ms = 1000;
     uint32_t last_report_us = 0;
     uint32_t last_update_us = 0;
     

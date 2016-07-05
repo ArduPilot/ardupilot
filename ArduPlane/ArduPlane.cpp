@@ -164,7 +164,7 @@ void Plane::ahrs_update()
     }
 
     // calculate a scaled roll limit based on current pitch
-    roll_limit_cd = g.roll_limit_cd * cosf(ahrs.pitch);
+    roll_limit_cd = aparm.roll_limit_cd * cosf(ahrs.pitch);
     pitch_limit_min_cd = aparm.pitch_limit_min_cd * fabsf(cosf(ahrs.roll));
 
     // updated the summed gyro used for ground steering and
@@ -491,6 +491,9 @@ void Plane::update_GPS_10Hz(void)
 
         // update wind estimate
         ahrs.estimate_wind();
+    } else if (gps.status() < AP_GPS::GPS_OK_FIX_3D && ground_start_count != 0) {
+        // lost 3D fix, start again
+        ground_start_count = 5;
     }
 
     calc_gndspeed_undershoot();
@@ -737,13 +740,14 @@ void Plane::update_flight_mode(void)
     case QLAND:
     case QRTL: {
         // set nav_roll and nav_pitch using sticks
-        nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+        int16_t roll_limit = MIN(roll_limit_cd, quadplane.aparm.angle_max);
+        nav_roll_cd  = channel_roll->norm_input() * roll_limit;
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
         float pitch_input = channel_pitch->norm_input();
         if (pitch_input > 0) {
-            nav_pitch_cd = pitch_input * aparm.pitch_limit_max_cd;
+            nav_pitch_cd = pitch_input * MIN(aparm.pitch_limit_max_cd, quadplane.aparm.angle_max);
         } else {
-            nav_pitch_cd = -(pitch_input * pitch_limit_min_cd);
+            nav_pitch_cd = pitch_input * MIN(-pitch_limit_min_cd, quadplane.aparm.angle_max);
         }
         nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
         break;

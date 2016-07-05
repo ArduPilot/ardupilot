@@ -736,7 +736,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: 0 9000
     // @Increment: 1
     // @User: Standard
-    GSCALAR(roll_limit_cd,          "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
+    ASCALAR(roll_limit_cd,          "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
 
     // @Param: LIM_PITCH_MAX
     // @DisplayName: Maximum Pitch Angle

@@ -48,6 +48,9 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     if (colon) {
         controller_ip = colon+1;
     }
+    // FlightAxis sensor data is not good enough for EKF. Use fake EKF by default
+    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
+    AP_Param::set_default_by_name("INS_GYR_CAL", 0);
 }
 
 /*
@@ -346,6 +349,9 @@ void FlightAxis::update(const struct sitl_input &input)
     last_time_s = state.m_currentPhysicsTime_SEC;
 
     last_velocity_ef = velocity_ef;
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

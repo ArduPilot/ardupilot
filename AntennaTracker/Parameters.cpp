@@ -221,6 +221,15 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(alt_source,				"ALT_SOURCE",	0),
 
+    // @Param: MAV_UPDATE_RATE
+    // @DisplayName: Mavlink Update Rate
+    // @Description: The rate at which Mavlink updates position and baro data
+    // @Units: Hz
+    // @Increment: 1
+    // @Range: 1 10
+    // @User: Standard
+    GSCALAR(mavlink_update_rate,	"MAV_UPDATE_RATE",	1),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
@@ -328,7 +337,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 0.001 0.1
     // @Increment: 0.001
     // @User: Standard
-	GGROUP(pidPitch2Srv,       "PITCH2SRV_", PID),
+	GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
 
     // @Param: YAW2SRV_P
     // @DisplayName: Yaw axis controller P gain
@@ -358,7 +367,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 0.001 0.1
     // @Increment: 0.001
     // @User: Standard
-	GGROUP(pidYaw2Srv,         "YAW2SRV_", PID),
+	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
     // @Param: CMD_TOTAL
     // @DisplayName: Number of loaded mission items

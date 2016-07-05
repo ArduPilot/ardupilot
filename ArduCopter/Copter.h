@@ -76,6 +76,7 @@
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
+#include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify/AP_Notify.h>          // Notify library
@@ -268,6 +269,8 @@ private:
         uint32_t start_ms;
     } takeoff_state;
 
+    uint32_t precland_last_update_ms;
+
     RCMapper rcmap;
 
     // board specific config
@@ -373,7 +376,6 @@ private:
     int32_t initial_armed_bearing;
 
     // Throttle variables
-    float throttle_average;              // estimated throttle required to hover
     int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
     // Loiter control
@@ -459,6 +461,7 @@ private:
     AC_AttitudeControl_Multi attitude_control;
 #endif
     AC_PosControl pos_control;
+    AC_Avoid avoid;
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
 
@@ -620,7 +623,7 @@ private:
     void check_ekf_yaw_reset();
     float get_roi_yaw();
     float get_look_ahead_yaw();
-    void update_thr_average();
+    void update_throttle_hover();
     void set_throttle_takeoff();
     float get_pilot_desired_throttle(int16_t throttle_control);
     float get_pilot_desired_climb_rate(float throttle_control);
@@ -664,7 +667,6 @@ private:
     void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_MotBatt();
-    void Log_Write_Startup();
     void Log_Write_Event(uint8_t id);
     void Log_Write_Data(uint8_t id, int32_t value);
     void Log_Write_Data(uint8_t id, uint32_t value);
@@ -911,6 +913,7 @@ private:
     void pre_arm_rc_checks();
     bool pre_arm_gps_checks(bool display_failure);
     bool pre_arm_ekf_attitude_check();
+    bool pre_arm_rallypoint_check();
     bool pre_arm_terrain_check(bool display_failure);
     bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();

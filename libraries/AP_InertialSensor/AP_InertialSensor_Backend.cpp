@@ -226,6 +226,11 @@ uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
 void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float temperature)
 {
     _imu._temperature[instance] = temperature;
+
+    /* give the temperature to the control loop in order to keep it constant*/
+    if (instance == 0) {
+        hal.util->set_imu_temp(temperature);
+    }
 }
 
 /*

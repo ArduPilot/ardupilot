@@ -71,25 +71,25 @@ private:
 
     // lateral acceration in m/s required to fly to the
     // L1 reference point (+ve to right)
-    float _latAccDem;
+    float _latAccDem = 0;
 
     // L1 tracking distance in meters which is dynamically updated
-    float _L1_dist;
+    float _L1_dist = 0;
 
     // Status which is true when the vehicle has started circling the WP
-    bool _WPcircle;
+    bool _WPcircle = false;
 
     // bearing angle (radians) to L1 point
-    float _nav_bearing;
+    float _nav_bearing = 0;
 
     // bearing error angle (radians) +ve to left of track
-    float _bearing_error;
+    float _bearing_error = 0;
 
     // crosstrack error in meters
-    float _crosstrack_error;
+    float _crosstrack_error = 0;
 
     // target bearing in centi-degrees from last update
-    int32_t _target_bearing_cd;
+    int32_t _target_bearing_cd = 0;
 
     // L1 tracking loop period (sec)
     AP_Float _L1_period;
@@ -97,7 +97,7 @@ private:
     AP_Float _L1_damping;
 
     // previous value of cross-track velocity
-    float _last_Nu;
+    float _last_Nu = 0;
 
     // prevent indecision in waypoint tracking
     void _prevent_indecision(float &Nu);
@@ -107,6 +107,6 @@ private:
     float _L1_xtrack_i = 0;
     AP_Float _L1_xtrack_i_gain;
     float _L1_xtrack_i_gain_prev = 0;
-    uint32_t _last_update_waypoint_us;
+    uint32_t _last_update_waypoint_us = 0;
     bool _data_is_stale = true;
 };

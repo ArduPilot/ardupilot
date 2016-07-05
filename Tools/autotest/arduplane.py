@@ -426,7 +426,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     return True
 
 
-def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False):
+def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     '''fly ArduPlane in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -461,7 +461,7 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL(binary, model='jsbsim', home=HOME_LOCATION, speedup=10, valgrind=valgrind)
+    sil = util.start_SIL(binary, model='jsbsim', home=HOME_LOCATION, speedup=10, valgrind=valgrind, gdb=gdb)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)

@@ -114,14 +114,14 @@ void AP_MotorsCoax::enable()
 
 void AP_MotorsCoax::output_to_motors()
 {
-    switch (_multicopter_flags.spool_mode) {
+    switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
             hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_roll_radio_passthrough, _servo1));
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_pitch_radio_passthrough, _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_roll_radio_passthrough, _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_pitch_radio_passthrough, _servo4));
+            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(-_roll_radio_passthrough, _servo3));
+            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-_pitch_radio_passthrough, _servo4));
             rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
             hal.rcout->push();
@@ -129,12 +129,12 @@ void AP_MotorsCoax::output_to_motors()
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             hal.rcout->cork();
-            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[0], _servo1));
-            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[1], _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[2], _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_throttle_low_end_pct * _actuator_out[3], _servo4));
-            rc_write(AP_MOTORS_MOT_5, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
-            rc_write(AP_MOTORS_MOT_6, constrain_int16(get_pwm_output_min() + _throttle_low_end_pct * _min_throttle, get_pwm_output_min(), get_pwm_output_min() + _min_throttle));
+            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[0], _servo1));
+            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[1], _servo2));
+            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[2], _servo3));
+            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[3], _servo4));
+            rc_write(AP_MOTORS_MOT_5, calc_spin_up_to_pwm());
+            rc_write(AP_MOTORS_MOT_6, calc_spin_up_to_pwm());
             hal.rcout->push();
             break;
         case SPOOL_UP:
@@ -174,12 +174,10 @@ void AP_MotorsCoax::output_armed_stabilizing()
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
     float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
     float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
-    float   thrust_min_rp;              // the minimum throttle setting that will not limit the roll and pitch output
+    float   thrust_min_rpy;             // the minimum throttle setting that will not limit the roll and pitch output
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
     float   thrust_out;                 //
-    float   throttle_thrust_hover = get_hover_throttle_as_high_end_pct();   // throttle hover thrust value, 0.0 - 1.0
-    float   throttle_thrust_rpy_mix;    // partial calculation of throttle_thrust_best_rpy
-    float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
+    float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   actuator_allowed = 0.0f;    // amount of yaw we can fit in
 
     // apply voltage and air pressure compensation
@@ -197,76 +195,67 @@ void AP_MotorsCoax::output_armed_stabilizing()
         throttle_thrust = _throttle_thrust_max;
         limit.throttle_upper = true;
     }
-    throttle_thrust_rpy_mix = MAX(throttle_thrust, throttle_thrust*MAX(0.0f,1.0f-_throttle_rpy_mix)+throttle_thrust_hover*_throttle_rpy_mix);
+
+    _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
     float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
 
     // calculate how much roll and pitch must be scaled to leave enough range for the minimum yaw
-    if (is_zero(roll_thrust) && is_zero(pitch_thrust)) {
-        rpy_scale = 1.0f;
+    if (is_zero(rp_thrust_max)) {
+        rp_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), 0.5f*(float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
-        if (rpy_scale < 1.0f) {
+        rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), 0.5f*(float)_yaw_headroom/1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
+        if (rp_scale < 1.0f) {
             limit.roll_pitch = true;
         }
     }
 
-    actuator_allowed = 1.0f - rpy_scale * rp_thrust_max;
+    actuator_allowed = 2.0f * (1.0f - rp_scale * rp_thrust_max);
     if (fabsf(yaw_thrust) > actuator_allowed) {
-        yaw_thrust = constrain_float(yaw_thrust, -2.0f * actuator_allowed, 2.0f * actuator_allowed);
+        yaw_thrust = constrain_float(yaw_thrust, -actuator_allowed, actuator_allowed);
         limit.yaw = true;
     }
 
     // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
-    thrust_min_rp = MAX(fabsf(rpy_scale * roll_thrust), fabsf(rpy_scale * pitch_thrust));
+    thrust_min_rpy = MAX(fabsf(rp_scale * rp_thrust_max), fabsf(yaw_thrust));
 
-    thr_adj = throttle_thrust - throttle_thrust_rpy_mix;
-    if (thr_adj < (thrust_min_rp - throttle_thrust_rpy_mix)) {
+    thr_adj = throttle_thrust - _throttle_avg_max;
+    if (thr_adj < (thrust_min_rpy - _throttle_avg_max)) {
         // Throttle can't be reduced to the desired level because this would mean roll or pitch control
         // would not be able to reach the desired level because of lack of thrust.
-        thr_adj = MIN(thrust_min_rp, throttle_thrust_rpy_mix) - throttle_thrust_rpy_mix;
+        thr_adj = MIN(thrust_min_rpy, _throttle_avg_max) - _throttle_avg_max;
     }
 
     // calculate the throttle setting for the lift fan
-    thrust_out = MIN(throttle_thrust_rpy_mix + thr_adj, 1.0f-(0.5*yaw_thrust));
+    thrust_out = _throttle_avg_max + thr_adj;
+
+    if (fabsf(yaw_thrust) > thrust_out) {
+        yaw_thrust = constrain_float(yaw_thrust, -thrust_out, thrust_out);
+        limit.yaw = true;
+    }
 
     _thrust_yt_ccw = thrust_out + 0.5f * yaw_thrust;
     _thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
 
     // limit thrust out for calculation of actuator gains
-    float thrust_out_actuator = MAX(throttle_thrust_hover*0.5,thrust_out);
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,thrust_out), 0.1f, 1.0f);
 
-    if (is_zero(thrust_out_actuator)) {
+    if (is_zero(thrust_out)) {
         limit.roll_pitch = true;
-        if (roll_thrust < 0.0f) {
-            _actuator_out[0] = -1.0f;
-        } else if (roll_thrust > 0.0f) {
-            _actuator_out[0] = 1.0f;
-        } else {
-            _actuator_out[0] = 0.0f;
-        }
-        if (roll_thrust < 0.0f) {
-            _actuator_out[1] = -1.0f;
-        } else if (roll_thrust > 0.0f) {
-            _actuator_out[1] = 1.0f;
-        } else {
-            _actuator_out[1] = 0.0f;
-        }
-    } else {
-        // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
-        // static thrust is proportional to the airflow velocity squared
-        // therefore the torque of the roll and pitch actuators should be approximately proportional to
-        // the angle of attack multiplied by the static thrust.
-        _actuator_out[0] = roll_thrust/thrust_out_actuator;
-        _actuator_out[1] = pitch_thrust/thrust_out_actuator;
-        if (fabsf(_actuator_out[0]) > 1.0f) {
-            limit.roll_pitch = true;
-            _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
-        }
-        if (fabsf(_actuator_out[1]) > 1.0f) {
-            limit.roll_pitch = true;
-            _actuator_out[1] = constrain_float(_actuator_out[1], -1.0f, 1.0f);
-        }
+    }
+    // force of a lifting surface is approximately equal to the angle of attack times the airflow velocity squared
+    // static thrust is proportional to the airflow velocity squared
+    // therefore the torque of the roll and pitch actuators should be approximately proportional to
+    // the angle of attack multiplied by the static thrust.
+    _actuator_out[0] = roll_thrust/thrust_out_actuator;
+    _actuator_out[1] = pitch_thrust/thrust_out_actuator;
+    if (fabsf(_actuator_out[0]) > 1.0f) {
+        limit.roll_pitch = true;
+        _actuator_out[0] = constrain_float(_actuator_out[0], -1.0f, 1.0f);
+    }
+    if (fabsf(_actuator_out[1]) > 1.0f) {
+        limit.roll_pitch = true;
+        _actuator_out[1] = constrain_float(_actuator_out[1], -1.0f, 1.0f);
     }
     _actuator_out[2] = -_actuator_out[0];
     _actuator_out[3] = -_actuator_out[1];

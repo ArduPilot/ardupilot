@@ -596,6 +596,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         break;
 
     case MSG_RETRY_DEFERRED:
+    case MSG_ADSB_VEHICLE:
     case MSG_TERRAIN:
     case MSG_OPTICAL_FLOW:
     case MSG_GIMBAL_REPORT:

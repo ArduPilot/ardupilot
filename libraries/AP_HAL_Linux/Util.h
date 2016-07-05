@@ -4,6 +4,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_HAL_Linux_Namespace.h"
+#include "Perf.h"
 #include "ToneAlarm.h"
 #include "Semaphores.h"
 
@@ -45,7 +46,8 @@ public:
     void set_custom_terrain_directory(const char *_custom_terrain_directory) { custom_terrain_directory = _custom_terrain_directory; }
 
     bool is_chardev_node(const char *path);
-    void set_imu_temp(float current);
+    void set_imu_temp(float current) override;
+    void set_imu_target_temp(int8_t *target) override;
 
     uint32_t available_memory(void) override;
 
@@ -63,10 +65,25 @@ public:
      */
     int read_file(const char *path, const char *fmt, ...) FMT_SCANF(3, 4);
 
-    perf_counter_t perf_alloc(perf_counter_type t, const char *name) override;
-    void perf_begin(perf_counter_t perf) override;
-    void perf_end(perf_counter_t perf) override;
-    void perf_count(perf_counter_t perf) override;
+    perf_counter_t perf_alloc(enum perf_counter_type t, const char *name) override
+    {
+        return Perf::get_instance()->add(t, name);
+    }
+
+    void perf_begin(perf_counter_t perf) override
+    {
+        return Perf::get_instance()->begin(perf);
+    }
+
+    void perf_end(perf_counter_t perf) override
+    {
+        return Perf::get_instance()->end(perf);
+    }
+
+    void perf_count(perf_counter_t perf) override
+    {
+        return Perf::get_instance()->count(perf);
+    }
 
     // create a new semaphore
     AP_HAL::Semaphore *new_semaphore(void) override { return new Linux::Semaphore; }

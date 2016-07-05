@@ -527,6 +527,17 @@ private:
     } auto_state;
 
     struct {
+        // roll pitch yaw commanded from external controller in centidegrees
+        Vector3l forced_rpy_cd;
+        // last time we heard from the external controller
+        Vector3l last_forced_rpy_ms;
+
+        // throttle  commanded from external controller in percent
+        float forced_throttle;
+        uint32_t last_forced_throttle_ms;
+} guided_state;
+
+    struct {
         // on hard landings, only check once after directly a landing so you
         // don't trigger a crash when picking up the aircraft
         bool checkedHardLanding:1;
@@ -549,11 +560,15 @@ private:
 
     // true if we are in an auto-throttle mode, which means
     // we need to run the speed/height controller
-    bool auto_throttle_mode;
+    bool auto_throttle_mode:1;
 
+    // true if we are in an auto-navigation mode, which controls whether control input is ignored
+    // with STICK_MIXING=0
+    bool auto_navigation_mode:1;
+    
     // this controls throttle suppression in auto modes
-    bool throttle_suppressed;
-
+    bool throttle_suppressed:1;
+	
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
@@ -754,7 +769,7 @@ private:
     bool gcs_out_of_time = false;
 
     // time that rudder arming has been running
-    uint32_t rudder_arm_timer;
+    uint32_t rudder_arm_timer = 0;
 
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
@@ -769,7 +784,6 @@ private:
     int32_t last_mixer_crc = -1;
 #endif // CONFIG_HAL_BOARD
     
-    void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_heartbeat(mavlink_channel_t chan);
@@ -918,7 +932,8 @@ private:
     bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
-    void init_rc_out();
+    void init_rc_out_main();
+    void init_rc_out_aux();
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);

@@ -52,6 +52,7 @@ private:
     void _allocate_buffers(uint16_t rxS, uint16_t txS);
     void _deallocate_buffers();
     void _udp_start_connection(void);
+    void _udpin_start_connection(void);
     void _tcp_start_connection(void);
     bool _serial_start_connection(void);
     bool _qflight_start_connection(void);
@@ -59,6 +60,7 @@ private:
     enum device_type {
         DEVICE_TCP,
         DEVICE_UDP,
+        DEVICE_UDPIN,
         DEVICE_SERIAL,
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
         DEVICE_QFLIGHT,

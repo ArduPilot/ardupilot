@@ -5,7 +5,7 @@
 
 class UDPDevice: public SerialDevice {
 public:
-    UDPDevice(const char *ip, uint16_t port, bool bcast);
+    UDPDevice(const char *ip, uint16_t port, bool bcast, bool input);
     virtual ~UDPDevice();
 
     virtual bool open() override;
@@ -19,5 +19,6 @@ private:
     const char *_ip;
     uint16_t _port;
     bool _bcast;
+    bool _input;
     bool _connected = false;
 };

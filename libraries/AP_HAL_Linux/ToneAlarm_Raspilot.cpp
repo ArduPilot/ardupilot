@@ -183,6 +183,7 @@ void ToneAlarm_Raspilot::_set_pwm0_duty(uint8_t percent)
     int bit_count = constrain_int32(320 * percent / 100, 320, 0);
     unsigned int bits = 0;
 
+    // FIXME: bits overflows for any bit_count > 32
     while (bit_count) {
       bits <<= 1;
       bits |= 1;

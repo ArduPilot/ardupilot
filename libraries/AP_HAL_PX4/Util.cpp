@@ -12,6 +12,8 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/safety.h>
 #include <systemlib/board_serial.h>
+#include <drivers/drv_gpio.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -168,6 +170,54 @@ void PX4Util::perf_end(perf_counter_t h)
 void PX4Util::perf_count(perf_counter_t h)
 {
     ::perf_count((::perf_counter_t)h);
+}
+
+void PX4Util::set_imu_temp(float current)
+{
+    if (!_heater.target || *_heater.target == -1) {
+        return;
+    }
+
+    // average over temperatures to remove noise
+    _heater.count++;
+    _heater.sum += current;
+    
+    // update once a second
+    uint32_t now = AP_HAL::millis();
+    if (now - _heater.last_update_ms < 1000) {
+        return;
+    }
+    _heater.last_update_ms = now;
+
+    current = _heater.sum / _heater.count;
+    _heater.sum = 0;
+    _heater.count = 0;
+
+    // experimentally tweaked for Pixhawk2
+    const float kI = 0.3f;
+    const float kP = 200.0f;
+    
+    float err = ((float)*_heater.target) - current;
+
+    _heater.integrator += kI * err;
+    _heater.integrator = constrain_float(_heater.integrator, 0, 70);
+
+    float output = constrain_float(kP * err + _heater.integrator, 0, 100);
+    
+    // hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", _heater.integrator, output, current, err);
+
+    if (_heater.fd == -1) {
+        _heater.fd = open("/dev/px4io", O_RDWR);
+    }
+    if (_heater.fd != -1) {
+        ioctl(_heater.fd, GPIO_SET_HEATER_DUTY_CYCLE, (unsigned)output);
+    }
+   
+}
+
+void PX4Util::set_imu_target_temp(int8_t *target)
+{
+    _heater.target = target;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

@@ -60,7 +60,7 @@ void Copter::heli_stabilize_run()
     pilot_throttle_scaled = input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // output pilot's throttle - note that TradHeli does not used angle-boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);

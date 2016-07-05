@@ -176,11 +176,12 @@ private:
         uint32_t        start_ms;
         uint16_t        count;
         float           sum;
+        uint16_t        read_count;
     } _cal;
 
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;
-    uint8_t _counter;
+    uint8_t _counter = 0;
 
     float get_pressure(void);
     void update_calibration(float raw_pressure);

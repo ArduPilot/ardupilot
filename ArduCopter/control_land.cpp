@@ -59,7 +59,7 @@ void Copter::land_gps_run()
     if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -123,8 +123,12 @@ void Copter::land_gps_run()
 
 #if PRECISION_LANDING == ENABLED
     // run precision landing
-    if (!ap.land_repo_active) {
-        wp_nav.shift_loiter_target(precland.get_target_shift(wp_nav.get_loiter_target()));
+    if (!ap.land_repo_active && precland.target_acquired() && precland_last_update_ms != precland.last_update_ms()) {
+        Vector3f target_pos;
+        precland.get_target_position(target_pos);
+        pos_control.set_xy_target(target_pos.x, target_pos.y);
+        pos_control.freeze_ff_xy();
+        precland_last_update_ms = precland.last_update_ms();
     }
 #endif
 
@@ -132,7 +136,7 @@ void Copter::land_gps_run()
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
 
     // pause 4 seconds before beginning land descent
     float cmb_rate;
@@ -183,7 +187,7 @@ void Copter::land_nogps_run()
     if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -209,7 +213,7 @@ void Copter::land_nogps_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // pause 4 seconds before beginning land descent
     float cmb_rate;

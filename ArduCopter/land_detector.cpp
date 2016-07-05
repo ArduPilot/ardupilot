@@ -2,6 +2,11 @@
 
 #include "Copter.h"
 
+// Code to detect a crash main ArduCopter code
+#define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
+#define LAND_CHECK_LARGE_ANGLE_CD   1500.0f     // maximum angle target to be considered landing
+#define LAND_CHECK_ACCEL_MOVING     3.0f        // maximum acceleration after subtracting gravity
+
 
 // counter to verify landings
 static uint32_t land_detector_count = 0;
@@ -57,7 +62,7 @@ void Copter::update_land_detector()
         bool motor_at_lower_limit = motors.limit.throttle_lower;
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
-        bool motor_at_lower_limit = motors.limit.throttle_lower && motors.is_throttle_mix_min();
+        bool motor_at_lower_limit = motors.limit.throttle_lower && attitude_control.is_throttle_mix_min();
 #endif
 
         // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
@@ -65,7 +70,7 @@ void Copter::update_land_detector()
 
         if (motor_at_lower_limit && accel_stationary) {
             // landed criteria met - increment the counter and check if we've triggered
-            if( land_detector_count < ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
+            if( land_detector_count < ((float)LAND_DETECTOR_TRIGGER_SEC)*scheduler.get_loop_rate_hz()) {
                 land_detector_count++;
             } else {
                 set_land_complete(true);
@@ -76,7 +81,7 @@ void Copter::update_land_detector()
         }
     }
 
-    set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*MAIN_LOOP_RATE));
+    set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*scheduler.get_loop_rate_hz()));
 }
 
 // set land_complete flag and disarm motors if disarm-on-land is configured
@@ -125,40 +130,40 @@ void Copter::update_throttle_thr_mix()
 #if FRAME_CONFIG != HELI_FRAME
     // if disarmed or landed prioritise throttle
     if(!motors.armed() || ap.land_complete) {
-        motors.set_throttle_mix_min();
+        attitude_control.set_throttle_mix_min();
         return;
     }
 
     if (mode_has_manual_throttle(control_mode)) {
         // manual throttle
         if(channel_throttle->get_control_in() <= 0) {
-            motors.set_throttle_mix_min();
+            attitude_control.set_throttle_mix_min();
         } else {
-            motors.set_throttle_mix_mid();
+            attitude_control.set_throttle_mix_mid();
         }
     } else {
         // autopilot controlled throttle
 
         // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
         const Vector3f angle_target = attitude_control.get_att_target_euler_cd();
-        bool large_angle_request = (norm(angle_target.x, angle_target.y) > 1500.0f);
+        bool large_angle_request = (norm(angle_target.x, angle_target.y) > LAND_CHECK_LARGE_ANGLE_CD);
 
         // check for large external disturbance - angle error over 30 degrees
-        const Vector3f angle_error = attitude_control.get_att_error_rot_vec_cd();
-        bool large_angle_error = (norm(angle_error.x, angle_error.y) > 3000.0f);
+        const float angle_error = attitude_control.get_att_error_angle_deg();
+        bool large_angle_error = (angle_error > LAND_CHECK_ANGLE_ERROR_DEG);
 
         // check for large acceleration - falling or high turbulence
         Vector3f accel_ef = ahrs.get_accel_ef_blended();
         accel_ef.z += GRAVITY_MSS;
-        bool accel_moving = (accel_ef.length() > 3.0f);
+        bool accel_moving = (accel_ef.length() > LAND_CHECK_ACCEL_MOVING);
 
         // check for requested decent
         bool descent_not_demanded = pos_control.get_desired_velocity().z >= 0.0f;
 
         if ( large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
-            motors.set_throttle_mix_max();
+            attitude_control.set_throttle_mix_max();
         } else {
-            motors.set_throttle_mix_min();
+            attitude_control.set_throttle_mix_min();
         }
     }
 #endif

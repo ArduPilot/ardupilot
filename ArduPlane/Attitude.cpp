@@ -38,7 +38,7 @@ float Plane::get_speed_scaler(void)
  */
 bool Plane::stick_mixing_enabled(void)
 {
-    if (auto_throttle_mode) {
+    if (auto_throttle_mode && auto_navigation_mode) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
             geofence_stickmixing() &&
@@ -429,7 +429,16 @@ void Plane::calc_throttle()
         return;
     }
 
-    channel_throttle->set_servo_out(SpdHgt_Controller->get_throttle_demand());
+    int32_t commanded_throttle = SpdHgt_Controller->get_throttle_demand();
+
+    // Received an external msg that guides throttle in the last 3 seconds?
+    if (control_mode == GUIDED &&
+            plane.guided_state.last_forced_throttle_ms > 0 &&
+            millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
+        commanded_throttle = plane.guided_state.forced_throttle;
+    }
+
+    channel_throttle->set_servo_out(commanded_throttle);
 }
 
 /*****************************************
@@ -445,12 +454,23 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
     if (control_mode == STABILIZE && rudder_input != 0) {
         disable_integrator = true;
     }
-    steering_control.rudder = yawController.get_servo_out(speed_scaler, disable_integrator);
 
-    // add in rudder mixing from roll
-    steering_control.rudder += channel_roll->get_servo_out() * g.kff_rudder_mix;
-    steering_control.rudder += rudder_input;
-    steering_control.rudder = constrain_int16(steering_control.rudder, -4500, 4500);
+    int16_t commanded_rudder;
+
+    // Received an external msg that guides yaw in the last 3 seconds?
+    if (control_mode == GUIDED &&
+            plane.guided_state.last_forced_rpy_ms.z > 0 &&
+            millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
+        commanded_rudder = plane.guided_state.forced_rpy_cd.z;
+    } else {
+        commanded_rudder = yawController.get_servo_out(speed_scaler, disable_integrator);
+
+        // add in rudder mixing from roll
+        commanded_rudder += channel_roll->get_servo_out() * g.kff_rudder_mix;
+        commanded_rudder += rudder_input;
+    }
+
+    steering_control.rudder = constrain_int16(commanded_rudder, -4500, 4500);
 }
 
 /*
@@ -519,8 +539,16 @@ void Plane::calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
     // --------------------------------
-    nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
+    int32_t commanded_pitch = SpdHgt_Controller->get_pitch_demand();
+
+    // Received an external msg that guides roll in the last 3 seconds?
+    if (control_mode == GUIDED &&
+            plane.guided_state.last_forced_rpy_ms.y > 0 &&
+            millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
+        commanded_pitch = plane.guided_state.forced_rpy_cd.y;
+    }
+
+    nav_pitch_cd = constrain_int32(commanded_pitch, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
 
@@ -529,7 +557,16 @@ void Plane::calc_nav_pitch()
  */
 void Plane::calc_nav_roll()
 {
-    nav_roll_cd = constrain_int32(nav_controller->nav_roll_cd(), -roll_limit_cd, roll_limit_cd);
+    int32_t commanded_roll = nav_controller->nav_roll_cd();
+
+    // Received an external msg that guides roll in the last 3 seconds?
+    if (control_mode == GUIDED &&
+            plane.guided_state.last_forced_rpy_ms.x > 0 &&
+            millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
+        commanded_roll = plane.guided_state.forced_rpy_cd.x;
+    }
+
+    nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);
     update_load_factor();
 }
 
@@ -1303,22 +1340,6 @@ bool Plane::allow_reverse_thrust(void)
     }
 
     return allow;
-}
-
-void Plane::demo_servos(uint8_t i) 
-{
-    while(i > 0) {
-        gcs_send_text(MAV_SEVERITY_INFO,"Demo servos");
-        demoing_servos = true;
-        servo_write(1, 1400);
-        hal.scheduler->delay(400);
-        servo_write(1, 1600);
-        hal.scheduler->delay(200);
-        servo_write(1, 1500);
-        demoing_servos = false;
-        hal.scheduler->delay(400);
-        i--;
-    }
 }
 
 /*

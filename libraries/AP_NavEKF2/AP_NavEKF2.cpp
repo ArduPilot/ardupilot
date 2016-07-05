@@ -25,7 +25,8 @@
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
 #define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define MAGB_P_NSE_DEFAULT      5.0E-04f
+#define MAGE_P_NSE_DEFAULT      5.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -49,7 +50,8 @@
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
 #define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define MAGB_P_NSE_DEFAULT      5.0E-04f
+#define MAGE_P_NSE_DEFAULT      5.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -73,7 +75,8 @@
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
 #define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define MAGB_P_NSE_DEFAULT      5.0E-04f
+#define MAGE_P_NSE_DEFAULT      5.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -97,7 +100,8 @@
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
 #define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAG_P_NSE_DEFAULT       2.5E-02f
+#define MAGB_P_NSE_DEFAULT      5.0E-04f
+#define MAGE_P_NSE_DEFAULT      5.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -373,13 +377,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
-    // @Param: MAG_P_NSE
-    // @DisplayName: Magnetic field process noise (gauss/s)
-    // @Description: This state process noise controls the growth of magnetic field state error estimates. Increasing it makes magnetic field bias estimation faster and noisier.
-    // @Range: 0.0001 0.01
-    // @User: Advanced
-    // @Units: gauss/s
-    AP_GROUPINFO("MAG_P_NSE", 29, NavEKF2, _magProcessNoise, MAG_P_NSE_DEFAULT),
+    // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK2_MAGE_P_NSE and EK2_MAGB_P_NSE
 
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
@@ -434,7 +432,51 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Values: 0:Disabled,1:FirstIMU,3:FirstAndSecondIMU,7:AllIMUs
     // @User: Advanced
     AP_GROUPINFO("LOG_MASK", 36, NavEKF2, _logging_mask, 1),
-    
+
+    // control of magentic yaw angle fusion
+
+    // @Param: YAW_M_NSE
+    // @DisplayName: Yaw measurement noise (rad)
+    // @Description: This is the RMS value of noise in yaw measurements from the magnetometer. Increasing it reduces the weighting on these measurements.
+    // @Range: 0.05 1.0
+    // @Increment: 0.05
+    // @User: Advanced
+    // @Units: gauss
+    AP_GROUPINFO("YAW_M_NSE", 37, NavEKF2, _yawNoise, 0.5f),
+
+    // @Param: YAW_I_GATE
+    // @DisplayName: Yaw measurement gate size
+    // @Description: This sets the percentage number of standard deviations applied to the magnetometer yaw measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
+    // @User: Advanced
+    AP_GROUPINFO("YAW_I_GATE", 38, NavEKF2, _yawInnovGate, 300),
+
+    // @Param: TAU_OUTPUT
+    // @DisplayName: Output complementary filter time constant (centi-sec)
+    // @Description: Sets the time constant of the output complementary filter/predictor in centi-seconds. Set to a negative number to use a computationally cheaper and less accurate method with an automatically calculated time constant.
+    // @Range: -1 100
+    // @Increment: 10
+    // @User: Advanced
+    AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 50),
+
+    // @Param: MAGE_P_NSE
+    // @DisplayName: Earth magnetic field process noise (gauss/s)
+    // @Description: This state process noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field estimation faster and noisier.
+    // @Range: 0.00001 0.01
+    // @User: Advanced
+    // @Units: gauss/s
+    AP_GROUPINFO("MAGE_P_NSE", 40, NavEKF2, _magEarthProcessNoise, MAGE_P_NSE_DEFAULT),
+
+    // @Param: MAGB_P_NSE
+    // @DisplayName: Body magnetic field process noise (gauss/s)
+    // @Description: This state process noise controls the growth of body magnetic field state error estimates. Increasing it makes magnetometer bias error estimation faster and noisier.
+    // @Range: 0.00001 0.01
+    // @User: Advanced
+    // @Units: gauss/s
+    AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF2, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
+
+
     AP_GROUPEND
 };
 
@@ -704,7 +746,9 @@ void NavEKF2::getTiltError(int8_t instance, float &ang)
 void NavEKF2::resetGyroBias(void)
 {
     if (core) {
-        core[primary].resetGyroBias();
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].resetGyroBias();
+        }
     }
 }
 
@@ -715,10 +759,17 @@ void NavEKF2::resetGyroBias(void)
 // If using a range finder for height no reset is performed and it returns false
 bool NavEKF2::resetHeightDatum(void)
 {
-    if (!core) {
-        return false;
+    bool status = true;
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            if (!core[i].resetHeightDatum()) {
+                status = false;
+            }
+        }
+    } else {
+        status = false;
     }
-    return core[primary].resetHeightDatum();
+    return status;
 }
 
 // Commands the EKF to not use GPS.
@@ -938,7 +989,9 @@ void NavEKF2::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, fl
 void NavEKF2::setTakeoffExpected(bool val)
 {
     if (core) {
-        core[primary].setTakeoffExpected(val);
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setTakeoffExpected(val);
+        }
     }
 }
 
@@ -947,7 +1000,9 @@ void NavEKF2::setTakeoffExpected(bool val)
 void NavEKF2::setTouchdownExpected(bool val)
 {
     if (core) {
-        core[primary].setTouchdownExpected(val);
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setTouchdownExpected(val);
+        }
     }
 }
 

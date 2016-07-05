@@ -99,6 +99,9 @@ void Plane::init_ardupilot()
     }
 #endif
 
+    set_control_channels();
+    init_rc_out_main();
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // this must be before BoardConfig.init() so if
     // BRD_SAFETYENABLE==0 then we don't have safety off yet
@@ -119,8 +122,6 @@ void Plane::init_ardupilot()
 
     // allow servo set on all channels except first 4
     ServoRelayEvents.set_channel_mask(0xFFF0);
-
-    set_control_channels();
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -230,9 +231,9 @@ void Plane::init_ardupilot()
 
     startup_ground();
 
-    // don't initialise rc output until after quadplane is setup as
+    // don't initialise aux rc output until after quadplane is setup as
     // that can change initial values of channels
-    init_rc_out();
+    init_rc_out_aux();
     
     // choose the nav controller
     set_nav_controller();
@@ -264,13 +265,6 @@ void Plane::startup_ground(void)
     delay(GROUND_START_DELAY * 1000);
 #endif
 
-    // Makes the servos wiggle
-    // step 1 = 1 wiggle
-    // -----------------------
-    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        demo_servos(1);
-    }
-
     //INS ground start
     //------------------------
     //
@@ -288,12 +282,6 @@ void Plane::startup_ground(void)
 
     // initialise mission library
     mission.init();
-
-    // Makes the servos wiggle - 3 times signals ready to fly
-    // -----------------------
-    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        demo_servos(3);
-    }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
@@ -348,6 +336,10 @@ void Plane::set_mode(enum FlightMode mode)
     crash_state.is_crashed = false;
     crash_state.impact_detected = false;
 
+    // reset external attitude guidance
+    guided_state.last_forced_rpy_ms.zero();
+    guided_state.last_forced_throttle_ms = 0;
+
     // always reset this because we don't know who called set_mode. In evasion
     // behavior you should set this flag after set_mode so you know the evasion
     // logic is controlling the mode. This allows manual override of the mode
@@ -385,6 +377,7 @@ void Plane::set_mode(enum FlightMode mode)
     {
     case INITIALISING:
         auto_throttle_mode = true;
+        auto_navigation_mode = false;
         break;
 
     case MANUAL:
@@ -392,21 +385,25 @@ void Plane::set_mode(enum FlightMode mode)
     case TRAINING:
     case FLY_BY_WIRE_A:
         auto_throttle_mode = false;
+        auto_navigation_mode = false;
         break;
 
     case AUTOTUNE:
         auto_throttle_mode = false;
+        auto_navigation_mode = false;
         autotune_start();
         break;
 
     case ACRO:
         auto_throttle_mode = false;
+        auto_navigation_mode = false;
         acro_state.locked_roll = false;
         acro_state.locked_pitch = false;
         break;
         
     case CRUISE:
         auto_throttle_mode = true;
+        auto_navigation_mode = false;
         cruise_state.locked_heading = false;
         cruise_state.lock_timer_ms = 0;
         set_target_altitude_current();
@@ -414,17 +411,20 @@ void Plane::set_mode(enum FlightMode mode)
 
     case FLY_BY_WIRE_B:
         auto_throttle_mode = true;
+        auto_navigation_mode = false;
         set_target_altitude_current();
         break;
 
     case CIRCLE:
         // the altitude to circle at is taken from the current altitude
         auto_throttle_mode = true;
+        auto_navigation_mode = true;
         next_WP_loc.alt = current_loc.alt;
         break;
 
     case AUTO:
         auto_throttle_mode = true;
+        auto_navigation_mode = true;
         if (quadplane.available() && quadplane.enable == 2) {
             auto_state.vtol_mode = true;
         } else {
@@ -437,17 +437,20 @@ void Plane::set_mode(enum FlightMode mode)
 
     case RTL:
         auto_throttle_mode = true;
+        auto_navigation_mode = true;
         prev_WP_loc = current_loc;
         do_RTL(get_RTL_altitude());
         break;
 
     case LOITER:
         auto_throttle_mode = true;
+        auto_navigation_mode = true;
         do_loiter_at_location();
         break;
 
     case GUIDED:
         auto_throttle_mode = true;
+        auto_navigation_mode = true;
         guided_throttle_passthru = false;
         /*
           when entering guided mode we set the target as the current
@@ -462,6 +465,7 @@ void Plane::set_mode(enum FlightMode mode)
     case QLOITER:
     case QLAND:
     case QRTL:
+        auto_navigation_mode = false;
         if (!quadplane.init_mode()) {
             control_mode = previous_mode;
         } else {

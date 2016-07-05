@@ -33,15 +33,15 @@ int UtilRPI::_check_rpi_version()
     hw = Util::from(hal.util)->get_hw_arm32();
 
     if (hw == UTIL_HARDWARE_RPI2) {
-        printf("Raspberry Pi 2 with BCM2709!\n");
+        printf("Raspberry Pi 2/3 with BCM2709!\n");
         _rpi_version = 2;
     } else if (hw == UTIL_HARDWARE_RPI1) {
         printf("Raspberry Pi 1 with BCM2708!\n");
         _rpi_version = 1;
     } else {
-        /* defaults to 1 */
-        fprintf(stderr, "Could not detect RPi version, defaulting to 1\n");
-        _rpi_version = 1;
+        /* defaults to RPi version 2/3 */
+        fprintf(stderr, "Could not detect RPi version, defaulting to 2/3\n");
+        _rpi_version = 2;
     }
     return _rpi_version;
 }

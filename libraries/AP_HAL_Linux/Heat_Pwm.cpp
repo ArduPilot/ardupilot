@@ -33,11 +33,10 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-HeatPwm::HeatPwm(uint8_t pwm_num, float Kp, float Ki, uint32_t period_ns, float target) :
+HeatPwm::HeatPwm(uint8_t pwm_num, float Kp, float Ki, uint32_t period_ns) :
     _Kp(Kp),
     _Ki(Ki),
-    _period_ns(period_ns),
-    _target(target)
+    _period_ns(period_ns)
 {
     _pwm = new PWM_Sysfs_Bebop(pwm_num);
     _pwm->set_period(_period_ns);
@@ -49,12 +48,17 @@ void HeatPwm::set_imu_temp(float current)
 {
     float error, output;
 
+    if (_target == nullptr) {
+        // not configured
+        return;
+    }
+    
     if (AP_HAL::millis() - _last_temp_update < 5) {
         return;
     }
 
     /* minimal PI algo without dt */
-    error = _target - current;
+    error = ((float)*_target) - current;
     /* Don't accumulate errors if the integrated error is superior
      * to the max duty cycle(pwm_period)
      */
@@ -72,6 +76,11 @@ void HeatPwm::set_imu_temp(float current)
 
     _pwm->set_duty_cycle(output);
     _last_temp_update = AP_HAL::millis();
+}
+
+void HeatPwm::set_imu_target_temp(int8_t *target)
+{
+    _target = target;
 }
 
 #endif

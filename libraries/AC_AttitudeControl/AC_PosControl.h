@@ -14,7 +14,6 @@
 
 
 // position controller default definitions
-#define POSCONTROL_THROTTLE_HOVER               0.5f    // default throttle required to maintain hover
 #define POSCONTROL_ACCELERATION_MIN             50.0f   // minimum horizontal acceleration in cm/s/s - used for sanity checking acceleration in leash length calculation
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_ACCEL_XY_MAX                 980.0f  // max horizontal acceleration in cm/s/s that the position velocity controller will ask from the lower accel controller
@@ -78,7 +77,7 @@ public:
     /// z position controller
     ///
 
-    /// set_alt_max - sets maximum altitude above home in cm
+    /// set_alt_max - sets maximum altitude above the ekf origin in cm
     ///   only enforced when set_alt_target_from_climb_rate is used
     ///   set to zero to disable limit
     void set_alt_max(float alt) { _alt_max = alt; }
@@ -114,9 +113,6 @@ public:
     /// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
     ///     called by pos_to_rate_z if z-axis speed or accelerations are changed
     void calc_leash_length_z();
-
-    /// set_throttle_hover - update estimated throttle required to maintain hover
-    void set_throttle_hover(float throttle) { _throttle_hover = throttle; }
 
     /// set_alt_target - set altitude target in cm above home
     void set_alt_target(float alt_cm) { _pos_target.z = alt_cm; }
@@ -255,7 +251,7 @@ public:
 
     /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
     ///     distance_max allows limiting distance to stopping point
-    ///		results placed in stopping_position vector
+    ///     results placed in stopping_position vector
     ///     set_accel_xy() should be called before this method to set vehicle acceleration
     ///     set_leash_length() should have been called before this method
     void get_stopping_point_xy(Vector3f &stopping_point) const;
@@ -373,7 +369,7 @@ private:
     AC_P&       _p_pos_z;
     AC_P&       _p_vel_z;
     AC_PID&     _pid_accel_z;
-    AC_P&	    _p_pos_xy;
+    AC_P&       _p_pos_xy;
     AC_PI_2D&   _pi_vel_xy;
 
     // parameters
@@ -384,7 +380,6 @@ private:
     float       _dt_xy;                 // time difference (in seconds) between update_xy_controller and update_vel_controller_xyz calls
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
-    float       _throttle_hover;        // estimated throttle required to maintain a level hover
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s

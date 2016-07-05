@@ -139,13 +139,17 @@ int32_t Plane::relative_altitude_abs_cm(void)
  */
 float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 {
-    if (use_rangefinder_if_available && rangefinder_state.in_range) {
+#if RANGEFINDER_ENABLED == ENABLED
+   if (use_rangefinder_if_available && rangefinder_state.in_range) {
         return rangefinder_state.height_estimate;
     }
+#endif
 
 #if AP_TERRAIN_AVAILABLE
     float altitude;
-    if (terrain.status() == AP_Terrain::TerrainStatusOK && terrain.height_above_terrain(altitude, true)) {
+    if (target_altitude.terrain_following &&
+        terrain.status() == AP_Terrain::TerrainStatusOK &&
+        terrain.height_above_terrain(altitude, true)) {
         return altitude;
     }
 #endif
