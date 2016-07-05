@@ -470,8 +470,9 @@ void Copter::one_hz_loop()
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
-
-    update_arming_checks();
+    
+    // perform pre-arm checks & display failures every 30 seconds
+    arming.update_arming_checks();
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
@@ -490,14 +491,6 @@ void Copter::one_hz_loop()
 
     // update assigned functions and enable auxiliary servos
     RC_Channel_aux::enable_aux_servos();
-
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters are always using motor interlock
-    set_using_interlock(true);
-#else
-    // check if we are using motor interlock control on an aux switch
-    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
-#endif
 
     check_usb_mux();
 

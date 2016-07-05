@@ -133,7 +133,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     in_arm_motors = true;
 
     // run pre-arm-checks and display failures
-    if (!all_arming_checks_passing(arming_from_gcs)) {
+    if(!arming.all_arming_checks_passing(arming_from_gcs)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
@@ -209,51 +209,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     in_arm_motors = false;
 
     // return success
-    return true;
-}
-
-// perform pre-arm checks and set ap.pre_arm_check flag
-//  return true if the checks pass successfully
-bool Copter::pre_arm_checks(bool display_failure)
-{
-    // exit immediately if already armed
-    if (motors.armed()) {
-        AP_Notify::flags.pre_arm_check = true;
-        return true;
-    }
-
-    // set notify LEDs based on gps checks
-    AP_Notify::flags.pre_arm_gps_check = arming.gps_checks(false);
-
-    // call arming class
-    if (!arming.pre_arm_checks(display_failure)) {
-        AP_Notify::flags.pre_arm_check = false;
-        return false;
-    }
-
-    AP_Notify::flags.pre_arm_check = true;
-    return true;
-}
-
-// arm_checks - perform final checks before arming
-//  always called just before arming.  Return true if ok to arm
-//  has side-effect that logging is started
-bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
-{
-#if LOGGING_ENABLED == ENABLED
-    // start dataflash
-    start_logging();
-#endif
-
-    // always check if the current mode allows arming
-    if (!mode_allows_arming(control_mode, arming_from_gcs)) {
-        if (display_failure) {
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Mode not armable"));
-        }
-        return false;
-    }
-
-    // if we've gotten this far all is ok
     return true;
 }
 

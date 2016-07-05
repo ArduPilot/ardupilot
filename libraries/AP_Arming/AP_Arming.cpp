@@ -206,9 +206,9 @@ AP_Arming::ArmingCheckResult AP_Arming::ins_checks(bool report)
                 threshold *= 3;
             }
             if (vec_diff.length() <= threshold) {
-                last_accel_pass_ms[i] = hal.scheduler->millis();
+                last_accel_pass_ms[i] = AP_HAL::millis();
             }
-            if (hal.scheduler->millis() - last_accel_pass_ms[i] > 10000) {
+            if (AP_HAL::millis() - last_accel_pass_ms[i] > 10000) {
                 if (report) {
                     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent Accelerometers");
                 }
@@ -227,9 +227,9 @@ AP_Arming::ArmingCheckResult AP_Arming::ins_checks(bool report)
             // allow for up to 5 degrees/s difference. Pass if its
             // been OK in last 10 seconds
             if (vec_diff.length() <= radians(5)) {
-                last_gyro_pass_ms[i] = hal.scheduler->millis();
+                last_gyro_pass_ms[i] = AP_HAL::millis();
             }
-            if (hal.scheduler->millis() - last_gyro_pass_ms[i] > 10000) {
+            if (AP_HAL::millis() - last_gyro_pass_ms[i] > 10000) {
                 if (report) {
                     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent gyros");
                 }
@@ -443,17 +443,17 @@ bool AP_Arming::pre_arm_checks(bool report)
     uint64_t enabled_checks = 0;
     uint64_t passed_checks = 0;
 
-    update_enabled_passed_state(MAV_PREARM_CHECK_SAFETYSWITCH, hardware_safety_check(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_BARO, barometer_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_INS, ins_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_PARAMETERS, parameter_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_COMPASS, compass_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_GPS, gps_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_BATTERY, battery_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_LOGGING, logging_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_RC, manual_transmitter_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_BOARD_VOLTAGE, board_voltage_checks(report), enabled_checks, passed_checks);
-    update_enabled_passed_state(MAV_PREARM_CHECK_RANGEFINDER, rangefinder_optflow_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_SWITCH, hardware_safety_check(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_BARO, barometer_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_INS, ins_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_PARAMETERS, parameter_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_COMPASS, compass_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_GPS, gps_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_BATTERY, battery_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_LOGGING, logging_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_RC, manual_transmitter_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_VOLTAGE, board_voltage_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_RANGEFINDER_OPTFLOW, rangefinder_optflow_checks(report), enabled_checks, passed_checks);
 
     if (report) {
         GCS_MAVLINK::send_prearm_check_report_all(enabled_checks, passed_checks);

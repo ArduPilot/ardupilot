@@ -228,8 +228,8 @@ private:
         struct {
             uint8_t unused1             : 1; // 0
             uint8_t simple_mode         : 2; // 1,2     // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
-            uint8_t pre_arm_rc_check    : 1; // 3       // true if rc input pre-arm checks have been completed successfully
-            uint8_t unused2             : 1; // 4
+            uint8_t unused2             : 1; // 3
+            uint8_t unused3             : 1; // 4
             uint8_t auto_armed          : 1; // 5       // stops auto missions from beginning until throttle is raised
             uint8_t logging_started     : 1; // 6       // true if dataflash logging has started
             uint8_t land_complete       : 1; // 7       // true if we have detected a landing
@@ -561,7 +561,7 @@ private:
     bool gcs_out_of_time;
 
     // Arming/Disarming management class
-    AP_Arming_Copter arming {ahrs, barometer, compass, ap.home_state};
+    AP_Arming_Copter arming {ahrs, barometer, compass, battery, ap.home_state};
 
     // Top-level logic
     // setup the var_info table
@@ -920,11 +920,6 @@ private:
     void arm_motors_check();
     void auto_disarm_check();
     bool init_arm_motors(bool arming_from_gcs);
-    void update_arming_checks(void);
-    bool all_arming_checks_passing(bool arming_from_gcs);
-    bool pre_arm_checks(bool display_failure);
-    void pre_arm_rc_checks();
-    bool arm_checks(bool display_failure, bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
     void lost_vehicle_check();
