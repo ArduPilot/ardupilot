@@ -21,5 +21,4 @@ public:
 
 private:
     int _fd;
-    uint64_t _last_timestamp;
 };
