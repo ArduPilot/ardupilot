@@ -150,7 +150,9 @@ void AP_BoardConfig::init()
         { 4, PWM_SERVO_MODE_4PWM, 2 },
         { 6, PWM_SERVO_MODE_6PWM, 0 },
         { 7, PWM_SERVO_MODE_3PWM1CAP, 2 },
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         { 8, PWM_SERVO_MODE_12PWM, 0 },
+#endif
     };
     uint8_t mode_parm = (uint8_t)_pwm_count.get();
     uint8_t i;
