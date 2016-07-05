@@ -98,13 +98,15 @@ bool ByteBuffer::advance(uint32_t n)
 
 uint8_t ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
 {
-    if (len > available()) {
-        len = available();
+    uint32_t n = available();
+
+    if (len > n) {
+        len = n;
     }
     if (len == 0) {
         return 0;
     }
-    uint32_t n;
+
     auto b = readptr(n);
     if (n > len) {
         n = len;
