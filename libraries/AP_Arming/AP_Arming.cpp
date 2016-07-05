@@ -237,6 +237,13 @@ AP_Arming::ArmingCheckResult AP_Arming::ins_checks(bool report)
             }
         }
     }
+    
+    if (ins.accel_cal_requires_reboot()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
+        }
+        return ARMING_CHECK_FAILED;
+    }
 
     return ARMING_CHECK_PASSED;
 }
