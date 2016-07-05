@@ -34,19 +34,22 @@ public:
 private:
     AP_Int16 vehicleSerialNumber;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     AP_Int8 _pwm_count;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 _ser1_rtscts;
     AP_Int8 _ser2_rtscts;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     AP_Int8 _safety_enable;
-    AP_Int8 _sbus_out_rate;
     AP_Int32 _ignore_safety_channels;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    AP_Int8 _sbus_out_rate;
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     AP_Int8 _can_enable;
 #endif
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-
 #endif
 
     // target temperarure for IMU in Celsius, or -1 to disable
