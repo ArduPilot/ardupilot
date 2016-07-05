@@ -1,0 +1,140 @@
+#!nsh
+#
+# VRBRAIN startup script.
+#
+# This script is responsible for:
+#
+# - mounting the microSD card (if present)
+# - running the user startup script from the microSD card (if present)
+# - detecting the configuration of the system and picking a suitable
+#   startup script to continue with
+#
+# Note: DO NOT add configuration-specific commands to this script;
+#       add them to the per-configuration scripts instead.
+#
+
+#
+# Default to auto-start mode.  An init script on the microSD card
+# can change this to prevent automatic startup of the flight script.
+#
+set MODE autostart
+set USB autoconnect
+
+#
+
+#
+
+
+if rgbled start
+then
+    set HAVE_RGBLED 1
+    # show startup white
+    rgbled rgb 16 16 16
+else
+    set HAVE_RGBLED 0
+fi
+
+#
+# Try to mount the microSD card.
+#
+echo "[init] looking for microSD..."
+if mount -t vfat /dev/mmcsd0 /fs/microsd
+then
+    echo "[init] card mounted at /fs/microsd"
+    set HAVE_MICROSD 1
+    # Start playing the startup tune
+    if [ -f /etc/tones/startup ]
+    then
+        tone_alarm /etc/tones/startup
+    else
+        tone_alarm 1
+    fi
+else
+    set HAVE_MICROSD 0
+    echo "Trying format of microSD"
+    tone_alarm MBAGP
+    if mkfatfs /dev/mmcsd0
+    then
+        echo "microSD card formatted"
+            if mount -t vfat /dev/mmcsd0 /fs/microsd
+            then
+                echo "format succeeded"
+                set HAVE_MICROSD 1
+                if [ -f /etc/tones/startup ]
+                then
+                    tone_alarm /etc/tones/startup
+                else
+                    tone_alarm 1
+                fi
+            else
+                echo "mount failed"
+                tone_alarm MNBG
+                if [ $HAVE_RGBLED == 1 ]
+                then
+                    rgbled rgb 16 0 0
+                fi
+            fi
+    else
+        echo "format failed"
+        tone_alarm MNBGG
+        if [ $HAVE_RGBLED == 1 ]
+        then
+                rgbled rgb 16 0 0
+        fi
+    fi
+fi
+
+#
+# Look for an init script on the microSD card.
+#
+# To prevent automatic startup in the current flight mode,
+# the script should set MODE to some other value.
+#
+if [ -f /fs/microsd/etc/rc ]
+then
+    echo "[init] reading /fs/microsd/etc/rc"
+    sh /fs/microsd/etc/rc
+fi
+# Also consider rc.txt files
+if [ -f /fs/microsd/etc/rc.txt ]
+then
+    echo "[init] reading /fs/microsd/etc/rc.txt"
+    sh /fs/microsd/etc/rc.txt
+fi
+
+#
+# Check for USB host
+#
+if [ $USB != autoconnect ]
+then
+    echo "[init] not connecting USB"
+else
+    if sercon
+    then
+        echo "[init] USB interface connected"
+    else
+        echo "[init] No USB connected"
+    fi
+fi
+
+if [ $HAVE_MICROSD == 0 ]
+then
+    if usb_connected
+    then
+        echo "Opening USB nsh"
+    else
+        echo "booting with no microSD"
+        set HAVE_MICROSD 1
+    fi
+fi
+
+# if this is an APM build then there will be a rc.APM script
+# from an EXTERNAL_SCRIPTS build option
+if [ -f /etc/init.d/rc.APM -a $HAVE_MICROSD == 1 -a ! -f /fs/microsd/APM/nostart ]
+then
+    echo Running rc.APM
+    # if APM startup is successful then nsh will exit
+    sh /etc/init.d/rc.APM
+else
+    nshterm /dev/ttyACM0 &
+fi
