@@ -1,0 +1,6 @@
+int32 x =  123
+int32 y =  234
+int32  z = 345
+float32 a=   1.0
+float32 b= 2.0
+float32  pi =  3.14159

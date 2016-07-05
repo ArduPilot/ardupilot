@@ -1,0 +1,320 @@
+#!nsh
+
+# APM startup script for NuttX on VRBRAIN
+
+# To disable APM startup add a /fs/microsd/APM/nostart file
+
+# check for an old file called APM, caused by 
+# a bug in an earlier firmware release
+if [ -f /fs/microsd/APM ]
+then
+    echo "APM file found - renaming"
+    mv /fs/microsd/APM /fs/microsd/APM.old
+fi
+
+if [ -f /fs/microsd/APM/nostart ]
+then
+    echo "APM/nostart found - skipping APM startup"
+    sh /etc/init.d/rc.error
+fi
+
+# mount binfs so we can find the built-in apps
+if [ -f /bin/reboot ]
+then
+    echo "binfs already mounted"
+else
+    echo "Mounting binfs"
+    if mount -t binfs /dev/null /bin
+    then
+            echo "binfs mounted OK"
+    else
+            sh /etc/init.d/rc.error
+    fi
+fi
+
+set sketch NONE
+if rm /fs/microsd/APM/boot.log
+then
+    echo "removed old boot.log"
+fi
+set logfile /fs/microsd/APM/BOOT.LOG
+
+if [ ! -f /bin/ArduPilot ]
+then
+    echo "/bin/ardupilot not found"
+    sh /etc/init.d/rc.error
+fi
+
+if mkdir /fs/microsd/APM > /dev/null
+then
+    echo "Created APM directory"
+fi
+
+echo "Starting uORB"
+if uorb start
+then
+    echo "uorb started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+echo "Starting ADC"
+if adc start
+then
+    echo "ADC started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+echo "Starting APM sensors"
+
+set INTERNAL_MS5611 false
+set INTERNAL_MPU6000 false
+set INTERNAL_MPU9250 false
+set INTERNAL_HMC5883 false
+
+set EXTERNAL_EXP_MS5611 false
+set EXTERNAL_EXP_MPU6000 false
+set EXTERNAL_EXP_HMC5983 false
+
+set EXTERNAL_IMU_MS5611 false
+set EXTERNAL_IMU_MPU6000 false
+set EXTERNAL_IMU_HMC5983 false
+
+set EXTERNAL_GPS_HMC5883 false
+
+if ver hwcmp VRBRAIN_V51
+then
+    echo "Detected VRBRAINv51 board"
+    set INTERNAL_MS5611 true
+    set INTERNAL_MPU6000 true
+    set INTERNAL_HMC5883 true
+    set EXTERNAL_GPS_HMC5883 true
+fi
+
+if ver hwcmp VRBRAIN_V52
+then
+    echo "Detected VRBRAINv52 board"
+    set INTERNAL_MS5611 true
+    set INTERNAL_MPU6000 true
+    set INTERNAL_HMC5883 true
+    set EXTERNAL_GPS_HMC5883 true
+fi
+
+if ver hwcmp VRBRAIN_V54
+then
+    echo "Detected VRBRAINv54 board"
+    set INTERNAL_MS5611 true
+    set INTERNAL_MPU6000 true
+    set INTERNAL_HMC5883 true
+    set EXTERNAL_GPS_HMC5883 true
+fi
+
+if ver hwcmp VRCORE_V10
+then
+    echo "Detected VRCOREv10 board"
+    set INTERNAL_MS5611 true
+    set INTERNAL_MPU6000 true
+    set EXTERNAL_GPS_HMC5883 true
+fi
+
+if ver hwcmp VRUBRAIN_V51
+then
+    echo "Detected VRUBRAINv51 board"
+    set INTERNAL_MS5611 true
+    set INTERNAL_MPU6000 true
+    set EXTERNAL_GPS_HMC5883 true
+fi
+
+if ver hwcmp VRUBRAIN_V52
+then
+    echo "Detected VRUBRAINv52 board"
+    set INTERNAL_MS5611 true
+    set INTERNAL_MPU6000 true
+    set EXTERNAL_GPS_HMC5883 true
+fi
+
+if [ $INTERNAL_MS5611 == true ]
+then
+    echo "Starting MS5611 Internal"
+    if ms5611 -s start
+    then
+        echo "MS5611 Internal started OK"
+    else
+        echo "MS5611 Internal start failed"
+        sh /etc/init.d/rc.error
+    fi
+fi
+
+if [ $EXTERNAL_GPS_HMC5883 == true ]
+then
+    echo "Starting HMC5883 External GPS"
+    if hmc5883 -C -X start
+    then
+        echo "HMC5883 External GPS started OK"
+    else
+        echo "HMC5883 External GPS start failed"
+    #    sh /etc/init.d/rc.error
+    fi
+fi
+
+if [ $INTERNAL_HMC5883 == true ]
+then
+    echo "Starting HMC5883 Internal"
+    if hmc5883 -C -R 12 -I start
+    then
+        echo "HMC5883 Internal started OK"
+    else
+        echo "HMC5883 Internal start failed"
+    #    sh /etc/init.d/rc.error
+    fi
+fi
+
+if [ $INTERNAL_MPU6000 == true ]
+then
+    echo "Starting MPU6000 Internal"
+    if mpu6000 -R 12 start
+    then
+        echo "MPU6000 Internal started OK"
+    else
+        echo "[APM] MPU6000 Internal start failed"
+        sh /etc/init.d/rc.error
+    fi
+fi
+
+if [ $INTERNAL_MPU9250 == true ]
+then
+    echo "Starting MPU9250 Internal"
+    if mpu9250 -R 4 start
+    then
+        echo "MPU9250 Internal started OK"
+    else
+        echo "[APM] MPU9250 Internal start failed"
+        sh /etc/init.d/rc.error
+    fi
+fi
+
+# optional ETS airspeed sensor
+if ets_airspeed start
+then
+    echo "Found ETS airspeed sensor"
+else
+    if ets_airspeed start -b 2
+    then
+        echo "Found ETS airspeed sensor"
+    else
+        echo "ETS airspeed sensor start failed"
+    fi
+fi
+
+if meas_airspeed start
+then
+    echo "Found MEAS airspeed sensor"
+else
+    if meas_airspeed start -b 2
+    then
+        echo "Found MEAS airspeed sensor"
+    else
+        echo "MEAS airspeed sensor start failed"
+    fi
+fi
+
+# optional Range Finder sensor
+if ll40ls -X start
+then
+    echo "Found external ll40ls sensor"
+fi
+
+if [ $LL_I2C_AUX == true ]
+then
+    if ll40ls -I start
+    then
+        echo "Found internal ll40ls sensor"
+    fi
+fi
+
+if [ $LL_PWM_INPUT == true ]
+then
+    # optional PWM input driver
+    if pwm_input start
+    then
+        echo "started pwm_input driver"
+        if ll40ls start pwm
+        then
+            echo "Found ll40ls sensor PWM"
+        fi
+    fi
+fi
+
+if trone start
+then
+    echo "Found trone sensor"
+fi
+
+if mb12xx start
+then
+    echo "Found mb12xx sensor"
+fi
+
+# Starting Optional PX4Flow sensor
+if px4flow start
+then
+    echo "Found PX4Flow sensor"
+fi
+
+if irlock start
+then
+    echo "Found IR-Lock and Pixy vision sensor"
+else
+    if irlock start -b 2
+    then
+        echo "Found IR-Lock and Pixy vision sensor"
+    else
+        echo "IR-Lock and Pixy vision sensor start failed"
+    fi
+fi
+
+echo "Starting MTD driver"
+if mtd start /fs/mtd
+then
+    echo "MTD driver started OK"
+else
+    echo "MTD driver start failed"
+    sh /etc/init.d/rc.error           
+fi
+
+echo "MTD driver read test"
+if mtd readtest /fs/mtd
+then
+    echo "MTD driver readtest OK"
+else
+    echo "MTD driver failed to read"
+    sh /etc/init.d/rc.error           
+fi
+
+echo "FMU mode PWM"
+if fmu mode_pwm
+then
+    echo "Set FMU mode_pwm"
+fi
+
+# optional PWM input driver
+if pwm_input start
+then
+    echo "started pwm_input driver"
+fi
+
+echo "Starting ArduPilot"
+if ArduPilot start
+then
+    echo "ArduPilot started OK"
+else
+    echo "ArduPilot start failed"
+    sh /etc/init.d/rc.error
+fi
+
+echo "Exiting from nsh shell"
+exit
+
+echo "rc.APM finished"
+
