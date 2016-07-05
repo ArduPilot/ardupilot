@@ -22,7 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "OpticalFlow.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include <sys/types.h>
 #include <sys/stat.h>
