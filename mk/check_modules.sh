@@ -49,7 +49,7 @@ done
             echo "modules/$m missing - failed module init"
             exit 1
         }
-        [ -f modules/$m/.git ] || {
+        [ -d modules/$m/.git ] || {
             echo "modules/$m/.git missing - failed module init"
             exit 1
         }
