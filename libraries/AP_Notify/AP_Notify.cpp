@@ -87,15 +87,16 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    Buzzer buzzer;
+    ToneAlarm_PX4 tonealarm;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
     AP_BoardLED boardled;
 #else
     VRBoard_LED boardled;
 #endif
-    ToshibaLED_I2C toshibaled;
+    ToshibaLED_PX4 toshibaled;
     ExternalLED externalled;
-    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &externalled, &buzzer};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &externalled, &tonealarm};
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
         NavioLED_I2C navioled;
