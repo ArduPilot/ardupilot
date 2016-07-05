@@ -15,15 +15,16 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <utility>
+#include "AP_Compass_BMM150.h"
 
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include <AP_HAL/utility/sparse-endian.h>
+#include <utility>
 
-#include "AP_Compass_BMM150.h"
+#include <AP_HAL/utility/sparse-endian.h>
+#include <AP_Math/AP_Math.h>
 
 #define CHIP_ID_REG 0x40
 #define CHIP_ID_VAL 0x32
@@ -85,38 +86,40 @@ AP_Compass_BMM150::AP_Compass_BMM150(Compass &compass,
 
 bool AP_Compass_BMM150::_load_trim_values()
 {
-    struct trim_registers {
-        int8_t _dig_x1;
-        int8_t _dig_y1;
-        uint8_t _rsv[3];
-        le16_t _dig_z4;
-        int8_t _dig_x2;
-        int8_t _dig_y2;
-        uint8_t _rsv2[2];
-        le16_t _dig_z2;
-        le16_t _dig_z1;
-        le16_t _dig_xyz1;
-        le16_t _dig_z3;
-        int8_t _dig_xy2;
-        uint8_t _dig_xy1;
+    struct {
+        int8_t dig_x1;
+        int8_t dig_y1;
+        uint8_t rsv[3];
+        le16_t dig_z4;
+        int8_t dig_x2;
+        int8_t dig_y2;
+        uint8_t rsv2[2];
+        le16_t dig_z2;
+        le16_t dig_z1;
+        le16_t dig_xyz1;
+        le16_t dig_z3;
+        int8_t dig_xy2;
+        uint8_t dig_xy1;
     } PACKED trim_registers;
-    bool ret;
 
-    ret = _dev->read_registers(DIG_X1_REG, (uint8_t *)&trim_registers, sizeof(trim_registers));
+    if (!_dev->read_registers(DIG_X1_REG, (uint8_t *)&trim_registers,
+                              sizeof(trim_registers))) {
+        return false;
+    }
 
-    _dig_x1 = trim_registers._dig_x1;
-    _dig_x2 = trim_registers._dig_x2;
-    _dig_xy1 = trim_registers._dig_xy1;
-    _dig_xy2 = trim_registers._dig_xy2;
-    _dig_xyz1 = le16toh(trim_registers._dig_xyz1);
-    _dig_y1 = trim_registers._dig_y1;
-    _dig_y2 = trim_registers._dig_y2;
-    _dig_z1 = le16toh(trim_registers._dig_z1);
-    _dig_z2 = le16toh(trim_registers._dig_z2);
-    _dig_z3 = le16toh(trim_registers._dig_z3);
-    _dig_z4 = le16toh(trim_registers._dig_z4);
+    _dig.x1 = trim_registers.dig_x1;
+    _dig.x2 = trim_registers.dig_x2;
+    _dig.xy1 = trim_registers.dig_xy1;
+    _dig.xy2 = trim_registers.dig_xy2;
+    _dig.xyz1 = le16toh(trim_registers.dig_xyz1);
+    _dig.y1 = trim_registers.dig_y1;
+    _dig.y2 = trim_registers.dig_y2;
+    _dig.z1 = le16toh(trim_registers.dig_z1);
+    _dig.z2 = le16toh(trim_registers.dig_z2);
+    _dig.z3 = le16toh(trim_registers.dig_z3);
+    _dig.z4 = le16toh(trim_registers.dig_z4);
 
-    return ret;
+    return true;
 }
 
 bool AP_Compass_BMM150::init()
@@ -190,6 +193,7 @@ bool AP_Compass_BMM150::init()
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, void));
 
     return true;
+
 bus_error:
     hal.console->printf("BMM150: Bus communication error\n");
 fail:
@@ -205,12 +209,12 @@ fail_sem:
  */
 int16_t AP_Compass_BMM150::_compensate_xy(int16_t xy, uint32_t rhall, int32_t txy1, int32_t txy2)
 {
-    int32_t inter = ((int32_t)_dig_xyz1) << 14;
+    int32_t inter = ((int32_t)_dig.xyz1) << 14;
     inter /= rhall;
     inter -= 0x4000;
 
-    int32_t val = _dig_xy2 * ((inter * inter) >> 7);
-    val += (inter * (((uint32_t)_dig_xy1) << 7));
+    int32_t val = _dig.xy2 * ((inter * inter) >> 7);
+    val += (inter * (((uint32_t)_dig.xy1) << 7));
     val >>= 9;
     val += 0x100000;
     val *= (txy2 + 0xA0);
@@ -224,30 +228,22 @@ int16_t AP_Compass_BMM150::_compensate_xy(int16_t xy, uint32_t rhall, int32_t tx
 
 int16_t AP_Compass_BMM150::_compensate_z(int16_t z, uint32_t rhall)
 {
-    int32_t dividend = ((int32_t)(z - _dig_z4)) << 15;
-    dividend -= (_dig_z3 * (rhall - _dig_xyz1)) >> 2;
+    int32_t dividend = ((int32_t)(z - _dig.z4)) << 15;
+    dividend -= (_dig.z3 * (rhall - _dig.xyz1)) >> 2;
 
-    int32_t divisor = ((int32_t)_dig_z1) * (rhall << 1);
+    int32_t divisor = ((int32_t)_dig.z1) * (rhall << 1);
     divisor += 0x8000;
     divisor >>= 16;
-    divisor += _dig_z2;
+    divisor += _dig.z2;
 
-    int32_t ret = dividend / divisor;
-    if (ret > 0x8000 || ret < -0x8000) {
-        if (ret > 0x8000) {
-            ret = 0x8000;
-        } else {
-            ret = -0x8000;
-        }
-    }
-    return ret;
+    return constrain_int32(dividend / divisor, -0x8000, 0x8000);
 }
 
 void AP_Compass_BMM150::_update()
 {
-    const uint32_t time_us = AP_HAL::micros();
+    const uint32_t time_usec = AP_HAL::micros();
 
-    if (time_us - _last_update_timestamp < MEASURE_TIME_USEC) {
+    if (time_usec - _last_update_timestamp < MEASURE_TIME_USEC) {
         return;
     }
 
@@ -255,7 +251,7 @@ void AP_Compass_BMM150::_update()
         return;
     }
 
-    uint16_t data[4];
+    le16_t data[4];
     bool ret = _dev->read_registers(DATA_X_LSB_REG, (uint8_t *) &data, sizeof(data));
     _dev->get_semaphore()->give();
 
@@ -265,19 +261,13 @@ void AP_Compass_BMM150::_update()
     }
 
     const uint16_t rhall = le16toh(data[3] >> 2);
-    Vector3f raw_field = Vector3f();
 
-    int16_t val = le16toh(((int16_t)data[0]) >> 3);
-    val = _compensate_xy(val, rhall, _dig_x1, _dig_x2);
-    raw_field.x = val;
-
-    val = le16toh(((int16_t)data[1]) >> 3);
-    val = _compensate_xy(val, rhall, _dig_y1, _dig_y2);
-    raw_field.y = val;
-
-    val = le16toh(((int16_t)data[2]) >> 1);
-    val = _compensate_z(val, rhall);
-    raw_field.z = val;
+    Vector3f raw_field = Vector3f{
+        (float) _compensate_xy(((int16_t)le16toh(data[0])) >> 3,
+                               rhall, _dig.x1, _dig.x2),
+        (float) _compensate_xy(((int16_t)le16toh(data[1])) >> 3,
+                               rhall, _dig.y1, _dig.y2),
+        (float) _compensate_z(((int16_t)le16toh(data[2])) >> 1, rhall)};
 
     /* apply sensitivity scale 16 LSB/uT */
     raw_field /= 16;
@@ -288,7 +278,7 @@ void AP_Compass_BMM150::_update()
     rotate_field(raw_field, _compass_instance);
 
     /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(raw_field, time_us, _compass_instance);
+    publish_raw_field(raw_field, time_usec, _compass_instance);
 
     /* correct raw_field for known errors */
     correct_field(raw_field, _compass_instance);
@@ -300,7 +290,7 @@ void AP_Compass_BMM150::_update()
         _accum_count = 5;
     }
 
-    _last_update_timestamp = time_us;
+    _last_update_timestamp = time_usec;
 }
 
 void AP_Compass_BMM150::read()
@@ -310,13 +300,12 @@ void AP_Compass_BMM150::read()
     }
 
     hal.scheduler->suspend_timer_procs();
-
     Vector3f field(_mag_accum);
     field /= _accum_count;
     _mag_accum.zero();
     _accum_count = 0;
-
     hal.scheduler->resume_timer_procs();
+
     publish_filtered_field(field, _compass_instance);
 }
 

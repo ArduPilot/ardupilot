@@ -7,6 +7,7 @@
 
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
+#include "AP_Compass_BMM150.h"
 #include "AP_Compass_HIL.h"
 #include "AP_Compass_HMC5843.h"
 #include "AP_Compass_LSM303D.h"
@@ -14,7 +15,6 @@
 #include "AP_Compass_PX4.h"
 #include "AP_Compass_QURT.h"
 #include "AP_Compass_qflight.h"
-#include "AP_Compass_BMM150.h"
 #include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
