@@ -11,4 +11,8 @@ namespace VRBRAIN {
 	class VRBRAINUtil;
         class VRBRAINGPIO;
         class VRBRAINDigitalSource;
+        class NSHShellStream;
+        class VRBRAINI2CDriver;
+        class VRBRAIN_I2C;
+        class Semaphore;
 }

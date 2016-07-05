@@ -2,6 +2,9 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "RCInput.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include <drivers/drv_pwm_output.h>
 #include <drivers/drv_hrt.h>
 #include <uORB/uORB.h>
 
@@ -112,6 +115,24 @@ void VRBRAINRCInput::_timer_tick(void)
         // note, we rely on the vehicle code checking new_input() 
         // and a timeout for the last valid input to handle failsafe
 	perf_end(_perf_rcin);
+}
+
+bool VRBRAINRCInput::rc_bind(int dsmMode)
+{
+
+
+
+
+
+
+
+
+
+
+
+
+
+    return true;
 }
 
 #endif

@@ -2,6 +2,30 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_VRBRAIN_Namespace.h"
+#include "Semaphores.h"
+
+class VRBRAIN::NSHShellStream : public AP_HAL::Stream {
+public:
+    size_t write(uint8_t);
+    size_t write(const uint8_t *buffer, size_t size);
+    int16_t read() override;
+    uint32_t available() override;
+    uint32_t txspace() override;
+private:
+    int shell_stdin = -1;
+    int shell_stdout = -1;
+    pthread_t shell_thread_ctx;
+
+    struct {
+        int in = -1;
+        int out = -1;
+    } child;
+    bool showed_memory_warning = false;
+    bool showed_armed_warning = false;
+
+    void start_shell(void);
+    static void shell_thread(void *arg);
+};
 
 class VRBRAIN::VRBRAINUtil : public AP_HAL::Util {
 public:
@@ -22,6 +46,31 @@ public:
 
     uint32_t available_memory(void) override;
 
+    /*
+      return a stream for access to nsh shell
+     */
+    AP_HAL::Stream *get_shell_stream() { return &_shell_stream; }
+    perf_counter_t perf_alloc(perf_counter_type t, const char *name) override;
+    void perf_begin(perf_counter_t ) override;
+    void perf_end(perf_counter_t) override;
+    void perf_count(perf_counter_t) override;
+    
+    // create a new semaphore
+    AP_HAL::Semaphore *new_semaphore(void) override { return new VRBRAIN::Semaphore; }
+
+    void set_imu_temp(float current) override;
+    void set_imu_target_temp(int8_t *target) override;
+    
 private:
     int _safety_handle;
+    VRBRAIN::NSHShellStream _shell_stream;
+
+    struct {
+        int8_t *target;
+        float integrator;
+        uint16_t count;
+        float sum;
+        uint32_t last_update_ms;
+        int fd = -1;
+    } _heater;
 };
