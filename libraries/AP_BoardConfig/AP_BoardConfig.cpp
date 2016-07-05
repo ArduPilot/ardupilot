@@ -22,14 +22,17 @@
 #include <AP_Common/AP_Common.h>
 #include "AP_BoardConfig.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_sbus.h>
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+# define BOARD_SAFETY_ENABLE_DEFAULT 1
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 #define BOARD_PWM_COUNT_DEFAULT 2
 #define BOARD_SER1_RTSCTS_DEFAULT 0 // no flow control on UART5 on FMUv1
@@ -39,23 +42,25 @@
 #else // V2
 #define BOARD_PWM_COUNT_DEFAULT 4
 #define BOARD_SER1_RTSCTS_DEFAULT 2
-#endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-
+# define BOARD_SAFETY_ENABLE_DEFAULT 0
+# define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: PWM_COUNT
     // @DisplayName: Auxiliary pin config
     // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
     // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
     // @RebootRequired: True
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, _pwm_count, BOARD_PWM_COUNT_DEFAULT),
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
     // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
@@ -69,22 +74,24 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, _ser2_rtscts, 2),
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
-    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
+    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SBUS_OUT
     // @DisplayName:  SBUS output rate
     // @Description: This sets the SBUS output frame rate in Hz
     // @Values: 0:Disabled,1:50Hz,2:75Hz,3:100Hz,4:150Hz,5:200Hz,6:250Hz,7:300Hz
     // @RebootRequired: True
     AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, _sbus_out_rate, 0),
-    
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
     // @Param: SERIAL_NUM
@@ -102,7 +109,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETY_MASK
     // @DisplayName: Channels to which ignore the safety switch state
     // @Description: A bitmask which controls what channels can move while the safety switch has not been pressed
@@ -130,7 +137,7 @@ extern "C" int uavcan_main(int argc, const char *argv[]);
 
 void AP_BoardConfig::init()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the FMU driver for the right number of PWMs */
     static const struct {
         uint8_t mode_parm;
@@ -143,6 +150,7 @@ void AP_BoardConfig::init()
         { 4, PWM_SERVO_MODE_4PWM, 2 },
         { 6, PWM_SERVO_MODE_6PWM, 0 },
         { 7, PWM_SERVO_MODE_3PWM1CAP, 2 },
+        { 8, PWM_SERVO_MODE_12PWM, 0 },
     };
     uint8_t mode_parm = (uint8_t)_pwm_count.get();
     uint8_t i;
@@ -162,13 +170,17 @@ void AP_BoardConfig::init()
             hal.console->printf("RCOutput: unable to setup AUX PWM with BRD_PWM_COUNT %u\n", mode_parm);
         }   
         close(fd);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         if (mode_table[i].num_gpios < 2) {
             // reduce change of config mistake where relay and PWM interfere
             AP_Param::set_default_by_name("RELAY_PIN", -1);
             AP_Param::set_default_by_name("RELAY_PIN2", -1);
         }
+#endif
     }
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // setup channels to ignore the armed state
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd != -1) {
@@ -182,11 +194,15 @@ void AP_BoardConfig::init()
     if (hal.uartD != NULL) {
         hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)_ser2_rtscts.get());
     }
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (_safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
     }
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (_sbus_out_rate.get() >= 1) {
         static const struct {
             uint8_t value;
@@ -245,10 +261,6 @@ void AP_BoardConfig::init()
         }
    }
 #endif
-    
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    /* configure the VRBRAIN driver for the right number of PWMs */
-
 #endif
 
     // let the HAL know the target temperature. We pass a pointer as
