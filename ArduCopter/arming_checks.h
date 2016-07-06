@@ -50,6 +50,8 @@ public:
     ArmingCheckResult rangefinder_optflow_checks(bool report);
     
     ArmingCheckResult terrain_checks(bool report);
+    
+    ArmingCheckResult rallypoint_checks(bool report);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];

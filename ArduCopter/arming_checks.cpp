@@ -448,3 +448,30 @@ AP_Arming::ArmingCheckResult AP_Arming_Copter::terrain_checks(bool report)
     
     return ARMING_CHECK_PASSED;
 }
+
+AP_Arming::ArmingCheckResult AP_Arming_Copter::rallypoint_checks(bool report)
+{
+#if AC_RALLY == ENABLED && AC_FENCE == ENABLED
+    // call parent class checks
+    ArmingCheckResult ret = AP_Arming::rallypoint_checks(report);
+    if (ret != ARMING_CHECK_PASSED) {
+        return ret;
+    }
+
+    // check rally points are within fences
+    for (uint8_t i=0; i<copter.rally.get_rally_total(); i++) {
+         RallyLocation rally_loc;
+         if (copter.rally.get_rally_point_with_index(i, rally_loc)) {
+             Location_Class rally_point(copter.rally.rally_location_to_location(rally_loc));
+             if (!copter.fence.check_destination_within_fence(rally_point)) {
+                 if (report) {
+                     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: rallypoints outside fence");
+                 }
+                 return ARMING_CHECK_FAILED;
+             }
+         }
+     }
+ #endif
+    
+    return ARMING_CHECK_PASSED;
+}
