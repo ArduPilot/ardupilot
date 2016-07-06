@@ -29,7 +29,7 @@ void Sub::init_rc_in()
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_yaw->set_angle(4500);
-    channel_throttle->set_range(0, THR_MAX);
+    channel_throttle->set_range(0, 1000);
     channel_forward->set_angle(4500);
     channel_lateral->set_angle(4500);
 
@@ -57,6 +57,7 @@ void Sub::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
     motors.set_frame_orientation(g.frame_orientation);
+    motors.set_loop_rate(scheduler.get_loop_rate_hz());
     motors.Init();                                              // motor initialisation
 
     for(uint8_t i = 0; i < 5; i++) {

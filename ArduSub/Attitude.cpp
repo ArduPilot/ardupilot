@@ -2,7 +2,7 @@
 
 #include "Sub.h"
 
-// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth
+// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw
 //      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
 float Sub::get_smoothing_gain()
 {
@@ -94,19 +94,22 @@ float Sub::get_look_ahead_yaw()
  *  throttle control
  ****************************************************************/
 
-// update_thr_average - update estimated throttle required to hover (if necessary)
-//  should be called at 100hz
-void Sub::update_thr_average()
+// update estimated throttle required to hover (if necessary)
+//  called at 100hz
+void Sub::update_throttle_hover()
 {
-    // ensure throttle_average has been initialised
-    if( is_zero(throttle_average) ) {
-        throttle_average = 0.5f;
-        // update position controller
-        pos_control.set_throttle_hover(throttle_average);
-    }
-
     // if not armed or landed exit
     if (!motors.armed() || ap.land_complete) {
+        return;
+    }
+
+    // do not update in manual throttle modes or Drift
+    if (mode_has_manual_throttle(control_mode) || (control_mode == DRIFT)) {
+        return;
+    }
+
+    // do not update while climbing or descending
+    if (!is_zero(pos_control.get_desired_velocity().z)) {
         return;
     }
 
@@ -115,9 +118,8 @@ void Sub::update_thr_average()
 
     // calc average throttle if we are in a level hover
     if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_average = throttle_average * 0.99f + throttle * 0.01f;
-        // update position controller
-        pos_control.set_throttle_hover(throttle_average);
+    	// Can we set the time constant automatically
+    	motors.update_throttle_hover(0.01f);
     }
 }
 
@@ -139,9 +141,9 @@ float Sub::get_pilot_desired_throttle(int16_t throttle_control)
 
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
+
     // ensure mid throttle is set within a reasonable range
-    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
-    float thr_mid = MAX(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
+    float thr_mid = constrain_float(motors.get_throttle_hover(), 0.1f, 0.9f);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < mid_stick) {
@@ -200,8 +202,7 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
 float Sub::get_non_takeoff_throttle()
 {
 	// ensure mid throttle is set within a reasonable range
-	g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
-	return MAX(0,g.throttle_mid-g.throttle_min) / ((float)(1000-g.throttle_min) * 2.0f);
+	return MAX(0,motors.get_throttle_hover()/2.0f);
 }
 
 float Sub::get_takeoff_trigger_throttle()
@@ -286,7 +287,7 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
 void Sub::set_accel_throttle_I_from_pilot_throttle(float pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_accel_z.set_integrator((pilot_throttle-throttle_average) * 1000.0f);
+	g.pid_accel_z.set_integrator((pilot_throttle-motors.get_throttle_hover()) * 1000.0f);
 }
 
 // updates position controller's maximum altitude using fence and EKF limits

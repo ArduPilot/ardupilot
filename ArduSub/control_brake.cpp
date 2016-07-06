@@ -44,7 +44,7 @@ void Sub::brake_run()
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(0)-throttle_average);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(0)-motors.get_throttle_hover());
         return;
     }
 
@@ -65,7 +65,7 @@ void Sub::brake_run()
     wp_nav.update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), 0.0f);
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), 0.0f, get_smoothing_gain());
 
     // body-frame rate controller is run directly from 100hz loop
 

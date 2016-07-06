@@ -97,7 +97,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 	SCHED_TASK(read_rangefinder,      20,    100),
 	SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
-    SCHED_TASK(update_thr_average,   100,     90),
+    SCHED_TASK(update_throttle_hover, 100,     90),
     SCHED_TASK(three_hz_loop,          3,     75),
 	SCHED_TASK(update_turn_counter,   10,     50),
     SCHED_TASK(compass_accumulate,   100,    100),
@@ -379,6 +379,9 @@ void Sub::ten_hz_logging_loop()
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_Vibration(ins);
     }
+    if (should_log(MASK_LOG_CTUN)) {
+        attitude_control.control_monitor_log();
+    }
 }
 
 // twentyfive_hz_logging_loop
@@ -457,9 +460,7 @@ void Sub::one_hz_loop()
         motors.set_frame_orientation(g.frame_orientation);
 
         // set all throttle channel settings
-        motors.set_throttle_range(g.throttle_min, channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
-        // set hover throttle
-        motors.set_hover_throttle(g.throttle_mid);
+        motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
     }
 
     // update assigned functions and enable auxiliary servos
