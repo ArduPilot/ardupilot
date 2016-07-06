@@ -403,9 +403,9 @@ AP_Arming::ArmingCheckResult AP_Arming_Copter::rangefinder_optflow_checks(bool r
         return ARMING_CHECK_DISABLED;
     }
 
-#if CONFIG_SONAR == ENABLED && OPTFLOW == ENABLED
+#if RANGEFINDER_ENABLED == ENABLED && OPTFLOW == ENABLED
     // check range finder if optflow enabled
-    if (copter.optflow.enabled() && !copter.sonar.pre_arm_check()) {
+    if (copter.optflow.enabled() && !copter.rangefinder.pre_arm_check()) {
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: check range finder");
         }
