@@ -767,8 +767,8 @@ private:
     output_elements outputDataNew;  // output state data at the current time step
     output_elements outputDataDelayed; // output state data at the current time step
     Vector3f delAngCorrection;      // correction applied to delta angles used by output observer to track the EKF
-    Vector3f velCorrection;         // correction applied to velocities used by the output observer to track the EKF
-    Vector3f posCorrection;         // correction applied to positions used by the output observer to track the EKF
+    Vector3f velErrintegral;        // integral of output predictor NED velocity tracking error (m)
+    Vector3f posErrintegral;        // integral of output predictor NED position tracking error (m.sec)
     float innovYaw;                 // compass yaw angle innovation (rad)
     uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
     bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system
