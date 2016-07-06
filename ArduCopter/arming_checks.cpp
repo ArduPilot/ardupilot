@@ -418,6 +418,7 @@ AP_Arming::ArmingCheckResult AP_Arming_Copter::rangefinder_optflow_checks(bool r
 
 AP_Arming::ArmingCheckResult AP_Arming_Copter::terrain_checks(bool report)
 {
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // call parent class checks
     ArmingCheckResult ret = AP_Arming::terrain_checks(report);
     if (ret != ARMING_CHECK_PASSED) {
@@ -434,6 +435,7 @@ AP_Arming::ArmingCheckResult AP_Arming_Copter::terrain_checks(bool report)
             return ARMING_CHECK_FAILED;
         }
     }
+#endif
     
     return ARMING_CHECK_PASSED;
 }

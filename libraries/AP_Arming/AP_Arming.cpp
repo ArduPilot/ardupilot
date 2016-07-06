@@ -423,10 +423,12 @@ AP_Arming::ArmingCheckResult AP_Arming::board_voltage_checks(bool report)
 
 AP_Arming::ArmingCheckResult AP_Arming::terrain_checks(bool report)
 {
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // check terrain data is fully loaded
     if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_TERRAIN)) {  
         return ARMING_CHECK_DISABLED;
     }
+#endif
 
     return ARMING_CHECK_PASSED;
 }
