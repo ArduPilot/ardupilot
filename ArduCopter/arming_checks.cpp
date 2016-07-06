@@ -415,3 +415,25 @@ AP_Arming::ArmingCheckResult AP_Arming_Copter::rangefinder_optflow_checks(bool r
 
     return ARMING_CHECK_PASSED;
 }
+
+AP_Arming::ArmingCheckResult AP_Arming_Copter::terrain_checks(bool report)
+{
+    // call parent class checks
+    ArmingCheckResult ret = AP_Arming::terrain_checks(report);
+    if (ret != ARMING_CHECK_PASSED) {
+        return ret;
+    }
+  
+    if (copter.terrain_use()) {
+        uint16_t terr_pending, terr_loaded;
+        copter.terrain.get_statistics(terr_pending, terr_loaded);
+        if (terr_pending > 0) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Terrain data");
+            }
+            return ARMING_CHECK_FAILED;
+        }
+    }
+    
+    return ARMING_CHECK_PASSED;
+}

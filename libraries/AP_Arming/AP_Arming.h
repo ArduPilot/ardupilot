@@ -24,7 +24,8 @@ public:
         ARMING_CHECK_LOGGING    = 0x0400,
         ARMING_CHECK_SWITCH     = 0x0800,
         ARMING_CHECK_GPS_CONFIG = 0x1000,
-        ARMING_CHECK_RANGEFINDER_OPTFLOW = 0x1200,
+        ARMING_CHECK_RANGEFINDER_OPTFLOW = 0x2000,
+        ARMING_CHECK_TERRAIN    = 0x4000,
     };
 
     enum ArmingMethod {
@@ -128,6 +129,8 @@ protected:
     ArmingCheckResult board_voltage_checks(bool report);
 
     virtual ArmingCheckResult manual_transmitter_checks(bool report);
+
+    virtual ArmingCheckResult terrain_checks(bool report);
 
     void update_enabled_passed_state(uint32_t check_id, ArmingCheckResult res, uint64_t &enabled_bitmask, uint64_t &passed_bitmask);
 };

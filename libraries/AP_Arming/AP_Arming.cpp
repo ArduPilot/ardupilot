@@ -421,6 +421,16 @@ AP_Arming::ArmingCheckResult AP_Arming::board_voltage_checks(bool report)
     return ARMING_CHECK_PASSED;
 }
 
+AP_Arming::ArmingCheckResult AP_Arming::terrain_checks(bool report)
+{
+    // check terrain data is fully loaded
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_TERRAIN)) {  
+        return ARMING_CHECK_DISABLED;
+    }
+
+    return ARMING_CHECK_PASSED;
+}
+
 void AP_Arming::update_enabled_passed_state(uint32_t check_id, ArmingCheckResult res, uint64_t &enabled_bitmask, uint64_t &passed_bitmask)
 {
     switch (res) {
@@ -461,6 +471,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     update_enabled_passed_state(ARMING_CHECK_RC, manual_transmitter_checks(report), enabled_checks, passed_checks);
     update_enabled_passed_state(ARMING_CHECK_VOLTAGE, board_voltage_checks(report), enabled_checks, passed_checks);
     update_enabled_passed_state(ARMING_CHECK_RANGEFINDER_OPTFLOW, rangefinder_optflow_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(ARMING_CHECK_TERRAIN, terrain_checks(report), enabled_checks, passed_checks);
 
     if (report) {
         GCS_MAVLINK::send_prearm_check_report_all(enabled_checks, passed_checks);
