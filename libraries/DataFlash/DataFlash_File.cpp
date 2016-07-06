@@ -824,6 +824,12 @@ uint16_t DataFlash_File::start_new_log(void)
         _read_fd = -1;
     }
 
+    if (disk_space_avail() < _free_space_min_avail) {
+        hal.console->printf("Out of space for logging\n");
+        _open_error = true;
+        return 0xffff;
+    }
+
     uint16_t log_num = find_last_log();
     // re-use empty logs if possible
     if (_get_log_size(log_num) > 0 || log_num == 0) {
@@ -1067,6 +1073,15 @@ void DataFlash_File::_io_timer(void)
         // write in _writebuf_chunk-sized chunks, but always write at
         // least once per 2 seconds if data is available
         return;
+    }
+    if (tnow - _free_space_last_check_time > _free_space_check_interval) {
+        _free_space_last_check_time = tnow;
+        if (disk_space_avail() < _free_space_min_avail) {
+            hal.console->printf("Out of space for logging\n");
+            stop_logging();
+            _open_error = true; // prevent logging starting again
+            return;
+        }
     }
 
     hal.util->perf_begin(_perf_write);

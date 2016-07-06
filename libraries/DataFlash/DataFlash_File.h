@@ -145,6 +145,13 @@ private:
         return ret;
     };
 
+    // free-space checks; filling up SD cards under NuttX leads to
+    // corrupt filesystems which cause loss of data, failure to gather
+    // data and failures-to-boot.
+    uint64_t _free_space_last_check_time; // microseconds
+    const uint32_t _free_space_check_interval = 1000000UL; // microseconds
+    const uint32_t _free_space_min_avail = 8388608; // bytes
+
     AP_HAL::Semaphore *semaphore;
     
     // performance counters
