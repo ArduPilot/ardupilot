@@ -140,7 +140,7 @@ void Sub::throw_run()
     case Throw_Uprighting:
 
         // demand a level roll/pitch attitude with zero yaw rate
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
 
         // output 50% throttle and turn off angle boost to maximise righting moment
         attitude_control.set_throttle_out(500, false, g.throttle_filt);
@@ -150,7 +150,7 @@ void Sub::throw_run()
     case Throw_HgtStabilise:
 
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
 
         // call height controller
         pos_control.set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
@@ -164,7 +164,7 @@ void Sub::throw_run()
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), 0.0f);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), 0.0f, get_smoothing_gain());
 
         // call height controller
         pos_control.set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);

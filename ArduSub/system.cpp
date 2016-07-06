@@ -191,6 +191,8 @@ void Sub::init_ardupilot()
 	Location_Class::set_terrain(&terrain);
 	wp_nav.set_terrain(&terrain);
 #endif
+	wp_nav.set_avoidance(&avoid);
+
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
