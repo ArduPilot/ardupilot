@@ -87,7 +87,7 @@ public:
         k_param_yaw_trim,
         k_param_pitch_trim,
         k_param_yaw_range,
-        k_param_pitch_range,
+        k_param_pitch_range,	//deprecated
         k_param_distance_min,
         k_param_sysid_target,       // 138
         k_param_gcs3,               // stream rates for fourth MAVLink port
@@ -101,6 +101,8 @@ public:
         k_param_servo_yaw_type,
         k_param_alt_source,
         k_param_mavlink_update_rate,
+        k_param_pitch_min,
+        k_param_pitch_max,
 
         //
         // 200 : Radio settings
@@ -149,8 +151,9 @@ public:
     AP_Float yaw_trim;
     AP_Float pitch_trim;
     AP_Int16 yaw_range;             // yaw axis total range of motion in degrees
-    AP_Int16 pitch_range;           // pitch axis total range of motion in degrees
     AP_Int16 distance_min;          // target's must be at least this distance from tracker to be tracked
+    AP_Int16 pitch_min;
+    AP_Int16 pitch_max;
 
     // Waypoints
     //

@@ -41,9 +41,6 @@ public:
     ///
     float        get_pid(float error, float scaler = 1.0);
 
-	// get_pid() constrained to +/- 4500
-    int16_t     get_pid_4500(float error, float scaler = 1.0);
-
     /// Reset the PID integrator
     ///
     void        reset_I();

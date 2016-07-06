@@ -55,6 +55,11 @@ void Tracker::send_heartbeat(mavlink_channel_t chan)
         break;
     }
 
+    // we are armed if safety switch is not disarmed
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+        base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
+    }
+
     gcs[chan-MAVLINK_COMM_0].send_heartbeat(MAV_TYPE_ANTENNA_TRACKER,
                                             base_mode,
                                             custom_mode,

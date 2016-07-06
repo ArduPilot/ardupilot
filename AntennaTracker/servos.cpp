@@ -11,7 +11,7 @@ void Tracker::init_servos()
 {
     // setup antenna control PWM channels
     channel_yaw.set_angle(g.yaw_range * 100/2);        // yaw range is +/- (YAW_RANGE parameter/2) converted to centi-degrees
-    channel_pitch.set_angle(g.pitch_range * 100/2);    // pitch range is +/- (PITCH_RANGE parameter/2) converted to centi-degrees
+    channel_pitch.set_angle((-g.pitch_min+g.pitch_max) * 100/2);    // pitch range is +/- (PITCH_MIN/MAX parameters/2) converted to centi-degrees
 
     // move servos to mid position
     channel_yaw.output_trim();
@@ -59,7 +59,8 @@ void Tracker::update_pitch_position_servo(float pitch)
     // servo_out is in 100ths of a degree
     float ahrs_pitch = ahrs.pitch_sensor*0.01f;
     int32_t angle_err = -(ahrs_pitch - pitch) * 100.0f;
-    int32_t pitch_limit_cd = g.pitch_range*100/2;
+    int32_t pitch_min_cd = g.pitch_min*100;
+    int32_t pitch_max_cd = g.pitch_max*100;
     // Need to configure your servo so that increasing servo_out causes increase in pitch/elevation (ie pointing higher into the sky,
     // above the horizon. On my antenna tracker this requires the pitch/elevation servo to be reversed
     // param set RC2_REV -1
@@ -83,7 +84,7 @@ void Tracker::update_pitch_position_servo(float pitch)
 
     // rate limit pitch servo
     if (g.pitch_slew_time > 0.02f) {
-        uint16_t max_change = 0.02f * (pitch_limit_cd) / g.pitch_slew_time;
+        uint16_t max_change = 0.02f * ((-pitch_min_cd+pitch_max_cd)/2) / g.pitch_slew_time;
         if (max_change < 1) {
             max_change = 1;
         }
@@ -97,12 +98,12 @@ void Tracker::update_pitch_position_servo(float pitch)
     channel_pitch.set_servo_out(new_servo_out);
 
     // position limit pitch servo
-    if (channel_pitch.get_servo_out() <= -pitch_limit_cd) {
-        channel_pitch.set_servo_out(-pitch_limit_cd);
+    if (channel_pitch.get_servo_out() <= pitch_min_cd) {
+        channel_pitch.set_servo_out(pitch_min_cd);
         g.pidPitch2Srv.reset_I();
     }
-    if (channel_pitch.get_servo_out() >= pitch_limit_cd) {
-        channel_pitch.set_servo_out(pitch_limit_cd);
+    if (channel_pitch.get_servo_out() >= pitch_max_cd) {
+        channel_pitch.set_servo_out(pitch_max_cd);
         g.pidPitch2Srv.reset_I();
     }
 }
@@ -119,15 +120,17 @@ void Tracker::update_pitch_onoff_servo(float pitch)
     // get_servo_out() is in 100ths of a degree
     float ahrs_pitch = degrees(ahrs.pitch);
     float err = ahrs_pitch - pitch;
+    int32_t pitch_min_cd = g.pitch_min*100;
+    int32_t pitch_max_cd = g.pitch_max*100;
 
     float acceptable_error = g.onoff_pitch_rate * g.onoff_pitch_mintime;
     if (fabsf(err) < acceptable_error) {
         channel_pitch.set_servo_out(0);
-    } else if (err > 0) {
+    } else if ((err > 0) && (pitch*100>pitch_min_cd)) {
         // positive error means we are pointing too high, so push the
         // servo down
         channel_pitch.set_servo_out(-9000);
-    } else {
+    } else if (pitch*100<pitch_max_cd){
         // negative error means we are pointing too low, so push the
         // servo up
         channel_pitch.set_servo_out(9000);
@@ -141,8 +144,12 @@ void Tracker::update_pitch_cr_servo(float pitch)
 {
     float ahrs_pitch = degrees(ahrs.pitch);
     float err_cd = (pitch - ahrs_pitch) * 100.0f;
-    g.pidPitch2Srv.set_input_filter_all(err_cd);
-    channel_pitch.set_servo_out(g.pidPitch2Srv.get_pid());
+    int32_t pitch_min_cd = g.pitch_min*100;
+    int32_t pitch_max_cd = g.pitch_max*100;
+    if ((pitch>pitch_min_cd) && (pitch<pitch_max_cd)){
+        g.pidPitch2Srv.set_input_filter_all(err_cd);
+        channel_pitch.set_servo_out(g.pidPitch2Srv.get_pid());
+    }
 }
 
 /**
@@ -180,7 +187,7 @@ void Tracker::update_yaw_position_servo(float yaw)
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     int32_t yaw_cd   = wrap_180_cd(yaw*100);
     int32_t yaw_limit_cd = g.yaw_range*100/2;
-    const int16_t margin = 500; // 5 degrees slop
+    const int16_t margin = MAX(500, wrap_360_cd(36000-yaw_limit_cd)/2);
 
     // Antenna as Ballerina. Use with antenna that do not have continuously rotating servos, ie at some point in rotation
     // the servo limits are reached and the servo has to slew 360 degrees to the 'other side' to keep tracking.
