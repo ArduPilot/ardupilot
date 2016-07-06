@@ -361,7 +361,6 @@ public:
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
-        k_param_pi_precland,    // 252
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
@@ -487,16 +486,12 @@ public:
     RC_Channel_aux          rc_6;
     RC_Channel_aux          rc_7;
     RC_Channel_aux          rc_8;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux          rc_9;
-#endif
     RC_Channel_aux          rc_10;
     RC_Channel_aux          rc_11;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux          rc_12;
     RC_Channel_aux          rc_13;
     RC_Channel_aux          rc_14;
-#endif
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
@@ -532,10 +527,6 @@ public:
     AC_P                    p_vel_z;
     AC_PID                  pid_accel_z;
 
-#if PRECISION_LANDING == ENABLED
-    AC_PI_2D                pi_precland;
-#endif
-
     AC_P                    p_pos_xy;
     AC_P                    p_alt_hold;
 
@@ -558,16 +549,12 @@ public:
         rc_6                (CH_6),
         rc_7                (CH_7),
         rc_8                (CH_8),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_9                (CH_9),
-#endif
         rc_10               (CH_10),
         rc_11               (CH_11),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_12               (CH_12),
         rc_13               (CH_13),
         rc_14               (CH_14),
-#endif
 
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------
@@ -575,10 +562,6 @@ public:
 
         p_vel_z                 (VEL_Z_P),
         pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
-
-#if PRECISION_LANDING == ENABLED
-        pi_precland             (PRECLAND_P,      PRECLAND_I,                       PRECLAND_IMAX,      VEL_XY_FILT_HZ,     PRECLAND_UPDATE_TIME),
-#endif
 
         // P controller	        initial P
         //----------------------------------------------------------------------
