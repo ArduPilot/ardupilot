@@ -213,8 +213,8 @@ void NavEKF2_core::InitialiseVariables()
     tasStoreIndex = 0;
     ofStoreIndex = 0;
     delAngCorrection.zero();
-    velCorrection.zero();
-    posCorrection.zero();
+    velErrintegral.zero();
+    posErrintegral.zero();
     gpsGoodToAlign = false;
     gpsNotAvailable = true;
     motorsArmed = false;
@@ -633,54 +633,47 @@ void NavEKF2_core::calcOutputStates()
         delAngCorrection = deltaAngErr * errorGain * dtIMUavg;
 
         // calculate velocity and position tracking errors
-        Vector3f velDelta = (stateStruct.velocity - outputDataDelayed.velocity);
-        Vector3f posDelta = (stateStruct.position - outputDataDelayed.position);
+        Vector3f velErr = (stateStruct.velocity - outputDataDelayed.velocity);
+        Vector3f posErr = (stateStruct.position - outputDataDelayed.position);
 
         // collect magnitude tracking error for diagnostics
         outputTrackError.x = deltaAngErr.length();
-        outputTrackError.y = velDelta.length();
-        outputTrackError.z = posDelta.length();
+        outputTrackError.y = velErr.length();
+        outputTrackError.z = posErr.length();
 
-        // If the user specifes a time constant for the position and velocity states then calculate and apply the position
-        // and velocity corrections immediately to the whole output history which takes longer to process but enables smaller
-        // time constants to be used. Else apply the corrections to the current state only using the same time constant
-        // used for the quaternion corrections.
-        if (frontend->_tauVelPosOutput > 0) {
-            // convert time constant from centi-seconds to seconds
-            float tauPosVel = constrain_float(0.01f*(float)frontend->_tauVelPosOutput, 0.1f, 0.5f);
+        // convert user specified time constant from centi-seconds to seconds
+        float tauPosVel = constrain_float(0.01f*(float)frontend->_tauVelPosOutput, 0.1f, 0.5f);
 
-            // calculate a gain to track the EKF position states with the specified time constant
-            float velPosGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
+        // calculate a gain to track the EKF position states with the specified time constant
+        float velPosGain = dtEkfAvg / constrain_float(tauPosVel, dtEkfAvg, 10.0f);
 
-            // use a PI feedback to calculate a correction that will be applied to the output state history
-            posCorrection += posDelta * sq(velPosGain) * 0.1f; // I term
-            velCorrection += velDelta * sq(velPosGain) * 0.1f; // I term
-            velDelta *= velPosGain; // P term
-            posDelta *= velPosGain; // P term
+        // use a PI feedback to calculate a correction that will be applied to the output state history
+        posErrintegral += posErr;
+        velErrintegral += velErr;
+        Vector3f velCorrection = velErr * velPosGain + velErrintegral * sq(velPosGain) * 0.1f;
+        Vector3f posCorrection = posErr * velPosGain + posErrintegral * sq(velPosGain) * 0.1f;
 
-            // loop through the output filter state history and apply the corrections to the velocity and position states
-            // this method is too expensive to use for the attitude states due to the quaternion operations required
-            // but does not introduce a time delay in the 'correction loop' and allows smaller tracking time constants
-            // to be used
-            output_elements outputStates;
-            for (unsigned index=0; index < imu_buffer_length; index++) {
-                outputStates = storedOutput[index];
+        // loop through the output filter state history and apply the corrections to the velocity and position states
+        // this method is too expensive to use for the attitude states due to the quaternion operations required
+        // but does not introduce a time delay in the 'correction loop' and allows smaller tracking time constants
+        // to be used
+        output_elements outputStates;
+        for (unsigned index=0; index < imu_buffer_length; index++) {
+            outputStates = storedOutput[index];
 
-                // a constant  velocity correction is applied
-                outputStates.velocity += velDelta + velCorrection;
+            // a constant  velocity correction is applied
+            outputStates.velocity += velCorrection;
 
-                // a constant position correction is applied
-                outputStates.position += posDelta + posCorrection;
+            // a constant position correction is applied
+            outputStates.position += posCorrection;
 
-                // push the updated data to the buffer
-                storedOutput[index] = outputStates;
-            }
-
-            // update output state to corrected values
-            //outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
-            outputDataNew = storedOutput[storedIMU.get_youngest_index()];
-
+            // push the updated data to the buffer
+            storedOutput[index] = outputStates;
         }
+
+        // update output state to corrected values
+        outputDataNew = storedOutput[storedIMU.get_youngest_index()];
+
     }
 }
 
