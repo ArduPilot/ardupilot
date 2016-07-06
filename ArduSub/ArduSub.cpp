@@ -269,8 +269,10 @@ void Sub::fast_loop()
     // check if we've reached the surface or bottom
     update_surface_and_bottom_detector();
 
+#if MOUNT == ENABLED
     // camera mount's fast update
     camera_mount.update_fast();
+#endif
 
     // log sensor health
     if (should_log(MASK_LOG_ANY)) {
@@ -337,7 +339,7 @@ void Sub::update_batt_compass(void)
 
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
-        compass.set_throttle(motors.get_throttle()/1000.0f);
+        compass.set_throttle(motors.get_throttle());
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
@@ -406,7 +408,7 @@ void Sub::twentyfive_hz_logging()
     }
 
     // log IMU data if we're not already logging at the higher rate
-    if (should_log(MASK_LOG_IMU) && should_log(MASK_LOG_IMU_RAW)) {
+    if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
@@ -493,7 +495,7 @@ void Sub::update_GPS(void)
 
             // log GPS message
             if (should_log(MASK_LOG_GPS) && !ahrs.have_ekf_logging()) {
-                DataFlash.Log_Write_GPS(gps, i, current_loc.alt);
+                DataFlash.Log_Write_GPS(gps, i);
             }
 
             gps_updated = true;
