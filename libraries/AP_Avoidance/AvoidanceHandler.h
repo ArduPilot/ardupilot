@@ -36,7 +36,7 @@ protected:
     // lowest height guided avoidance will send the aircraft, in metres
     const uint8_t _minimum_guided_height = 10;
 
-    bool new_destination_perpendicular(Vector3f &newdest_neu, const AP_AHRS &_ahrs, const uint8_t _minimum_avoid_height, const float wp_speed_xy, const float wp_speed_z);
+    bool new_destination_perpendicular(Vector3f &newdest_neu, const AP_AHRS &_ahrs, const float wp_speed_xy, const float wp_speed_z, const uint8_t _minimum_avoid_height);
 
 private:
 

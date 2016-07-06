@@ -40,7 +40,7 @@ Vector2f AvoidanceHandler::perpendicular_xy(const Location &p1, const Vector3f &
 }
 
 // wp_speeds in cm/s
-bool AvoidanceHandler::new_destination_perpendicular(Vector3f &newdest_neu, const AP_AHRS &_ahrs, const uint8_t _minimum_avoid_height, const float wp_speed_xy, const float wp_speed_z)
+bool AvoidanceHandler::new_destination_perpendicular(Vector3f &newdest_neu, const AP_AHRS &_ahrs, const float wp_speed_xy, const float wp_speed_z, const uint8_t _minimum_avoid_height)
 {
     if (_threat == nullptr) {
         // why where we called?!
@@ -65,14 +65,14 @@ bool AvoidanceHandler::new_destination_perpendicular(Vector3f &newdest_neu, cons
     // perpendicular to that velocity may mean we do weird things.
     // Instead, we will fly directly away from them:
     if (_threat->_velocity.length() < _low_velocity_threshold) {
-        Vector2f delta_pos_xy =  location_diff(_threat->_location, my_abs_pos);
-        float delta_pos_z = my_abs_pos.alt - _threat->_location.alt;
-        delta_pos_xy.normalize();
-        newdest_neu[0] = my_pos_ned[0]*100 + delta_pos_xy[0] * wp_speed_xy * 10; // 10 second
-        newdest_neu[1] = my_pos_ned[1]*100 + delta_pos_xy[1] * wp_speed_xy * 10; // 10 second
-        newdest_neu[2] = -my_pos_ned[2]*100 + delta_pos_z * wp_speed_z * 10; // 10 seconds
+        const Vector2f delta_pos_xy =  location_diff(_threat->_location, my_abs_pos);
+        const float delta_pos_z = my_abs_pos.alt - _threat->_location.alt;
+        Vector3f delta_pos_xyz = Vector3f(delta_pos_xy[0],delta_pos_xy[1],delta_pos_z);
+        delta_pos_xyz.normalize();
+        newdest_neu[0] = my_pos_ned[0]*100 + delta_pos_xyz[0] * wp_speed_xy * 10; // 10 second
+        newdest_neu[1] = my_pos_ned[1]*100 + delta_pos_xyz[1] * wp_speed_xy * 10; // 10 second
+        newdest_neu[2] = -my_pos_ned[2]*100 + delta_pos_xyz[2] * wp_speed_z * 10; // 10 seconds
         if(newdest_neu[2] < _minimum_avoid_height*100) {
-            ::fprintf(stderr, "Doing 2D velocity-based avoidance\n");
             newdest_neu[0] = my_pos_ned[0]*100 + delta_pos_xy[0] * wp_speed_xy * 10; // 10 second
             newdest_neu[1] = my_pos_ned[1]*100 + delta_pos_xy[1] * wp_speed_xy * 10; // 10 second
             newdest_neu[2] = -my_pos_ned[2]*100;
