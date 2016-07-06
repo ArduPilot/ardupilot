@@ -39,8 +39,6 @@ UARTDriver::UARTDriver(bool default_console) :
     _flow_control(FLOW_CONTROL_DISABLE)
 {
     if (default_console) {
-        _device = new ConsoleDevice();
-        _device->open();
         _console = true;
     }
 }
