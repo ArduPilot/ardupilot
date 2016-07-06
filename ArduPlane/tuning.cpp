@@ -282,7 +282,12 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
     // than rmsD. Otherwise it is too easy to push D too high while
     // tuning a quadplane and end up with D dominating
     const float max_P_D_ratio = 3.0f;
-    
+
+    if (plane.quadplane.motors->get_throttle() < 0.1f) {
+        // don't report stale errors if not running VTOL motors
+        return 0;
+    }
+        
     switch(parm) {
     // special handling of dual-parameters
     case TUNING_RATE_ROLL_PI:
