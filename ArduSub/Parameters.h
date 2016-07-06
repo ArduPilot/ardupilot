@@ -182,6 +182,7 @@ public:
         k_param_fs_crash_check,
 		k_param_throw_motor_start,
 		k_param_terrain_follow,		// 94
+		k_param_avoid,
 
         // 97: RSSI
         k_param_rssi = 97,
@@ -281,7 +282,7 @@ public:
         k_param_rc_8,
         k_param_rc_10,
         k_param_rc_11,
-        k_param_throttle_min,
+        k_param_throttle_min,           // remove
         k_param_throttle_max,           // remove
         k_param_failsafe_throttle,
         k_param_throttle_fs_action,     // remove
@@ -293,7 +294,7 @@ public:
         k_param_radio_tuning_low,
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled,
-        k_param_throttle_mid,
+        k_param_throttle_mid,           // remove
         k_param_failsafe_gps_enabled,   // remove
         k_param_rc_9,
         k_param_rc_12,
@@ -437,10 +438,8 @@ public:
 
     // Throttle
     //
-    AP_Int16        throttle_min;
     AP_Int8         failsafe_throttle;
     AP_Int16        failsafe_throttle_value;
-    AP_Int16        throttle_mid;
     AP_Int16        throttle_deadzone;
 
     // Flight modes

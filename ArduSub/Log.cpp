@@ -301,13 +301,14 @@ struct PACKED log_Control_Tuning {
     float  throttle_in;
     float  angle_boost;
     float    throttle_out;
+    float    throttle_hover;
     float    desired_alt;
     float    inav_alt;
     int32_t  baro_alt;
     int16_t  desired_rangefinder_alt;
     int16_t  rangefinder_alt;
     float    terr_alt;
-    int16_t  desired_climb_rate;
+    int16_t  target_climb_rate;
     int16_t  climb_rate;
 };
 
@@ -326,13 +327,14 @@ void Sub::Log_Write_Control_Tuning()
         throttle_in         : attitude_control.get_throttle_in(),
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : motors.get_throttle(),
+		throttle_hover      : motors.get_throttle_hover(),
         desired_alt         : pos_control.get_alt_target() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
         desired_rangefinder_alt   : (int16_t)target_rangefinder_alt,
         rangefinder_alt           : rangefinder_state.alt_cm,
 		terr_alt			: terr_alt,
-        desired_climb_rate  : (int16_t)pos_control.get_vel_target_z(),
+        target_climb_rate   : (int16_t)pos_control.get_vel_target_z(),
         climb_rate          : climb_rate
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -708,7 +710,7 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-    		"CTUN", "Qfffffeccfhh", "TimeUS,ThrIn,ABst,ThrOut,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
+    		"CTUN", "Qffffffeccfhh", "TimeUS,ThrIn,ABst,ThrOut,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "QHHIhBHI",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
@@ -825,7 +827,7 @@ void Sub::Log_Write_Baro(void) {}
 void Sub::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
 void Sub::Log_Write_Home_And_Origin() {}
 void Sub::Log_Sensor_Health() {}
-void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {};
+void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 
 #if OPTFLOW == ENABLED
 void Sub::Log_Write_Optflow() {}
