@@ -586,8 +586,8 @@ private:
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
 
-    // return true when IMU calibration completed
-    bool imuCalCompleted(void);
+    // return true and set the class variable true if the delta angle bias has been learned
+    bool checkGyroCalStatus(void);
 
     // update inflight calculaton that determines if GPS data is good enough for reliable navigation
     void calcGpsGoodForFlight(void);
@@ -801,6 +801,7 @@ private:
     bool magFieldLearned;           // true when the magnetic field has been learned
     Vector3f earthMagFieldVar;      // NED earth mag field variances for last learned field (mGauss^2)
     Vector3f bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
+    bool delAngBiasLearned;         // true when the gyro bias has been learned
 
     Vector3f outputTrackError;
 
