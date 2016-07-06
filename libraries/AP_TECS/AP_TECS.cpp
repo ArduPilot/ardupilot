@@ -577,7 +577,10 @@ float AP_TECS::timeConstant(void) const
     return _timeConst;
 }
 
-void AP_TECS::_update_throttle(void)
+/*
+  calculate throttle demand - airspeed enabled case
+ */
+void AP_TECS::_update_throttle_with_airspeed(void)
 {
     // Calculate limits to be applied to potential energy error to prevent over or underspeed occurring due to large height errors
     float SPE_err_max = 0.5f * _TASmax * _TASmax - _SKE_dem;
@@ -650,6 +653,10 @@ void AP_TECS::_update_throttle(void)
         _integTHR_state = _integTHR_state + (_STE_error * _get_i_gain()) * _DT * K_STE2Thr;
         if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT)
         {
+            if (!_flags.reached_speed_takeoff) {
+                // ensure we run at full throttle until we reach the target airspeed
+                _throttle_dem = MAX(_throttle_dem, _THRmaxf - _integTHR_state);
+            }
             _integTHR_state = integ_max;
         }
         else
@@ -658,12 +665,7 @@ void AP_TECS::_update_throttle(void)
         }
 
         // Sum the components.
-        // Only use feed-forward component if airspeed is not being used
-        if (_ahrs.airspeed_sensor_enabled()) {
-            _throttle_dem = _throttle_dem + _integTHR_state;
-        } else {
-            _throttle_dem = ff_throttle;
-        }
+        _throttle_dem = _throttle_dem + _integTHR_state;
     }
 
     // Constrain throttle demand
@@ -685,7 +687,10 @@ float AP_TECS::_get_i_gain(void)
     return i_gain;
 }
 
-void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
+/*
+  calculate throttle, non-airspeed case
+ */
+void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
 {
     // Calculate throttle demand by interpolating between pitch and throttle limits
     float nomThr;
@@ -879,6 +884,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _TAS_dem_adj       = _TAS_dem;
         _flags.underspeed        = false;
         _flags.badDescent        = false;
+        _flags.reached_speed_takeoff = false;
         _DT                = 0.1f; // when first starting TECS, use a
         // small time constant
     }
@@ -892,6 +898,11 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _TAS_dem_adj       = _TAS_dem;
         _flags.underspeed        = false;
         _flags.badDescent  = false;
+    }
+    
+    if (_flight_stage != AP_TECS::FLIGHT_TAKEOFF && _flight_stage != AP_TECS::FLIGHT_LAND_ABORT) {
+        // reset takeoff speed flag when not in takeoff
+        _flags.reached_speed_takeoff = false;        
     }
 }
 
@@ -993,6 +1004,14 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         }
     }
 
+    if (flight_stage == FLIGHT_TAKEOFF || flight_stage == FLIGHT_LAND_ABORT) {
+        if (!_flags.reached_speed_takeoff && _TAS_state >= _TAS_dem_adj) {
+            // we have reached our target speed in takeoff, allow for
+            // normal throttle control
+            _flags.reached_speed_takeoff = true;
+        }
+    }
+    
     // convert to radians
     _PITCHmaxf = radians(_PITCHmaxf);
     _PITCHminf = radians(_PITCHminf);
@@ -1017,9 +1036,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     // Calculate throttle demand - use simple pitch to throttle if no airspeed sensor
     if (_ahrs.airspeed_sensor_enabled()) {
-        _update_throttle();
+        _update_throttle_with_airspeed();
     } else {
-        _update_throttle_option(throttle_nudge);
+        _update_throttle_without_airspeed(throttle_nudge);
     }
 
     // Detect bad descent due to demanded airspeed being too high
