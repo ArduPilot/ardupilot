@@ -187,7 +187,7 @@ void Tracker::update_yaw_position_servo(float yaw)
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     int32_t yaw_cd   = wrap_180_cd(yaw*100);
     int32_t yaw_limit_cd = g.yaw_range*100/2;
-    const int16_t margin = max(500, wrap_360_cd(36000-yaw_limit_cd)/2);
+    const int16_t margin = MAX(500, wrap_360_cd(36000-yaw_limit_cd)/2);
 
     // Antenna as Ballerina. Use with antenna that do not have continuously rotating servos, ie at some point in rotation
     // the servo limits are reached and the servo has to slew 360 degrees to the 'other side' to keep tracking.
