@@ -425,6 +425,15 @@ AP_Arming::ArmingCheckResult AP_Arming_Copter::terrain_checks(bool report)
         return ret;
     }
   
+    // check if terrain following is enabled, using a range finder but RTL_ALT is higher than rangefinder's max range
+    // To-Do: modify RTL return path to fly at or above the RTL_ALT and remove this check
+    if ((copter.rangefinder.num_sensors() > 0) && (copter.g.rtl_altitude > copter.rangefinder.max_distance_cm())) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: RTL_ALT above rangefinder max range");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+  
     if (copter.terrain_use()) {
         uint16_t terr_pending, terr_loaded;
         copter.terrain.get_statistics(terr_pending, terr_loaded);
