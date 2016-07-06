@@ -346,7 +346,7 @@ AP_Arming::ArmingCheckResult AP_Arming_Copter::manual_transmitter_checks(bool re
     ret = ARMING_CHECK_PASSED;
 
     // check if radio has been calibrated
-    if (!copter.channel_throttle->get_radio_min() && !copter.channel_throttle->get_radio_max()) {
+    if (!copter.channel_throttle->get_radio_min() || !copter.channel_throttle->get_radio_max()) {
         ret = ARMING_CHECK_FAILED;
     }
 
