@@ -91,6 +91,9 @@ def cygwin_pidof(procName):
 def under_cygwin():
     return os.path.exists("/usr/bin/cygstart")
 
+def under_macos():
+    return sys.platform == 'darwin'
+
 def kill_tasks_cygwin(victims):
     '''shell out to ps -ea to find processes to kill'''
     for victim in list(victims):
@@ -98,6 +101,11 @@ def kill_tasks_cygwin(victims):
 #        progress("pids for (%s): %s" % (victim,",".join([ str(p) for p in pids])))
         for apid in pids:
             os.kill(apid, signal.SIGKILL)
+
+def kill_tasks_macos():
+    for window in windowID:
+        cmd = "osascript -e \'tell application \"Terminal\" to close (window(get index of window id %s))\'" % window
+        os.system(cmd)
 
 def kill_tasks_psutil(victims):
     '''use the psutil module to kill tasks by name.  Sadly, this module is not available on Windows, but when it is we should be able to *just* use this routine'''
@@ -135,12 +143,10 @@ def kill_tasks():
             'AntennaTracker.elf',
         ]
 
-        # will only run to close terminal windows in macosx platform
-        for window in windowID:
-            cmd = "osascript -e \'tell application \"Terminal\" to close (window(get index of window id %s))\'" % window
-            os.system(cmd)
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
+        if under_macos():
+            return kill_tasks_macos()
 
         try:
             kill_tasks_psutil(victim_names)
@@ -598,7 +604,7 @@ def run_in_terminal_window(autotest, name, cmd):
 
     # bg this explicitly?!
     out = subprocess.Popen(runme,stdout=subprocess.PIPE).communicate()[0]
-    if sys.platform == 'darwin':
+    if under_macos():
         import re
         p = re.compile('tab 1 of window id (.*)')
         windowID.append(p.findall(out)[0])
