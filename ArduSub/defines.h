@@ -360,10 +360,11 @@ enum ThrowModeState {
 #define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
 #define DATA_EKF_ALT_RESET                  60
 #define DATA_LAND_CANCELLED_BY_PILOT        61
-#define DATA_SURFACED						62	// Sub only
-#define DATA_NOT_SURFACED					63	// Sub only
-#define DATA_BOTTOMED						64	// Sub only
-#define DATA_NOT_BOTTOMED					65	// Sub only
+#define DATA_EKF_YAW_RESET                  62
+#define DATA_SURFACED						63	// Sub only
+#define DATA_NOT_SURFACED					64	// Sub only
+#define DATA_BOTTOMED						65	// Sub only
+#define DATA_NOT_BOTTOMED					66	// Sub only
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
