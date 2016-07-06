@@ -57,17 +57,16 @@ CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS         =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS)
 ASFLAGS        +=   $(ASOPTS)
 LDFLAGS         =   -g $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS)
-UNAME_S        :=   $(shell uname -s)
 
 ifneq ($(SYSTYPE),Darwin)
 LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
 LIBS ?= -lm -pthread
-ifneq ($(UNAME_S),Darwin)
-CXXFLAGS += -lrt
-endif
 
+ifneq ($(SYSTYPE),Darwin)
+LIBS += -lrt
+endif
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
 LIBS += -lwinmm
 endif
