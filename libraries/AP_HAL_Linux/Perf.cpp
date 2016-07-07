@@ -28,6 +28,10 @@
 #include "Perf.h"
 #include "Perf_Lttng.h"
 
+#ifndef PRIu64
+#define PRIu64 "llu"
+#endif
+
 using namespace Linux;
 
 static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
