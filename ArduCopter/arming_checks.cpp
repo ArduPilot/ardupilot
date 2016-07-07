@@ -199,12 +199,6 @@ AP_Arming::ArmingCheckResult AP_Arming_Copter::compass_checks(bool report)
 
 AP_Arming::ArmingCheckResult AP_Arming_Copter::gps_checks(bool report)
 {
-    // call parent class checks
-    ArmingCheckResult ret = AP_Arming::gps_checks(report);
-    if (ret == ARMING_CHECK_FAILED) {
-        return ret;
-    }
-
     // check if flight mode requires GPS
     bool gps_required = copter.mode_requires_GPS(copter.control_mode);
 
