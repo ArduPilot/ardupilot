@@ -1,7 +1,8 @@
 #pragma once
 
-#include "AP_HAL_Linux.h"
+#include <AP_HAL/utility/OwnPtr.h>
 
+#include "AP_HAL_Linux.h"
 #include "SerialDevice.h"
 
 class Linux::UARTDriver : public AP_HAL::UARTDriver {
@@ -38,7 +39,7 @@ public:
     enum flow_control get_flow_control(void) { return _flow_control; }
 
 private:
-    SerialDevice *_device = nullptr;
+    AP_HAL::OwnPtr<SerialDevice> _device;
     bool _nonblocking_writes;
     bool _console;
     volatile bool _in_timer;
