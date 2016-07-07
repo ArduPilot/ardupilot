@@ -3,6 +3,7 @@
 #include "AP_HAL_Linux.h"
 
 #include "SerialDevice.h"
+#include <AP_HAL/utility/OwnPtr.h>
 
 class Linux::UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -38,7 +39,7 @@ public:
     enum flow_control get_flow_control(void) { return _flow_control; }
 
 private:
-    SerialDevice *_device = nullptr;
+    AP_HAL::OwnPtr<SerialDevice> _device = nullptr;
     bool _nonblocking_writes;
     bool _console;
     volatile bool _in_timer;
