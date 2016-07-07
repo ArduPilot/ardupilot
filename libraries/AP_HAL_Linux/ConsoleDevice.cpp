@@ -14,6 +14,7 @@ ConsoleDevice::ConsoleDevice()
 
 ConsoleDevice::~ConsoleDevice()
 {
+    close();
 }
 
 bool ConsoleDevice::close()
