@@ -36,7 +36,15 @@ public:
     bool _write_pending_bytes(void);
     virtual void _timer_tick(void);
 
-    enum flow_control get_flow_control(void) { return _flow_control; }
+    virtual enum flow_control get_flow_control(void) override
+    {
+        return _device->get_flow_control();
+    }
+
+    virtual void set_flow_control(enum flow_control flow_control_setting) override
+   {
+       _device->set_flow_control(flow_control_setting);
+   }
 
 private:
     AP_HAL::OwnPtr<SerialDevice> _device = nullptr;
@@ -48,7 +56,6 @@ private:
     char *_flag;
     bool _connected; // true if a client has connected         
     bool _packetise; // true if writes should try to be on mavlink boundaries
-    enum flow_control _flow_control;
 
     void _allocate_buffers(uint16_t rxS, uint16_t txS);
     void _deallocate_buffers();

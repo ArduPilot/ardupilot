@@ -35,8 +35,7 @@ using namespace Linux;
 
 UARTDriver::UARTDriver(bool default_console) :
     device_path(NULL),
-    _packetise(false),
-    _flow_control(FLOW_CONTROL_DISABLE)
+    _packetise(false)
 {
     if (default_console) {
         _console = true;
@@ -74,21 +73,18 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         case DEVICE_TCP:
         {
             _tcp_start_connection();
-            _flow_control = FLOW_CONTROL_ENABLE;
             break;
         }
 
         case DEVICE_UDP:
         {
             _udp_start_connection();
-            _flow_control = FLOW_CONTROL_ENABLE;
             break;
         }
 
         case DEVICE_UDPIN:
         {
             _udpin_start_connection();
-            _flow_control = FLOW_CONTROL_ENABLE;
             break;
         }
         
@@ -96,7 +92,6 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         case DEVICE_QFLIGHT:
         {
             _qflight_start_connection();
-            _flow_control = FLOW_CONTROL_DISABLE;
             break;
         }
 #endif
@@ -275,7 +270,6 @@ bool UARTDriver::_serial_start_connection()
     _device = new UARTDevice(device_path);
     _connected = _device->open();
     _device->set_blocking(false);
-    _flow_control = FLOW_CONTROL_DISABLE;
 
     return true;
 }
@@ -285,7 +279,6 @@ bool UARTDriver::_qflight_start_connection()
 {
     _device = new QFLIGHTDevice(device_path);
     _connected = _device->open();
-    _flow_control = FLOW_CONTROL_DISABLE;
 
     return true;
 }
