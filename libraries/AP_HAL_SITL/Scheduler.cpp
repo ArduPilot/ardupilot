@@ -9,7 +9,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fenv.h>
-#include "fenv_polyfill.h"
 
 using namespace HALSITL;
 
