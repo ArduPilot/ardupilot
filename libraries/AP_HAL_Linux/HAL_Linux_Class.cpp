@@ -10,6 +10,7 @@
 
 #include "AP_HAL_Linux_Private.h"
 #include "HAL_Linux_Class.h"
+#include <AP_Module/AP_Module.h>
 
 using namespace Linux;
 
@@ -228,23 +229,30 @@ void _usage(void)
 {
     printf("Usage: -A uartAPath -B uartBPath -C uartCPath -D uartDPath -E uartEPath -F uartFPath\n");
     printf("Options:\n");
-    printf("\t-serial:          -A /dev/ttyO4\n");
+    printf("\tserial:\n");
+    printf("                    -A /dev/ttyO4\n");
     printf("\t                  -B /dev/ttyS1\n");
-    printf("\t-tcp:             -C tcp:192.168.2.15:1243:wait\n");
+    printf("\tnetworking tcp:\n");
+    printf("\t                  -C tcp:192.168.2.15:1243:wait\n");
     printf("\t                  -A tcp:11.0.0.2:5678\n");
     printf("\t                  -A udp:11.0.0.2:14550\n");
+    printf("\tnetworking UDP:\n");
     printf("\t                  -A udp:11.0.0.255:14550:bcast\n");
     printf("\t                  -A udpin:0.0.0.0:14550\n");
-    printf("\t-custom log path:\n");
+    printf("\tcustom log path:\n");
     printf("\t                  --log-directory /var/APM/logs\n");
     printf("\t                  -l /var/APM/logs\n");
-    printf("\t-custom terrain path:\n");
+    printf("\tcustom terrain path:\n");
     printf("\t                   --terrain-directory /var/APM/terrain\n");
     printf("\t                   -t /var/APM/terrain\n");
+    printf("\tmodule support:\n");
+    printf("\t                   --module-directory /etc/APM/modules\n");
 }
 
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
+    const char *module_path = nullptr;
+    
     assert(callbacks);
 
     int opt;
@@ -261,11 +269,12 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 #endif
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
+        {"module-directory",    true,  0, 'M'},
         {"help",                false,  0, 'h'},
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:l:t:he:S",
+    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:l:t:he:SM:",
                     options);
 
     /*
@@ -305,6 +314,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 't':
             utilInstance.set_custom_terrain_directory(gopt.optarg);
             break;
+        case 'M':
+            module_path = gopt.optarg;
+            break;
         case 'h':
             _usage();
             exit(0);
@@ -336,7 +348,15 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     // deadlock, and infinite loop in setup()") for details about the
     // order of scheduler initialize and setup on Linux.
     scheduler->system_initialized();
+
+    // possibly load external modules
+    if (module_path != nullptr) {
+        AP_Module::init(module_path);
+    }
+
+    AP_Module::call_hook_setup_start();
     callbacks->setup();
+    AP_Module::call_hook_setup_complete();
 
     for (;;) {
         callbacks->loop();
