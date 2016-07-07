@@ -35,7 +35,8 @@ using namespace Linux;
 
 UARTDriver::UARTDriver(bool default_console) :
     device_path(NULL),
-    _packetise(false)
+    _packetise(false),
+    _device{new ConsoleDevice()}
 {
     if (default_console) {
         _console = true;
@@ -62,62 +63,27 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (device_path == NULL && _console) {
         _device = new ConsoleDevice();
-        _device->open();
-        _device->set_blocking(false);
     } else if (!_initialised) {
         if (device_path == NULL) {
             return;
         }
 
-        switch (_parseDevicePath(device_path)) {
-        case DEVICE_TCP:
-        {
-            _tcp_start_connection();
-            break;
-        }
+        _device = _parseDevicePath(device_path);
 
-        case DEVICE_UDP:
-        {
-            _udp_start_connection();
-            break;
-        }
-
-        case DEVICE_UDPIN:
-        {
-            _udpin_start_connection();
-            break;
-        }
-        
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-        case DEVICE_QFLIGHT:
-        {
-            _qflight_start_connection();
-            break;
-        }
-#endif
-
-        case DEVICE_SERIAL:
-        {
-            if (!_serial_start_connection()) {
-                break; /* Whatever it might mean */
-            }
-            break;
-        }
-        default:
-        {
-            // Notify that the option is not valid and select standart input and output
+        if (_device.get() == nullptr) {
             ::printf("Argument is not valid. Fallback to console.\n");
             ::printf("Launch with --help to see an example.\n");
 
             _device = new ConsoleDevice();
-            _device->open();
-            _device->set_blocking(false);
-            break;
-        }
         }
     }
 
+    if (!_connected) {
+        _connected = _device->open();
+        _device->set_blocking(false);
+    }
     _initialised = false;
+
     while (_in_timer) hal.scheduler->delay(1);
 
     _device->set_speed(b);
@@ -195,25 +161,26 @@ void UARTDriver::_deallocate_buffers()
         - tcp:*:1243:wait
         - udp:192.168.2.15:1243
 */
-UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
+AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 {
     struct stat st;
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
-        return DEVICE_SERIAL;
+        return AP_HAL::OwnPtr<SerialDevice>(new UARTDevice(arg));
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
     } else if (strncmp(arg, "qflight:", 8) == 0) {
-        return DEVICE_QFLIGHT;
+        return AP_HAL::OwnPtr<SerialDevice>(new QFLIGHTDevice(device_path));
 #endif
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
                strncmp(arg, "udp:", 4) != 0 &&
                strncmp(arg, "udpin:", 6)) {
-        return DEVICE_UNKNOWN;
+        return nullptr;
     }
 
     char *devstr = strdup(arg);
+
     if (devstr == NULL) {
-        return DEVICE_UNKNOWN;
+        return nullptr;
     }
 
     char *saveptr = NULL;
@@ -224,12 +191,9 @@ UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
     port = strtok_r(NULL, ":", &saveptr);
     flag = strtok_r(NULL, ":", &saveptr);
 
-    device_type type = DEVICE_UNKNOWN;
-
     if (ip == NULL || port == NULL) {
-        fprintf(stderr, "IP or port is set incorrectly.\n");
-        type = DEVICE_UNKNOWN;
-        goto errout;
+        free(devstr);
+        return nullptr;
     }
 
     if (_ip) {
@@ -250,77 +214,27 @@ UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
         _flag = strdup(flag);
     }
 
-    if (strcmp(protocol, "udp") == 0) {
-        type = DEVICE_UDP;
-    } else if (strcmp(protocol, "udpin") == 0) {
-        type = DEVICE_UDPIN;
-    } else {
-        type = DEVICE_TCP;
-    }
+    AP_HAL::OwnPtr<SerialDevice> device = nullptr;
 
-errout:
+    if (strcmp(protocol, "udp") == 0 || strcmp(protocol, "udpin") == 0) {
+        bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
+        _packetise = true;
+        if (strcmp(protocol, "udp") == 0) {
+            device = new UDPDevice(_ip, _base_port, bcast, false);
+        } else {
+            if (bcast) {
+                AP_HAL::panic("Can't combine udpin with bcast");
+            }
+            device = new UDPDevice(_ip, _base_port, false, true);
+
+        }
+    } else {
+        bool wait = (_flag && strcmp(_flag, "wait") == 0);
+        device = new TCPServerDevice(_ip, _base_port, wait);
+    }
 
     free(devstr);
-    return type;
-}
-
-
-bool UARTDriver::_serial_start_connection()
-{
-    _device = new UARTDevice(device_path);
-    _connected = _device->open();
-    _device->set_blocking(false);
-
-    return true;
-}
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-bool UARTDriver::_qflight_start_connection()
-{
-    _device = new QFLIGHTDevice(device_path);
-    _connected = _device->open();
-
-    return true;
-}
-#endif
-
-/*
-  start a UDP connection for the serial port
- */
-void UARTDriver::_udp_start_connection(void)
-{
-    bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
-    _device = new UDPDevice(_ip, _base_port, bcast, false);
-    _connected = _device->open();
-    _device->set_blocking(false);
-
-    /* try to write on MAVLink packet boundaries if possible */
-    _packetise = true;
-}
-
-/*
-  start a UDP connection for the serial port
- */
-void UARTDriver::_udpin_start_connection(void)
-{
-    bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
-    if (bcast) {
-        AP_HAL::panic("Can't combine udpin with bcast");
-    }
-    _device = new UDPDevice(_ip, _base_port, false, true);
-    _connected = _device->open();
-    _device->set_blocking(false);
-
-    /* try to write on MAVLink packet boundaries if possible */
-    _packetise = true;
-}
-
-void UARTDriver::_tcp_start_connection(void)
-{
-    bool wait = (_flag && strcmp(_flag, "wait") == 0);
-    _device = new TCPServerDevice(_ip, _base_port, wait);
-
-    _connected = _device->open();
+    return device;
 }
 
 /*
