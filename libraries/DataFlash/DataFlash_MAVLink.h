@@ -127,6 +127,10 @@ protected:
         uint8_t state_sent_max;
     } stats;
 
+    // this method is used when reporting system status over mavlink
+    bool logging_enabled() const { return true; }
+    bool logging_failed() const;
+
 private:
     mavlink_channel_t _chan;
     uint8_t _target_system_id;
