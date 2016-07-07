@@ -14,9 +14,15 @@ public:
     virtual ssize_t read(uint8_t *buf, uint16_t n) override;
     virtual void set_blocking(bool blocking) override;
     virtual void set_speed(uint32_t speed) override;
+    virtual void set_flow_control(enum AP_HAL::UARTDriver::flow_control flow_control_setting) override;
+    virtual AP_HAL::UARTDriver::flow_control get_flow_control(void) override
+    {
+        return _flow_control;
+    }
 
 private:
     void _disable_crlf();
+    AP_HAL::UARTDriver::flow_control _flow_control = AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_DISABLE;
 
     int _fd = -1;
     const char *_device_path;
