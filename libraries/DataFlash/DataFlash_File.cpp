@@ -32,7 +32,7 @@
 #include <time.h>
 #include <dirent.h>
 #include <AP_HAL/utility/RingBuffer.h>
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(__MACH__)
 #include <sys/param.h>
 #include <sys/mount.h>
 #elif !DATAFLASH_FILE_MINIMAL
