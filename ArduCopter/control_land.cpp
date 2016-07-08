@@ -23,9 +23,10 @@ bool Copter::land_init(bool ignore_checks)
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
     pos_control.set_accel_z(wp_nav.get_accel_z());
 
-    // initialise altitude target to stopping point
-    pos_control.set_target_to_stopping_point_z();
-
+    // initialise position and desired velocity
+    pos_control.set_alt_target(inertial_nav.get_altitude());
+    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    
     land_start_time = millis();
 
     land_pause = false;
@@ -52,9 +53,6 @@ void Copter::land_run()
 //      should be called at 100hz or more
 void Copter::land_gps_run()
 {
-    int16_t roll_control = 0, pitch_control = 0;
-    float target_yaw_rate = 0;
-
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -81,78 +79,17 @@ void Copter::land_gps_run()
 #endif
         return;
     }
-
-    // relax loiter target if we might be landed
-    if (ap.land_complete_maybe) {
-        wp_nav.loiter_soften_for_landing();
-    }
-
-    // process pilot inputs
-    if (!failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
-            // exit land if throttle is high
-            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
-                set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
-            }
-        }
-
-        if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
-            // process pilot's roll and pitch input
-            roll_control = channel_roll->get_control_in();
-            pitch_control = channel_pitch->get_control_in();
-
-            // record if pilot has overriden roll or pitch
-            if (roll_control != 0 || pitch_control != 0) {
-                ap.land_repo_active = true;
-            }
-        }
-
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-    }
-
+    
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // process roll, pitch inputs
-    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
-
-#if PRECISION_LANDING == ENABLED
-    // run precision landing
-    if (!ap.land_repo_active && precland.target_acquired() && precland_last_update_ms != precland.last_update_ms()) {
-        Vector3f target_pos;
-        precland.get_target_position(target_pos);
-        pos_control.set_xy_target(target_pos.x, target_pos.y);
-        pos_control.freeze_ff_xy();
-        precland_last_update_ms = precland.last_update_ms();
-    }
-#endif
-
-    // run loiter controller
-    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
-
-    // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
-
-    // pause 4 seconds before beginning land descent
-    float cmb_rate;
-    if(land_pause && millis()-land_start_time < 4000) {
-        cmb_rate = 0;
-    } else {
+    
+    // pause before beginning land descent
+    if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
         land_pause = false;
-        cmb_rate = get_land_descent_speed();
     }
-
-    // record desired climb rate for logging
-    desired_climb_rate = cmb_rate;
-
-    // update altitude target and call position controller
-    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
-    pos_control.update_z_controller();
+    
+    land_run_horizontal_control();
+    land_run_vertical_control(land_pause);
 }
 
 // land_nogps_run - runs the land controller
@@ -215,56 +152,102 @@ void Copter::land_nogps_run()
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
-    // pause 4 seconds before beginning land descent
-    float cmb_rate;
-    if(land_pause && millis()-land_start_time < LAND_WITH_DELAY_MS) {
-        cmb_rate = 0;
-    } else {
+    // pause before beginning land descent
+    if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
         land_pause = false;
-        cmb_rate = get_land_descent_speed();
+    }
+
+    land_run_vertical_control(land_pause);
+}
+
+void Copter::land_run_vertical_control(bool pause_descent)
+{
+    bool navigating = pos_control.is_active_xy();
+
+    // compute desired velocity
+    int32_t alt_above_ground;
+    if (rangefinder_alt_ok()) {
+        alt_above_ground = rangefinder_state.alt_cm_filt.get();
+    } else {
+        if (!navigating || !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
+            current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_above_ground);
+        }
+    }
+
+    float cmb_rate = 0;
+    if (!pause_descent) {
+        cmb_rate = AC_AttitudeControl::sqrt_controller(LAND_START_ALT-alt_above_ground, g.p_alt_hold.kP(), pos_control.get_accel_z());
+        cmb_rate = constrain_float(cmb_rate, pos_control.get_speed_down(), -abs(g.land_speed));
     }
 
     // record desired climb rate for logging
     desired_climb_rate = cmb_rate;
 
-    // call position controller
-    pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
+    // update altitude target and call position controller
+    pos_control.set_alt_target_from_climb_rate_ff(cmb_rate, G_Dt, true);
     pos_control.update_z_controller();
 }
 
-// get_land_descent_speed - high level landing logic
-//      returns climb rate (in cm/s) which should be passed to the position controller
-//      should be called at 100hz or higher
-float Copter::get_land_descent_speed()
+void Copter::land_run_horizontal_control()
 {
-#if RANGEFINDER_ENABLED == ENABLED
-    bool rangefinder_ok = rangefinder_state.enabled && rangefinder_state.alt_healthy;
-#else
-    bool rangefinder_ok = false;
-#endif
-
-    // get position controller's target altitude above terrain
-    Location_Class target_loc = pos_control.get_pos_target();
-    int32_t target_alt_cm;
-
-    // get altitude target above home by default
-    target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, target_alt_cm);
-
-    // try to use terrain if enabled
-    if (terrain_use() && !target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_alt_cm)) {
-        Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
+    int16_t roll_control = 0, pitch_control = 0;
+    float target_yaw_rate = 0;
+    
+    // relax loiter target if we might be landed
+    if (ap.land_complete_maybe) {
+        wp_nav.loiter_soften_for_landing();
     }
-
-    // if we are above 10m and the rangefinder does not sense anything perform regular alt hold descent
-    if ((target_alt_cm >= LAND_START_ALT) && !rangefinder_ok) {
-        if (g.land_speed_high > 0) {
-            // user has asked for a different landing speed than normal descent rate
-            return -abs(g.land_speed_high);
+    
+    // process pilot inputs
+    if (!failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
+                set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
+            }
         }
-        return pos_control.get_speed_down();
-    }else{
-        return -abs(g.land_speed);
+
+        if (g.land_repositioning) {
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
+
+            // process pilot's roll and pitch input
+            roll_control = channel_roll->get_control_in();
+            pitch_control = channel_pitch->get_control_in();
+
+            // record if pilot has overriden roll or pitch
+            if (roll_control != 0 || pitch_control != 0) {
+                ap.land_repo_active = true;
+            }
+        }
+
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
+
+#if PRECISION_LANDING == ENABLED
+    bool doing_precision_landing = !ap.land_repo_active && precland.target_acquired();
+    // run precision landing
+    if (doing_precision_landing && precland_last_update_ms != precland.last_update_ms()) {
+        Vector3f target_pos;
+        precland.get_target_position(target_pos);
+        pos_control.set_xy_target(target_pos.x, target_pos.y);
+        pos_control.freeze_ff_xy();
+        precland_last_update_ms = precland.last_update_ms();
+    }
+#else
+    bool doing_precision_landing = false;
+#endif
+    
+    // process roll, pitch inputs
+    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
+
+    // run loiter controller
+    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+
+    // call attitude controller
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
 }
 
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
