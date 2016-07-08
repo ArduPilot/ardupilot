@@ -105,8 +105,13 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 
+    if (rover.DataFlash.logging_present()) { // primary logging only (usually File)
+        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
+    }
+
+
     // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control and motor output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS);
+    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_LOGGING);
 
     switch (control_mode) {
     case MANUAL:
@@ -130,6 +135,10 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
 
     case INITIALISING:
         break;
+    }
+
+    if (rover.DataFlash.logging_enabled()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
     // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
@@ -173,6 +182,10 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
         if (sonar.has_data()) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
+    }
+
+    if (rover.DataFlash.logging_failed()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
 
     if (AP_Notify::flags.initialising) {
