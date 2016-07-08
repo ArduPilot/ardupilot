@@ -147,6 +147,9 @@ public:
 
     /// get_alt_error - returns altitude error in cm
     float get_alt_error() const;
+    
+    // returns horizontal error in cm
+    float get_horizontal_error() const;
 
     /// set_target_to_stopping_point_z - sets altitude target to reasonable stopping altitude in cm above home
     void set_target_to_stopping_point_z();

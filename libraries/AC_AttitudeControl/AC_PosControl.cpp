@@ -744,6 +744,11 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     update_z_controller();
 }
 
+float AC_PosControl::get_horizontal_error() const
+{
+    return norm(_pos_error.x, _pos_error.y);
+}
+
 ///
 /// private methods
 ///
