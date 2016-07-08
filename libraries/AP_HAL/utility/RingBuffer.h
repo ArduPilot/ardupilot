@@ -99,8 +99,8 @@ public:
     bool commit(uint32_t len);
 
 private:
-    uint8_t *buf = nullptr;
-    uint32_t size = 0;
+    uint8_t *buf;
+    uint32_t size;
 
     // head is where the next available data is. tail is where new
     // data is written
