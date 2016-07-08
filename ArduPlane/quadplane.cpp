@@ -1615,7 +1615,7 @@ void QuadPlane::check_land_complete(void)
     // we only consider the vehicle landed when the motors have been
     // at minimum for 5s and the vertical position estimate has not
     // changed by more than 20cm for 4s
-    if (fabsf(height - landing_detect.vpos_start_m > 0.2)) {
+    if (fabsf(height - landing_detect.vpos_start_m) > 0.2) {
         // height has changed, call off landing detection
         landing_detect.land_start_ms = 0;
         return;
