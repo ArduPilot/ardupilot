@@ -20,10 +20,7 @@
  */
 #pragma once
 
-#if !defined(HAVE_BYTESWAP_H) || HAVE_BYTESWAP_H
 #include <byteswap.h>
-#endif
-
 #include <endian.h>
 #include <stdint.h>
 
