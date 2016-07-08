@@ -61,19 +61,21 @@ void UARTDriver::begin(uint32_t b)
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    if (device_path == NULL && _console) {
-        _device = new ConsoleDevice();
-    } else if (!_initialised) {
-        if (device_path == NULL) {
-            return;
-        }
-
-        _device = _parseDevicePath(device_path);
-
-        if (!_device.get()) {
-            ::fprintf(stderr, "Argument is not valid. Fallback to console.\n"
-                      "Launch with --help to see an example.\n");
+    if (!_initialised) {
+        if (device_path == NULL && _console) {
             _device = new ConsoleDevice();
+        } else {
+            if (device_path == NULL) {
+                return;
+            }
+
+            _device = _parseDevicePath(device_path);
+
+            if (!_device.get()) {
+                ::fprintf(stderr, "Argument is not valid. Fallback to console.\n"
+                          "Launch with --help to see an example.\n");
+                _device = new ConsoleDevice();
+            }
         }
     }
 
