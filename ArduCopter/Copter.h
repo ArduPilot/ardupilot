@@ -813,7 +813,8 @@ private:
     void land_run();
     void land_gps_run();
     void land_nogps_run();
-    float get_land_descent_speed();
+    void land_run_vertical_control(bool pause_descent = false);
+    void land_run_horizontal_control();
     void land_do_not_use_GPS();
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
