@@ -83,7 +83,7 @@ void AC_PrecLand::init()
 void AC_PrecLand::update(float alt_above_terrain_cm)
 {
     // run backend update
-    if (_backend != NULL) {
+    if (_backend != NULL && _enabled) {
         // read from sensor
         _backend->update();
         
