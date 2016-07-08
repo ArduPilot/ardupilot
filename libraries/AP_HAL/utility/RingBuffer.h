@@ -52,13 +52,13 @@ public:
       popping it
     */
     bool update(const uint8_t *data, uint32_t len);
-    
+
     // return size of ringbuffer
     uint32_t get_size(void) const { return size; }
 
     // set size of ringbuffer, caller responsible for locking
     void set_size(uint32_t size);
-    
+
     // advance the read pointer (discarding bytes)
     bool advance(uint32_t n);
 
@@ -143,7 +143,7 @@ public:
         }
         return buffer->write((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
-   
+
     /*
       throw away an object
      */
@@ -161,7 +161,7 @@ public:
         return buffer->read((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
-    
+
     /*
      * push_force() is semantically equivalent to:
      *   if (!push(t)) { pop(); push(t); }
@@ -185,11 +185,11 @@ public:
     bool update(const T &object) {
         return buffer->update((uint8_t*)&object, sizeof(T));
     }
-    
+
 private:
     ByteBuffer *buffer = nullptr;
 };
-    
+
 
 
 /*
@@ -233,7 +233,7 @@ public:
         count++;
         return true;
     }
-   
+
     /*
       throw away an object
      */
@@ -257,7 +257,7 @@ public:
         return pop();
     }
 
-    
+
     /*
      * push_force() is semantically equivalent to:
      *   if (!push(t)) { pop(); push(t); }
@@ -292,7 +292,7 @@ public:
         count--;
         return true;
     }
-    
+
     // allow array indexing, based on current head. Returns a pointer
     // to the object or NULL
     T * operator[](uint16_t i) {
@@ -301,11 +301,10 @@ public:
         }
         return &buffer[(head+i)%size];
     }
-    
+
 private:
     T *buffer;
     uint16_t size;  // total buffer size
     uint16_t count; // number in buffer now
     uint16_t head;  // first element
 };
-    
