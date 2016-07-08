@@ -42,6 +42,8 @@ EXTRAFLAGS += -DUAVCAN=1
 
 # Add missing parts from libc and libstdc++
 EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0
+EXTRAFLAGS += -DHAVE_ENDIAN_H=0
+EXTRAFLAGS += -DHAVE_BYTESWAP_H=0
 
 EXTRAFLAGS += -I$(BUILDROOT)/libraries/GCS_MAVLink/include/mavlink
 
