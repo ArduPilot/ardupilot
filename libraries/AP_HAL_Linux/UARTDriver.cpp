@@ -61,7 +61,7 @@ void UARTDriver::begin(uint32_t b)
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    if (device_path == NULL && _console) {
+    if (device_path == NULL && _console && !_initialised) {
         _device = new ConsoleDevice();
     } else if (!_initialised) {
         if (device_path == NULL) {
