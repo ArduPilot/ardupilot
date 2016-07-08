@@ -33,25 +33,25 @@ public:
 
     bool arm_checks(bool report, bool arming_from_gcs);
 
-    ArmingCheckResult barometer_checks(bool report);
+    ArmingCheckResult barometer_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    ArmingCheckResult ins_checks(bool report);
+    ArmingCheckResult ins_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    ArmingCheckResult parameter_checks(bool report);
+    ArmingCheckResult parameter_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    ArmingCheckResult compass_checks(bool report);
+    ArmingCheckResult compass_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    ArmingCheckResult gps_checks(bool report);
+    ArmingCheckResult gps_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    ArmingCheckResult manual_transmitter_checks(bool report);
+    ArmingCheckResult manual_transmitter_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    ArmingCheckResult battery_checks(bool report);
+    ArmingCheckResult battery_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    ArmingCheckResult rangefinder_optflow_checks(bool report);
+    ArmingCheckResult rangefinder_optflow_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
     
-    ArmingCheckResult terrain_checks(bool report);
+    ArmingCheckResult terrain_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
     
-    ArmingCheckResult rallypoint_checks(bool report);
+    ArmingCheckResult rallypoint_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];

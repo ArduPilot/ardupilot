@@ -78,7 +78,9 @@ void Copter::init_rc_out()
     esc_calibration_startup_check();
 
     // enable output to motors
-    if (arming.manual_transmitter_checks(false)) {
+    uint64_t enabled_checks = 0;
+    uint64_t passed_checks = 0;
+    if (arming.manual_transmitter_checks(false, enabled_checks, passed_checks)) {
         enable_motor_output();
     }
 
