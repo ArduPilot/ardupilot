@@ -164,7 +164,15 @@ void Copter::land_run_vertical_control(bool pause_descent)
 {
     bool navigating = pos_control.is_active_xy();
 
+#if PRECISION_LANDING == ENABLED
+    bool doing_precision_landing = !ap.land_repo_active && precland.target_acquired() && navigating;
+#else
+    bool doing_precision_landing = false;
+#endif
+
     // compute desired velocity
+    const float precland_acceptable_error = 25.0f;
+    const float precland_min_descent_speed = 10.0f;
     int32_t alt_above_ground;
     if (rangefinder_alt_ok()) {
         alt_above_ground = rangefinder_state.alt_cm_filt.get();
@@ -178,6 +186,11 @@ void Copter::land_run_vertical_control(bool pause_descent)
     if (!pause_descent) {
         cmb_rate = AC_AttitudeControl::sqrt_controller(LAND_START_ALT-alt_above_ground, g.p_alt_hold.kP(), pos_control.get_accel_z());
         cmb_rate = constrain_float(cmb_rate, pos_control.get_speed_down(), -abs(g.land_speed));
+
+        if (doing_precision_landing && alt_above_ground < 300.0f) {
+            float land_slowdown = MAX(0.0f, pos_control.get_horizontal_error()*(abs(g.land_speed)/precland_acceptable_error));
+            cmb_rate = MIN(-precland_min_descent_speed, cmb_rate+land_slowdown);
+        }
     }
 
     // record desired climb rate for logging
