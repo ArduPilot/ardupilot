@@ -16,6 +16,8 @@
 #include "RCInput.h"
 #include "sbus.h"
 
+#define MIN_NUM_CHANNELS 5
+
 extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
@@ -102,7 +104,7 @@ void RCInput::_process_ppmsum_pulse(uint16_t width_usec)
     if (width_usec >= 2700) {
         // a long pulse indicates the end of a frame. Reset the
         // channel counter so next pulse is channel 0
-        if (ppm_state._channel_counter >= 5) {
+        if (ppm_state._channel_counter >= MIN_NUM_CHANNELS) {
             for (uint8_t i=0; i<ppm_state._channel_counter; i++) {
                 _pwm_values[i] = ppm_state._pulse_capt[i];
             }
@@ -210,7 +212,7 @@ void RCInput::_process_sbus_pulse(uint16_t width_s0, uint16_t width_s1)
         if (sbus_decode(bytes, values, &num_values,
                         &sbus_failsafe, &sbus_frame_drop,
                         LINUX_RC_INPUT_NUM_CHANNELS) &&
-            num_values >= 5) {
+            num_values >= MIN_NUM_CHANNELS) {
             for (i=0; i<num_values; i++) {
                 _pwm_values[i] = values[i];
             }
@@ -279,7 +281,7 @@ void RCInput::_process_dsm_pulse(uint16_t width_s0, uint16_t width_s1)
             uint16_t values[8];
             uint16_t num_values=0;
             if (dsm_decode(AP_HAL::micros64(), bytes, values, &num_values, 8) &&
-                num_values >= 5) {
+                num_values >= MIN_NUM_CHANNELS) {
                 for (i=0; i<num_values; i++) {
                     _pwm_values[i] = values[i];
                 }
@@ -380,7 +382,7 @@ void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
             uint16_t values[16] {};
             uint16_t num_values=0;
             if (dsm_decode(AP_HAL::micros64(), dsm.frame, values, &num_values, 16) &&
-                num_values >= 5) {
+                num_values >= MIN_NUM_CHANNELS) {
                 for (uint8_t i=0; i<num_values; i++) {
                     if (values[i] != 0) {
                         _pwm_values[i] = values[i];
@@ -442,7 +444,7 @@ void RCInput::add_sbus_input(const uint8_t *bytes, size_t nbytes)
             bool sbus_failsafe;
             bool sbus_frame_drop;
             if (sbus_decode(sbus.frame, values, &num_values, &sbus_failsafe, &sbus_frame_drop, 16) &&
-                num_values >= 5) {
+                num_values >= MIN_NUM_CHANNELS) {
                 for (uint8_t i=0; i<num_values; i++) {
                     if (values[i] != 0) {
                         _pwm_values[i] = values[i];
