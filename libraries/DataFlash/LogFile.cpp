@@ -1131,7 +1131,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     if (ahrs.get_NavEKF().enabled()) {
         // Write first EKF packet
         Vector3f euler;
-        Vector3f posNED;
+        Vector2f posNE;
+        float posD;
         Vector3f velNED;
         Vector3f dAngBias;
         Vector3f dVelBias;
@@ -1139,7 +1140,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         float posDownDeriv;
         ahrs.get_NavEKF().getEulerAngles(euler);
         ahrs.get_NavEKF().getVelNED(velNED);
-        ahrs.get_NavEKF().getPosNED(posNED);
+        ahrs.get_NavEKF().getPosNE(posNE);
+        ahrs.get_NavEKF().getPosD(posD);
         ahrs.get_NavEKF().getGyroBias(gyroBias);
         posDownDeriv = ahrs.get_NavEKF().getPosDownDerivative();
         struct log_EKF1 pkt = {
@@ -1152,9 +1154,9 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             velE    : (float)(velNED.y), // velocity East (m/s)
             velD    : (float)(velNED.z), // velocity Down (m/s)
             posD_dot : (float)(posDownDeriv), // first derivative of down position
-            posN    : (float)(posNED.x), // metres North
-            posE    : (float)(posNED.y), // metres East
-            posD    : (float)(posNED.z), // metres Down
+            posN    : (float)(posNE.x), // metres North
+            posE    : (float)(posNE.y), // metres East
+            posD    : (float)(posD), // metres Down
             gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
             gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
             gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
@@ -1286,7 +1288,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     uint64_t time_us = AP_HAL::micros64();
 	// Write first EKF packet
     Vector3f euler;
-    Vector3f posNED;
+    Vector2f posNE;
+    float posD;
     Vector3f velNED;
     Vector3f dAngBias;
     Vector3f dVelBias;
@@ -1294,7 +1297,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     float posDownDeriv;
     ahrs.get_NavEKF2().getEulerAngles(0,euler);
     ahrs.get_NavEKF2().getVelNED(0,velNED);
-    ahrs.get_NavEKF2().getPosNED(0,posNED);
+    ahrs.get_NavEKF2().getPosNE(0,posNE);
+    ahrs.get_NavEKF2().getPosD(0,posD);
     ahrs.get_NavEKF2().getGyroBias(0,gyroBias);
     posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(0);
     struct log_EKF1 pkt = {
@@ -1307,9 +1311,9 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         velE    : (float)(velNED.y), // velocity East (m/s)
         velD    : (float)(velNED.z), // velocity Down (m/s)
         posD_dot : (float)(posDownDeriv), // first derivative of down position
-        posN    : (float)(posNED.x), // metres North
-        posE    : (float)(posNED.y), // metres East
-        posD    : (float)(posNED.z), // metres Down
+        posN    : (float)(posNE.x), // metres North
+        posE    : (float)(posNE.y), // metres East
+        posD    : (float)(posD), // metres Down
         gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
         gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
         gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
@@ -1445,7 +1449,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         // Write 6th EKF packet
         ahrs.get_NavEKF2().getEulerAngles(1,euler);
         ahrs.get_NavEKF2().getVelNED(1,velNED);
-        ahrs.get_NavEKF2().getPosNED(1,posNED);
+        ahrs.get_NavEKF2().getPosNE(1,posNE);
+        ahrs.get_NavEKF2().getPosD(1,posD);
         ahrs.get_NavEKF2().getGyroBias(1,gyroBias);
         posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(1);
         struct log_EKF1 pkt6 = {
@@ -1458,9 +1463,9 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             velE    : (float)(velNED.y), // velocity East (m/s)
             velD    : (float)(velNED.z), // velocity Down (m/s)
             posD_dot : (float)(posDownDeriv), // first derivative of down position
-            posN    : (float)(posNED.x), // metres North
-            posE    : (float)(posNED.y), // metres East
-            posD    : (float)(posNED.z), // metres Down
+            posN    : (float)(posNE.x), // metres North
+            posE    : (float)(posNE.y), // metres East
+            posD    : (float)(posD), // metres Down
             gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
             gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
             gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
