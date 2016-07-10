@@ -269,12 +269,8 @@ void NavEKF2_core::SelectMagFusion()
 
     // If the final yaw reset has been performed and the state variances are sufficiently low
     // record that the earth field has been learned.
-    bool earthMagFieldConverged = false;
     if (!magFieldLearned && finalInflightMagInit) {
-        earthMagFieldConverged = (P[16][16] < sq(0.01f)) && (P[17][17] < sq(0.01f)) && (P[18][18] < sq(0.01f));
-    }
-    if (magFieldLearned || earthMagFieldConverged) {
-        magFieldLearned = true;
+        magFieldLearned = (P[16][16] < sq(0.01f)) && (P[17][17] < sq(0.01f)) && (P[18][18] < sq(0.01f));
     }
 
     // record the last learned field variances
