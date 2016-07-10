@@ -263,6 +263,7 @@ void NavEKF2_core::InitialiseVariables()
     quatAtLastMagReset = stateStruct.quat;
     magFieldLearned = false;
     delAngBiasLearned = false;
+    memset(&filterStatus, 0, sizeof(filterStatus));
 
     // zero data buffers
     storedIMU.reset();
@@ -460,6 +461,9 @@ void NavEKF2_core::UpdateFilter(bool predict)
 
         // Update states using sideslip constraint assumption for fly-forward vehicles
         SelectBetaFusion();
+
+        // Update the filter status
+        updateFilterStatus();
     }
 
     // Wind output forward from the fusion to output time horizon
