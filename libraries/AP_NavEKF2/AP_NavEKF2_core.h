@@ -71,6 +71,16 @@ public:
     // If false returned, do not use for flight control
     bool getPosNED(Vector3f &pos) const;
 
+    // Return the last calculated NE position relative to the reference point (m).
+    // If a calculated solution is not available, use the best available data and return false
+    // If false returned, do not use for flight control
+    bool getPosNE(Vector2f &posNE) const;
+
+    // Return the last calculated D position relative to the reference point (m).
+    // If a calculated solution is not available, use the best available data and return false
+    // If false returned, do not use for flight control
+    bool getPosD(float &posD) const;
+
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
