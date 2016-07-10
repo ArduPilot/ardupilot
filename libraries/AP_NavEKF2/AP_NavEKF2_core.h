@@ -389,6 +389,9 @@ private:
         uint32_t    time_ms;        // 4
     };
 
+    // update the navigation filter status
+    void  updateFilterStatus(void);
+
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
 
@@ -807,6 +810,7 @@ private:
     Vector3f earthMagFieldVar;      // NED earth mag field variances for last learned field (mGauss^2)
     Vector3f bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
     bool delAngBiasLearned;         // true when the gyro bias has been learned
+    nav_filter_status filterStatus; // contains the status of various filter outputs
 
     Vector3f outputTrackError;
 
