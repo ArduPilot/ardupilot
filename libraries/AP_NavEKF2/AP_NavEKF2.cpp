@@ -673,19 +673,6 @@ int8_t NavEKF2::getPrimaryCoreIndex(void) const
     return primary;
 }
 
-
-// Return the last calculated NED position relative to the reference point (m).
-// If a calculated solution is not available, use the best available data and return false
-// If false returned, do not use for flight control
-bool NavEKF2::getPosNED(int8_t instance, Vector3f &pos)
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (!core) {
-        return false;
-    }
-    return core[instance].getPosNED(pos);
-}
-
 // Return the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
