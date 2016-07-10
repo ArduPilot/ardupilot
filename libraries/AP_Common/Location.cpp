@@ -20,8 +20,7 @@ AP_Terrain *Location_Class::_terrain = NULL;
 /// constructors
 Location_Class::Location_Class()
 {
-    lat = lng = alt = 0;
-    options = 0;
+    zero();
 }
 
 Location_Class::Location_Class(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame)
