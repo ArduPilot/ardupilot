@@ -603,7 +603,8 @@ private:
     void fuseEulerYaw();
 
     // Fuse declination angle to keep earth field declination from changing when we don't have earth relative observations.
-    void FuseDeclination();
+    // Input is 1-sigma uncertainty in published declination
+    void FuseDeclination(float declErr);
 
     // Propagate PVA solution forward from the fusion time horizon to the current time horizon
     // using a simple observer
@@ -794,6 +795,9 @@ private:
     float posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
     Vector3f delAngCorrected;       // corrected IMU delta angle vector at the EKF time horizon (rad)
     Vector3f delVelCorrected;       // corrected IMU delta velocity vector at the EKF time horizon (m/s)
+    bool magFieldLearned;           // true when the magnetic field has been learned
+    Vector3f earthMagFieldVar;      // NED earth mag field variances for last learned field (mGauss^2)
+    Vector3f bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
 
     Vector3f outputTrackError;
 

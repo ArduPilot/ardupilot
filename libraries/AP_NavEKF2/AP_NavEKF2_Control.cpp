@@ -111,9 +111,24 @@ void NavEKF2_core::setWindMagStateLearningMode()
         inhibitMagStates = true;
     } else if (inhibitMagStates && !setMagInhibit) {
         inhibitMagStates = false;
-        // when commencing use of magnetic field states, set the variances equal to the observation uncertainty
-        for (uint8_t index=16; index<=21; index++) {
-            P[index][index] = sq(frontend->_magNoise);
+        if (magFieldLearned) {
+            // if we have already learned the field states, then retain the learned variances
+            P[16][16] = earthMagFieldVar.x;
+            P[17][17] = earthMagFieldVar.y;
+            P[18][18] = earthMagFieldVar.z;
+            P[19][19] = bodyMagFieldVar.x;
+            P[20][20] = bodyMagFieldVar.y;
+            P[21][21] = bodyMagFieldVar.z;
+        } else {
+            // set the variances equal to the observation variances
+            for (uint8_t index=18; index<=21; index++) {
+                P[index][index] = sq(frontend->_magNoise);
+            }
+
+            // set the NE earth magnetic field states using the published declination
+            // and set the corresponding variances and covariances
+            alignMagStateDeclination();
+
         }
         // request a reset of the yaw and magnetic field states if not done before
         if (!magStateInitComplete || (!finalInflightMagInit && inFlight)) {

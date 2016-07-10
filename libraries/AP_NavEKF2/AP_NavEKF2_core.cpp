@@ -261,6 +261,7 @@ void NavEKF2_core::InitialiseVariables()
     posDownAtLastMagReset = stateStruct.position.z;
     yawInnovAtLastMagReset = 0.0f;
     quatAtLastMagReset = stateStruct.quat;
+    magFieldLearned = false;
 
     // zero data buffers
     storedIMU.reset();
@@ -1374,54 +1375,47 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
 
-        // calculate initial filter quaternion states using yaw from magnetometer if mag heading healthy
-        // otherwise use existing heading
-        if (!badMagYaw) {
-            // store the yaw change so that it can be retrieved externally for use by the control loops to prevent yaw disturbances following a reset
-            Vector3f tempEuler;
-            stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
-            // this check ensures we accumulate the resets that occur within a single iteration of the EKF
-            if (imuSampleTime_ms != lastYawReset_ms) {
-                yawResetAngle = 0.0f;
-            }
-            yawResetAngle += wrap_PI(yaw - tempEuler.z);
-            lastYawReset_ms = imuSampleTime_ms;
-            // calculate an initial quaternion using the new yaw value
-            initQuat.from_euler(roll, pitch, yaw);
-            // zero the attitude covariances becasue the corelations will now be invalid
-            zeroAttCovOnly();
-        } else {
-            initQuat = stateStruct.quat;
+        // calculate initial filter quaternion states using yaw from magnetometer
+        // store the yaw change so that it can be retrieved externally for use by the control loops to prevent yaw disturbances following a reset
+        Vector3f tempEuler;
+        stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
+        // this check ensures we accumulate the resets that occur within a single iteration of the EKF
+        if (imuSampleTime_ms != lastYawReset_ms) {
+            yawResetAngle = 0.0f;
         }
+        yawResetAngle += wrap_PI(yaw - tempEuler.z);
+        lastYawReset_ms = imuSampleTime_ms;
+        // calculate an initial quaternion using the new yaw value
+        initQuat.from_euler(roll, pitch, yaw);
+        // zero the attitude covariances becasue the corelations will now be invalid
+        zeroAttCovOnly();
 
         // calculate initial Tbn matrix and rotate Mag measurements into NED
         // to set initial NED magnetic field states
-        initQuat.rotation_matrix(Tbn);
-        stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
+        // don't do this if the earth field has already been learned
+        if (!magFieldLearned) {
+            initQuat.rotation_matrix(Tbn);
+            stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
 
-        // align the NE earth magnetic field states with the published declination
-        alignMagStateDeclination();
+            // set the NE earth magnetic field states using the published declination
+            // and set the corresponding variances and covariances
+            alignMagStateDeclination();
 
-        // zero the magnetic field state associated covariances
-        zeroRows(P,16,21);
-        zeroCols(P,16,21);
-        // set initial earth magnetic field variances
-        P[16][16] = sq(frontend->_magNoise);
-        P[17][17] = P[16][16];
-        P[18][18] = P[16][16];
-        // set initial body magnetic field variances
-        P[19][19] = sq(frontend->_magNoise);
-        P[20][20] = P[19][19];
-        P[21][21] = P[19][19];
+            // set the remaining variances and covariances
+            zeroRows(P,18,21);
+            zeroCols(P,18,21);
+            P[18][18] = sq(frontend->_magNoise);
+            P[19][19] = P[18][18];
+            P[20][20] = P[18][18];
+            P[21][21] = P[18][18];
 
-        // clear bad magnetic yaw status
-        badMagYaw = false;
-
-        // clear mag state reset request
-        magStateResetRequest = false;
+        }
 
         // record the fact we have initialised the magnetic field states
         recordMagReset();
+
+        // clear mag state reset request
+        magStateResetRequest = false;
 
     } else {
         // this function should not be called if there is no compass data but if is is, return the
