@@ -686,6 +686,30 @@ bool NavEKF2::getPosNED(int8_t instance, Vector3f &pos)
     return core[instance].getPosNED(pos);
 }
 
+// Return the last calculated NE position relative to the reference point (m).
+// If a calculated solution is not available, use the best available data and return false
+// If false returned, do not use for flight control
+bool NavEKF2::getPosNE(int8_t instance, Vector2f &posNE)
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (!core) {
+        return false;
+    }
+    return core[instance].getPosNE(posNE);
+}
+
+// Return the last calculated D position relative to the reference point (m).
+// If a calculated solution is not available, use the best available data and return false
+// If false returned, do not use for flight control
+bool NavEKF2::getPosD(int8_t instance, float &posD)
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (!core) {
+        return false;
+    }
+    return core[instance].getPosD(posD);
+}
+
 // return NED velocity in m/s
 void NavEKF2::getVelNED(int8_t instance, Vector3f &vel)
 {
