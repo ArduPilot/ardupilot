@@ -331,7 +331,7 @@ void NavEKF2_core::recordYawReset()
 bool NavEKF2_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
-    const float delAngBiasVarMax = sq(radians(0.1f * dtEkfAvg));
+    const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
     delAngBiasLearned =  (P[9][9] <= delAngBiasVarMax) &&
                             (P[10][10] <= delAngBiasVarMax) &&
                             (P[11][11] <= delAngBiasVarMax);
