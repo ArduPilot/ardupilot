@@ -25,11 +25,20 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Common/Location.h>
 
 #define VEHICLE_THREAT_RADIUS_M         1000
 #define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
 #define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
 #define ADSB_VEHICLE_LIST_SIZE_MAX      100
+
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    #define ADSB_LIST_RADIUS_DEFAULT        10000 // in meters
+#else // APM_BUILD_TYPE(APM_BUILD_ArduCopter), Rover, Boat
+    #define ADSB_LIST_RADIUS_DEFAULT        2000 // in meters
+#endif
 
 class AP_ADSB
 {
@@ -117,6 +126,7 @@ private:
         uint16_t    list_size = 1; // start with tiny list, then change to param-defined size. This ensures it doesn't fail on start
         adsb_vehicle_t *vehicle_list = nullptr;
         uint16_t    vehicle_count = 0;
+        AP_Int32    list_radius;
 
     // streamrate stuff
     uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
