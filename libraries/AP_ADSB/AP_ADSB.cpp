@@ -51,6 +51,13 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     AP_GROUPINFO("LIST_MAX",   2, AP_ADSB, in_state.list_size_param, ADSB_VEHICLE_LIST_SIZE_DEFAULT),
 
 
+    // @Param: LIST_RADIUS
+    // @DisplayName: ADSB vehicle list radius filter
+    // @Description: ADSB vehicle list radius filter. Vehicles detected outside this radius will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations.
+    // @Range: 1 100000
+    // @User: Advanced
+    AP_GROUPINFO("LIST_RADIUS",   3, AP_ADSB, in_state.list_radius, ADSB_LIST_RADIUS_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -262,7 +269,13 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     adsb_vehicle_t vehicle {};
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
 
-    if (find_index(vehicle, &index)) {
+    if (!_my_loc.is_zero() &&
+            _my_loc.get_distance(AP_ADSB::get_location(vehicle)) > in_state.list_radius) {
+
+        // vehicle is out of range. Ignore it.
+        return;
+
+    } else if (find_index(vehicle, &index)) {
 
         // found, update it
         set_vehicle(index, vehicle);
