@@ -69,12 +69,13 @@ public:
     // add or update vehicle_list from inbound mavlink msg
     void update_vehicle(const mavlink_message_t* msg);
 
-    bool get_possible_threat()  { return _enabled && _another_vehicle_within_radius; }
 
-    ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(_behavior.get()); }
-    bool get_is_evading_threat()  { return _enabled && _is_evading_threat; }
-    void set_is_evading_threat(bool is_evading) { if (_enabled) { _is_evading_threat = is_evading; } }
-    uint16_t get_vehicle_count() { return _vehicle_count; }
+    bool get_possible_threat()  { return _enabled && avoid_state.another_vehicle_within_radius; }
+
+    ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(avoid_state.behavior.get()); }
+    bool get_is_evading_threat()  { return _enabled && avoid_state.is_evading_threat; }
+    void set_is_evading_threat(bool is_evading) { if (_enabled) { avoid_state.is_evading_threat = is_evading; } }
+    uint16_t get_vehicle_count() { return in_state.vehicle_count; }
 
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
     void send_adsb_vehicle(mavlink_channel_t chan);
@@ -106,24 +107,38 @@ private:
     const AP_AHRS &_ahrs;
 
     AP_Int8     _enabled;
-    AP_Int8     _behavior;
-    AP_Int16    _list_size_param;
-    uint16_t    _list_size = 1; // start with tiny list, then change to param-defined size. This ensures it doesn't fail on start
-    adsb_vehicle_t *_vehicle_list;
-    uint16_t    _vehicle_count = 0;
-    bool        _another_vehicle_within_radius = false;
-    bool        _is_evading_threat = false;
 
-    // index of and distance to vehicle with lowest threat
-    uint16_t    _lowest_threat_index = 0;
-    float       _lowest_threat_distance = 0;
+    Location_Class  _my_loc;
 
-    // index of and distance to vehicle with highest threat
-    uint16_t    _highest_threat_index = 0;
-    float       _highest_threat_distance = 0;
+    // ADSB-IN state. Maintains list of external vehicles
+    struct {
+        // list management
+        AP_Int16    list_size_param;
+        uint16_t    list_size = 1; // start with tiny list, then change to param-defined size. This ensures it doesn't fail on start
+        adsb_vehicle_t *vehicle_list = nullptr;
+        uint16_t    vehicle_count = 0;
 
     // streamrate stuff
     uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
     uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
+    } in_state;
+
+
+
+    // Avoidance state
+    struct {
+        AP_Int8     behavior;
+
+        bool        another_vehicle_within_radius = false;
+        bool        is_evading_threat = false;
+
+        // index of and distance to vehicle with lowest threat
+        uint16_t    lowest_threat_index = 0;
+        float       lowest_threat_distance = 0;
+
+        // index of and distance to vehicle with highest threat
+        uint16_t    highest_threat_index = 0;
+        float       highest_threat_distance = 0;
+    } avoid_state;
 
 };
