@@ -78,6 +78,8 @@ public:
     // add or update vehicle_list from inbound mavlink msg
     void update_vehicle(const mavlink_message_t* msg);
 
+    // handle ADS-B transceiver report
+    void transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
 
     bool get_possible_threat()  { return _enabled && avoid_state.another_vehicle_within_radius; }
 
@@ -88,6 +90,11 @@ public:
 
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
     void send_adsb_vehicle(mavlink_channel_t chan);
+
+    void set_stall_speed_cm(uint16_t stall_speed_cm) { out_state.cfg.stall_speed_cm = stall_speed_cm; }
+
+    void set_is_auto_mode(bool is_in_auto_mode) { _is_in_auto_mode = is_in_auto_mode; }
+    void set_is_flying(bool is_flying) { out_state.is_flying = is_flying; }
 
 private:
 
@@ -111,13 +118,26 @@ private:
 
     void set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle);
 
+    // Generates pseudorandom ICAO from gps time, lat, and lon
+    uint32_t genICAO(const Location &loc);
+
+    // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
+    void set_callsign(const char* str, bool append_icao);
+
+    // send static and dynamic data to ADSB transceiver
+    void send_configure(mavlink_channel_t chan);
+    void send_dynamic_out(mavlink_channel_t chan);
+
+
     // reference to AHRS, so we can ask for our position,
     // heading and speed
-    const AP_AHRS &_ahrs;
+    AP_AHRS &_ahrs;
 
     AP_Int8     _enabled;
 
     Location_Class  _my_loc;
+
+    bool _is_in_auto_mode;
 
     // ADSB-IN state. Maintains list of external vehicles
     struct {
@@ -128,11 +148,34 @@ private:
         uint16_t    vehicle_count = 0;
         AP_Int32    list_radius;
 
-    // streamrate stuff
-    uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
-    uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
+        // streamrate stuff
+        uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
+        uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
     } in_state;
 
+
+    // ADSB-OUT state. Maintains export data
+    struct {
+        uint32_t    last_config_ms; // send once every 10s
+        uint32_t    last_report_ms; // send at 5Hz
+        int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means broadcast to all
+        ADSB_TRANSPONDER_DYNAMIC_OUTPUT_STATUS_FLAGS status;     // transceiver status
+        bool        is_flying;
+
+        // ADSB-OUT configuration
+        struct {
+            int32_t     ICAO_id;
+            AP_Int32    ICAO_id_param;
+            int32_t     ICAO_id_param_prev = -1; // assume we never send
+            char        callsign[9]; //Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only).
+            AP_Int8     emitterType;
+            AP_Int8      lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
+            AP_Int8      gpsLatOffset;
+            AP_Int8      gpsLonOffset;
+            uint16_t     stall_speed_cm;
+        } cfg;
+
+    } out_state;
 
 
     // Avoidance state
