@@ -24,6 +24,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_ADSB.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <stdio.h>  // for sprintf
+#include <limits.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -58,6 +60,40 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LIST_RADIUS",   3, AP_ADSB, in_state.list_radius, ADSB_LIST_RADIUS_DEFAULT),
 
+    // @Param: ICAO_ID
+    // @DisplayName: ICAO_ID vehicle identifaction number
+    // @Description: ICAO_ID unique vehicle identifaction number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
+    // @Range: -1 16777215
+    // @User: Advanced
+    AP_GROUPINFO("ICAO_ID",   4, AP_ADSB, out_state.cfg.ICAO_id_param, 0),
+
+    // @Param: EMIT_TYPE
+    // @DisplayName: Emitter type
+    // @Description: ADSB classification for the type of vehicle emitting the transponder signal. Default value is 14 (UAV).
+    // @Values: 0:NoInfo,1:Light,2:Small,3:Large,4:HighVortexlarge,5:Heavy,6:HighlyManuv,7:Rotocraft,8:RESERVED,9:Glider,10:LightAir,11:Parachute,12:UltraLight,13:RESERVED,14:UAV,15:Space,16:RESERVED,17:EmergencySurface,18:ServiceSurface,19:PointObstacle
+    // @User: Advanced
+    AP_GROUPINFO("EMIT_TYPE",   5, AP_ADSB, out_state.cfg.emitterType, ADSB_EMITTER_TYPE_UAV),
+
+    // @Param: LEN_WIDTH
+    // @DisplayName: Aircraft length and width
+    // @Description: Aircraft length and width encoding. See ADSB_TRANSPONDER_STATIC_INPUT_ALW_ENCODE
+    // @User: Advanced
+    AP_GROUPINFO("LEN_WIDTH",   6, AP_ADSB, out_state.cfg.lengthWidth, ADSB_TRANSPONDER_AIRCRAFT_SIZE_NO_DATA),
+
+    // @Param: OFFSET_LAT
+    // @DisplayName: GPS antenna lateral offset
+    // @Description: GPS antenna lateral offset. See ADSB_TRANSPONDER_STATIC_INPUT_GPS_LAT_OFFSET
+    // @User: Advanced
+    AP_GROUPINFO("OFFSET_LAT",   7, AP_ADSB, out_state.cfg.gpsLatOffset, ADSB_TRANSPONDER_GPS_LAT_OFFSET_NO_DATA),
+
+    // @Param: OFFSET_LON
+    // @DisplayName: GPS antenna longitudinal offset
+    // @Description: GPS antenna longitudinal offset. See ADSB_TRANSPONDER_STATIC_INPUT_GPS_LON_OFFSET
+    // @User: Advanced
+    AP_GROUPINFO("OFFSET_LON",   8, AP_ADSB, out_state.cfg.gpsLonOffset, ADSB_TRANSPONDER_GPS_LON_OFFSET_NO_DATA),
+
+
+
     AP_GROUPEND
 };
 
@@ -88,6 +124,9 @@ void AP_ADSB::init(void)
     avoid_state.highest_threat_distance = 0;
     avoid_state.another_vehicle_within_radius = false;
     avoid_state.is_evading_threat = false;
+
+    // out_state
+    set_callsign("PING1234", false);
 }
 
 /*
@@ -141,7 +180,73 @@ void AP_ADSB::update(void)
         }
     }
 
+// -----------------------
+    if (_my_loc.is_zero()) {
+        // if we don't have a GPS lock then there's nothing else to do
+        return;
+    }
+// -----------------------
+
+
+
     perform_threat_detection();
+
+    // ensure it's positive 24bit but allow -1
+    out_state.cfg.ICAO_id_param = constrain_int32(out_state.cfg.ICAO_id_param, -1, 0x00FFFFFF);
+
+    // send dynamic data to transceiver, every 1s
+    if (now - out_state.last_report_ms >= 1000) {
+        out_state.last_report_ms = now;
+        // if the transceiver has been detected on a channel, use that channel. Else, broadcast to all
+        if (out_state.chan >= 0 && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
+            send_dynamic_out((mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan));
+        } else {
+            for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+                send_dynamic_out((mavlink_channel_t)(MAVLINK_COMM_0 + i));
+            }
+        }
+    } // last_report_ms
+
+
+
+    // keep checking for ICAO_id because we may change it during run-time
+    if (out_state.cfg.ICAO_id_param <= -1) {
+        // icao param of -1 means static information is not sent, transceiver is assumed pre-programmed.
+        // reset timer constantly so it never reaches 10s so it never sends
+        out_state.last_config_ms = now;
+
+    } else if (out_state.cfg.ICAO_id == 0 ||
+            out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param) {
+        // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
+        out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
+        out_state.cfg.ICAO_id = genICAO(_my_loc);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Generated ICAO_id: %d", out_state.cfg.ICAO_id);
+        set_callsign("PING", true);
+        out_state.last_config_ms = 0; // send now
+
+    } else {
+        // if param is set (non zero), then always use it
+        out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
+        out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
+        set_callsign("PING", true);
+        out_state.last_config_ms = 0; // send now
+    }
+
+
+    // send static configuration data to transceiver, every 10s
+    if (now - out_state.last_config_ms >= 10000) {
+
+        out_state.last_config_ms = now;
+        // if the transceiver has been detected on a channel, use that channel. Else, broadcast to all
+        if (out_state.chan >= 0 && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
+            send_configure((mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan));
+        } else {
+            for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+                send_configure((mavlink_channel_t)(MAVLINK_COMM_0 + i));
+            }
+        }
+    } // last_config_ms
+
 }
 
 /*
@@ -365,5 +470,200 @@ void AP_ADSB::send_adsb_vehicle(mavlink_channel_t chan)
             vehicle.flags,
             vehicle.squawk);
     }
+}
+
+
+void AP_ADSB::send_dynamic_out(mavlink_channel_t chan)
+{
+    // --------------
+    // Knowns
+    AP_GPS gps = _ahrs.get_gps();
+    Vector3f gps_velocity = gps.velocity();
+
+    int32_t latitude = _my_loc.lat;
+    int32_t longitude = _my_loc.lng;
+    int32_t altGNSS = _my_loc.alt*0.1f; // convert cm to mm
+    int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
+    int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
+    int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
+    uint8_t fixType = gps.status(); // this lines up perfectly with our enum
+    uint8_t emStatus = 0; // TODO: implement this ENUM. no emergency = 0
+    uint8_t numSats = gps.num_sats();
+    uint16_t squawk = 1200; // Mode A code (typically 1200 [0x04B0] for VFR)
+
+    uint32_t accHoriz = UINT_MAX;
+    float accHoriz_f;
+    if (gps.horizontal_accuracy(accHoriz_f)) {
+        accHoriz = accHoriz_f * 1E3; // convert m to mm
+    }
+
+    uint16_t accVert = USHRT_MAX;
+    float accVert_f;
+    if (gps.vertical_accuracy(accVert_f)) {
+        accVert = accVert_f * 1E2; // convert m to cm
+    }
+
+    uint16_t accVel = USHRT_MAX;
+    float accVel_f;
+    if (gps.speed_accuracy(accVel_f)) {
+        accVel = accVel_f * 1E3; // convert m/s to mm/s
+    }
+
+    uint16_t state = 0;
+    if (_is_in_auto_mode) {
+        state |= ADSB_TRANSPONDER_AUTOPILOT_ENABLED;
+    }
+    if (!out_state.is_flying) {
+        state |= ADSB_TRANSPONDER_ON_GROUND;
+    }
+
+
+
+    // --------------
+    // Not Sure
+    uint32_t utcTime = UINT_MAX; //    uint32_t utcTime,
+    // TODO: confirm this sets utcTime correctly
+    const uint64_t gps_time = gps.time_epoch_usec();
+    utcTime = gps_time / 1000000ULL;
+
+    // just set them all, I don't think these are implemented on the transceiver (yet)
+    uint8_t control = ADSB_TRANSPONDER_RECEIVE_ONLY | ADSB_TRANSPONDER_TX_ENABLE_1090ES | ADSB_TRANSPONDER_TX_ENABLE_UAT;
+
+
+
+    // --------------
+    // Unknowns
+    int32_t altPres = INT_MAX; //_ahrs.get_baro().get_altitude() relative to home, not MSL
+
+
+
+    mavlink_msg_adsb_transponder_dynamic_input_send(
+            chan,
+            utcTime,
+            latitude,
+            longitude,
+            altPres,
+            altGNSS,
+            accHoriz,
+            accVert,
+            accVel,
+            velVert,
+            nsVog,
+            ewVog,
+            fixType,
+            numSats,
+            emStatus,
+            control,
+            state,
+            squawk);
+}
+
+void AP_ADSB::send_configure(mavlink_channel_t chan)
+{
+    mavlink_msg_adsb_transponder_static_input_send(
+            chan,
+            (uint32_t)out_state.cfg.ICAO_id,
+            out_state.cfg.callsign,
+            (uint8_t)out_state.cfg.emitterType,
+            (uint8_t)out_state.cfg.lengthWidth,
+            (uint8_t)out_state.cfg.gpsLatOffset,
+            (uint8_t)out_state.cfg.gpsLonOffset,
+            out_state.cfg.stall_speed_cm);
+}
+
+/*
+ * this is a message from the transceiver reporting it's health. Using this packet
+ * we determine which channel is on so we don't have to send out_state to all channels
+ */
+
+void AP_ADSB::transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg)
+{
+    mavlink_adsb_transponder_dynamic_output_t packet {};
+    mavlink_msg_adsb_transponder_dynamic_output_decode(msg, &packet);
+
+    if (out_state.chan != chan) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
+    }
+    out_state.chan = chan;
+
+    if (out_state.status != (ADSB_TRANSPONDER_DYNAMIC_OUTPUT_STATUS_FLAGS)packet.status) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_DEBUG, "ADSB: Transceiver status %d", packet.status);
+    }
+    out_state.status = (ADSB_TRANSPONDER_DYNAMIC_OUTPUT_STATUS_FLAGS)packet.status;
+}
+
+/*
+ @brief Generates pseudorandom ICAO from gps time, lat, and lon.
+ Reference: DO282B, 2.2.4.5.1.3.2
+
+ Note gps.time is the number of seconds since UTC midnight
+*/
+uint32_t AP_ADSB::genICAO(const Location &loc)
+{
+    // gps_time is not seconds since UTC midnight, but it is an equivalent random number
+    // TODO: use UTC time instead of GPS time
+    AP_GPS gps = _ahrs.get_gps();
+    const uint64_t gps_time = gps.time_epoch_usec();
+
+    uint32_t timeSum = 0;
+    uint32_t M3 = 4096 * (loc.lat & 0x00000FFF) + (loc.lng & 0x00000FFF);
+
+    for (uint8_t i=0; i<24; i++) {
+        timeSum += (((gps_time & 0x00FFFFFF)>> i) & 0x00000001);
+    }
+    return( (timeSum ^ M3) & 0x00FFFFFF);
+}
+
+// assign a string to out_state.cfg.callsign but ensure it's null terminated
+void AP_ADSB::set_callsign(const char* str, bool append_icao)
+{
+    bool zero_char_pad = false;
+
+    // clean slate
+    memset(out_state.cfg.callsign, 0, sizeof(out_state.cfg.callsign));
+
+    // copy str to cfg.callsign but we can't use strncpy because we need
+    // to restrict values to only 'A' - 'Z' and '0' - '9'
+    for (uint8_t i=0; i<sizeof(out_state.cfg.callsign)-1; i++) {
+        if (!str[i] || zero_char_pad) {
+            // finish early. Either pad the rest with zero char or null terminate and call it a day
+            if ((append_icao && i<4) || zero_char_pad) {
+                out_state.cfg.callsign[i] = '0';
+                zero_char_pad = true;
+            } else {
+                // already null terminated via memset so just stop
+                break;
+            }
+
+        } else if (('A' <= str[i] && str[i] <= 'Z') ||
+                   ('0' <= str[i] && str[i] <= '9')) {
+            // valid as-is
+            // spaces are also allowed but are handled in the last else
+            out_state.cfg.callsign[i] = str[i];
+
+        } else if ('a' <= str[i] && str[i] <= 'z') {
+            // toupper()
+            out_state.cfg.callsign[i] = str[i] - ('a' - 'A');
+
+        } else if (i == 0) {
+            // invalid, pad to char zero because first index can't be space
+            out_state.cfg.callsign[i] = '0';
+
+        } else {
+            // invalid, pad with space
+            out_state.cfg.callsign[i] = ' ';
+        }
+    } // for i
+
+    if (append_icao) {
+        char str_icao[5];
+        sprintf(str_icao, "%4d", out_state.cfg.ICAO_id % 10000);
+        out_state.cfg.callsign[4] = str_icao[0];
+        out_state.cfg.callsign[5] = str_icao[1];
+        out_state.cfg.callsign[6] = str_icao[2];
+        out_state.cfg.callsign[7] = str_icao[3];
+    }
+
+    out_state.cfg.callsign[8] = 0; // always null terminate just to be sure
 }
 
