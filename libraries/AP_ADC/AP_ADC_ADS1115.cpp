@@ -223,6 +223,7 @@ void AP_ADC_ADS1115::_update()
         return;
     }
 
+    _dev->get_semaphore()->give();
 
     float sample = _convert_register_data_to_mv(be16toh(val));
 
@@ -232,8 +233,6 @@ void AP_ADC_ADS1115::_update()
     /* select next channel */
     _channel_to_read = (_channel_to_read + 1) % _channels_number;
     _start_conversion(_channel_to_read);
-
-    _dev->get_semaphore()->give();
 
     _last_update_timestamp = AP_HAL::micros();
 }
