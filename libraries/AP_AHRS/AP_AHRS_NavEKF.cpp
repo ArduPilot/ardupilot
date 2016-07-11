@@ -713,8 +713,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
     }
 }
 
-// return a relative ground position in meters/second, North/East
-// order. return true if estimate is valid
+// write a relative ground position estimate in meters, North/East order
+// return true if estimate is valid
 bool AP_AHRS_NavEKF::get_relative_position_NE(Vector2f &posNE) const
 {
     switch (active_EKF_type()) {
@@ -745,7 +745,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE(Vector2f &posNE) const
     }
 }
 
-// return a relative ground position in meters/second, Down
+// write a relative ground position in meters, Down
 // return true if the estimate is valid
 bool AP_AHRS_NavEKF::get_relative_position_D(float &posD) const
 {
