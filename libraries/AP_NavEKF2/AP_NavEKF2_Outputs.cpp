@@ -209,7 +209,7 @@ void NavEKF2_core::getAccelZBias(float &zbias) const {
     }
 }
 
-// Return the last estimated NE position relative to the reference point (m).
+// Write the last estimated NE position relative to the reference point (m).
 // Return true if the estimate is valid
 bool NavEKF2_core::getPosNE(Vector2f &posNE) const
 {
@@ -245,7 +245,7 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
     return false;
 }
 
-// Return the last calculated D position relative to the reference point (m).
+// Write the last calculated D position relative to the reference point (m).
 // Return true if the estimte is valid
 bool NavEKF2_core::getPosD(float &posD) const
 {

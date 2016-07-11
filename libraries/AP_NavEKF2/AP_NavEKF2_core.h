@@ -66,12 +66,12 @@ public:
     // Intended to be used by the front-end to determine which is the primary EKF
     float faultScore(void) const;
 
-    // Return the last calculated NE position relative to the reference point (m).
+    // Write the last calculated NE position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
     bool getPosNE(Vector2f &posNE) const;
 
-    // Return the last calculated D position relative to the reference point (m).
+    // Write the last calculated D position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
     bool getPosD(float &posD) const;

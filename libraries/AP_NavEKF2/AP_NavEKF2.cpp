@@ -673,7 +673,7 @@ int8_t NavEKF2::getPrimaryCoreIndex(void) const
     return primary;
 }
 
-// Return the last calculated NE position relative to the reference point (m).
+// Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
 bool NavEKF2::getPosNE(int8_t instance, Vector2f &posNE)
@@ -685,7 +685,7 @@ bool NavEKF2::getPosNE(int8_t instance, Vector2f &posNE)
     return core[instance].getPosNE(posNE);
 }
 
-// Return the last calculated D position relative to the reference point (m).
+// Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
 bool NavEKF2::getPosD(int8_t instance, float &posD)
