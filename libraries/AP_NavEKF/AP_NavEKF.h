@@ -71,12 +71,12 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
-    // Return the last calculated North East position relative to the reference point (m).
+    // Write the last calculated North East position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
     bool getPosNE(Vector2f &posNE) const;
 
-    // Return the last calculated Down position relative to the reference point (m).
+    // Write the last calculated Down position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
     bool getPosD(float &posD) const;
