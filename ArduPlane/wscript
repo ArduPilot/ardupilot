@@ -3,35 +3,13 @@
 
 def build(bld):
     vehicle = bld.path.name
-    bld.ap_stlib(
-        name=vehicle + '_libs',
-        vehicle=vehicle,
-        libraries=bld.ap_common_vehicle_libraries() + [
-            'APM_Control',
-            'APM_OBC',
-            'AP_ADSB',
-            'AP_Arming',
-            'AP_Camera',
-            'AP_Frsky_Telem',
-            'AP_L1_Control',
-            'AP_Menu',
-            'AP_Navigation',
-            'AP_Parachute',
-            'AP_RCMapper',
-            'AP_Relay',
-            'AP_ServoRelayEvents',
-            'AP_SpdHgtControl',
-            'AP_TECS',
-            'AP_InertialNav',
-            'AC_WPNav',
-            'AC_AttitudeControl',
-            'AP_Motors',
-            'AC_PID',
-            'AC_Fence',
-            'AC_Avoidance'
-        ],
-        use='mavlink',
-    )
+    with open("ArduPlane/directories_list") as f:
+        bld.ap_stlib(
+            name=vehicle + '_libs',
+            vehicle=vehicle,
+            libraries=bld.ap_common_vehicle_libraries() + [l.rstrip() for l in f],
+            use='mavlink',
+        )
 
     bld.ap_program(
         program_name='arduplane',

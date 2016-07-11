@@ -3,14 +3,13 @@
 
 def build(bld):
     vehicle = bld.path.name
-    bld.ap_stlib(
-        name=vehicle + '_libs',
-        vehicle=vehicle,
-        libraries=bld.ap_common_vehicle_libraries() + [
-            'AC_PID',
-        ],
-        use='mavlink',
-    )
+    with open("AntennaTracker/directories_list") as f:
+        bld.ap_stlib(
+            name=vehicle + '_libs',
+            vehicle=vehicle,
+            libraries=bld.ap_common_vehicle_libraries() + [l.rstrip() for l in f],
+            use='mavlink',
+        )
 
     bld.ap_program(
         program_name='antennatracker',
