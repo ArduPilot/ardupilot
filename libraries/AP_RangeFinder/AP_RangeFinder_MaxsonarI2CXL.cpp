@@ -30,7 +30,7 @@
 extern const AP_HAL::HAL& hal;
 
 /* 
-   The constructor also initialises the rangefinder. Note that this
+   The constructor also initializes the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
@@ -75,40 +75,34 @@ bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
     uint8_t tosend[] = {AP_RANGE_FINDER_MAXSONARI2CXL_COMMAND_TAKE_RANGE_READING};
 
     // send command to take reading
-    if (!_dev->transfer(tosend, sizeof(tosend), nullptr, 0)) {
-        _dev->get_semaphore()->give();
-        return false;
-    }
-
-    // return semaphore
+    bool ret = _dev->transfer(tosend, sizeof(tosend), nullptr, 0);
     _dev->get_semaphore()->give();
-
-    return true;
+    return ret;
 }
 
 // read - return last value measured by sensor
 bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
 {
+    uint8_t buff[2];
+
     // exit immediately if we can't take the semaphore
     if (!_dev->get_semaphore()->take(1)) {
         return false;
     }
 
-    uint8_t buff[2];
     // take range reading and read back results
-    if (!_dev->transfer(nullptr, 0, buff, sizeof(buff))) {
-        _dev->get_semaphore()->give();
-        return false;
-    }
+    bool ret = _dev->transfer(nullptr, 0, buff, sizeof(buff));
     _dev->get_semaphore()->give();
 
-    // combine results into distance
-    reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
+    if (ret) {
+        // combine results into distance
+        reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
 
-    // trigger a new reading
-    start_reading();
+        // trigger a new reading
+        start_reading();
+    }
 
-    return true;
+    return ret;
 }
 
 
