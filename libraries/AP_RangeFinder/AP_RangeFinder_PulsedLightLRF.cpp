@@ -20,8 +20,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-/* 
-   The constructor also initialises the rangefinder. Note that this
+/*
+   The constructor also initializes the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
@@ -32,7 +32,7 @@ AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(RangeFinder &_range
 {
 }
 
-/* 
+/*
    detect if a PulsedLight rangefinder is connected. We'll detect by
    trying to take a reading on I2C. If we get a result the sensor is
    there.
@@ -67,37 +67,31 @@ bool AP_RangeFinder_PulsedLightLRF::start_reading()
     }
 
     // send command to take reading
-    if (!_dev->write_register(AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG,
-                              AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE)) {
-        _dev->get_semaphore()->give();
-        return false;
-    }
-
-    // return semaphore
+    bool ret = _dev->write_register(AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG,
+                                    AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE);
     _dev->get_semaphore()->give();
-
-    return true;
+    return ret;
 }
 
 // read - return last value measured by sensor
 bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
 {
-    if (_dev->get_semaphore()->take(1)) {
+    uint8_t buff[2];
+
+    if (!_dev->get_semaphore()->take(1)) {
         return false;
     }
 
-    uint8_t buff[2];
     // read the high and low byte distance registers
-    if (!_dev->read_registers(AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, buff, sizeof(buff))) {
-        _dev->get_semaphore()->give();
+    bool ret = _dev->read_registers(AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, buff, sizeof(buff));
+    _dev->get_semaphore()->give();
+
+    if (!ret) {
         return false;
     }
 
     // combine results into distance
     reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
-
-    // return semaphore
-    _dev->get_semaphore()->give();
 
     // kick off another reading for next time
     // To-Do: replace this with continuous mode
@@ -107,7 +101,7 @@ bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
     return true;
 }
 
-/* 
+/*
    update the state of the sensor
 */
 void AP_RangeFinder_PulsedLightLRF::update(void)
