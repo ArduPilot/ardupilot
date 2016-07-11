@@ -284,12 +284,10 @@ _options_for_frame = {
     },
     "heli-dual": {
         "make_target": "sitl-heli-dual",
-        "waf_target": "bin/arducopter-coax",  # is this correct? -pb201604301447
+        "waf_target": "bin/arducopter-heli-dual",
+        "default_params_filename": "default_params/copter-heli.parm",
     },
-    "heli-compound": {
-        "make_target": "sitl-heli-compound",
-        "waf_target": "bin/arducopter-coax",  # is this correct? -pb201604301447
-    },
+    # OTHER COPTERS
     "singlecopter": {
         "make_target": "sitl-single",
         "waf_target": "bin/arducopter-single",
