@@ -179,7 +179,9 @@ void Plane::init_ardupilot()
     
 #if OPTFLOW == ENABLED
     // make optflow available to libraries
-    ahrs.set_optflow(&optflow);
+    if (optflow.enabled()) {
+        ahrs.set_optflow(&optflow);
+    }
 #endif
 
     // Register mavlink_delay_cb, which will run anytime you have
@@ -246,11 +248,9 @@ void Plane::init_ardupilot()
 
     // initialise sensor
 #if OPTFLOW == ENABLED
-    if (!optflow.enabled()) {
-        return;
+    if (optflow.enabled()) {
+        optflow.init();
     }
-
-    optflow.init();
 #endif
 
 }
