@@ -21,7 +21,7 @@
 extern const AP_HAL::HAL& hal;
 
 /* 
-   The constructor also initialises the rangefinder. Note that this
+   The constructor also initializes the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
@@ -54,29 +54,26 @@ AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder &_ranger
 // read - return last value measured by sensor
 bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
 {
+    uint8_t buff[2];
+
+    if (ranger._address[state.instance] == 0) {
+        return false;
+    }
+
     // exit immediately if we can't take the semaphore
     if (!_dev->get_semaphore()->take(1)) {
         return false;
     }
     
-    if (ranger._address[state.instance] == 0) {
-        return false;
-    }
-
-    uint8_t buff[2];
     // read the high and low byte distance registers
-    if (!_dev->read(buff, sizeof(buff))) {
-        _dev->get_semaphore()->give();
-        return false;
+    bool ret = _dev->read(buff, sizeof(buff));
+    if (ret) {
+        // combine results into distance
+        reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
     }
 
-    // combine results into distance
-    reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
-
-    // return semaphore
     _dev->get_semaphore()->give();
-
-    return true;
+    return ret;
 }
 
 /* 
