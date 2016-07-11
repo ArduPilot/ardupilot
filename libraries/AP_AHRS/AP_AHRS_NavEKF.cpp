@@ -233,19 +233,24 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             float abias;
             EKF2.getAccelZBias(-1,abias);
 
-            // This EKF uses the primary IMU
+            int8_t imu_index = EKF2.getIMUIndex();
+            if (imu_index == -1) {
+                imu_index = _ins.get_primary_accel();
+            }
+
             // Eventually we will run a separate instance of the EKF for each IMU and do the selection and blending of EKF outputs upstream
             // update _accel_ef_ekf
             for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
                 Vector3f accel = _ins.get_accel(i);
-                if (i==_ins.get_primary_accel()) {
+                if (i==imu_index) {
                     accel.z -= abias;
                 }
                 if (_ins.get_accel_health(i)) {
                     _accel_ef_ekf[i] = _dcm_matrix * accel;
                 }
             }
-            _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
+
+            _accel_ef_ekf_blended = _accel_ef_ekf[imu_index];
         }
     }
 }
