@@ -626,9 +626,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     rangefinder_optflow_checks(report, enabled_checks, passed_checks);
     terrain_checks(report, enabled_checks, passed_checks);
 
-    if (report) {
-        GCS_MAVLINK::send_prearm_check_report_all(enabled_checks, passed_checks);
-    }
+    GCS_MAVLINK::send_prearm_check_report_all(enabled_checks, passed_checks);
 
     // total results
     bool success = (enabled_checks == (enabled_checks & passed_checks));
