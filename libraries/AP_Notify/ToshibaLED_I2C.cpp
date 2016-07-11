@@ -15,6 +15,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+/* LED driver for TCA62724FMG */
+
 #include "ToshibaLED_I2C.h"
 
 #include <utility>
