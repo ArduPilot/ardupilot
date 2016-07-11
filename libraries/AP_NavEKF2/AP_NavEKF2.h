@@ -62,13 +62,13 @@ public:
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIndex(void) const;
 
-    // Return the last calculated NE position relative to the reference point (m) for the specified instance.
+    // Write the last calculated NE position relative to the reference point (m) for the specified instance.
     // An out of range instance (eg -1) returns data for the the primary instance
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
     bool getPosNE(int8_t instance, Vector2f &posNE);
 
-    // Return the last calculated D position relative to the reference point (m) for the specified instance.
+    // Write the last calculated D position relative to the reference point (m) for the specified instance.
     // An out of range instance (eg -1) returns data for the the primary instance
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
