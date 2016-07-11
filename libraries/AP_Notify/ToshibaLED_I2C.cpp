@@ -17,6 +17,8 @@
  */
 #include "ToshibaLED_I2C.h"
 
+#include <utility>
+
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -29,15 +31,12 @@ extern const AP_HAL::HAL& hal;
 #define TOSHIBA_LED_PWM2    0x03    // pwm2 register
 #define TOSHIBA_LED_ENABLE  0x04    // enable register
 
-ToshibaLED_I2C::ToshibaLED_I2C()
-    : _dev(hal.i2c_mgr->get_device(TOSHIBA_LED_I2C_BUS, TOSHIBA_LED_I2C_ADDR))
-{
-}
-
 bool ToshibaLED_I2C::hw_init()
 {
+    _dev = std::move(hal.i2c_mgr->get_device(TOSHIBA_LED_I2C_BUS, TOSHIBA_LED_I2C_ADDR));
+
     // take i2c bus sempahore
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
@@ -57,11 +56,16 @@ bool ToshibaLED_I2C::hw_init()
 // set_rgb - set color as a combination of red, green and blue values
 bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    // update the red value
-    uint8_t val[4] = { TOSHIBA_LED_PWM0, (uint8_t)(blue>>4), (uint8_t)(green>>4), (uint8_t)(red>>4) };
-    bool success = _dev->transfer(val, sizeof(val), nullptr, 0);
+    if (!_dev || !_dev->get_semaphore()->take(5)) {
+        return false;
+    }
 
-    // give back i2c semaphore
+    /* 4-bit for each color */
+    uint8_t val[4] = { TOSHIBA_LED_PWM0, (uint8_t)(blue >> 4),
+                       (uint8_t)(green / 16), (uint8_t)(red / 16) };
+    bool ret = _dev->transfer(val, sizeof(val), nullptr, 0);
+
     _dev->get_semaphore()->give();
-    return success;
+
+    return ret;
 }
