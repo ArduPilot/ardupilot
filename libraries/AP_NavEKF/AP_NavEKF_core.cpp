@@ -3358,8 +3358,8 @@ float NavEKF_core::getPosDownDerivative(void) const
     return posDownDerivative;
 }
 
-// Return the last calculated NE position relative to the reference point (m).
-// if a calculated solution is not available, use the best available data and return false
+// Write the last calculated NE position relative to the reference point (m).
+// Return true if the estimate is valid
 bool NavEKF_core::getPosNE(Vector2f &posNE) const
 {
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
@@ -3394,8 +3394,8 @@ bool NavEKF_core::getPosNE(Vector2f &posNE) const
     return false;
 }
 
-// Return the last calculated D position relative to the reference point (m).
-// if a calculated solution is not available, use the best available data and return false
+// Write the last calculated D position relative to the reference point (m).
+// Return true if the estimate is valid
 bool NavEKF_core::getPosD(float &posD) const
 {
     // The EKF always has a height estimate regardless of mode of operation
