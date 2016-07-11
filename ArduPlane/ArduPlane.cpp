@@ -321,6 +321,8 @@ void Plane::one_second_loop()
     // make it possible to change orientation at runtime
     ahrs.set_orientation();
 
+    adsb.set_stall_speed_cm(aparm.airspeed_min);
+
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
