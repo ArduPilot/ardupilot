@@ -2098,6 +2098,12 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #endif
         break;
 
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
+#if ADSB_ENABLED == ENABLED
+        copter.adsb.transceiver_report(chan, msg);
+#endif
+        break;
+
     case MAVLINK_MSG_ID_SETUP_SIGNING:
         handle_setup_signing(msg);
         break;
