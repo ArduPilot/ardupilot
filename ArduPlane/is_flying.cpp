@@ -153,6 +153,7 @@ void Plane::update_is_flying_5Hz(void)
         }
     }
     previous_is_flying = new_is_flying;
+    adsb.set_is_flying(new_is_flying);
 
     crash_detection_update();
 
