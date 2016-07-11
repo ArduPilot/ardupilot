@@ -15,7 +15,6 @@ public:
     // Constructor
     AP_InertialNav_NavEKF(AP_AHRS_NavEKF &ahrs) :
         AP_InertialNav(),
-        _haveabspos(false),
         _ahrs_ekf(ahrs)
         {}
 
@@ -116,8 +115,7 @@ public:
 private:
     Vector3f _relpos_cm;   // NEU
     Vector3f _velocity_cm; // NEU
-    float _pos_z_rate;
+    float _pos_z_rate_cm;
     struct Location _abspos;
-    bool _haveabspos;
     AP_AHRS_NavEKF &_ahrs_ekf;
 };
