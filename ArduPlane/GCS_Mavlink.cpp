@@ -2275,6 +2275,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         plane.adsb.update_vehicle(msg);
         break;
 
+    case MAVLINK_MSG_ID_ADSB_TRANSPONDER_DYNAMIC_OUTPUT:
+        plane.adsb.transceiver_report(chan, msg);
+        break;
+
     case MAVLINK_MSG_ID_SETUP_SIGNING:
         handle_setup_signing(msg);
         break;
