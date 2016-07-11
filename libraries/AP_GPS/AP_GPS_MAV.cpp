@@ -45,17 +45,17 @@ AP_GPS_MAV::read(void)
 void
 AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
 {
-    mavlink_gps_mav_t packet;
-    mavlink_msg_gps_mav_decode(msg, &packet);
+    mavlink_gps_input_t packet;
+    mavlink_msg_gps_input_decode(msg, &packet);
 
-    bool have_alt    = ((packet.ignore & (1<<0)) == 0);
-    bool have_hdop   = ((packet.ignore & (1<<1)) == 0);
-    bool have_vdop   = ((packet.ignore & (1<<2)) == 0);
-    bool have_vel_h  = ((packet.ignore & (1<<3)) == 0);
-    bool have_vel_v  = ((packet.ignore & (1<<4)) == 0);
-    bool have_sa     = ((packet.ignore & (1<<5)) == 0);
-    bool have_ha     = ((packet.ignore & (1<<6)) == 0);
-    bool have_va     = ((packet.ignore & (1<<7)) == 0);
+    bool have_alt    = ((packet.ignore_flags & (1<<0)) == 0);
+    bool have_hdop   = ((packet.ignore_flags & (1<<1)) == 0);
+    bool have_vdop   = ((packet.ignore_flags & (1<<2)) == 0);
+    bool have_vel_h  = ((packet.ignore_flags & (1<<3)) == 0);
+    bool have_vel_v  = ((packet.ignore_flags & (1<<4)) == 0);
+    bool have_sa     = ((packet.ignore_flags & (1<<5)) == 0);
+    bool have_ha     = ((packet.ignore_flags & (1<<6)) == 0);
+    bool have_va     = ((packet.ignore_flags & (1<<7)) == 0);
 
     state.time_week     = packet.time_week;
     state.time_week_ms  = packet.time_week_ms;
