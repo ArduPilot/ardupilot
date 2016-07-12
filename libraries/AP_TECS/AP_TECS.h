@@ -109,13 +109,13 @@ public:
 
 private:
     // Last time update_50Hz was called
-    uint64_t _update_50hz_last_usec = 0;
+    uint64_t _update_50hz_last_usec;
 
     // Last time update_speed was called
-    uint64_t _update_speed_last_usec = 0;
+    uint64_t _update_speed_last_usec;
 
     // Last time update_pitch_throttle was called
-    uint64_t _update_pitch_throttle_last_usec = 0;
+    uint64_t _update_pitch_throttle_last_usec;
 
     // reference to the AHRS object
     AP_AHRS &_ahrs;
@@ -155,16 +155,16 @@ private:
     int8_t _pitch_max_limit = 90;
     
     // current height estimate (above field elevation)
-    float _height = 0;
+    float _height;
 
     // throttle demand in the range from -1.0 to 1.0, usually positive unless reverse thrust is enabled via _THRminf < 0
-    float _throttle_dem = 0;
+    float _throttle_dem;
 
     // pitch angle demand in radians
-    float _pitch_dem = 0;
+    float _pitch_dem;
 
     // estimated climb rate (m/s)
-    float _climb_rate = 0;
+    float _climb_rate;
 
     /*
       a filter to estimate climb rate if we don't have it from the EKF
@@ -178,59 +178,59 @@ private:
     } _height_filter;
 
     // Integrator state 4 - airspeed filter first derivative
-    float _integDTAS_state = 0;
+    float _integDTAS_state;
 
     // Integrator state 5 - true airspeed
-    float _TAS_state = 0;
+    float _TAS_state;
 
     // Integrator state 6 - throttle integrator
-    float _integTHR_state = 0;
+    float _integTHR_state;
 
     // Integrator state 6 - pitch integrator
-    float _integSEB_state = 0;
+    float _integSEB_state;
 
     // throttle demand rate limiter state
-    float _last_throttle_dem = 0;
+    float _last_throttle_dem;
 
     // pitch demand rate limiter state
-    float _last_pitch_dem = 0;
+    float _last_pitch_dem;
 
     // Rate of change of speed along X axis
-    float _vel_dot = 0;
+    float _vel_dot;
 
     // Equivalent airspeed
-    float _EAS = 0;
+    float _EAS;
 
     // True airspeed limits
-    float _TASmax = 0;
-    float _TASmin = 0;
+    float _TASmax;
+    float _TASmin;
 
     // Current and last true airspeed demand
-    float _TAS_dem = 0;
-    float _TAS_dem_last = 0;
+    float _TAS_dem;
+    float _TAS_dem_last;
 
     // Equivalent airspeed demand
-    float _EAS_dem = 0;
+    float _EAS_dem;
 
     // height demands
-    float _hgt_dem = 0;
-    float _hgt_dem_in_old = 0;
-    float _hgt_dem_adj = 0;
-    float _hgt_dem_adj_last = 0;
-    float _hgt_rate_dem = 0;
-    float _hgt_dem_prev = 0;
-    float _land_hgt_dem = 0;
+    float _hgt_dem;
+    float _hgt_dem_in_old;
+    float _hgt_dem_adj;
+    float _hgt_dem_adj_last;
+    float _hgt_rate_dem;
+    float _hgt_dem_prev;
+    float _land_hgt_dem;
 
     // Speed demand after application of rate limiting
     // This is the demand tracked by the TECS control loops
-    float _TAS_dem_adj = 0;
+    float _TAS_dem_adj;
 
     // Speed rate demand after application of rate limiting
     // This is the demand tracked by the TECS control loops
-    float _TAS_rate_dem = 0;
+    float _TAS_rate_dem;
 
     // Total energy rate filter state
-    float _STEdotErrLast = 0;
+    float _STEdotErrLast;
 
     struct flags {
         // Underspeed condition
@@ -248,49 +248,49 @@ private:
     };
 
     // time when underspeed started
-    uint32_t _underspeed_start_ms = 0;
+    uint32_t _underspeed_start_ms;
 
     // auto mode flightstage
-    enum FlightStage _flight_stage = FLIGHT_NORMAL;
+    enum FlightStage _flight_stage;
 
     // pitch demand before limiting
-    float _pitch_dem_unc = 0;
+    float _pitch_dem_unc;
 
     // Maximum and minimum specific total energy rate limits
-    float _STEdot_max = 0;
-    float _STEdot_min = 0;
+    float _STEdot_max;
+    float _STEdot_min;
 
     // Maximum and minimum floating point throttle limits
-    float _THRmaxf = 0;
-    float _THRminf = 0;
+    float _THRmaxf;
+    float _THRminf;
 
     // Maximum and minimum floating point pitch limits
-    float _PITCHmaxf = 0;
-    float _PITCHminf = 0;
+    float _PITCHmaxf;
+    float _PITCHminf;
 
     // Specific energy quantities
-    float _SPE_dem = 0;
-    float _SKE_dem = 0;
-    float _SPEdot_dem = 0;
-    float _SKEdot_dem = 0;
-    float _SPE_est = 0;
-    float _SKE_est = 0;
-    float _SPEdot = 0;
-    float _SKEdot = 0;
+    float _SPE_dem;
+    float _SKE_dem;
+    float _SPEdot_dem;
+    float _SKEdot_dem;
+    float _SPE_est;
+    float _SKE_est;
+    float _SPEdot;
+    float _SKEdot;
 
     // Specific energy error quantities
-    float _STE_error = 0;
+    float _STE_error;
 
     // Time since last update of main TECS loop (seconds)
-    float _DT = 0;
+    float _DT;
 
     // counter for demanded sink rate on land final
-    uint8_t _flare_counter = 0;
+    uint8_t _flare_counter;
 
     // percent traveled along the previous and next waypoints
-    float _path_proportion = 0;
+    float _path_proportion;
 
-    float _distance_beyond_land_wp = 0;
+    float _distance_beyond_land_wp;
 
     // internal variables to be logged
     struct {
