@@ -108,7 +108,7 @@ public:
     void reset_rate_controller_I_terms();
 
     // Sets yaw target to vehicle heading
-    void set_yaw_target_to_current_heading() { _attitude_target_euler_angle.z = _ahrs.yaw; }
+    void set_yaw_target_to_current_heading() { shift_ef_yaw_target(degrees(_ahrs.yaw - _attitude_target_euler_angle.z)*100.0f); }
 
     // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
     void shift_ef_yaw_target(float yaw_shift_cd);
