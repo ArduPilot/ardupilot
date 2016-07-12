@@ -69,6 +69,7 @@ public:
 		GPS_TYPE_GSOF  = 11,
 		GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
+        GPS_TYPE_NORTH = 14,
     };
 
     /// GPS status codes
@@ -392,6 +393,7 @@ private:
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct ERB_detect_state erb_detect_state;
+        struct NORTH_detect_state north_detect_state;
     } detect_state[GPS_MAX_INSTANCES];
 
     struct {

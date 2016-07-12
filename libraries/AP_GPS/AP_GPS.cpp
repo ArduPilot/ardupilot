@@ -21,6 +21,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 
+#include "AP_GPS_NORTH.h"
 #include "AP_GPS_ERB.h"
 #include "AP_GPS_GSOF.h"
 #include "AP_GPS_MTK.h"
@@ -313,6 +314,11 @@ AP_GPS::detect_instance(uint8_t instance)
             _broadcast_gps_type("ERB", instance, dstate->last_baud);
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
         }
+		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NORTH) &&
+                 AP_GPS_NORTH::_detect(dstate->north_detect_state, data)) {
+			_broadcast_gps_type("NORTH", instance, dstate->last_baud);
+			new_gps = new AP_GPS_NORTH(*this, state[instance], _port[instance]);
+		}        
 		else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
 			// prevent false detection of NMEA mode in
 			// a MTK or UBLOX which has booted in NMEA mode
