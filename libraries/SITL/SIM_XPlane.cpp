@@ -262,6 +262,10 @@ bool XPlane::receive_data(void)
             break;
 
         case Generator:
+            /*
+              in order to get interlock switch on helis we map the
+              "generator1 on/off" function of XPlane 10 to channel 8.
+             */
             rcin_chan_count = 8;
             rcin[7] = data[1];
             break;
