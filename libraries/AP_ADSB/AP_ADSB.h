@@ -32,7 +32,7 @@
 #define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
 #define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
 #define ADSB_VEHICLE_LIST_SIZE_MAX      100
-
+#define ADSB_CHAN_TIMEOUT_MS            15000
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     #define ADSB_LIST_RADIUS_DEFAULT        10000 // in meters
@@ -63,7 +63,7 @@ public:
 
 
     // Constructor
-    AP_ADSB(AP_AHRS &ahrs) :
+    AP_ADSB(const AP_AHRS &ahrs) :
         _ahrs(ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -131,7 +131,7 @@ private:
 
     // reference to AHRS, so we can ask for our position,
     // heading and speed
-    AP_AHRS &_ahrs;
+    const AP_AHRS &_ahrs;
 
     AP_Int8     _enabled;
 
@@ -159,6 +159,7 @@ private:
         uint32_t    last_config_ms; // send once every 10s
         uint32_t    last_report_ms; // send at 5Hz
         int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means broadcast to all
+        uint32_t    chan_last_ms;
         ADSB_TRANSPONDER_DYNAMIC_OUTPUT_STATUS_FLAGS status;     // transceiver status
         bool        is_flying;
 

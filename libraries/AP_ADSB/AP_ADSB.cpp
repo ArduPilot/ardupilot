@@ -192,41 +192,22 @@ void AP_ADSB::update(void)
     perform_threat_detection();
 
     // ensure it's positive 24bit but allow -1
-    out_state.cfg.ICAO_id_param = constrain_int32(out_state.cfg.ICAO_id_param, -1, 0x00FFFFFF);
-
-    // send dynamic data to transceiver, every 1s
-    if (now - out_state.last_report_ms >= 1000) {
-        out_state.last_report_ms = now;
-        // if the transceiver has been detected on a channel, use that channel. Else, broadcast to all
-        if (out_state.chan >= 0 && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
-            send_dynamic_out((mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan));
-        } else {
-            for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-                send_dynamic_out((mavlink_channel_t)(MAVLINK_COMM_0 + i));
-            }
-        }
-    } // last_report_ms
-
-
-
-    // keep checking for ICAO_id because we may change it during run-time
-    if (out_state.cfg.ICAO_id_param <= -1) {
+    if (out_state.cfg.ICAO_id_param <= -1 || out_state.cfg.ICAO_id_param > 0x00FFFFFF) {
         // icao param of -1 means static information is not sent, transceiver is assumed pre-programmed.
         // reset timer constantly so it never reaches 10s so it never sends
         out_state.last_config_ms = now;
 
     } else if (out_state.cfg.ICAO_id == 0 ||
-            out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param) {
-        // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
-        out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
-        out_state.cfg.ICAO_id = genICAO(_my_loc);
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Generated ICAO_id: %d", out_state.cfg.ICAO_id);
-        set_callsign("PING", true);
-        out_state.last_config_ms = 0; // send now
+        out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param) {
 
-    } else {
-        // if param is set (non zero), then always use it
-        out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
+        // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
+        if (out_state.cfg.ICAO_id_param == 0) {
+            out_state.cfg.ICAO_id = genICAO(_my_loc);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Generated ICAO_id: %d", out_state.cfg.ICAO_id);
+        } else {
+            out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id: %d", out_state.cfg.ICAO_id);
+        }
         out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
         set_callsign("PING", true);
         out_state.last_config_ms = 0; // send now
@@ -234,19 +215,23 @@ void AP_ADSB::update(void)
 
 
     // send static configuration data to transceiver, every 10s
-    if (now - out_state.last_config_ms >= 10000) {
-
-        out_state.last_config_ms = now;
-        // if the transceiver has been detected on a channel, use that channel. Else, broadcast to all
-        if (out_state.chan >= 0 && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
-            send_configure((mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan));
+    if (out_state.chan >= 0 && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
+        if (now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
+            // haven't gotten a heartbeat health status packet in a while, assume hardware failure
+            out_state.chan = -1;
         } else {
-            for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-                send_configure((mavlink_channel_t)(MAVLINK_COMM_0 + i));
-            }
-        }
-    } // last_config_ms
+        if (now - out_state.last_config_ms >= 10000) {
+            out_state.last_config_ms = now;
+            send_configure((mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan));
+        } // last_config_ms
 
+        // send dynamic data to transceiver, every 1s
+        if (now - out_state.last_report_ms >= 1000) {
+            out_state.last_report_ms = now;
+            send_dynamic_out((mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan));
+        } // last_report_ms
+        } // chan_last_ms
+    }
 }
 
 /*
@@ -533,6 +518,7 @@ void AP_ADSB::send_dynamic_out(mavlink_channel_t chan)
 
     // --------------
     // Unknowns
+    // TODO: implement http://www.srh.noaa.gov/images/epz/wxcalc/pressureAltitude.pdf
     int32_t altPres = INT_MAX; //_ahrs.get_baro().get_altitude() relative to home, not MSL
 
 
@@ -584,6 +570,8 @@ void AP_ADSB::transceiver_report(mavlink_channel_t chan, const mavlink_message_t
     if (out_state.chan != chan) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
     }
+
+    out_state.chan_last_ms = AP_HAL::millis();
     out_state.chan = chan;
 
     if (out_state.status != (ADSB_TRANSPONDER_DYNAMIC_OUTPUT_STATUS_FLAGS)packet.status) {
