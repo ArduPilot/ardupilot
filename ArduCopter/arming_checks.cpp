@@ -47,6 +47,13 @@ bool Copter::pre_arm_checks(bool display_failure)
         return false;
     }
 
+    if (avoidance.current_threat_level() != MAV_COLLISION_THREAT_LEVEL_NONE) {
+        if (display_failure) {
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Avoidance threat detected");
+        }
+        return false;
+    }
+
     // check if motor interlock aux switch is in use
     // if it is, switch needs to be in disabled position to arm
     // otherwise exit immediately.  This check to be repeated,

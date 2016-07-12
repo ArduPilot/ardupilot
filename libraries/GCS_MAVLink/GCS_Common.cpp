@@ -415,6 +415,9 @@ void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *m
     waypoint_request_i = 0;                 // reset the next expected command number to zero
     waypoint_request_last = packet.count;   // record how many commands we expect to receive
     waypoint_timelast_request = 0;          // set time we last requested commands to zero
+
+    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who wants to upload
+    waypoint_dest_compid = msg->compid;     // record component id of GCS who wants to upload
 }
 
 /*
@@ -458,6 +461,9 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     waypoint_receiving   = true;
     waypoint_request_i   = packet.start_index;
     waypoint_request_last= packet.end_index;
+
+    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who wants to upload
+    waypoint_dest_compid = msg->compid;     // record component id of GCS who wants to upload
 }
 
 
@@ -944,6 +950,35 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     }
 }
 
+void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
+                                 mavlink_message_t &msg)
+{
+    // we exclude radio packets to make it possible to use the
+    // CLI over the radio
+    if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
+        mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
+    }
+    if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
+        (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
+        serialmanager_p &&
+        serialmanager_p->get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2) {
+        // if we receive any MAVLink2 packets on a connection
+        // currently sending MAVLink1 then switch to sending
+        // MAVLink2
+        mavlink_status_t *cstatus = mavlink_get_channel_status(chan);
+        if (cstatus != NULL) {
+            cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+        }
+    }
+    // if a snoop handler has been setup then use it
+    if (msg_snoop != NULL) {
+        msg_snoop(&msg);
+    }
+    if (routing.check_and_forward(chan, &msg)) {
+        handleMessage(&msg);
+    }
+}
+
 void
 GCS_MAVLINK::update(run_cli_fn run_cli)
 {
@@ -976,30 +1011,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
 
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
-            // we exclude radio packets to make it possible to use the
-            // CLI over the radio
-            if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-                mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
-            }
-            if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
-                (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
-                serialmanager_p &&
-                serialmanager_p->get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2) {
-                // if we receive any MAVLink2 packets on a connection
-                // currently sending MAVLink1 then switch to sending
-                // MAVLink2
-                mavlink_status_t *cstatus = mavlink_get_channel_status(chan);
-                if (cstatus != NULL) {
-                    cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-                }
-            }
-            // if a snoop handler has been setup then use it
-            if (msg_snoop != NULL) {
-                msg_snoop(&msg);
-            }
-            if (routing.check_and_forward(chan, &msg)) {
-                handleMessage(&msg);
-            }
+            packetReceived(status, msg);
         }
     }
 
@@ -1011,10 +1023,9 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
     uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
 
     // stop waypoint receiving if timeout
-    if (waypoint_receiving && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
+    if ((tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
         waypoint_receiving = false;
-    } else if (waypoint_receiving &&
-               (tnow - waypoint_timelast_request) > wp_recv_time) {
+    } else if ((tnow - waypoint_timelast_request) > wp_recv_time) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
     }
@@ -1667,3 +1678,23 @@ bool GCS_MAVLINK::telemetry_delayed(mavlink_channel_t _chan)
 }
 
 
+void GCS_MAVLINK::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour)
+{
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_COLLISION) {
+                mavlink_msg_collision_send(
+                    chan,
+                    MAV_COLLISION_SRC_ADSB,
+                    threat.src_id,
+                    behaviour,
+                    threat.threat_level,
+                    threat.time_to_closest_approach,
+                    threat.closest_approach_z,
+                    threat.closest_approach_xy
+                    );
+            }
+        }
+    }
+}

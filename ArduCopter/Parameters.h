@@ -364,6 +364,11 @@ public:
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
+
+        k_param_avoidance = 256, // AP_Avoidance
+
+        // the k_param_* space is 9-bits in size
+        // 511: reserved
     };
 
     AP_Int16        format_version;

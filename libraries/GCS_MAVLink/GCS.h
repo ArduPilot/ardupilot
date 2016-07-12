@@ -15,6 +15,7 @@
 #include "MAVLink_routing.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
 // check if a message will fit in the payload space available
@@ -100,6 +101,9 @@ public:
     void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
         msg_snoop = _msg_snoop;
     }
+    // packetReceived is called on any successful decode of a mavlink message
+    virtual void packetReceived(const mavlink_status_t &status,
+                                mavlink_message_t &msg);
 
     struct statustext_t {
         uint8_t                 bitmask;
@@ -166,6 +170,7 @@ public:
     void send_home(const Location &home) const;
     static void send_home_all(const Location &home);
     void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
+    static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    

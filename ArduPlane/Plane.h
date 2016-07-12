@@ -92,6 +92,7 @@
 #include "GCS_Mavlink.h"
 #include "quadplane.h"
 #include "tuning.h"
+#include "avoidance.h"
 
 // Configuration
 #include "config.h"
@@ -134,6 +135,9 @@ public:
     friend class AP_Arming_Plane;
     friend class QuadPlane;
     friend class AP_Tuning_Plane;
+    friend class AP_Avoidance_Plane;
+    friend class AvoidanceHandler__ModeChange;
+    friend class AvoidanceHandler_PERPENDICULAR;
 
     Plane(void);
 
@@ -633,6 +637,9 @@ private:
     } adsb_state;
 
 
+    // situational awareness and response:
+    AP_Avoidance_Plane avoidance{ahrs, adsb};
+
     // Outback Challenge Failsafe Support
 #if OBC_FAILSAFE == ENABLED
     APM_OBC obc {mission, barometer, gps, rcmap};
@@ -1009,6 +1016,7 @@ private:
     bool adsb_evasion_start(void);
     void adsb_evasion_stop(void);
     void adsb_evasion_ongoing(void);
+    void avoidance_update();
     void update_flight_mode(void);
     void stabilize();
     void set_servos_idle(void);

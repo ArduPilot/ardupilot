@@ -971,6 +971,13 @@ void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
 }
 
+void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
+                                        mavlink_message_t &msg)
+{
+    copter.avoidance.MAVLink_packetReceived(msg);
+    GCS_MAVLINK::packetReceived(status, msg);
+}
+
 void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required

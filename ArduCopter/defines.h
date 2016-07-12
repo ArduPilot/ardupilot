@@ -67,7 +67,8 @@ enum aux_sw_func {
 	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
     AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
     AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
-    AUXSW_THROW =               37  // change to THROW flight mode
+    AUXSW_THROW =               37,  // change to THROW flight mode
+    AUXSW_AVOID =               38,  // enable AP_Avoidance library
 };
 
 // Frame types
@@ -103,7 +104,8 @@ enum control_mode_t {
     AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
-    THROW =        18   // throw to launch mode using inertial/GPS system, no pilot input
+    THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
+    AVOID =        19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
 };
 
 enum mode_reason_t {
@@ -120,7 +122,9 @@ enum mode_reason_t {
     MODE_REASON_FENCE_BREACH,
     MODE_REASON_TERRAIN_FAILSAFE,
     MODE_REASON_BRAKE_TIMEOUT,
-    MODE_REASON_FLIP_COMPLETE
+    MODE_REASON_FLIP_COMPLETE,
+    MODE_REASON_AVOIDANCE,
+    MODE_REASON_AVOIDANCE_RECOVERY,
 };
 
 // Tuning enumeration
@@ -351,6 +355,8 @@ enum ThrowModeState {
 #define DATA_EKF_ALT_RESET                  60
 #define DATA_LAND_CANCELLED_BY_PILOT        61
 #define DATA_EKF_YAW_RESET                  62
+#define DATA_AVOIDANCE_ENABLE               63
+#define DATA_AVOIDANCE_DISABLE              64
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f

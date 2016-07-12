@@ -113,6 +113,7 @@
 
 // Local modules
 #include "Parameters.h"
+#include "avoidance.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -122,6 +123,11 @@ class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Copter;
     friend class Parameters;
+    friend class AP_Avoidance_Copter;
+    friend class AvoidanceHandler__AVOID;
+    friend class AvoidanceHandler__ModeChange;
+    friend class AvoidanceHandler_TCAS; // for access to wp_nav
+    friend class AvoidanceHandler_PERPENDICULAR; // for access to wp_nav
 
     Copter(void);
 
@@ -551,6 +557,9 @@ private:
 
     AP_ADSB adsb {ahrs};
 
+    // situational awareness and response:
+    AP_Avoidance_Copter avoidance{ahrs, adsb};
+
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
@@ -778,6 +787,7 @@ private:
     void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
     void adsb_update(void);
     void adsb_handle_vehicle_threats(void);
+    void avoidance_update(void);
     bool brake_init(bool ignore_checks);
     void brake_run();
     void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
@@ -859,6 +869,12 @@ private:
     void parachute_check();
     void parachute_release();
     void parachute_manual_release();
+
+    // support for AP_Avoidance custom flight mode, AVOID
+    bool avoid_init(bool ignore_checks);
+    void avoid_run();
+    bool avoid_set_destination(const Vector3f& destination);
+
     void ekf_check();
     bool ekf_over_threshold();
     void failsafe_ekf_event();

@@ -24,7 +24,9 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
+#include <AP_Buffer/AP_Buffer.h>
 
 #define VEHICLE_THREAT_RADIUS_M         1000
 #define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
@@ -46,7 +48,11 @@ public:
         ADSB_THREAT_HIGH = 1
     };
 
-    struct adsb_vehicle_t {
+    class adsb_vehicle_t {
+    public:
+
+        Location get_location() const;
+
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
         ADSB_THREAT_LEVEL threat_level;   // basic threat level
@@ -54,7 +60,7 @@ public:
 
 
     // Constructor
-    AP_ADSB(AP_AHRS &ahrs) :
+    AP_ADSB(class AP_AHRS &ahrs) :
         _ahrs(ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -79,6 +85,12 @@ public:
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
     void send_adsb_vehicle(mavlink_channel_t chan);
 
+    bool enabled() const {
+        return _enabled;
+    }
+
+    bool next_sample(adsb_vehicle_t &obstacle);
+
 private:
 
     // initialize _vehicle_list
@@ -91,7 +103,6 @@ private:
     void perform_threat_detection(void);
 
     // extract a location out of a vehicle item
-    Location get_location(const adsb_vehicle_t &vehicle) const;
 
     // return index of given vehicle if ICAO_ADDRESS matches. return -1 if no match
     bool find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const;
@@ -125,5 +136,10 @@ private:
     // streamrate stuff
     uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
     uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
+
+    static const uint8_t max_samples = 30;
+    AP_Buffer<adsb_vehicle_t, max_samples> samples;
+
+    void push_sample(adsb_vehicle_t &vehicle);
 
 };
