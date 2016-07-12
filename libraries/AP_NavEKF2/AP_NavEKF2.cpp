@@ -201,7 +201,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary height source
-    // @Description: This parameter controls which height sensor is used by the EKF. If the selected optionn cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS.
+    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS. NOTE - the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
     // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF2, _altSource, 0),
@@ -475,6 +475,15 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @Units: gauss/s
     AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF2, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
+
+    // @Param: RNG_USE_HGT
+    // @DisplayName: Range finder switch height percentage
+    // @Description: The range finder will be used as the primary height source when below a specified percentage of the sensor maximum as set by the RNGFND_MAX_CM parameter. Set to -1 to prevent range finder use.
+    // @Range: -1 70
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: %
+    AP_GROUPINFO("RNG_USE_HGT", 42, NavEKF2, _useRngSwHgt, -1),
 
     AP_GROUPEND
 };
@@ -1023,6 +1032,19 @@ void NavEKF2::setTouchdownExpected(bool val)
             core[i].setTouchdownExpected(val);
         }
     }
+}
+
+// Set to true if the terrain underneath is stable enough to be used as a height reference
+// in combination with a range finder. Set to false if the terrain underneath the vehicle
+// cannot be used as a height reference
+void NavEKF2::setTerrainHgtStable(bool val)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setTerrainHgtStable(val);
+        }
+    }
+
 }
 
 /*

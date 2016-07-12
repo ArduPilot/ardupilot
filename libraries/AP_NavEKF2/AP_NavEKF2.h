@@ -211,6 +211,11 @@ public:
     // causes the EKF to compensate for expected barometer errors due to ground effect
     void setTouchdownExpected(bool val);
 
+    // Set to true if the terrain underneath is stable enough to be used as a height reference
+    // in combination with a range finder. Set to false if the terrain underneath the vehicle
+    // cannot be used as a height reference
+    void setTerrainHgtStable(bool val);
+
     /*
     return the filter fault status as a bitmasked integer for the specified instance
     An out of range instance (eg -1) returns data for the the primary instance
@@ -330,6 +335,7 @@ private:
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
+    AP_Int8 _useRngSwHgt;           // Maximum valid range of the range finder in metres
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
