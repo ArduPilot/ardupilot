@@ -498,23 +498,7 @@ void Replay::setup()
         logreader.set_save_chek_messages(true);
     }
 
-    if (generate_fpe) {
-        // SITL_State::_parse_command_line sets up an FPE handler.  We
-        // can do better:
-        feenableexcept(FE_INVALID | FE_OVERFLOW);
-        signal(SIGFPE, _replay_sig_fpe);
-    } else {
-        // disable floating point exception generation:
-        int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
-#ifndef __i386__
-        // i386 with gcc doesn't work with FE_INVALID
-        exceptions |= FE_INVALID;
-#endif
-        if (feclearexcept(exceptions)) {
-            ::fprintf(stderr, "Failed to disable floating point exceptions: %s", strerror(errno));
-        }
-        signal(SIGFPE, SIG_IGN);
-    }
+    set_signal_handlers();
 
     hal.console->printf("Processing log %s\n", filename);
 
@@ -592,6 +576,27 @@ void Replay::set_user_parameters(void)
             ::printf("Failed to set parameter %s to %f\n", u->name, u->value);
             exit(1);
         }
+    }
+}
+
+void Replay::set_signal_handlers(void)
+{
+    if (generate_fpe) {
+        // SITL_State::_parse_command_line sets up an FPE handler.  We
+        // can do better:
+        feenableexcept(FE_INVALID | FE_OVERFLOW);
+        signal(SIGFPE, _replay_sig_fpe);
+    } else {
+        // disable floating point exception generation:
+        int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
+#ifndef __i386__
+        // i386 with gcc doesn't work with FE_INVALID
+        exceptions |= FE_INVALID;
+#endif
+        if (feclearexcept(exceptions)) {
+            ::fprintf(stderr, "Failed to disable floating point exceptions: %s", strerror(errno));
+        }
+        signal(SIGFPE, SIG_IGN);
     }
 }
 
