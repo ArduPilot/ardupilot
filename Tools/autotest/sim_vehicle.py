@@ -114,9 +114,9 @@ def kill_tasks():
 
     import psutil
     for proc in psutil.process_iter():
-        if proc.status() == psutil.STATUS_ZOMBIE:
+        if proc.status == psutil.STATUS_ZOMBIE:
             continue
-        if proc.name() in victim_names:
+        if proc.name in victim_names:
             proc.kill()
 
 # clean up processes at exit:
@@ -434,7 +434,7 @@ def options_for_frame(frame, vehicle, opts):
 
     return ret
 
-def do_build_waf(vehicledir, opts, frame_options):
+def do_build_waf(opts, frame_options):
     '''build sitl using waf'''
     progress("WAF build")
 
@@ -479,7 +479,7 @@ def do_build(vehicledir, opts, frame_options):
     '''build build target (e.g. sitl) in directory vehicledir'''
 
     if opts.build_system == 'waf':
-        return do_build_waf(vehicledir, opts, frame_options)
+        return do_build_waf(opts, frame_options)
 
     old_dir = os.getcwd()
 

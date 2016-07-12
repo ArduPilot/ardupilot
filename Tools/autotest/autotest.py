@@ -81,11 +81,16 @@ def build_devrelease():
     return True
 
 def build_examples():
-    '''run the build_examples.sh script'''
-    print("Running build_examples.sh")
-    if util.run_cmd(util.reltopdir('Tools/scripts/build_examples.sh'), dir=util.reltopdir('.')) != 0:
-        print("Failed build_examples.sh")
-        return False
+    '''build examples'''
+    for target in 'px4-v2', 'navio':
+        print("Running build.examples for %s" % target)
+        try:
+            util.build_examples(target)
+        except Exception as e:
+            print("Failed build_examples on board=%s" % target)
+            print(str(e))
+            return False
+
     return True
 
 def build_parameters():
@@ -477,9 +482,15 @@ if len(args) > 0:
     # allow a wildcard list of steps
     matched = []
     for a in args:
+        arg_matched = False
         for s in steps:
             if fnmatch.fnmatch(s.lower(), a.lower()):
                 matched.append(s)
+                arg_matched = True
+        if not arg_matched:
+            print("No steps matched argument ({})".format(a))
+            sys.exit(1)
+
     steps = matched
 
 try:

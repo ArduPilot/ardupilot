@@ -151,7 +151,9 @@ private:
     Scheduler *_scheduler;
     Compass *_compass;
     OpticalFlow *_optical_flow;
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain *_terrain;
+#endif
 
     SocketAPM _sitl_rc_in{true};
     SITL::SITL *_sitl;
@@ -210,8 +212,7 @@ private:
     bool enable_gimbal;
     SITL::Gimbal *gimbal;
 
-    // simulated gimbal
-    bool enable_ADSB;
+    // simulated ADSb
     SITL::ADSB *adsb;
 
     // output socket for flightgear viewing
@@ -221,6 +222,8 @@ private:
     const char *_client_address;
 
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
+
+    const char *_home_str;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

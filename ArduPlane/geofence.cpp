@@ -284,7 +284,7 @@ void Plane::geofence_check(bool altitude_check_only)
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
         if (geofence_state != NULL &&
-            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) &&
+            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL) &&
             control_mode == GUIDED &&
             geofence_present() &&
             geofence_state->boundary_uptodate &&
@@ -348,7 +348,7 @@ void Plane::geofence_check(bool altitude_check_only)
 
     // we are outside the fence
     if (geofence_state->fence_triggered &&
-        (control_mode == GUIDED || g.fence_action == FENCE_ACTION_REPORT)) {
+        (control_mode == GUIDED || control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
@@ -375,13 +375,18 @@ void Plane::geofence_check(bool altitude_check_only)
 
     case FENCE_ACTION_GUIDED:
     case FENCE_ACTION_GUIDED_THR_PASS:
+    case FENCE_ACTION_RTL:
         // make sure we don't auto trim the surfaces on this mode change
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
-        set_mode(GUIDED);
+        if (g.fence_action == FENCE_ACTION_RTL) {
+            set_mode(RTL);
+        } else {
+            set_mode(GUIDED);
+        }
         g.auto_trim.set(saved_auto_trim);
 
-        if (g.fence_ret_rally != 0) { //return to a rally point
+        if (g.fence_ret_rally != 0 || g.fence_action == FENCE_ACTION_RTL) { //return to a rally point
             guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
         } else { //return to fence return point, not a rally point
@@ -404,9 +409,10 @@ void Plane::geofence_check(bool altitude_check_only)
         geofence_state->guided_lng = guided_WP_loc.lng;
         geofence_state->old_switch_position = oldSwitchPosition;
 
-        setup_terrain_target_alt(guided_WP_loc);
-
-        set_guided_WP();
+        if (g.fence_action != FENCE_ACTION_RTL) { //not needed for RTL mode
+            setup_terrain_target_alt(guided_WP_loc);
+            set_guided_WP();
+        }
 
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
             guided_throttle_passthru = true;

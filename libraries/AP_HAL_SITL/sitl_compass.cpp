@@ -41,11 +41,6 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     if (yawDeg < -180.0f) {
         yawDeg += 360.0f;
     }
-    _compass->setHIL(0, radians(rollDeg), radians(pitchDeg), radians(yawDeg));
-    _compass->setHIL(1, radians(rollDeg), radians(pitchDeg), radians(yawDeg));
-    Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
-    Vector3f motor = _sitl->mag_mot.get() * _current;
-    Vector3f new_mag_data = _compass->getHIL(0) + noise + motor;
 
     // 100Hz
     uint32_t now = AP_HAL::millis();
@@ -53,6 +48,11 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
         return;
     }
     last_update = now;
+
+    // calculate sensor noise and add to 'truth' field in body frame
+    // units are milli-Gauss
+    Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
+    Vector3f new_mag_data = _sitl->state.bodyMagField + noise;
 
     // add delay
     uint32_t best_time_delta_mag = 1000; // initialise large time representing buffer entry closest to current time - delay.

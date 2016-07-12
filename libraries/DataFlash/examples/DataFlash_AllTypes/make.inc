@@ -6,3 +6,5 @@ LIBRARIES += DataFlash
 LIBRARIES += GCS_MAVLink
 LIBRARIES += StorageManager
 LIBRARIES += AP_Scheduler
+LIBRARIES += AP_ADC
+

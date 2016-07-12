@@ -63,8 +63,10 @@ waf list
 ## Program groups ##
 
 Program groups are used to represent a class of programs. They can be used to
-build all programs of a certain class without having to specify each program. A
-program can belong to more than one group.
+build all programs of a certain class without having to specify each program.
+It's possible for two groups to overlap, except when both groups are main
+groups. In other words, a program can belong to more than one group, but only
+to one main group.
 
 There's a special group, called "all", that comprises all programs.
 
@@ -134,6 +136,9 @@ waf bin
 
 # Build all examples
 waf examples
+
+# Build arducopter binaries
+waf copter
 ```
 
 ## Building a specific program ##
@@ -147,6 +152,20 @@ waf --targets bin/arducopter-quad
 
 # Build vectors unit test
 waf --targets tests/test_vectors
+```
+
+## Uploading ##
+
+There's a build option `--upload` that can be used to tell the build that it
+must upload the program(s) addressed by `--targets` arguments. The
+implementation is board-specific and not all boards may have that implemented.
+Example:
+
+```bash
+# PX4 supports uploading the program through a USB connection
+waf configure --board px4-v2
+# Build arducopter-quad and upload it to my board
+waf --targets bin/arducopter-quad --upload
 ```
 
 ## Checking ##

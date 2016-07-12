@@ -125,6 +125,9 @@ void last_letter::recv_fdm(const struct sitl_input &input)
     airspeed = pkt.airspeed;
     airspeed_pitot = pkt.airspeed;
 
+    // update magnetic field
+    update_mag_field_bf();
+    
     // auto-adjust to last_letter frame rate
     uint64_t deltat_us = pkt.timestamp_us - last_timestamp_us;
     time_now_us += deltat_us;

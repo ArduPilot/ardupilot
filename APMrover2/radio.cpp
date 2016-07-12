@@ -18,6 +18,9 @@ void Rover::set_control_channels(void)
     // For a rover safety is TRIM throttle
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->get_radio_trim());
+        if (g.skid_steer_out) {
+            hal.rcout->set_safety_pwm(1UL<<(rcmap.roll()-1),  channel_steer->get_radio_trim());
+        }
     }
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
@@ -42,6 +45,9 @@ void Rover::init_rc_out()
 
     if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
         channel_throttle->enable_out();
+        if (g.skid_steer_out) {
+            channel_steer->enable_out();
+        }
     }
 
     RC_Channel::output_trim_all();    
@@ -55,6 +61,9 @@ void Rover::init_rc_out()
     // full speed backward.
     if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1),  channel_throttle->get_radio_trim());
+        if (g.skid_steer_out) {
+            hal.rcout->set_safety_pwm(1UL<<(rcmap.roll()-1),  channel_steer->get_radio_trim());
+        }
     }
 }
 
@@ -96,8 +105,10 @@ void Rover::rudder_arm_disarm_check()
 			// not at full right rudder
 			rudder_arm_timer = 0;
 		}
-	} else if (!motor_active()) {
+	} else if (!motor_active() & !g.skid_steer_out) {
 		// when armed and motor not active (not moving), full left rudder starts disarming counter
+        // This is disabled for skid steering otherwise when tring to turn a skid steering rover around
+        // the rover would disarm
 		if (channel_steer->get_control_in() < -4000) {
 			uint32_t now = millis();
 

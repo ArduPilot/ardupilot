@@ -75,9 +75,8 @@ public:
 	// should be called at 100hz or more
 	virtual void rate_controller_run();
 
-    // get lean angle max for pilot input that prioritises altitude hold over lean angle
-    // NOTE: returns centi-degrees
-    float get_althold_lean_angle_max() const;
+    // Update Alt_Hold angle maximum
+    void update_althold_lean_angle_max(float throttle_in) override;
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
@@ -94,6 +93,9 @@ public:
 
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
     void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
+
+    // Set output throttle
+    void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -122,9 +124,6 @@ private:
     //
     // throttle methods
     //
-
-    // calculate total body frame throttle required to produce the given earth frame throttle
-    float get_boosted_throttle(float throttle_in);
     
     // pass through for roll and pitch
     int16_t _passthrough_roll;

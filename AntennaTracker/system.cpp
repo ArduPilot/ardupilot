@@ -112,8 +112,6 @@ void Tracker::init_tracker()
         prepare_servos();
     }
 
-    // calibrate pressure on startup by default
-    nav_status.need_altitude_calibration = true;
 }
 
 // updates the status of the notify objects

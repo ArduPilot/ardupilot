@@ -64,24 +64,46 @@ def deltree(path):
 def relwaf():
     return "./modules/waf/waf-light"
 
-def build_SIL(build_target, j=None, debug=False):
-    '''build desktop SIL'''
-
-    # first configure
-    cmd_configure = [relwaf(), "configure", "--board", 'sitl']
+def waf_configure(board, j=None, debug=False):
+    cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
     if j is not None:
         cmd_configure.extend(['-j', str(j)])
     run_cmd(cmd_configure, dir=topdir(), checkfail=True)
 
-    # then clean
+def waf_clean():
     run_cmd([relwaf(), "clean"], dir=topdir(), checkfail=True)
+
+def build_SIL(build_target, j=None, debug=False, board='sitl'):
+    '''build desktop SIL'''
+
+    # first configure
+    waf_configure(board, j=j, debug=debug)
+
+    # then clean
+    waf_clean()
 
     # then build
     cmd_make = [relwaf(), "build", "--target", build_target]
+    if j is not None:
+        cmd_make.extend(['-j', str(j)])
     run_cmd(cmd_make, dir=topdir(), checkfail=True, show=True)
     return True
+
+def build_examples(board, j=None, debug=False, clean=False):
+    # first configure
+    waf_configure(board, j=j, debug=debug)
+
+    # then clean
+    if clean:
+        waf_clean()
+
+    # then build
+    cmd_make = [relwaf(), "examples"]
+    run_cmd(cmd_make, dir=topdir(), checkfail=True, show=True)
+    return True
+
 
 # list of pexpect children to close on exit
 close_list = []

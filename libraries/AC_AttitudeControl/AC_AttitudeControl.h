@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 /// @file    AC_AttitudeControl.h
@@ -40,7 +40,14 @@
 
 #define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
 
-#define AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ   1.0f    // filter (in hz) of throttle filter used to limit lean angle so that vehicle does not lose altitude
+#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT      1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
+#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX    0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
+
+#define AC_ATTITUDE_CONTROL_MIN_DEFAULT   0.1f    // minimum throttle mix
+#define AC_ATTITUDE_CONTROL_MID_DEFAULT   0.5f    // manual throttle mix
+#define AC_ATTITUDE_CONTROL_MAX_DEFAULT   0.5f    // maximum throttle mix default
+
+#define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT 0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 
 class AC_AttitudeControl {
 public:
@@ -54,7 +61,8 @@ public:
         _dt(dt),
         _angle_boost(0),
         _att_ctrl_use_accel_limit(true),
-        _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ),
+        _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+        _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
         _aparm(aparm),
         _motors(motors)
@@ -128,7 +136,7 @@ public:
     void input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
 
     // Run angular velocity controller and send outputs to the motors
-    virtual void rate_controller_run();
+    virtual void rate_controller_run() = 0;
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
     void euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
@@ -190,8 +198,11 @@ public:
     // Enable or disable body-frame feed forward
     void accel_limiting(bool enable_or_disable);
 
+    // Update Alt_Hold angle maximum
+    virtual void update_althold_lean_angle_max(float throttle_in) = 0;
+
     // Set output throttle
-    void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff);
+    virtual void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) = 0;
 
     // Set output throttle and disable stabilization
     void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
@@ -203,7 +214,7 @@ public:
     float angle_boost() const { return _angle_boost; }
 
     // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
-    virtual float get_althold_lean_angle_max() const = 0;
+    float get_althold_lean_angle_max() const;
 
     // Return configured tilt angle limit in centidegrees
     float lean_angle_max() const { return _aparm.angle_max; }
@@ -263,9 +274,6 @@ protected:
     // Run the yaw angular velocity PID controller and return the output
     virtual float rate_bf_to_motor_yaw(float rate_target_rads);
 
-    // Compute a throttle value that is adjusted for the tilt angle of the vehicle
-    virtual float get_boosted_throttle(float throttle_in) = 0;
-
     // Return angle in radians to be added to roll angle. Used by heli to counteract
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
     virtual float get_roll_trim_rad() { return 0;}
@@ -308,6 +316,9 @@ protected:
     AC_P                _p_angle_pitch;
     AC_P                _p_angle_yaw;
 
+    // Angle limit time constant (to maintain altitude)
+    AP_Float            _angle_limit_tc;
+
     // Intersampling period in seconds
     float               _dt;
 
@@ -336,7 +347,6 @@ protected:
     Vector3f            _ang_vel_target_rads;
 
     // throttle provided as input to attitude controller.  This does not include angle boost.
-    // Used only for logging.
     float               _throttle_in = 0.0f;
 
     // This represents the throttle increase applied for tilt compensation.
@@ -346,13 +356,45 @@ protected:
     // Specifies whether the attitude controller should use the acceleration limit
     bool                _att_ctrl_use_accel_limit;
 
-    // Filtered throttle input - used to limit lean angle when throttle is saturated
-    LowPassFilterFloat  _throttle_in_filt;
+    // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
+    float               _althold_lean_angle_max = 0.0f;
+
+    float               _throttle_rpy_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
+    float               _throttle_rpy_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
 
     // References to external libraries
     const AP_AHRS&      _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
+
+protected:
+    /*
+      state of control monitoring
+    */
+    struct {
+        float rms_roll_P;
+        float rms_roll_D;
+        float rms_pitch_P;
+        float rms_pitch_D;
+        float rms_yaw;
+    } _control_monitor;
+
+    // update state in ControlMonitor
+    void control_monitor_filter_pid(float value, float &rms_P);
+    void control_monitor_update(void);
+
+public:
+    // log a CTRL message
+    void control_monitor_log(void);
+
+    // return current RMS controller filter for each axis
+    float control_monitor_rms_output_roll(void) const;
+    float control_monitor_rms_output_roll_P(void) const;
+    float control_monitor_rms_output_roll_D(void) const;
+    float control_monitor_rms_output_pitch_P(void) const;
+    float control_monitor_rms_output_pitch_D(void) const;
+    float control_monitor_rms_output_pitch(void) const;
+    float control_monitor_rms_output_yaw(void) const;
 };
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\
