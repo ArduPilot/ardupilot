@@ -261,6 +261,8 @@ public:
     // publish output observer angular, velocity and position tracking error
     void getOutputTrackingError(Vector3f &error) const;
 
+    uint8_t getIMUIndex(void) const { return imu_index; }
+
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;

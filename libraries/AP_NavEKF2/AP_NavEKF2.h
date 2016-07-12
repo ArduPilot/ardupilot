@@ -271,6 +271,8 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set(enable); }
 
+    int8_t getIMUIndex(void) const;
+
     // are we doing sensor logging inside the EKF?
     bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
     

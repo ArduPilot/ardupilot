@@ -673,6 +673,14 @@ int8_t NavEKF2::getPrimaryCoreIndex(void) const
     return primary;
 }
 
+int8_t NavEKF2::getIMUIndex(void) const
+{
+    if (!core) {
+        return -1;
+    }
+    return core[primary].getIMUIndex();
+}
+
 
 // Return the last calculated NED position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
