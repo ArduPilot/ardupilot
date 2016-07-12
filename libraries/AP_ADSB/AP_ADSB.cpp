@@ -359,9 +359,17 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     adsb_vehicle_t vehicle {};
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
     Location_Class vehicle_loc = Location_Class(AP_ADSB::get_location(vehicle));
+    bool my_loc_is_zero = _my_loc.is_zero();
+    float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
 
-    if (!_my_loc.is_zero() &&
-            _my_loc.get_distance(vehicle_loc) > in_state.list_radius) {
+    if (vehicle_loc.is_zero()) {
+
+        // invalid vehicle lat/lng. Ignore it.
+        return;
+
+    } else if (in_state.list_radius > 0 &&
+            !my_loc_is_zero &&
+            my_loc_distance_to_vehicle > in_state.list_radius) {
 
         // vehicle is out of range. Ignore it.
         return;
@@ -377,14 +385,11 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
         set_vehicle(in_state.vehicle_count, vehicle);
         in_state.vehicle_count++;
 
-    } else {
+    } else if (!my_loc_is_zero &&
+            !is_zero(avoid_state.lowest_threat_distance) &&
+            my_loc_distance_to_vehicle < avoid_state.lowest_threat_distance) { // is closer than the furthest
 
         // buffer is full, replace the vehicle with lowest threat as long as it's not further away
-        if (!is_zero(avoid_state.lowest_threat_distance) && !_my_loc.is_zero()) { // nonzero means it is valid
-
-            float distance = _my_loc.get_distance(get_location(vehicle));
-            if (distance < avoid_state.lowest_threat_distance) { // is closer than the furthest
-
                  // overwrite the lowest_threat/furthest
                 index = avoid_state.lowest_threat_index;
                 set_vehicle(index, vehicle);
@@ -396,13 +401,10 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
 
                 // is it the nearest? Then it's the highest threat. That's an easy check
                 // that we don't need to run perform_threat_detection() to determine
-                if (avoid_state.highest_threat_distance > distance) {
-                    avoid_state.highest_threat_distance = distance;
+        if (avoid_state.highest_threat_distance > my_loc_distance_to_vehicle) {
+            avoid_state.highest_threat_distance = my_loc_distance_to_vehicle;
                     avoid_state.highest_threat_index = index;
                 }
-            } // if distance
-
-        } // if !zero
     } // if buffer full
 }
 
