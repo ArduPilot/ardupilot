@@ -769,7 +769,7 @@ private:
     bool gcs_out_of_time = false;
 
     // time that rudder arming has been running
-    uint32_t rudder_arm_timer = 0;
+    uint32_t rudder_arm_timer;
 
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
