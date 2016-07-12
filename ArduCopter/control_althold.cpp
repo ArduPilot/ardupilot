@@ -57,19 +57,17 @@ void Copter::althold_run()
 
 #if FRAME_CONFIG == HELI_FRAME
     // helicopters are held on the ground until rotor speed runup has finished
-    bool takeoff_triggered = (ap.land_complete && (channel_throttle->get_control_in() > get_takeoff_trigger_throttle()) && motors.rotor_runup_complete());
+    bool takeoff_triggered = (ap.land_complete && (target_climb_rate > 0.0f) && motors.rotor_runup_complete());
 #else
-    bool takeoff_triggered = (ap.land_complete && (channel_throttle->get_control_in() > get_takeoff_trigger_throttle()) && motors.spool_up_complete());
+    bool takeoff_triggered = ap.land_complete && (target_climb_rate > 0.0f);
 #endif
 
     // Alt Hold State Machine Determination
     if (!motors.armed() || !motors.get_interlock()) {
         althold_state = AltHold_MotorStopped;
-    } else if (!ap.auto_armed){
-        althold_state = AltHold_NotAutoArmed;
-    } else if (takeoff_state.running || takeoff_triggered){
+    } else if (takeoff_state.running || takeoff_triggered) {
         althold_state = AltHold_Takeoff;
-    } else if (ap.land_complete){
+    } else if (!ap.auto_armed || ap.land_complete) {
         althold_state = AltHold_Landed;
     } else {
         althold_state = AltHold_Flying;
@@ -81,37 +79,21 @@ void Copter::althold_run()
     case AltHold_MotorStopped:
 
         motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-#if FRAME_CONFIG == HELI_FRAME    
-        // helicopters are capable of flying even with the motor stopped, therefore we will attempt to keep flying
-        // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-
+#if FRAME_CONFIG == HELI_FRAME    
         // force descent rate and call position controller
         pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-        pos_control.update_z_controller();
 #else
-        // Multicopters do not stabilize roll/pitch/yaw when motor are stopped
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
-#endif
-        break;
-
-    case AltHold_NotAutoArmed:
-
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-#if FRAME_CONFIG == HELI_FRAME
-        // Helicopters always stabilize roll/pitch/yaw
+        attitude_control.reset_rate_controller_I_terms();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-        attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else
-        // Multicopters do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
 #endif
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
+        pos_control.update_z_controller();
         break;
 
     case AltHold_Takeoff:
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // initiate take-off
         if (!takeoff_state.running) {
@@ -125,9 +107,6 @@ void Copter::althold_run()
         // get take-off adjusted pilot and takeoff climb rates
         takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
-        // set motors to full range
-        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
@@ -138,20 +117,18 @@ void Copter::althold_run()
         break;
 
     case AltHold_Landed:
-
-#if FRAME_CONFIG == HELI_FRAME
-        attitude_control.set_yaw_target_to_current_heading();
-#endif
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
-        // set motors to spin-when-armed if throttle at zero, otherwise full range
-        if (ap.throttle_zero) {
+        // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
+        if (target_climb_rate < 0.0f) {
             motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         } else {
             motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
+
+        attitude_control.reset_rate_controller_I_terms();
+        attitude_control.set_yaw_target_to_current_heading();
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        pos_control.relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        pos_control.update_z_controller();
         break;
 
     case AltHold_Flying:

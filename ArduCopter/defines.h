@@ -225,7 +225,6 @@ enum RTLState {
 // Alt_Hold states
 enum AltHoldModeState {
     AltHold_MotorStopped,
-    AltHold_NotAutoArmed,
     AltHold_Takeoff,
     AltHold_Flying,
     AltHold_Landed
