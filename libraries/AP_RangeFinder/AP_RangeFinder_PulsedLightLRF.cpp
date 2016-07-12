@@ -18,6 +18,7 @@
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -77,14 +78,15 @@ bool AP_RangeFinder_PulsedLightLRF::start_reading()
 // read - return last value measured by sensor
 bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
 {
-    uint8_t buff[2];
+    be16_t val;
 
     if (!_dev->get_semaphore()->take(1)) {
         return false;
     }
 
     // read the high and low byte distance registers
-    bool ret = _dev->read_registers(AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, buff, sizeof(buff));
+    bool ret = _dev->read_registers(AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG,
+                                    (uint8_t *) &val, sizeof(val));
     _dev->get_semaphore()->give();
 
     if (!ret) {
@@ -92,7 +94,7 @@ bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
     }
 
     // combine results into distance
-    reading_cm = ((uint16_t)buff[0]) << 8 | buff[1];
+    reading_cm = be16toh(val);
 
     // kick off another reading for next time
     // To-Do: replace this with continuous mode
