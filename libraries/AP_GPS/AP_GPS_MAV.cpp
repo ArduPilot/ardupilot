@@ -29,8 +29,7 @@ AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriv
 // Reading does nothing in this class; we simply return whether or not
 // the latest reading has been consumed.  By calling this function we assume
 // the caller is consuming the new data;
-bool
-AP_GPS_MAV::read(void)
+bool AP_GPS_MAV::read(void)
 {
     if (_new_data) {
         _new_data = false;
@@ -42,8 +41,7 @@ AP_GPS_MAV::read(void)
 
 // handles an incoming mavlink message (HIL_GPS) and sets
 // corresponding gps data appropriately;
-void
-AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
+void AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
 {
     mavlink_gps_input_t packet;
     mavlink_msg_gps_input_decode(msg, &packet);
@@ -64,16 +62,19 @@ AP_GPS_MAV::handle_msg(mavlink_message_t *msg)
     Location loc;
     loc.lat = packet.lat;
     loc.lng = packet.lon;
-    if (have_alt)
+    if (have_alt) {
         loc.alt = packet.alt;
+    }
     state.location = loc;
     state.location.options = 0;
 
-    if (have_hdop)
+    if (have_hdop) {
         state.hdop = packet.hdop * 10; //In centimeters
+    }
 
-    if (have_vdop)
+    if (have_vdop) {
         state.vdop = packet.vdop * 10; //In centimeters
+    }
 
     if (have_vel_h) {
         Vector3f vel(packet.vn, packet.ve, 0);
