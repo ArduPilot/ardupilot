@@ -145,7 +145,7 @@ private:
         AP_Int16    list_size_param;
         uint16_t    list_size = 1; // start with tiny list, then change to param-defined size. This ensures it doesn't fail on start
         adsb_vehicle_t *vehicle_list = nullptr;
-        uint16_t    vehicle_count = 0;
+        uint16_t    vehicle_count;
         AP_Int32    list_radius;
 
         // streamrate stuff
@@ -183,16 +183,16 @@ private:
     struct {
         AP_Int8     behavior;
 
-        bool        another_vehicle_within_radius = false;
-        bool        is_evading_threat = false;
+        bool        another_vehicle_within_radius;
+        bool        is_evading_threat;
 
         // index of and distance to vehicle with lowest threat
-        uint16_t    lowest_threat_index = 0;
-        float       lowest_threat_distance = 0;
+        uint16_t    lowest_threat_index;
+        float       lowest_threat_distance;
 
         // index of and distance to vehicle with highest threat
-        uint16_t    highest_threat_index = 0;
-        float       highest_threat_distance = 0;
+        uint16_t    highest_threat_index;
+        float       highest_threat_distance;
     } avoid_state;
 
 };
