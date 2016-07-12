@@ -172,10 +172,16 @@ bool XPlane::receive_data(void)
             break;
 
         case AoA:
-        case Trim:
             // ignored
             break;
 
+        case Trim:
+            if (heli_frame) {
+                // use flaps for collective as no direct collective data input
+                rcin[2] = data[4];
+            }
+            break;
+            
         case PitchRollHeading: {
             float roll, pitch, yaw;
             pitch = radians(data[1]);
@@ -218,10 +224,7 @@ bool XPlane::receive_data(void)
             break;
 
         case ThrottleCommand: {
-            if (heli_frame) {
-                // on helis we setup the joystick to use "throttle2" for collective input
-                rcin[2] = data[2];
-            } else {
+            if (!heli_frame) {
                 /* getting joystick throttle input is very weird. The
                  * problem is that XPlane sends the ThrottleCommand packet
                  * both for joystick throttle input and for throttle that
