@@ -203,13 +203,12 @@ void AP_ADSB::update(void)
         // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
         if (out_state.cfg.ICAO_id_param == 0) {
             out_state.cfg.ICAO_id = genICAO(_my_loc);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Generated ICAO_id: %d", out_state.cfg.ICAO_id);
         } else {
             out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id: %d", out_state.cfg.ICAO_id);
         }
         out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
         set_callsign("PING", true);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", out_state.cfg.ICAO_id, out_state.cfg.callsign);
         out_state.last_config_ms = 0; // send now
     }
 
@@ -645,7 +644,7 @@ void AP_ADSB::set_callsign(const char* str, bool append_icao)
 
     if (append_icao) {
         char str_icao[5];
-        sprintf(str_icao, "%4d", out_state.cfg.ICAO_id % 10000);
+        sprintf(str_icao, "%04X", out_state.cfg.ICAO_id % 0x10000);
         out_state.cfg.callsign[4] = str_icao[0];
         out_state.cfg.callsign[5] = str_icao[1];
         out_state.cfg.callsign[6] = str_icao[2];
