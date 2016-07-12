@@ -1958,6 +1958,12 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_GPS_INPUT:
+    {
+        plane.gps.handle_msg(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_HIL_STATE:
     {
 #if HIL_SUPPORT
