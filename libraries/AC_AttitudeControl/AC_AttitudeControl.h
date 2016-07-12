@@ -104,6 +104,9 @@ public:
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
 
+    // reset rate controller I terms
+    void reset_rate_controller_I_terms();
+
     // Sets yaw target to vehicle heading
     void set_yaw_target_to_current_heading() { _attitude_target_euler_angle.z = _ahrs.yaw; }
 
