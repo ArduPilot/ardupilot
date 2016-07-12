@@ -32,6 +32,8 @@ const char *AP_Module::hook_names[AP_Module::NUM_HOOKS] = {
     "hook_setup_start",
     "hook_setup_complete",
     "hook_AHRS_update",
+    "hook_gyro_sample",
+    "hook_accel_sample",
 };
 
 /*
@@ -189,6 +191,63 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
     
     for (const struct hook_list *h=hooks[HOOK_AHRS_UPDATE]; h; h=h->next) {
         hook_AHRS_update_fn_t fn = reinterpret_cast<hook_AHRS_update_fn_t>(h->symbol);
+        fn(&state);
+    }    
+}
+
+
+/*
+  call any gyro_sample hooks
+*/
+void AP_Module::call_hook_gyro_sample(uint8_t instance, float dt, const Vector3f &gyro)
+{
+    if (hooks[HOOK_GYRO_SAMPLE] == nullptr) {
+        // avoid filling in struct
+        return;
+    }
+
+    /*
+      construct gyro_sample structure
+     */
+    struct gyro_sample state {};
+    state.structure_version = gyro_sample_version;
+    state.time_us = AP_HAL::micros64();
+    state.instance = instance;
+    state.delta_time = dt;
+    state.gyro[0] = gyro[0];
+    state.gyro[1] = gyro[1];
+    state.gyro[2] = gyro[2];
+
+    for (const struct hook_list *h=hooks[HOOK_GYRO_SAMPLE]; h; h=h->next) {
+        hook_gyro_sample_fn_t fn = reinterpret_cast<hook_gyro_sample_fn_t>(h->symbol);
+        fn(&state);
+    }    
+}
+
+/*
+  call any accel_sample hooks
+*/
+void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel)
+{
+    if (hooks[HOOK_ACCEL_SAMPLE] == nullptr) {
+        // avoid filling in struct
+        return;
+    }
+
+    /*
+      construct accel_sample structure
+     */
+    struct accel_sample state {};
+    state.structure_version = accel_sample_version;
+    state.time_us = AP_HAL::micros64();
+    state.instance = instance;
+    state.delta_time = dt;
+    state.accel[0] = accel[0];
+    state.accel[1] = accel[1];
+    state.accel[2] = accel[2];
+
+    for (const struct hook_list *h=hooks[HOOK_ACCEL_SAMPLE]; h; h=h->next) {
+        hook_accel_sample_fn_t fn = reinterpret_cast<hook_accel_sample_fn_t>(h->symbol);
         fn(&state);
     }    
 }

@@ -53,6 +53,12 @@ public:
     // call any AHRS_update hooks
     static void call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs);
 
+    // call any gyro_sample hooks
+    static void call_hook_gyro_sample(uint8_t instance, float dt, const Vector3f &gyro);
+
+    // call any accel_sample hooks
+    static void call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel);
+    
     
 private:
 
@@ -60,6 +66,8 @@ private:
         HOOK_SETUP_START    = 0,
         HOOK_SETUP_COMPLETE,
         HOOK_AHRS_UPDATE,
+        HOOK_GYRO_SAMPLE,
+        HOOK_ACCEL_SAMPLE,
         NUM_HOOKS
     };
 

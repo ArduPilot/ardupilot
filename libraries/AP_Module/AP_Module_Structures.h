@@ -16,6 +16,8 @@ extern "C" {
 #include <stdbool.h>
 
 #define AHRS_state_version 1
+#define gyro_sample_version 1
+#define accel_sample_version 1
 
 enum AHRS_status {
     AHRS_STATUS_INITIALISING    = 0,
@@ -83,6 +85,46 @@ struct AHRS_state {
 
 
 /*
+  export corrected gyro samples at hardware sampling rate
+ */
+struct gyro_sample {
+    // version of this structure (gyro_sample_version)
+    uint32_t structure_version;
+
+    // which gyro this is
+    uint8_t instance;
+    
+    // time since boot in microseconds
+    uint64_t time_us;
+
+    // time associated with this sample (seconds)
+    float delta_time;
+    
+    // body frame rates in radian/sec
+    float gyro[3];
+};
+
+/*
+  export corrected accel samples at hardware sampling rate
+ */
+struct accel_sample {
+    // version of this structure (accel_sample_version)
+    uint32_t structure_version;
+
+    // which accel this is
+    uint8_t instance;
+    
+    // time since boot in microseconds
+    uint64_t time_us;
+
+    // time associated with this sample (seconds)
+    float delta_time;
+
+    // body frame rates in m/s/s
+    float accel[3];
+};
+    
+/*
   prototypes for hook functions
  */
 typedef void (*hook_setup_start_fn_t)(uint64_t);
@@ -94,6 +136,12 @@ void hook_setup_complete(uint64_t time_us);
 typedef void (*hook_AHRS_update_fn_t)(const struct AHRS_state *);
 void hook_AHRS_update(const struct AHRS_state *state);
 
+typedef void (*hook_gyro_sample_fn_t)(const struct gyro_sample *);
+void hook_gyro_sample(const struct gyro_sample *state);
+
+typedef void (*hook_accel_sample_fn_t)(const struct accel_sample *);
+void hook_accel_sample(const struct accel_sample *state);
+    
 #ifdef __cplusplus
 }
 #endif
