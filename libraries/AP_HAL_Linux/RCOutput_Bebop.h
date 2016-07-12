@@ -47,16 +47,7 @@ public:
     uint8_t temperature;
 };
 
-struct bldc_info {
-    uint8_t version_maj;
-    uint8_t version_min;
-    uint8_t type;
-    uint8_t n_motors;
-    uint16_t n_flights;
-    uint16_t last_flight_time;
-    uint32_t total_flight_time;
-    uint8_t last_error;
-}__attribute__((packed));
+struct bldc_info;
 
 class Linux::RCOutput_Bebop : public AP_HAL::RCOutput {
 public:

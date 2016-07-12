@@ -1,6 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#include "RCOutput_Bebop.h"
+
 #include <errno.h>
 #include <poll.h>
 #include <pthread.h>
@@ -9,27 +11,26 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <utility>
 
 #include <AP_HAL/utility/sparse-endian.h>
 
-#include "RCOutput_Bebop.h"
 #include "Util.h"
-#include <utility>
 
 /* BEBOP BLDC registers description */
-
+#define BEBOP_BLDC_I2C_ADDR 0x08
 #define BEBOP_BLDC_STARTPROP 0x40
-
 #define BEBOP_BLDC_SETREFSPEED 0x02
-struct bldc_ref_speed_data {
+
+struct PACKED bldc_ref_speed_data {
     uint8_t     cmd;
     uint16_t    rpm[BEBOP_BLDC_MOTORS_NUM];
     uint8_t     enable_security;
     uint8_t     checksum;
-}__attribute__((packed));
+};
 
 #define BEBOP_BLDC_GETOBSDATA 0x20
-struct bldc_obs_data {
+struct PACKED bldc_obs_data {
     uint16_t    rpm[BEBOP_BLDC_MOTORS_NUM];
     uint16_t    batt_mv;
     uint8_t     status;
@@ -37,7 +38,18 @@ struct bldc_obs_data {
     uint8_t     motors_err;
     uint8_t     temp;
     uint8_t     checksum;
-}__attribute__((packed));
+};
+
+struct PACKED bldc_info {
+    uint8_t version_maj;
+    uint8_t version_min;
+    uint8_t type;
+    uint8_t n_motors;
+    uint16_t n_flights;
+    uint16_t last_flight_time;
+    uint32_t total_flight_time;
+    uint8_t last_error;
+};
 
 #define BEBOP_BLDC_TOGGLE_GPIO 0x4d
 #define BEBOP_BLDC_GPIO_RESET   (1 << 0)
@@ -60,7 +72,7 @@ struct bldc_obs_data {
 #define BEBOP_BLDC_MAX_RPM_2 12200
 
 /* Priority of the thread controlling the BLDC via i2c
- * set to 14, which is the same as the UART 
+ * set to 14, which is the same as the UART
  */
 #define RCOUT_BEBOP_RTPRIO 14
 /* Set timeout to 500ms */
@@ -75,11 +87,11 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-RCOutput_Bebop::RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev):
-    _dev(std::move(dev)),
-    _min_pwm(BEBOP_BLDC_MIN_PERIOD_US),
-    _max_pwm(BEBOP_BLDC_MAX_PERIOD_US),
-    _state(BEBOP_BLDC_STOPPED)
+RCOutput_Bebop::RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+    : _dev(std::move(dev))
+    , _min_pwm(BEBOP_BLDC_MIN_PERIOD_US)
+    , _max_pwm(BEBOP_BLDC_MAX_PERIOD_US)
+    , _state(BEBOP_BLDC_STOPPED)
 {
     memset(_period_us, 0, sizeof(_period_us));
     memset(_request_period_us, 0, sizeof(_request_period_us));
@@ -101,13 +113,14 @@ void RCOutput_Bebop::_start_prop()
 {
     uint8_t data = BEBOP_BLDC_STARTPROP;
 
-    if (!_dev->get_semaphore()->take(0))
+    if (!_dev->get_semaphore()->take(0)) {
         return;
+    }
 
-    _dev->transfer(&data, sizeof(data), nullptr, 0);
-
+    if (_dev->transfer(&data, sizeof(data), nullptr, 0)) {
+        _state = BEBOP_BLDC_STARTED;
+    }
     _dev->get_semaphore()->give();
-    _state = BEBOP_BLDC_STARTED;
 }
 
 void RCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
@@ -117,14 +130,16 @@ void RCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
 
     data.cmd = BEBOP_BLDC_SETREFSPEED;
 
-    for (i=0; i<BEBOP_BLDC_MOTORS_NUM; i++)
+    for (i=0; i<BEBOP_BLDC_MOTORS_NUM; i++) {
         data.rpm[i] = htobe16(rpm[i]);
+    }
 
     data.enable_security = 0;
     data.checksum = _checksum((uint8_t *) &data, sizeof(data) - 1);
 
-    if (!_dev->get_semaphore()->take(0))
+    if (!_dev->get_semaphore()->take(0)) {
         return;
+    }
 
     _dev->transfer((uint8_t *)&data, sizeof(data), nullptr, 0);
 
@@ -133,10 +148,12 @@ void RCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
 
 bool RCOutput_Bebop::_get_info(struct bldc_info *info)
 {
-    if (info == NULL) {
+    if (info == nullptr) {
         return false;
     }
+
     memset(info, 0, sizeof(struct bldc_info));
+
     if (!_dev->get_semaphore()->take(0)) {
         return false;
     }
@@ -151,14 +168,16 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
     int i;
 
     memset(&data, 0, sizeof(data));
-    if (!_dev->get_semaphore()->take(0))
+    if (!_dev->get_semaphore()->take(0)) {
         return -EBUSY;
+    }
 
     _dev->read_registers(BEBOP_BLDC_GETOBSDATA, (uint8_t *)&data, sizeof(data));
     _dev->get_semaphore()->give();
 
-    if (data.checksum != _checksum((uint8_t *)&data, sizeof(data) - 1))
+    if (data.checksum != _checksum((uint8_t *)&data, sizeof(data) - 1)) {
         hal.console->printf("RCOutput_Bebop: bad checksum in obs data");
+    }
 
     /* fill obs class */
     for (i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
@@ -167,8 +186,9 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
         /* clear 'rpm saturation bit' */
         data.rpm[i] &= (uint16_t)(~(1 << 7));
         obs.rpm[i] = be16toh(data.rpm[i]);
-        if (obs.rpm[i] == 0)
+        if (obs.rpm[i] == 0) {
             obs.rpm_saturated[i] = 0;
+        }
     }
 
     obs.batt_mv = be16toh(data.batt_mv);
@@ -176,13 +196,15 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
     obs.error = data.error;
     obs.motors_err = data.motors_err;
     obs.temperature = data.temp;
+
     return 0;
 }
 
 void RCOutput_Bebop::_toggle_gpio(uint8_t mask)
 {
-    if (!_dev->get_semaphore()->take(0))
+    if (!_dev->get_semaphore()->take(0)) {
         return;
+    }
 
     _dev->write_register(BEBOP_BLDC_TOGGLE_GPIO, mask);
     _dev->get_semaphore()->give();
@@ -193,8 +215,9 @@ void RCOutput_Bebop::_stop_prop()
     uint8_t data = BEBOP_BLDC_STOP_PROP;
     _state = BEBOP_BLDC_STOPPED;
 
-    if (!_dev->get_semaphore()->take(0))
+    if (!_dev->get_semaphore()->take(0)) {
         return;
+    }
 
     _dev->transfer(&data, sizeof(data), nullptr, 0);
     _dev->get_semaphore()->give();
@@ -204,8 +227,9 @@ void RCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
 
-    if (!_dev->get_semaphore()->take(0))
+    if (!_dev->get_semaphore()->take(0)) {
         return;
+    }
 
     _dev->transfer(&data, sizeof(data), nullptr, 0);
     _dev->get_semaphore()->give();
@@ -213,8 +237,9 @@ void RCOutput_Bebop::_clear_error()
 
 void RCOutput_Bebop::_play_sound(uint8_t sound)
 {
-    if (!_dev->get_semaphore()->take(0))
+    if (!_dev->get_semaphore()->take(0)) {
         return;
+    }
 
     _dev->write_register(BEBOP_BLDC_PLAY_SOUND, sound);
     _dev->get_semaphore()->give();
@@ -300,13 +325,15 @@ void RCOutput_Bebop::disable_ch(uint8_t ch)
 
 void RCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
 {
-    if (ch >= BEBOP_BLDC_MOTORS_NUM)
+    if (ch >= BEBOP_BLDC_MOTORS_NUM) {
         return;
+    }
 
     _request_period_us[ch] = period_us;
 
-    if (!_corking)
+    if (!_corking) {
         push();
+    }
 }
 
 void RCOutput_Bebop::cork()
@@ -335,8 +362,9 @@ uint16_t RCOutput_Bebop::read(uint8_t ch)
 
 void RCOutput_Bebop::read(uint16_t* period_us, uint8_t len)
 {
-    for (int i = 0; i < len; i++)
+    for (int i = 0; i < len; i++) {
         period_us[i] = read(0 + i);
+    }
 }
 
 void RCOutput_Bebop::set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm)
@@ -406,11 +434,11 @@ void RCOutput_Bebop::_run_rcout()
     while (true) {
         pthread_mutex_lock(&_mutex);
         ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-        if (ret != 0)
+        if (ret != 0) {
             hal.console->println("RCOutput_Bebop: bad checksum in obs data");
+        }
 
-        if (ts.tv_nsec > (1000000000 - BEBOP_BLDC_TIMEOUT_NS))
-        {
+        if (ts.tv_nsec > (1000000000 - BEBOP_BLDC_TIMEOUT_NS)) {
             ts.tv_sec += 1;
             ts.tv_nsec = ts.tv_nsec + BEBOP_BLDC_TIMEOUT_NS - 1000000000;
         } else {
@@ -418,8 +446,9 @@ void RCOutput_Bebop::_run_rcout()
         }
 
         ret = 0;
-        while ((memcmp(_period_us, current_period_us, sizeof(_period_us)) == 0) && (ret == 0))
+        while ((memcmp(_period_us, current_period_us, sizeof(_period_us)) == 0) && (ret == 0)) {
             ret = pthread_cond_timedwait(&_cond, &_mutex, &ts);
+        }
 
         memcpy(current_period_us, _period_us, sizeof(_period_us));
         pthread_mutex_unlock(&_mutex);
@@ -427,8 +456,9 @@ void RCOutput_Bebop::_run_rcout()
         /* start propellers if the speed of the 4 motors is >= min speed
          * min speed set to min_pwm + 50*/
         for (i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
-            if (current_period_us[i] <= _min_pwm + 50)
+            if (current_period_us[i] <= _min_pwm + 50) {
                 break;
+            }
             _rpm[bebop_bldc_channels[i]] = _period_us_to_rpm(current_period_us[i]);
         }
 
@@ -442,10 +472,12 @@ void RCOutput_Bebop::_run_rcout()
         } else {
             /* all the motor pwm values are higher than minimum
              * if the bldc is stopped, start it*/
-            if (_state == BEBOP_BLDC_STOPPED)
+            if (_state == BEBOP_BLDC_STOPPED) {
                 _start_prop();
+            }
         }
         _set_ref_speed(_rpm);
     }
 }
+
 #endif
