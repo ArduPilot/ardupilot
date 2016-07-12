@@ -83,7 +83,7 @@ private:
     //  angles stored in _angle_to_target
     //  earth-frame angles stored in _ef_angle_to_target
     //  position estimate is stored in _target_pos
-    void calc_angles_and_pos(float alt_above_terrain_cm);
+    void calc_angles_and_pos(const Vector3f& target_vec_unit_body, float alt_above_terrain_cm);
 
     // returns enabled parameter as an behaviour
     enum PrecLandBehaviour get_behaviour() const { return (enum PrecLandBehaviour)(_enabled.get()); }
@@ -97,6 +97,7 @@ private:
     AP_Int8                     _type;              // precision landing controller type
 
     uint32_t                    _last_update_ms;      // epoch time in millisecond when update is called
+    uint32_t                    _last_backend_los_meas_ms;
 
     // output from sensor (stored for logging)
     Vector2f                    _angle_to_target;   // last raw sensor angle to target
