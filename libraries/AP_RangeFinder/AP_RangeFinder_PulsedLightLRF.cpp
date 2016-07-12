@@ -13,10 +13,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "AP_RangeFinder_PulsedLightLRF.h"
-#include <AP_HAL/AP_HAL.h>
+
 #include <utility>
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -26,9 +27,9 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(RangeFinder &_ranger, uint8_t instance,
-                                                             RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state),
-    _dev(hal.i2c_mgr->get_device(0, AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR))
+                                                             RangeFinder::RangeFinder_State &_state)
+    : AP_RangeFinder_Backend(_ranger, instance, _state)
+    , _dev(hal.i2c_mgr->get_device(0, AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR))
 {
 }
 
