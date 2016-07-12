@@ -29,9 +29,9 @@ extern const AP_HAL::HAL& hal;
 // Constructor
 AP_BattMonitor_SMBus_I2C::AP_BattMonitor_SMBus_I2C(AP_BattMonitor &mon, uint8_t instance,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
-                                                   AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev) :
-    AP_BattMonitor_SMBus(mon, instance, mon_state),
-    _dev(std::move(dev))
+                                                   AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+    : AP_BattMonitor_SMBus(mon, instance, mon_state)
+    , _dev(std::move(dev))
 {}
 
 /// Read the battery voltage and current.  Should be called at 10hz

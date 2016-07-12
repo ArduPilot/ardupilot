@@ -7,6 +7,7 @@
 #include "AP_BattMonitor_SMBus.h"
 #include <AP_HAL/I2CDevice.h>
 
+#define BATTMONITOR_SBUS_I2C_BUS 1
 #define BATTMONITOR_SMBUS_I2C_ADDR 0x0B    // default I2C bus address
 
 class AP_BattMonitor_SMBus_I2C : public AP_BattMonitor_SMBus
