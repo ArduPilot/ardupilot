@@ -176,6 +176,7 @@ private:
     const char **parse_list_from_string(const char *str);
     bool parse_param_line(char *line, char **vname, float &value);
     void load_param_file(const char *filename);
+    void set_signal_handlers(void);
 };
 
 enum {
