@@ -408,7 +408,7 @@ void XPlane::send_data(const struct sitl_input &input)
 
         d.code = PropPitch;
         d.data[0] = collective;
-        d.data[1] = -rudder*10; // reverse sense of rudder, 10 degrees pitch range
+        d.data[1] = -rudder*15; // reverse sense of rudder, 15 degrees pitch range
         d.data[2] = 0;
         d.data[3] = 0;
         d.data[4] = 0;
