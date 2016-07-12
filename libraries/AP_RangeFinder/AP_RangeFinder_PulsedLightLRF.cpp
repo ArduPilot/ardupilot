@@ -30,7 +30,7 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(RangeFinder &_ranger, uint8_t instance,
                                                              RangeFinder::RangeFinder_State &_state)
     : AP_RangeFinder_Backend(_ranger, instance, _state)
-    , _dev(hal.i2c_mgr->get_device(0, AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR))
+    , _dev(hal.i2c_mgr->get_device(1, AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR))
 {
 }
 
@@ -64,7 +64,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_PulsedLightLRF::detect(RangeFinder &_rang
 // start_reading() - ask sensor to make a range reading
 bool AP_RangeFinder_PulsedLightLRF::start_reading()
 {
-    if (!_dev->get_semaphore()->take(1)) {
+    if (!_dev || !_dev->get_semaphore()->take(1)) {
         return false;
     }
 
@@ -72,6 +72,7 @@ bool AP_RangeFinder_PulsedLightLRF::start_reading()
     bool ret = _dev->write_register(AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG,
                                     AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE);
     _dev->get_semaphore()->give();
+
     return ret;
 }
 
