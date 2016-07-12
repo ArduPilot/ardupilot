@@ -26,15 +26,16 @@
 
 extern const AP_HAL::HAL &hal;
 
-#define I2C_ADDRESS_MS4525DO 0x28
+#define MS4525D0_I2C_BUS 1
+#define MS4525D0_I2C_ADDR 0x28
 
 // probe and initialise the sensor
 bool AP_Airspeed_I2C::init()
 {
-    _dev = hal.i2c_mgr->get_device(1, I2C_ADDRESS_MS4525DO);
+    _dev = hal.i2c_mgr->get_device(MS4525D0_I2C_BUS, MS4525D0_I2C_ADDR);
 
     // take i2c bus sempahore
-    if (!_dev->get_semaphore()->take(200)) {
+    if (!_dev || !_dev->get_semaphore()->take(200)) {
         return false;
     }
 
@@ -42,6 +43,7 @@ bool AP_Airspeed_I2C::init()
     hal.scheduler->delay(10);
     _collect();
     _dev->get_semaphore()->give();
+
     if (_last_sample_time_ms != 0) {
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, void));
         return true;
@@ -53,7 +55,8 @@ bool AP_Airspeed_I2C::init()
 void AP_Airspeed_I2C::_measure()
 {
     _measurement_started_ms = 0;
-    if (_dev->transfer(0, 1, nullptr, 0)) {
+    uint8_t cmd = 0;
+    if (_dev->transfer(&cmd, 1, nullptr, 0)) {
         _measurement_started_ms = AP_HAL::millis();
     }
 }
@@ -65,7 +68,7 @@ void AP_Airspeed_I2C::_collect()
 
     _measurement_started_ms = 0;
 
-    if (_dev->transfer(nullptr, 0, data, sizeof(data))) {
+    if (!_dev->transfer(nullptr, 0, data, sizeof(data))) {
         return;
     }
 
