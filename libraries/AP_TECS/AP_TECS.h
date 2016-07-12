@@ -298,7 +298,7 @@ private:
         float SPE_error;
         float SKE_error;
         float SEB_delta;
-    } logging {0};
+    } logging;
     
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);
