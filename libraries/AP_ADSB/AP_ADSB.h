@@ -85,16 +85,16 @@ public:
 
     ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(avoid_state.behavior.get()); }
     bool get_is_evading_threat()  { return _enabled && avoid_state.is_evading_threat; }
-    void set_is_evading_threat(bool is_evading) { if (_enabled) { avoid_state.is_evading_threat = is_evading; } }
+    void set_is_evading_threat(const bool is_evading) { if (_enabled) { avoid_state.is_evading_threat = is_evading; } }
     uint16_t get_vehicle_count() { return in_state.vehicle_count; }
 
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
     void send_adsb_vehicle(mavlink_channel_t chan);
 
-    void set_stall_speed_cm(uint16_t stall_speed_cm) { out_state.cfg.stall_speed_cm = stall_speed_cm; }
+    void set_stall_speed_cm(const uint16_t stall_speed_cm) { out_state.cfg.stall_speed_cm = stall_speed_cm; }
 
-    void set_is_auto_mode(bool is_in_auto_mode) { _is_in_auto_mode = is_in_auto_mode; }
-    void set_is_flying(bool is_flying) { out_state.is_flying = is_flying; }
+    void set_is_auto_mode(const bool is_in_auto_mode) { _is_in_auto_mode = is_in_auto_mode; }
+    void set_is_flying(const bool is_flying) { out_state.is_flying = is_flying; }
 
 private:
 
@@ -108,25 +108,25 @@ private:
     void perform_threat_detection(void);
 
     // extract a location out of a vehicle item
-    Location get_location(const adsb_vehicle_t &vehicle) const;
+    Location_Class get_location(const adsb_vehicle_t &vehicle) const;
 
     // return index of given vehicle if ICAO_ADDRESS matches. return -1 if no match
     bool find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const;
 
     // remove a vehicle from the list
-    void delete_vehicle(uint16_t index);
+    void delete_vehicle(const uint16_t index);
 
-    void set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle);
+    void set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle);
 
     // Generates pseudorandom ICAO from gps time, lat, and lon
-    uint32_t genICAO(const Location &loc);
+    uint32_t genICAO(const Location_Class &loc);
 
     // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
-    void set_callsign(const char* str, bool append_icao);
+    void set_callsign(const char* str, const bool append_icao);
 
     // send static and dynamic data to ADSB transceiver
-    void send_configure(mavlink_channel_t chan);
-    void send_dynamic_out(mavlink_channel_t chan);
+    void send_configure(const mavlink_channel_t chan);
+    void send_dynamic_out(const mavlink_channel_t chan);
 
 
     // reference to AHRS, so we can ask for our position,

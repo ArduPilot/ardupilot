@@ -293,13 +293,14 @@ void AP_ADSB::perform_threat_detection(void)
 /*
  * Convert/Extract a Location from a vehicle
  */
-Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
+Location_Class AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
-    Location loc {};
-    loc.alt = vehicle.info.altitude * 0.1f; // convert mm to cm.
-    loc.lat = vehicle.info.lat;
-    loc.lng = vehicle.info.lon;
-    loc.flags.relative_alt = false;
+    Location_Class loc = Location_Class(
+        vehicle.info.lat,
+        vehicle.info.lon,
+        vehicle.info.altitude * 0.1f,
+        Location_Class::ALT_FRAME_ABSOLUTE);
+
     return loc;
 }
 
@@ -307,7 +308,7 @@ Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
  *  delete a vehicle by copying last vehicle to
  *  current index then decrementing count
  */
-void AP_ADSB::delete_vehicle(uint16_t index)
+void AP_ADSB::delete_vehicle(const uint16_t index)
 {
     if (index < in_state.vehicle_count) {
         // if the vehicle is the lowest/highest threat, invalidate it
@@ -357,9 +358,10 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     uint16_t index;
     adsb_vehicle_t vehicle {};
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
+    Location_Class vehicle_loc = Location_Class(AP_ADSB::get_location(vehicle));
 
     if (!_my_loc.is_zero() &&
-            _my_loc.get_distance(AP_ADSB::get_location(vehicle)) > in_state.list_radius) {
+            _my_loc.get_distance(vehicle_loc) > in_state.list_radius) {
 
         // vehicle is out of range. Ignore it.
         return;
@@ -407,7 +409,7 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
 /*
  * Copy a vehicle's data into the list
  */
-void AP_ADSB::set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle)
+void AP_ADSB::set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle)
 {
     if (index < in_state.list_size) {
         in_state.vehicle_list[index] = vehicle;
@@ -415,7 +417,7 @@ void AP_ADSB::set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle)
     }
 }
 
-void AP_ADSB::send_adsb_vehicle(mavlink_channel_t chan)
+void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
 {
     if (in_state.vehicle_list == nullptr || in_state.vehicle_count == 0) {
         return;
@@ -457,7 +459,7 @@ void AP_ADSB::send_adsb_vehicle(mavlink_channel_t chan)
 }
 
 
-void AP_ADSB::send_dynamic_out(mavlink_channel_t chan)
+void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
 {
     // --------------
     // Knowns
@@ -543,7 +545,7 @@ void AP_ADSB::send_dynamic_out(mavlink_channel_t chan)
             squawk);
 }
 
-void AP_ADSB::send_configure(mavlink_channel_t chan)
+void AP_ADSB::send_configure(const mavlink_channel_t chan)
 {
     mavlink_msg_adsb_transponder_static_input_send(
             chan,
@@ -561,7 +563,7 @@ void AP_ADSB::send_configure(mavlink_channel_t chan)
  * we determine which channel is on so we don't have to send out_state to all channels
  */
 
-void AP_ADSB::transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg)
+void AP_ADSB::transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
 {
     mavlink_adsb_transponder_dynamic_output_t packet {};
     mavlink_msg_adsb_transponder_dynamic_output_decode(msg, &packet);
@@ -585,7 +587,7 @@ void AP_ADSB::transceiver_report(mavlink_channel_t chan, const mavlink_message_t
 
  Note gps.time is the number of seconds since UTC midnight
 */
-uint32_t AP_ADSB::genICAO(const Location &loc)
+uint32_t AP_ADSB::genICAO(const Location_Class &loc)
 {
     // gps_time is not seconds since UTC midnight, but it is an equivalent random number
     // TODO: use UTC time instead of GPS time
@@ -602,7 +604,7 @@ uint32_t AP_ADSB::genICAO(const Location &loc)
 }
 
 // assign a string to out_state.cfg.callsign but ensure it's null terminated
-void AP_ADSB::set_callsign(const char* str, bool append_icao)
+void AP_ADSB::set_callsign(const char* str, const bool append_icao)
 {
     bool zero_char_pad = false;
 
