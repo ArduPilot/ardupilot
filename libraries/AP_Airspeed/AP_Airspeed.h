@@ -181,7 +181,7 @@ private:
 
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;
-    uint8_t _counter = 0;
+    uint8_t _counter;
 
     float get_pressure(void);
     void update_calibration(float raw_pressure);
