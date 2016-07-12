@@ -45,7 +45,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder &_ranger
 
     uint16_t reading_cm;
 
-    if (!sensor->get_reading(reading_cm)) {
+    if (!sensor || !sensor->get_reading(reading_cm)) {
         delete sensor;
         return nullptr;
     }
@@ -63,7 +63,7 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
     }
 
     // exit immediately if we can't take the semaphore
-    if (!_dev->get_semaphore()->take(1)) {
+    if (!_dev || _dev->get_semaphore()->take(1)) {
         return false;
     }
 
@@ -75,6 +75,7 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
     }
 
     _dev->get_semaphore()->give();
+
     return ret;
 }
 
