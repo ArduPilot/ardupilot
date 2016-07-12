@@ -40,6 +40,11 @@
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
 
+// active height source
+#define HGT_SOURCE_BARO 0
+#define HGT_SOURCE_RNG  1
+#define HGT_SOURCE_GPS  2
+
 class AP_AHRS;
 
 class NavEKF2_core
@@ -195,6 +200,11 @@ public:
     // called by vehicle code to specify that a touchdown is expected to happen
     // causes the EKF to compensate for expected barometer errors due to ground effect
     void setTouchdownExpected(bool val);
+
+    // Set to true if the terrain underneath is stable enough to be used as a height reference
+    // in combination with a range finder. Set to false if the terrain underneath the vehicle
+    // cannot be used as a height reference
+    void setTerrainHgtStable(bool val);
 
     /*
     return the filter fault status as a bitmasked integer
@@ -624,6 +634,9 @@ private:
     // calculate a filtered offset between baro height measurement and EKF height estimate
     void calcFiltBaroOffset();
 
+    // calculate a filtered offset between GPS height measurement and EKF height estimate
+    void calcFiltGpsHgtOffset();
+
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
 
@@ -737,6 +750,7 @@ private:
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
+    float gpsHgtAccuracy;           // estimated height accuracy in m returned by the GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
     uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
     float posDownAtTakeoff;         // flight vehicle vertical position sampled at transition from on-ground to in-air and used as a reference (m)
@@ -809,6 +823,8 @@ private:
     Vector3f bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
     bool delAngBiasLearned;         // true when the gyro bias has been learned
     nav_filter_status filterStatus; // contains the status of various filter outputs
+    float ekfOriginHgtVar;          // Variance of the the EKF WGS-84 origin height estimate (m^2)
+    uint32_t lastOriginHgtTime_ms;  // last time the ekf's WGS-84 origin height was corrected
 
     Vector3f outputTrackError;
 
@@ -854,7 +870,6 @@ private:
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
     Vector3f omegaAcrossFlowTime;   // body angular rates averaged across the optical flow sample period
-    Matrix3f Tnb_flow;              // transformation matrix from nav to body axes at the middle of the optical flow sample period
     Matrix3f Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
     Vector2 varInnovOptFlow;        // optical flow innovations variances (rad/sec)^2
     Vector2 innovOptFlow;           // optical flow LOS innovations (rad/sec)
@@ -889,12 +904,17 @@ private:
     float delTimeOF;                // time that delAngBodyOF is summed across
 
     // Range finder
-    float baroHgtOffset;            // offset applied when baro height used as a backup height reference if range-finder fails
-    float rngOnGnd;                 // Expected range finder reading in metres when vehicle is on ground
-    float storedRngMeas[3];             // Ringbuffer of stored range measurements
-    uint32_t storedRngMeasTime_ms[3];   // Ringbuffer of stored range measurement times
-    uint32_t lastRngMeasTime_ms;        // Timestamp of last range measurement
-    uint8_t rngMeasIndex;               // Current range measurement ringbuffer index
+    float baroHgtOffset;                    // offset applied when when switching to use of Baro height
+    float rngOnGnd;                         // Expected range finder reading in metres when vehicle is on ground
+    float storedRngMeas[2][3];              // Ringbuffer of stored range measurements for dual range sensors
+    uint32_t storedRngMeasTime_ms[2][3];    // Ringbuffers of stored range measurement times for dual range sensors
+    uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
+    uint8_t rngMeasIndex[2];                // Current range measurement ringbuffer index for dual range sensors
+    bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
+    uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
+
+    // height source selection logic
+    uint8_t activeHgtSource;    // integer defining active height source
 
     // Movement detector
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
