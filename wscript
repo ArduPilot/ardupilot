@@ -90,6 +90,11 @@ revisions.
         default=False,
         help="Don't use libiio even if supported by board and dependencies available")
 
+    g.add_option('--static',
+        action='store_true',
+        default=False,
+        help='Force a static build')
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -121,6 +126,10 @@ def configure(cfg):
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
+
+    if cfg.options.static:
+        cfg.msg('Using static linking')
+        env.STATIC_LINKING = True
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
