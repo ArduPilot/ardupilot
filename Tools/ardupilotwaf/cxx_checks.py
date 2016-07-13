@@ -157,26 +157,46 @@ def check_librt(cfg, env):
     return ret
 
 @conf
+def check_package(cfg, env, libname):
+    '''use pkg-config to look for an installed library that has a LIBNAME.pc file'''
+    cfg.check_cfg(package=libname, mandatory=False, global_define=True,
+                  args=['--libs', '--cflags'])
+    capsname = libname.upper()
+    env.LIB += cfg.env['LIB_%s' % capsname]
+    env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
+    env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
+    env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+
+@conf
 def check_lttng(cfg, env):
     if cfg.options.disable_lttng:
         cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
         return False
 
-    cfg.check_cfg(package='lttng-ust', mandatory=False, global_define=True,
-                  args=['--libs', '--cflags'])
-    env.LIB += cfg.env['LIB_LTTNG-UST']
+    check_package(cfg, env, 'lttng-ust')
     return True
 
 @conf
 def check_libiio(cfg, env):
+    if env.STATIC_LINKING:
+        # libiio depends on libdl which means it can't be used in a static build
+        cfg.msg("libiio disabled for static build", 'disabled', color='YELLOW')
+        return False
     if cfg.options.disable_libiio:
         cfg.msg("Checking for 'libiio':", 'disabled', color='YELLOW')
         return False
 
-    cfg.check_cfg(package='libiio', mandatory=False, global_define=True,
-                  args=['--libs', '--cflags'])
-    env.LIB += cfg.env['LIB_LIBIIO']
-    # workaround bug in libiio 0.6 not including -ldl
-    if cfg.env['LIB_LIBIIO']:
-        env.LIB += ['dl']
+    check_package(cfg, env, 'libiio')
     return True
+
+@conf
+def check_libdl(cfg, env):
+    if env.STATIC_LINKING:
+        # using loadable modules for a static build is not recommended
+        cfg.msg("libdl disabled for static build", 'disabled', color='YELLOW')
+        return False
+    ret = cfg.check(compiler='cxx', lib='dl', mandatory=False)
+    if ret:
+        env.LIB += cfg.env['LIB_DL']
+        cfg.define('HAVE_LIBDL', 1)
+    return ret
