@@ -14,9 +14,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  this is a driver for DSM input in the QFLIGHT board. It could be
-  extended to other boards in future by providing an open/read/write
-  abstraction
+  this is a driver for SBUS input in Linux board using a UART. Note
+  that it relies on kernel support for 100kbaud and on a uart inverted
+  in hardware
  */
 
 #include <AP_HAL/AP_HAL.h>
