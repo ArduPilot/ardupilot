@@ -376,7 +376,7 @@ void RCInput_RPI::init_DMA()
 //We must stop DMA when the process is killed
 void RCInput_RPI::set_sigaction()
 {
-    for (int i = 0; i < 64; i++) { 
+    for (int i = 0; i < NSIG; i++) {
         //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
         struct sigaction sa;
         memset(&sa, 0, sizeof(sa));
