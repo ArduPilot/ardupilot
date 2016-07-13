@@ -82,7 +82,7 @@ public:
     /* AP_HAL::I2CDeviceManager implementation */
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address)
     {
-        return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice());
+        return nullptr;
     }
 };
 
