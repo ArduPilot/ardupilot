@@ -94,6 +94,21 @@ static const struct {
     { "calibration",        Calibration::create },
 };
 
+void SITL_State::_set_signal_handlers(void) const
+{
+    struct sigaction sa_fpe;
+
+    sigemptyset(&sa_fpe.sa_mask);
+    sa_fpe.sa_handler = _sig_fpe;
+    sigaction(SIGFPE, &sa_fpe, nullptr);
+
+    struct sigaction sa_pipe;
+
+    sigemptyset(&sa_pipe.sa_mask);
+    sa_pipe.sa_handler = SIG_IGN; /* No-op SIGPIPE handler */
+    sigaction(SIGPIPE, &sa_pipe, nullptr);
+}
+
 void SITL_State::_parse_command_line(int argc, char * const argv[])
 {
     int opt;
@@ -107,9 +122,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         AP_HAL::panic("out of memory");
     }
 
-    signal(SIGFPE, _sig_fpe);
-    // No-op SIGPIPE handler
-    signal(SIGPIPE, SIG_IGN);
+    _set_signal_handlers();
 
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
