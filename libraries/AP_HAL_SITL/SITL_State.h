@@ -89,6 +89,8 @@ private:
     void _update_compass(float rollDeg, float pitchDeg, float yawDeg);
     void _update_flow(void);
 
+    void _set_signal_handlers(void) const;
+
     struct gps_data {
         double latitude;
         double longitude;
