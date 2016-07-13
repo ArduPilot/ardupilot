@@ -195,8 +195,7 @@ def check_libdl(cfg, env):
         # using loadable modules for a static build is not recommended
         cfg.msg("libdl disabled for static build", 'disabled', color='YELLOW')
         return False
-    ret = cfg.check(compiler='cxx', lib='dl', mandatory=False)
+    ret = cfg.check(compiler='cxx', lib='dl', mandatory=False, global_define=True, define_name='HAVE_LIBDL')
     if ret:
         env.LIB += cfg.env['LIB_DL']
-        cfg.define('HAVE_LIBDL', 1)
     return ret
