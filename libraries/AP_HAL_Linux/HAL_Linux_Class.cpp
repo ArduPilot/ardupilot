@@ -7,10 +7,10 @@
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include <AP_Module/AP_Module.h>
 
 #include "AP_HAL_Linux_Private.h"
 #include "HAL_Linux_Class.h"
-#include <AP_Module/AP_Module.h>
 
 using namespace Linux;
 
