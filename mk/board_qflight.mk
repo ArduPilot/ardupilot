@@ -42,6 +42,8 @@ MISSING_TOOLCHAIN_FLAGS += -DHAVE_STD_NULLPTR_T=0 -DHAVE_STD_MOVE=0 -DHAVE_STD_R
 # Hardcoded libraries/AP_Common/missing/cmath defines in "make" to retain the current behavior
 EXTRAFLAGS += -DHAVE_CMATH_ISFINITE -DNEED_CMATH_ISFINITE_STD_NAMESPACE
 
+EXTRAFLAGS += -D__STDC_FORMAT_MACROS
+
 # DSP build flags
 DSP_INC=$(MISSING_TOOLCHAIN_FLAGS) $(SHARED_INC) -I$(HEXAGON_FC_ADDON)/hexagon/inc -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/sys -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/sys/sys -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/sys/machine -I$(HEXAGON_FC_ADDON)/hexagon/inc/dspal/include -I$(HEXAGON_SDK_ROOT)/lib/common/qurt/ADSPv5MP/include -I$(HEXAGON_SDK_ROOT)/lib/common/remote/ship/hexagon_ReleaseG -I$(QFLIGHT_BUILD) -I$(HEXAGON_SDK_ROOT)/inc/stddef -I$(SKETCHBOOK)/libraries
 DSP_FLAGS=-mv5 -G0 -g -O3 -fno-exceptions -fno-strict-aliasing -fno-zero-initialized-in-bss -fdata-sections -fpic -D__V_DYNAMIC__  $(DSP_INC) -D_PID_T -D_UID_T -D_TIMER_T -D_HAS_C9X
