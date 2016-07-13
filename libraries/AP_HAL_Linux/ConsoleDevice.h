@@ -19,4 +19,6 @@ private:
     int _rd_fd = -1;
     int _wr_fd = -1;
     bool _closed = true;
+
+    bool _set_signal_handlers(void) const;
 };
