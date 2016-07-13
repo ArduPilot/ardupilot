@@ -157,6 +157,9 @@ class Board:
                 '-Wl,--gc-sections',
             ]
 
+        # We always want to use PRI format macros
+        cfg.define('__STDC_FORMAT_MACROS', 1)
+
 
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
@@ -237,9 +240,6 @@ class linux(Board):
         env.AP_LIBRARIES = [
             'AP_HAL_Linux',
         ]
-
-        # We always want to use PRI format macros
-        cfg.define('__STDC_FORMAT_MACROS', 1)
 
 
 class minlure(linux):
