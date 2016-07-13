@@ -246,12 +246,13 @@ void _usage(void)
     printf("\t                   --terrain-directory /var/APM/terrain\n");
     printf("\t                   -t /var/APM/terrain\n");
     printf("\tmodule support:\n");
-    printf("\t                   --module-directory /etc/APM/modules\n");
+    printf("\t                   --module-directory %s\n", AP_MODULE_DEFAULT_DIRECTORY);
+    printf("\t                   -M %s\n", AP_MODULE_DEFAULT_DIRECTORY);
 }
 
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
-    const char *module_path = nullptr;
+    const char *module_path = AP_MODULE_DEFAULT_DIRECTORY;
     
     assert(callbacks);
 
