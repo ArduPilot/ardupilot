@@ -581,11 +581,16 @@ void Replay::set_user_parameters(void)
 
 void Replay::set_signal_handlers(void)
 {
+    struct sigaction sa;
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
     if (generate_fpe) {
         // SITL_State::_parse_command_line sets up an FPE handler.  We
         // can do better:
         feenableexcept(FE_INVALID | FE_OVERFLOW);
-        signal(SIGFPE, _replay_sig_fpe);
+        sa.sa_handler = _replay_sig_fpe;
     } else {
         // disable floating point exception generation:
         int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
@@ -596,7 +601,11 @@ void Replay::set_signal_handlers(void)
         if (feclearexcept(exceptions)) {
             ::fprintf(stderr, "Failed to disable floating point exceptions: %s", strerror(errno));
         }
-        signal(SIGFPE, SIG_IGN);
+        sa.sa_handler = SIG_IGN;
+    }
+
+    if (sigaction(SIGFPE, &sa, nullptr) < 0) {
+        ::fprintf(stderr, "Failed to set floating point exceptions' handler: %s", strerror(errno));
     }
 }
 
