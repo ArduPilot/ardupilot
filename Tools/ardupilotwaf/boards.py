@@ -234,6 +234,7 @@ class linux(Board):
 
         cfg.check_librt(env)
         cfg.check_lttng(env)
+        cfg.check_libdl(env)
         cfg.check_libiio(env)
 
         env.LINKFLAGS += ['-pthread',]
@@ -320,7 +321,6 @@ class bebop(linux):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
         )
-        env.STATIC_LINKING = True
 
 class raspilot(linux):
     toolchain = 'arm-linux-gnueabihf'
