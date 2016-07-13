@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <math.h>
 
-#include "../../../AP_Module_Structures.h"
+#include <AP_Module_Structures.h>
 
 void hook_setup_start(uint64_t time_us)
 {
@@ -34,4 +34,32 @@ void hook_AHRS_update(const struct AHRS_state *state)
            degrees(state->eulers[0]),
            degrees(state->eulers[1]),
            degrees(state->eulers[2]));
+}
+
+void hook_gyro_sample(const struct gyro_sample *state)
+{
+    static uint64_t last_print_us;
+    if (state->time_us - last_print_us < 1000000UL) {
+        return;
+    }
+    last_print_us = state->time_us;
+    // print gyro rates once per second
+    printf("gyro (%.1f,%.1f,%.1f)\n",
+           degrees(state->gyro[0]),
+           degrees(state->gyro[1]),
+           degrees(state->gyro[2]));    
+}
+
+void hook_accel_sample(const struct accel_sample *state)
+{
+    static uint64_t last_print_us;
+    if (state->time_us - last_print_us < 1000000UL) {
+        return;
+    }
+    last_print_us = state->time_us;
+    // print accels once per second
+    printf("accel (%.1f,%.1f,%.1f)\n",
+           state->accel[0],
+           state->accel[1],
+           state->accel[2]);
 }
