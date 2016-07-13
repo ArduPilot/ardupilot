@@ -378,10 +378,14 @@ void RCInput_RPI::set_sigaction()
 {
     for (int i = 0; i < NSIG; i++) {
         //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
-        struct sigaction sa;
+        struct sigaction sa, sa_old;
         memset(&sa, 0, sizeof(sa));
-        sa.sa_handler = RCInput_RPI::termination_handler;
-        sigaction(i, &sa, NULL);
+        sigaction(i, nullptr, &sa_old);
+
+        if (sa_old.sa_handler == nullptr) {
+            sa.sa_handler = RCInput_RPI::termination_handler;
+            sigaction(i, &sa, nullptr);
+        }
     }
 }
 
