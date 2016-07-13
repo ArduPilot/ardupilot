@@ -37,6 +37,9 @@
 #define AP_MODULE_SUPPORTED 0
 #endif
 
+#ifndef AP_MODULE_DEFAULT_DIRECTORY
+#define AP_MODULE_DEFAULT_DIRECTORY "/usr/lib/ardupilot/modules"
+#endif
 
 class AP_Module {
 public:
