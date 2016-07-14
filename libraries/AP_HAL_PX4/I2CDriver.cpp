@@ -3,41 +3,11 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
 #include "I2CDriver.h"
-#include <drivers/device/i2c.h>
-#include <arch/board/board.h>
-#include "board_config.h"
+#include "I2CWrapper.h"
 
 extern const AP_HAL::HAL& hal;
 
 using namespace PX4;
-
-/*
-  wrapper class for I2C to expose protected functions from PX4Firmware
- */
-class PX4::PX4_I2C : public device::I2C {
-public:
-    PX4_I2C(uint8_t bus);
-    bool do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len);
-};
-
-// constructor
-PX4_I2C::PX4_I2C(uint8_t bus) : 
-    I2C("AP_I2C", "/dev/api2c", bus, 0, 400000UL)
-{
-    /*
-      attach to the bus. Return value can be ignored as we have no probe function
-    */
-    init();
-}
-
-/*
-  main transfer function
- */
-bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len)
-{
-    set_address(address);
-    return transfer(send, send_len, recv, recv_len) == OK;
-}
 
 // constructor for main i2c class
 PX4I2CDriver::PX4I2CDriver(void)
