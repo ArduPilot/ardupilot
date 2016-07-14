@@ -65,6 +65,10 @@ public:
     // this supports the NAVl1_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    void set_reverse(bool reverse) {
+        _reverse = reverse;
+    }
+
 private:
     // reference to the AHRS object
     AP_AHRS &_ahrs;
@@ -109,4 +113,8 @@ private:
     float _L1_xtrack_i_gain_prev = 0;
     uint32_t _last_update_waypoint_us;
     bool _data_is_stale = true;
+
+    bool _reverse = false;
+    float get_yaw();
+    float get_yaw_sensor();
 };
