@@ -250,6 +250,9 @@ void Rover::set_reverse(bool reverse)
         return;
     }
     g.pidSpeedThrottle.reset_I();
+    steerController.reset_I();
+    nav_controller->set_reverse(reverse);
+    steerController.set_reverse(reverse);
     in_reverse = reverse;
 }
 
@@ -269,7 +272,6 @@ void Rover::set_mode(enum mode mode)
     control_mode = mode;
     throttle_last = 0;
     throttle = 500;
-    set_reverse(false);
     g.pidSpeedThrottle.reset_I();
 
     if (control_mode != AUTO) {
