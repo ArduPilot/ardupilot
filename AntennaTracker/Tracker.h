@@ -158,6 +158,8 @@ private:
         float bearing;                  // bearing to vehicle in centi-degrees
         float distance;                 // distance to vehicle in meters
         float pitch;                    // pitch to vehicle in degrees (positive means vehicle is above tracker, negative means below)
+        float angle_error_pitch;        // angle error between target and current pitch in centi-degrees
+        float angle_error_yaw;          // angle error between target and current yaw in centi-degrees
         float alt_difference_baro;      // altitude difference between tracker and vehicle in meters according to the barometer.  positive value means vehicle is above tracker
         float alt_difference_gps;       // altitude difference between tracker and vehicle in meters according to the gps.  positive value means vehicle is above tracker
         float altitude_offset;          // offset in meters which is added to tracker altitude to align altitude measurements with vehicle's barometer
@@ -166,7 +168,7 @@ private:
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
-    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
+    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
     // setup the var_info table
     AP_Param param_loader{var_info};
@@ -215,11 +217,11 @@ private:
     void update_GPS(void);
     void init_servos();
     void update_pitch_servo(float pitch);
-    void update_pitch_position_servo(float pitch);
+    void update_pitch_position_servo(void);
     void update_pitch_cr_servo(float pitch);
     void update_pitch_onoff_servo(float pitch);
     void update_yaw_servo(float yaw);
-    void update_yaw_position_servo(float yaw);
+    void update_yaw_position_servo(void);
     void update_yaw_cr_servo(float yaw);
     void update_yaw_onoff_servo(float yaw);
     void init_tracker();
@@ -252,6 +254,8 @@ private:
     void start_logging();
     void log_init(void);
     bool should_log(uint32_t mask);
+    void calc_angle_error(float pitch, float yaw);
+    void calc_body_frame_target(float pitch, float yaw, float& bf_pitch, float& bf_yaw);
 
 public:
     void mavlink_snoop(const mavlink_message_t* msg);
