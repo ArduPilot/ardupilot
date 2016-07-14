@@ -127,20 +127,20 @@ struct accel_sample {
 /*
   prototypes for hook functions
  */
-typedef void (*hook_setup_start_fn_t)(uint64_t);
-void hook_setup_start(uint64_t time_us);
+typedef void (*ap_hook_setup_start_fn_t)(uint64_t);
+void ap_hook_setup_start(uint64_t time_us);
     
-typedef void (*hook_setup_complete_fn_t)(uint64_t);
-void hook_setup_complete(uint64_t time_us);
+typedef void (*ap_hook_setup_complete_fn_t)(uint64_t);
+void ap_hook_setup_complete(uint64_t time_us);
     
-typedef void (*hook_AHRS_update_fn_t)(const struct AHRS_state *);
-void hook_AHRS_update(const struct AHRS_state *state);
+typedef void (*ap_hook_AHRS_update_fn_t)(const struct AHRS_state *);
+void ap_hook_AHRS_update(const struct AHRS_state *state);
 
-typedef void (*hook_gyro_sample_fn_t)(const struct gyro_sample *);
-void hook_gyro_sample(const struct gyro_sample *state);
+typedef void (*ap_hook_gyro_sample_fn_t)(const struct gyro_sample *);
+void ap_hook_gyro_sample(const struct gyro_sample *state);
 
-typedef void (*hook_accel_sample_fn_t)(const struct accel_sample *);
-void hook_accel_sample(const struct accel_sample *state);
+typedef void (*ap_hook_accel_sample_fn_t)(const struct accel_sample *);
+void ap_hook_accel_sample(const struct accel_sample *state);
     
 #ifdef __cplusplus
 }

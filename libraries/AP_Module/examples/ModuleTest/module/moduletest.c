@@ -9,12 +9,12 @@
 
 #include <AP_Module_Structures.h>
 
-void hook_setup_start(uint64_t time_us)
+void ap_hook_setup_start(uint64_t time_us)
 {
     printf("setup_start called\n");
 }
 
-void hook_setup_complete(uint64_t time_us)
+void ap_hook_setup_complete(uint64_t time_us)
 {
     printf("setup_complete called\n");
 }
@@ -22,7 +22,7 @@ void hook_setup_complete(uint64_t time_us)
 
 #define degrees(x) (x * 180.0 / M_PI)
 
-void hook_AHRS_update(const struct AHRS_state *state)
+void ap_hook_AHRS_update(const struct AHRS_state *state)
 {
     static uint64_t last_print_us;
     if (state->time_us - last_print_us < 1000000UL) {
@@ -36,7 +36,7 @@ void hook_AHRS_update(const struct AHRS_state *state)
            degrees(state->eulers[2]));
 }
 
-void hook_gyro_sample(const struct gyro_sample *state)
+void ap_hook_gyro_sample(const struct gyro_sample *state)
 {
     static uint64_t last_print_us;
     if (state->time_us - last_print_us < 1000000UL) {
@@ -50,7 +50,7 @@ void hook_gyro_sample(const struct gyro_sample *state)
            degrees(state->gyro[2]));    
 }
 
-void hook_accel_sample(const struct accel_sample *state)
+void ap_hook_accel_sample(const struct accel_sample *state)
 {
     static uint64_t last_print_us;
     if (state->time_us - last_print_us < 1000000UL) {
