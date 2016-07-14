@@ -14,6 +14,7 @@
 #include <utility>
 
 #include <AP_HAL/utility/sparse-endian.h>
+#include <AP_Math/AP_Math.h>
 
 #include "Util.h"
 
@@ -22,23 +23,7 @@
 #define BEBOP_BLDC_STARTPROP 0x40
 #define BEBOP_BLDC_SETREFSPEED 0x02
 
-struct PACKED bldc_ref_speed_data {
-    uint8_t     cmd;
-    uint16_t    rpm[BEBOP_BLDC_MOTORS_NUM];
-    uint8_t     enable_security;
-    uint8_t     checksum;
-};
-
 #define BEBOP_BLDC_GETOBSDATA 0x20
-struct PACKED bldc_obs_data {
-    uint16_t    rpm[BEBOP_BLDC_MOTORS_NUM];
-    uint16_t    batt_mv;
-    uint8_t     status;
-    uint8_t     error;
-    uint8_t     motors_err;
-    uint8_t     temp;
-    uint8_t     checksum;
-};
 
 struct PACKED bldc_info {
     uint8_t version_maj;
@@ -524,7 +509,7 @@ void RCOutput_Bebop::_run_rcout()
         /* start propellers if the speed of the 4 motors is >= min speed
          * min speed set to min_pwm + 50*/
         for (i = 0; i < _n_motors; i++) {
-            if (current_period_us[i] <= _min_pwm + 50)
+            if (current_period_us[i] <= _min_pwm + 50) {
                 break;
             }
             _rpm[bebop_bldc_channels[i]] = _period_us_to_rpm(current_period_us[i]);

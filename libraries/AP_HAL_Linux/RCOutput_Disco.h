@@ -6,7 +6,7 @@
 
 class Linux::RCOutput_Disco : public AP_HAL::RCOutput {
 public:
-    RCOutput_Disco(void) {}
+    RCOutput_Disco(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
     ~RCOutput_Disco() {}
 
     static RCOutput_Bebop *from(AP_HAL::RCOutput *rcoutput)

@@ -29,6 +29,11 @@
 
 namespace Linux {
 
+RCOutput_Disco::RCOutput_Disco(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+    : bebop_out(std::move(dev))
+{
+}
+    
 void RCOutput_Disco::init()
 {
     sysfs_out.init();
