@@ -9,7 +9,7 @@
 class AP_HAL::Util {
 public:
     // soft_armed starts out true
-    Util() : soft_armed(true), capabilities(0) {}
+    Util() : soft_armed(false), capabilities(0) {}
 
     int snprintf(char* str, size_t size,
                  const char *format, ...);
