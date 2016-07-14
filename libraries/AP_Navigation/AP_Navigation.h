@@ -113,6 +113,8 @@ public:
     // every update_XXXXXX() call.
     virtual bool data_is_stale(void) const = 0;
 
+    virtual void set_reverse(bool reverse) = 0;
+
 	// add new navigation controllers to this enum. Users can then
 	// select which navigation controller to use by setting the
 	// NAV_CONTROLLER parameter
