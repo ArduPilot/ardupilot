@@ -23,6 +23,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Airspeed_Backend.h"
+#include <AP_HAL/I2CDevice.h>
 
 class AP_Airspeed_I2C : public AP_Airspeed_Backend
 {
@@ -44,4 +45,5 @@ private:
     float _pressure;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };

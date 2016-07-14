@@ -17,10 +17,17 @@
 #pragma once
 
 #include "NavioLED.h"
+#include <AP_HAL/I2CDevice.h>
 
 class NavioLED_I2C : public NavioLED
 {
+public:
+    NavioLED_I2C();
+
 protected:
     virtual bool hw_init(void);
     virtual bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);
+
+private:
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };

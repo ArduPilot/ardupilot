@@ -90,6 +90,11 @@ public:
         return transfer(buf, sizeof(buf), nullptr, 0);
     }
 
+    bool read(uint8_t *recv, uint32_t recv_len)
+    {
+        return transfer(nullptr, 0, recv, recv_len);
+    }
+
     /*
      * Get the semaphore for the bus this device is in.  This is intended for
      * drivers to use during initialization phase only.

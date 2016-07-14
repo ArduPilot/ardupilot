@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 #include "AP_ADC_ADS1115.h"
 
@@ -106,7 +107,7 @@ static const uint16_t mux_table[ADS1115_CHANNELS_COUNT] = {
 
 
 AP_ADC_ADS1115::AP_ADC_ADS1115():
-    _i2c_sem(NULL),
+    _dev(hal.i2c_mgr->get_device(0, ADS1115_DEFAULT_ADDRESS)),
     _channel_to_read(0)
 {
     _samples = new adc_report_s[_channels_number];
@@ -117,7 +118,6 @@ bool AP_ADC_ADS1115::init()
     hal.scheduler->suspend_timer_procs();
 
     _gain = ADS1115_PGA_4P096;
-    _i2c_sem = hal.i2c->get_semaphore();
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, void));
     hal.scheduler->resume_timer_procs();
@@ -127,17 +127,18 @@ bool AP_ADC_ADS1115::init()
 
 bool AP_ADC_ADS1115::_start_conversion(uint8_t channel)
 {
-    union {
+    struct {
+        uint8_t reg;
         uint16_t w;
-        uint8_t b[2];
     } config;
 
     config.w = ADS1115_OS_ACTIVE | _gain | mux_table[channel] |
     ADS1115_MODE_SINGLESHOT | ADS1115_COMP_QUE_DISABLE | ADS1115_RATE_250;
 
-    config.w = config.b[0] << 8 | config.b[1];
+    config.reg = ADS1115_RA_CONFIG;
+    config.w = htobe16(config.w);
 
-    if (hal.i2c->writeRegisters((uint8_t)ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONFIG, 2, (uint8_t *) &config) != 0) {
+    if (_dev->transfer((uint8_t *)&config, sizeof(config), nullptr, 0)) {
         return false;
     }
 
@@ -201,35 +202,32 @@ void AP_ADC_ADS1115::_update()
         return;
     }
 
-    union {
-        uint8_t b[2];
-        int16_t w;
-    } word, config;
+    uint16_t word, config;
 
-    if (!_i2c_sem->take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
-    if ( hal.i2c->readRegisters(ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONFIG, 2, config.b) != 0 ) {
-        error("i2c->readRegisters failed in ADS1115");
-        _i2c_sem->give();
+    if (!_dev->read_registers(ADS1115_RA_CONFIG, (uint8_t *)&config, sizeof(config))) {
+        error("i2c->read_registers failed in ADS1115");
+        _dev->get_semaphore()->give();
         return;
     }
 
     /* check rdy bit */
-    if ((config.b[1] & 0x80) != 0x80 ) {
-        _i2c_sem->give();
+    if ((config & 0x80) != 0x80 ) {
+        _dev->get_semaphore()->give();
         return;
     }
 
-    if ( hal.i2c->readRegisters(ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONVERSION, 2, word.b) != 0 ) {
-        _i2c_sem->give();
+    if (!_dev->read_registers(ADS1115_RA_CONVERSION, (uint8_t *)&word,  sizeof(word))) {
+        _dev->get_semaphore()->give();
         return;
     }
 
-    word.w = word.b[0] << 8 | word.b[1]; /* Exchange MSB and LSB */
+    word = htobe16(word);
 
-    float sample = _convert_register_data_to_mv(word.w);
+    float sample = _convert_register_data_to_mv(word);
 
     _samples[_channel_to_read].data = sample;
     _samples[_channel_to_read].id = _channel_to_read;
@@ -238,7 +236,7 @@ void AP_ADC_ADS1115::_update()
     _channel_to_read = (_channel_to_read + 1) % _channels_number;
     _start_conversion(_channel_to_read);
 
-    _i2c_sem->give();
+    _dev->get_semaphore()->give();
 
     _last_update_timestamp = AP_HAL::micros();
 }
