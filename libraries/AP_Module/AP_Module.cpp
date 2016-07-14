@@ -102,11 +102,13 @@ void AP_Module::init(const char *module_path)
 */
 void AP_Module::call_hook_setup_start(void)
 {
+#if AP_MODULE_SUPPORTED
     uint64_t now = AP_HAL::micros64();
     for (const struct hook_list *h=hooks[HOOK_SETUP_START]; h; h=h->next) {
         ap_hook_setup_start_fn_t fn = reinterpret_cast<ap_hook_setup_start_fn_t>(h->symbol);
         fn(now);
     }
+#endif
 }
 
 /*
@@ -114,11 +116,13 @@ void AP_Module::call_hook_setup_start(void)
 */
 void AP_Module::call_hook_setup_complete(void)
 {
+#if AP_MODULE_SUPPORTED
     uint64_t now = AP_HAL::micros64();
     for (const struct hook_list *h=hooks[HOOK_SETUP_COMPLETE]; h; h=h->next) {
         ap_hook_setup_complete_fn_t fn = reinterpret_cast<ap_hook_setup_complete_fn_t>(h->symbol);
         fn(now);
-    }    
+    }
+#endif
 }
 
 /*
@@ -126,6 +130,7 @@ void AP_Module::call_hook_setup_complete(void)
 */
 void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
 {
+#if AP_MODULE_SUPPORTED
     if (hooks[HOOK_AHRS_UPDATE] == nullptr) {
         // avoid filling in AHRS_state
         return;
@@ -192,7 +197,8 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
     for (const struct hook_list *h=hooks[HOOK_AHRS_UPDATE]; h; h=h->next) {
         ap_hook_AHRS_update_fn_t fn = reinterpret_cast<ap_hook_AHRS_update_fn_t>(h->symbol);
         fn(&state);
-    }    
+    }
+#endif
 }
 
 
@@ -201,6 +207,7 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
 */
 void AP_Module::call_hook_gyro_sample(uint8_t instance, float dt, const Vector3f &gyro)
 {
+#if AP_MODULE_SUPPORTED
     if (hooks[HOOK_GYRO_SAMPLE] == nullptr) {
         // avoid filling in struct
         return;
@@ -221,7 +228,8 @@ void AP_Module::call_hook_gyro_sample(uint8_t instance, float dt, const Vector3f
     for (const struct hook_list *h=hooks[HOOK_GYRO_SAMPLE]; h; h=h->next) {
         ap_hook_gyro_sample_fn_t fn = reinterpret_cast<ap_hook_gyro_sample_fn_t>(h->symbol);
         fn(&state);
-    }    
+    }
+#endif
 }
 
 /*
@@ -229,6 +237,7 @@ void AP_Module::call_hook_gyro_sample(uint8_t instance, float dt, const Vector3f
 */
 void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel)
 {
+#if AP_MODULE_SUPPORTED
     if (hooks[HOOK_ACCEL_SAMPLE] == nullptr) {
         // avoid filling in struct
         return;
@@ -249,5 +258,6 @@ void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3
     for (const struct hook_list *h=hooks[HOOK_ACCEL_SAMPLE]; h; h=h->next) {
         ap_hook_accel_sample_fn_t fn = reinterpret_cast<ap_hook_accel_sample_fn_t>(h->symbol);
         fn(&state);
-    }    
+    }
+#endif
 }
