@@ -30,7 +30,9 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
     // Check airspeed sensor
     uint64_t enabled_checks = 0;
     uint64_t passed_checks = 0;
-    ret &= AP_Arming::airspeed_checks(report, enabled_checks, passed_checks);
+    if (AP_Arming::airspeed_checks(report, enabled_checks, passed_checks)==ARMING_CHECK_FAILED) {
+        ret = false;
+    }
 
     if (plane.aparm.roll_limit_cd < 300) {
         if (report) {
