@@ -30,10 +30,11 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                               NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags) :
+                               NavEKF &_EKF1, NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags) :
     AP_AHRS_DCM(ins, baro, gps),
     EKF1(_EKF1),
     EKF2(_EKF2),
+    EKF3(_EKF3),
     _ekf_flags(flags)
 {
     _dcm_matrix.identity();
@@ -74,6 +75,7 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
     // reset the EKF gyro bias states
     EKF1.resetGyroBias();
     EKF2.resetGyroBias();
+    EKF3.resetGyroBias();
 }
 
 void AP_AHRS_NavEKF::update(void)
@@ -88,6 +90,7 @@ void AP_AHRS_NavEKF::update(void)
     update_EKF1();
 #endif
     update_EKF2();
+    update_EKF3();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     update_SITL();
 #endif
@@ -251,6 +254,72 @@ void AP_AHRS_NavEKF::update_EKF2(void)
     }
 }
 
+
+void AP_AHRS_NavEKF::update_EKF3(void)
+{
+    if (!ekf3_started) {
+        // wait 1 second for DCM to output a valid tilt error estimate
+        if (start_time_ms == 0) {
+            start_time_ms = AP_HAL::millis();
+        }
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms || force_ekf) {
+            ekf3_started = EKF3.InitialiseFilter();
+            if (force_ekf) {
+                return;
+            }
+        }
+    }
+    if (ekf3_started) {
+        EKF3.UpdateFilter();
+        if (active_EKF_type() == EKF_TYPE2) {
+            Vector3f eulers;
+            EKF3.getRotationBodyToNED(_dcm_matrix);
+            EKF3.getEulerAngles(-1,eulers);
+            roll  = eulers.x;
+            pitch = eulers.y;
+            yaw   = eulers.z;
+
+            update_cd_values();
+            update_trig();
+
+            // keep _gyro_bias for get_gyro_drift()
+            EKF3.getGyroBias(-1,_gyro_bias);
+            _gyro_bias = -_gyro_bias;
+
+            // calculate corrected gryo estimate for get_gyro()
+            _gyro_estimate.zero();
+            uint8_t healthy_count = 0;
+            for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
+                if (_ins.get_gyro_health(i) && healthy_count < 2 && _ins.use_gyro(i)) {
+                    _gyro_estimate += _ins.get_gyro(i);
+                    healthy_count++;
+                }
+            }
+            if (healthy_count > 1) {
+                _gyro_estimate /= healthy_count;
+            }
+            _gyro_estimate += _gyro_bias;
+
+            float abias;
+            EKF3.getAccelZBias(-1,abias);
+
+            // This EKF uses the primary IMU
+            // Eventually we will run a separate instance of the EKF for each IMU and do the selection and blending of EKF outputs upstream
+            // update _accel_ef_ekf
+            for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
+                Vector3f accel = _ins.get_accel(i);
+                if (i==_ins.get_primary_accel()) {
+                    accel.z -= abias;
+                }
+                if (_ins.get_accel_health(i)) {
+                    _accel_ef_ekf[i] = _dcm_matrix * accel;
+                }
+            }
+            _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
+        }
+    }
+}
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 void AP_AHRS_NavEKF::update_SITL(void)
 {
@@ -315,6 +384,9 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
     if (ekf2_started) {
         ekf2_started = EKF2.InitialiseFilter();
     }
+    if (ekf3_started) {
+        ekf3_started = EKF3.InitialiseFilter();
+    }
 }
 
 // reset the current attitude, used on new IMU calibration
@@ -329,6 +401,9 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 #endif
     if (ekf2_started) {
         ekf2_started = EKF2.InitialiseFilter();
+    }
+    if (ekf3_started) {
+        ekf3_started = EKF3.InitialiseFilter();
     }
 }
 
@@ -355,6 +430,14 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         }
         break;
 
+    case EKF_TYPE3:
+        if (EKF3.getLLH(loc) && EKF3.getPosNED(-1,ned_pos) && EKF3.getOriginLLH(origin)) {
+            // fixup altitude using relative position from EKF origin
+            loc.alt = origin.alt - ned_pos.z*100;
+            return true;
+        }
+        break;
+        
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL: {
         const struct SITL::sitl_fdm &fdm = _sitl->state;
@@ -404,6 +487,10 @@ Vector3f AP_AHRS_NavEKF::wind_estimate(void)
         break;
 #endif
 
+    case EKF_TYPE3:
+        EKF3.getWind(-1,wind);
+        break;
+
     case EKF_TYPE2:
     default:
         EKF2.getWind(-1,wind);
@@ -432,6 +519,8 @@ bool AP_AHRS_NavEKF::use_compass(void)
 #endif
     case EKF_TYPE2:
         return EKF2.use_compass();
+    case EKF_TYPE3:
+        return EKF3.use_compass();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         return true;
@@ -459,6 +548,7 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
     case EKF_TYPE1:
 #endif
     case EKF_TYPE2:
+    case EKF_TYPE3:
     default:
         // DCM is secondary
         eulers = _dcm_attitude;
@@ -484,6 +574,7 @@ bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc)
     case EKF_TYPE1:
 #endif
     case EKF_TYPE2:
+    case EKF_TYPE3:
     default:
         // return DCM position
         AP_AHRS_DCM::get_position(loc);
@@ -505,6 +596,10 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
         EKF1.getVelNED(vec);
         return Vector2f(vec.x, vec.y);
 #endif
+
+    case EKF_TYPE3:
+        EKF3.getVelNED(-1,vec);
+        return Vector2f(vec.x, vec.y);
 
     case EKF_TYPE2:
     default:
@@ -545,11 +640,15 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
         return true;
 #endif
 
+    case EKF_TYPE3:
+        EKF3.getVelNED(-1,vec);
+        return true;
+
     case EKF_TYPE2:
     default:
         EKF2.getVelNED(-1,vec);
         return true;
-
+        
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL: {
         const struct SITL::sitl_fdm &fdm = _sitl->state;
@@ -573,6 +672,10 @@ bool AP_AHRS_NavEKF::get_mag_field_NED(Vector3f &vec) const
             return true;
 #endif
 
+        case EKF_TYPE3:
+            EKF3.getMagNED(-1,vec);
+            return true;
+            
         case EKF_TYPE2:
         default:
             EKF2.getMagNED(-1,vec);
@@ -598,6 +701,10 @@ bool AP_AHRS_NavEKF::get_mag_field_correction(Vector3f &vec) const
             return true;
 #endif
 
+        case EKF_TYPE3:
+            EKF3.getMagXYZ(-1,vec);
+            return true;
+            
         case EKF_TYPE2:
         default:
             EKF2.getMagXYZ(-1,vec);
@@ -624,6 +731,10 @@ bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity)
         return true;
 #endif
 
+    case EKF_TYPE3:
+        velocity = EKF3.getPosDownDerivative(-1);
+        return true;
+        
     case EKF_TYPE2:
     default:
         velocity = EKF2.getPosDownDerivative(-1);
@@ -651,10 +762,13 @@ bool AP_AHRS_NavEKF::get_hagl(float &height) const
         return EKF1.getHAGL(height);
 #endif
 
+    case EKF_TYPE3:
+        return EKF3.getHAGL(height);
+
     case EKF_TYPE2:
     default:
         return EKF2.getHAGL(height);
-
+        
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL: {
         const struct SITL::sitl_fdm &fdm = _sitl->state;
@@ -688,6 +802,9 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
     }
 #endif
 
+    case EKF_TYPE3:
+        return EKF3.getPosNED(-1,vec);
+        
     case EKF_TYPE2:
     default: {
         Vector2f posNE;
@@ -780,7 +897,7 @@ bool AP_AHRS_NavEKF::get_relative_position_D(float &posD) const
 }
 
 /*
-  canonicalise _ekf_type, forcing it to be 0, 1 or 2
+  canonicalise _ekf_type, forcing it to be 0, 1, 2 or 3
  */
 uint8_t AP_AHRS_NavEKF::ekf_type(void) const
 {
@@ -797,11 +914,11 @@ uint8_t AP_AHRS_NavEKF::ekf_type(void) const
     
     // check for invalid type
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (type > 2 && type != EKF_TYPE_SITL) {
+    if (type > 3 && type != EKF_TYPE_SITL) {
         type = 2;
     }
 #else
-    if (type > 2) {
+    if (type > 3) {
         type = 2;
     }
 #endif
@@ -852,6 +969,23 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
         break;
     }
 
+    case 3: {
+        // do we have an EKF3 yet?
+        if (!ekf3_started) {
+            return EKF_TYPE_NONE;
+        }
+        if (always_use_EKF()) {
+            uint16_t ekf3_faults;
+            EKF3.getFilterFaults(-1,ekf3_faults);
+            if (ekf3_faults == 0) {
+                ret = EKF_TYPE3;
+            }
+        } else if (EKF3.healthy()) {
+            ret = EKF_TYPE3;
+        }
+        break;
+    }
+        
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         ret = EKF_TYPE_SITL;
@@ -874,6 +1008,8 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
         nav_filter_status filt_state;
         if (ret == EKF_TYPE2) {
             EKF2.getFilterStatus(-1,filt_state);
+        } else if (ret == EKF_TYPE3) {
+            EKF3.getFilterStatus(-1,filt_state);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         } else if (ret == EKF_TYPE_SITL) {
             get_filter_status(filt_state);
@@ -964,6 +1100,21 @@ bool AP_AHRS_NavEKF::healthy(void) const
         return true;
     }
 
+    case 3: {
+        bool ret = ekf3_started && EKF3.healthy();
+        if (!ret) {
+            return false;
+        }
+        if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
+                _vehicle_class == AHRS_VEHICLE_GROUND) &&
+                active_EKF_type() != EKF_TYPE3) {
+            // on fixed wing we want to be using EKF to be considered
+            // healthy if EKF is enabled
+            return false;
+        }
+        return true;
+    }
+        
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         return true;
@@ -989,6 +1140,10 @@ bool AP_AHRS_NavEKF::initialised(void) const
         // initialisation complete 10sec after ekf has started
         return (ekf1_started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
 
+    case 3:
+        // initialisation complete 10sec after ekf has started
+        return (ekf3_started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
+        
     case 2:
     default:
         // initialisation complete 10sec after ekf has started
@@ -1014,6 +1169,10 @@ bool AP_AHRS_NavEKF::get_filter_status(nav_filter_status &status) const
         return true;
 #endif
 
+    case EKF_TYPE3:
+        EKF3.getFilterStatus(-1,status);
+        return true;
+        
     case EKF_TYPE2:
     default:
         EKF2.getFilterStatus(-1,status);
@@ -1042,6 +1201,7 @@ void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlo
 {
     EKF1.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
     EKF2.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+    EKF3.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
 }
 
 // inhibit GPS usage
@@ -1051,6 +1211,9 @@ uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
     case 0:
     case 1:
         return EKF1.setInhibitGPS();
+
+    case 3:
+        return EKF3.setInhibitGPS();
 
     case 2:
     default:
@@ -1072,6 +1235,10 @@ void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVel
         EKF1.getEkfControlLimits(ekfGndSpdLimit,ekfNavVelGainScaler);
         break;
 
+    case 3:
+        EKF3.getEkfControlLimits(ekfGndSpdLimit,ekfNavVelGainScaler);
+        break;
+        
     case 2:
     default:
         EKF2.getEkfControlLimits(ekfGndSpdLimit,ekfNavVelGainScaler);
@@ -1136,6 +1303,8 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
         return EKF1.prearm_failure_reason();
     case 2:
         return EKF2.prearm_failure_reason();
+    case 3:
+        return EKF3.prearm_failure_reason();
     }
     return nullptr;
 }
@@ -1149,6 +1318,8 @@ uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng) const
         return EKF1.getLastYawResetAngle(yawAng);
     case 2:
         return EKF2.getLastYawResetAngle(yawAng);
+    case 3:
+        return EKF3.getLastYawResetAngle(yawAng);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         return 0;
@@ -1166,6 +1337,8 @@ uint32_t AP_AHRS_NavEKF::getLastPosNorthEastReset(Vector2f &pos) const
         return EKF1.getLastPosNorthEastReset(pos);
     case 2:
         return EKF2.getLastPosNorthEastReset(pos);
+    case 3:
+        return EKF3.getLastPosNorthEastReset(pos);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         return 0;
@@ -1183,6 +1356,8 @@ uint32_t AP_AHRS_NavEKF::getLastVelNorthEastReset(Vector2f &vel) const
         return EKF1.getLastVelNorthEastReset(vel);
     case 2:
         return EKF2.getLastVelNorthEastReset(vel);
+    case 3:
+        return EKF3.getLastVelNorthEastReset(vel);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         return 0;
@@ -1222,7 +1397,12 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
         return EKF1.resetHeightDatum();
     case 2:
         EKF1.resetHeightDatum();
+        EKF3.resetHeightDatum();
         return EKF2.resetHeightDatum();
+    case 3:
+        EKF1.resetHeightDatum();
+        EKF2.resetHeightDatum();
+        return EKF3.resetHeightDatum();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         return false;
@@ -1247,6 +1427,9 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
         break;
 #endif
         
+    case EKF_TYPE3:
+        return EKF3.send_status_report(chan);
+        
     case EKF_TYPE2:
     default:
         return EKF2.send_status_report(chan);
@@ -1270,6 +1453,12 @@ bool AP_AHRS_NavEKF::get_origin(Location &ret) const
         return true;
 #endif
 
+    case EKF_TYPE3:
+        if (!EKF3.getOriginLLH(ret)) {
+            return false;
+        }
+        return true;
+        
     case EKF_TYPE2:
     default:
         if (!EKF2.getOriginLLH(ret)) {
@@ -1300,6 +1489,9 @@ bool AP_AHRS_NavEKF::get_hgt_ctrl_limit(float& limit) const
         return EKF1.getHeightControlLimit(limit);
 #endif
 
+    case EKF_TYPE3:
+        return EKF3.getHeightControlLimit(limit);
+        
     case EKF_TYPE2:
     default:
         return EKF2.getHeightControlLimit(limit);
@@ -1325,6 +1517,9 @@ bool AP_AHRS_NavEKF::get_location(struct Location &loc) const
         return EKF1.getLLH(loc);
 #endif
 
+    case EKF_TYPE3:
+        return EKF3.getLLH(loc);
+        
     case EKF_TYPE2:
     default:
         return EKF2.getLLH(loc);
@@ -1354,6 +1549,11 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
         return true;
 #endif
 
+    case EKF_TYPE3:
+        // use EKF to get variance
+        EKF3.getVariances(-1,velVar, posVar, hgtVar, magVar, tasVar, offset);
+        return true;
+        
     case EKF_TYPE2:
     default:
         // use EKF to get variance
@@ -1384,6 +1584,9 @@ void AP_AHRS_NavEKF::setTakeoffExpected(bool val)
         case EKF_TYPE2:
             EKF2.setTakeoffExpected(val);
             break;
+        case EKF_TYPE3:
+            EKF3.setTakeoffExpected(val);
+            break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         case EKF_TYPE_SITL:
             break;
@@ -1401,6 +1604,9 @@ void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
 #endif
         case EKF_TYPE2:
             EKF2.setTouchdownExpected(val);
+            break;
+        case EKF_TYPE3:
+            EKF3.setTouchdownExpected(val);
             break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         case EKF_TYPE_SITL:
@@ -1424,6 +1630,8 @@ bool AP_AHRS_NavEKF::have_ekf_logging(void) const
     switch (ekf_type()) {
     case 2:
         return EKF2.have_ekf_logging();
+    case 3:
+        return EKF3.have_ekf_logging();
     default:
         break;
     }
