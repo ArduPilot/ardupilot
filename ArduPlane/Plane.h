@@ -121,7 +121,7 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 protected:
-    ArmingCheckResult ins_checks(bool report);
+    ArmingCheckResult ins_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 };
 
 /*
