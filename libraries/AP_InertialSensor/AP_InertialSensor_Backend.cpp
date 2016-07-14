@@ -71,10 +71,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
     dt = 1.0f / _imu._gyro_raw_sample_rates[instance];
 
-#if AP_MODULE_SUPPORTED
     // call gyro_sample hook if any
     AP_Module::call_hook_gyro_sample(instance, dt, gyro);
-#endif
     
     // compute delta angle
     Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
@@ -171,10 +169,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
     dt = 1.0f / _imu._accel_raw_sample_rates[instance];
 
-#if AP_MODULE_SUPPORTED
     // call gyro_sample hook if any
     AP_Module::call_hook_accel_sample(instance, dt, accel);
-#endif
     
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
