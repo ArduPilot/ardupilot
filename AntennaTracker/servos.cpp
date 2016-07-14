@@ -39,7 +39,7 @@ void Tracker::update_pitch_servo(float pitch)
 
     case SERVO_TYPE_POSITION:
     default:
-        update_pitch_position_servo(pitch);
+        update_pitch_position_servo();
         break;
     }
 
@@ -52,13 +52,8 @@ void Tracker::update_pitch_servo(float pitch)
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
-void Tracker::update_pitch_position_servo(float pitch)
+void Tracker::update_pitch_position_servo()
 {
-    // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
-    // pitch argument is -90 to 90, where 0 is horizontal
-    // servo_out is in 100ths of a degree
-    float ahrs_pitch = ahrs.pitch_sensor*0.01f;
-    int32_t angle_err = -(ahrs_pitch - pitch) * 100.0f;
     int32_t pitch_min_cd = g.pitch_min*100;
     int32_t pitch_max_cd = g.pitch_max*100;
     // Need to configure your servo so that increasing servo_out causes increase in pitch/elevation (ie pointing higher into the sky,
@@ -79,7 +74,7 @@ void Tracker::update_pitch_position_servo(float pitch)
     // PITCH2SRV_IMAX   4000.000000
 
     // calculate new servo position
-    g.pidPitch2Srv.set_input_filter_all(angle_err);
+    g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
     int32_t new_servo_out = channel_pitch.get_servo_out() + g.pidPitch2Srv.get_pid();
 
     // rate limit pitch servo
@@ -115,24 +110,19 @@ void Tracker::update_pitch_position_servo(float pitch)
  */
 void Tracker::update_pitch_onoff_servo(float pitch)
 {
-    // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
-    // pitch argument is -90 to 90, where 0 is horizontal
-    // get_servo_out() is in 100ths of a degree
-    float ahrs_pitch = degrees(ahrs.pitch);
-    float err = ahrs_pitch - pitch;
     int32_t pitch_min_cd = g.pitch_min*100;
     int32_t pitch_max_cd = g.pitch_max*100;
 
     float acceptable_error = g.onoff_pitch_rate * g.onoff_pitch_mintime;
-    if (fabsf(err) < acceptable_error) {
+    if (fabsf(nav_status.angle_error_pitch) < acceptable_error) {
         channel_pitch.set_servo_out(0);
-    } else if ((err > 0) && (pitch*100>pitch_min_cd)) {
-        // positive error means we are pointing too high, so push the
-        // servo down
+    } else if ((nav_status.angle_error_pitch > 0) && (pitch*100>pitch_min_cd)) {
+        // positive error means we are pointing too low, so push the
+        // servo up
         channel_pitch.set_servo_out(-9000);
     } else if (pitch*100<pitch_max_cd){
-        // negative error means we are pointing too low, so push the
-        // servo up
+        // negative error means we are pointing too high, so push the
+        // servo down
         channel_pitch.set_servo_out(9000);
     }
 }
@@ -142,12 +132,10 @@ void Tracker::update_pitch_onoff_servo(float pitch)
 */
 void Tracker::update_pitch_cr_servo(float pitch)
 {
-    float ahrs_pitch = degrees(ahrs.pitch);
-    float err_cd = (pitch - ahrs_pitch) * 100.0f;
     int32_t pitch_min_cd = g.pitch_min*100;
     int32_t pitch_max_cd = g.pitch_max*100;
     if ((pitch>pitch_min_cd) && (pitch<pitch_max_cd)){
-        g.pidPitch2Srv.set_input_filter_all(err_cd);
+        g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
         channel_pitch.set_servo_out(g.pidPitch2Srv.get_pid());
     }
 }
@@ -168,7 +156,7 @@ void Tracker::update_yaw_servo(float yaw)
 
     case SERVO_TYPE_POSITION:
     default:
-        update_yaw_position_servo(yaw);
+        update_yaw_position_servo();
         break;
     }
 
@@ -182,10 +170,8 @@ void Tracker::update_yaw_servo(float yaw)
    yaw to the requested yaw, so the board (and therefore the antenna)
    will be pointing at the target
  */
-void Tracker::update_yaw_position_servo(float yaw)
+void Tracker::update_yaw_position_servo()
 {
-    int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
-    int32_t yaw_cd   = wrap_180_cd(yaw*100);
     int32_t yaw_limit_cd = g.yaw_range*100/2;
     const int16_t margin = MAX(500, wrap_360_cd(36000-yaw_limit_cd)/2);
 
@@ -209,11 +195,10 @@ void Tracker::update_yaw_position_servo(float yaw)
     // param set RC1_MIN 680
     // According to the specs at https://www.servocity.com/html/hs-645mg_ultra_torque.html,
     // that should be 600 through 2400, but the azimuth gearing in my antenna pointer is not exactly 2:1
-    int32_t angle_err = wrap_180_cd(ahrs_yaw_cd - yaw_cd);
 
     /*
-      a positive error means that we need to rotate counter-clockwise
-      a negative error means that we need to rotate clockwise
+      a positive error means that we need to rotate clockwise
+      a negative error means that we need to rotate counter-clockwise
 
       Use our current yawspeed to determine if we are moving in the
       right direction
@@ -228,12 +213,12 @@ void Tracker::update_yaw_position_servo(float yaw)
     if (slew_dir != 0) {
         making_progress = (-slew_dir * earth_rotation.z >= 0);
     } else {
-        making_progress = (angle_err * earth_rotation.z >= 0);
+        making_progress = (nav_status.angle_error_yaw * earth_rotation.z <= 0);
     }
 
     // handle hitting servo limits
     if (abs(channel_yaw.get_servo_out()) == 18000 &&
-        labs(angle_err) > margin &&
+        labs(nav_status.angle_error_yaw) > margin &&
         making_progress &&
         AP_HAL::millis() - slew_start_ms > g.min_reverse_time*1000) {
         // we are at the limit of the servo and are not moving in the
@@ -246,14 +231,14 @@ void Tracker::update_yaw_position_servo(float yaw)
       stop slewing and revert to normal control when normal control
       should move us in the right direction
      */
-    if (slew_dir * angle_err < -margin) {
+    if (slew_dir * nav_status.angle_error_yaw > margin) {
         new_slew_dir = 0;
     }
 
     if (new_slew_dir != slew_dir) {
         tracker.gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Slew: %d/%d err=%ld servo=%ld ez=%.3f",
                                   (int)slew_dir, (int)new_slew_dir,
-                                  (long)angle_err,
+                                  (long)nav_status.angle_error_yaw,
                                   (long)channel_yaw.get_servo_out(),
                                   (double)degrees(ahrs.get_gyro().z));
     }
@@ -264,10 +249,10 @@ void Tracker::update_yaw_position_servo(float yaw)
         new_servo_out = slew_dir * 18000;
         g.pidYaw2Srv.reset_I();
     } else {
-        g.pidYaw2Srv.set_input_filter_all(angle_err);
+        g.pidYaw2Srv.set_input_filter_all(nav_status.angle_error_yaw);
         float servo_change = g.pidYaw2Srv.get_pid();
         servo_change = constrain_float(servo_change, -18000, 18000);
-        new_servo_out = constrain_float(channel_yaw.get_servo_out() - servo_change, -18000, 18000);
+        new_servo_out = constrain_float(channel_yaw.get_servo_out() + servo_change, -18000, 18000);
     }
 
     // rate limit yaw servo
@@ -304,22 +289,17 @@ void Tracker::update_yaw_position_servo(float yaw)
  */
 void Tracker::update_yaw_onoff_servo(float yaw)
 {
-    int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
-    int32_t yaw_cd   = wrap_180_cd(yaw*100);
-    int32_t err_cd = wrap_180_cd(ahrs_yaw_cd - yaw_cd);
-    float err = err_cd * 0.01f;
-
     float acceptable_error = g.onoff_yaw_rate * g.onoff_yaw_mintime;
-    if (fabsf(err) < acceptable_error) {
+    if (fabsf(nav_status.angle_error_yaw * 0.01f) < acceptable_error) {
         channel_yaw.set_servo_out(0);
-    } else if (err > 0) {
-        // positive error means we are clockwise of the target, so
-        // move anti-clockwise
-        channel_yaw.set_servo_out(-18000);
-    } else {
-        // negative error means we are anti-clockwise of the target, so
+    } else if (nav_status.angle_error_yaw * 0.01f > 0) {
+        // positive error means we are counter-clockwise of the target, so
         // move clockwise
         channel_yaw.set_servo_out(18000);
+    } else {
+        // negative error means we are clockwise of the target, so
+        // move counter-clockwise
+        channel_yaw.set_servo_out(-18000);
     }
 }
 
@@ -328,10 +308,6 @@ void Tracker::update_yaw_onoff_servo(float yaw)
  */
 void Tracker::update_yaw_cr_servo(float yaw)
 {
-    int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
-    float yaw_cd = wrap_180_cd(yaw*100.0f);
-    float err_cd = wrap_180_cd(yaw_cd - (float)ahrs_yaw_cd);
-
-    g.pidYaw2Srv.set_input_filter_all(err_cd);
-    channel_yaw.set_servo_out(g.pidYaw2Srv.get_pid());
+    g.pidYaw2Srv.set_input_filter_all(nav_status.angle_error_yaw);
+    channel_yaw.set_servo_out(-g.pidYaw2Srv.get_pid());
 }
