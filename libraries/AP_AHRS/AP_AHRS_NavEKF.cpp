@@ -93,10 +93,8 @@ void AP_AHRS_NavEKF::update(void)
     update_SITL();
 #endif
 
-#if AP_MODULE_SUPPORTED
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
-#endif
 }
 
 void AP_AHRS_NavEKF::update_DCM(void)
