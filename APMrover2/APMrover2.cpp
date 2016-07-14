@@ -411,14 +411,12 @@ void Rover::update_current_mode(void)
     switch (control_mode){
     case AUTO:
     case RTL:
-        set_reverse(false);
         calc_lateral_acceleration();
         calc_nav_steer();
         calc_throttle(g.speed_cruise);
         break;
 
     case GUIDED:
-        set_reverse(false);
         if (rtl_complete || verify_RTL()) {
             // we have reached destination so stop where we are
             if (channel_throttle->get_servo_out() != g.throttle_min.get()) {
@@ -483,7 +481,6 @@ void Rover::update_current_mode(void)
         // hold position - stop motors and center steering
         channel_throttle->set_servo_out(0);
         channel_steer->set_servo_out(0);
-        set_reverse(false);
         break;
 
     case INITIALISING:
