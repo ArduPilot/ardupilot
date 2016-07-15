@@ -34,23 +34,6 @@
 /.lock-waf*
 /.waf*
 /tmp/*
-/Tools/ArdupilotMegaPlanner/3DRRadio/bin
-/Tools/ArdupilotMegaPlanner/3DRRadio/obj
-/Tools/ArdupilotMegaPlanner/APMPlannerXplanes/APMPlannerXplanes/Debug
-/Tools/ArdupilotMegaPlanner/bin
-/Tools/ArdupilotMegaPlanner/bin/APM Planner.app
-/Tools/ArdupilotMegaPlanner/bin/Debug
-/Tools/ArdupilotMegaPlanner/bin/Release/gmapcache
-/Tools/ArdupilotMegaPlanner/bin/Release/logs/
-/Tools/ArdupilotMegaPlanner/CustomImages
-/Tools/ArdupilotMegaPlanner/Msi/upload.bat
-/Tools/ArdupilotMegaPlanner/obj
-/Tools/ArdupilotMegaPlanner/resedit/bin
-/Tools/ArdupilotMegaPlanner/resedit/obj
-/Tools/ArdupilotMegaPlanner/Updater/bin
-/Tools/ArdupilotMegaPlanner/Updater/obj
-/Tools/ArdupilotMegaPlanner/wix/bin
-/Tools/ArdupilotMegaPlanner/wix/obj
 /Tools/autotest/ch7_mission.txt
 /Tools/autotest/aircraft/Rascal/reset.xml
 /Tools/autotest/jsbsim_fgout_0.xml
