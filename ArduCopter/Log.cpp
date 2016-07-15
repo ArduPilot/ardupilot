@@ -651,12 +651,11 @@ struct PACKED log_Precland {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t healthy;
-    float bf_angle_x;
-    float bf_angle_y;
-    float ef_angle_x;
-    float ef_angle_y;
+    uint8_t target_acquired;
     float pos_x;
     float pos_y;
+    float vel_x;
+    float vel_y;
 };
 
 // Write an optical flow packet
@@ -668,19 +667,20 @@ void Copter::Log_Write_Precland()
         return;
     }
 
-    const Vector2f &bf_angle = precland.last_bf_angle_to_target();
-    const Vector2f &ef_angle = precland.last_ef_angle_to_target();
-    const Vector3f &target_pos_ofs = precland.last_target_pos_offset();
+    Vector2f target_pos_rel = Vector2f(0.0f,0.0f);
+    Vector2f target_vel_rel = Vector2f(0.0f,0.0f);
+    precland.get_target_position_relative_cm(target_pos_rel);
+    precland.get_target_velocity_relative_cms(target_vel_rel);
+
     struct log_Precland pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
         time_us         : AP_HAL::micros64(),
         healthy         : precland.healthy(),
-        bf_angle_x      : degrees(bf_angle.x),
-        bf_angle_y      : degrees(bf_angle.y),
-        ef_angle_x      : degrees(ef_angle.x),
-        ef_angle_y      : degrees(ef_angle.y),
-        pos_x           : target_pos_ofs.x,
-        pos_y           : target_pos_ofs.y
+        target_acquired : precland.target_acquired(),
+        pos_x           : target_pos_rel.x,
+        pos_y           : target_pos_rel.y,
+        vel_x           : target_vel_rel.x,
+        vel_y           : target_vel_rel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // PRECISION_LANDING == ENABLED
@@ -833,7 +833,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_HELI_MSG, sizeof(log_Heli),
       "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",    "QBffffff",    "TimeUS,Heal,bX,bY,eX,eY,pX,pY" },
+      "PL",    "QBBffff",    "TimeUS,Heal,TAcq,pX,pY,vX,vY" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
     { LOG_THROW_MSG, sizeof(log_Throw),
