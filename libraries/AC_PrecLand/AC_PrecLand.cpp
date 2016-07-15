@@ -22,6 +22,33 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
+    // @Param: YAW_ALIGN
+    // @DisplayName: Sensor yaw alignment
+    // @Description: Yaw angle from body x-axis to sensor x-axis.
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: Centi-degrees
+    AP_GROUPINFO("YAW_ALIGN",    2, AC_PrecLand, _yaw_align, 0),
+
+    // @Param: LAND_OFS_X
+    // @DisplayName: Land offset forward
+    // @Description: Desired landing position of the camera forward of the target in vehicle body frame
+    // @Range: -20 20
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: Centimeters
+    AP_GROUPINFO("LAND_OFS_X",    3, AC_PrecLand, _land_ofs_cm_x, 0),
+
+    // @Param: LAND_OFS_Y
+    // @DisplayName: Land offset right
+    // @Description: desired landing position of the camera right of the target in vehicle body frame
+    // @Range: -20 20
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: Centimeters
+    AP_GROUPINFO("LAND_OFS_Y",    4, AC_PrecLand, _land_ofs_cm_y, 0),
+
     AP_GROUPEND
 };
 
@@ -81,81 +108,126 @@ void AC_PrecLand::init()
 }
 
 // update - give chance to driver to get updates from sensor
-void AC_PrecLand::update(float alt_above_terrain_cm)
+void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 {
+    _attitude_history.push_back(_ahrs.get_rotation_body_to_ned());
+    
     // run backend update
     if (_backend != NULL && _enabled) {
         // read from sensor
         _backend->update();
-        
+
+        Vector3f vehicleVelocityNED = _inav.get_velocity()*0.01f;
+        vehicleVelocityNED.z = -vehicleVelocityNED.z;
+
+        if (target_acquired()) {
+            // EKF prediction step
+            float dt;
+            Vector3f targetDelVel;
+            _ahrs.getCorrectedDeltaVelocityNED(targetDelVel, dt);
+            targetDelVel = -targetDelVel;
+
+            _ekf_x.predict(dt, targetDelVel.x, 0.5f*dt);
+            _ekf_y.predict(dt, targetDelVel.y, 0.5f*dt);
+
+            if (_inav.get_filter_status().flags.horiz_pos_rel) {
+                _ekf_x.fuseVel(-vehicleVelocityNED.x, sq(1.0f));
+                _ekf_y.fuseVel(-vehicleVelocityNED.y, sq(1.0f));
+            }
+        }
+
         if (_backend->have_los_meas() && _backend->los_meas_time_ms() != _last_backend_los_meas_ms) {
             // we have a new, unique los measurement
             _last_backend_los_meas_ms = _backend->los_meas_time_ms();
 
             Vector3f target_vec_unit_body;
             _backend->get_los_body(target_vec_unit_body);
-            
-            calc_angles_and_pos(target_vec_unit_body, alt_above_terrain_cm);
+
+            // Apply sensor yaw alignment rotation
+            float sin_yaw_align = sinf(radians(_yaw_align*0.01f));
+            float cos_yaw_align = cosf(radians(_yaw_align*0.01f));
+            Matrix3f Rz = Matrix3f(
+                cos_yaw_align, -sin_yaw_align, 0,
+                sin_yaw_align, cos_yaw_align, 0,
+                0, 0, 1
+            );
+
+            Vector3f target_vec_unit_ned = _attitude_history.front() * Rz * target_vec_unit_body;
+
+            bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
+
+            if (target_vec_valid && rangefinder_alt_valid && rangefinder_alt_cm > 0.0f) {
+                float alt = MAX(rangefinder_alt_cm*0.01f, 0.0f);
+                float dist = alt/target_vec_unit_ned.z;
+                Vector3f targetPosRelMeasNED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt);
+
+                float xy_pos_var = sq(targetPosRelMeasNED.z*(0.01f + 0.01f*_ahrs.get_gyro().length()) + 0.02f);
+                if (!target_acquired()) {
+                    // reset filter state
+                    if (_inav.get_filter_status().flags.horiz_pos_rel) {
+                        _ekf_x.init(targetPosRelMeasNED.x, xy_pos_var, -vehicleVelocityNED.x, sq(1.0f));
+                        _ekf_y.init(targetPosRelMeasNED.y, xy_pos_var, -vehicleVelocityNED.y, sq(1.0f));
+                    } else {
+                        _ekf_x.init(targetPosRelMeasNED.x, xy_pos_var, 0.0f, sq(10.0f));
+                        _ekf_y.init(targetPosRelMeasNED.y, xy_pos_var, 0.0f, sq(10.0f));
+                    }
+                    _last_update_ms = AP_HAL::millis();
+                } else {
+                    float NIS_x = _ekf_x.getPosNIS(targetPosRelMeasNED.x, xy_pos_var);
+                    float NIS_y = _ekf_y.getPosNIS(targetPosRelMeasNED.y, xy_pos_var);
+                    if (MAX(NIS_x, NIS_y) < 3.0f || _outlier_reject_count >= 3) {
+                        _outlier_reject_count = 0;
+                        _ekf_x.fusePos(targetPosRelMeasNED.x, xy_pos_var);
+                        _ekf_y.fusePos(targetPosRelMeasNED.y, xy_pos_var);
+                        _last_update_ms = AP_HAL::millis();
+                    } else {
+                        _outlier_reject_count++;
+                    }
+                }
+            }
         }
     }
 }
 
-bool AC_PrecLand::target_acquired()
+bool AC_PrecLand::target_acquired() const
 {
-    return (AP_HAL::millis()-_last_update_ms) < 1000;
+    return (AP_HAL::millis()-_last_update_ms) < 2000;
 }
 
-bool AC_PrecLand::get_target_position(Vector3f& ret)
+bool AC_PrecLand::get_target_position_cm(Vector2f& ret) const
 {
     if (!target_acquired()) {
         return false;
     }
 
-    ret = _target_pos;
+    Vector3f land_ofs_ned_cm = _ahrs.get_rotation_body_to_ned() * Vector3f(_land_ofs_cm_x,_land_ofs_cm_y,0);
+
+    ret.x = _ekf_x.getPos()*100.0f + _inav.get_position().x + land_ofs_ned_cm.x;
+    ret.y = _ekf_y.getPos()*100.0f + _inav.get_position().y + land_ofs_ned_cm.y;
     return true;
 }
 
-bool AC_PrecLand::get_target_position_relative(Vector3f& ret)
+bool AC_PrecLand::get_target_position_relative_cm(Vector2f& ret) const
 {
     if (!target_acquired()) {
         return false;
     }
 
-    ret = _target_pos_rel;
+    Vector3f land_ofs_ned_cm = _ahrs.get_rotation_body_to_ned() * Vector3f(_land_ofs_cm_x,_land_ofs_cm_y,0);
+
+    ret.x = _ekf_x.getPos()*100.0f + land_ofs_ned_cm.x;
+    ret.y = _ekf_y.getPos()*100.0f + land_ofs_ned_cm.y;
     return true;
 }
 
-bool AC_PrecLand::get_target_velocity_relative(Vector3f& ret)
+bool AC_PrecLand::get_target_velocity_relative_cms(Vector2f& ret) const
 {
-    return false;
-}
-
-// converts sensor's body-frame angles to earth-frame angles and position estimate
-//  raw sensor angles stored in _angle_to_target (might be in earth frame, or maybe body frame)
-//  earth-frame angles stored in _ef_angle_to_target
-//  position estimate is stored in _target_pos
-void AC_PrecLand::calc_angles_and_pos(const Vector3f& target_vec_unit_body, float alt_above_terrain_cm)
-{
-    // rotate into NED frame
-    Vector3f target_vec_unit_ned = _ahrs.get_rotation_body_to_ned()*target_vec_unit_body;
-
-    // extract the angles to target (logging only)
-    _angle_to_target.x = atan2f(-target_vec_unit_body.y, target_vec_unit_body.z);
-    _angle_to_target.y = atan2f( target_vec_unit_body.x, target_vec_unit_body.z);
-    _ef_angle_to_target.x = atan2f(-target_vec_unit_ned.y, target_vec_unit_ned.z);
-    _ef_angle_to_target.y = atan2f( target_vec_unit_ned.x, target_vec_unit_ned.z);
-
-    if (target_vec_unit_ned.z > 0.0f) {
-        // get current altitude (constrained to be positive)
-        float alt = MAX(alt_above_terrain_cm, 0.0f);
-        float dist = alt/target_vec_unit_ned.z;
-        _target_pos_rel.x = target_vec_unit_ned.x*dist;
-        _target_pos_rel.y = target_vec_unit_ned.y*dist;
-        _target_pos_rel.z = alt;  // not used
-        _target_pos = _inav.get_position()+_target_pos_rel;
-
-        _last_update_ms = AP_HAL::millis();
+    if (!target_acquired()) {
+        return false;
     }
+    ret.x = _ekf_x.getVel()*100.0f;
+    ret.y = _ekf_y.getVel()*100.0f;
+    return true;
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message
