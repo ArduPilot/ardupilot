@@ -10,10 +10,9 @@ class AP_Baro_MS56XX : public AP_Baro_Backend
 {
 public:
     void update();
-    void accumulate();
 
 protected:
-    AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer);
+    AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
     void _init();
 
     virtual void _calculate() = 0;
@@ -35,8 +34,6 @@ protected:
     uint32_t                 _last_timer;
     bool                     _timesliced;
 
-    bool _use_timer;
-
     // Internal calibration registers
     uint16_t                 _c1,_c2,_c3,_c4,_c5,_c6;
     float                    _D1, _D2;
@@ -46,7 +43,7 @@ protected:
 class AP_Baro_MS5611 : public AP_Baro_MS56XX
 {
 public:
-    AP_Baro_MS5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer);
+    AP_Baro_MS5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 protected:
     void _calculate();
 };
@@ -54,7 +51,7 @@ protected:
 class AP_Baro_MS5607 : public AP_Baro_MS56XX
 {
 public:
-    AP_Baro_MS5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer);
+    AP_Baro_MS5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 protected:
     void _calculate();
 };
@@ -62,7 +59,7 @@ protected:
 class AP_Baro_MS5637 : public AP_Baro_MS56XX
 {
 public:
-    AP_Baro_MS5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer);
+    AP_Baro_MS5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 protected:
     void _calculate();
     bool _read_prom(uint16_t prom[8]) override;
