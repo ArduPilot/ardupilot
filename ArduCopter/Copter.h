@@ -293,8 +293,6 @@ private:
         uint32_t start_ms;
     } takeoff_state;
 
-    uint32_t precland_last_update_ms;
-
     // altitude below which we do no navigation in auto takeoff
     float auto_takeoff_no_nav_alt_cm;
     
