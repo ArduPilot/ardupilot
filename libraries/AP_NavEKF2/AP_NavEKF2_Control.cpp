@@ -227,6 +227,7 @@ void NavEKF2_core::setAidingMode()
         // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         if (PV_AidingMode == AID_NONE) {
             // We have ceased aiding
+            hal.console->printf("EKF2 IMU%u has stopped aiding\n",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
             velTimeout = true;            
@@ -388,7 +389,7 @@ bool NavEKF2_core::checkGyroCalStatus(void)
 // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
 uint8_t NavEKF2_core::setInhibitGPS(void)
 {
-    if(PV_AidingMode == AID_ABSOLUTE && motorsArmed) {
+    if((PV_AidingMode == AID_ABSOLUTE) && motorsArmed) {
         return 0;
     } else {
         gpsInhibit = true;
