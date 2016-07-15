@@ -52,6 +52,9 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     }
 
     ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
+    if (strstr(frame_str, "-ice")) {
+        ice_engine = true;
+    }
 }
 
 /*
@@ -235,6 +238,10 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     }
     
     float thrust     = throttle;
+
+    if (ice_engine) {
+        thrust = icengine.update(input);
+    }
 
     // calculate angle of attack
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
