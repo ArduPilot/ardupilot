@@ -259,37 +259,6 @@ void Rover::send_servo_out(mavlink_channel_t chan)
 #endif
 }
 
-void Rover::send_radio_out(mavlink_channel_t chan)
-{
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
-    mavlink_msg_servo_output_raw_send(
-        chan,
-        micros(),
-        0,     // port
-        hal.rcout->read(0),
-        hal.rcout->read(1),
-        hal.rcout->read(2),
-        hal.rcout->read(3),
-        hal.rcout->read(4),
-        hal.rcout->read(5),
-        hal.rcout->read(6),
-        hal.rcout->read(7));
-#else
-    mavlink_msg_servo_output_raw_send(
-        chan,
-        micros(),
-        0,     // port
-        RC_Channel::rc_channel(0)->get_radio_out(),
-        RC_Channel::rc_channel(1)->get_radio_out(),
-        RC_Channel::rc_channel(2)->get_radio_out(),
-        RC_Channel::rc_channel(3)->get_radio_out(),
-        RC_Channel::rc_channel(4)->get_radio_out(),
-        RC_Channel::rc_channel(5)->get_radio_out(),
-        RC_Channel::rc_channel(6)->get_radio_out(),
-        RC_Channel::rc_channel(7)->get_radio_out());
-#endif
-}
-
 void Rover::send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
@@ -480,7 +449,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_RADIO_OUT:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        rover.send_radio_out(chan);
+        send_servo_output_raw(false);
         break;
 
     case MSG_VFR_HUD:
