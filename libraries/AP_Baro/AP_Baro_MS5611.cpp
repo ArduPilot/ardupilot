@@ -51,10 +51,9 @@ static const uint8_t ADDR_CMD_CONVERT_TEMPERATURE = ADDR_CMD_CONVERT_D2_OSR1024;
 /*
   constructor
  */
-AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer)
+AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_Baro_Backend(baro)
     , _dev(std::move(dev))
-    , _use_timer(use_timer)
 {
 }
 
@@ -104,10 +103,8 @@ void AP_Baro_MS56XX::_init()
 
     hal.scheduler->resume_timer_procs();
 
-    if (_use_timer) {
-        /* timer needs to be called every 10ms so set the freq_div to 10 */
-        _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void), 10);
-    }
+    /* timer needs to be called every 10ms so set the freq_div to 10 */
+    _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void), 10);
 }
 
 /**
@@ -284,12 +281,6 @@ void AP_Baro_MS56XX::_timer(void)
 
 void AP_Baro_MS56XX::update()
 {
-    if (!_use_timer) {
-        // if we're not using the timer then accumulate one more time
-        // to cope with the calibration loop and minimise lag
-        accumulate();
-    }
-
     if (!_updated) {
         return;
     }
@@ -316,8 +307,8 @@ void AP_Baro_MS56XX::update()
 }
 
 /* MS5611 class */
-AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer)
-    : AP_Baro_MS56XX(baro, std::move(dev), use_timer)
+AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : AP_Baro_MS56XX(baro, std::move(dev))
 {
     _init();
 }
@@ -358,8 +349,8 @@ void AP_Baro_MS5611::_calculate()
 }
 
 /* MS5607 Class */
-AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer)
-    : AP_Baro_MS56XX(baro, std::move(dev), use_timer)
+AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : AP_Baro_MS56XX(baro, std::move(dev))
 {
     _init();
 }
@@ -400,8 +391,8 @@ void AP_Baro_MS5607::_calculate()
 }
 
 /* MS5637 Class */
-AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool use_timer)
-    : AP_Baro_MS56XX(baro, std::move(dev), use_timer)
+AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : AP_Baro_MS56XX(baro, std::move(dev))
 {
     _init();
 }
@@ -437,18 +428,4 @@ void AP_Baro_MS5637::_calculate()
     int32_t pressure = ((int64_t)raw_pressure * SENS / (int64_t)2097152 - OFF) / (int64_t)32768;
     float temperature = TEMP * 0.01f;
     _copy_to_frontend(_instance, (float)pressure, temperature);
-}
-
-/*
-  Read the sensor from main code. This is only used for I2C MS5611 to
-  avoid conflicts on the semaphore from calling it in a timer, which
-  conflicts with the compass driver use of I2C
-*/
-void AP_Baro_MS56XX::accumulate(void)
-{
-    if (!_use_timer) {
-        // the timer isn't being called as a timer, so we need to call
-        // it in accumulate()
-        _timer();
-    }
 }
