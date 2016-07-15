@@ -415,39 +415,6 @@ void Plane::send_servo_out(mavlink_channel_t chan)
         receiver_rssi);
 }
 
-void Plane::send_radio_out(mavlink_channel_t chan)
-{
-#if HIL_SUPPORT
-    if (g.hil_mode==1 && !g.hil_servos) {
-        mavlink_msg_servo_output_raw_send(
-            chan,
-            micros(),
-            0,     // port
-            RC_Channel::rc_channel(0)->get_radio_out(),
-            RC_Channel::rc_channel(1)->get_radio_out(),
-            RC_Channel::rc_channel(2)->get_radio_out(),
-            RC_Channel::rc_channel(3)->get_radio_out(),
-            RC_Channel::rc_channel(4)->get_radio_out(),
-            RC_Channel::rc_channel(5)->get_radio_out(),
-            RC_Channel::rc_channel(6)->get_radio_out(),
-            RC_Channel::rc_channel(7)->get_radio_out());
-        return;
-    }
-#endif
-    mavlink_msg_servo_output_raw_send(
-        chan,
-        micros(),
-        0,     // port
-        hal.rcout->read(0),
-        hal.rcout->read(1),
-        hal.rcout->read(2),
-        hal.rcout->read(3),
-        hal.rcout->read(4),
-        hal.rcout->read(5),
-        hal.rcout->read(6),
-        hal.rcout->read(7));
-}
-
 void Plane::send_vfr_hud(mavlink_channel_t chan)
 {
     float aspeed;
@@ -714,7 +681,11 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     case MSG_RADIO_OUT:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        plane.send_radio_out(chan);
+#if HIL_SUPPORT
+        send_servo_output_raw(plane.g.hil_mode);
+#else
+        send_servo_output_raw(false);
+#endif
         break;
 
     case MSG_VFR_HUD:
