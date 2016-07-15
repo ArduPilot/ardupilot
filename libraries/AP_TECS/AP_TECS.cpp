@@ -504,7 +504,14 @@ void AP_TECS::_update_height_demand(void)
     // be replaced with a better zero-lag filter in the future.
     float new_hgt_dem = _hgt_dem_adj;
     if (_flags.is_doing_auto_land) {
-        new_hgt_dem += (_hgt_dem_adj - _hgt_dem_adj_last)*10.0f*(timeConstant()+1);
+        if (hgt_dem_lag_filter_slew < 1) {
+            hgt_dem_lag_filter_slew += 0.1f; // increment at 10Hz to gradually apply the compensation at first
+        } else {
+            hgt_dem_lag_filter_slew = 1;
+        }
+        new_hgt_dem += hgt_dem_lag_filter_slew*(_hgt_dem_adj - _hgt_dem_adj_last)*10.0f*(timeConstant()+1);
+    } else {
+        hgt_dem_lag_filter_slew = 0;
     }
     _hgt_dem_adj_last = _hgt_dem_adj;
     _hgt_dem_adj = new_hgt_dem;
