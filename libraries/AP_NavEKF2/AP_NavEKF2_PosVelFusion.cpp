@@ -27,7 +27,7 @@ void NavEKF2_core::ResetVelocity(void)
 
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.zero();
-    } else if (!gpsNotAvailable) {
+    } else {
         // reset horizontal velocity states to the GPS velocity
         stateStruct.velocity.x  = gpsDataNew.vel.x; // north velocity from blended accel data
         stateStruct.velocity.y  = gpsDataNew.vel.y; // east velocity from blended accel data
@@ -68,7 +68,7 @@ void NavEKF2_core::ResetPosition(void)
         // reset all position state history to the last known position
         stateStruct.position.x = lastKnownPositionNE.x;
         stateStruct.position.y = lastKnownPositionNE.y;
-    } else if (!gpsNotAvailable) {
+    } else  {
         // write to state vector and compensate for offset  between last GPs measurement and the EKF time horizon
         stateStruct.position.x = gpsDataNew.pos.x  + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
         stateStruct.position.y = gpsDataNew.pos.y  + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
