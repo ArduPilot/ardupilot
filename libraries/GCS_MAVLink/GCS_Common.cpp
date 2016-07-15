@@ -1667,3 +1667,30 @@ bool GCS_MAVLINK::telemetry_delayed(mavlink_channel_t _chan)
 }
 
 
+/*
+  send SERVO_OUTPUT_RAW
+ */
+void GCS_MAVLINK::send_servo_output_raw(bool hil)
+{
+    uint16_t values[16] {};
+    if (hil) {
+        for (uint8_t i=0; i<16; i++) {
+            values[i] = RC_Channel::rc_channel(i)->get_radio_out();
+        }
+    } else {
+        hal.rcout->read(values, 16);
+    }
+    for (uint8_t i=0; i<16; i++) {
+        if (values[i] == 65535) {
+            values[i] = 0;
+        }
+    }    
+    mavlink_msg_servo_output_raw_send(
+            chan,
+            AP_HAL::micros(),
+            0,     // port
+            values[0],  values[1],  values[2],  values[3],
+            values[4],  values[5],  values[6],  values[7],
+            values[8],  values[9],  values[10], values[11],
+            values[12], values[13], values[14], values[15]);
+}
