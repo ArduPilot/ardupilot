@@ -378,22 +378,6 @@ void NOINLINE Copter::send_servo_out(mavlink_channel_t chan)
 #endif // HIL_MODE
 }
 
-void NOINLINE Copter::send_radio_out(mavlink_channel_t chan)
-{
-    mavlink_msg_servo_output_raw_send(
-        chan,
-        micros(),
-        0,     // port
-        hal.rcout->read(0),
-        hal.rcout->read(1),
-        hal.rcout->read(2),
-        hal.rcout->read(3),
-        hal.rcout->read(4),
-        hal.rcout->read(5),
-        hal.rcout->read(6),
-        hal.rcout->read(7));
-}
-
 void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
@@ -584,7 +568,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 
     case MSG_RADIO_OUT:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        copter.send_radio_out(chan);
+        send_servo_output_raw(false);
         break;
 
     case MSG_VFR_HUD:
