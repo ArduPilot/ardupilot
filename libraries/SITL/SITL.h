@@ -105,6 +105,8 @@ public:
     AP_Int8  terrain_enable; // enable using terrain for height
 
     // wind control
+    float wind_speed_active;
+    float wind_direction_active;
     AP_Float wind_speed;
     AP_Float wind_direction;
     AP_Float wind_turbulance;
