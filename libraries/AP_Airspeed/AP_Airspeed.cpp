@@ -118,6 +118,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SKIP_CAL",  7, AP_Airspeed, _skip_cal, 0),
 
+    // @Param: FAIL_ACTN
+    // @DisplayName: Behavior for when a hardware failure is detected on a pitot tube
+    // @Description: When a pitot tube is determined to be generating untrustworthy data, various actions can occur which are set by a bitmask. 0 = do nothing, bit 1 allows auto-disable and reverts to using internal estimate by setting ARSPD_USE=0, bit 2 allows auto-reenable when airspeed sensor is determined to be trustworthy again (NOT SUPPORTED YET), bit 4 if ARSPD_USE value changes then save to non-volatile memory
+    // @Bitmask: 0:None,1:AutoTurnOffUse,2:AllowResumeUse,4:Save
+    // @User: Advanced
+    AP_GROUPINFO("FAIL_ACTN",  8, AP_Airspeed, _fail_action_mask, AP_AIRSPEED_FAILURE_ACTION_BIT_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -268,3 +275,61 @@ void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
     _hil_set = true;
     _healthy = true;
 }
+
+// check airspeed airspeed error and apply ARSPD_FAIL_ACTN behavior
+// return true if failure was just detected or if ARSPD_USE state changes
+bool AP_Airspeed::self_check(bool airspeed_data_validity)
+{
+    uint32_t now = AP_HAL::millis();
+    _self_check.trustable = airspeed_data_validity;
+
+    if (!_enable) {
+        _self_check.hysteresis_timer_ms = 0;
+        return false;
+    } else if (_use) {
+
+        if (_self_check.trustable) {
+            // Apply hysteresis to trust decision
+            _self_check.hysteresis_timer_ms = now;
+
+        } else if (_self_check.hysteresis_timer_ms > 0 &&
+                now - _self_check.hysteresis_timer_ms > 3000) { // require a few seconds of bad airspeed
+
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ALERT, "Airspeed sensor data invalid");
+            if (_fail_action_mask & FAILURE_ACTION_BIT_DISABLE) {
+                // turn off airspeed sensor
+                _use = 0;
+                _self_check.hysteresis_timer_ms = now;
+                if (_fail_action_mask & FAILURE_ACTION_BIT_SAVE) {
+                    // save param in non-volatile memory
+                    _use.save(true);
+                }
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ALERT, "Airspeed sensor disabled (ARSPD_USE=0)");
+            } else {
+                _self_check.hysteresis_timer_ms = 0;
+            }
+            return true;
+        }
+    }
+#ifdef FAILURE_ACTION_BIT_ALLOW_REENABLE // NOT SUPPORTED YET
+    else if (_self_check.hysteresis_timer_ms > 0 && // if we've ever used it in the past
+            (_fail_action_mask & FAILURE_ACTION_BIT_ALLOW_REENABLE) ) { // willing to turn it back on
+
+        if (!_self_check.trustable) {
+            _self_check.hysteresis_timer_ms = now;
+        }  else if (now - _self_check.hysteresis_timer_ms > 20000) { // a few seconds of good airspeed
+            _self_check.hysteresis_timer_ms = now;
+            _use = 1;
+            if (_fail_action_mask & FAILURE_ACTION_BIT_SAVE) {
+                // save param in non-volatile memory
+                _use.save(true);
+            }
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ALERT, "Airspeed sensor data valid again (ARSPD_USE=1)");
+            return true;
+        }
+    }
+#endif
+
+    return false;
+}
+
