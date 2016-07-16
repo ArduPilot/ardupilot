@@ -172,8 +172,6 @@ void AP_InertialSensor_BMI160::start()
         }
     }
 
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
-
     _dev->get_semaphore()->give();
 
     _accel_instance = _imu.register_accel(BMI160_ODR_TO_HZ(BMI160_ODR));
