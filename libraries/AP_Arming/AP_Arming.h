@@ -14,16 +14,60 @@ public:
         ARMING_CHECK_ALL        = 0x0001,
         ARMING_CHECK_BARO       = 0x0002,
         ARMING_CHECK_COMPASS    = 0x0004,
-        ARMING_CHECK_GPS        = 0x0008,
-        ARMING_CHECK_INS        = 0x0010,
-        ARMING_CHECK_PARAMETERS = 0x0020,
-        ARMING_CHECK_RC         = 0x0040,
-        ARMING_CHECK_VOLTAGE    = 0x0080,
-        ARMING_CHECK_BATTERY    = 0x0100,
-        ARMING_CHECK_AIRSPEED   = 0x0200,
-        ARMING_CHECK_LOGGING    = 0x0400,
-        ARMING_CHECK_SWITCH     = 0x0800,
-        ARMING_CHECK_GPS_CONFIG = 0x1000,
+        ARMING_CHECK_COMPASS_2  = 0x0008,
+        ARMING_CHECK_COMPASS_3  = 0x0010,
+        ARMING_CHECK_COMPASS_4  = 0x0020,
+        ARMING_CHECK_COMPASS_5  = 0x0040,
+        ARMING_CHECK_COMPASS_6  = 0x0080,
+        ARMING_CHECK_COMPASS_7  = 0x0100,      
+        ARMING_CHECK_GPS        = 0x0200,    
+        ARMING_CHECK_INS        = 0x0400,
+        ARMING_CHECK_INS_2      = 0x0800,
+        ARMING_CHECK_INS_3      = 0x1000,
+        ARMING_CHECK_INS_4      = 0x2000,
+        ARMING_CHECK_INS_5      = 0x4000,
+        ARMING_CHECK_INS_6      = 0x8000,
+        ARMING_CHECK_INS_7      = 0x10000,
+        ARMING_CHECK_PARAMETERS = 0x20000,
+        ARMING_CHECK_RC         = 0x40000,
+        ARMING_CHECK_VOLTAGE    = 0x80000,
+        ARMING_CHECK_BATTERY    = 0x100000,
+        ARMING_CHECK_AIRSPEED   = 0x200000,
+        ARMING_CHECK_LOGGING    = 0x400000,
+        ARMING_CHECK_SWITCH     = 0x800000,
+        ARMING_CHECK_GPS_CONFIG = 0x1000000,
+        ARMING_CHECK_RANGEFINDER_OPTFLOW = 0x2000000,
+        ARMING_CHECK_TERRAIN    = 0x4000000,
+        ARMING_CHECK_RALLYPOINT = 0x8000000,
+        
+        // vehicle specific checks are in the left-most 32 bits
+        
+        // COPTER SPECIFIC CHECKS
+        ARMING_CHECK_COPTER_BARO          = 0x100000000,
+        ARMING_CHECK_COPTER_INS           = 0x200000000,
+        ARMING_CHECK_COPTER_INS_2         = 0x400000000,
+        ARMING_CHECK_COPTER_PARAMETERS    = 0x800000000,
+        ARMING_CHECK_COPTER_PARAMETERS_2  = 0x1000000000,
+        ARMING_CHECK_COPTER_PARAMETERS_3  = 0x2000000000,
+        ARMING_CHECK_HELI_PARAMETERS      = 0x4000000000,
+        ARMING_CHECK_COPTER_COMPASS       = 0x8000000000,
+        ARMING_CHECK_COPTER_GPS           = 0x10000000000,
+        ARMING_CHECK_COPTER_GPS_2         = 0x20000000000,
+        ARMING_CHECK_COPTER_GPS_3         = 0x40000000000,
+        ARMING_CHECK_COPTER_GPS_4         = 0x80000000000,
+        ARMING_CHECK_COPTER_RC            = 0x100000000000,
+        ARMING_CHECK_COPTER_RC_2          = 0x200000000000,
+        ARMING_CHECK_COPTER_RC_3          = 0x400000000000,
+        ARMING_CHECK_COPTER_RC_4          = 0x800000000000,
+        ARMING_CHECK_COPTER_RC_5          = 0x1000000000000,
+        ARMING_CHECK_COPTER_RC_6          = 0x2000000000000,
+        ARMING_CHECK_COPTER_BATTERY       = 0x4000000000000,
+        ARMING_CHECK_COPTER_RANGEFINDER_OPTFLOW = 0x8000000000000,
+        ARMING_CHECK_COPTER_TERRAIN       = 0x10000000000000,
+        ARMING_CHECK_COPTER_TERRAIN_2     = 0x20000000000000,
+        ARMING_CHECK_COPTER_RALLYPOINT    = 0x40000000000000,
+        
+        // PLANE SPECIFIC CHECKS
     };
 
     enum ArmingMethod {
@@ -42,6 +86,22 @@ public:
         ARMING_RUDDER_DISABLED  = 0,
         ARMING_RUDDER_ARMONLY   = 1,
         ARMING_RUDDER_ARMDISARM = 2
+    };
+
+    enum ArmingCheckResult {
+        ARMING_CHECK_DISABLED = 0,
+        ARMING_CHECK_FAILED = 1,
+        ARMING_CHECK_PASSED = 2
+    };
+
+    struct FailureDescription {
+        enum ArmingChecks group;
+        const char *description;
+    };
+
+    const FailureDescription FailureDescriptions[2] = {
+        {.group = ARMING_CHECK_BARO, .description = "Barometer not healthy"},
+        {.group = ARMING_CHECK_BARO, .description = "Altitude disparity"}
     };
 
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
@@ -88,23 +148,31 @@ protected:
 
     void set_enabled_checks(uint16_t);
 
-    bool barometer_checks(bool report);
+    virtual ArmingCheckResult barometer_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    bool airspeed_checks(bool report);
+    ArmingCheckResult airspeed_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    bool logging_checks(bool report);
+    ArmingCheckResult logging_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    virtual bool ins_checks(bool report);
+    virtual ArmingCheckResult ins_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    bool compass_checks(bool report);
+    virtual ArmingCheckResult parameter_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    bool gps_checks(bool report);
+    virtual ArmingCheckResult compass_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
+    
+    virtual ArmingCheckResult gps_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    bool battery_checks(bool report);
+    ArmingCheckResult battery_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    bool hardware_safety_check(bool report);
+    ArmingCheckResult hardware_safety_check(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    bool board_voltage_checks(bool report);
+    ArmingCheckResult board_voltage_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 
-    bool manual_transmitter_checks(bool report);
+    virtual ArmingCheckResult manual_transmitter_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
+    
+    virtual ArmingCheckResult rangefinder_optflow_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
+
+    virtual ArmingCheckResult terrain_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
+    
+    virtual ArmingCheckResult rallypoint_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks);
 };

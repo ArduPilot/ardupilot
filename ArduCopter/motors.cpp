@@ -133,7 +133,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     in_arm_motors = true;
 
     // run pre-arm-checks and display failures
-    if (!all_arming_checks_passing(arming_from_gcs)) {
+    if(!arming.all_arming_checks_passing(arming_from_gcs)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
@@ -171,6 +171,12 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         set_home_to_current_location();
     }
     calc_distance_and_bearing();
+
+    // if we are not using Emergency Stop switch option, force Estop false to ensure motors
+    // can run normally
+    if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+        set_motor_emergency_stop(false);
+    }
 
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);

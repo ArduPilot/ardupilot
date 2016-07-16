@@ -58,8 +58,9 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     }
 
     // check if radio is calibrated
-    pre_arm_rc_checks();
-    if (!ap.pre_arm_rc_check) {
+    uint64_t enabled_checks = 0;
+    uint64_t passed_checks = 0;
+    if (!arming.manual_transmitter_checks(false, enabled_checks, passed_checks)) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "RC not calibrated");
         ap.compass_mot = false;
         return 1;

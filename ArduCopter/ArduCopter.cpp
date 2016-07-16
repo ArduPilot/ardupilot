@@ -470,8 +470,9 @@ void Copter::one_hz_loop()
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
-
-    update_arming_checks();
+    
+    // perform pre-arm checks & display failures every 30 seconds
+    arming.update_arming_checks();
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config

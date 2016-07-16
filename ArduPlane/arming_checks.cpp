@@ -28,7 +28,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
     bool ret = AP_Arming::pre_arm_checks(report);
 
     // Check airspeed sensor
-    ret &= AP_Arming::airspeed_checks(report);
+    uint64_t enabled_checks = 0;
+    uint64_t passed_checks = 0;
+    if (AP_Arming::airspeed_checks(report, enabled_checks, passed_checks)==ARMING_CHECK_FAILED) {
+        ret = false;
+    }
 
     if (plane.aparm.roll_limit_cd < 300) {
         if (report) {
@@ -78,16 +82,19 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
     return ret;
 }
 
-bool AP_Arming_Plane::ins_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Plane::ins_checks(bool report, uint64_t &enabled_checks, uint64_t &passed_checks)
 {
     // call parent class checks
-    if (!AP_Arming::ins_checks(report)) {
-        return false;
-    }
+    ArmingCheckResult ret = AP_Arming::ins_checks(report, enabled_checks, passed_checks);
+    bool group_contains_failure = false;
+    bool group_is_disabled = true;
 
     // additional plane specific checks
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
+        enabled_checks |= ARMING_CHECK_INS;
+        passed_checks |= ARMING_CHECK_INS;
+        group_is_disabled = false;
         if (!ahrs.healthy()) {
             if (report) {
                 const char *reason = ahrs.prearm_failure_reason();
@@ -97,9 +104,19 @@ bool AP_Arming_Plane::ins_checks(bool report)
                     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
                 }
             }
-            return false;
+            passed_checks &= ~ARMING_CHECK_INS;
+            group_contains_failure = true;
         }
     }
 
-    return true;
+    if (ret==ARMING_CHECK_DISABLED && group_is_disabled) {
+        return ARMING_CHECK_DISABLED;
+    }
+    
+    if (ret==ARMING_CHECK_FAILED || group_contains_failure) {
+        return ARMING_CHECK_FAILED;
+    }
+
+    // if we got here checks have passed
+    return ARMING_CHECK_PASSED;
 }

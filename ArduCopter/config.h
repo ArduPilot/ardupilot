@@ -165,14 +165,6 @@
  # define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
 #endif
 
-#ifndef BOARD_VOLTAGE_MIN
- # define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
-#endif
-
-#ifndef BOARD_VOLTAGE_MAX
- # define BOARD_VOLTAGE_MAX             5.8f        // max board voltage in volts for pre-arm checks
-#endif
-
 // prearm GPS hdop check
 #ifndef GPS_HDOP_GOOD_DEFAULT
  # define GPS_HDOP_GOOD_DEFAULT         140     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
@@ -207,21 +199,6 @@
 
 #ifndef PREARM_DISPLAY_PERIOD
 # define PREARM_DISPLAY_PERIOD 30
-#endif
-
-// pre-arm baro vs inertial nav max alt disparity
-#ifndef PREARM_MAX_ALT_DISPARITY_CM
- # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
-#endif
-
-// arming check's maximum acceptable accelerometer vector difference (in m/s/s) between primary and backup accelerometers
-#ifndef PREARM_MAX_ACCEL_VECTOR_DIFF
-  #define PREARM_MAX_ACCEL_VECTOR_DIFF      0.70f    // pre arm accel check will fail if primary and backup accelerometer vectors differ by 0.7m/s/s
-#endif
-
-// arming check's maximum acceptable rotation rate difference (in rad/sec) between primary and backup gyros
-#ifndef PREARM_MAX_GYRO_VECTOR_DIFF
-  #define PREARM_MAX_GYRO_VECTOR_DIFF       0.0873f  // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.0873 rad/sec (=5deg/sec)
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
