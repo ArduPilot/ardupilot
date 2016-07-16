@@ -75,43 +75,45 @@ static inline char *startswith(const char *s, const char *prefix)
 /* Private struct to maintain for each bus */
 class I2CBus {
 public:
-    ~I2CBus()
-    {
-        if (fd >= 0) {
-            ::close(fd);
-        }
-    }
-
-    int open(uint8_t n)
-    {
-        char path[sizeof("/dev/i2c-XXX")];
-        int r;
-
-        if (fd >= 0) {
-            return -EBUSY;
-        }
-
-        r = snprintf(path, sizeof(path), "/dev/i2c-%u", n);
-        if (r < 0 || r >= (int)sizeof(path)) {
-            return -EINVAL;
-        }
-
-        fd = ::open(path, O_RDWR | O_CLOEXEC);
-        if (fd < 0) {
-            return -errno;
-        }
-
-        bus = n;
-
-        return fd;
-    }
+    ~I2CBus();
+    int open(uint8_t n);
 
     Semaphore sem;
     int fd = -1;
     uint8_t bus;
-
     uint8_t ref;
 };
+
+I2CBus::~I2CBus()
+{
+    if (fd >= 0) {
+        ::close(fd);
+    }
+}
+
+int I2CBus::open(uint8_t n)
+{
+    char path[sizeof("/dev/i2c-XXX")];
+    int r;
+
+    if (fd >= 0) {
+        return -EBUSY;
+    }
+
+    r = snprintf(path, sizeof(path), "/dev/i2c-%u", n);
+    if (r < 0 || r >= (int)sizeof(path)) {
+        return -EINVAL;
+    }
+
+    fd = ::open(path, O_RDWR | O_CLOEXEC);
+    if (fd < 0) {
+        return -errno;
+    }
+
+    bus = n;
+
+    return fd;
+}
 
 I2CDevice::~I2CDevice()
 {
