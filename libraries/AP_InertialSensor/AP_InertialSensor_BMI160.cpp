@@ -150,6 +150,8 @@ void AP_InertialSensor_BMI160::start()
         AP_HAL::panic("BMI160: Unable to get semaphore");
     }
 
+    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+
     r = _configure_accel();
     if (!r) {
         AP_HAL::panic("BMI160: Unable to configure accelerometer");
