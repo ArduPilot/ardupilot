@@ -2107,6 +2107,11 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         send_autopilot_version(FIRMWARE_VERSION);
         break;
 
+    case MAVLINK_MSG_ID_LED_CONTROL:
+        // send message to Notify
+        AP_Notify::handle_led_control(msg);
+        break;
+        
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         plane.DataFlash.remote_log_block_status_msg(chan, msg);
         break;
