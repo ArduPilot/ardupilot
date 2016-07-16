@@ -107,6 +107,10 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
             break;
 #endif
 
+        case MAV_CMD_DO_SET_REVERSE:
+            do_set_reverse(cmd);
+            break;
+
 		default:
 		    // return false for unhandled commands
 		    return false;
@@ -403,5 +407,14 @@ void Rover::log_picture()
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
         }      
+    }
+}
+
+void Rover::do_set_reverse(const AP_Mission::Mission_Command& cmd)
+{
+	if (cmd.p1 == 1) {
+        set_reverse(true);
+	} else {
+        set_reverse(false);
     }
 }

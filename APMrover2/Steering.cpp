@@ -203,7 +203,9 @@ void Rover::calc_nav_steer() {
     }
 
     // add in obstacle avoidance
-    lateral_acceleration += (obstacle.turn_angle/45.0f) * g.turn_max_g;
+    if (!in_reverse) {
+        lateral_acceleration += (obstacle.turn_angle/45.0f) * g.turn_max_g;
+    }
 
     // constrain to max G force
     lateral_acceleration = constrain_float(lateral_acceleration, -g.turn_max_g*GRAVITY_MSS, g.turn_max_g*GRAVITY_MSS);
