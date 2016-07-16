@@ -25,64 +25,25 @@
 
 namespace Linux {
 
+class Poller;
+
 class Pollable {
+    friend class Poller;
 public:
     Pollable(int fd) : _fd(fd) { }
+    Pollable() : _fd(-1) { }
+
     virtual ~Pollable();
 
     int get_fd() const { return _fd; }
 
-    bool set_blocking(bool setting);
-
-    virtual void on_can_read(int max_time_ms) {}
-    virtual void on_can_write(int max_time_ms) {}
-    virtual void on_error(int max_time_ms) {}
-    virtual void on_hang_up(int max_time_ms) {}
+    virtual void on_can_read() { }
+    virtual void on_can_write() { }
+    virtual void on_error() { }
+    virtual void on_hang_up() { }
 
 protected:
     int _fd;
-};
-
-class BufferedPollable : public Pollable {
-public:
-    BufferedPollable(int fd) : Pollable(fd) { }
-    BufferedPollable(int fd, uint32_t read_buffer_size, uint32_t write_buffer_size)
-        : Pollable(fd)
-        , _read_buffer{read_buffer_size}
-        , _write_buffer{write_buffer_size} { }
-
-    bool is_write_buffer_empty();
-    uint32_t get_read_buffer_available();
-    uint32_t get_write_buffer_available();
-
-    uint32_t buffered_read(uint8_t *buf, uint32_t len);
-    uint32_t buffered_write(const uint8_t *buf, uint32_t len);
-
-    void set_blocking_writes(bool setting) { _blocking_writes = setting; }
-    void set_blocking_reads(bool setting) { _blocking_reads = setting; }
-
-    virtual void on_can_read(int max_time_ms) override;
-    virtual void on_can_write(int max_time_ms) override;
-    virtual void on_hang_up(int max_time_ms) override;
-
-protected:
-    ByteBuffer _read_buffer{1024}, _write_buffer{1024};
-    Linux::Semaphore _write_sem, _read_sem;
-
-    void write_fd(uint32_t n_bytes);
-
-private:
-    bool _blocking_writes{false}, _blocking_reads{false};
-};
-
-class PacketedBufferedPollable : public BufferedPollable {
-private:
-    uint32_t to_mavlink_boundary(uint32_t available);
-
-public:
-    PacketedBufferedPollable(int fd) : BufferedPollable(fd) { }
-
-    virtual void on_can_write(int max_time_ms) override;
 };
 
 class Poller {
@@ -90,22 +51,13 @@ public:
     Poller() : _epfd(epoll_create1(EPOLL_CLOEXEC)) { }
     ~Poller() { close(_epfd); }
 
-    enum Event : uint8_t {
-        Read = 1<<0,
-        Write = 1<<1,
-        Error = 1<<2,
-        All = Read | Write | Error
-    };
-
-    bool register_pollable(Pollable*, const Event);
+    bool register_pollable(Pollable*, uint32_t events);
     void unregister_pollable(const Pollable*);
 
-    int poll(int timeout_ms) const;
+    int poll() const;
 
 private:
     int _epfd;
-
-    static uint32_t to_epoll_events(Event events);
 };
 
 }
