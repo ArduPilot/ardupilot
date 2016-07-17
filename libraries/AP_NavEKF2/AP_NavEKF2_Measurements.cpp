@@ -417,6 +417,8 @@ void NavEKF2_core::readGpsData()
             if (PV_AidingMode != AID_ABSOLUTE) {
                 // Pre-alignment checks
                 gpsGoodToAlign = calcGpsGoodToAlign();
+            } else {
+                gpsGoodToAlign = false;
             }
 
             // Post-alignment checks
