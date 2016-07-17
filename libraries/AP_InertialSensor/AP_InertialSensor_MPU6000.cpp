@@ -9,13 +9,20 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_ACCEL_SCALE_1G    (GRAVITY_MSS / 4096.0f)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#ifndef NO_IMU600XX_DRDY
 #define MPU6000_DRDY_PIN 70
+#endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
 #include <AP_HAL_Linux/GPIO.h>
 #define MPU6000_DRDY_PIN BBB_P8_14
 #endif
 #endif
+
+//enable bypass MPU60XX for HCM8343
+#define MPUREG_USER_CTRL                        0x6A
+#define MPUREG_INT_PIN_CFG                      0x37
+#define BIT_I2C_BYPASS_EN                       0x02
 
 // MPU 6000 registers
 #define MPUREG_XG_OFFS_TC                       0x00
@@ -472,6 +479,12 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
     // grab the used instances
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
+
+#ifdef MEGA_I2C_IMU60XX_BY_PASS
+	//enable bypass for HCM8343
+    _register_write(MPUREG_USER_CTRL, 0);
+    _register_write(MPUREG_INT_PIN_CFG, BIT_I2C_BYPASS_EN);
+#endif
 
     hal.scheduler->resume_timer_procs();
     

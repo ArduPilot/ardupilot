@@ -229,7 +229,13 @@ bool Tracker::mavlink_set_mode(uint8_t mode)
 
 void Tracker::check_usb_mux(void)
 {
+
+#ifndef MEGA_GENERIC_PINS
     bool usb_check = hal.gpio->usb_connected();
+#else
+    bool usb_check = hal.gpio->read(USB_MUXPIN); //simulate USB_MUX setup for Generic AVR board.
+#endif
+
     if (usb_check == usb_connected) {
         return;
     }

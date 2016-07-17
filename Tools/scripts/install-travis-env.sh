@@ -17,11 +17,12 @@ PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           zip genromfs"
 UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386 gcc-multilib"
 
+# We do not make ARM builds on master-AVR branch.
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
-ARM_ROOT="gcc-arm-none-eabi-4_7-2014q2"
-ARM_TARBALL="$ARM_ROOT-20140408-linux.tar.bz2"
-ARM_TARBALL_URL="http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL"
+#ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
+#ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
+#ARM_TARBALL_URL="http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL"
 
 RPI_ROOT="master"
 RPI_TARBALL="$RPI_ROOT.tar.gz"
@@ -76,18 +77,18 @@ fi
 
 mkdir -p $OPT
 
-cd $OPT
-wget $ARM_TARBALL_URL
-tar xjf ${ARM_TARBALL}
-rm -f ${ARM_TARBALL}
+#cd $OPT
+#wget $ARM_TARBALL_URL
+#tar xjf ${ARM_TARBALL}
+#rm -f ${ARM_TARBALL}
 
 cd $OPT
 wget $RPI_TARBALL_URL
 tar xzf ${RPI_TARBALL}
 rm -f ${RPI_TARBALL}
 
-exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
-echo $exportline >> ~/.profile
+#exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
+#echo $exportline >> ~/.profile
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
 echo $exportline2 >> ~/.profile
@@ -97,8 +98,8 @@ echo $exportline3 >> ~/.profile
 
 . ~/.profile
 echo $PATH
-ls -l $OPT/$ARM_ROOT/bin
-$OPT/$ARM_ROOT/bin/arm-none-eabi-gcc --version
+#ls -l $OPT/$ARM_ROOT/bin
+#$OPT/$ARM_ROOT/bin/arm-none-eabi-gcc --version
 
 echo "Compiler for NavIO"
 arm-linux-gnueabihf-gcc --version

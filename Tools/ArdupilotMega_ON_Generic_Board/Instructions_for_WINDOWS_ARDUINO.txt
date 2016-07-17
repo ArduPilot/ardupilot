@@ -1,0 +1,83 @@
+COMPILING WITH Arduino 1.6.6 ON WINDOWS
+-------------------------------------
+
+You can compile from master-AVR branch, AntennaTracker, ArduPlane and APMRover for AVR generics Boards with I2C BUS0 enabled.
+
+The next device are supported:
+    
+	- MPU60XX    Inertial Sensor.
+	- HMC5883L   Compass Magnetometer.
+	- MS5611     Barometer.
+
+As default is enabled auxilliary pin from MPU60XX to route any atached I2C devices to this pins. Most generics boards are atached compass to this pin.
+
+
+
+1. SOFTWARE TOOLS REQUIRED
+--------------------------
+
+These tools you need to download first.
+
+  1.1 Arduino 1.6.6 version, download from this link:
+  
+          http://arduino.cc/download.php?f=/arduino-1.6.6-windows.exe
+		  
+  1.2 Git tool, download from this link:
+  
+          https://git-scm.com/downloads
+  
+  1.3 fix_includes_arduino166 program, With this tool you can change all include headers files to work with arduino 1.6.6 in windows.
+      You need compile the code, it's included on repo branch master-AVR Tools/ArdupilotMega_ON_Generic_Board/
+		  
+		  
+  1.4 Notepad++, download from this link:
+      
+	  https://notepad-plus-plus.org/download/v6.8.8.html
+	  
+  
+2. STEPS FOR COMPILING
+----------------------
+
+  2.1 Download and Install Arduino from section 1.1 to default path.
+  
+  2.2 Download and install GIT tool from section 1.2 to default path. NOTE.- in the steps windows install choose the option: 
+      
+	  "Run Git from the Windows command Prompt"
+	  
+  2.3 Download and install Notepad++ from section 1.4 to default path.
+	  
+  
+  2.4 Open Explorer and navigate to 'c:\' drive, right click and select "Git bash here", it's open a windows command prompt.
+  
+  
+  2.5 In prompt command line type the next command to clone Ardupilot master-AVR branch as follow:
+          
+		  $ git clone https://github.com/diydrones/ardupilot.git
+		  $ git checkout master-AVR
+		  $ echo "ARDUINO=/c/arduino" > /c/ardupilot/config.mk
+		  
+  
+  2.6 Compile Tools\ArdupilotMega_ON_Generic_Board\fix_includes_arduino166 with VS2013 or SharpDevelop (with this one was compiled).   
+      Then you use as follow:
+
+      fix_includes_arduino166 -P <PATH_TO_FOLDER>
+
+      Example: Supose that you cloned Ardupilot in c:\ardupilot then you will have c:\ardupilot\libraries and you want make AntennaTracker c:\ardupilot\AntennaTracker then,
+
+      fix_includes_arduino166 -P c:\ardupilot\libraries
+      fix_includes_arduino166 -P c:\ardupilot\AntennaTracker
+
+      WARNING!
+      This tool make changes to the files in all librarie path and this tool doesn't make a backup of your files. You must be sure.
+	  
+  2.7 Open Arduino, go to File, Preferences, in "sketchbook location" click on Browse and choose the path where are the ardupilot folder you checkout with GIT,
+      in this case c:\ardupilot
+	  
+  2.8 Open the next file with notepad++, c:\ardupilot\libraries\AP_HAL\AP_HAL_Boards.h and replace this line #define AVR_ARDUINO_ENVIRONMENTS with //#define AVR_ARDUINO_ENVIRONMENTS. Save and close.
+      NOTE: If you uncomment this line, you are telling to Arduino make code for AVR Generic Board, but if you comment with this line with '//' you are telling to Arduino make code for APM2 Board.
+  
+  2.9 Open AntennTracker in Arduino and compile.
+	  
+	  
+
+Enjoy!
