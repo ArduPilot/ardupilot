@@ -313,7 +313,7 @@ bool NavEKF2_core::optFlowDataPresent(void) const
 // return true if the filter to be ready to use gps
 bool NavEKF2_core::readyToUseGPS(void) const
 {
-    return validOrigin && tiltAlignComplete && yawAlignComplete && gpsGoodToAlign && (frontend->_fusionModeGPS != 3);
+    return validOrigin && tiltAlignComplete && yawAlignComplete && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse;
 }
 
 // return true if we should use the compass
