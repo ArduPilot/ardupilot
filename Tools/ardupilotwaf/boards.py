@@ -138,7 +138,7 @@ class Board:
                 '-Wno-c++11-narrowing'
             ]
         else:
-            env.CXXFLAFS += [
+            env.CXXFLAGS += [
                 '-Werror=unused-but-set-variable'
             ]
 
