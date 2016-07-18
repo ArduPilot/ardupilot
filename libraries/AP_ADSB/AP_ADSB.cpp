@@ -219,16 +219,17 @@ void AP_ADSB::update(void)
             // haven't gotten a heartbeat health status packet in a while, assume hardware failure
             out_state.chan = -1;
         } else {
-            if (now - out_state.last_config_ms >= 5000) {
-            out_state.last_config_ms = now;
-            send_configure((mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan));
-        } // last_config_ms
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
+            if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, ADSB_TRANSPONDER_STATIC_INPUT)) {
+                out_state.last_config_ms = now;
+                send_configure(chan);
+            } // last_config_ms
 
             // send dynamic data to transceiver at 5Hz
-            if (now - out_state.last_report_ms >= 200) {
-            out_state.last_report_ms = now;
-            send_dynamic_out((mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan));
-        } // last_report_ms
+            if (now - out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(chan, ADSB_TRANSPONDER_DYNAMIC_INPUT)) {
+                out_state.last_report_ms = now;
+                send_dynamic_out(chan);
+            } // last_report_ms
         } // chan_last_ms
     }
 }
