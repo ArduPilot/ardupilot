@@ -185,7 +185,13 @@ void NavEKF2_core::readMagData()
                     stateStruct.body_magfield.zero();
                     // clear the measurement buffer
                     storedMag.reset();
-                    }
+                    // clear the data waiting flag so that we do not use any data pending from the previous sensor
+                    magDataToFuse = false;
+                    // request a reset of the magnetic field states
+                    magStateResetRequest = true;
+                    // declare the field unlearned so that the reset request will be obeyed
+                    magFieldLearned = false;
+                }
             }
         }
 
