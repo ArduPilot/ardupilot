@@ -24,6 +24,8 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
 #ifdef HAL_COMPASS_HMC5843_I2C_ADDR
 
 #include <assert.h>
@@ -589,5 +591,7 @@ bool AP_HMC5843_BusDriver_Auxiliary::start_measurements()
 
     return true;
 }
+
+#endif
 
 #endif
