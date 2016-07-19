@@ -219,6 +219,18 @@ int I2CDevice::get_fd()
     return _bus.fd;
 }
 
+AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(
+    uint32_t period_usec, AP_HAL::Device::PeriodicCb)
+{
+    return nullptr;
+}
+
+bool I2CDevice::adjust_periodic_callback(
+    AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
+{
+    return false;
+}
+
 I2CDeviceManager::I2CDeviceManager()
 {
     /* Reserve space up-front for 4 buses */
