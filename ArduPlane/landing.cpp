@@ -182,10 +182,7 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
 
     // re-calculate auto_state.land_slope with updated prev_WP_loc
     setup_landing_glide_slope();
-    float new_slope_deg = degrees(atan(auto_state.land_slope));
-
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing glide slope re-calculated as %.1f degrees", (double)new_slope_deg);
-
+    
     if (rangefinder_state.correction >= 0) { // we're too low or object is below us
         // correction positive means we're too low so we should continue on with
         // the newly computed shallower slope instead of pitching/throttling up
@@ -198,6 +195,7 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
         // offset and "perfect" slope.
 
         // calculate projected slope with projected alt
+        float new_slope_deg = degrees(atan(auto_state.land_slope));
         float initial_slope_deg = degrees(atan(auto_state.initial_land_slope));
 
         // is projected slope too steep?
