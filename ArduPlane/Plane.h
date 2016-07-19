@@ -524,6 +524,9 @@ private:
 
         // are we doing loiter mode as a VTOL?
         bool vtol_loiter:1;
+
+        // landing altitude offset (meters)
+        float land_alt_offset;
     } auto_state;
 
     struct {
@@ -856,6 +859,7 @@ private:
     void setup_terrain_target_alt(Location &loc);
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
+    float mission_alt_offset(void);
     float height_above_target(void);
     float lookahead_adjustment(void);
     float rangefinder_correction(void);

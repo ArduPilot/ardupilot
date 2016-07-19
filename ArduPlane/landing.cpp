@@ -200,8 +200,10 @@ void Plane::adjust_landing_slope_for_rangefinder_bump(void)
 
         // is projected slope too steep?
         if (new_slope_deg - initial_slope_deg > g.land_slope_recalc_steep_threshold_to_abort) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Slope re-calculated too steep, abort landing!");
-            barometer.set_baro_drift_altitude(barometer.get_baro_drift_offset() - rangefinder_state.correction);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Steep landing slope (%.0fm %.1fdeg)",
+                                             (double)rangefinder_state.correction, (double)(new_slope_deg - initial_slope_deg));
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "aborting landing!");
+            auto_state.land_alt_offset = rangefinder_state.correction;
             auto_state.commanded_go_around = 1;
             g.land_slope_recalc_steep_threshold_to_abort = 0; // disable this feature so we only perform it once
         }
