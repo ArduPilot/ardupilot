@@ -185,7 +185,13 @@ void NavEKF2_core::readMagData()
                     stateStruct.body_magfield.zero();
                     // clear the measurement buffer
                     storedMag.reset();
-                    }
+                    // clear the data waiting flag so that we do not use any data pending from the previous sensor
+                    magDataToFuse = false;
+                    // request a reset of the magnetic field states
+                    magStateResetRequest = true;
+                    // declare the field unlearned so that the reset request will be obeyed
+                    magFieldLearned = false;
+                }
             }
         }
 
@@ -417,6 +423,8 @@ void NavEKF2_core::readGpsData()
             if (PV_AidingMode != AID_ABSOLUTE) {
                 // Pre-alignment checks
                 gpsGoodToAlign = calcGpsGoodToAlign();
+            } else {
+                gpsGoodToAlign = false;
             }
 
             // Post-alignment checks
@@ -454,54 +462,6 @@ void NavEKF2_core::readGpsData()
             gpsCheckStatus.bad_fix = true;
         }
     }
-
-    // We need to handle the case where GPS is lost for a period of time that is too long to dead-reckon
-    // If that happens we need to put the filter into a constant position mode, reset the velocity states to zero
-    // and use the last estimated position as a synthetic GPS position
-
-    // check if we can use opticalflow as a backup
-    bool optFlowBackupAvailable = (flowDataValid && !hgtTimeout);
-
-    // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
-    uint16_t gpsRetryTimeout_ms = useAirspeed() ? frontend->gpsRetryTimeUseTAS_ms : frontend->gpsRetryTimeNoTAS_ms;
-
-    // Set the time that copters will fly without a GPS lock before failing the GPS and switching to a non GPS mode
-    uint16_t gpsFailTimeout_ms = optFlowBackupAvailable ? frontend->gpsFailTimeWithFlow_ms : gpsRetryTimeout_ms;
-
-    // If we haven't received GPS data for a while and we are using it for aiding, then declare the position and velocity data as being timed out
-    if (imuSampleTime_ms - lastTimeGpsReceived_ms > gpsFailTimeout_ms) {
-
-        // Let other processes know that GPS is not available and that a timeout has occurred
-        posTimeout = true;
-        velTimeout = true;
-        gpsNotAvailable = true;
-
-        // If we are totally reliant on GPS for navigation, then we need to switch to a non-GPS mode of operation
-        // If we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
-        // If we can do optical flow nav (valid flow data and height above ground estimate), then go into flow nav mode.
-        if (PV_AidingMode == AID_ABSOLUTE && !useAirspeed() && !assume_zero_sideslip()) {
-            if (optFlowBackupAvailable) {
-                // we can do optical flow only nav
-                frontend->_fusionModeGPS = 3;
-                PV_AidingMode = AID_RELATIVE;
-            } else {
-                // store the current position
-                lastKnownPositionNE.x = stateStruct.position.x;
-                lastKnownPositionNE.y = stateStruct.position.y;
-
-                // put the filter into constant position mode
-                PV_AidingMode = AID_NONE;
-
-                // Reset the velocity and position states
-                ResetVelocity();
-                ResetPosition();
-
-                // Reset the normalised innovation to avoid false failing bad fusion tests
-                velTestRatio = 0.0f;
-                posTestRatio = 0.0f;
-            }
-        }
-    }
 }
 
 // read the delta angle and corresponding time interval from the IMU
@@ -534,7 +494,7 @@ void NavEKF2_core::readBaroData()
 
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
-        if (isAiding && getTakeoffExpected()) {
+        if (getTakeoffExpected()) {
             baroDataNew.hgt = MAX(baroDataNew.hgt, meaHgtAtTakeOff);
         }
 

@@ -209,19 +209,15 @@ void NavEKF2_core::getAccelZBias(float &zbias) const {
     }
 }
 
-// Return the last calculated NED position relative to the reference point (m).
-// if a calculated solution is not available, use the best available data and return false
-bool NavEKF2_core::getPosNED(Vector3f &pos) const
+// Write the last estimated NE position relative to the reference point (m).
+// Return true if the estimate is valid
+bool NavEKF2_core::getPosNE(Vector2f &posNE) const
 {
-    // The EKF always has a height estimate regardless of mode of operation
-    pos.z = outputDataNew.position.z;
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
-    nav_filter_status status;
-    getFilterStatus(status);
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
-        pos.x = outputDataNew.position.x;
-        pos.y = outputDataNew.position.y;
+        posNE.x = outputDataNew.position.x;
+        posNE.y = outputDataNew.position.y;
         return true;
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
@@ -230,26 +226,36 @@ bool NavEKF2_core::getPosNED(Vector3f &pos) const
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const struct Location &gpsloc = _ahrs->get_gps().location();
                 Vector2f tempPosNE = location_diff(EKF_origin, gpsloc);
-                pos.x = tempPosNE.x;
-                pos.y = tempPosNE.y;
+                posNE.x = tempPosNE.x;
+                posNE.y = tempPosNE.y;
                 return false;
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
-                pos.x = outputDataNew.position.x;
-                pos.y = outputDataNew.position.y;
+                posNE.x = outputDataNew.position.x;
+                posNE.y = outputDataNew.position.y;
                 return false;
             }
         } else {
             // If the origin has not been set, then we have no means of providing a relative position
-            pos.x = 0.0f;
-            pos.y = 0.0f;
+            posNE.x = 0.0f;
+            posNE.y = 0.0f;
             return false;
         }
     }
     return false;
 }
 
+// Write the last calculated D position relative to the reference point (m).
+// Return true if the estimte is valid
+bool NavEKF2_core::getPosD(float &posD) const
+{
+    // The EKF always has a height estimate regardless of mode of operation
+    posD = outputDataNew.position.z;
 
+    // Return the current height solution status
+    return filterStatus.flags.vert_pos;
+
+}
 // return the estimated height above ground level
 bool NavEKF2_core::getHAGL(float &HAGL) const
 {
@@ -272,9 +278,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
         loc.flags.terrain_alt = 0;
 
         // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
-        nav_filter_status status;
-        getFilterStatus(status);
-        if (status.flags.horiz_pos_abs || status.flags.horiz_pos_rel) {
+        if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
             loc.lat = EKF_origin.lat;
             loc.lng = EKF_origin.lng;
             location_offset(loc, outputDataNew.position.x, outputDataNew.position.y);
@@ -448,45 +452,10 @@ void  NavEKF2_core::getFilterTimeouts(uint8_t &timeouts) const
                 tasTimeout<<4);
 }
 
-/*
-Return a filter function status that indicates:
-    Which outputs are valid
-    If the filter has detected takeoff
-    If the filter has activated the mode that mitigates against ground effect static pressure errors
-    If GPS data is being used
-*/
+// Return the navigation filter status message
 void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
 {
-    // init return value
-    status.value = 0;
-
-    bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
-    bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
-    bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
-    bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
-    bool optFlowNavPossible = flowDataValid && (frontend->_fusionModeGPS == 3);
-    bool gpsNavPossible = !gpsNotAvailable && gpsGoodToAlign;
-    bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode == AID_NONE)));
-    // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks
-    bool hgtNotAccurate = (frontend->_altSource == 2) && !validOrigin;
-
-    // set individual flags
-    status.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
-    status.flags.horiz_vel = someHorizRefData && filterHealthy;      // horizontal velocity estimate valid
-    status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
-    status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && filterHealthy;   // relative horizontal position estimate valid
-    status.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthy; // absolute horizontal position estimate valid
-    status.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
-    status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
-    status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthy;     // constant position mode
-    status.flags.pred_horiz_pos_rel = ((optFlowNavPossible || gpsNavPossible) && filterHealthy) || status.flags.horiz_pos_rel; // we should be able to estimate a relative position when we enter flight mode
-    status.flags.pred_horiz_pos_abs = (gpsNavPossible && filterHealthy) || status.flags.horiz_pos_abs; // we should be able to estimate an absolute position when we enter flight mode
-    status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
-    status.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
-    status.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
-    status.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
-    status.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE); // The GPS is glitching
+    status = filterStatus;
 }
 
 /*
@@ -512,40 +481,36 @@ void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
 // send an EKF_STATUS message to GCS
 void NavEKF2_core::send_status_report(mavlink_channel_t chan)
 {
-    // get filter status
-    nav_filter_status filt_state;
-    getFilterStatus(filt_state);
-
     // prepare flags
     uint16_t flags = 0;
-    if (filt_state.flags.attitude) {
+    if (filterStatus.flags.attitude) {
         flags |= EKF_ATTITUDE;
     }
-    if (filt_state.flags.horiz_vel) {
+    if (filterStatus.flags.horiz_vel) {
         flags |= EKF_VELOCITY_HORIZ;
     }
-    if (filt_state.flags.vert_vel) {
+    if (filterStatus.flags.vert_vel) {
         flags |= EKF_VELOCITY_VERT;
     }
-    if (filt_state.flags.horiz_pos_rel) {
+    if (filterStatus.flags.horiz_pos_rel) {
         flags |= EKF_POS_HORIZ_REL;
     }
-    if (filt_state.flags.horiz_pos_abs) {
+    if (filterStatus.flags.horiz_pos_abs) {
         flags |= EKF_POS_HORIZ_ABS;
     }
-    if (filt_state.flags.vert_pos) {
+    if (filterStatus.flags.vert_pos) {
         flags |= EKF_POS_VERT_ABS;
     }
-    if (filt_state.flags.terrain_alt) {
+    if (filterStatus.flags.terrain_alt) {
         flags |= EKF_POS_VERT_AGL;
     }
-    if (filt_state.flags.const_pos_mode) {
+    if (filterStatus.flags.const_pos_mode) {
         flags |= EKF_CONST_POS_MODE;
     }
-    if (filt_state.flags.pred_horiz_pos_rel) {
+    if (filterStatus.flags.pred_horiz_pos_rel) {
         flags |= EKF_PRED_POS_HORIZ_REL;
     }
-    if (filt_state.flags.pred_horiz_pos_abs) {
+    if (filterStatus.flags.pred_horiz_pos_abs) {
         flags |= EKF_PRED_POS_HORIZ_ABS;
     }
 

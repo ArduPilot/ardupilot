@@ -66,10 +66,15 @@ public:
     // Intended to be used by the front-end to determine which is the primary EKF
     float faultScore(void) const;
 
-    // Return the last calculated NED position relative to the reference point (m).
+    // Write the last calculated NE position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNED(Vector3f &pos) const;
+    bool getPosNE(Vector2f &posNE) const;
+
+    // Write the last calculated D position relative to the reference point (m).
+    // If a calculated solution is not available, use the best available data and return false
+    // If false returned, do not use for flight control
+    bool getPosD(float &posD) const;
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
@@ -384,6 +389,9 @@ private:
         uint32_t    time_ms;        // 4
     };
 
+    // update the navigation filter status
+    void  updateFilterStatus(void);
+
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
 
@@ -586,6 +594,9 @@ private:
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
 
+    // return true and set the class variable true if the delta angle bias has been learned
+    bool checkGyroCalStatus(void);
+
     // update inflight calculaton that determines if GPS data is good enough for reliable navigation
     void calcGpsGoodForFlight(void);
 
@@ -722,8 +733,6 @@ private:
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
-    bool isAiding;                  // true when the filter is fusing position, velocity or flow measurements
-    bool prevIsAiding;              // isAiding from previous frame
     struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
@@ -764,8 +773,8 @@ private:
     output_elements outputDataNew;  // output state data at the current time step
     output_elements outputDataDelayed; // output state data at the current time step
     Vector3f delAngCorrection;      // correction applied to delta angles used by output observer to track the EKF
-    Vector3f velCorrection;         // correction applied to velocities used by the output observer to track the EKF
-    Vector3f posCorrection;         // correction applied to positions used by the output observer to track the EKF
+    Vector3f velErrintegral;        // integral of output predictor NED velocity tracking error (m)
+    Vector3f posErrintegral;        // integral of output predictor NED position tracking error (m.sec)
     float innovYaw;                 // compass yaw angle innovation (rad)
     uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
     bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system
@@ -798,6 +807,8 @@ private:
     bool magFieldLearned;           // true when the magnetic field has been learned
     Vector3f earthMagFieldVar;      // NED earth mag field variances for last learned field (mGauss^2)
     Vector3f bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
+    bool delAngBiasLearned;         // true when the gyro bias has been learned
+    nav_filter_status filterStatus; // contains the status of various filter outputs
 
     Vector3f outputTrackError;
 
@@ -870,7 +881,9 @@ private:
                      AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
                      AID_RELATIVE=2    // only optical flow aiding is being used so position estimates will be relative
                     };
-    AidingMode PV_AidingMode;           // Defines the preferred mode for aiding of velocity and position estimates from the INS
+    AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
+    AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
+    bool gpsInhibit;                // externally set flag informing the EKF not to use the GPS
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     Vector3f delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     float delTimeOF;                // time that delAngBodyOF is summed across
