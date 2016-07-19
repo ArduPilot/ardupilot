@@ -63,11 +63,11 @@ public:
     }
 
     /* See AP_HAL::Device::register_periodic_callback() */
-    AP_HAL::Device::PeriodicHandle *register_periodic_callback(
-        uint32_t period_usec, AP_HAL::MemberProc) override
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override
     {
         return nullptr;
-    };
+    }
 
     /* See AP_HAL::Device::get_fd() */
     int get_fd() override { return -1; }
