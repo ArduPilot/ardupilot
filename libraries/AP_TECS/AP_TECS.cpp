@@ -536,6 +536,9 @@ void AP_TECS::_detect_underspeed(void)
     }
     else
     {
+        // this clears underspeed if we reach our demanded height and
+        // we are either below 95% throttle or we above 90% of min
+        // airspeed
         _flags.underspeed = false;
     }
 }
