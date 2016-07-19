@@ -19,6 +19,7 @@
 
 #include <inttypes.h>
 
+#include "AP_HAL_Namespace.h"
 #include "utility/functor.h"
 
 /*
