@@ -65,11 +65,18 @@ public:
     AP_HAL::Semaphore *get_semaphore() { return nullptr; }
 
     /* See AP_HAL::Device::register_periodic_callback() */
-    AP_HAL::Device::PeriodicHandle *register_periodic_callback(
-        uint32_t period_usec, AP_HAL::MemberProc) override
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override
     {
         return nullptr;
-    };
+    }
+
+    /* See Device::adjust_periodic_callback() */
+    virtual bool adjust_periodic_callback(
+        AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override
+    {
+        return true;
+    }
 
     /* See AP_HAL::Device::get_fd() */
     int get_fd() { return -1; }
