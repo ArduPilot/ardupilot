@@ -19,7 +19,7 @@
 
 #include <inttypes.h>
 
-#include "AP_HAL_Namespace.h"
+#include "utility/functor.h"
 
 /*
  * This is an interface abstracting I2C and SPI devices
@@ -36,7 +36,8 @@ public:
         SPEED_LOW,
     };
 
-    typedef void PeriodicHandle;
+    FUNCTOR_TYPEDEF(PeriodicCb, bool);
+    typedef void* PeriodicHandle;
 
     const enum BusType bus_type;
 
@@ -118,9 +119,26 @@ public:
      * lock must be taken.
      *
      * Return: A handle for this periodic callback. To cancel the callback
-     * delete the handle.
+     * call #unregister_callback() or return false on the callback.
      */
-    virtual PeriodicHandle *register_periodic_callback(uint32_t period_usec, AP_HAL::MemberProc) = 0;
+    virtual PeriodicHandle register_periodic_callback(uint32_t period_usec, PeriodicCb) = 0;
+
+    /*
+     * Adjust the time for the periodic callback registered with
+     * #register_periodic_callback. Note that the time will be re-calculated
+     * from the moment this call is made and expire after @period_usec.
+     *
+     * Return: true if periodic callback was sucessfully adjusted, false otherwise.
+     */
+    virtual bool adjust_periodic_callback(PeriodicHandle h, uint32_t period_usec) = 0;
+
+    /*
+     * Cancel a periodic callback on this bus.
+     *
+     * Return: true if callback was successfully unregistered, false
+     * otherwise.
+     */
+    virtual bool unregister_callback(PeriodicHandle h) { return false; }
 
     /*
      * Temporary method to get the fd used by this device: it's here only for
