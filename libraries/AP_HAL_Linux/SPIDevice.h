@@ -51,8 +51,8 @@ public:
     AP_HAL::Semaphore *get_semaphore() override;
 
     /* See AP_HAL::Device::register_periodic_callback() */
-    AP_HAL::Device::PeriodicHandle *register_periodic_callback(
-        uint32_t period_usec, AP_HAL::MemberProc) override
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override
     {
         return nullptr;
     }
