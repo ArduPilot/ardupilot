@@ -62,15 +62,6 @@ void MultiCopter::update(const struct sitl_input &input)
 
     update_dynamics(rot_accel);
 
-    if (on_ground(position)) {
-        // zero roll/pitch, but keep yaw
-        float r, p, y;
-        dcm.to_euler(&r, &p, &y);
-        dcm.from_euler(0, 0, y);
-
-        position.z = -(ground_level + frame_height - home.alt*0.01f + ground_height_difference);
-    }
-    
     // update lat/lon/altitude
     update_position();
 

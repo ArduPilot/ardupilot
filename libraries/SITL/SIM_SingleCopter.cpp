@@ -102,17 +102,6 @@ void SingleCopter::update(const struct sitl_input &input)
     
     update_dynamics(rot_accel);
     
-    // constrain height to the ground
-    if (on_ground(position) && !was_on_ground) {
-        // zero roll/pitch, but keep yaw
-        float r, p, y;
-        dcm.to_euler(&r, &p, &y);
-        dcm.from_euler(0, 0, y);
-        
-        position.z = -(ground_level + frame_height - home.alt*0.01f + ground_height_difference);
-        velocity_ef.zero();
-    }
-
     // update lat/lon/altitude
     update_position();
 
