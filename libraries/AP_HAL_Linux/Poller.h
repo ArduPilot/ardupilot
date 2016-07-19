@@ -36,9 +36,6 @@ public:
     virtual ~Pollable();
 
     int get_fd() const { return _fd; }
-    int set_fd();
-
-    bool set_blocking(bool setting);
 
     virtual void on_can_read() { }
     virtual void on_can_write() { }

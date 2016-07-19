@@ -104,21 +104,4 @@ Pollable::~Pollable()
     }
 }
 
-bool Pollable::set_blocking(bool setting)
-{
-    int curflags = fcntl(_fd, F_GETFL, 0);
-
-    if (curflags < 0) {
-        return false;
-    }
-
-    if (setting) {
-        curflags &= ~O_NONBLOCK;
-    } else {
-        curflags |= O_NONBLOCK;
-    }
-
-    return fcntl(_fd, F_SETFL, curflags) == 0;
-}
-
 }
