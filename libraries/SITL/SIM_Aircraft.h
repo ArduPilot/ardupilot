@@ -71,8 +71,11 @@ public:
     virtual void update(const struct sitl_input &input) = 0;
 
     /* fill a sitl_fdm structure from the simulator state */
-    void fill_fdm(struct sitl_fdm &fdm) const;
+    void fill_fdm(struct sitl_fdm &fdm);
 
+    /* smooth sensors to provide kinematic consistancy */
+    void smooth_sensors(void);
+    
     /* return normal distribution random numbers */
     static double rand_normal(double mean, double stddev);
 
@@ -150,6 +153,8 @@ protected:
         GROUND_BEHAVIOR_NO_MOVEMENT,
         GROUND_BEHAVIOR_FWD_ONLY,
     } ground_behavior;
+
+    bool use_smoothing;
     
     AP_Terrain *terrain;
     float ground_height_difference;
@@ -206,6 +211,17 @@ private:
     uint32_t last_ground_contact_ms;
     const uint32_t min_sleep_time;
 
+    struct {
+        bool enabled;
+        Vector3f accel_body;
+        Vector3f gyro;
+        Matrix3f rotation_b2e;
+        Vector3f position;
+        Vector3f velocity_ef;
+        uint64_t last_update_us;
+        Location location;
+    } smoothing;
+    
     /* set this always to the sampling in degrees for the table below */
     #define SAMPLING_RES		10.0f
     #define SAMPLING_MIN_LAT	-60.0f

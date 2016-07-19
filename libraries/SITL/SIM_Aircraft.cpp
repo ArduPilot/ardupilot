@@ -313,8 +313,11 @@ double Aircraft::rand_normal(double mean, double stddev)
 /*
    fill a sitl_fdm structure from the simulator state
 */
-void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
+void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 {
+    if (use_smoothing) {
+        smooth_sensors();
+    }
     fdm.timestamp_us = time_now_us;
     fdm.latitude  = location.lat * 1.0e-7;
     fdm.longitude = location.lng * 1.0e-7;
@@ -342,6 +345,21 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.rcin_chan_count = rcin_chan_count;
     memcpy(fdm.rcin, rcin, rcin_chan_count*sizeof(float));
     fdm.bodyMagField = mag_bf;
+
+    if (smoothing.enabled) {
+        fdm.xAccel = smoothing.accel_body.x;
+        fdm.yAccel = smoothing.accel_body.y;
+        fdm.zAccel = smoothing.accel_body.z;    
+        fdm.rollRate  = degrees(smoothing.gyro.x);
+        fdm.pitchRate = degrees(smoothing.gyro.y);
+        fdm.yawRate   = degrees(smoothing.gyro.z);
+        fdm.speedN    = smoothing.velocity_ef.x;
+        fdm.speedE    = smoothing.velocity_ef.y;
+        fdm.speedD    = smoothing.velocity_ef.z;
+        fdm.latitude  = smoothing.location.lat * 1.0e-7;
+        fdm.longitude = smoothing.location.lng * 1.0e-7;
+        fdm.altitude  = smoothing.location.alt * 1.0e-2;
+    }
 }
 
 uint64_t Aircraft::get_wall_time_us() const
@@ -441,6 +459,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             // no X or Y movement
             velocity_ef.x = 0;
             velocity_ef.y = 0;
+            if (velocity_ef.z > 0) {
+                velocity_ef.z = 0;
+            }
+            gyro.zero();
+            use_smoothing = true;
             break;
         }
         case GROUND_BEHAVIOR_FWD_ONLY: {
@@ -455,6 +478,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
                 v_bf.x = 0;
             }
             velocity_ef = dcm * v_bf;
+            if (velocity_ef.z > 0) {
+                velocity_ef.z = 0;
+            }
+            gyro.zero();
+            use_smoothing = true;
             break;
         }
         }
@@ -556,5 +584,82 @@ bool Aircraft::get_mag_field_ef(float latitude_deg, float longitude_deg, float &
 
 }
 
+/*
+  smooth sensors for kinematic consistancy when we interact with the ground
+ */
+void Aircraft::smooth_sensors(void)
+{
+    uint64_t now = time_now_us;
+    Vector3f delta_pos = position - smoothing.position;
+    if (smoothing.last_update_us == 0 || delta_pos.length() > 10) {
+        smoothing.position = position;
+        smoothing.rotation_b2e = dcm;
+        smoothing.accel_body = accel_body;
+        smoothing.velocity_ef = velocity_ef;
+        smoothing.gyro = gyro;
+        smoothing.last_update_us = now;
+        smoothing.location = location;
+        printf("Smoothing reset at %.3f\n", now * 1.0e-6f);
+        return;
+    }
+    float delta_time = (now - smoothing.last_update_us) * 1.0e-6f;
+
+    // calculate required accel to get us to desired position and velocity in the time_constant
+    const float time_constant = 0.1;
+    Vector3f dvel = (velocity_ef - smoothing.velocity_ef) + (delta_pos / time_constant);
+    Vector3f accel_e = dvel / time_constant + (dcm * accel_body + Vector3f(0,0,GRAVITY_MSS));
+    const float accel_limit = 14*GRAVITY_MSS;
+    accel_e.x = constrain_float(accel_e.x, -accel_limit, accel_limit);
+    accel_e.y = constrain_float(accel_e.y, -accel_limit, accel_limit);
+    accel_e.z = constrain_float(accel_e.z, -accel_limit, accel_limit);
+    smoothing.accel_body = smoothing.rotation_b2e.transposed() * (accel_e + Vector3f(0,0,-GRAVITY_MSS));
+
+    // calculate rotational rate to get us to desired attitude in time constant
+    Quaternion desired_q, current_q, error_q;
+    desired_q.from_rotation_matrix(dcm);
+    desired_q.normalize();
+    current_q.from_rotation_matrix(smoothing.rotation_b2e);
+    current_q.normalize();
+    error_q = desired_q / current_q;
+    error_q.normalize();
+
+    Vector3f angle_differential;
+    error_q.to_axis_angle(angle_differential);
+    smoothing.gyro = gyro + angle_differential / time_constant;
+
+    float R,P,Y;
+    smoothing.rotation_b2e.to_euler(&R,&P,&Y);
+    float R2,P2,Y2;
+    dcm.to_euler(&R2,&P2,&Y2);
+
+#if 0
+    DataFlash_Class::instance()->Log_Write("SMOO", "TimeUS,AEx,AEy,AEz,DPx,DPy,DPz,R,P,Y,R2,P2,Y2",
+                                           "Qffffffffffff",
+                                           AP_HAL::micros64(),
+                                           degrees(angle_differential.x),
+                                           degrees(angle_differential.y),
+                                           degrees(angle_differential.z),
+                                           delta_pos.x, delta_pos.y, delta_pos.z,
+                                           degrees(R), degrees(P), degrees(Y),
+                                           degrees(R2), degrees(P2), degrees(Y2));
+#endif
+                                           
+
+    // integrate to get new attitude
+    smoothing.rotation_b2e.rotate(smoothing.gyro * delta_time);
+    smoothing.rotation_b2e.normalize();
+
+    // integrate to get new position
+    smoothing.velocity_ef += accel_e * delta_time;
+    smoothing.position += smoothing.velocity_ef * delta_time;
+
+    smoothing.location = home;
+    location_offset(smoothing.location, smoothing.position.x, smoothing.position.y);
+    smoothing.location.alt  = home.alt - smoothing.position.z*100.0f;
+    
+    smoothing.last_update_us = now;
+    smoothing.enabled = true;
+}
+    
 } // namespace SITL
 

@@ -98,8 +98,6 @@ void SingleCopter::update(const struct sitl_input &input)
     accel_body = Vector3f(0, 0, -thrust / mass);
     accel_body += dcm.transposed() * air_resistance;
 
-    bool was_on_ground = on_ground(position);
-    
     update_dynamics(rot_accel);
     
     // update lat/lon/altitude
