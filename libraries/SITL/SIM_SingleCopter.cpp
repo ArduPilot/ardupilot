@@ -109,7 +109,7 @@ void SingleCopter::update(const struct sitl_input &input)
         dcm.to_euler(&r, &p, &y);
         dcm.from_euler(0, 0, y);
         
-        position.z = -(ground_level + frame_height - home.alt*0.01f);
+        position.z = -(ground_level + frame_height - home.alt*0.01f + ground_height_difference);
         velocity_ef.zero();
     }
 

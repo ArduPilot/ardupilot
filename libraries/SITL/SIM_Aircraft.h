@@ -22,6 +22,7 @@
 #include <AP_Math/AP_Math.h>
 
 #include "SITL.h"
+#include <AP_Terrain/AP_Terrain.h>
 
 namespace SITL {
 
@@ -144,10 +145,19 @@ protected:
     const char *frame;
     bool use_time_sync = true;
 
+    enum {
+        GROUND_BEHAVIOR_NONE=0,
+        GROUND_BEHAVIOR_NO_MOVEMENT,
+        GROUND_BEHAVIOR_FWD_ONLY,
+    } ground_behavior;
+    
+    AP_Terrain *terrain;
+    float ground_height_difference;
+
     const float FEET_TO_METERS = 0.3048f;
     const float KNOTS_TO_METERS_PER_SECOND = 0.51444f;
     
-    bool on_ground(const Vector3f &pos) const;
+    bool on_ground(const Vector3f &pos);
 
     /* update location from position */
     void update_position(void);

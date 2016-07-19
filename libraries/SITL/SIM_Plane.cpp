@@ -47,6 +47,8 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     } else if (strstr(frame_str, "-vtail")) {
         vtail = true;
     }
+
+    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
 }
 
 /*

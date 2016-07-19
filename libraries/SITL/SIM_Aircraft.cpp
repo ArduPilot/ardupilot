@@ -30,6 +30,7 @@
 #endif
 
 #include <DataFlash/DataFlash.h>
+#include <AP_Param/AP_Param.h>
 
 namespace SITL {
 
@@ -69,6 +70,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
 
     last_wall_time_us = get_wall_time_us();
     frame_counter = 0;
+
+    terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
 }
 
 
@@ -117,9 +120,15 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
 /*
    return true if we are on the ground
 */
-bool Aircraft::on_ground(const Vector3f &pos) const
+bool Aircraft::on_ground(const Vector3f &pos)
 {
-    return (-pos.z) + home.alt*0.01f <= ground_level + frame_height;
+    float h1, h2;
+    if (sitl->terrain_enable && terrain &&
+        terrain->height_amsl(home, h1, false) &&
+        terrain->height_amsl(location, h2, false)) {
+        ground_height_difference = h2 - h1;
+    }
+    return (-pos.z) + home.alt*0.01f <= ground_level + frame_height + ground_height_difference;
 }
 
 /*
@@ -419,7 +428,36 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             printf("Hit ground at %f m/s\n", velocity_ef.z);
             last_ground_contact_ms = AP_HAL::millis();
         }
-        position.z = -(ground_level + frame_height - home.alt*0.01f);
+        position.z = -(ground_level + frame_height - home.alt*0.01f + ground_height_difference);
+
+        switch (ground_behavior) {
+        case GROUND_BEHAVIOR_NONE:
+            break;
+        case GROUND_BEHAVIOR_NO_MOVEMENT: {
+            // zero roll/pitch, but keep yaw
+            float r, p, y;
+            dcm.to_euler(&r, &p, &y);
+            dcm.from_euler(0, 0, y);
+            // no X or Y movement
+            velocity_ef.x = 0;
+            velocity_ef.y = 0;
+            break;
+        }
+        case GROUND_BEHAVIOR_FWD_ONLY: {
+            // zero roll/pitch, but keep yaw
+            float r, p, y;
+            dcm.to_euler(&r, &p, &y);
+            dcm.from_euler(0, 0, y);
+            // only fwd movement
+            Vector3f v_bf = dcm.transposed() * velocity_ef;
+            v_bf.y = 0;
+            if (v_bf.x < 0) {
+                v_bf.x = 0;
+            }
+            velocity_ef = dcm * v_bf;
+            break;
+        }
+        }
     }
 }
 

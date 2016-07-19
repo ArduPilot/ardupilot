@@ -47,6 +47,8 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
         frame_type = HELI_FRAME_CONVENTIONAL;
     }
     gas_heli = (strstr(frame_str, "-gas") != NULL);
+
+    ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
 
 /*
@@ -167,7 +169,7 @@ void Helicopter::update(const struct sitl_input &input)
         dcm.to_euler(&r, &p, &y);
         dcm.from_euler(0, 0, y);
         
-        position.z = -(ground_level + frame_height - home.alt*0.01f);
+        position.z = -(ground_level + frame_height - home.alt*0.01f + ground_height_difference);
         velocity_ef.zero();
     }
 
