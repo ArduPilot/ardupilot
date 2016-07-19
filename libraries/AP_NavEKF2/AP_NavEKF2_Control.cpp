@@ -8,6 +8,7 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
@@ -221,7 +222,7 @@ void NavEKF2_core::setAidingMode()
         // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         if (PV_AidingMode == AID_NONE) {
             // We have ceased aiding
-            hal.console->printf("EKF2 IMU%u has stopped aiding\n",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u has stopped aiding",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
             velTimeout = true;            
@@ -238,7 +239,7 @@ void NavEKF2_core::setAidingMode()
             stateStruct.position.z = -meaHgtAtTakeOff;
         } else if (PV_AidingMode == AID_RELATIVE) {
             // We have commenced aiding, but GPS usage has been prohibited so use optical flow only
-            hal.console->printf("EKF2 IMU%u is using optical flow\n",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u is using optical flow",(unsigned)imu_index);
             posTimeout = true;
             velTimeout = true;
             // Reset the last valid flow measurement time
@@ -247,7 +248,7 @@ void NavEKF2_core::setAidingMode()
             prevFlowFuseTime_ms = imuSampleTime_ms;
         } else if (PV_AidingMode == AID_ABSOLUTE) {
             // We have commenced aiding and GPS usage is allowed
-            hal.console->printf("EKF2 IMU%u is using GPS\n",(unsigned)imu_index);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
             posTimeout = false;
             velTimeout = false;
             // we need to reset the GPS timers to prevent GPS timeout logic being invoked on entry into GPS aiding
@@ -276,7 +277,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
     tiltErrFilt = alpha*temp + (1.0f-alpha)*tiltErrFilt;
     if (tiltErrFilt < 0.005f && !tiltAlignComplete) {
         tiltAlignComplete = true;
-        hal.console->printf("EKF2 IMU%u tilt alignment complete\n",(unsigned)imu_index);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u tilt alignment complete",(unsigned)imu_index);
     }
 
     // submit yaw and magnetic field reset requests depending on whether we have compass data
@@ -352,7 +353,7 @@ void NavEKF2_core::setOrigin()
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
-    hal.console->printf("EKF2 IMU%u Origin Set\n",(unsigned)imu_index);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u Origin Set",(unsigned)imu_index);
 }
 
 // record a yaw reset event
