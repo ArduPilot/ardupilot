@@ -127,11 +127,15 @@ bool AP_Compass_BMM150::init()
     uint8_t val = 0;
     bool ret;
 
-    hal.scheduler->suspend_timer_procs();
+    _accum_sem = hal.util->new_semaphore();
+    if (!_accum_sem) {
+        hal.console->printf("BMM150: Unable to create semaphore\n");
+        return false;
+    }
 
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.console->printf("BMM150: Unable to get bus semaphore\n");
-        goto fail_sem;
+        return false;
     }
 
     /* Do a soft reset */
@@ -184,13 +188,14 @@ bool AP_Compass_BMM150::init()
     }
 
     _dev->get_semaphore()->give();
-    hal.scheduler->resume_timer_procs();
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, AP_COMPASS_TYPE_BMM150);
 
+    hal.scheduler->suspend_timer_procs();
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, void));
+    hal.scheduler->resume_timer_procs();
 
     return true;
 
@@ -198,8 +203,6 @@ bus_error:
     hal.console->printf("BMM150: Bus communication error\n");
 fail:
     _dev->get_semaphore()->give();
-fail_sem:
-    hal.scheduler->resume_timer_procs();
     return false;
 }
 
@@ -283,28 +286,34 @@ void AP_Compass_BMM150::_update()
     /* correct raw_field for known errors */
     correct_field(raw_field, _compass_instance);
 
+    if (!_accum_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
     _mag_accum += raw_field;
     _accum_count++;
     if (_accum_count == 10) {
         _mag_accum /= 2;
         _accum_count = 5;
     }
-
     _last_update_timestamp = time_usec;
+    _accum_sem->give();
 }
 
 void AP_Compass_BMM150::read()
 {
+    if (!_accum_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
     if (_accum_count == 0) {
+        _accum_sem->give();
         return;
     }
 
-    hal.scheduler->suspend_timer_procs();
     Vector3f field(_mag_accum);
     field /= _accum_count;
     _mag_accum.zero();
     _accum_count = 0;
-    hal.scheduler->resume_timer_procs();
+    _accum_sem->give();
 
     publish_filtered_field(field, _compass_instance);
 }
