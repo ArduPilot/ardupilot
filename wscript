@@ -132,8 +132,8 @@ def configure(cfg):
     cfg.define('WAF_BUILD', 1)
 
     if cfg.options.static:
-        cfg.msg('Using static linking')
-        env.STATIC_LINKING = True
+        cfg.msg('Using static linking', 'yes', color='YELLOW')
+        cfg.env.STATIC_LINKING = True
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
