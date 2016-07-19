@@ -831,8 +831,8 @@ const AP_Param::Info Copter::var_info[] = {
 
 #if AC_RALLY == ENABLED
     // @Group: RALLY_
-    // @Path: ../libraries/AP_Rally/AP_Rally.cpp
-    GOBJECT(rally,      "RALLY_",   AP_Rally),
+    // @Path: AP_Rally.cpp,../libraries/AP_Rally/AP_Rally.cpp
+    GOBJECT(rally,      "RALLY_",   AP_Rally_Copter),
 #endif
 
 #if FRAME_CONFIG ==     HELI_FRAME
