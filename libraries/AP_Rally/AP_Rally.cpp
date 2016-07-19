@@ -132,7 +132,7 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
         Location rally_loc = rally_location_to_location(next_rally);
         float dis = get_distance(current_loc, rally_loc);
 
-        if (dis < min_dis || min_dis < 0) {
+        if (is_valid(rally_loc) && (dis < min_dis || min_dis < 0)) {
             min_dis = dis;
             return_loc = next_rally;
         }

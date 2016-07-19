@@ -62,6 +62,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    virtual bool is_valid(const Location &rally_point) const { return true; }
+
     static StorageAccess _storage;
 
     // internal variables
