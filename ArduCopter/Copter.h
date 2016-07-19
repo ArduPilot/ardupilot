@@ -293,6 +293,7 @@ private:
         uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
         uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
         uint8_t terrain             : 1; // 6   // true if the missing terrain data failsafe has occurred
+        uint8_t adsb                : 1; // 7   // true if an adsb related failsafe has occurred
 
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
