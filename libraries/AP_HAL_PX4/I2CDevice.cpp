@@ -21,8 +21,6 @@
 
 namespace PX4 {
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
-
 uint8_t PX4::PX4_I2C::instance;
 
 /*
