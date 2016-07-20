@@ -236,10 +236,9 @@ void Copter::guided_set_velocity(const Vector3f& velocity)
         guided_vel_control_start();
     }
 
+    // record velocity target
+    guided_vel_target_cms = velocity;
     vel_update_time_ms = millis();
-
-    // set position controller velocity target
-    pos_control.set_desired_velocity(velocity);
 
     // log target
     Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity);
@@ -440,7 +439,9 @@ void Copter::guided_vel_control_run()
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - vel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !pos_control.get_desired_velocity().is_zero()) {
-        pos_control.set_desired_velocity(Vector3f(0,0,0));
+        guided_set_desired_velocity_with_accel_limits(Vector3f(0.0f,0.0f,0.0f));
+    } else {
+        guided_set_desired_velocity_with_accel_limits(guided_vel_target_cms);
     }
 
     // call velocity controller which includes z axis controller
@@ -584,6 +585,45 @@ void Copter::guided_angle_control_run()
     // call position controller
     pos_control.set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false);
     pos_control.update_z_controller();
+}
+
+// helper function to update position controller's desired velocity while respecting acceleration limits
+void Copter::guided_set_desired_velocity_with_accel_limits(const Vector3f& vel_des)
+{
+    // get current desired velocity
+    Vector3f curr_vel_des = pos_control.get_desired_velocity();
+
+    // exit immediately if already equal
+    if (curr_vel_des == vel_des) {
+        return;
+    }
+
+    // get change in desired velocity
+    Vector3f vel_delta = vel_des - curr_vel_des;
+
+    // limit xy change
+    float vel_delta_xy = safe_sqrt(sq(vel_delta.x)+sq(vel_delta.y));
+    float vel_delta_xy_max = G_Dt * pos_control.get_accel_xy();
+    float ratio_xy = 1.0f;
+    if (!is_zero(vel_delta_xy) && (vel_delta_xy > vel_delta_xy_max)) {
+        ratio_xy = vel_delta_xy_max / vel_delta_xy;
+    }
+
+    // limit z change
+    float vel_delta_z = fabsf(vel_delta.z);
+    float vel_delta_z_max = G_Dt * pos_control.get_accel_z();
+    float ratio_z = 1.0f;
+    if (!is_zero(vel_delta_z) && (vel_delta_z > vel_delta_z_max)) {
+        ratio_z = vel_delta_z_max / vel_delta_z;
+    }
+
+    // new target
+    curr_vel_des.x += (vel_delta.x * ratio_xy);
+    curr_vel_des.y += (vel_delta.y * ratio_xy);
+    curr_vel_des.z += (vel_delta.z * ratio_z);
+
+    // update position controller with new target
+    pos_control.set_desired_velocity(curr_vel_des);
 }
 
 // Guided Limit code
