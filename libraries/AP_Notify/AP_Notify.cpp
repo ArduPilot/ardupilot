@@ -121,9 +121,10 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         ToshibaLED_I2C toshibaled;
         NotifyDevice *AP_Notify::_devices[] = {&navioled, &toshibaled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+        AP_BoardLED boardled;
         Buzzer buzzer;
         Display display;
-        NotifyDevice *AP_Notify::_devices[] = {&display, &buzzer};
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &display, &buzzer};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
         AP_BoardLED boardled;
         NotifyDevice *AP_Notify::_devices[] = {&boardled};
