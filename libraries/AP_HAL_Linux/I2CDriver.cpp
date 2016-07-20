@@ -18,7 +18,7 @@
 #include "I2CDriver.h"
 #include "Util.h"
 
-extern const AP_HAL::HAL &hal;
+static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 using namespace Linux;
 
