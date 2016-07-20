@@ -130,6 +130,13 @@ void Plane::init_home()
 */
 void Plane::update_home()
 {
+    if (fabsf(barometer.get_altitude()) > 2) {
+        // don't auto-update if we have changed barometer altitude
+        // significantly. This allows us to cope with slow baro drift
+        // but not re-do home and the baro if we have changed height
+        // significantly
+        return;
+    }
     if (home_is_set == HOME_SET_NOT_LOCKED) {
         Location loc = gps.location();
         Location origin;
