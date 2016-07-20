@@ -237,7 +237,7 @@ void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
     _pos_target.z = _inav.get_altitude();
     _vel_desired.z = 0.0f;
     _flags.use_desvel_ff_z = false;
-    _vel_target.z= _inav.get_velocity_z();
+    _vel_target.z = _inav.get_velocity_z();
     _vel_last.z = _inav.get_velocity_z();
     _accel_feedforward.z = 0.0f;
     _accel_last_z_cms = 0.0f;
@@ -568,8 +568,8 @@ void AC_PosControl::set_target_to_stopping_point_xy()
 ///     set_leash_length() should have been called before this method
 void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 {
-	const Vector3f curr_pos = _inav.get_position();
-	Vector3f curr_vel = _inav.get_velocity();
+    const Vector3f curr_pos = _inav.get_position();
+    Vector3f curr_vel = _inav.get_velocity();
     float linear_distance;      // the distance at which we swap from a linear to sqrt response
     float linear_velocity;      // the velocity above which we swap from a linear to sqrt response
     float stopping_dist;		// the distance within the vehicle can stop
@@ -866,7 +866,6 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
 ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
 void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
-    const Vector3f &vel_curr = _inav.get_velocity();  // current velocity in cm/s
     Vector2f vel_xy_p, vel_xy_i;
 
     // reset last velocity target to current target
@@ -874,6 +873,14 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
         _vel_last.x = _vel_target.x;
         _vel_last.y = _vel_target.y;
         _flags.reset_rate_to_accel_xy = false;
+    }
+
+    // check if vehicle velocity is being overridden
+    if (_flags.vehicle_horiz_vel_override) {
+        _flags.vehicle_horiz_vel_override = false;
+    } else {
+        _vehicle_horiz_vel.x = _inav.get_velocity().x;
+        _vehicle_horiz_vel.y = _inav.get_velocity().y;
     }
 
     // feed forward desired acceleration calculation
@@ -895,8 +902,8 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     _vel_last.y = _vel_target.y;
 
     // calculate velocity error
-    _vel_error.x = _vel_target.x - vel_curr.x;
-    _vel_error.y = _vel_target.y - vel_curr.y;
+    _vel_error.x = _vel_target.x - _vehicle_horiz_vel.x;
+    _vel_error.y = _vel_target.y - _vehicle_horiz_vel.y;
 
     // call pi controller
     _pi_vel_xy.set_input(_vel_error);
