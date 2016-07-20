@@ -177,10 +177,10 @@ void AP_InertialSensor_BMI160::start()
     _accel_instance = _imu.register_accel(BMI160_ODR_TO_HZ(BMI160_ODR));
     _gyro_instance = _imu.register_gyro(BMI160_ODR_TO_HZ(BMI160_ODR));
 
-    hal.scheduler->resume_timer_procs();
-
     hal.scheduler->register_timer_process(
         FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI160::_poll_data, void));
+
+    hal.scheduler->resume_timer_procs();
 }
 
 bool AP_InertialSensor_BMI160::update()
