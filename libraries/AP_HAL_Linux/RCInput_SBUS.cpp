@@ -102,7 +102,7 @@ void RCInput_SBUS::_timer_tick(void)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    // as TMIN is SBUS_FRAME_SIZE the select won't return unless there is
+    // as VMIN is SBUS_FRAME_SIZE the select won't return unless there is
     // at least SBUS_FRAME_SIZE bytes available
     if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
         return;
