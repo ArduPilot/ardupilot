@@ -812,6 +812,7 @@ private:
     void guided_vel_control_run();
     void guided_posvel_control_run();
     void guided_angle_control_run();
+    void guided_set_desired_velocity_with_accel_limits(const Vector3f& vel_des);
     void guided_limit_clear();
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     void guided_limit_init_time_and_pos();
