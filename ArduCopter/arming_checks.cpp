@@ -337,6 +337,14 @@ bool Copter::pre_arm_checks(bool display_failure)
         if (!pre_arm_terrain_check(display_failure)) {
             return false;
         }
+
+        // check adsb avoidance failsafe
+        if (failsafe.adsb) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: ADSB threat detected");
+            }
+            return false;
+        }
     }
 
     // check throttle is above failsafe throttle
@@ -673,6 +681,16 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // check for missing terrain data
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
         if (!pre_arm_terrain_check(display_failure)) {
+            return false;
+        }
+    }
+
+    // check adsb
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
+        if (failsafe.adsb) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: ADSB threat detected");
+            }
             return false;
         }
     }
