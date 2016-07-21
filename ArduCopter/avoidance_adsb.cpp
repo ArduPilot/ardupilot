@@ -3,6 +3,7 @@
 
 void Copter::avoidance_adsb_update(void)
 {
+    adsb.update();
     avoidance_adsb.update();
 }
 
