@@ -317,7 +317,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         if (AP_Mission::is_nav_cmd(cmd)) {
             gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav. Invalid or no current nav cmd");
         }else{
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify conditon. Invalid or no current condition cmd");
+        gcs_send_text(MAV_SEVERITY_WARNING,"Verify condition. Invalid or no current condition cmd");
     }
         // return true so that we do not get stuck at this command
         return true;
