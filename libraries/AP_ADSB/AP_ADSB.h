@@ -25,20 +25,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Common/Location.h>
-
-#define VEHICLE_THREAT_RADIUS_M         1000
-#define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
-#define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
-#define ADSB_VEHICLE_LIST_SIZE_MAX      100
-#define ADSB_CHAN_TIMEOUT_MS            15000
-
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    #define ADSB_LIST_RADIUS_DEFAULT        10000 // in meters
-#else // APM_BUILD_TYPE(APM_BUILD_ArduCopter), Rover, Boat
-    #define ADSB_LIST_RADIUS_DEFAULT        2000 // in meters
-#endif
 
 class AP_ADSB
 {
@@ -160,7 +147,7 @@ private:
         uint32_t    last_report_ms; // send at 5Hz
         int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means broadcast to all
         uint32_t    chan_last_ms;
-        ADSB_TRANSPONDER_DYNAMIC_OUTPUT_STATUS_FLAGS status;     // transceiver status
+        // TODO: add enum "status"
         bool        is_flying;
 
         // ADSB-OUT configuration
