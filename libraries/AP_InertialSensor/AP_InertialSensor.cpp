@@ -1077,17 +1077,21 @@ check_sample:
         // accel and gyro. This normally completes immediately.
         bool gyro_available = false;
         bool accel_available = false;
-        while (!gyro_available || !accel_available) {
+        while (true) {
             for (uint8_t i=0; i<_backend_count; i++) {
                 _backends[i]->accumulate();
             }
+
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
                 gyro_available |= _new_gyro_data[i];
                 accel_available |= _new_accel_data[i];
             }
-            if (!gyro_available || !accel_available) {
-                hal.scheduler->delay_microseconds(100);
+
+            if (gyro_available && accel_available) {
+                break;
             }
+
+            hal.scheduler->delay_microseconds(100);
         }
     }
 
