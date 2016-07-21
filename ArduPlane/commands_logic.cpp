@@ -40,6 +40,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // reset loiter start time. New command is a new loiter
         loiter.start_time_ms = 0;
 
+        AP_Mission::Mission_Command next_nav_cmd;
+        const uint16_t next_index = mission.get_current_nav_index() + 1;
+        auto_state.wp_is_land_approach = mission.get_next_nav_cmd(next_index, next_nav_cmd) && (next_nav_cmd.id == MAV_CMD_NAV_LAND);
+
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing nav command ID #%i",cmd.id);
     } else {
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing command ID #%i",cmd.id);

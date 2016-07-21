@@ -474,7 +474,8 @@ int32_t Plane::adjusted_relative_altitude_cm(void)
 float Plane::mission_alt_offset(void)
 {
     float ret = g.alt_offset;
-    if (control_mode == AUTO && auto_state.land_in_progress) {
+    if (control_mode == AUTO &&
+            (auto_state.land_in_progress || auto_state.wp_is_land_approach)) {
         // when landing after an aborted landing due to too high glide
         // slope we use an offset from the last landing attempt
         ret += auto_state.land_alt_offset;

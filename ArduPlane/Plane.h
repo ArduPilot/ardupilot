@@ -442,6 +442,9 @@ private:
         // are we in auto and flight mode is approach || pre-flare || final (flare)
         bool land_in_progress:1;
 
+        // are we headed to the land approach waypoint? Works for any nav type
+        bool wp_is_land_approach:1;
+
         // should we fly inverted?
         bool inverted_flight:1;
 
