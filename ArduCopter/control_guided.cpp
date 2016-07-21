@@ -13,10 +13,10 @@
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
 #define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
-static Vector3f posvel_pos_target_cm;
-static Vector3f posvel_vel_target_cms;
-static uint32_t posvel_update_time_ms;
-static uint32_t vel_update_time_ms;
+static Vector3f guided_pos_target_cm;       // position target (used by posvel controller only)
+static Vector3f guided_vel_target_cms;      // velocity target (used by velocity controller and posvel controller)
+static uint32_t posvel_update_time_ms;      // system time of last target update to posvel controller (i.e. position and velocity update)
+static uint32_t vel_update_time_ms;         // system time of last target update to velocity controller
 
 struct {
     uint32_t update_time_ms;
@@ -253,10 +253,10 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
     }
 
     posvel_update_time_ms = millis();
-    posvel_pos_target_cm = destination;
-    posvel_vel_target_cms = velocity;
+    guided_pos_target_cm = destination;
+    guided_vel_target_cms = velocity;
 
-    pos_control.set_pos_target(posvel_pos_target_cm);
+    pos_control.set_pos_target(guided_pos_target_cm);
 
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, velocity);
@@ -493,8 +493,8 @@ void Copter::guided_posvel_control_run()
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
-    if (tnow - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !posvel_vel_target_cms.is_zero()) {
-        posvel_vel_target_cms.zero();
+    if (tnow - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !guided_vel_target_cms.is_zero()) {
+        guided_vel_target_cms.zero();
     }
 
     // calculate dt
@@ -508,11 +508,11 @@ void Copter::guided_posvel_control_run()
         }
 
         // advance position target using velocity target
-        posvel_pos_target_cm += posvel_vel_target_cms * dt;
+        guided_pos_target_cm += guided_vel_target_cms * dt;
 
         // send position and velocity targets to position controller
-        pos_control.set_pos_target(posvel_pos_target_cm);
-        pos_control.set_desired_velocity_xy(posvel_vel_target_cms.x, posvel_vel_target_cms.y);
+        pos_control.set_pos_target(guided_pos_target_cm);
+        pos_control.set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
 
         // run position controller
         pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler, false);
