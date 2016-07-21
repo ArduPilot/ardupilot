@@ -23,13 +23,9 @@
 #include "AP_InertialSensor_SITL.h"
 #include "AP_InertialSensor_qflight.h"
 
-/*
-  enable TIMING_DEBUG to track down scheduling issues with the main
-  loop. Output is on the debug console
- */
-#define TIMING_DEBUG 0
-
-#if TIMING_DEBUG
+/* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
+ * Output is on the debug console. */
+#ifdef INS_TIMING_DEBUG
 #include <stdio.h>
 #define timing_printf(fmt, args...)      do { printf("[timing] " fmt, ##args); } while(0)
 #else
