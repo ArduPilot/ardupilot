@@ -27,6 +27,7 @@
 #include <stdio.h>  // for sprintf
 #include <limits.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define VEHICLE_THREAT_RADIUS_M         1000
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
