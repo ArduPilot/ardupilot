@@ -127,7 +127,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
 #if ADSB_ENABLED == ENABLED
-    SCHED_TASK(adsb_update,            1,    100),
+    SCHED_TASK(adsb_update,            5,    100),
 #endif
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,   5,     75),
@@ -501,6 +501,8 @@ void Copter::one_hz_loop()
 
     // log terrain data
     terrain_logging();
+
+    adsb.set_is_flying(!ap.land_complete);
 }
 
 // called at 50hz

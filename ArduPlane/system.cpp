@@ -482,6 +482,8 @@ void Plane::set_mode(enum FlightMode mode)
     // start with throttle suppressed in auto_throttle modes
     throttle_suppressed = auto_throttle_mode;
 
+    adsb.set_is_auto_mode(auto_navigation_mode);
+
     if (should_log(MASK_LOG_MODE))
         DataFlash.Log_Write_Mode(control_mode);
 
