@@ -114,6 +114,7 @@
 
 // Local modules
 #include "Parameters.h"
+#include "avoidance_adsb.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -124,6 +125,7 @@ public:
     friend class GCS_MAVLINK_Copter;
     friend class AP_Rally_Copter;
     friend class Parameters;
+    friend class AP_Avoidance_Copter;
 
     Copter(void);
 
@@ -554,6 +556,9 @@ private:
 
     AP_ADSB adsb {ahrs};
 
+    // avoidance of adsb enabled vehicles (normally manned vheicles)
+    AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
+
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
@@ -781,6 +786,7 @@ private:
     void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
     void adsb_update(void);
     void adsb_handle_vehicle_threats(void);
+    void avoidance_adsb_update(void);
     bool brake_init(bool ignore_checks);
     void brake_run();
     void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
@@ -863,6 +869,12 @@ private:
     void parachute_check();
     void parachute_release();
     void parachute_manual_release();
+
+    // support for AP_Avoidance custom flight mode, AVOID_ADSB
+    bool avoid_adsb_init(bool ignore_checks);
+    void avoid_adsb_run();
+    bool avoid_adsb_set_velocity(const Vector3f& velocity_neu);
+
     void ekf_check();
     bool ekf_over_threshold();
     void failsafe_ekf_event();
