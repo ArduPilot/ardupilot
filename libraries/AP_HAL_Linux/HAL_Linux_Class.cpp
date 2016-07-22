@@ -335,7 +335,6 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
     i2c1->begin();
 #endif
-    spi->init();
     rcout->init();
     rcin->init();
     uartA->begin(115200);
