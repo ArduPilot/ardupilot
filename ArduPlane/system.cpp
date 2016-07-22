@@ -586,7 +586,8 @@ void Plane::check_short_failsafe()
             flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
             flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
             flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-        if(failsafe.ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
+        // The condition is checked and the flag ch3_failsafe is set in radio.cpp
+        if(failsafe.ch3_failsafe) {
             failsafe_short_on_event(FAILSAFE_SHORT);
         }
     }
