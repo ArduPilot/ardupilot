@@ -506,3 +506,11 @@ fi
 
 echo "rc.APM finished"
 
+# Start any custom addons
+	set FEXTRAS /fs/microsd/etc/extras.txt
+	if [ -f $FEXTRAS ]
+	then
+		echo "INFO  [init] Addons script: $FEXTRAS"
+		sh $FEXTRAS
+	fi
+	unset FEXTRAS
