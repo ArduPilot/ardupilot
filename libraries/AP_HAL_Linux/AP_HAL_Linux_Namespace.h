@@ -6,7 +6,6 @@ namespace Linux {
     class RPIOUARTDriver;
     class I2CDevice;
     class I2CDeviceManager;
-    class I2CDriver;
     class SPIDeviceManager;
     class SPIDeviceDriver;
     class Storage;
