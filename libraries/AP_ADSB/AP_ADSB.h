@@ -83,6 +83,8 @@ public:
     void set_is_auto_mode(const bool is_in_auto_mode) { _is_in_auto_mode = is_in_auto_mode; }
     void set_is_flying(const bool is_flying) { out_state.is_flying = is_flying; }
 
+    UAVIONIX_ADSB_RF_HEALTH get_transceiver_status(void) { return out_state.status; }
+
 private:
 
     // initialize _vehicle_list
@@ -147,7 +149,7 @@ private:
         uint32_t    last_report_ms; // send at 5Hz
         int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means broadcast to all
         uint32_t    chan_last_ms;
-        // TODO: add enum "status"
+        UAVIONIX_ADSB_RF_HEALTH status;     // transceiver status
         bool        is_flying;
 
         // ADSB-OUT configuration
@@ -157,10 +159,11 @@ private:
             int32_t     ICAO_id_param_prev = -1; // assume we never send
             char        callsign[9]; //Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only).
             AP_Int8     emitterType;
-            AP_Int8      lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
-            AP_Int8      gpsLatOffset;
-            AP_Int8      gpsLonOffset;
-            uint16_t     stall_speed_cm;
+            AP_Int8     lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
+            AP_Int8     gpsLatOffset;
+            AP_Int8     gpsLonOffset;
+            uint16_t    stall_speed_cm;
+            AP_Int8     rfSelect;
         } cfg;
 
     } out_state;

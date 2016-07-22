@@ -85,25 +85,32 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Description: ADSB classification for the type of vehicle emitting the transponder signal. Default value is 14 (UAV).
     // @Values: 0:NoInfo,1:Light,2:Small,3:Large,4:HighVortexlarge,5:Heavy,6:HighlyManuv,7:Rotocraft,8:RESERVED,9:Glider,10:LightAir,11:Parachute,12:UltraLight,13:RESERVED,14:UAV,15:Space,16:RESERVED,17:EmergencySurface,18:ServiceSurface,19:PointObstacle
     // @User: Advanced
-    AP_GROUPINFO("EMIT_TYPE",   5, AP_ADSB, out_state.cfg.emitterType, 14),
+    AP_GROUPINFO("EMIT_TYPE",   5, AP_ADSB, out_state.cfg.emitterType, ADSB_EMITTER_TYPE_UAV),
 
     // @Param: LEN_WIDTH
     // @DisplayName: Aircraft length and width
-    // @Description: Aircraft length and width encoding.
+    // @Description: Aircraft length and width encoding. See ADSB_TRANSPONDER_STATIC_INPUT_ALW_ENCODE
     // @User: Advanced
-    AP_GROUPINFO("LEN_WIDTH",   6, AP_ADSB, out_state.cfg.lengthWidth, 0),
+    AP_GROUPINFO("LEN_WIDTH",   6, AP_ADSB, out_state.cfg.lengthWidth, UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_NO_DATA),
 
     // @Param: OFFSET_LAT
     // @DisplayName: GPS antenna lateral offset
-    // @Description: GPS antenna lateral offset.
+    // @Description: GPS antenna lateral offset. See ADSB_TRANSPONDER_STATIC_INPUT_GPS_LAT_OFFSET
     // @User: Advanced
-    AP_GROUPINFO("OFFSET_LAT",   7, AP_ADSB, out_state.cfg.gpsLatOffset, 0),
+    AP_GROUPINFO("OFFSET_LAT",   7, AP_ADSB, out_state.cfg.gpsLatOffset, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_NO_DATA),
 
     // @Param: OFFSET_LON
     // @DisplayName: GPS antenna longitudinal offset
-    // @Description: GPS antenna longitudinal offset.
+    // @Description: GPS antenna longitudinal offset. See ADSB_TRANSPONDER_STATIC_INPUT_GPS_LON_OFFSET
     // @User: Advanced
-    AP_GROUPINFO("OFFSET_LON",   8, AP_ADSB, out_state.cfg.gpsLonOffset, 0),
+    AP_GROUPINFO("OFFSET_LON",   8, AP_ADSB, out_state.cfg.gpsLonOffset, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON_NO_DATA),
+
+    // @Param: RF_SELECT
+    // @DisplayName: Transceiver RF selection
+    // @Description: Transceiver RF selection for Rx enable and/or Tx enable.
+    // @Values: 0:Disabled,1:Rx-Only,2:Tx-Only,3:Rx and Tx Enabled
+    // @User: Advanced
+    AP_GROUPINFO("RF_SELECT",   9, AP_ADSB, out_state.cfg.rfSelect, UAVIONIX_ADSB_OUT_RF_SELECT_RX_ENABLED | UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED),
 
 
 
@@ -230,18 +237,17 @@ void AP_ADSB::update(void)
     if (out_state.chan >= 0 && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
         if (now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
             // haven't gotten a heartbeat health status packet in a while, assume hardware failure
+            // TODO: reset out_state.chan
             out_state.chan = -1;
         } else {
             mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
-            // TODO: add check HAVE_PAYLOAD_SPACE(config)
-            if (now - out_state.last_config_ms >= 5000) {
+            if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
                 out_state.last_config_ms = now;
                 send_configure(chan);
             } // last_config_ms
 
             // send dynamic data to transceiver at 5Hz
-            // TODO: add check HAVE_PAYLOAD_SPACE(dynamic)
-            if (now - out_state.last_report_ms >= 200) {
+            if (now - out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
                 out_state.last_report_ms = now;
                 send_dynamic_out(chan);
             } // last_report_ms
@@ -479,12 +485,98 @@ void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
 
 void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
 {
-    // TODO: send dynamic packet
+    // --------------
+    // Knowns
+    AP_GPS gps = _ahrs.get_gps();
+    Vector3f gps_velocity = gps.velocity();
+
+    int32_t latitude = _my_loc.lat;
+    int32_t longitude = _my_loc.lng;
+    int32_t altGNSS = _my_loc.alt*0.1f; // convert cm to mm
+    int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
+    int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
+    int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
+    uint8_t fixType = gps.status(); // this lines up perfectly with our enum
+    uint8_t emStatus = 0; // TODO: implement this ENUM. no emergency = 0
+    uint8_t numSats = gps.num_sats();
+    uint16_t squawk = 1200; // Mode A code (typically 1200 [0x04B0] for VFR)
+
+    uint32_t accHoriz = UINT_MAX;
+    float accHoriz_f;
+    if (gps.horizontal_accuracy(accHoriz_f)) {
+        accHoriz = accHoriz_f * 1E3; // convert m to mm
+    }
+
+    uint16_t accVert = USHRT_MAX;
+    float accVert_f;
+    if (gps.vertical_accuracy(accVert_f)) {
+        accVert = accVert_f * 1E2; // convert m to cm
+    }
+
+    uint16_t accVel = USHRT_MAX;
+    float accVel_f;
+    if (gps.speed_accuracy(accVel_f)) {
+        accVel = accVel_f * 1E3; // convert m/s to mm/s
+    }
+
+    uint16_t state = 0;
+    if (_is_in_auto_mode) {
+        state |= UAVIONIX_ADSB_OUT_DYNAMIC_STATE_AUTOPILOT_ENABLED;
+    }
+    if (!out_state.is_flying) {
+        state |= UAVIONIX_ADSB_OUT_DYNAMIC_STATE_ON_GROUND;
+    }
+
+
+
+    // --------------
+    // Not Sure
+    uint32_t utcTime = UINT_MAX; //    uint32_t utcTime,
+    // TODO: confirm this sets utcTime correctly
+    const uint64_t gps_time = gps.time_epoch_usec();
+    utcTime = gps_time / 1000000ULL;
+
+
+
+    // --------------
+    // Unknowns
+    // TODO: implement http://www.srh.noaa.gov/images/epz/wxcalc/pressureAltitude.pdf
+    int32_t altPres = INT_MAX; //_ahrs.get_baro().get_altitude() relative to home, not MSL
+
+
+
+    mavlink_msg_uavionix_adsb_out_dynamic_send(
+            chan,
+            utcTime,
+            latitude,
+            longitude,
+            altGNSS,
+            fixType,
+            numSats,
+            altPres,
+            accHoriz,
+            accVert,
+            accVel,
+            velVert,
+            nsVog,
+            ewVog,
+            emStatus,
+            state,
+            squawk);
 }
 
 void AP_ADSB::send_configure(const mavlink_channel_t chan)
 {
-    // TODO configure packet
+    mavlink_msg_uavionix_adsb_out_cfg_send(
+            chan,
+            (uint32_t)out_state.cfg.ICAO_id,
+            out_state.cfg.callsign,
+            (uint8_t)out_state.cfg.emitterType,
+            (uint8_t)out_state.cfg.lengthWidth,
+            (uint8_t)out_state.cfg.gpsLatOffset,
+            (uint8_t)out_state.cfg.gpsLonOffset,
+            out_state.cfg.stall_speed_cm,
+            (uint8_t)out_state.cfg.rfSelect);
 }
 
 /*
@@ -494,7 +586,16 @@ void AP_ADSB::send_configure(const mavlink_channel_t chan)
 
 void AP_ADSB::transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
 {
-    // TODO: parse transceiver report
+    mavlink_uavionix_adsb_transceiver_health_report_t packet {};
+    mavlink_msg_uavionix_adsb_transceiver_health_report_decode(msg, &packet);
+
+    if (out_state.chan != chan) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
+    }
+
+    out_state.chan_last_ms = AP_HAL::millis();
+    out_state.chan = chan;
+    out_state.status = (UAVIONIX_ADSB_RF_HEALTH)packet.rfHealth;
 }
 
 /*
