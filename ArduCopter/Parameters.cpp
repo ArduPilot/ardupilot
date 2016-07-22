@@ -966,6 +966,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("WP_TKOFF_NAV_ALT", 1, ParametersG2, takeoff_nav_alt, 0),
 
+    // @Group: BTN_
+    // @Path: ../libraries/AP_Button/AP_Button.cpp
+    AP_SUBGROUPINFO(button, "BTN_", 2, ParametersG2, AP_Button),
+    
     AP_GROUPEND
 };
 

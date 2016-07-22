@@ -226,3 +226,11 @@ void Copter::epm_update()
     epm.update();
 }
 #endif
+
+/*
+  update AP_Button
+ */
+void Copter::button_update(void)
+{
+    g2.button.update();
+}

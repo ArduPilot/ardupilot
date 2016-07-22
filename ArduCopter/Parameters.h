@@ -543,6 +543,9 @@ public:
 
     // altitude at which nav control can start in takeoff
     AP_Float takeoff_nav_alt;
+
+    // button checking
+    AP_Button button;
 };
 
 extern const AP_Param::Info        var_info[];
