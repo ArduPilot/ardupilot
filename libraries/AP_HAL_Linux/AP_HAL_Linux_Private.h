@@ -8,7 +8,6 @@
 #include "SPIUARTDriver.h"
 #include "RPIOUARTDriver.h"
 #include "I2CDevice.h"
-#include "SPIDriver.h"
 #include "AnalogIn_ADS1115.h"
 #include "AnalogIn_IIO.h"
 #include "AnalogIn_Raspilot.h"

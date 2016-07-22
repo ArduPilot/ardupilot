@@ -11,6 +11,7 @@
 
 #include "AP_HAL_Linux_Private.h"
 #include "HAL_Linux_Class.h"
+#include "SPIDevice.h"
 
 using namespace Linux;
 
@@ -301,7 +302,6 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 
     scheduler->init();
     gpio->init();
-    spi->init();
     rcout->init();
     rcin->init();
     uartA->begin(115200);
