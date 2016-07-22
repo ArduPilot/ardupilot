@@ -406,18 +406,8 @@ void AP_TECS::_update_speed_demand(void)
     // calculate velocity rate limits based on physical performance limits
     // provision to use a different rate limit if bad descent or underspeed condition exists
     // Use 50% of maximum energy rate to allow margin for total energy contgroller
-    float velRateMax;
-    float velRateMin;
-    if ((_flags.badDescent) || (_flags.underspeed))
-    {
-        velRateMax = 0.5f * _STEdot_max / _TAS_state;
-        velRateMin = 0.5f * _STEdot_min / _TAS_state;
-    }
-    else
-    {
-        velRateMax = 0.5f * _STEdot_max / _TAS_state;
-        velRateMin = 0.5f * _STEdot_min / _TAS_state;
-    }
+    float velRateMax = 0.5f * _STEdot_max / _TAS_state;
+    float velRateMin = 0.5f * _STEdot_min / _TAS_state;
 
     // Apply rate limit
     if ((_TAS_dem - _TAS_dem_adj) > (velRateMax * 0.1f))
