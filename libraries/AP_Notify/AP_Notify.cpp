@@ -171,3 +171,11 @@ void AP_Notify::handle_led_control(mavlink_message_t *msg)
         _devices[i]->handle_led_control(msg);
     }
 }
+
+// handle a PLAY_TUNE message
+void AP_Notify::handle_play_tune(mavlink_message_t *msg)
+{
+    for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+        _devices[i]->handle_play_tune(msg);
+    }
+}

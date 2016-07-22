@@ -336,4 +336,19 @@ void ToneAlarm_PX4::update()
     }
 }
 
+
+/*
+  handle a PLAY_TUNE message
+*/
+void ToneAlarm_PX4::handle_play_tune(mavlink_message_t *msg)
+{
+    // decode mavlink message
+    mavlink_play_tune_t packet;
+    
+    mavlink_msg_play_tune_decode(msg, &packet);
+
+    play_string(packet.tune);
+}
+
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
