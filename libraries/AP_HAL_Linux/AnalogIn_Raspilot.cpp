@@ -1,11 +1,13 @@
+#include "AnalogIn_Raspilot.h"
+
+#include <algorithm>
+
 #include <AP_HAL/AP_HAL.h>
 
-#include "AnalogIn_Raspilot.h"
 #include "px4io_protocol.h"
 
-AnalogSource_Raspilot::AnalogSource_Raspilot(int16_t pin):
-    _pin(pin),
-    _value(0.0f)
+AnalogSource_Raspilot::AnalogSource_Raspilot(int16_t pin)
+    : _pin(pin)
 {
 }
 
@@ -54,7 +56,6 @@ float AnalogIn_Raspilot::board_voltage(void)
     _vcc_pin_analog_source->set_pin(4);
 
     return 5.0;
-    //return _vcc_pin_analog_source->voltage_average() * 2.0;
 }
 
 AP_HAL::AnalogSource* AnalogIn_Raspilot::channel(int16_t pin)
@@ -74,13 +75,10 @@ void AnalogIn_Raspilot::init()
 {
     _vcc_pin_analog_source = channel(4);
 
-    _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
-    _spi_sem = _spi->get_semaphore();
-
-    if (_spi_sem == NULL) {
-        AP_HAL::panic("PANIC: RCIutput_Raspilot did not get "
-                                  "valid SPI semaphore!");
-        return; // never reached
+    _dev = std::move(hal.spi->get_device("raspio"));
+    if (!_dev) {
+        AP_HAL::panic("Bus for AnalogIn_Raspilot not found");
+        return;
     }
 
     hal.scheduler->suspend_timer_procs();
@@ -94,7 +92,7 @@ void AnalogIn_Raspilot::_update()
         return;
     }
 
-    if (!_spi_sem->take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
@@ -105,8 +103,9 @@ void AnalogIn_Raspilot::_update()
     tx.offset = 0;
     tx.crc = 0;
     tx.crc = crc_packet(&tx);
+
     /* set raspilotio to read reg4 */
-    _spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, sizeof(tx));
+    _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
 
     hal.scheduler->delay_microseconds(200);
 
@@ -116,10 +115,11 @@ void AnalogIn_Raspilot::_update()
     tx.offset = 0;
     tx.crc = 0;
     tx.crc = crc_packet(&tx);
-    /* get reg4 data from raspilotio */
-    _spi->transaction((uint8_t *)&tx, (uint8_t *)&rx, sizeof(tx));
 
-    _spi_sem->give();
+    /* get reg4 data from raspilotio */
+    _dev->transfer((uint8_t *)&tx, sizeof(tx), (uint8_t *)&rx, sizeof(rx));
+
+    _dev->get_semaphore()->give();
 
     for (int16_t i = 0; i < RASPILOT_ADC_MAX_CHANNELS; i++) {
         for (int16_t j=0; j < RASPILOT_ADC_MAX_CHANNELS; j++) {
