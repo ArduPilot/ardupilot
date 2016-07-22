@@ -126,6 +126,26 @@ protected:
     bool ins_checks(bool report);
 };
 
+
+/*
+  a plane specific AP_AdvancedFailsafe class
+ */
+class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
+{
+public:
+    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap);
+
+    // called to set all outputs to termination state
+    void terminate_vehicle(void);
+    
+protected:
+    // setup failsafe values for if FMU firmware stops running
+    void setup_IO_failsafe(void);
+
+    // return the AFS mapped control mode
+    enum control_mode afs_mode(void);
+};
+
 /*
   main APM:Plane class
  */
@@ -137,6 +157,7 @@ public:
     friend class AP_Arming_Plane;
     friend class QuadPlane;
     friend class AP_Tuning_Plane;
+    friend class AP_AdvancedFailsafe_Plane;
 
     Plane(void);
 
@@ -632,7 +653,7 @@ private:
     AP_ADSB adsb {ahrs};
 
     // Outback Challenge Failsafe Support
-    AP_AdvancedFailsafe afs {mission, barometer, gps, rcmap};
+    AP_AdvancedFailsafe_Plane afs {mission, barometer, gps, rcmap};
 
     /*
       meta data to support counting the number of circles in a loiter

@@ -82,7 +82,10 @@ void Plane::failsafe_check(void)
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
-        afs.check_crash_plane();
+        if (afs.should_crash_vehicle()) {
+            afs.terminate_vehicle();
+            return;
+        }
 
         if (!demoing_servos) {
             channel_roll->output();
