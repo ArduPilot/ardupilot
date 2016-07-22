@@ -552,6 +552,10 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
+    // @Group: BTN_
+    // @Path: ../libraries/AP_Button/AP_Button.cpp
+    GOBJECT(button, "BTN_",  AP_Button),
+    
 	AP_VAREND
 };
 
