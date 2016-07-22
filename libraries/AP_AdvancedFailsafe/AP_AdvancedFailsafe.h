@@ -30,7 +30,7 @@
 #include <inttypes.h>
 
 
-class APM_OBC
+class AP_AdvancedFailsafe
 {
 public:
     enum control_mode {
@@ -47,7 +47,7 @@ public:
     };
 
     // Constructor
-    APM_OBC(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
+    AP_AdvancedFailsafe(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
         mission(_mission),
         baro(_baro),
         gps(_gps),
@@ -133,5 +133,5 @@ private:
     bool check_altlimit(void);
 };
 
-// map from ArduPlane control_mode to APM_OBC::control_mode
-#define OBC_MODE(control_mode) (auto_throttle_mode?APM_OBC::OBC_AUTO:(control_mode==MANUAL?APM_OBC::OBC_MANUAL:APM_OBC::OBC_FBW))
+// map from ArduPlane control_mode to AP_AdvancedFailsafe::control_mode
+#define OBC_MODE(control_mode) (auto_throttle_mode?AP_AdvancedFailsafe::OBC_AUTO:(control_mode==MANUAL?AP_AdvancedFailsafe::OBC_MANUAL:AP_AdvancedFailsafe::OBC_FBW))
