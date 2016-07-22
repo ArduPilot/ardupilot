@@ -45,8 +45,8 @@ static UARTDriver uartEDriver(false);
 static UARTDriver uartFDriver(false);
 
 static I2CDeviceManager i2c_mgr_instance;
+static SPIDeviceManager spi_mgr_instance;
 
-static SPIDeviceManager spiDeviceManager;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
@@ -186,7 +186,7 @@ HAL_Linux::HAL_Linux() :
         &uartEDriver,
         &uartFDriver,
         &i2c_mgr_instance,
-        &spiDeviceManager,
+        &spi_mgr_instance,
         &analogIn,
         &storageDriver,
         &uartADriver,
