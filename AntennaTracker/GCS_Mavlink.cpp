@@ -108,7 +108,7 @@ void Tracker::send_hwstatus(mavlink_channel_t chan)
     mavlink_msg_hwstatus_send(
         chan,
         0,
-        hal.i2c->lockup_count());
+        0);
 }
 
 void Tracker::send_waypoint_request(mavlink_channel_t chan)
