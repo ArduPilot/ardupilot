@@ -32,7 +32,7 @@ post_mode should be set to POST_LAZY. Example::
         ...
 """
 
-from waflib import Context, Task, Utils
+from waflib import Context, Logs, Task, Utils
 from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature, taskgen_method
 
@@ -146,6 +146,16 @@ def git_submodule(bld, git_submodule, **kw):
 
     return bld(**kw)
 
+def _post_fun(bld):
+    Logs.info('')
+    for name, t in _submodules_tasks.items():
+        if not t.non_fast_forward:
+            continue
+        Logs.warn("Submodule %s not updated: non-fastforward" % name)
+
+@conf
+def git_submodule_post_fun(bld):
+    bld.add_post_fun(_post_fun)
 
 def _git_head_hash(ctx, path, short=False):
     cmd = [ctx.env.get_flat('GIT'), 'rev-parse']
