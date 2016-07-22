@@ -30,6 +30,7 @@ class HAL_SITL;
 class HALSITL::SITL_State {
     friend class HALSITL::Scheduler;
     friend class HALSITL::Util;
+    friend class HALSITL::GPIO;
 public:
     void init(int argc, char * const argv[]);
 
