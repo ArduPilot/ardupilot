@@ -52,8 +52,6 @@ namespace AP_HAL {
         // Devices using AP_HAL::SPIDevice abstraction
         SPIDevice_Type              = -1,
         SPIDevice_ADS7844           = 1,
-        SPIDevice_Ublox             = 11,
-        SPIDevice_RASPIO            = 12,
     };
 
     // Must be implemented by the concrete HALs.
