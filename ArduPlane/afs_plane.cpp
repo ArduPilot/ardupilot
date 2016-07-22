@@ -37,6 +37,12 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_manual, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
     RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_none, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
+
+    ch_roll->output();
+    ch_pitch->output();
+    ch_yaw->output();
+    ch_throttle->output();
+    RC_Channel_aux::output_ch_all();
 }
 
 void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)
@@ -61,6 +67,12 @@ void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_manual, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
     RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_none, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
+
+    if (plane.quadplane.available()) {
+        // setup AP_Motors outputs for failsafe
+        uint16_t mask = plane.quadplane.motors->get_motor_mask();
+        hal.rcout->set_failsafe_pwm(mask, plane.quadplane.thr_min_pwm);
+    }
 }
 
 /*
