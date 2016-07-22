@@ -341,6 +341,8 @@ def build(bld):
     )
 
     bld.load('build_summary')
+    if bld.env.SUBMODULE_UPDATE:
+        bld.git_submodule_post_fun()
 
 ardupilotwaf.build_command('check',
     program_group_list='all',
