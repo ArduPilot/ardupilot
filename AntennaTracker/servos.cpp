@@ -77,30 +77,17 @@ void Tracker::update_pitch_position_servo()
     g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
     int32_t new_servo_out = channel_pitch.get_servo_out() + g.pidPitch2Srv.get_pid();
 
-    // rate limit pitch servo
-    if (g.pitch_slew_time > 0.02f) {
-        uint16_t max_change = 0.02f * ((-pitch_min_cd+pitch_max_cd)/2) / g.pitch_slew_time;
-        if (max_change < 1) {
-            max_change = 1;
-        }
-        if (new_servo_out <= channel_pitch.get_servo_out() - max_change) {
-            new_servo_out = channel_pitch.get_servo_out() - max_change;
-        }
-        if (new_servo_out >= channel_pitch.get_servo_out() + max_change) {
-            new_servo_out = channel_pitch.get_servo_out() + max_change;
-        }
-    }
-    channel_pitch.set_servo_out(new_servo_out);
-
     // position limit pitch servo
-    if (channel_pitch.get_servo_out() <= pitch_min_cd) {
-        channel_pitch.set_servo_out(pitch_min_cd);
+    if (new_servo_out <= pitch_min_cd) {
+        new_servo_out = pitch_min_cd;
         g.pidPitch2Srv.reset_I();
     }
-    if (channel_pitch.get_servo_out() >= pitch_max_cd) {
-        channel_pitch.set_servo_out(pitch_max_cd);
+    if (new_servo_out >= pitch_max_cd) {
+        new_servo_out = pitch_max_cd;
         g.pidPitch2Srv.reset_I();
     }
+    // rate limit pitch servo
+    channel_pitch.set_servo_out(new_servo_out);
 }
 
 
@@ -173,7 +160,6 @@ void Tracker::update_yaw_servo(float yaw)
 void Tracker::update_yaw_position_servo()
 {
     int32_t yaw_limit_cd = g.yaw_range*100/2;
-    const int16_t margin = MAX(500, wrap_360_cd(36000-yaw_limit_cd)/2);
 
     // Antenna as Ballerina. Use with antenna that do not have continuously rotating servos, ie at some point in rotation
     // the servo limits are reached and the servo has to slew 360 degrees to the 'other side' to keep tracking.
@@ -181,7 +167,6 @@ void Tracker::update_yaw_position_servo()
     // This algorithm accounts for the fact that the antenna mount may not be aligned with North
     // (in fact, any alignment is permissible), and that the alignment may change (possibly rapidly) over time
     // (as when the antenna is mounted on a moving, turning vehicle)
-    // When the servo is being forced beyond its limits, it rapidly slews to the 'other side' then normal tracking takes over.
     //
     // With my antenna mount, large pwm output drives the antenna anticlockise, so need:
     // param set RC1_REV -1
@@ -203,82 +188,23 @@ void Tracker::update_yaw_position_servo()
       Use our current yawspeed to determine if we are moving in the
       right direction
      */
-    int8_t new_slew_dir = slew_dir;
 
-    // get earth frame z-axis rotation rate in radians
-    Vector3f earth_rotation = ahrs.get_gyro() * ahrs.get_rotation_body_to_ned();
-
-
-    bool making_progress;
-    if (slew_dir != 0) {
-        making_progress = (-slew_dir * earth_rotation.z >= 0);
-    } else {
-        making_progress = (nav_status.angle_error_yaw * earth_rotation.z <= 0);
-    }
-
-    // handle hitting servo limits
-    if (abs(channel_yaw.get_servo_out()) == 18000 &&
-        labs(nav_status.angle_error_yaw) > margin &&
-        making_progress &&
-        AP_HAL::millis() - slew_start_ms > g.min_reverse_time*1000) {
-        // we are at the limit of the servo and are not moving in the
-        // right direction, so slew the other way
-        new_slew_dir = -channel_yaw.get_servo_out() / 18000;
-        slew_start_ms = AP_HAL::millis();
-    }
-
-    /*
-      stop slewing and revert to normal control when normal control
-      should move us in the right direction
-     */
-    if (slew_dir * nav_status.angle_error_yaw > margin) {
-        new_slew_dir = 0;
-    }
-
-    if (new_slew_dir != slew_dir) {
-        tracker.gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Slew: %d/%d err=%ld servo=%ld ez=%.3f",
-                                  (int)slew_dir, (int)new_slew_dir,
-                                  (long)nav_status.angle_error_yaw,
-                                  (long)channel_yaw.get_servo_out(),
-                                  (double)degrees(ahrs.get_gyro().z));
-    }
-
-    slew_dir = new_slew_dir;
-    int16_t new_servo_out;
-    if (slew_dir != 0) {
-        new_servo_out = slew_dir * 18000;
-        g.pidYaw2Srv.reset_I();
-    } else {
-        g.pidYaw2Srv.set_input_filter_all(nav_status.angle_error_yaw);
-        float servo_change = g.pidYaw2Srv.get_pid();
-        servo_change = constrain_float(servo_change, -18000, 18000);
-        new_servo_out = constrain_float(channel_yaw.get_servo_out() + servo_change, -18000, 18000);
-    }
-
-    // rate limit yaw servo
-    if (g.yaw_slew_time > 0.02f) {
-        uint16_t max_change = 0.02f * yaw_limit_cd / g.yaw_slew_time;
-        if (max_change < 1) {
-            max_change = 1;
-        }
-        if (new_servo_out <= channel_yaw.get_servo_out() - max_change) {
-            new_servo_out = channel_yaw.get_servo_out() - max_change;
-        }
-        if (new_servo_out >= channel_yaw.get_servo_out() + max_change) {
-            new_servo_out = channel_yaw.get_servo_out() + max_change;
-        }
-    }
-    channel_yaw.set_servo_out(new_servo_out);
+    g.pidYaw2Srv.set_input_filter_all(nav_status.angle_error_yaw);
+    float servo_change = g.pidYaw2Srv.get_pid();
+    servo_change = constrain_float(servo_change, -18000, 18000);
+    float new_servo_out = constrain_float(channel_yaw.get_servo_out() + servo_change, -18000, 18000);
 
     // position limit yaw servo
-    if (channel_yaw.get_servo_out() <= -yaw_limit_cd) {
-        channel_yaw.set_servo_out(-yaw_limit_cd);
+    if (new_servo_out <= -yaw_limit_cd) {
+    	new_servo_out = -yaw_limit_cd;
         g.pidYaw2Srv.reset_I();
     }
-    if (channel_yaw.get_servo_out() >= yaw_limit_cd) {
-        channel_yaw.set_servo_out(yaw_limit_cd);
+    if (new_servo_out >= yaw_limit_cd) {
+    	new_servo_out = yaw_limit_cd;
         g.pidYaw2Srv.reset_I();
     }
+
+    channel_yaw.set_servo_out(new_servo_out);
 }
 
 
