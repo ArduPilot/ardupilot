@@ -47,6 +47,9 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     } else if (strstr(frame_str, "-vtail")) {
         vtail = true;
     }
+    if (strstr(frame_str, "-elevrev")) {
+        reverse_elevator_rudder = true;
+    }
 
     ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
 }
@@ -205,6 +208,10 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float elevator = (input.servos[1]-1500)/500.0f;
     float rudder   = (input.servos[3]-1500)/500.0f;
     float throttle;
+    if (reverse_elevator_rudder) {
+        elevator = -elevator;
+        rudder = -rudder;
+    }
     if (elevons) {
         // fake an elevon plane
         float ch1 = aileron;
