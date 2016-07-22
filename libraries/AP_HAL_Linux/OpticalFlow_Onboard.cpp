@@ -80,7 +80,8 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
     _pwm->enable(true);
 
     _camerasensor = new CameraSensor_Mt9v117(HAL_OPTFLOW_ONBOARD_SUBDEV_PATH,
-                                             hal.i2c, 0x5D, MT9V117_QVGA,
+                                             hal.i2c_mgr->get_device(0, 0x5D),
+                                             MT9V117_QVGA,
                                              BEBOP_GPIO_CAMV_NRST,
                                              BEBOP_CAMV_PWM_FREQ);
     if (!_camerasensor->set_format(HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH,
