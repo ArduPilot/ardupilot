@@ -59,6 +59,12 @@ void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
    if (txS < 1024) {
        txS = 2048;
    }
+    if (!is_initialized()) {
+        _dev = hal.spi->get_device("ublox");
+        if (!_dev) {
+            return;
+        }
+    }
 
    /*
      allocate the read buffer
