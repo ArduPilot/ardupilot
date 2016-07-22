@@ -77,12 +77,11 @@ void loop()
             offset[i][2] = -(max[i][2] + min[i][2]) / 2;
 
             // display all to user
-            hal.console->printf("Heading: %.2f (%3d,%3d,%3d) i2c error: %u",
+            hal.console->printf("Heading: %.2f (%3d,%3d,%3d)",
                                 ToDeg(heading),
                                 (int)mag.x,
                                 (int)mag.y,
-                                (int)mag.z,
-                                (unsigned)hal.i2c->lockup_count());
+                                (int)mag.z);
 
             // display offsets
             hal.console->printf(" offsets(%.2f, %.2f, %.2f)",
