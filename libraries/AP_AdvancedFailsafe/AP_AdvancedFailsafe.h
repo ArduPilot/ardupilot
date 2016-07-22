@@ -34,9 +34,9 @@ class AP_AdvancedFailsafe
 {
 public:
     enum control_mode {
-        OBC_MANUAL = 0,
-        OBC_FBW    = 1,
-        OBC_AUTO   = 2
+        AFS_MANUAL = 0,
+        AFS_FBW    = 1,
+        AFS_AUTO   = 2
     };
 
     enum state {
@@ -134,4 +134,4 @@ private:
 };
 
 // map from ArduPlane control_mode to AP_AdvancedFailsafe::control_mode
-#define OBC_MODE(control_mode) (auto_throttle_mode?AP_AdvancedFailsafe::OBC_AUTO:(control_mode==MANUAL?AP_AdvancedFailsafe::OBC_MANUAL:AP_AdvancedFailsafe::OBC_FBW))
+#define AFS_MODE_PLANE(control_mode) (auto_throttle_mode?AP_AdvancedFailsafe::AFS_AUTO:(control_mode==MANUAL?AP_AdvancedFailsafe::AFS_MANUAL:AP_AdvancedFailsafe::AFS_FBW))
