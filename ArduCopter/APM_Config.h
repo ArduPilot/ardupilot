@@ -52,7 +52,7 @@
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).
 //#define USERHOOK_VARIABLES "UserVariables.h"
-// Put your custom code into the UserCode.pde with function names matching those listed below and ensure the appropriate #define below is uncommented below
+// Put your custom code into the UserCode.cpp with function names matching those listed below and ensure the appropriate #define below is uncommented below
 //#define USERHOOK_INIT userhook_init();                      // for code to be run once at startup
 //#define USERHOOK_FASTLOOP userhook_FastLoop();            // for code to be run at 100hz
 //#define USERHOOK_50HZLOOP userhook_50Hz();                  // for code to be run at 50hz

@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_drift.pde - init and run calls for drift flight mode
+ * control_drift.cpp - init and run calls for drift flight mode
  */
 
 #ifndef DRIFT_SPEEDGAIN
