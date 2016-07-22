@@ -432,6 +432,9 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
                     avoid_state.highest_threat_index = index;
                 }
     } // if buffer full
+
+    vehicle.last_update_ms = AP_HAL::millis() - vehicle.info.tslc;
+    push_sample(vehicle); // note that set_vehicle modifies vehicle
 }
 
 /*
@@ -677,3 +680,13 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
     out_state.cfg.callsign[sizeof(out_state.cfg.callsign)-1] = 0; // always null terminate just to be sure
 }
 
+
+void AP_ADSB::push_sample(adsb_vehicle_t &vehicle)
+{
+    samples.push_back(vehicle);
+}
+
+bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
+{
+    return samples.pop_front(vehicle);
+}

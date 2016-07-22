@@ -25,6 +25,10 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_AHRS/AP_AHRS.h>
+
+#include <AP_Buffer/AP_Buffer.h>
 
 class AP_ADSB
 {
@@ -84,6 +88,14 @@ public:
 
     UAVIONIX_ADSB_RF_HEALTH get_transceiver_status(void) { return out_state.status; }
 
+    // extract a location out of a vehicle item
+    Location_Class get_location(const adsb_vehicle_t &vehicle) const;
+
+    bool enabled() const {
+        return _enabled;
+    }
+    bool next_sample(adsb_vehicle_t &obstacle);
+
 private:
 
     // initialize _vehicle_list
@@ -94,9 +106,6 @@ private:
 
     // compares current vector against vehicle_list to detect threats
     void perform_threat_detection(void);
-
-    // extract a location out of a vehicle item
-    Location_Class get_location(const adsb_vehicle_t &vehicle) const;
 
     // return index of given vehicle if ICAO_ADDRESS matches. return -1 if no match
     bool find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const;
@@ -183,5 +192,10 @@ private:
         uint16_t    highest_threat_index;
         float       highest_threat_distance;
     } avoid_state;
+
+    static const uint8_t max_samples = 30;
+    AP_Buffer<adsb_vehicle_t, max_samples> samples;
+
+    void push_sample(adsb_vehicle_t &vehicle);
 
 };
