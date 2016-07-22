@@ -405,11 +405,6 @@
  # define RESET_SWITCH_CHAN_PWM 1750
 #endif
 
-// OBC Failsafe enable
-#ifndef OBC_FAILSAFE
-#define OBC_FAILSAFE ENABLED
-#endif
-
 #define HIL_SUPPORT ENABLED
 
 //////////////////////////////////////////////////////////////////////////////

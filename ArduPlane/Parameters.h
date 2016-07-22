@@ -321,7 +321,7 @@ public:
 
         // other objects
         k_param_sitl = 230,
-        k_param_obc,
+        k_param_afs,
         k_param_rollController,
         k_param_pitchController,
         k_param_yawController,

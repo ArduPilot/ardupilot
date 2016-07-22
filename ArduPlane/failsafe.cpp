@@ -42,13 +42,11 @@ void Plane::failsafe_check(void)
     if (in_failsafe && tnow - last_timestamp > 20000) {
         last_timestamp = tnow;
 
-#if OBC_FAILSAFE == ENABLED
         if (in_calibration) {
             // tell the failsafe system that we are calibrating
             // sensors, so don't trigger failsafe
-            obc.heartbeat();
+            afs.heartbeat();
         }
-#endif
 
         if (hal.rcin->num_channels() < 5) {
             // we don't have any RC input to pass through
@@ -81,12 +79,10 @@ void Plane::failsafe_check(void)
             channel_output_mixer(g.elevon_output, channel_pitch, channel_roll);
         }
 
-#if OBC_FAILSAFE == ENABLED
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
-        obc.check_crash_plane();
-#endif
+        afs.check_crash_plane();
 
         if (!demoing_servos) {
             channel_roll->output();
