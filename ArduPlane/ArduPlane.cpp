@@ -50,7 +50,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(read_airspeed,          10,    100),
     SCHED_TASK(update_alt,             10,    200),
     SCHED_TASK(adjust_altitude_target, 10,    200),
-    SCHED_TASK(obc_fs_check,           10,    100),
+    SCHED_TASK(afs_fs_check,           10,    100),
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,    500),
     SCHED_TASK(update_events,          50,    150),
@@ -286,14 +286,12 @@ void Plane::update_logging2(void)
 
 
 /*
-  check for OBC failsafe check
+  check for AFS failsafe check
  */
-void Plane::obc_fs_check(void)
+void Plane::afs_fs_check(void)
 {
-#if OBC_FAILSAFE == ENABLED
-    // perform OBC failsafe checks
-    obc.check(OBC_MODE(control_mode), failsafe.last_heartbeat_ms, geofence_breached(), failsafe.AFS_last_valid_rc_ms);
-#endif
+    // perform AFS failsafe checks
+    afs.check(AFS_MODE_PLANE(control_mode), failsafe.last_heartbeat_ms, geofence_breached(), failsafe.AFS_last_valid_rc_ms);
 }
 
 

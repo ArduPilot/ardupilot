@@ -1315,11 +1315,9 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SITL),
 #endif
 
-#if OBC_FAILSAFE == ENABLED
     // @Group: AFS_
-    // @Path: ../libraries/APM_OBC/APM_OBC.cpp
-    GOBJECT(obc,  "AFS_", APM_OBC),
-#endif
+    // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
+    GOBJECT(afs,  "AFS_", AP_AdvancedFailsafe),
 
 #if OPTFLOW == ENABLED
     // @Group: FLOW

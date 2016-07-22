@@ -53,7 +53,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
 
-#include <APM_OBC/APM_OBC.h>
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <APM_Control/APM_Control.h>
 #include <APM_Control/AP_AutoTune.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
@@ -632,9 +632,7 @@ private:
     AP_ADSB adsb {ahrs};
 
     // Outback Challenge Failsafe Support
-#if OBC_FAILSAFE == ENABLED
-    APM_OBC obc {mission, barometer, gps, rcmap};
-#endif
+    AP_AdvancedFailsafe afs {mission, barometer, gps, rcmap};
 
     /*
       meta data to support counting the number of circles in a loiter
@@ -991,7 +989,7 @@ private:
     void update_GPS_10Hz(void);
     void update_compass(void);
     void update_alt(void);
-    void obc_fs_check(void);
+    void afs_fs_check(void);
     void compass_accumulate(void);
     void compass_cal_update();
     void barometer_accumulate(void);
