@@ -12,7 +12,6 @@ namespace AP_HAL {
     class UARTDriver;
     class I2CDevice;
     class I2CDeviceManager;
-    class I2CDriver;
     class Device;
 
     class SPIDevice;
