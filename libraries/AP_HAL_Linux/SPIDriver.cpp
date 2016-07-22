@@ -40,7 +40,7 @@ SPIDeviceDriver SPIDeviceManager::_device[] = {
 SPIDeviceDriver SPIDeviceManager::_device[] = {
     /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
     SPIDeviceDriver("mpu9250",    0, 1, AP_HAL::SPIDevice_Type, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 20*MHZ),
-    SPIDeviceDriver("ublox",      0, 0, AP_HAL::SPIDevice_Ublox, SPI_MODE_0, 8, SPI_CS_KERNEL,  5*MHZ, 5*MHZ),
+    SPIDeviceDriver("ublox",      0, 0, AP_HAL::SPIDevice_Type, SPI_MODE_0, 8, SPI_CS_KERNEL,  5*MHZ, 5*MHZ),
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
     SPIDeviceDriver("lsm9ds1_m",  0, 2, AP_HAL::SPIDevice_Type, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
 #endif
@@ -66,12 +66,12 @@ SPIDeviceDriver SPIDeviceManager::_device[] = {
     SPIDeviceDriver("ms5611",     0, 0, AP_HAL::SPIDevice_Type, SPI_MODE_3, 8, RPI_GPIO_23,  10*MHZ, 10*MHZ),
     SPIDeviceDriver("lsm9ds0_am", 0, 0, AP_HAL::SPIDevice_Type, SPI_MODE_3, 8, RPI_GPIO_22,  10*MHZ, 10*MHZ),
     SPIDeviceDriver("lsm9ds0_g",  0, 0, AP_HAL::SPIDevice_Type, SPI_MODE_3, 8, RPI_GPIO_12,  10*MHZ, 10*MHZ),
-    SPIDeviceDriver("raspio",     0, 0, AP_HAL::SPIDevice_RASPIO,      SPI_MODE_3, 8, RPI_GPIO_7,   10*MHZ, 10*MHZ),
+    SPIDeviceDriver("raspio",     0, 0, AP_HAL::SPIDevice_Type,      SPI_MODE_3, 8, RPI_GPIO_7,   10*MHZ, 10*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 SPIDeviceDriver SPIDeviceManager::_device[] = {
     SPIDeviceDriver("mpu9250", 0, 0, AP_HAL::SPIDevice_Type, SPI_MODE_0, 8, RPI_GPIO_7, 1*MHZ,   20*MHZ),
-    SPIDeviceDriver("ublox",   0, 0, AP_HAL::SPIDevice_Ublox,   SPI_MODE_0, 8, RPI_GPIO_8, 250*KHZ, 5*MHZ),
+    SPIDeviceDriver("ublox",   0, 0, AP_HAL::SPIDevice_Type,   SPI_MODE_0, 8, RPI_GPIO_8, 250*KHZ, 5*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 SPIDeviceDriver SPIDeviceManager::_device[] = {
