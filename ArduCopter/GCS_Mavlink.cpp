@@ -337,7 +337,7 @@ void NOINLINE Copter::send_hwstatus(mavlink_channel_t chan)
     mavlink_msg_hwstatus_send(
         chan,
         hal.analogin->board_voltage()*1000,
-        hal.i2c->lockup_count());
+        0);
 }
 
 void NOINLINE Copter::send_servo_out(mavlink_channel_t chan)
