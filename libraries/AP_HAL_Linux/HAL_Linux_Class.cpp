@@ -68,7 +68,7 @@ static Empty::I2CDriver i2cDriver0(&i2cSemaphore0);
 static I2CDriver  i2cDriver0(1);
 #endif
 
-static SPIDeviceManager spiDeviceManager;
+static SPIDeviceManager spi_mgr_instance;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
@@ -212,7 +212,7 @@ HAL_Linux::HAL_Linux() :
         NULL,
         NULL,
 #endif
-        &spiDeviceManager,
+        &spi_mgr_instance,
         &analogIn,
         &storageDriver,
         &uartADriver,
