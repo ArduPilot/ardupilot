@@ -7,7 +7,6 @@ namespace Empty {
     class GPIO;
     class I2CDevice;
     class I2CDeviceManager;
-    class I2CDriver;
     class OpticalFlow;
     class PrivateMember;
     class RCInput;

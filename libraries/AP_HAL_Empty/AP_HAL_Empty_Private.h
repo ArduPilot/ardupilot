@@ -7,7 +7,6 @@
 #include "AnalogIn.h"
 #include "GPIO.h"
 #include "I2CDevice.h"
-#include "I2CDriver.h"
 #include "OpticalFlow.h"
 #include "PrivateMember.h"
 #include "RCInput.h"

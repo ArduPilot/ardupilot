@@ -12,8 +12,6 @@ using namespace Empty;
 static UARTDriver uartADriver;
 static UARTDriver uartBDriver;
 static UARTDriver uartCDriver;
-static Semaphore  i2cSemaphore;
-static I2CDriver  i2cDriver(&i2cSemaphore);
 static SPIDeviceManager spiDeviceManager;
 static AnalogIn analogIn;
 static Storage storageDriver;
@@ -32,9 +30,6 @@ HAL_Empty::HAL_Empty() :
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         NULL,            /* no uartF */
-        &i2cDriver,
-        NULL, /* only one i2c */
-        NULL, /* only one i2c */
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
