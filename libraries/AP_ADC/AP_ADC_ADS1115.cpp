@@ -207,7 +207,7 @@ void AP_ADC_ADS1115::_update()
     }
 
     if (!_dev->read_registers(ADS1115_RA_CONFIG, config, sizeof(config))) {
-        error("i2c->read_registers failed in ADS1115");
+        error("_dev->read_registers failed in ADS1115");
         _dev->get_semaphore()->give();
         return;
     }
