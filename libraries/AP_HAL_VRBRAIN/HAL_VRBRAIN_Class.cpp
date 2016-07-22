@@ -32,8 +32,6 @@
 
 using namespace VRBRAIN;
 
-static Empty::Semaphore  i2cSemaphore;
-static Empty::I2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::SPIDeviceManager spiDeviceManager;
 static Empty::OpticalFlow optflowDriver;
 //static Empty::GPIO gpioDriver;
@@ -110,9 +108,6 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
         &uartEDriver,  /* uartE */
         NULL, // uartF
         &i2c_mgr_instance,
-        &i2cDriver, /* Empty i2c */
-        &i2cDriver, /* Empty i2c */
-        &i2cDriver, /* Empty i2c */
         &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
         &storageDriver, /* storage */
