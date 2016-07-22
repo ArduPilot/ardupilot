@@ -26,6 +26,8 @@
 #include "AP_RangeFinder_Bebop.h"
 #include "AP_RangeFinder_MAVLink.h"
 
+extern const AP_HAL::HAL &hal;
+
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
@@ -463,6 +465,18 @@ void RangeFinder::update(void)
         }
     }
 }
+
+void RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
+{
+    if (!backend) {
+        return;
+    }
+    if (num_instances == RANGEFINDER_MAX_INSTANCES) {
+        AP_HAL::panic("Too many RANGERS backends");
+    }
+
+    drivers[num_instances++] = backend;
+}
     
 /*
   detect if an instance of a rangefinder is connected. 
@@ -478,26 +492,17 @@ void RangeFinder::detect_instance(uint8_t instance)
     }
 #endif
     if (type == RangeFinder_TYPE_PLI2C) {
-        if (AP_RangeFinder_PulsedLightLRF::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PulsedLightLRF(*this, instance, state[instance]);
-            return;
-        }
-    } 
+        _add_backend(AP_RangeFinder_PulsedLightLRF::detect(*this, instance, state[instance]));
+    }
     if (type == RangeFinder_TYPE_MBI2C) {
-        if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarI2CXL(*this, instance, state[instance]);
-            return;
-        }
+        _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
     }
     if (type == RangeFinder_TYPE_LWI2C) {
-        if (AP_RangeFinder_LightWareI2C::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareI2C(*this, instance, state[instance]);
-            return;
+        if (_address[instance]) {
+            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
+                hal.i2c_mgr->get_device(0, _address[instance])));
         }
-    } 
+    }
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (type == RangeFinder_TYPE_PX4) {
         if (AP_RangeFinder_PX4::detect(*this, instance)) {
