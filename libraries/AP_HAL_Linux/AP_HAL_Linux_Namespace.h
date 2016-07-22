@@ -13,7 +13,6 @@ namespace Linux {
     class GPIO_RPI;
     class GPIO_Sysfs;
     class Storage;
-    class Storage_FRAM;
     class DigitalSource;
     class DigitalSource_Sysfs;
     class PeriodicThread;

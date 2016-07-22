@@ -64,14 +64,7 @@ static AnalogIn_Navio2 analogIn;
 static Empty::AnalogIn analogIn;
 #endif
 
-/*
-  select between FRAM and FS
- */
-#if LINUX_STORAGE_USE_FRAM == 1
-static Storage_FRAM storageDriver;
-#else
 static Storage storageDriver;
-#endif
 
 /*
   use the BBB gpio driver on ERLE, PXF and BBBMINI
