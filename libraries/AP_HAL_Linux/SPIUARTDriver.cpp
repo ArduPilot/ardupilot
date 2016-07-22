@@ -131,7 +131,7 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         return 0;
     }
 
-    _dev->transfer(buf, sizeof(*buf), nullptr, 0);
+    _dev->transfer_fullduplex(buf, _buffer, size);
 
     sem_give();
 
@@ -186,6 +186,7 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 }
 
 static uint8_t ff_stub[300] = {0xff};
+
 int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     if (_external) {
@@ -206,7 +207,7 @@ int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
         n = 100;
     }
 
-    _dev->transfer(nullptr, 0, ff_stub, sizeof(ff_stub));
+    _dev->transfer_fullduplex(ff_stub, buf, n);
 
     sem_give();
 
