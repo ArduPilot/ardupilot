@@ -103,6 +103,7 @@ public:
     AP_Int16 flow_rate; // optflow data rate (Hz)
     AP_Int8  flow_delay; // optflow data delay
     AP_Int8  terrain_enable; // enable using terrain for height
+    AP_Int8  pin_mask; // for GPIO emulation
 
     // wind control
     float wind_speed_active;

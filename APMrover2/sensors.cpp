@@ -119,3 +119,11 @@ void Rover::read_sonars(void)
         obstacle.turn_angle = 0;
     }
 }
+
+/*
+  update AP_Button
+ */
+void Rover::button_update(void)
+{
+    button.update();
+}
