@@ -15,6 +15,7 @@
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "GPIO.h"
 #include "SITL_State.h"
 #include "Util.h"
 
@@ -29,9 +30,9 @@ static Scheduler sitlScheduler(&sitlState);
 static RCInput  sitlRCInput(&sitlState);
 static RCOutput sitlRCOutput(&sitlState);
 static AnalogIn sitlAnalogIn(&sitlState);
+static GPIO sitlGPIO(&sitlState);
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::GPIO emptyGPIO;
 static Empty::Semaphore emptyI2Csemaphore;
 static Empty::I2CDriver emptyI2C(&emptyI2Csemaphore);
 static Empty::I2CDeviceManager i2c_mgr_instance;
@@ -63,7 +64,7 @@ HAL_SITL::HAL_SITL() :
         &sitlAnalogIn, /* analogin */
         &sitlEEPROMStorage, /* storage */
         &sitlUart0Driver, /* console */
-        &emptyGPIO, /* gpio */
+        &sitlGPIO, /* gpio */
         &sitlRCInput,  /* rcinput */
         &sitlRCOutput, /* rcoutput */
         &sitlScheduler, /* scheduler */
