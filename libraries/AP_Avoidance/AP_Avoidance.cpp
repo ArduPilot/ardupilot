@@ -227,7 +227,7 @@ void AP_Avoidance::get_adsb_samples()
     AP_ADSB::adsb_vehicle_t vehicle;
     while (_adsb.next_sample(vehicle)) {
         uint32_t src_id = src_id_for_adsb_vehicle(vehicle);
-        Location loc = vehicle.get_location();
+        Location loc = _adsb.get_location(vehicle);
         add_obstacle(vehicle.last_update_ms,
                    MAV_COLLISION_SRC_ADSB,
                    src_id,
