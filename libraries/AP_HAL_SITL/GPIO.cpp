@@ -32,12 +32,15 @@ void GPIO::write(uint8_t pin, uint8_t value)
         return;
     }
     uint8_t mask = sitlState->_sitl->pin_mask.get();
+    uint8_t new_mask = mask;
     if (value) {
-        mask |= (1U<<pin);
+        new_mask |= (1U<<pin);
     } else {
-        mask &= ~(1U<<pin);
+        new_mask &= ~(1U<<pin);
     }
-    sitlState->_sitl->pin_mask.set(mask);
+    if (mask != new_mask) {
+        sitlState->_sitl->pin_mask.set_and_notify(new_mask);
+    }
 }
 
 void GPIO::toggle(uint8_t pin)
