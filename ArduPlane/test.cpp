@@ -55,7 +55,7 @@ int8_t Plane::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
     while(1) {
         hal.scheduler->delay(20);
 
-        // Filters radio input - adjust filters in the radio.pde file
+        // Filters radio input - adjust filters in the radio.cpp file
         // ----------------------------------------------------------
         read_radio();
 
