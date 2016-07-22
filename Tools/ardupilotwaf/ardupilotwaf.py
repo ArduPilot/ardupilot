@@ -56,6 +56,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_RSSI',
     'AP_Mount',
     'AP_Module',
+    'AP_Button',
 ]
 
 def _get_legacy_defines(sketch_name):
