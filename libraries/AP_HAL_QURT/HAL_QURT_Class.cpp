@@ -35,8 +35,6 @@ static UARTDriver uartBDriver("/dev/tty-4");
 static UARTDriver uartCDriver("/dev/tty-2");
 static UARTDriver uartDDriver(nullptr);
 static UARTDriver uartEDriver(nullptr);
-static Semaphore  i2cSemaphore;
-static Empty::I2CDriver  i2cDriver(&i2cSemaphore);
 
 static Empty::SPIDeviceManager spiDeviceManager;
 static Empty::AnalogIn analogIn;
@@ -59,9 +57,6 @@ HAL_QURT::HAL_QURT() :
         &uartEDriver,
         NULL, // uartF
         &i2c_mgr_instance,
-        &i2cDriver,
-        NULL, /* only one i2c */
-        NULL, /* only one i2c */
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
