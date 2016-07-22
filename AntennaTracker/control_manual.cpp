@@ -3,7 +3,7 @@
 #include "Tracker.h"
 
 /*
- * control_manual.pde - manual control mode
+ * control_manual.cpp - manual control mode
  */
 
 /*

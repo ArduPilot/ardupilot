@@ -3,7 +3,7 @@
 #include "Tracker.h"
 
 /*
- * control_auto.pde - auto control mode
+ * control_auto.cpp - auto control mode
  */
 
 /*
