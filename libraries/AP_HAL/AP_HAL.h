@@ -10,7 +10,6 @@
 
 /* HAL Module Classes (all pure virtual) */
 #include "UARTDriver.h"
-#include "SPIDriver.h"
 #include "AnalogIn.h"
 #include "Storage.h"
 #include "GPIO.h"

@@ -51,7 +51,6 @@ namespace AP_HAL {
     enum SPIDeviceType {
         // Devices using AP_HAL::SPIDevice abstraction
         SPIDevice_Type              = -1,
-        SPIDevice_ADS7844           = 1,
     };
 
     // Must be implemented by the concrete HALs.

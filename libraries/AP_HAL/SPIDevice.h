@@ -56,6 +56,12 @@ public:
     virtual int get_fd() override = 0;
 };
 
-/* SPIDeviceManager is temporarily provided by SPIDriver.h */
+class SPIDeviceManager {
+public:
+    virtual OwnPtr<SPIDevice> get_device(const char *name)
+    {
+        return nullptr;
+    }
+};
 
 }
