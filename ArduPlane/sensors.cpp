@@ -156,3 +156,11 @@ void Plane::rpm_update(void)
         }
     }
 }
+
+/*
+  update AP_Button
+ */
+void Plane::button_update(void)
+{
+    g2.button.update();
+}

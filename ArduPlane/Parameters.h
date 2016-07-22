@@ -50,6 +50,7 @@ public:
         k_param_software_type,
         k_param_num_resets,
         k_param_NavEKF2,
+        k_param_g2,
 
         // Misc
         //
@@ -566,6 +567,20 @@ public:
         rc_16                                   (CH_16),
         _dummy(0)
         {}
+};
+
+/*
+  2nd block of parameters, to avoid going past 256 top level keys
+ */
+class ParametersG2 {
+public:
+    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
+    // button reporting library
+    AP_Button button;
 };
 
 extern const AP_Param::Info var_info[];

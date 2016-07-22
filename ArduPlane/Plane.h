@@ -88,6 +88,7 @@
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Button/AP_Button.h>
 
 #include "GCS_Mavlink.h"
 #include "quadplane.h"
@@ -146,8 +147,9 @@ private:
     AP_Vehicle::FixedWing aparm;
     AP_HAL::BetterStream* cliSerial;
 
-    // Global parameters are all contained within the 'g' class.
+    // Global parameters are all contained within the 'g' and 'g2' classes.
     Parameters g;
+    ParametersG2 g2;
 
     // main loop scheduler
     AP_Scheduler scheduler;
@@ -638,7 +640,6 @@ private:
         Location prev_wp;
     } adsb_state;
 
-
     // Outback Challenge Failsafe Support
 #if OBC_FAILSAFE == ENABLED
     APM_OBC obc {mission, barometer, gps, rcmap};
@@ -955,6 +956,7 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void rpm_update(void);
+    void button_update(void);
     void report_radio();
     void report_ins();
     void report_compass();
