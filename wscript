@@ -141,7 +141,23 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
-    cfg.load('git_submodule')
+
+    cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
+
+    cfg.start_msg('Source is git repository')
+    if cfg.srcnode.find_node('.git'):
+        cfg.end_msg('yes')
+    else:
+        cfg.end_msg('no')
+        cfg.env.SUBMODULE_UPDATE = False
+
+    cfg.start_msg('Update submodules')
+    if cfg.env.SUBMODULE_UPDATE:
+        cfg.end_msg('yes')
+        cfg.load('git_submodule')
+    else:
+        cfg.end_msg('no')
+
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
     cfg.load('gtest')
@@ -171,9 +187,6 @@ def configure(cfg):
     cfg.env.prepend_value('DEFINES', [
         'SKETCHBOOK="' + cfg.srcnode.abspath() + '"',
     ])
-
-    if cfg.options.submodule_update:
-        cfg.env.SUBMODULE_UPDATE = True
 
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
