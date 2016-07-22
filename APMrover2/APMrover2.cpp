@@ -79,6 +79,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(frsky_telemetry_send,    5,    100),
 #endif
     SCHED_TASK(dataflash_periodic,     50,    300),
+    SCHED_TASK(button_update,          5,     100),
 };
 
 /*

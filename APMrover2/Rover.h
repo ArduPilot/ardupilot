@@ -72,6 +72,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
+#include <AP_Button/AP_Button.h>
 
 // Configuration
 #include "config.h"
@@ -134,6 +135,7 @@ private:
     Compass compass;
     AP_InertialSensor ins;
     RangeFinder sonar { serial_manager };
+    AP_Button button;
 
     // flight modes convenience array
     AP_Int8	*modes;
@@ -454,6 +456,7 @@ private:
     void reset_control_switch();
     void read_trim_switch();
     void update_events(void);
+    void button_update(void);
     void navigate();
     void set_control_channels(void);
     void init_rc_in();

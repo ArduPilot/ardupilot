@@ -195,6 +195,7 @@ public:
         k_param_steerController,
         k_param_barometer,
         k_param_notify,
+        k_param_button,
 
         k_param_DataFlash = 253, // Logging Group
 
