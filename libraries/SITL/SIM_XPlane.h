@@ -100,6 +100,8 @@ private:
         LatLonAlt           = 20,
 		LocVelDistTraveled  = 21,
         ThrottleCommand     = 25,
+        Mixture             = 29,
+        CarbHeat            = 30,
         EngineRPM           = 37,
         PropRPM             = 38,
         PropPitch           = 39,
