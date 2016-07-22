@@ -170,7 +170,7 @@ AP_AdvancedFailsafe::check(AP_AdvancedFailsafe::control_mode mode, uint32_t last
     // check if RC termination is enabled
     // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
     if (_state != STATE_PREFLIGHT && !_terminate && _enable_RC_fs &&
-        (mode == OBC_MANUAL || mode == OBC_FBW || !_rc_term_manual_only) &&
+        (mode == AFS_MANUAL || mode == AFS_FBW || !_rc_term_manual_only) &&
         _rc_fail_time_seconds > 0 &&
             (AP_HAL::millis() - last_valid_rc_ms) > (_rc_fail_time_seconds * 1000.0f)) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
@@ -182,7 +182,7 @@ AP_AdvancedFailsafe::check(AP_AdvancedFailsafe::control_mode mode, uint32_t last
     // receiver
     if (_manual_pin != -1) {
         hal.gpio->pinMode(_manual_pin, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_manual_pin, mode==OBC_MANUAL);
+        hal.gpio->write(_manual_pin, mode==AFS_MANUAL);
     }
 
     uint32_t now = AP_HAL::millis();
@@ -193,7 +193,7 @@ AP_AdvancedFailsafe::check(AP_AdvancedFailsafe::control_mode mode, uint32_t last
     case STATE_PREFLIGHT:
         // we startup in preflight mode. This mode ends when
         // we first enter auto.
-        if (mode == OBC_AUTO) {
+        if (mode == AFS_AUTO) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting AFS_AUTO");
             _state = STATE_AUTO;
         }
