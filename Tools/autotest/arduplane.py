@@ -440,28 +440,9 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL(binary, wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=10)
-    print("Starting MAVProxy")
-    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
-    util.expect_setup_callback(mavproxy, expect_callback)
-
-    mavproxy.expect('Telemetry log: (\S+)')
-    mavproxy.expect('Received [0-9]+ parameters',timeout=3000)
-
-    # setup test parameters
-    mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
-    mavproxy.expect('Loaded [0-9]+ parameters')
-    mavproxy.send("param set LOG_REPLAY 1\n")
-    mavproxy.send("param set LOG_DISARMED 1\n")
-    time.sleep(3)
-
-    mavproxy.send("param fetch\n")
-
-    # restart with new parms
-    util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
-
-    sil = util.start_SIL(binary, model='jsbsim', home=HOME_LOCATION, speedup=10, valgrind=valgrind, gdb=gdb)
+    sil = util.start_SIL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=10,
+                         valgrind=valgrind, gdb=gdb,
+                         defaults_file=os.path.join(testdir, 'ArduPlane.parm'))
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
@@ -495,6 +476,7 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     mav.idle_hooks.append(idle_hook)
 
     failed = False
+    fail_list = []
     e = 'None'
     try:
         print("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
@@ -511,46 +493,60 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
         if not takeoff(mavproxy, mav):
             print("Failed takeoff")
             failed = True
+            fail_list.append("takeoff")
         if not fly_left_circuit(mavproxy, mav):
             print("Failed left circuit")
             failed = True
+            fail_list.append("left_circuit")
         if not axial_left_roll(mavproxy, mav, 1):
             print("Failed left roll")
             failed = True
+            fail_list.append("left_roll")
         if not inside_loop(mavproxy, mav):
             print("Failed inside loop")
             failed = True
+            fail_list.append("inside_loop")
         if not test_stabilize(mavproxy, mav):
             print("Failed stabilize test")
             failed = True
+            fail_list.append("stabilize")
         if not test_acro(mavproxy, mav):
             print("Failed ACRO test")
             failed = True
+            fail_list.append("acro")
         if not test_FBWB(mavproxy, mav):
             print("Failed FBWB test")
             failed = True
+            fail_list.append("fbwb")
         if not test_FBWB(mavproxy, mav, mode='CRUISE'):
             print("Failed CRUISE test")
             failed = True
+            fail_list.append("cruise")
         if not fly_RTL(mavproxy, mav):
             print("Failed RTL")
             failed = True
+            fail_list.append("RTL")
         if not fly_LOITER(mavproxy, mav):
             print("Failed LOITER")
             failed = True
+            fail_list.append("LOITER")
         if not fly_CIRCLE(mavproxy, mav):
             print("Failed CIRCLE")
             failed = True
+            fail_list.append("LOITER")
         if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy = 10,
                            target_altitude=homeloc.alt+100):
             print("Failed mission")
             failed = True
+            fail_list.append("mission")
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
             print("Failed log download")
             failed = True
+            fail_list.append("log_download")
     except pexpect.TIMEOUT, e:
         print("Failed with timeout")
         failed = True
+        fail_list.append("timeout")
 
     mav.close()
     util.pexpect_close(mavproxy)
@@ -562,6 +558,6 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduPlane-valgrind.log"))
 
     if failed:
-        print("FAILED: %s" % e)
+        print("FAILED: %s" % e, fail_list)
         return False
     return True
