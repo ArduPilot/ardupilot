@@ -1,7 +1,5 @@
 #pragma once
 
-#define LINUX_STORAGE_USE_FRAM 0
-
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_Linux_Namespace.h"
 
@@ -41,5 +39,3 @@ protected:
     uint8_t _buffer[LINUX_STORAGE_SIZE];
     volatile uint32_t _dirty_mask;
 };
-
-#include "Storage_FRAM.h"
