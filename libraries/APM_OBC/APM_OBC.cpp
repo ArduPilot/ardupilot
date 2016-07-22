@@ -30,7 +30,6 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo APM_OBC::var_info[] = {
-
     // @Param: ENABLE
     // @DisplayName: Enable Advanced Failsafe
     // @Description: This enables the advanced failsafe system. If this is set to zero (disable) then all the other AFS options have no effect
