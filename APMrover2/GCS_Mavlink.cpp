@@ -1391,6 +1391,16 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SETUP_SIGNING:
         handle_setup_signing(msg);
         break;
+
+    case MAVLINK_MSG_ID_LED_CONTROL:
+        // send message to Notify
+        AP_Notify::handle_led_control(msg);
+        break;
+
+    case MAVLINK_MSG_ID_PLAY_TUNE:
+        // send message to Notify
+        AP_Notify::handle_play_tune(msg);
+        break;
     } // end switch
 } // end handle mavlink
 
