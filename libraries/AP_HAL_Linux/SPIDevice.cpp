@@ -157,6 +157,46 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     return true;
 }
 
+bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
+                                    uint32_t len)
+{
+    struct spi_ioc_transfer msgs[1] = { };
+
+    assert(_bus.fd >= 0);
+
+    if (!send || !recv || len == 0) {
+        return false;
+    }
+
+    msgs[0].tx_buf = (uint64_t) send;
+    msgs[0].rx_buf = (uint64_t) recv;
+    msgs[0].len = len;
+    msgs[0].speed_hz = _desc._speed;
+    msgs[0].delay_usecs = 0;
+    msgs[0].bits_per_word = _desc._bitsPerWord;
+    msgs[0].cs_change = 0;
+
+    int r = ioctl(_bus.fd, SPI_IOC_WR_MODE, &_desc._mode);
+    if (r < 0) {
+        hal.console->printf("SPIDevice: error on setting mode fd=%d (%s)\n",
+                            _bus.fd, strerror(errno));
+        return false;
+    }
+
+    _cs_assert();
+    r = ioctl(_bus.fd, SPI_IOC_MESSAGE(1), &msgs);
+    _cs_release();
+
+    if (r == -1) {
+        hal.console->printf("SPIDevice: error transferring data fd=%d (%s)\n",
+                            _bus.fd, strerror(errno));
+        return false;
+    }
+
+    return true;
+}
+
+
 void SPIDevice::_cs_assert()
 {
     if (_desc._cs_pin == SPI_CS_KERNEL) {

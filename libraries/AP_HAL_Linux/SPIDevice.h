@@ -43,6 +43,10 @@ public:
     bool transfer(const uint8_t *send, uint32_t send_len,
                   uint8_t *recv, uint32_t recv_len) override;
 
+    /* See AP_HAL::SPIDevice::transfer_fullduplex() */
+    bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
+                             uint32_t len) override;
+
     /* See AP_HAL::Device::get_semaphore() */
     AP_HAL::Semaphore *get_semaphore() override;
 
