@@ -33,8 +33,6 @@ static AnalogIn sitlAnalogIn(&sitlState);
 static GPIO sitlGPIO(&sitlState);
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::Semaphore emptyI2Csemaphore;
-static Empty::I2CDriver emptyI2C(&emptyI2Csemaphore);
 static Empty::I2CDeviceManager i2c_mgr_instance;
 static Empty::SPIDeviceManager emptySPI;
 static Empty::OpticalFlow emptyOpticalFlow;
@@ -57,9 +55,6 @@ HAL_SITL::HAL_SITL() :
         &sitlUart4Driver,  /* uartE */
         &sitlUart5Driver,  /* uartF */
         &i2c_mgr_instance,
-        &emptyI2C, /* i2c */
-        &emptyI2C, /* i2c */
-        &emptyI2C, /* i2c */
         &emptySPI, /* spi */
         &sitlAnalogIn, /* analogin */
         &sitlEEPROMStorage, /* storage */
@@ -85,8 +80,6 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     rcout->init();
 
     //spi->init();
-    //i2c->begin();
-    //i2c->setTimeout(100);
     analogin->init();
 
     callbacks->setup();
