@@ -37,23 +37,65 @@ from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature, taskgen_method
 
 import os.path
+import re
 
 class update_submodule(Task.Task):
     color = 'BLUE'
     run_str = '${GIT} submodule update --recursive --init -- ${SUBMODULE_PATH}'
+
+    fast_forward_diff_re = dict(
+        removed=re.compile(r'-Subproject commit ([0-9a-f]+)'),
+        added=re.compile(r'\+Subproject commit ([0-9a-f]+)')
+    )
+
+    def is_fast_forward(self, path):
+        bld = self.generator.bld
+        git = self.env.get_flat('GIT')
+
+        cmd = git, 'diff', '--submodule=short', '--', os.path.basename(path)
+        cwd = self.cwd.make_node(os.path.dirname(path))
+        out = bld.cmd_and_log(cmd, quiet=Context.BOTH, cwd=cwd)
+
+        m = self.fast_forward_diff_re['removed'].search(out)
+        n = self.fast_forward_diff_re['added'].search(out)
+        if not m or not n:
+            bld.fatal('git_submodule: failed to parse diff')
+
+        head = n.group(1)
+        wanted = m.group(1)
+        cmd = git, 'merge-base', head, wanted
+        cwd = self.cwd.make_node(path)
+        out = bld.cmd_and_log(cmd, quiet=Context.BOTH, cwd=cwd)
+
+        return out.strip() == head
 
     def runnable_status(self):
         e = self.env.get_flat
         cmd = e('GIT'), 'submodule', 'status', '--recursive', '--', e('SUBMODULE_PATH')
         out = self.generator.bld.cmd_and_log(cmd, quiet=Context.BOTH, cwd=self.cwd)
 
+        self.non_fast_forward = []
+
         # git submodule status uses a blank prefix for submodules that are up
         # to date
+        r = Task.SKIP_ME
         for line in out.splitlines():
-            if line[0] != ' ':
-                return Task.RUN_ME
+            prefix = line[0]
+            path = line[1:].split()[1]
+            if prefix == ' ':
+                continue
+            if prefix == '-':
+                r = Task.RUN_ME
+            if prefix == '+':
+                if not self.is_fast_forward(path):
+                    self.non_fast_forward.append(path)
+                else:
+                    r = Task.RUN_ME
 
-        return Task.SKIP_ME
+        if self.non_fast_forward:
+            r = Task.SKIP_ME
+
+        return r
 
     def uid(self):
         if not hasattr(self, 'uid_'):
