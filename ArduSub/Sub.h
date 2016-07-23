@@ -143,6 +143,7 @@ private:
 
     // Global parameters are all contained within the 'g' class.
     Parameters g;
+    ParametersG2 g2;
 
     // main loop scheduler
     AP_Scheduler scheduler;
@@ -278,6 +279,9 @@ private:
     } takeoff_state;
 
     uint32_t precland_last_update_ms;
+
+    // altitude below which we do no navigation in auto takeoff
+    float auto_takeoff_no_nav_alt_cm;
 
     RCMapper rcmap;
 
@@ -615,6 +619,8 @@ private:
     float get_takeoff_trigger_throttle();
     float get_throttle_pre_takeoff(float input_thr);
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
+    void auto_takeoff_set_start_alt(void);
+    void auto_takeoff_attitude_run(float target_yaw_rate);
     void set_accel_throttle_I_from_pilot_throttle(float pilot_throttle);
     void update_poscon_alt_max();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -784,6 +790,8 @@ private:
     void land_run();
     void land_gps_run();
     void land_nogps_run();
+    void land_run_vertical_control(bool pause_descent = false);
+    void land_run_horizontal_control();
     float get_land_descent_speed();
     void land_do_not_use_GPS();
     void set_mode_land_with_pause(mode_reason_t reason);

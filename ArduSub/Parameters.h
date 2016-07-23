@@ -55,6 +55,7 @@ public:
         k_param_ins,                            // libraries/AP_InertialSensor variables
 		k_param_NavEKF2_old, // deprecated
 		k_param_NavEKF2,
+		k_param_g2, // 2nd block of parameters
 
         // simulation
         k_param_sitl = 10,
@@ -570,6 +571,20 @@ public:
         p_alt_hold              (ALT_HOLD_P)
     {
     }
+};
+
+/*
+  2nd block of parameters, to avoid going past 256 top level keys
+*/
+class ParametersG2 {
+public:
+    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
+    // altitude at which nav control can start in takeoff
+    AP_Float takeoff_nav_alt;
 };
 
 extern const AP_Param::Info        var_info[];
