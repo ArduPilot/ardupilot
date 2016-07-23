@@ -1000,7 +1000,26 @@ const AP_Param::Info Sub::var_info[] = {
 	// @User: Standard
 	GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
+	// @Group:
+    // @Path: Parameters.cpp
+    GOBJECT(g2, "",  ParametersG2),
+
     AP_VAREND
+};
+
+/*
+  2nd group of parameters
+ */
+const AP_Param::GroupInfo ParametersG2::var_info[] = {
+
+    // @Param: TKOFF_NAV_ALT
+    // @DisplayName: Takeoff navigation altitude
+    // @Description: This is the altitude in meters above the takeoff point that attitude changes for navigation can begin
+    // @Range: 0 5
+    // @User: Standard
+    AP_GROUPINFO("WP_TKOFF_NAV_ALT", 1, ParametersG2, takeoff_nav_alt, 0),
+
+    AP_GROUPEND
 };
 
 /*

@@ -1839,6 +1839,13 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_GPS_INPUT:
+    {
+      result = MAV_RESULT_ACCEPTED;
+      sub.gps.handle_msg(msg);
+      break;
+    }
+
 #if HIL_MODE != HIL_MODE_DISABLED
     case MAVLINK_MSG_ID_HIL_STATE:          // MAV ID: 90
     {

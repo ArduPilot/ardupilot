@@ -72,6 +72,9 @@ bool Sub::guided_takeoff_start(float final_alt_above_home)
 	// clear i term when we're taking off
 	set_throttle_takeoff();
 
+	// get initial alt for WP_TKOFF_NAV_ALT
+	auto_takeoff_set_start_alt();
+
 	return true;
 }
 
@@ -334,8 +337,8 @@ void Sub::guided_takeoff_run()
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
 
-    // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+    // call attitude controller
+    auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // guided_pos_control_run - runs the guided position controller
