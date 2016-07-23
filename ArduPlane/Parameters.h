@@ -574,13 +574,16 @@ public:
  */
 class ParametersG2 {
 public:
-    ParametersG2(void) { AP_Param::setup_object_defaults(this, var_info); }
+    ParametersG2(void);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
     // button reporting library
     AP_Button button;
+
+    // internal combustion engine control
+    AP_ICEngine ice_control;
 };
 
 extern const AP_Param::Info var_info[];
