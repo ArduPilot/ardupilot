@@ -233,7 +233,7 @@ void Sub::land_run_horizontal_control()
 		precland_last_update_ms = precland.last_update_ms();
 	}
 #else
-	bool doing_precision_landing = false;
+	//bool doing_precision_landing = false;
 #endif
 
 	// process roll, pitch inputs
