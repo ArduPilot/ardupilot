@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
 	// @Range: 0.1 1.0
 	// @Increment: 0.01
 	// @User: Standard
-	AP_GROUPINFO("GAIN_MAX", 9, AP_Motors6DOF, _gain_max, 1.0),
+	AP_GROUPINFO("GAIN_MAX", 8, AP_Motors6DOF, _gain_max, 1.0),
 
 	// @Param: GAIN_MIN
 	// @DisplayName: Minimum allowed motor gain
@@ -105,7 +105,7 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
 	// @Range: 0.1 1.0
 	// @Increment: 0.01
 	// @User: Standard
-	AP_GROUPINFO("GAIN_MIN", 10, AP_Motors6DOF, _gain_min, 0.25),
+	AP_GROUPINFO("GAIN_MIN", 8, AP_Motors6DOF, _gain_min, 0.25),
 
 	// @Param: GAIN_STEPS
 	// @DisplayName: Number of gain levels between min and max
@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
 	// @Range: 1 10
 	// @Increment: 1
 	// @User: Standard
-	AP_GROUPINFO("GAIN_STEPS", 11, AP_Motors6DOF, _gain_steps, 4),
+	AP_GROUPINFO("GAIN_STEPS", 8, AP_Motors6DOF, _gain_steps, 4),
 
     AP_GROUPEND
 };

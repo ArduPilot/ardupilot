@@ -22,12 +22,7 @@ public:
         AP_MotorsMatrix(loop_rate, speed_hz)
     {
     	AP_Param::setup_object_defaults(this, var_info);
-
-    	// Set gain to the closest notch near the lower-middle
-    	_gain = _gain_min;
-    	for ( uint8_t i = 0 ; i < _gain_steps/2-1 ; i++ ) {
-    		increase_gain();
-    	}
+    	_gain = (_gain_min + _gain_max)/2;
     };
 
     void output_min() override;
