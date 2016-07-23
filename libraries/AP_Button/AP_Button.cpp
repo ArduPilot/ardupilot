@@ -151,10 +151,12 @@ void AP_Button::send_report(void)
             continue;
         }
         mavlink_channel_t chan = (mavlink_channel_t)i;
-        mavlink_msg_button_change_send(chan,
-                                       now,
-                                       (uint32_t)last_change_time_ms,
-                                       last_mask);
+        if (HAVE_PAYLOAD_SPACE(chan, BUTTON_CHANGE)) {
+            mavlink_msg_button_change_send(chan,
+                                           now,
+                                           (uint32_t)last_change_time_ms,
+                                           last_mask);
+        }
     }
 }
 
