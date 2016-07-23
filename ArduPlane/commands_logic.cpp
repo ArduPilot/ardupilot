@@ -227,9 +227,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_ENGINE_CONTROL:
-        plane.ice_control.engine_control(cmd.content.do_engine_control.start_control,
-                                         cmd.content.do_engine_control.cold_start,
-                                         cmd.content.do_engine_control.height_delay_cm*0.01f);
+        plane.g2.ice_control.engine_control(cmd.content.do_engine_control.start_control,
+                                            cmd.content.do_engine_control.cold_start,
+                                            cmd.content.do_engine_control.height_delay_cm*0.01f);
         break;
     }
 
@@ -316,6 +316,8 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
+    case MAV_CMD_DO_VTOL_TRANSITION:
+    case MAV_CMD_DO_ENGINE_CONTROL:
         return true;
 
     default:
