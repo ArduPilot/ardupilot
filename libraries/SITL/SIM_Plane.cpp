@@ -250,6 +250,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     Vector3f force = getForce(aileron, elevator, rudder);
     rot_accel = getTorque(aileron, elevator, rudder, force);
 
+    // simulate engine RPM
+    rpm1 = thrust * 7000;
+    
     // scale thrust to newtons
     thrust *= thrust_scale;
 

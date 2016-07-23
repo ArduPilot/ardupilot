@@ -54,5 +54,6 @@ private:
         };
         uint8_t value;
     } state, last_state;
+    bool overheat:1;
 };
 }
