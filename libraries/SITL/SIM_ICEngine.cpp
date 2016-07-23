@@ -84,9 +84,12 @@ float ICEngine::update(const Aircraft::sitl_input &input)
     }
     if (start_time_us != 0 && state.starter) {
         uint32_t starter_time_us = (now - start_time_us);
-        if (starter_time_us > 3000*1000UL) {
+        if (starter_time_us > 3000*1000UL && !overheat) {
+            overheat = true;
             printf("Starter overheat\n");            
         }
+    } else {
+        overheat = false;
     }
 
 output:
