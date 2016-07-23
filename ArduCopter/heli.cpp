@@ -75,8 +75,6 @@ void Copter::check_dynamic_flight(void)
 // should be run between the rate controller and the servo updates.
 void Copter::update_heli_control_dynamics(void)
 {
-    static int16_t hover_roll_trim_scalar_slew = 0;
-
     // Use Leaky_I if we are not moving fast
     attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
 

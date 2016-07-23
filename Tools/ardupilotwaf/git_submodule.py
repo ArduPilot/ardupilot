@@ -80,7 +80,7 @@ def git_submodule_update(self, name):
         module_node = self.bld.srcnode.make_node(os.path.join('modules', name))
 
         tsk = self.create_task('update_submodule', submodule=name)
-        tsk.cwd = self.bld.srcnode.abspath()
+        tsk.cwd = self.bld.srcnode
         tsk.env.SUBMODULE_PATH = module_node.abspath()
 
         _submodules_tasks[name] = tsk

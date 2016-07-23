@@ -24,6 +24,21 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_ADSB.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <stdio.h>  // for sprintf
+#include <limits.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+
+#define VEHICLE_THREAT_RADIUS_M         1000
+#define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
+#define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
+#define ADSB_VEHICLE_LIST_SIZE_MAX      100
+#define ADSB_CHAN_TIMEOUT_MS            15000
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    #define ADSB_LIST_RADIUS_DEFAULT        10000 // in meters
+#else // APM_BUILD_TYPE(APM_BUILD_ArduCopter), Rover, Boat
+    #define ADSB_LIST_RADIUS_DEFAULT        2000 // in meters
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -41,14 +56,56 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Description: ADSB based Collision Avoidance Behavior selector
     // @Values: 0:None,1:Loiter,2:LoiterAndDescend
     // @User: Advanced
-    AP_GROUPINFO("BEHAVIOR",   1, AP_ADSB, _behavior, ADSB_BEHAVIOR_NONE),
+    AP_GROUPINFO("BEHAVIOR",   1, AP_ADSB, avoid_state.behavior, ADSB_BEHAVIOR_NONE),
 
     // @Param: LIST_MAX
     // @DisplayName: ADSB vehicle list size
     // @Description: ADSB list size of nearest vehicles. Longer lists take longer to refresh with lower SRx_ADSB values.
     // @Range: 1 100
     // @User: Advanced
-    AP_GROUPINFO("LIST_MAX",   2, AP_ADSB, _list_size_param, ADSB_VEHICLE_LIST_SIZE_DEFAULT),
+    AP_GROUPINFO("LIST_MAX",   2, AP_ADSB, in_state.list_size_param, ADSB_VEHICLE_LIST_SIZE_DEFAULT),
+
+
+    // @Param: LIST_RADIUS
+    // @DisplayName: ADSB vehicle list radius filter
+    // @Description: ADSB vehicle list radius filter. Vehicles detected outside this radius will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations.
+    // @Range: 1 100000
+    // @User: Advanced
+    AP_GROUPINFO("LIST_RADIUS",   3, AP_ADSB, in_state.list_radius, ADSB_LIST_RADIUS_DEFAULT),
+
+    // @Param: ICAO_ID
+    // @DisplayName: ICAO_ID vehicle identifaction number
+    // @Description: ICAO_ID unique vehicle identifaction number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
+    // @Range: -1 16777215
+    // @User: Advanced
+    AP_GROUPINFO("ICAO_ID",   4, AP_ADSB, out_state.cfg.ICAO_id_param, 0),
+
+    // @Param: EMIT_TYPE
+    // @DisplayName: Emitter type
+    // @Description: ADSB classification for the type of vehicle emitting the transponder signal. Default value is 14 (UAV).
+    // @Values: 0:NoInfo,1:Light,2:Small,3:Large,4:HighVortexlarge,5:Heavy,6:HighlyManuv,7:Rotocraft,8:RESERVED,9:Glider,10:LightAir,11:Parachute,12:UltraLight,13:RESERVED,14:UAV,15:Space,16:RESERVED,17:EmergencySurface,18:ServiceSurface,19:PointObstacle
+    // @User: Advanced
+    AP_GROUPINFO("EMIT_TYPE",   5, AP_ADSB, out_state.cfg.emitterType, 14),
+
+    // @Param: LEN_WIDTH
+    // @DisplayName: Aircraft length and width
+    // @Description: Aircraft length and width encoding.
+    // @User: Advanced
+    AP_GROUPINFO("LEN_WIDTH",   6, AP_ADSB, out_state.cfg.lengthWidth, 0),
+
+    // @Param: OFFSET_LAT
+    // @DisplayName: GPS antenna lateral offset
+    // @Description: GPS antenna lateral offset.
+    // @User: Advanced
+    AP_GROUPINFO("OFFSET_LAT",   7, AP_ADSB, out_state.cfg.gpsLatOffset, 0),
+
+    // @Param: OFFSET_LON
+    // @DisplayName: GPS antenna longitudinal offset
+    // @Description: GPS antenna longitudinal offset.
+    // @User: Advanced
+    AP_GROUPINFO("OFFSET_LON",   8, AP_ADSB, out_state.cfg.gpsLonOffset, 0),
+
+
 
     AP_GROUPEND
 };
@@ -58,25 +115,31 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
  */
 void AP_ADSB::init(void)
 {
-    _vehicle_count = 0;
-    if (_vehicle_list == nullptr) {
-        if (_list_size_param != constrain_int16(_list_size_param, 1, ADSB_VEHICLE_LIST_SIZE_MAX)) {
-            _list_size_param.set_and_notify(ADSB_VEHICLE_LIST_SIZE_DEFAULT);
-            _list_size_param.save();
+    // in_state
+    in_state.vehicle_count = 0;
+    if (in_state.vehicle_list == nullptr) {
+        if (in_state.list_size_param != constrain_int16(in_state.list_size_param, 1, ADSB_VEHICLE_LIST_SIZE_MAX)) {
+            in_state.list_size_param.set_and_notify(ADSB_VEHICLE_LIST_SIZE_DEFAULT);
+            in_state.list_size_param.save();
         }
-        _list_size = _list_size_param;
-        _vehicle_list = new adsb_vehicle_t[_list_size];
+        in_state.list_size = in_state.list_size_param;
+        in_state.vehicle_list = new adsb_vehicle_t[in_state.list_size];
 
-        if (_vehicle_list == nullptr) {
+        if (in_state.vehicle_list == nullptr) {
             // dynamic RAM allocation of _vehicle_list[] failed, disable gracefully
             hal.console->printf("Unable to initialize ADS-B vehicle list\n");
             _enabled.set_and_notify(0);
         }
     }
-    _lowest_threat_distance = 0;
-    _highest_threat_distance = 0;
-    _another_vehicle_within_radius = false;
-    _is_evading_threat = false;
+
+    // avoid_state
+    avoid_state.lowest_threat_distance = 0;
+    avoid_state.highest_threat_distance = 0;
+    avoid_state.another_vehicle_within_radius = false;
+    avoid_state.is_evading_threat = false;
+
+    // out_state
+    set_callsign("PING1234", false);
 }
 
 /*
@@ -84,10 +147,10 @@ void AP_ADSB::init(void)
  */
 void AP_ADSB::deinit(void)
 {
-    _vehicle_count = 0;
-    if (_vehicle_list != nullptr) {
-        delete [] _vehicle_list;
-        _vehicle_list = nullptr;
+    in_state.vehicle_count = 0;
+    if (in_state.vehicle_list != nullptr) {
+        delete [] in_state.vehicle_list;
+        in_state.vehicle_list = nullptr;
     }
 }
 
@@ -96,24 +159,32 @@ void AP_ADSB::deinit(void)
  */
 void AP_ADSB::update(void)
 {
+    // update _my_loc
+    if (!_ahrs.get_position(_my_loc)) {
+        _my_loc.zero();
+    }
+
     if (!_enabled) {
-        if (_vehicle_list != nullptr) {
+        if (in_state.vehicle_list != nullptr) {
             deinit();
         }
         // nothing to do
         return;
-    } else if (_vehicle_list == nullptr)  {
+    } else if (in_state.vehicle_list == nullptr)  {
         init();
         return;
-    } else if (_list_size != _list_size_param) {
+    } else if (in_state.list_size != in_state.list_size_param) {
         deinit();
         return;
     }
 
+    uint32_t now = AP_HAL::millis();
+
+    // check current list for vehicles that time out
     uint16_t index = 0;
-    while (index < _vehicle_count) {
+    while (index < in_state.vehicle_count) {
         // check list and drop stale vehicles. When disabled, the list will get flushed
-        if (AP_HAL::millis() - _vehicle_list[index].last_update_ms > VEHICLE_TIMEOUT_MS) {
+        if (now - in_state.vehicle_list[index].last_update_ms > VEHICLE_TIMEOUT_MS) {
             // don't increment index, we want to check this same index again because the contents changed
             // also, if we're disabled then clear the list
             delete_vehicle(index);
@@ -122,8 +193,60 @@ void AP_ADSB::update(void)
         }
     }
 
+// -----------------------
+    if (_my_loc.is_zero()) {
+        // if we don't have a GPS lock then there's nothing else to do
+        return;
+    }
+// -----------------------
+
+
+
     perform_threat_detection();
-    //hal.console->printf("ADSB: cnt %u, lowT %.0f, highT %.0f\r", _vehicle_count, _lowest_threat_distance, _highest_threat_distance);
+
+    // ensure it's positive 24bit but allow -1
+    if (out_state.cfg.ICAO_id_param <= -1 || out_state.cfg.ICAO_id_param > 0x00FFFFFF) {
+        // icao param of -1 means static information is not sent, transceiver is assumed pre-programmed.
+        // reset timer constantly so it never reaches 10s so it never sends
+        out_state.last_config_ms = now;
+
+    } else if (out_state.cfg.ICAO_id == 0 ||
+        out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param) {
+
+        // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
+        if (out_state.cfg.ICAO_id_param == 0) {
+            out_state.cfg.ICAO_id = genICAO(_my_loc);
+        } else {
+            out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
+        }
+        out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
+        set_callsign("PING", true);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", out_state.cfg.ICAO_id, out_state.cfg.callsign);
+        out_state.last_config_ms = 0; // send now
+    }
+
+
+    // send static configuration data to transceiver, every 10s
+    if (out_state.chan >= 0 && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
+        if (now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
+            // haven't gotten a heartbeat health status packet in a while, assume hardware failure
+            out_state.chan = -1;
+        } else {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
+            // TODO: add check HAVE_PAYLOAD_SPACE(config)
+            if (now - out_state.last_config_ms >= 5000) {
+                out_state.last_config_ms = now;
+                send_configure(chan);
+            } // last_config_ms
+
+            // send dynamic data to transceiver at 5Hz
+            // TODO: add check HAVE_PAYLOAD_SPACE(dynamic)
+            if (now - out_state.last_report_ms >= 200) {
+                out_state.last_report_ms = now;
+                send_dynamic_out(chan);
+            } // last_report_ms
+        } // chan_last_ms
+    }
 }
 
 /*
@@ -131,13 +254,11 @@ void AP_ADSB::update(void)
  */
 void AP_ADSB::perform_threat_detection(void)
 {
-    Location my_loc;
-    if (_vehicle_count == 0 ||
-        _ahrs.get_position(my_loc) == false) {
+    if (in_state.vehicle_count == 0 || _my_loc.is_zero()) {
         // nothing to do or current location is unknown so we can't calculate any collisions
-        _another_vehicle_within_radius = false;
-        _lowest_threat_distance = 0; // 0 means invalid
-        _highest_threat_distance = 0; // 0 means invalid
+        avoid_state.another_vehicle_within_radius = false;
+        avoid_state.lowest_threat_distance = 0; // 0 means invalid
+        avoid_state.highest_threat_distance = 0; // 0 means invalid
         return;
     }
 
@@ -152,8 +273,8 @@ void AP_ADSB::perform_threat_detection(void)
     uint16_t min_distance_index = 0;
     uint16_t max_distance_index = 0;
 
-    for (uint16_t index = 0; index < _vehicle_count; index++) {
-        float distance = get_distance(my_loc, get_location(_vehicle_list[index]));
+    for (uint16_t index = 0; index < in_state.vehicle_count; index++) {
+        float distance = _my_loc.get_distance(get_location(in_state.vehicle_list[index]));
         if (min_distance > distance || index == 0) {
             min_distance = distance;
             min_distance_index = index;
@@ -164,37 +285,38 @@ void AP_ADSB::perform_threat_detection(void)
         }
 
         if (distance <= VEHICLE_THREAT_RADIUS_M) {
-            _vehicle_list[index].threat_level = ADSB_THREAT_HIGH;
+            in_state.vehicle_list[index].threat_level = ADSB_THREAT_HIGH;
         } else {
-            _vehicle_list[index].threat_level = ADSB_THREAT_LOW;
+            in_state.vehicle_list[index].threat_level = ADSB_THREAT_LOW;
         }
     } // for index
 
-    _highest_threat_index = min_distance_index;
-    _highest_threat_distance = min_distance;
+    avoid_state.highest_threat_index = min_distance_index;
+    avoid_state.highest_threat_distance = min_distance;
 
-    _lowest_threat_index = max_distance_index;
-    _lowest_threat_distance = max_distance;
+    avoid_state.lowest_threat_index = max_distance_index;
+    avoid_state.lowest_threat_distance = max_distance;
 
     // if within radius, set flag and enforce a double radius to clear flag
-    if (is_zero(_highest_threat_distance) ||  // 0 means invalid
-            _highest_threat_distance > 2*VEHICLE_THREAT_RADIUS_M) {
-        _another_vehicle_within_radius = false;
-    } else if (_highest_threat_distance <= VEHICLE_THREAT_RADIUS_M) {
-        _another_vehicle_within_radius = true;
+    if (is_zero(avoid_state.highest_threat_distance) ||  // 0 means invalid
+            avoid_state.highest_threat_distance > 2*VEHICLE_THREAT_RADIUS_M) {
+        avoid_state.another_vehicle_within_radius = false;
+    } else if (avoid_state.highest_threat_distance <= VEHICLE_THREAT_RADIUS_M) {
+        avoid_state.another_vehicle_within_radius = true;
     }
 }
 
 /*
  * Convert/Extract a Location from a vehicle
  */
-Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
+Location_Class AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
-    Location loc {};
-    loc.alt = vehicle.info.altitude * 0.1f; // convert mm to cm.
-    loc.lat = vehicle.info.lat;
-    loc.lng = vehicle.info.lon;
-    loc.flags.relative_alt = false;
+    Location_Class loc = Location_Class(
+        vehicle.info.lat,
+        vehicle.info.lon,
+        vehicle.info.altitude * 0.1f,
+        Location_Class::ALT_FRAME_ABSOLUTE);
+
     return loc;
 }
 
@@ -202,23 +324,23 @@ Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
  *  delete a vehicle by copying last vehicle to
  *  current index then decrementing count
  */
-void AP_ADSB::delete_vehicle(uint16_t index)
+void AP_ADSB::delete_vehicle(const uint16_t index)
 {
-    if (index < _vehicle_count) {
+    if (index < in_state.vehicle_count) {
         // if the vehicle is the lowest/highest threat, invalidate it
-        if (index == _lowest_threat_index) {
-            _lowest_threat_distance = 0;
+        if (index == avoid_state.lowest_threat_index) {
+            avoid_state.lowest_threat_distance = 0;
         }
-        if (index == _highest_threat_index) {
-            _highest_threat_distance = 0;
+        if (index == avoid_state.highest_threat_index) {
+            avoid_state.highest_threat_distance = 0;
         }
 
-        if (index != (_vehicle_count-1)) {
-            _vehicle_list[index] = _vehicle_list[_vehicle_count-1];
+        if (index != (in_state.vehicle_count-1)) {
+            in_state.vehicle_list[index] = in_state.vehicle_list[in_state.vehicle_count-1];
         }
         // TODO: is memset needed? When we decrement the index we essentially forget about it
-        memset(&_vehicle_list[_vehicle_count-1], 0, sizeof(adsb_vehicle_t));
-        _vehicle_count--;
+        memset(&in_state.vehicle_list[in_state.vehicle_count-1], 0, sizeof(adsb_vehicle_t));
+        in_state.vehicle_count--;
     }
 }
 
@@ -229,8 +351,8 @@ void AP_ADSB::delete_vehicle(uint16_t index)
  */
 bool AP_ADSB::find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const
 {
-    for (uint16_t i = 0; i < _vehicle_count; i++) {
-        if (_vehicle_list[i].info.ICAO_address == vehicle.info.ICAO_address) {
+    for (uint16_t i = 0; i < in_state.vehicle_count; i++) {
+        if (in_state.vehicle_list[i].info.ICAO_address == vehicle.info.ICAO_address) {
             *index = i;
             return true;
         }
@@ -244,7 +366,7 @@ bool AP_ADSB::find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const
  */
 void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
 {
-    if (_vehicle_list == nullptr) {
+    if (in_state.vehicle_list == nullptr) {
         // We are only null when disabled. Updating is inhibited.
         return;
     }
@@ -252,83 +374,90 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     uint16_t index;
     adsb_vehicle_t vehicle {};
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
+    Location_Class vehicle_loc = Location_Class(AP_ADSB::get_location(vehicle));
+    bool my_loc_is_zero = _my_loc.is_zero();
+    float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
 
-    if (find_index(vehicle, &index)) {
+    if (vehicle_loc.is_zero()) {
+
+        // invalid vehicle lat/lng. Ignore it.
+        return;
+
+    } else if (in_state.list_radius > 0 &&
+            !my_loc_is_zero &&
+            my_loc_distance_to_vehicle > in_state.list_radius) {
+
+        // vehicle is out of range. Ignore it.
+        return;
+
+    } else if (find_index(vehicle, &index)) {
 
         // found, update it
         set_vehicle(index, vehicle);
 
-    } else if (_vehicle_count < _list_size) {
+    } else if (in_state.vehicle_count < in_state.list_size) {
 
         // not found and there's room, add it to the end of the list
-        set_vehicle(_vehicle_count, vehicle);
-        _vehicle_count++;
+        set_vehicle(in_state.vehicle_count, vehicle);
+        in_state.vehicle_count++;
 
-    } else {
+    } else if (!my_loc_is_zero &&
+            !is_zero(avoid_state.lowest_threat_distance) &&
+            my_loc_distance_to_vehicle < avoid_state.lowest_threat_distance) { // is closer than the furthest
 
         // buffer is full, replace the vehicle with lowest threat as long as it's not further away
-        Location my_loc;
-        if (!is_zero(_lowest_threat_distance) && // nonzero means it is valid
-            _ahrs.get_position(my_loc)) {       // true means my_loc is valid
-
-            float distance = get_distance(my_loc, get_location(vehicle));
-            if (distance < _lowest_threat_distance) { // is closer than the furthest
-
                  // overwrite the lowest_threat/furthest
-                index = _lowest_threat_index;
+                index = avoid_state.lowest_threat_index;
                 set_vehicle(index, vehicle);
 
                 // this is now invalid because the vehicle was overwritten, need
                 // to run perform_threat_detection() to determine new one because
                 // we aren't keeping track of the second-furthest vehicle.
-                _lowest_threat_distance = 0;
+                avoid_state.lowest_threat_distance = 0;
 
                 // is it the nearest? Then it's the highest threat. That's an easy check
                 // that we don't need to run perform_threat_detection() to determine
-                if (_highest_threat_distance > distance) {
-                    _highest_threat_distance = distance;
-                    _highest_threat_index = index;
+        if (avoid_state.highest_threat_distance > my_loc_distance_to_vehicle) {
+            avoid_state.highest_threat_distance = my_loc_distance_to_vehicle;
+                    avoid_state.highest_threat_index = index;
                 }
-            } // if distance
-
-        } // if !zero
     } // if buffer full
 }
 
 /*
  * Copy a vehicle's data into the list
  */
-void AP_ADSB::set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle)
+void AP_ADSB::set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle)
 {
-    if (index < _list_size) {
-        _vehicle_list[index] = vehicle;
-        _vehicle_list[index].last_update_ms = AP_HAL::millis();
+    if (index < in_state.list_size) {
+        in_state.vehicle_list[index] = vehicle;
+        in_state.vehicle_list[index].last_update_ms = AP_HAL::millis();
     }
 }
 
-void AP_ADSB::send_adsb_vehicle(mavlink_channel_t chan)
+void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
 {
-    if (_vehicle_list == nullptr || _vehicle_count == 0) {
+    if (in_state.vehicle_list == nullptr || in_state.vehicle_count == 0) {
         return;
     }
 
     uint32_t now = AP_HAL::millis();
 
-    if (send_index[chan] >= _vehicle_count) {
+    if (in_state.send_index[chan] >= in_state.vehicle_count) {
         // we've finished a list
-        if (now - send_start_ms[chan] < 1000) {
+        if (now - in_state.send_start_ms[chan] < 1000) {
             // too soon to start a new one
             return;
         } else {
             // start new list
-            send_start_ms[chan] = now;
-            send_index[chan] = 0;
+            in_state.send_start_ms[chan] = now;
+            in_state.send_index[chan] = 0;
         }
     }
 
-    if (send_index[chan] < _vehicle_count) {
-        mavlink_adsb_vehicle_t vehicle = _vehicle_list[send_index[chan]].info;
-        send_index[chan]++;
+    if (in_state.send_index[chan] < in_state.vehicle_count) {
+        mavlink_adsb_vehicle_t vehicle = in_state.vehicle_list[in_state.send_index[chan]].info;
+        in_state.send_index[chan]++;
 
         mavlink_msg_adsb_vehicle_send(chan,
             vehicle.ICAO_address,
@@ -345,5 +474,101 @@ void AP_ADSB::send_adsb_vehicle(mavlink_channel_t chan)
             vehicle.flags,
             vehicle.squawk);
     }
+}
+
+
+void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
+{
+    // TODO: send dynamic packet
+}
+
+void AP_ADSB::send_configure(const mavlink_channel_t chan)
+{
+    // TODO configure packet
+}
+
+/*
+ * this is a message from the transceiver reporting it's health. Using this packet
+ * we determine which channel is on so we don't have to send out_state to all channels
+ */
+
+void AP_ADSB::transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
+{
+    // TODO: parse transceiver report
+}
+
+/*
+ @brief Generates pseudorandom ICAO from gps time, lat, and lon.
+ Reference: DO282B, 2.2.4.5.1.3.2
+
+ Note gps.time is the number of seconds since UTC midnight
+*/
+uint32_t AP_ADSB::genICAO(const Location_Class &loc)
+{
+    // gps_time is not seconds since UTC midnight, but it is an equivalent random number
+    // TODO: use UTC time instead of GPS time
+    AP_GPS gps = _ahrs.get_gps();
+    const uint64_t gps_time = gps.time_epoch_usec();
+
+    uint32_t timeSum = 0;
+    uint32_t M3 = 4096 * (loc.lat & 0x00000FFF) + (loc.lng & 0x00000FFF);
+
+    for (uint8_t i=0; i<24; i++) {
+        timeSum += (((gps_time & 0x00FFFFFF)>> i) & 0x00000001);
+    }
+    return( (timeSum ^ M3) & 0x00FFFFFF);
+}
+
+// assign a string to out_state.cfg.callsign but ensure it's null terminated
+void AP_ADSB::set_callsign(const char* str, const bool append_icao)
+{
+    bool zero_char_pad = false;
+
+    // clean slate
+    memset(out_state.cfg.callsign, 0, sizeof(out_state.cfg.callsign));
+
+    // copy str to cfg.callsign but we can't use strncpy because we need
+    // to restrict values to only 'A' - 'Z' and '0' - '9' and pad
+    for (uint8_t i=0; i<sizeof(out_state.cfg.callsign)-1; i++) {
+        if (!str[i] || zero_char_pad) {
+            // finish early. Either pad the rest with zero char or null terminate and call it a day
+            if ((append_icao && i<4) || zero_char_pad) {
+                out_state.cfg.callsign[i] = '0';
+                zero_char_pad = true;
+            } else {
+                // already null terminated via memset so just stop
+                break;
+            }
+
+        } else if (('A' <= str[i] && str[i] <= 'Z') ||
+                   ('0' <= str[i] && str[i] <= '9')) {
+            // valid as-is
+            // spaces are also allowed but are handled in the last else
+            out_state.cfg.callsign[i] = str[i];
+
+        } else if ('a' <= str[i] && str[i] <= 'z') {
+            // toupper()
+            out_state.cfg.callsign[i] = str[i] - ('a' - 'A');
+
+        } else if (i == 0) {
+            // invalid, pad to char zero because first index can't be space
+            out_state.cfg.callsign[i] = '0';
+
+        } else {
+            // invalid, pad with space
+            out_state.cfg.callsign[i] = ' ';
+        }
+    } // for i
+
+    if (append_icao) {
+        char str_icao[5];
+        sprintf(str_icao, "%04X", out_state.cfg.ICAO_id % 0x10000);
+        out_state.cfg.callsign[4] = str_icao[0];
+        out_state.cfg.callsign[5] = str_icao[1];
+        out_state.cfg.callsign[6] = str_icao[2];
+        out_state.cfg.callsign[7] = str_icao[3];
+    }
+
+    out_state.cfg.callsign[sizeof(out_state.cfg.callsign)-1] = 0; // always null terminate just to be sure
 }
 

@@ -45,6 +45,7 @@ set(config_module_list
     systemcmds/reflect
     systemcmds/motor_test
     systemcmds/usb_connected
+    systemcmds/otp
 
 #
 # Library modules

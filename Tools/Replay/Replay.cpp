@@ -794,7 +794,8 @@ void Replay::loop()
         if (streq(type,"ATT")) {
             Vector3f ekf_euler;
             Vector3f velNED;
-            Vector3f posNED;
+            Vector2f posNE;
+            float posD;
             Vector3f gyroBias;
             float accelWeighting;
             float accelZBias1;
@@ -803,11 +804,10 @@ void Replay::loop()
             Vector3f magNED;
             Vector3f magXYZ;
             Vector3f DCM_attitude;
-            Vector3f ekf_relpos;
             Vector3f velInnov;
             Vector3f posInnov;
             Vector3f magInnov;
-            float    tasInnov;
+            float tasInnov;
             float velVar;
             float posVar;
             float hgtVar;
@@ -820,7 +820,8 @@ void Replay::loop()
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
             _vehicle.EKF.getEulerAngles(ekf_euler);
             _vehicle.EKF.getVelNED(velNED);
-            _vehicle.EKF.getPosNED(posNED);
+            _vehicle.EKF.getPosNE(posNE);
+            _vehicle.EKF.getPosD(posD);
             _vehicle.EKF.getGyroBias(gyroBias);
             _vehicle.EKF.getIMU1Weighting(accelWeighting);
             _vehicle.EKF.getAccelZBias(accelZBias1, accelZBias2);
@@ -830,7 +831,6 @@ void Replay::loop()
             _vehicle.EKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
             _vehicle.EKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
             _vehicle.EKF.getFilterFaults(faultStatus);
-            _vehicle.EKF.getPosNED(ekf_relpos);
             Vector3f inav_pos = _vehicle.inertial_nav.get_position() * 0.01f;
             float temp = degrees(ekf_euler.z);
 
@@ -858,9 +858,9 @@ void Replay::loop()
                     inav_pos.x,
                     inav_pos.y,
                     inav_pos.z,
-                    ekf_relpos.x,
-                    ekf_relpos.y,
-                    -ekf_relpos.z);
+                    posNE.x,
+                    posNE.y,
+                    -posD);
             fprintf(plotf2, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
                     AP_HAL::millis() * 0.001f,
                     degrees(ekf_euler.x),
@@ -869,17 +869,17 @@ void Replay::loop()
                     velNED.x, 
                     velNED.y, 
                     velNED.z, 
-                    posNED.x, 
-                    posNED.y, 
-                    posNED.z, 
+                    posNE.x,
+                    posNE.y,
+                    posD,
                     60*degrees(gyroBias.x), 
                     60*degrees(gyroBias.y), 
                     60*degrees(gyroBias.z), 
                     windVel.x, 
                     windVel.y, 
-                    magNED.x, 
-                    magNED.y, 
-                    magNED.z, 
+                    magNED.x,
+                    magNED.y,
+                    magNED.z,
                     magXYZ.x, 
                     magXYZ.y, 
                     magXYZ.z,
@@ -894,9 +894,8 @@ void Replay::loop()
             float       velN  = (float)(velNED.x); // velocity North (m/s)
             float       velE  = (float)(velNED.y); // velocity East (m/s)
             float       velD  = (float)(velNED.z); // velocity Down (m/s)
-            float       posN  = (float)(posNED.x); // metres North
-            float       posE  = (float)(posNED.y); // metres East
-            float       posD  = (float)(posNED.z); // metres Down
+            float       posN  = (float)(posNE.x); // metres North
+            float       posE  = (float)(posNE.y); // metres East
             float       gyrX  = (float)(6000*degrees(gyroBias.x)); // centi-deg/min
             float       gyrY  = (float)(6000*degrees(gyroBias.y)); // centi-deg/min
             float       gyrZ  = (float)(6000*degrees(gyroBias.z)); // centi-deg/min

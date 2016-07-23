@@ -33,6 +33,7 @@ namespace Linux {
     class RCInput_UART;
     class RCInput_UDP;
     class RCInput_DSM;
+    class RCInput_SBUS;
     class RCOutput_PRU;
     class RCOutput_AioPRU;
     class RCOutput_PCA9685;
@@ -41,6 +42,7 @@ namespace Linux {
     class RCOutput_Bebop;
     class RCOutput_Sysfs;
     class RCOutput_QFLIGHT;
+    class RCOutput_Disco;
     class Semaphore;
     class Scheduler;
     class Util;

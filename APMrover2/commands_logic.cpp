@@ -31,6 +31,10 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 			do_RTL();
 			break;
 
+        case MAV_CMD_NAV_LOITER_UNLIM:              // Loiter indefinitely
+            do_loiter_unlimited(cmd);
+            break;
+
         // Conditional commands
 		case MAV_CMD_CONDITION_DELAY:
 			do_wait_delay(cmd);
@@ -103,6 +107,10 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
             break;
 #endif
 
+        case MAV_CMD_DO_SET_REVERSE:
+            do_set_reverse(cmd);
+            break;
+
 		default:
 		    // return false for unhandled commands
 		    return false;
@@ -153,6 +161,9 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			return verify_RTL();
 
+        case MAV_CMD_NAV_LOITER_UNLIM:
+            return verify_loiter_unlim();
+
         case MAV_CMD_CONDITION_DELAY:
             return verify_wait_delay();
 
@@ -192,6 +203,15 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     distance_past_wp = 0;
 
 	set_next_WP(cmd.content.location);
+}
+
+void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
+{
+    Location cmdloc = cmd.content.location;
+    location_sanitize(current_loc, cmdloc);
+    set_next_WP(cmdloc);
+    loiter_time_max = 100; // an arbitrary large loiter time
+    distance_past_wp = 0;
 }
 
 /********************************************************************************/
@@ -261,6 +281,13 @@ bool Rover::verify_RTL()
         return true;
     }
 
+    return false;
+}
+
+bool Rover::verify_loiter_unlim()
+{
+    // Continually increase the loiter time so it never finishes
+    loiter_time += loiter_time_max;
     return false;
 }
 
@@ -380,5 +407,14 @@ void Rover::log_picture()
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
         }      
+    }
+}
+
+void Rover::do_set_reverse(const AP_Mission::Mission_Command& cmd)
+{
+	if (cmd.p1 == 1) {
+        set_reverse(true);
+	} else {
+        set_reverse(false);
     }
 }

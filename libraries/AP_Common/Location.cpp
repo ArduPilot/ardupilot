@@ -20,8 +20,7 @@ AP_Terrain *Location_Class::_terrain = NULL;
 /// constructors
 Location_Class::Location_Class()
 {
-    lat = lng = alt = 0;
-    options = 0;
+    zero();
 }
 
 Location_Class::Location_Class(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame)
@@ -235,7 +234,8 @@ float Location_Class::get_distance(const struct Location &loc2) const
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location_Class::offset(float ofs_north, float ofs_east)
 {
-    if (!is_zero(ofs_north) || !is_zero(ofs_east)) {
+    // use is_equal() because is_zero() is a local class conflict and is_zero() in AP_Math does not belong to a class
+    if (!is_equal(ofs_north, 0.0f) || !is_equal(ofs_east, 0.0f)) {
         int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
         int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(*this);
         lat += dlat;

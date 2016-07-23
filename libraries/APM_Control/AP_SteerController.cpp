@@ -115,7 +115,11 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 
 	// Calculate the steering rate error (deg/sec) and apply gain scaler
     // We do this in earth frame to allow for rover leaning over in hard corners
-	float rate_error = (desired_rate - ToDeg(_ahrs.get_yaw_rate_earth())) * scaler;
+    float yaw_rate_earth = ToDeg(_ahrs.get_yaw_rate_earth());
+    if (_reverse) {
+        yaw_rate_earth = wrap_180(180 + yaw_rate_earth);
+    }
+    float rate_error = (desired_rate - yaw_rate_earth) * scaler;
 	
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
@@ -175,6 +179,9 @@ int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
 
 	// Calculate the desired steering rate given desired_accel and speed
     float desired_rate = ToDeg(desired_accel / speed);
+    if (_reverse) {
+        desired_rate *= -1;
+    }
     return get_steering_out_rate(desired_rate);
 }
 

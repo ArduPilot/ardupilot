@@ -20,27 +20,31 @@ public:
 
     // Constructor
     AC_PrecLand_IRLock(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state);
-
-    // init - perform any required initialisation of backend controller
+    
+    // perform any required initialisation of backend
     void init();
 
-    // update - give chance to driver to get updates from sensor
-    //  returns true if new data available
-    bool update();
-    // IRLock is hard-mounted to the frame of the vehicle, so it will always be in body-frame
-    MAV_FRAME get_frame_of_reference() { return MAV_FRAME_BODY_NED; }
+    // retrieve updates from sensor
+    void update();
 
-    // get_angle_to_target - returns body frame angles (in radians) to target
-    //  returns true if angles are available, false if not (i.e. no target)
-    //  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
-    //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
-    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad);
-
-    // handle_msg - parses a mavlink message from the companion computer
-    void handle_msg(mavlink_message_t* msg) { /* do nothing */ }
+    // provides a unit vector towards the target in body frame
+    //  returns same as have_los_meas()
+    bool get_los_body(Vector3f& ret);
+    
+    // returns system time in milliseconds of last los measurement
+    uint32_t los_meas_time_ms();
+    
+    // return true if there is a valid los measurement available
+    bool have_los_meas();
+    
+    // parses a mavlink message from the companion computer
+    void handle_msg(mavlink_message_t* msg) {};
 
 private:
     AP_IRLock_PX4 irlock;
-
+    
+    Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
+    bool                _have_los_meas;         // true if there is a valid measurement from the camera
+    uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
 };
 #endif

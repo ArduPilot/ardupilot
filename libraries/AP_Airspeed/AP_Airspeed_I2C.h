@@ -21,12 +21,20 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_HAL/utility/OwnPtr.h>
+#include <AP_HAL/I2CDevice.h>
+#include <utility>
 
 #include "AP_Airspeed_Backend.h"
+#include <AP_HAL/I2CDevice.h>
 
 class AP_Airspeed_I2C : public AP_Airspeed_Backend
 {
 public:
+    AP_Airspeed_I2C(const AP_Float &psi_range);
+    ~AP_Airspeed_I2C(void) {}
+    
     // probe and initialise the sensor
     bool init();
 
@@ -44,4 +52,6 @@ private:
     float _pressure;
     uint32_t _last_sample_time_ms;
     uint32_t _measurement_started_ms;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    const AP_Float &_psi_range;
 };

@@ -7,7 +7,9 @@ name="$1"
 shift
 echo "Starting $name : $*"
 # default to xterm as it has the most consistent options and can start minimised
-if [ -n "$DISPLAY" -a -n "$(which xterm)" ]; then
+if [ -n "$DISPLAY" -a -n "$(which osascript)" ]; then
+  osascript -e 'tell application "Terminal" to do script "'"$* "'"'
+elif [ -n "$DISPLAY" -a -n "$(which xterm)" ]; then
   xterm -iconic -xrm 'XTerm*selectToClipboard: true' -xrm 'XTerm*initialFont: 6' -n "$name" -name "$name" -T "$name" -hold -e $* &
 elif [ -n "$DISPLAY" -a -n "$(which konsole)" ]; then
   konsole --hold -e $*

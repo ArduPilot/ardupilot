@@ -30,10 +30,10 @@
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_sbus.h>
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 #define BOARD_PWM_COUNT_DEFAULT 2
 #define BOARD_SER1_RTSCTS_DEFAULT 0 // no flow control on UART5 on FMUv1
-#elif CONFIG_ARCH_BOARD_PX4FMU_V4
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 #define BOARD_PWM_COUNT_DEFAULT 6
 #define BOARD_SER1_RTSCTS_DEFAULT 2
 #else // V2

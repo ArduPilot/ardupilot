@@ -1131,7 +1131,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     if (ahrs.get_NavEKF().enabled()) {
         // Write first EKF packet
         Vector3f euler;
-        Vector3f posNED;
+        Vector2f posNE;
+        float posD;
         Vector3f velNED;
         Vector3f dAngBias;
         Vector3f dVelBias;
@@ -1139,7 +1140,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         float posDownDeriv;
         ahrs.get_NavEKF().getEulerAngles(euler);
         ahrs.get_NavEKF().getVelNED(velNED);
-        ahrs.get_NavEKF().getPosNED(posNED);
+        ahrs.get_NavEKF().getPosNE(posNE);
+        ahrs.get_NavEKF().getPosD(posD);
         ahrs.get_NavEKF().getGyroBias(gyroBias);
         posDownDeriv = ahrs.get_NavEKF().getPosDownDerivative();
         struct log_EKF1 pkt = {
@@ -1152,9 +1154,9 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             velE    : (float)(velNED.y), // velocity East (m/s)
             velD    : (float)(velNED.z), // velocity Down (m/s)
             posD_dot : (float)(posDownDeriv), // first derivative of down position
-            posN    : (float)(posNED.x), // metres North
-            posE    : (float)(posNED.y), // metres East
-            posD    : (float)(posNED.z), // metres Down
+            posN    : (float)(posNE.x), // metres North
+            posE    : (float)(posNE.y), // metres East
+            posD    : (float)(posD), // metres Down
             gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
             gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
             gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
@@ -1268,10 +1270,10 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
                 HAGL : (int16_t)(100*HAGL),
                 offset : (int16_t)(100*gndOffset),
                 RI : (int16_t)(100*rngInnov),
-                  meaRng : (uint16_t)(100*range),
-                  errHAGL : (uint16_t)(100*gndOffsetErr)
-               };
-              WriteBlock(&pkt5, sizeof(pkt5));
+                meaRng : (uint16_t)(100*range),
+                errHAGL : (uint16_t)(100*gndOffsetErr),
+            };
+            WriteBlock(&pkt5, sizeof(pkt5));
         }
     }
     // only log EKF2 if enabled
@@ -1286,7 +1288,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     uint64_t time_us = AP_HAL::micros64();
 	// Write first EKF packet
     Vector3f euler;
-    Vector3f posNED;
+    Vector2f posNE;
+    float posD;
     Vector3f velNED;
     Vector3f dAngBias;
     Vector3f dVelBias;
@@ -1294,7 +1297,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     float posDownDeriv;
     ahrs.get_NavEKF2().getEulerAngles(0,euler);
     ahrs.get_NavEKF2().getVelNED(0,velNED);
-    ahrs.get_NavEKF2().getPosNED(0,posNED);
+    ahrs.get_NavEKF2().getPosNE(0,posNE);
+    ahrs.get_NavEKF2().getPosD(0,posD);
     ahrs.get_NavEKF2().getGyroBias(0,gyroBias);
     posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(0);
     struct log_EKF1 pkt = {
@@ -1307,9 +1311,9 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         velE    : (float)(velNED.y), // velocity East (m/s)
         velD    : (float)(velNED.z), // velocity Down (m/s)
         posD_dot : (float)(posDownDeriv), // first derivative of down position
-        posN    : (float)(posNED.x), // metres North
-        posE    : (float)(posNED.y), // metres East
-        posD    : (float)(posNED.z), // metres Down
+        posN    : (float)(posNE.x), // metres North
+        posE    : (float)(posNE.y), // metres East
+        posD    : (float)(posD), // metres Down
         gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
         gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
         gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
@@ -1411,38 +1415,42 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     WriteBlock(&pkt4, sizeof(pkt4));
 
     // Write fifth EKF packet - take data from the primary instance
-    if (optFlowEnabled) {
-        float normInnov=0; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
-        float gndOffset=0; // estimated vertical position of the terrain relative to the nav filter zero datum
-        float flowInnovX=0, flowInnovY=0; // optical flow LOS rate vector innovations from the main nav filter
-        float auxFlowInnov=0; // optical flow LOS rate innovation from terrain offset estimator
-        float HAGL=0; // height above ground level
-        float rngInnov=0; // range finder innovations
-        float range=0; // measured range
-        float gndOffsetErr=0; // filter ground offset state error
-        ahrs.get_NavEKF2().getFlowDebug(-1,normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
-        struct log_EKF5 pkt5 = {
-            LOG_PACKET_HEADER_INIT(LOG_NKF5_MSG),
-            time_us : time_us,
-            normInnov : (uint8_t)(MIN(100*normInnov,255)),
-            FIX : (int16_t)(1000*flowInnovX),
-            FIY : (int16_t)(1000*flowInnovY),
-            AFI : (int16_t)(1000*auxFlowInnov),
-            HAGL : (int16_t)(100*HAGL),
-            offset : (int16_t)(100*gndOffset),
-            RI : (int16_t)(100*rngInnov),
-            meaRng : (uint16_t)(100*range),
-            errHAGL : (uint16_t)(100*gndOffsetErr)
-         };
-        WriteBlock(&pkt5, sizeof(pkt5));
-    }
+    float normInnov=0; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
+    float gndOffset=0; // estimated vertical position of the terrain relative to the nav filter zero datum
+    float flowInnovX=0, flowInnovY=0; // optical flow LOS rate vector innovations from the main nav filter
+    float auxFlowInnov=0; // optical flow LOS rate innovation from terrain offset estimator
+    float HAGL=0; // height above ground level
+    float rngInnov=0; // range finder innovations
+    float range=0; // measured range
+    float gndOffsetErr=0; // filter ground offset state error
+    Vector3f predictorErrors; // output predictor angle, velocity and position tracking error
+    ahrs.get_NavEKF2().getFlowDebug(-1,normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
+    ahrs.get_NavEKF2().getOutputTrackingError(-1,predictorErrors);
+    struct log_NKF5 pkt5 = {
+        LOG_PACKET_HEADER_INIT(LOG_NKF5_MSG),
+        time_us : time_us,
+        normInnov : (uint8_t)(MIN(100*normInnov,255)),
+        FIX : (int16_t)(1000*flowInnovX),
+        FIY : (int16_t)(1000*flowInnovY),
+        AFI : (int16_t)(1000*auxFlowInnov),
+        HAGL : (int16_t)(100*HAGL),
+        offset : (int16_t)(100*gndOffset),
+        RI : (int16_t)(100*rngInnov),
+        meaRng : (uint16_t)(100*range),
+        errHAGL : (uint16_t)(100*gndOffsetErr),
+        angErr : (float)predictorErrors.x,
+        velErr : (float)predictorErrors.y,
+        posErr : (float)predictorErrors.z
+     };
+    WriteBlock(&pkt5, sizeof(pkt5));
 
     // log innovations for the second IMU if enabled
     if (ahrs.get_NavEKF2().activeCores() >= 2) {
         // Write 6th EKF packet
         ahrs.get_NavEKF2().getEulerAngles(1,euler);
         ahrs.get_NavEKF2().getVelNED(1,velNED);
-        ahrs.get_NavEKF2().getPosNED(1,posNED);
+        ahrs.get_NavEKF2().getPosNE(1,posNE);
+        ahrs.get_NavEKF2().getPosD(1,posD);
         ahrs.get_NavEKF2().getGyroBias(1,gyroBias);
         posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(1);
         struct log_EKF1 pkt6 = {
@@ -1455,9 +1463,9 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             velE    : (float)(velNED.y), // velocity East (m/s)
             velD    : (float)(velNED.z), // velocity Down (m/s)
             posD_dot : (float)(posDownDeriv), // first derivative of down position
-            posN    : (float)(posNED.x), // metres North
-            posE    : (float)(posNED.y), // metres East
-            posD    : (float)(posNED.z), // metres Down
+            posN    : (float)(posNE.x), // metres North
+            posE    : (float)(posNE.y), // metres East
+            posD    : (float)(posD), // metres Down
             gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
             gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
             gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string

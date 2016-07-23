@@ -145,14 +145,14 @@ public:
 
 private:
     // how many drivers do we have?
-    uint8_t _num_drivers = 0;
+    uint8_t _num_drivers;
     AP_Baro_Backend *drivers[BARO_MAX_DRIVERS];
 
     // how many sensors do we have?
-    uint8_t _num_sensors = 0;
+    uint8_t _num_sensors;
 
     // what is the primary sensor at the moment?
-    uint8_t _primary = 0;
+    uint8_t _primary;
 
     struct sensor {
     	uint8_t type;					// 0 for air pressure (default), 1 for water pressure
@@ -169,20 +169,20 @@ private:
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
-    float                               _alt_offset_active = 0;
+    float                               _alt_offset_active;
     AP_Int8                             _primary_baro; // primary chosen by user
-    float                               _last_altitude_EAS2TAS = 0;
-    float                               _EAS2TAS = 0;
-    float                               _external_temperature = 0;
-    uint32_t                            _last_external_temperature_ms = 0;
+    float                               _last_altitude_EAS2TAS;
+    float                               _EAS2TAS;
+    float                               _external_temperature;
+    uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
     AP_Float							_specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
     AP_Float							_base_pressure; // the ground_pressure for a water pressure sensor is persistent
     AP_Int8								_reset_base_pressure; // reset the _base_pressure for a water pressure sensor on next boot
-    bool                                _hil_mode = false;
+    bool                                _hil_mode:1;
 
     // when did we last notify the GCS of new pressure reference?
-    uint32_t                            _last_notify_ms = 0;
+    uint32_t                            _last_notify_ms;
 
     void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
 };

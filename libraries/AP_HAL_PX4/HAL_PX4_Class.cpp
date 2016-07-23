@@ -16,6 +16,7 @@
 #include "Util.h"
 #include "GPIO.h"
 #include "I2CDriver.h"
+#include "I2CDevice.h"
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
@@ -43,7 +44,7 @@ static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
 
-static Empty::I2CDeviceManager i2c_mgr_instance;
+static PX4::I2CDeviceManager i2c_mgr_instance;
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"

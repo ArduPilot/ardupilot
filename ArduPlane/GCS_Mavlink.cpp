@@ -818,8 +818,10 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
-        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow(plane.ahrs, plane.optflow);
+        if (plane.optflow.enabled()) {        
+            CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
+            send_opticalflow(plane.ahrs, plane.optflow);
+        }
 #endif
         break;
 
@@ -1956,6 +1958,12 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_GPS_INPUT:
+    {
+        plane.gps.handle_msg(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_HIL_STATE:
     {
 #if HIL_SUPPORT
@@ -2099,6 +2107,11 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         send_autopilot_version(FIRMWARE_VERSION);
         break;
 
+    case MAVLINK_MSG_ID_LED_CONTROL:
+        // send message to Notify
+        AP_Notify::handle_led_control(msg);
+        break;
+        
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         plane.DataFlash.remote_log_block_status_msg(chan, msg);
         break;

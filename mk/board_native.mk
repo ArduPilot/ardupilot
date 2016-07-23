@@ -5,6 +5,7 @@ include $(MK_DIR)/find_tools.mk
 # Hardcoded libraries/AP_Common/missing/cmath defines in "make" to retain the current behavior
 EXTRAFLAGS += -DHAVE_CMATH_ISFINITE -DNEED_CMATH_ISFINITE_STD_NAMESPACE
 
+EXTRAFLAGS += -DHAVE_ENDIAN_H -DHAVE_BYTESWAP_H
 #
 # Tool options
 #
@@ -62,7 +63,11 @@ ifneq ($(SYSTYPE),Darwin)
 LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
-LIBS ?= -lm -lrt -pthread
+LIBS ?= -lm -pthread
+
+ifneq ($(SYSTYPE),Darwin)
+LIBS += -lrt
+endif
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
 LIBS += -lwinmm
 endif

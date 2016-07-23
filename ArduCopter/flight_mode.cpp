@@ -120,6 +120,8 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         control_mode_reason = reason;
         DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 
+        adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
+
 #if AC_FENCE == ENABLED
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
         // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)

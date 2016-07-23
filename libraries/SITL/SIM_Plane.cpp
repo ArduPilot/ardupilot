@@ -36,6 +36,9 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
 
+    if (strstr(frame_str, "-heavy")) {
+        mass = 8;
+    }
     if (strstr(frame_str, "-revthrust")) {
         reverse_thrust = true;
     }
@@ -44,6 +47,8 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     } else if (strstr(frame_str, "-vtail")) {
         vtail = true;
     }
+
+    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
 }
 
 /*
@@ -240,6 +245,12 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     // add some noise
     if (thrust_scale > 0) {
         add_noise(fabsf(thrust) / thrust_scale);
+    }
+
+    if (on_ground(position)) {
+        // add some ground friction
+        Vector3f vel_body = dcm.transposed() * velocity_ef;
+        accel_body.x -= vel_body.x * 0.3f;
     }
 }
     

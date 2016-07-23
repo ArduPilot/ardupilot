@@ -47,6 +47,8 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
         frame_type = HELI_FRAME_CONVENTIONAL;
     }
     gas_heli = (strstr(frame_str, "-gas") != NULL);
+
+    ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
 
 /*
@@ -156,21 +158,8 @@ void Helicopter::update(const struct sitl_input &input)
     accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, -thrust / mass);
     accel_body += dcm.transposed() * air_resistance;
 
-    bool was_on_ground = on_ground(position);
-    
     update_dynamics(rot_accel);
     
-    // constrain height to the ground
-    if (on_ground(position) && !was_on_ground) {
-        // zero roll/pitch, but keep yaw
-        float r, p, y;
-        dcm.to_euler(&r, &p, &y);
-        dcm.from_euler(0, 0, y);
-        
-        position.z = -(ground_level + frame_height - home.alt*0.01f);
-        velocity_ef.zero();
-    }
-
     // update lat/lon/altitude
     update_position();
 

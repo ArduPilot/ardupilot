@@ -15,6 +15,10 @@ import getpass
 import time
 import signal
 
+# List of open terminal windows for macosx
+windowID = []
+
+
 class CompatError(Exception):
     '''a custom exception class to hold state if we encounter the parse error we are looking for'''
     def __init__(self,error, opts, rargs):
@@ -87,6 +91,9 @@ def cygwin_pidof(procName):
 def under_cygwin():
     return os.path.exists("/usr/bin/cygstart")
 
+def under_macos():
+    return sys.platform == 'darwin'
+
 def kill_tasks_cygwin(victims):
     '''shell out to ps -ea to find processes to kill'''
     for victim in list(victims):
@@ -94,6 +101,11 @@ def kill_tasks_cygwin(victims):
 #        progress("pids for (%s): %s" % (victim,",".join([ str(p) for p in pids])))
         for apid in pids:
             os.kill(apid, signal.SIGKILL)
+
+def kill_tasks_macos():
+    for window in windowID:
+        cmd = "osascript -e \'tell application \"Terminal\" to close (window(get index of window id %s))\'" % window
+        os.system(cmd)
 
 def kill_tasks_psutil(victims):
     '''use the psutil module to kill tasks by name.  Sadly, this module is not available on Windows, but when it is we should be able to *just* use this routine'''
@@ -133,6 +145,8 @@ def kill_tasks():
 
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
+        if under_macos():
+            return kill_tasks_macos()
 
         try:
             kill_tasks_psutil(victim_names)
@@ -583,10 +597,19 @@ def run_cmd_blocking(what, cmd, quiet=False, **kw):
 
 def run_in_terminal_window(autotest, name, cmd):
     '''execute the run_in_terminal_window.sh command for cmd'''
+    global windowID
     runme = [os.path.join(autotest, "run_in_terminal_window.sh"), name]
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
-    p = subprocess.Popen(runme) # bg this explicitly?!
+
+    if under_macos():
+        # on MacOS record the window IDs so we can close them later
+        out = subprocess.Popen(runme,stdout=subprocess.PIPE).communicate()[0]
+        import re
+        p = re.compile('tab 1 of window id (.*)')
+        windowID.append(p.findall(out)[0])
+    else:
+        p = subprocess.Popen(runme)
 
 tracker_uarta = None # blemish
 

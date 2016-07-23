@@ -27,4 +27,6 @@ private:
 #include "GPIO_Minnow.h"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #include "GPIO_Bebop.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#include "GPIO_Disco.h"
 #endif

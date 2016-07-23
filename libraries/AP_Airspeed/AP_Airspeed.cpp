@@ -21,8 +21,10 @@
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <utility>
 
 extern const AP_HAL::HAL &hal;
 
@@ -62,8 +64,15 @@ extern const AP_HAL::HAL &hal;
     #else
          #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
     #endif
+    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+         #define PSI_RANGE_DEFAULT 0.05
+    #endif
 #else
  #define ARSPD_DEFAULT_PIN 0
+#endif
+
+#ifndef PSI_RANGE_DEFAULT
+#define PSI_RANGE_DEFAULT 1.0f
 #endif
 
 // table of user settable parameters
@@ -118,8 +127,22 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SKIP_CAL",  7, AP_Airspeed, _skip_cal, 0),
 
+    // @Param: PSI_RANGE
+    // @DisplayName: The PSI range of the device
+    // @Description: This parameter allows you to to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
+    // @User: Advanced
+    AP_GROUPINFO("PSI_RANGE",  8, AP_Airspeed, _psi_range, PSI_RANGE_DEFAULT),
+    
     AP_GROUPEND
 };
+
+
+AP_Airspeed::AP_Airspeed(const AP_Vehicle::FixedWing &parms)
+    : _EAS2TAS(1.0f)
+    , _calibration(parms)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
 
 
 /*

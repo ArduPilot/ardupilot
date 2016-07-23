@@ -16,39 +16,40 @@
  */
 #include "Display_SSD1306_I2C.h"
 
+#include <utility>
+
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
+
+#define SSD1306_I2C_BUS 2
+#define SSD1306_I2C_ADDR 0x3C    // default I2C bus address
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+
 bool Display_SSD1306_I2C::hw_init()
 {
-    // display init sequence
-    uint8_t init_seq[] = {0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3,
+    struct {
+        uint8_t reg;
+        uint8_t seq[31];
+    } init_seq = { 0x0,  {0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3,
                           0x00, 0x40, 0x8D, 0x14, 0x20, 0x00,
                           0xA1, 0xC8, 0xDA, 0x12, 0x81, 0xCF,
                           0xD9, 0xF1, 0xDB, 0x40, 0xA4, 0xA6,
-                          0xAF, 0x21, 0, 127, 0x22, 0, 7
-                         };
+                          0xAF, 0x21, 0, 127, 0x22, 0, 7 } };
 
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    _dev = std::move(hal.i2c_mgr->get_device(SSD1306_I2C_BUS, SSD1306_I2C_ADDR));
 
     // take i2c bus sempahore
-    if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
-    // disable recording of i2c lockup errors
-    hal.i2c->ignore_errors(true);
-
     // init display
-    hal.i2c->writeRegisters(SSD1306_I2C_ADDRESS, 0x0, sizeof(init_seq), init_seq);
-
-    // re-enable recording of i2c lockup errors
-    hal.i2c->ignore_errors(false);
+    _dev->transfer((uint8_t *)&init_seq, sizeof(init_seq), nullptr, 0);
 
     // give back i2c semaphore
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
 
     // clear display
     hw_update();
@@ -58,25 +59,32 @@ bool Display_SSD1306_I2C::hw_init()
 
 bool Display_SSD1306_I2C::hw_update()
 {
-    uint8_t command[] = {0x21, 0, 127, 0x22, 0, 7};
+    struct PACKED {
+        uint8_t reg;
+        uint8_t cmd[6];
+    } command = { 0x0, {0x21, 0, 127, 0x22, 0, 7} };
 
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    struct PACKED {
+        uint8_t reg;
+        uint8_t db[SSD1306_ROWS];
+    } display_buffer = { 0x40, {} };
 
-    // exit immediately if we can't take the semaphore
-    if (i2c_sem == NULL || !i2c_sem->take(5)) {
+    if (!_dev || !_dev->get_semaphore()->take(5)) {
         return false;
     }
 
     // write buffer to display
     for (uint8_t i = 0; i < (SSD1306_COLUMNS / SSD1306_COLUMNS_PER_PAGE); i++) {
-        command[4] = i;
-        hal.i2c->writeRegisters(SSD1306_I2C_ADDRESS, 0x0, sizeof(command), command);
-        hal.i2c->writeRegisters(SSD1306_I2C_ADDRESS, 0x40, SSD1306_ROWS, &_displaybuffer[i * SSD1306_ROWS]);
+        command.cmd[4] = i;
+
+        _dev->transfer((uint8_t *)&command, sizeof(command), nullptr, 0);
+
+        memcpy(&display_buffer.db[0], &_displaybuffer[i * SSD1306_ROWS], SSD1306_ROWS);
+        _dev->transfer((uint8_t *)&display_buffer, sizeof(display_buffer), nullptr, 0);
     }
 
     // give back i2c semaphore
-    i2c_sem->give();
+    _dev->get_semaphore()->give();
 
     return true;
 }

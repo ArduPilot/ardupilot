@@ -25,11 +25,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
-
-#define VEHICLE_THREAT_RADIUS_M         1000
-#define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
-#define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
-#define ADSB_VEHICLE_LIST_SIZE_MAX      100
+#include <AP_Common/Location.h>
 
 class AP_ADSB
 {
@@ -54,7 +50,7 @@ public:
 
 
     // Constructor
-    AP_ADSB(AP_AHRS &ahrs) :
+    AP_ADSB(const AP_AHRS &ahrs) :
         _ahrs(ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -69,15 +65,23 @@ public:
     // add or update vehicle_list from inbound mavlink msg
     void update_vehicle(const mavlink_message_t* msg);
 
-    bool get_possible_threat()  { return _enabled && _another_vehicle_within_radius; }
+    // handle ADS-B transceiver report
+    void transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
 
-    ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(_behavior.get()); }
-    bool get_is_evading_threat()  { return _enabled && _is_evading_threat; }
-    void set_is_evading_threat(bool is_evading) { if (_enabled) { _is_evading_threat = is_evading; } }
-    uint16_t get_vehicle_count() { return _vehicle_count; }
+    bool get_possible_threat()  { return _enabled && avoid_state.another_vehicle_within_radius; }
+
+    ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(avoid_state.behavior.get()); }
+    bool get_is_evading_threat()  { return _enabled && avoid_state.is_evading_threat; }
+    void set_is_evading_threat(const bool is_evading) { if (_enabled) { avoid_state.is_evading_threat = is_evading; } }
+    uint16_t get_vehicle_count() { return in_state.vehicle_count; }
 
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
     void send_adsb_vehicle(mavlink_channel_t chan);
+
+    void set_stall_speed_cm(const uint16_t stall_speed_cm) { out_state.cfg.stall_speed_cm = stall_speed_cm; }
+
+    void set_is_auto_mode(const bool is_in_auto_mode) { _is_in_auto_mode = is_in_auto_mode; }
+    void set_is_flying(const bool is_flying) { out_state.is_flying = is_flying; }
 
 private:
 
@@ -91,39 +95,91 @@ private:
     void perform_threat_detection(void);
 
     // extract a location out of a vehicle item
-    Location get_location(const adsb_vehicle_t &vehicle) const;
+    Location_Class get_location(const adsb_vehicle_t &vehicle) const;
 
     // return index of given vehicle if ICAO_ADDRESS matches. return -1 if no match
     bool find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const;
 
     // remove a vehicle from the list
-    void delete_vehicle(uint16_t index);
+    void delete_vehicle(const uint16_t index);
 
-    void set_vehicle(uint16_t index, const adsb_vehicle_t &vehicle);
+    void set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle);
+
+    // Generates pseudorandom ICAO from gps time, lat, and lon
+    uint32_t genICAO(const Location_Class &loc);
+
+    // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
+    void set_callsign(const char* str, const bool append_icao);
+
+    // send static and dynamic data to ADSB transceiver
+    void send_configure(const mavlink_channel_t chan);
+    void send_dynamic_out(const mavlink_channel_t chan);
+
 
     // reference to AHRS, so we can ask for our position,
     // heading and speed
     const AP_AHRS &_ahrs;
 
     AP_Int8     _enabled;
-    AP_Int8     _behavior;
-    AP_Int16    _list_size_param;
-    uint16_t    _list_size = 1; // start with tiny list, then change to param-defined size. This ensures it doesn't fail on start
-    adsb_vehicle_t *_vehicle_list;
-    uint16_t    _vehicle_count = 0;
-    bool        _another_vehicle_within_radius = false;
-    bool        _is_evading_threat = false;
 
-    // index of and distance to vehicle with lowest threat
-    uint16_t    _lowest_threat_index = 0;
-    float       _lowest_threat_distance = 0;
+    Location_Class  _my_loc;
 
-    // index of and distance to vehicle with highest threat
-    uint16_t    _highest_threat_index = 0;
-    float       _highest_threat_distance = 0;
+    bool _is_in_auto_mode;
 
-    // streamrate stuff
-    uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
-    uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
+    // ADSB-IN state. Maintains list of external vehicles
+    struct {
+        // list management
+        AP_Int16    list_size_param;
+        uint16_t    list_size = 1; // start with tiny list, then change to param-defined size. This ensures it doesn't fail on start
+        adsb_vehicle_t *vehicle_list = nullptr;
+        uint16_t    vehicle_count;
+        AP_Int32    list_radius;
+
+        // streamrate stuff
+        uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
+        uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
+    } in_state;
+
+
+    // ADSB-OUT state. Maintains export data
+    struct {
+        uint32_t    last_config_ms; // send once every 10s
+        uint32_t    last_report_ms; // send at 5Hz
+        int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means broadcast to all
+        uint32_t    chan_last_ms;
+        // TODO: add enum "status"
+        bool        is_flying;
+
+        // ADSB-OUT configuration
+        struct {
+            int32_t     ICAO_id;
+            AP_Int32    ICAO_id_param;
+            int32_t     ICAO_id_param_prev = -1; // assume we never send
+            char        callsign[9]; //Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only).
+            AP_Int8     emitterType;
+            AP_Int8      lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
+            AP_Int8      gpsLatOffset;
+            AP_Int8      gpsLonOffset;
+            uint16_t     stall_speed_cm;
+        } cfg;
+
+    } out_state;
+
+
+    // Avoidance state
+    struct {
+        AP_Int8     behavior;
+
+        bool        another_vehicle_within_radius;
+        bool        is_evading_threat;
+
+        // index of and distance to vehicle with lowest threat
+        uint16_t    lowest_threat_index;
+        float       lowest_threat_distance;
+
+        // index of and distance to vehicle with highest threat
+        uint16_t    highest_threat_index;
+        float       highest_threat_distance;
+    } avoid_state;
 
 };

@@ -4,6 +4,7 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 #include <DataFlash/DataFlash.h>
+#include <AP_Module/AP_Module.h>
 
 const extern AP_HAL::HAL& hal;
 
@@ -70,6 +71,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
     dt = 1.0f / _imu._gyro_raw_sample_rates[instance];
 
+    // call gyro_sample hook if any
+    AP_Module::call_hook_gyro_sample(instance, dt, gyro);
+    
     // compute delta angle
     Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
 
@@ -165,6 +169,9 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
     dt = 1.0f / _imu._accel_raw_sample_rates[instance];
 
+    // call gyro_sample hook if any
+    AP_Module::call_hook_accel_sample(instance, dt, accel);
+    
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
     // delta velocity

@@ -26,14 +26,14 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('mode AUTO\n')
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 9, max_dist=60, timeout=1200):
+    if not wait_waypoint(mav, 1, 19, max_dist=60, timeout=1200):
         return False
     mavproxy.expect('DISARMED')
     # wait for blood sample here
-    mavproxy.send('wp set 10\n')
+    mavproxy.send('wp set 20\n')
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
-    if not wait_waypoint(mav, 10, 18, max_dist=60, timeout=1200):
+    if not wait_waypoint(mav, 20, 34, max_dist=60, timeout=1200):
         return False
     mavproxy.expect('DISARMED')
     print("Mission OK")
@@ -101,8 +101,8 @@ def fly_QuadPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
 
-        # wait for EKF to settle
-        wait_seconds(mav, 15)
+        # wait for EKF and GPS checks to pass
+        wait_seconds(mav, 30)
 
         mavproxy.send('arm throttle\n')
         mavproxy.expect('ARMED')

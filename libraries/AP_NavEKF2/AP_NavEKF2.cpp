@@ -24,9 +24,9 @@
 #define ACC_P_NSE_DEFAULT       6.0E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
-#define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAGB_P_NSE_DEFAULT      5.0E-04f
-#define MAGE_P_NSE_DEFAULT      5.0E-03f
+#define ABIAS_P_NSE_DEFAULT     5.0E-03f
+#define MAGB_P_NSE_DEFAULT      1.0E-04f
+#define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -49,9 +49,9 @@
 #define ACC_P_NSE_DEFAULT       6.0E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
-#define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAGB_P_NSE_DEFAULT      5.0E-04f
-#define MAGE_P_NSE_DEFAULT      5.0E-03f
+#define ABIAS_P_NSE_DEFAULT     5.0E-03f
+#define MAGB_P_NSE_DEFAULT      1.0E-04f
+#define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -74,9 +74,9 @@
 #define ACC_P_NSE_DEFAULT       6.0E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
-#define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAGB_P_NSE_DEFAULT      5.0E-04f
-#define MAGE_P_NSE_DEFAULT      5.0E-03f
+#define ABIAS_P_NSE_DEFAULT     5.0E-03f
+#define MAGB_P_NSE_DEFAULT      1.0E-04f
+#define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -99,9 +99,9 @@
 #define ACC_P_NSE_DEFAULT       6.0E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-04f
 #define GSCALE_P_NSE_DEFAULT    5.0E-04f
-#define ABIAS_P_NSE_DEFAULT     1.0E-03f
-#define MAGB_P_NSE_DEFAULT      5.0E-04f
-#define MAGE_P_NSE_DEFAULT      5.0E-03f
+#define ABIAS_P_NSE_DEFAULT     5.0E-03f
+#define MAGB_P_NSE_DEFAULT      1.0E-04f
+#define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
 #define POS_I_GATE_DEFAULT      500
 #define HGT_I_GATE_DEFAULT      500
@@ -454,11 +454,11 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: TAU_OUTPUT
     // @DisplayName: Output complementary filter time constant (centi-sec)
-    // @Description: Sets the time constant of the output complementary filter/predictor in centi-seconds. Set to a negative number to use a computationally cheaper and less accurate method with an automatically calculated time constant.
-    // @Range: -1 100
-    // @Increment: 10
+    // @Description: Sets the time constant of the output complementary filter/predictor in centi-seconds.
+    // @Range: 10 50
+    // @Increment: 5
     // @User: Advanced
-    AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 50),
+    AP_GROUPINFO("TAU_OUTPUT", 39, NavEKF2, _tauVelPosOutput, 25),
 
     // @Param: MAGE_P_NSE
     // @DisplayName: Earth magnetic field process noise (gauss/s)
@@ -475,7 +475,6 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @Units: gauss/s
     AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF2, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
-
 
     AP_GROUPEND
 };
@@ -674,17 +673,28 @@ int8_t NavEKF2::getPrimaryCoreIndex(void) const
     return primary;
 }
 
-
-// Return the last calculated NED position relative to the reference point (m).
+// Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF2::getPosNED(int8_t instance, Vector3f &pos)
+bool NavEKF2::getPosNE(int8_t instance, Vector2f &posNE)
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getPosNED(pos);
+    return core[instance].getPosNE(posNE);
+}
+
+// Write the last calculated D position relative to the reference point (m).
+// If a calculated solution is not available, use the best available data and return false
+// If false returned, do not use for flight control
+bool NavEKF2::getPosD(int8_t instance, float &posD)
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (!core) {
+        return false;
+    }
+    return core[instance].getPosD(posD);
 }
 
 // return NED velocity in m/s
@@ -937,6 +947,15 @@ void NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posI
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    }
+}
+
+// publish output observer angular, velocity and position tracking error
+void NavEKF2::getOutputTrackingError(int8_t instance, Vector3f &error) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        core[instance].getOutputTrackingError(error);
     }
 }
 

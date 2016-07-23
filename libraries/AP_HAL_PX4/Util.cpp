@@ -108,11 +108,11 @@ bool PX4Util::get_system_id(char buf[40])
     uint8_t serialid[12];
     memset(serialid, 0, sizeof(serialid));
     get_board_serial(serialid);
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     const char *board_type = "PX4v1";
-#elif CONFIG_ARCH_BOARD_PX4FMU_V2
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     const char *board_type = "PX4v2";
-#elif CONFIG_ARCH_BOARD_PX4FMU_V4
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     const char *board_type = "PX4v4";
 #else
     const char *board_type = "PX4v?";

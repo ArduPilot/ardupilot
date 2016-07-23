@@ -38,7 +38,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if ((magTestRatio.x <= 1.0f && magTestRatio.y <= 1.0f && yawTestRatio <= 1.0f) || !consistentMagData) {
         magYawResetTimer_ms = imuSampleTime_ms;
     }
-    if (imuSampleTime_ms - magYawResetTimer_ms > 5000) {
+    if ((imuSampleTime_ms - magYawResetTimer_ms > 5000) && !motorsArmed) {
         // request reset of heading and magnetic field states
         magYawResetRequest = true;
         // reset timer to ensure that bad magnetometer data cannot cause a heading reset more often than every 5 seconds

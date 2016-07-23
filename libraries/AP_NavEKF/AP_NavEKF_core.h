@@ -114,10 +114,15 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
-    // Return the last calculated NED position relative to the reference point (m).
+    // Write the last calculated NE position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNED(Vector3f &pos) const;
+    bool getPosNE(Vector2f &posNE) const;
+
+    // Write the last calculated D position relative to the reference point (m).
+    // If a calculated solution is not available, use the best available data and return false
+    // If false returned, do not use for flight control
+    bool getPosD(float &posD) const;
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
@@ -259,9 +264,7 @@ public:
     */
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
-    /*
-    return filter status flags
-    */
+    // return filter status flags
     void  getFilterStatus(nav_filter_status &status) const;
 
     /*
@@ -323,6 +326,9 @@ private:
         float       posD2;          // 30
         Vector3f    omega;          // 31 .. 33
     } &state;
+
+    // update the navigation filter status
+    void  updateFilterStatus(void);
 
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
@@ -697,6 +703,7 @@ private:
     Vector3f delAngBiasAtArming;    // value of the gyro delta angle bias at arming
     float hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
     Quaternion prevQuatMagReset;    // Quaternion from the previous frame that the magnetic field state reset condition test was performed
+    nav_filter_status filterStatus; // contains the status of various filter outputs
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement

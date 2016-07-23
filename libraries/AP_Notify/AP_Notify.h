@@ -114,5 +114,6 @@ private:
     static NotifyDevice* _devices[];
 
     AP_Int8 _rgb_led_brightness;
+    AP_Int8 _rgb_led_override;
     AP_Int8 _buzzer_enable;
 };

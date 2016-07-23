@@ -42,6 +42,28 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
 
 
 /*
+  Wrap AHRS yaw if in reverse - radians
+ */
+float AP_L1_Control::get_yaw()
+{
+    if (_reverse) {
+        return wrap_PI(M_PI + _ahrs.yaw);
+    }
+    return _ahrs.yaw;
+}
+
+/*
+  Wrap AHRS yaw sensor if in reverse - centi-degress
+ */
+float AP_L1_Control::get_yaw_sensor()
+{
+    if (_reverse) {
+        return wrap_180_cd(18000 + _ahrs.yaw_sensor);
+    }
+    return _ahrs.yaw_sensor;
+}
+
+/*
   return the bank angle needed to achieve tracking from the last
   update_*() operation
  */
@@ -119,7 +141,7 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
     const float Nu_limit = 0.9f*M_PI;
     if (fabsf(Nu) > Nu_limit &&
         fabsf(_last_Nu) > Nu_limit &&
-        labs(wrap_180_cd(_target_bearing_cd - _ahrs.yaw_sensor)) > 12000 &&
+        labs(wrap_180_cd(_target_bearing_cd - get_yaw_sensor())) > 12000 &&
         Nu * _last_Nu < 0.0f) {
         // we are moving away from the target waypoint and pointing
         // away from the waypoint (not flying backwards). The sign
@@ -166,7 +188,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
         // use a small ground speed vector in the right direction,
         // allowing us to use the compass heading at zero GPS velocity
         groundSpeed = 0.1f;
-        _groundspeed_vector = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw)) * groundSpeed;
+        _groundspeed_vector = Vector2f(cosf(get_yaw()), sinf(get_yaw())) * groundSpeed;
     }
 
     // Calculate time varying control parameters
@@ -183,7 +205,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     if (AB.length() < 1.0e-6f) {
         AB = location_diff(_current_loc, next_WP);
         if (AB.length() < 1.0e-6f) {
-            AB = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
+            AB = Vector2f(cosf(get_yaw()), sinf(get_yaw()));
         }
     }
     AB.normalize();

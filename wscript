@@ -90,6 +90,15 @@ revisions.
         default=False,
         help="Don't use libiio even if supported by board and dependencies available")
 
+    g.add_option('--disable-tests', action='store_true',
+        default=False,
+        help="Disable compilation and test execution")
+
+    g.add_option('--static',
+        action='store_true',
+        default=False,
+        help='Force a static build')
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -121,6 +130,10 @@ def configure(cfg):
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
+
+    if cfg.options.static:
+        cfg.msg('Using static linking', 'yes', color='YELLOW')
+        cfg.env.STATIC_LINKING = True
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
@@ -226,7 +239,8 @@ def _build_common_taskgens(bld):
         use='mavlink',
     )
 
-    bld.libgtest(cxxflags=['-include', 'ap_config.h'])
+    if bld.env.HAS_GTEST:
+        bld.libgtest(cxxflags=['-include', 'ap_config.h'])
 
     if bld.env.HAS_GBENCHMARK:
         bld.libbenchmark()

@@ -62,11 +62,17 @@ public:
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIndex(void) const;
 
-    // Return the last calculated NED position relative to the reference point (m) for the specified instance.
+    // Write the last calculated NE position relative to the reference point (m) for the specified instance.
     // An out of range instance (eg -1) returns data for the the primary instance
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNED(int8_t instance, Vector3f &pos);
+    bool getPosNE(int8_t instance, Vector2f &posNE);
+
+    // Write the last calculated D position relative to the reference point (m) for the specified instance.
+    // An out of range instance (eg -1) returns data for the the primary instance
+    // If a calculated solution is not available, use the best available data and return false
+    // If false returned, do not use for flight control
+    bool getPosD(int8_t instance, float &posD);
 
     // return NED velocity in m/s for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
@@ -173,6 +179,9 @@ public:
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
     void  getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov);
+
+    // publish output observer angular, velocity and position tracking error
+    void getOutputTrackingError(int8_t instance, Vector3f &error) const;
 
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance

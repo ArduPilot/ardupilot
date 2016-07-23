@@ -67,6 +67,9 @@ private:
     } report;
     float last_flap;
 
+    // are we controlling a heli?
+    bool heli_frame;
+    
     // throttle joystick input is very weird. See comments in the main code
     const float throttle_magic = 0.000123f;
     const float throttle_magic_scale = 1.0e6;
@@ -97,6 +100,10 @@ private:
         LatLonAlt           = 20,
 		LocVelDistTraveled  = 21,
         ThrottleCommand     = 25,
+        EngineRPM           = 37,
+        PropRPM             = 38,
+        PropPitch           = 39,
+        Generator           = 58,
 	};
 };
 

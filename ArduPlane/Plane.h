@@ -442,6 +442,9 @@ private:
         // are we in auto and flight mode is approach || pre-flare || final (flare)
         bool land_in_progress:1;
 
+        // are we headed to the land approach waypoint? Works for any nav type
+        bool wp_is_land_approach:1;
+
         // should we fly inverted?
         bool inverted_flight:1;
 
@@ -524,6 +527,9 @@ private:
 
         // are we doing loiter mode as a VTOL?
         bool vtol_loiter:1;
+
+        // landing altitude offset (meters)
+        float land_alt_offset;
     } auto_state;
 
     struct {
@@ -769,7 +775,7 @@ private:
     bool gcs_out_of_time = false;
 
     // time that rudder arming has been running
-    uint32_t rudder_arm_timer = 0;
+    uint32_t rudder_arm_timer;
 
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
@@ -856,6 +862,7 @@ private:
     void setup_terrain_target_alt(Location &loc);
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
+    float mission_alt_offset(void);
     float height_above_target(void);
     float lookahead_adjustment(void);
     float rangefinder_correction(void);

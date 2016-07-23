@@ -758,6 +758,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.do_vtol_transition.target_state = packet.param1;
         break;
         
+    case MAV_CMD_DO_SET_REVERSE:
+        cmd.p1 = packet.param1; // 0 = forward, 1 = reverse
+        break;
+
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1173,6 +1177,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
         packet.param1 = cmd.p1;                         // disable=0 enable=1
+        break;
+
+    case MAV_CMD_DO_SET_REVERSE:
+        packet.param1 = cmd.p1;   // 0 = forward, 1 = reverse
         break;
 
     case MAV_CMD_NAV_ALTITUDE_WAIT:                     // MAV ID: 83

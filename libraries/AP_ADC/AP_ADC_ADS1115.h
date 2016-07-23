@@ -2,9 +2,10 @@
 #pragma once
 
 #include <inttypes.h>
-#include "AP_ADC.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
 
+#include "AP_ADC.h"
 
 struct adc_report_s
 {
@@ -28,13 +29,12 @@ public:
 private:
     static const uint8_t _channels_number;
 
-    AP_HAL::Semaphore*  _i2c_sem;
-
     uint32_t            _last_update_timestamp;
     uint16_t            _gain;
     int                 _channel_to_read;
     adc_report_s        *_samples;
 
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 
     void _update();
     bool _start_conversion(uint8_t channel);

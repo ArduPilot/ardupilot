@@ -39,31 +39,15 @@ void NavEKF2_core::SelectFlowFusion()
     // Perform Data Checks
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
-    // Check if the optical flow sensor has timed out
-    bool flowSensorTimeout = ((imuSampleTime_ms - flowValidMeaTime_ms) > 5000);
-    // Check if the fusion has timed out (flow measurements have been rejected for too long)
-    bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
     // check is the terrain offset estimate is still valid
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
     // Perform tilt check
     bool tiltOK = (Tnb_flow.c.z > frontend->DCM33FlowMin);
-    // Constrain measurements to zero if we are using optical flow and are on the ground
-    if (frontend->_fusionModeGPS == 3 && !takeOffDetected && isAiding) {
+    // Constrain measurements to zero if we are on the ground
+    if (frontend->_fusionModeGPS == 3 && !takeOffDetected) {
         ofDataDelayed.flowRadXYcomp.zero();
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
-    }
-
-    // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
-    if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
-        PV_AidingMode = AID_NONE;
-        // reset the velocity
-        ResetVelocity();
-        // store the current position to be used to as a sythetic position measurement
-        lastKnownPositionNE.x = stateStruct.position.x;
-        lastKnownPositionNE.y = stateStruct.position.y;
-        // reset the position
-        ResetPosition();
     }
 
     // if we do have valid flow measurements, fuse data into a 1-state EKF to estimate terrain height

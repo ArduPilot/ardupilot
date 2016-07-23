@@ -18,13 +18,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef SPARSE_ENDIAN_H
-#define SPARSE_ENDIAN_H
+#pragma once
 
-#if !defined(HAVE_BYTESWAP_H) || HAVE_BYTESWAP_H
 #include <byteswap.h>
-#endif
-
 #include <endian.h>
 #include <stdint.h>
 
@@ -87,5 +83,3 @@ static inline uint64_t le64toh(le64_t value) { return bswap_64_on_be((uint64_t _
 static inline uint16_t be16toh(be16_t value) { return bswap_16_on_le((uint16_t __force)value); }
 static inline uint32_t be32toh(be32_t value) { return bswap_32_on_le((uint32_t __force)value); }
 static inline uint64_t be64toh(be64_t value) { return bswap_64_on_le((uint64_t __force)value); }
-
-#endif /* SPARSE_ENDIAN_H */

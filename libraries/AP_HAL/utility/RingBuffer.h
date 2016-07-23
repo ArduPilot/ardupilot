@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -51,17 +52,17 @@ public:
       popping it
     */
     bool update(const uint8_t *data, uint32_t len);
-    
+
     // return size of ringbuffer
     uint32_t get_size(void) const { return size; }
 
     // set size of ringbuffer, caller responsible for locking
     void set_size(uint32_t size);
-    
+
     // advance the read pointer (discarding bytes)
     bool advance(uint32_t n);
 
-    // return a pointer to the next available data
+    // Returns the pointer and size to a contiguous read of the next available data
     const uint8_t *readptr(uint32_t &available_bytes);
 
     // peek one byte without advancing read pointer. Return byte
@@ -72,15 +73,39 @@ public:
       read len bytes without advancing the read pointer
     */
     uint32_t peekbytes(uint8_t *data, uint32_t len);
-    
+
+    // Similar to peekbytes(), but will fill out IoVec struct with
+    // both parts of the ring buffer if wraparound is happening, or
+    // just one part. Returns the number of parts written to.
+    struct IoVec {
+        uint8_t *data;
+        uint32_t len;
+    };
+    uint8_t peekiovec(IoVec vec[2], uint32_t len);
+
+    // Reserve `len` bytes and fills out `vec` with both parts of the
+    // ring buffer (if wraparound is happening), or just one contiguous
+    // part. Returns the number of `vec` elements filled out. Can be used
+    // with system calls such as `readv()`.
+    //
+    // After a call to 'reserve()', 'write()' should never be called
+    // until 'commit()' is called!
+    uint8_t reserve(IoVec vec[2], uint32_t len);
+
+    /*
+     * "Releases" the memory previously reserved by 'reserve()' to be read.
+     * Committer must inform how many bytes were actually written in 'len'.
+     */
+    bool commit(uint32_t len);
+
 private:
-    uint8_t *buf = nullptr;
-    uint32_t size = 0;
+    uint8_t *buf;
+    uint32_t size;
 
     // head is where the next available data is. tail is where new
     // data is written
-    volatile uint32_t head = 0;
-    volatile uint32_t tail = 0;
+    std::atomic<uint32_t> head{0};
+    std::atomic<uint32_t> tail{0};
 };
 
 /*
@@ -118,7 +143,7 @@ public:
         }
         return buffer->write((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
-   
+
     /*
       throw away an object
      */
@@ -136,7 +161,7 @@ public:
         return buffer->read((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
-    
+
     /*
      * push_force() is semantically equivalent to:
      *   if (!push(t)) { pop(); push(t); }
@@ -160,11 +185,11 @@ public:
     bool update(const T &object) {
         return buffer->update((uint8_t*)&object, sizeof(T));
     }
-    
+
 private:
     ByteBuffer *buffer = nullptr;
 };
-    
+
 
 
 /*
@@ -208,7 +233,7 @@ public:
         count++;
         return true;
     }
-   
+
     /*
       throw away an object
      */
@@ -232,7 +257,7 @@ public:
         return pop();
     }
 
-    
+
     /*
      * push_force() is semantically equivalent to:
      *   if (!push(t)) { pop(); push(t); }
@@ -267,7 +292,7 @@ public:
         count--;
         return true;
     }
-    
+
     // allow array indexing, based on current head. Returns a pointer
     // to the object or NULL
     T * operator[](uint16_t i) {
@@ -276,11 +301,10 @@ public:
         }
         return &buffer[(head+i)%size];
     }
-    
+
 private:
     T *buffer;
     uint16_t size;  // total buffer size
     uint16_t count; // number in buffer now
     uint16_t head;  // first element
 };
-    

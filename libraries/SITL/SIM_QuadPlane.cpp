@@ -82,6 +82,7 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
     // we use zero terminal velocity to let the plane model handle the drag
     frame->init(mass, 0.51, 0, 0);
 
+    ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
 
 /*

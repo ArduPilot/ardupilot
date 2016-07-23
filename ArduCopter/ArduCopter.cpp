@@ -102,7 +102,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(compass_accumulate,   100,    100),
     SCHED_TASK(barometer_accumulate,  50,     90),
 #if PRECISION_LANDING == ENABLED
-    SCHED_TASK(update_precland,       50,     50),
+    SCHED_TASK(update_precland,      400,     50),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
     SCHED_TASK(check_dynamic_flight,  50,     75),
@@ -127,7 +127,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
 #if ADSB_ENABLED == ENABLED
-    SCHED_TASK(adsb_update,            1,    100),
+    SCHED_TASK(adsb_update,           10,    100),
 #endif
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,   5,     75),
@@ -428,6 +428,11 @@ void Copter::twentyfive_hz_logging()
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
+
+#if PRECISION_LANDING == ENABLED
+    // log output
+    Log_Write_Precland();
+#endif
 }
 
 void Copter::dataflash_periodic(void)
@@ -496,6 +501,8 @@ void Copter::one_hz_loop()
 
     // log terrain data
     terrain_logging();
+
+    adsb.set_is_flying(!ap.land_complete);
 }
 
 // called at 50hz
