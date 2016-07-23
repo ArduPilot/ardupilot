@@ -8,21 +8,23 @@
 
 #if PRECISION_LANDING == ENABLED
 
-void Copter::init_precland()
+void Sub::init_precland()
 {
-    copter.precland.init();
+    sub.precland.init();
 }
 
-void Copter::update_precland()
+void Sub::update_precland()
 {
-    float final_alt = current_loc.alt;
+	int32_t height_above_ground_cm = current_loc.alt;
 
-    // use range finder altitude if it is valid
-    if (rangefinder_alt_ok()) {
-        final_alt = rangefinder_state.alt_cm;
+	// use range finder altitude if it is valid, else try to get terrain alt
+	if (rangefinder_alt_ok()) {
+		height_above_ground_cm = rangefinder_state.alt_cm;
+	} else if (terrain_use()) {
+		current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, height_above_ground_cm);
     }
 
-    copter.precland.update(final_alt);
+    sub.precland.update(height_above_ground_cm);
 
     // log output
     Log_Write_Precland();
