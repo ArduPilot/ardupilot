@@ -1256,6 +1256,13 @@ void Plane::set_servos(void)
         }
     }
 
+    uint8_t override_pct;
+    if (g2.ice_control.throttle_override(override_pct)) {
+        // the ICE controller wants to override the throttle for starting
+        channel_throttle->set_servo_out(override_pct);
+        channel_throttle->calc_pwm();
+    }
+    
     // send values to the PWM timers for output
     // ----------------------------------------
     if (g.rudder_only == 0) {

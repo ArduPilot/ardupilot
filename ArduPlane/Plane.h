@@ -89,6 +89,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Button/AP_Button.h>
+#include <AP_ICEngine/AP_ICEngine.h>
 
 #include "GCS_Mavlink.h"
 #include "quadplane.h"
@@ -132,6 +133,7 @@ class Plane : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Plane;
     friend class Parameters;
+    friend class ParametersG2;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
     friend class AP_Tuning_Plane;
@@ -956,6 +958,7 @@ private:
     void read_receiver_rssi(void);
     void rpm_update(void);
     void button_update(void);
+    void ice_update(void);
     void report_radio();
     void report_ins();
     void report_compass();

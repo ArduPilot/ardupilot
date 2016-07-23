@@ -164,3 +164,11 @@ void Plane::button_update(void)
 {
     g2.button.update();
 }
+
+/*
+  update AP_ICEngine
+ */
+void Plane::ice_update(void)
+{
+    g2.ice_control.update();
+}

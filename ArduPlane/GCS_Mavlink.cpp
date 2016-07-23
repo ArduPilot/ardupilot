@@ -1677,6 +1677,14 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
+
+        case MAV_CMD_DO_ENGINE_CONTROL:
+            if (!plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3)) {
+                result = MAV_RESULT_FAILED;
+            } else {
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
             
         default:
             break;

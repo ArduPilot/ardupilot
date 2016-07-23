@@ -225,6 +225,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_VTOL_TRANSITION:
         plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)cmd.content.do_vtol_transition.target_state);
         break;
+
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        plane.ice_control.engine_control(cmd.content.do_engine_control.start_control,
+                                         cmd.content.do_engine_control.cold_start,
+                                         cmd.content.do_engine_control.height_delay_cm*0.01f);
+        break;
     }
 
     return true;
