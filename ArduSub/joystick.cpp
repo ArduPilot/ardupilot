@@ -21,6 +21,10 @@ namespace {
 	int16_t video_switch = 1100;
 	int16_t x_last, y_last, z_last;
 	uint16_t buttons_prev;
+	float gain = 0.5;
+	float maxGain = 1.0;
+	float minGain = 0.25;
+	int8_t numGainSettings = 4;
 }
 
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons) {
@@ -28,8 +32,8 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
 	uint32_t tnow_ms = millis();
 
-	float rpyScale = 0.4; // Scale -1000-1000 to -400-400
-	float throttleScale = 0.8; // Scale 0-1000 to 0-800
+	float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
+	float throttleScale = 0.8*gain; // Scale 0-1000 to 0-800 with gain
 	int16_t rpyCenter = 1500;
 	int16_t throttleBase = 1500-500*throttleScale;
 
@@ -184,20 +188,20 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 				static bool lowGain = false;
 				lowGain = !lowGain;
 				if ( lowGain ) {
-					motors.set_gain(0.0f);
+					gain = 0.5f;
 				} else {
-					motors.set_gain(1.0f);
+					gain = 1.0f;
 				}
-				gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",motors.get_gain()*100);
+				gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",gain*100);
 			}
 			break;
 		case JSButton::button_function_t::k_gain_inc:
-			motors.increase_gain();
-			gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",motors.get_gain()*100);
+			gain = constrain_float(gain + (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
+			gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",gain*100);
 			break;
 		case JSButton::button_function_t::k_gain_dec:
-			motors.decrease_gain();
-			gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",motors.get_gain()*100);
+			gain = constrain_float(gain - (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
+			gcs_send_text_fmt(MAV_SEVERITY_INFO,"Gain: %2.0f%%",gain*100);
 			break;
 		case JSButton::button_function_t::k_trim_roll_inc:
 			rollTrim = constrain_float(rollTrim+10,-200,200);
