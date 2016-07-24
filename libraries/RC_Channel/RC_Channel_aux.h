@@ -163,9 +163,11 @@ public:
     static bool find_channel(Aux_servo_function_t function, uint8_t &chan);
     
 private:
-    static uint64_t _function_mask;
+    static uint64_t _function_mask[2];
     static bool _initialised;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
 
     void aux_servo_function_setup(void);
+    static void set_function_mask(uint8_t function);
+    static void clear_function_mask(void);
 };

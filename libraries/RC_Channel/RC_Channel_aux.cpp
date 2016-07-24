@@ -20,8 +20,22 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] = {
 };
 
 RC_Channel_aux *RC_Channel_aux::_aux_channels[RC_AUX_MAX_CHANNELS];
-uint64_t RC_Channel_aux::_function_mask;
+uint64_t RC_Channel_aux::_function_mask[2];
 bool RC_Channel_aux::_initialised;
+
+void
+RC_Channel_aux::set_function_mask(uint8_t fn)
+{
+    uint8_t idx = fn / 64;
+    uint8_t bit = fn % 64;
+    _function_mask[idx] |= (1ULL<<(uint8_t)bit);
+}
+
+void
+RC_Channel_aux::clear_function_mask(void)
+{
+    memset(_function_mask, 0, sizeof(_function_mask));
+}
 
 /// map a function to a servo channel and output it
 void
@@ -123,7 +137,7 @@ void RC_Channel_aux::aux_servo_function_setup(void)
     }
 
     if (function < k_nr_aux_servo_functions) {
-        _function_mask |= (1ULL<<(uint8_t)function);
+        set_function_mask((uint8_t)function.get());
     }
 }
 
@@ -136,7 +150,7 @@ void RC_Channel_aux::aux_servo_function_setup(void)
 /// (do not call this twice with different parameters, the second call will reset the effect of the first call)
 void RC_Channel_aux::update_aux_servo_function(void)
 {
-    _function_mask = 0;
+    clear_function_mask();
 
     // set auxiliary ranges
     for (uint8_t i = 0; i < RC_AUX_MAX_CHANNELS; i++) {
@@ -381,7 +395,10 @@ bool
 RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t function)
 {
     if (function < k_nr_aux_servo_functions) {
-        return (_function_mask & (1ULL<<function)) != 0;
+        uint8_t fn = (uint8_t)function;
+        uint8_t idx = fn / 64;
+        uint8_t bit = fn % 64;
+        return (_function_mask[idx] & (1ULL<<bit)) != 0;
     }
 	 return false;
 }
