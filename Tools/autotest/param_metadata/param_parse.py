@@ -105,7 +105,10 @@ for vehicle in vehicles:
 
 debug("Found %u documented libraries" % len(libraries))
 
-for library in libraries:
+recursed_libraries = libraries[:]
+
+while len(recursed_libraries):
+    library = recursed_libraries.pop()
     debug("===\n\n\nProcessing library %s" % library.name)
 
     if hasattr(library, 'Path'):
@@ -114,9 +117,6 @@ for library in libraries:
             path = path.strip()
             debug("\n Processing file '%s'" % path)
             if path.endswith('.pde') or path.find('/') == -1:
-                if len(vehicles) != 1:
-                    print("Unable to handle multiple vehicles with .pde library")
-                    continue
                 libraryfname = os.path.join(vehicles[0].path, path)
             else:
                 libraryfname = os.path.normpath(os.path.join(apm_path + '/libraries/' + path))
@@ -142,11 +142,34 @@ for library in libraries:
                         error("unknown parameter metadata field %s" % field[0])
 
                 library.params.append(p)
+
+            group_matches = prog_groups.findall(p_text)
+            for group_match in group_matches:
+                l = Library(library.name + group_match[0])
+                fields = prog_param_fields.findall(group_match[1])
+                for field in fields:
+                    if field[0] in known_group_fields:
+                        setattr(l, field[0], field[1])
+                    else:
+                        error("unknown parameter metadata field '%s'" % field[0])
+                if hasattr(l, 'Path'):
+                    # make this path relative to the file it was found
+                    # in.  This is required when e.g. ArduCopter's
+                    # Parameters.cpp uses the Motors library and the
+                    # Motors library uses the RC_Channel library, as
+                    # Motors references RC_Channel relative to the Motors
+                    # directory
+                    l.Path = os.path.join(os.path.dirname(path), l.Path)
+                if not any(l.name == parsed_l.name for parsed_l in libraries):
+                    recursed_libraries.append(l)
+                    libraries.append(l)
+
     else:
         error("Skipped: no Path found")
 
     debug("Processed %u documented parameters" % len(library.params))
 
+for library in libraries:
     def is_number(numberString):
         try:
             float(numberString)
