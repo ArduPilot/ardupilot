@@ -627,7 +627,7 @@ bool QuadPlane::is_flying(void)
     if (!available()) {
         return false;
     }
-    if (motors->get_throttle() > 0.1 && !motors->limit.throttle_lower) {
+    if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
         return true;
     }
     return false;
@@ -637,7 +637,7 @@ bool QuadPlane::is_flying(void)
 bool QuadPlane::should_relax(void)
 {
     bool motor_at_lower_limit = motors->limit.throttle_lower && attitude_control->is_throttle_mix_min();
-    if (motors->get_throttle() < 0.01) {
+    if (motors->get_throttle() < 0.01f) {
         motor_at_lower_limit = true;
     }
     if (!motor_at_lower_limit) {
@@ -654,7 +654,16 @@ bool QuadPlane::should_relax(void)
 // see if we are flying in vtol
 bool QuadPlane::is_flying_vtol(void)
 {
+    if (motors->get_throttle() > 0.01f) {
+        // if we are demanding more than 1% throttle then don't consider aircraft landed
+        return true;
+    }
+    if (plane.control_mode == QSTABILIZE || plane.control_mode == QHOVER || plane.control_mode == QLOITER) {
+        // in manual flight modes only consider aircraft landed when pilot demanded throttle is zero
+        return plane.channel_throttle->get_control_in() > 0;
+    }
     if (in_vtol_mode() && millis() - landing_detect.lower_limit_start_ms > 5000) {
+        // use landing detector
         return true;
     }
     return false;
