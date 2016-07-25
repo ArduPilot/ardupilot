@@ -253,8 +253,9 @@ def _build_recursion(bld):
         '*',
         'Tools/*',
         'libraries/*/examples/*',
-        '**/tests',
-        '**/benchmarks',
+        'libraries/*/tests',
+        'libraries/*/utility/tests',
+        'libraries/*/benchmarks',
     ]
 
     common_dirs_excl = [
@@ -264,8 +265,8 @@ def _build_recursion(bld):
     ]
 
     hal_dirs_patterns = [
-        'libraries/%s/**/tests',
-        'libraries/%s/**/benchmarks',
+        'libraries/%s/*/tests',
+        'libraries/%s/*/benchmarks',
         'libraries/%s/examples/*',
     ]
 
