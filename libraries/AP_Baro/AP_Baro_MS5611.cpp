@@ -17,6 +17,8 @@
 
 #include <utility>
 
+#include <AP_Math/AP_Math.h>
+
 extern const AP_HAL::HAL &hal;
 
 static const uint8_t CMD_MS56XX_RESET = 0x1E;
@@ -39,6 +41,11 @@ static const uint8_t CMD_MS56XX_PROM = 0xA0;
 #define ADDR_CMD_CONVERT_D2_OSR2048 0x56
 #define ADDR_CMD_CONVERT_D2_OSR4096 0x58
 
+#define CONVERSION_TIME_OSR_4096   9.04 * USEC_PER_MSEC
+#define CONVERSION_TIME_OSR_2048   4.54 * USEC_PER_MSEC
+#define CONVERSION_TIME_OSR_1024   2.28 * USEC_PER_MSEC
+#define CONVERSION_TIME_OSR_0512   1.17 * USEC_PER_MSEC
+#define CONVERSION_TIME_OSR_0256   0.60 * USEC_PER_MSEC
 /*
   use an OSR of 1024 to reduce the self-heating effect of the
   sensor. Information from MS tells us that some individual sensors
@@ -47,7 +54,7 @@ static const uint8_t CMD_MS56XX_PROM = 0xA0;
  */
 static const uint8_t ADDR_CMD_CONVERT_PRESSURE = ADDR_CMD_CONVERT_D1_OSR1024;
 static const uint8_t ADDR_CMD_CONVERT_TEMPERATURE = ADDR_CMD_CONVERT_D2_OSR1024;
-
+static const uint32_t CONVERSION_TIME = CONVERSION_TIME_OSR_1024;
 /*
   constructor
  */
@@ -63,11 +70,12 @@ void AP_Baro_MS56XX::_init()
         AP_HAL::panic("AP_Baro_MS56XX: failed to use device");
     }
 
-    _instance = _frontend.register_sensor();
+    _sem = hal.util->new_semaphore();
+    if (!_sem) {
+        AP_HAL::panic("AP_Baro_MS56XX: failed to create semaphore");
+    }
 
-    // we need to suspend timers to prevent other SPI drivers grabbing
-    // the bus while we do the long initialisation
-    hal.scheduler->suspend_timer_procs();
+    _instance = _frontend.register_sensor();
 
     if (!_dev->get_semaphore()->take(10)) {
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
@@ -91,20 +99,16 @@ void AP_Baro_MS56XX::_init()
 
     // Send a command to read temperature first
     _dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0);
-    _last_timer = AP_HAL::micros();
+    _last_cmd_usec = AP_HAL::micros();
     _state = 0;
 
-    _s_D1 = 0;
-    _s_D2 = 0;
-    _d1_count = 0;
-    _d2_count = 0;
+    memset(&_accum, 0, sizeof(_accum));
 
     _dev->get_semaphore()->give();
 
-    hal.scheduler->resume_timer_procs();
-
-    /* timer needs to be called every 10ms so set the freq_div to 10 */
-    _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void), 10);
+    /* Request 100Hz update */
+    _dev->register_periodic_callback(10 * USEC_PER_MSEC,
+                                     FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, bool));
 }
 
 /**
@@ -204,98 +208,95 @@ bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
 }
 
 /*
-  Read the sensor. This is a state machine
-  We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
-  temperature does not change so quickly...
+ * Read the sensor with a state machine
+ * We read one time temperature (state=0) and then 4 times pressure (states 1-4)
+ *
+ * Temperature is used to calculate the compensated pressure and doesn't vary
+ * as fast as pressure. Hence we reuse the same temperature for 4 samples of
+ * pressure.
 */
-void AP_Baro_MS56XX::_timer(void)
+bool AP_Baro_MS56XX::_timer(void)
 {
-    // Throttle read rate to 100hz maximum.
-    if (!_timesliced &&
-        AP_HAL::micros() - _last_timer < 10000) {
-        return;
+    /*
+     * transfer is taking longer than it should or we got stuck by other
+     * sensors: skip one sample
+     */
+    if (AP_HAL::micros() - _last_cmd_usec < CONVERSION_TIME) {
+        return true;
     }
 
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
+    uint8_t next_cmd;
+    uint8_t next_state;
+    uint32_t adc_val = _read_adc();
 
-    if (_state == 0) {
-        // On state 0 we read temp
-        uint32_t d2 = _read_adc();
-        if (d2 != 0) {
-            _s_D2 += d2;
-            _d2_count++;
-            if (_d2_count == 32) {
-                // we have summed 32 values. This only happens
-                // when we stop reading the barometer for a long time
-                // (more than 1.2 seconds)
-                _s_D2 >>= 1;
-                _d2_count = 16;
-            }
-
-            if (_dev->transfer(&ADDR_CMD_CONVERT_PRESSURE, 1, nullptr, 0)) {
-                _state++;
-            }
-        } else {
-            /* if read fails, re-initiate a temperature read command or we are
-             * stuck */
-            _dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0);
-        }
+    /*
+     * If read fails, re-initiate a read command for current state or we are
+     * stuck
+     */
+    if (adc_val == 0) {
+        next_state = _state;
     } else {
-        uint32_t d1 = _read_adc();
-        if (d1 != 0) {
-            // occasional zero values have been seen on the PXF
-            // board. These may be SPI errors, but safest to ignore
-            _s_D1 += d1;
-            _d1_count++;
-            if (_d1_count == 128) {
-                // we have summed 128 values. This only happens
-                // when we stop reading the barometer for a long time
-                // (more than 1.2 seconds)
-                _s_D1 >>= 1;
-                _d1_count = 64;
-            }
-            // Now a new reading exists
-            _updated = true;
-
-            if (_state == 4) {
-                if (_dev->transfer(&ADDR_CMD_CONVERT_TEMPERATURE, 1, nullptr, 0)) {
-                    _state = 0;
-                }
-            } else {
-                if (_dev->transfer(&ADDR_CMD_CONVERT_PRESSURE, 1, nullptr, 0)) {
-                    _state++;
-                }
-            }
-        } else {
-            /* if read fails, re-initiate a pressure read command or we are
-             * stuck */
-            _dev->transfer(&ADDR_CMD_CONVERT_PRESSURE, 1, nullptr, 0);
-        }
+        next_state = (_state + 1) % 5;
     }
 
-    _last_timer = AP_HAL::micros();
-    _dev->get_semaphore()->give();
+    next_cmd = next_state == 0 ? ADDR_CMD_CONVERT_TEMPERATURE
+                               : ADDR_CMD_CONVERT_PRESSURE;
+    _dev->transfer(&next_cmd, 1, nullptr, 0);
+
+    _last_cmd_usec = AP_HAL::micros();
+
+    /* if we had a failed read we are all done */
+    if (adc_val == 0) {
+        return true;
+    }
+
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        if (_state == 0) {
+            _update_and_wrap_accumulator(&_accum.s_D2, adc_val,
+                                         &_accum.d2_count, 32);
+        } else {
+            _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
+                                         &_accum.d1_count, 128);
+        }
+        _sem->give();
+        _state = next_state;
+    }
+
+    return true;
+}
+
+void AP_Baro_MS56XX::_update_and_wrap_accumulator(uint32_t *accum, uint32_t val,
+                                                  uint8_t *count, uint8_t max_count)
+{
+    *accum += val;
+    *count += 1;
+    if (*count == max_count) {
+        *count = max_count / 2;
+        *accum = *accum / 2;
+    }
 }
 
 void AP_Baro_MS56XX::update()
 {
-    if (!_updated) {
-        return;
-    }
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
 
-    // Suspend timer procs because these variables are written to
-    // in "_update".
-    hal.scheduler->suspend_timer_procs();
-    sD1 = _s_D1; _s_D1 = 0;
-    sD2 = _s_D2; _s_D2 = 0;
-    d1count = _d1_count; _d1_count = 0;
-    d2count = _d2_count; _d2_count = 0;
-    _updated = false;
-    hal.scheduler->resume_timer_procs();
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
+
+    if (_accum.d1_count == 0) {
+        _sem->give();
+        return;
+    }
+
+    sD1 = _accum.s_D1;
+    sD2 = _accum.s_D2;
+    d1count = _accum.d1_count;
+    d2count = _accum.d2_count;
+    memset(&_accum, 0, sizeof(_accum));
+
+    _sem->give();
 
     if (d1count != 0) {
         _D1 = ((float)sD1) / d1count;
