@@ -4,8 +4,8 @@
 
 /**
  *
- * ekf_check.pde - detects failures of the ekf or inertial nav system
- *                 triggers an alert to the pilot and helps take countermeasures
+ * Detects failures of the ekf or inertial nav system triggers an alert
+ * to the pilot and helps take countermeasures
  *
  */
 

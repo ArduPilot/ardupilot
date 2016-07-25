@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_stabilize.pde - init and run calls for stabilize flight mode
+ * Init and run calls for stabilize flight mode
  */
 
 // stabilize_init - initialise stabilize controller

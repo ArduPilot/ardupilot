@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_loiter.pde - init and run calls for loiter flight mode
+ * Init and run calls for loiter flight mode
  */
 
 // loiter_init - initialise loiter controller

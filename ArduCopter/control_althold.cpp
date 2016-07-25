@@ -3,7 +3,7 @@
 
 
 /*
- * control_althold.pde - init and run calls for althold, flight mode
+ * Init and run calls for althold, flight mode
  */
 
 // althold_init - initialise althold controller

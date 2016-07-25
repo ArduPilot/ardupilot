@@ -2,7 +2,7 @@
 
 #include "Copter.h"
 
-// position_vector.pde related utility functions
+// Position vectors related utility functions
 
 // position vectors are Vector3f
 //    .x = latitude from home in cm

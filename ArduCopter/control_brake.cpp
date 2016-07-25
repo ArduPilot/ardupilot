@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_brake.pde - init and run calls for brake flight mode
+ * Init and run calls for brake flight mode
  */
 
 // brake_init - initialise brake controller
