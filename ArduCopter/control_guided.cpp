@@ -610,17 +610,12 @@ void Copter::guided_set_desired_velocity_with_accel_limits(const Vector3f& vel_d
     }
 
     // limit z change
-    float vel_delta_z = fabsf(vel_delta.z);
     float vel_delta_z_max = G_Dt * pos_control.get_accel_z();
-    float ratio_z = 1.0f;
-    if (!is_zero(vel_delta_z) && (vel_delta_z > vel_delta_z_max)) {
-        ratio_z = vel_delta_z_max / vel_delta_z;
-    }
 
     // new target
     curr_vel_des.x += (vel_delta.x * ratio_xy);
     curr_vel_des.y += (vel_delta.y * ratio_xy);
-    curr_vel_des.z += (vel_delta.z * ratio_z);
+    curr_vel_des.z += constrain_float(vel_delta.z, -vel_delta_z_max, vel_delta_z_max);
 
     // update position controller with new target
     pos_control.set_desired_velocity(curr_vel_des);
