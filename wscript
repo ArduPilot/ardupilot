@@ -263,8 +263,8 @@ def _build_common_taskgens(bld):
     # split into smaller pieces with well defined boundaries.
     bld.ap_stlib(
         name='ap',
-        vehicle='UNKNOWN',
-        libraries=bld.ap_get_all_libraries(),
+        ap_vehicle='UNKNOWN',
+        ap_libraries=bld.ap_get_all_libraries(),
         use='mavlink',
     )
 
