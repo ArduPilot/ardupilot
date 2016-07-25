@@ -387,20 +387,18 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     Location_Class vehicle_loc = Location_Class(AP_ADSB::get_location(vehicle));
     bool my_loc_is_zero = _my_loc.is_zero();
     float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
+    bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius;
+    bool is_tracked_in_list = find_index(vehicle, &index);
 
-    if (vehicle_loc.is_zero()) {
+    if (vehicle_loc.is_zero() || out_of_range) {
 
-        // invalid vehicle lat/lng. Ignore it.
+        // vehicle is out of range or invalid lat/lng. If we're tracking it, delete from list. Otherwise ignore it.
+        if (is_tracked_in_list) {
+            delete_vehicle(index);
+        }
         return;
 
-    } else if (in_state.list_radius > 0 &&
-            !my_loc_is_zero &&
-            my_loc_distance_to_vehicle > in_state.list_radius) {
-
-        // vehicle is out of range. Ignore it.
-        return;
-
-    } else if (find_index(vehicle, &index)) {
+    } else if (is_tracked_in_list) {
 
         // found, update it
         set_vehicle(index, vehicle);
@@ -416,21 +414,21 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
             my_loc_distance_to_vehicle < avoid_state.lowest_threat_distance) { // is closer than the furthest
 
         // buffer is full, replace the vehicle with lowest threat as long as it's not further away
-                 // overwrite the lowest_threat/furthest
-                index = avoid_state.lowest_threat_index;
-                set_vehicle(index, vehicle);
+         // overwrite the lowest_threat/furthest
+        index = avoid_state.lowest_threat_index;
+        set_vehicle(index, vehicle);
 
-                // this is now invalid because the vehicle was overwritten, need
-                // to run perform_threat_detection() to determine new one because
-                // we aren't keeping track of the second-furthest vehicle.
-                avoid_state.lowest_threat_distance = 0;
+        // this is now invalid because the vehicle was overwritten, need
+        // to run perform_threat_detection() to determine new one because
+        // we aren't keeping track of the second-furthest vehicle.
+        avoid_state.lowest_threat_distance = 0;
 
-                // is it the nearest? Then it's the highest threat. That's an easy check
-                // that we don't need to run perform_threat_detection() to determine
+        // is it the nearest? Then it's the highest threat. That's an easy check
+        // that we don't need to run perform_threat_detection() to determine
         if (avoid_state.highest_threat_distance > my_loc_distance_to_vehicle) {
             avoid_state.highest_threat_distance = my_loc_distance_to_vehicle;
-                    avoid_state.highest_threat_index = index;
-                }
+            avoid_state.highest_threat_index = index;
+        }
     } // if buffer full
 
     vehicle.last_update_ms = AP_HAL::millis() - (vehicle.info.tslc * 1000);
