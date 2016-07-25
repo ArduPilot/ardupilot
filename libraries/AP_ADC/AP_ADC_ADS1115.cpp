@@ -1,7 +1,4 @@
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include <AP_HAL/utility/sparse-endian.h>
 
 #include "AP_ADC_ADS1115.h"
@@ -239,5 +236,3 @@ void AP_ADC_ADS1115::_update()
 
     _last_update_timestamp = AP_HAL::micros();
 }
-
-#endif
