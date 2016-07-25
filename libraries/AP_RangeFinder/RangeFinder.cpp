@@ -491,6 +491,7 @@ void RangeFinder::detect_instance(uint8_t instance)
         type = RangeFinder_TYPE_PX4;
     }
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     if (type == RangeFinder_TYPE_PLI2C) {
         _add_backend(AP_RangeFinder_PulsedLightLRF::detect(*this, instance, state[instance]));
     }
@@ -503,6 +504,7 @@ void RangeFinder::detect_instance(uint8_t instance)
                 hal.i2c_mgr->get_device(0, _address[instance])));
         }
     }
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (type == RangeFinder_TYPE_PX4) {
         if (AP_RangeFinder_PX4::detect(*this, instance)) {
