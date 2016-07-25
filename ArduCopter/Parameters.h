@@ -183,9 +183,11 @@ public:
         k_param_throw_motor_start,
         k_param_terrain_follow,    // 94
         k_param_avoid,
+        k_param_throw_type,
 
         // 97: RSSI
         k_param_rssi = 97,
+        k_param_throw_next_mode,
                 
         //
         // 100: Inertial Nav
@@ -454,6 +456,8 @@ public:
     AP_Int16        gcs_pid_mask;
 
     AP_Int8         throw_motor_start;
+    AP_Int8         throw_type;
+    AP_Int8         throw_next_mode;
     AP_Int8         terrain_follow;
 
     // RC channels

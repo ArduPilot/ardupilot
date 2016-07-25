@@ -940,6 +940,20 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(throw_motor_start, "THROW_MOT_START", 0),
 
+    // @Param: THROW_TYPE
+    // @DisplayName: Type of Throw
+    // @Description: Used by THROW mode. Specifies whether Copter is thrown upward or dropped.
+    // @Values: 0:Upward Throw,1:Downward
+    // @User: Standard
+    GSCALAR(throw_type, "THROW_TYPE", THROW_TYPE_DEFAULT),
+
+    // @Param: THROW_NEXT_MODE
+    // @DisplayName: Flight Mode after Throw action
+    // @Description: Used by THROW mode. Specifies the Flight Mode Copter is set to following a successful Throw action
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw
+    // @User: Standard
+    GSCALAR(throw_next_mode, "THROW_NEXT_MODE", THROW_NEXT_MODE_DEFAULT),
+
     // @Param: TERRAIN_FOLLOW
     // @DisplayName: Terrain Following use control
     // @Description: This enables terrain following for RTL and LAND flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.
