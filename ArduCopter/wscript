@@ -30,7 +30,6 @@ def build(bld):
             'AP_ServoRelayEvents',
             'AP_Avoidance',
         ],
-        use='mavlink',
     )
 
     frames = (

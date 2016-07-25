@@ -21,7 +21,6 @@ def build(bld):
             'AP_ServoRelayEvents',
             'PID',
         ],
-        use='mavlink',
     )
 
     bld.ap_program(

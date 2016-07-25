@@ -31,7 +31,6 @@ def build(bld):
             'AC_Fence',
             'AC_Avoidance'
         ],
-        use='mavlink',
     )
 
     bld.ap_program(
