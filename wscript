@@ -135,6 +135,8 @@ def configure(cfg):
         cfg.msg('Using static linking', 'yes', color='YELLOW')
         cfg.env.STATIC_LINKING = True
 
+    cfg.load('ap_libraries')
+
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
 
@@ -316,6 +318,11 @@ def build(bld):
     bld.post_mode = Build.POST_LAZY
 
     bld.load('ardupilotwaf')
+
+    bld.env.AP_LIBRARIES_OBJECTS_KW.update(
+        use='mavlink',
+        cxxflags=['-include', 'ap_config.h'],
+    )
 
     _build_cmd_tweaks(bld)
 
