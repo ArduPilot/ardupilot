@@ -923,7 +923,7 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     global homeloc
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sil = util.start_SIL(binary, wipe=True, model='+', home=home, speedup=speedup_default)
+    sil = util.start_SIL(binary, wipe=True, model=FRAME, home=home, speedup=speedup_default)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
 
@@ -938,7 +938,7 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL(binary, model='+', home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
+    sil = util.start_SIL(binary, model=FRAME, home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
