@@ -381,7 +381,7 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
         return;
     }
 
-    uint16_t index;
+    uint16_t index = in_state.list_size + 1; // initialize with invalid index
     adsb_vehicle_t vehicle {};
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
     Location_Class vehicle_loc = Location_Class(AP_ADSB::get_location(vehicle));
