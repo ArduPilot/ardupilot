@@ -282,6 +282,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         initial_height = 0;
         height_required = height_delay;
         state = ICE_START_HEIGHT_DELAY;
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", height_delay);
         return true;
     }
     state = ICE_STARTING;
