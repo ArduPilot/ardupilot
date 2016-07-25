@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*****************************************************************************
-*  esc_calibration.pde : functions to check and perform ESC calibration
+* Functions to check and perform ESC calibration
 *****************************************************************************/
 
 #define ESC_CALIBRATION_HIGH_THROTTLE   950

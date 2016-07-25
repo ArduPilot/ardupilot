@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_sport.pde - init and run calls for sport flight mode
+ * Init and run calls for sport flight mode
  */
 
 // sport_init - initialise sport controller

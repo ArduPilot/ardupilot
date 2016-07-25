@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_auto.pde - init and run calls for auto flight mode
+ * Init and run calls for auto flight mode
  *
  * This file contains the implementation for Land, Waypoint navigation and Takeoff from Auto mode
  * Command execution code (i.e. command_logic.pde) should:

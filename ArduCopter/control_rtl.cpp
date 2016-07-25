@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_rtl.pde - init and run calls for RTL flight mode
+ * Init and run calls for RTL flight mode
  *
  * There are two parts to RTL, the high level decision making which controls which state we are in
  * and the lower implementation of the waypoint or landing controllers within those states

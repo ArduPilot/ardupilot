@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_flip.pde - init and run calls for flip flight mode
+ * Init and run calls for flip flight mode
  *      original implementation in 2010 by Jose Julio
  *      Adapted and updated for AC2 in 2011 by Jason Short
  *

@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_circle.pde - init and run calls for circle flight mode
+ * Init and run calls for circle flight mode
  */
 
 // circle_init - initialise circle controller flight mode

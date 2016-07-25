@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * control_guided.pde - init and run calls for guided flight mode
+ * Init and run calls for guided flight mode
  */
 
 #ifndef GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM

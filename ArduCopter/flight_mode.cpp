@@ -3,8 +3,8 @@
 #include "Copter.h"
 
 /*
- * flight.pde - high level calls to set and update flight modes
- *      logic for individual flight modes is in control_acro.pde, control_stabilize.pde, etc
+ * High level calls to set and update flight modes logic for individual
+ * flight modes is in control_acro.cpp, control_stabilize.cpp, etc
  */
 
 // set_mode - change flight mode and perform any necessary initialisation
