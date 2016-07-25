@@ -122,7 +122,7 @@ void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vect
         Vector2f start = boundary[j];
         Vector2f end = boundary[i];
         // vector from current position to closest point on current edge
-        Vector2f limit_direction = closest_point(position_xy, start, end) - position_xy;
+        Vector2f limit_direction = Vector2f::closest_point(position_xy, start, end) - position_xy;
         // distance to closest point
         const float limit_distance = limit_direction.length();
         if (!is_zero(limit_distance)) {
@@ -199,33 +199,5 @@ float AC_Avoid::get_stopping_distance(const float kP, const float accel_cmss, co
     } else {
         float linear_distance = accel_cmss/(2.0f*kP*kP);
         return linear_distance + (speed*speed)/(2.0f*accel_cmss);
-    }
-}
-
-/*
- * Returns the point closest to p on the line segment (v,w).
- *
- * Comments and implementation taken from
- * http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
- */
-Vector2f AC_Avoid::closest_point(Vector2f p, Vector2f v, Vector2f w) const
-{
-    // length squared of line segment
-    const float l2 = (v - w).length_squared();
-    if (is_zero(l2)) {
-        // v == w case
-        return v;
-    }
-    // Consider the line extending the segment, parameterized as v + t (w - v).
-    // We find projection of point p onto the line.
-    // It falls where t = [(p-v) . (w-v)] / |w-v|^2
-    // We clamp t from [0,1] to handle points outside the segment vw.
-    const float t = ((p - v) * (w - v)) / l2;
-    if (t <= 0) {
-        return v;
-    } else if (t >= 1) {
-        return w;
-    } else {
-        return v + (w - v)*t;
     }
 }
