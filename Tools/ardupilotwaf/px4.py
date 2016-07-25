@@ -17,7 +17,7 @@ def _load_dynamic_env_data(bld):
     for name in ('cxx_flags', 'include_dirs', 'definitions'):
         _dynamic_env_data[name] = bldnode.find_node(name).read().split(';')
 
-@feature('px4_ap_stlib', 'px4_ap_program')
+@feature('px4_ap_library', 'px4_ap_program')
 @before_method('process_source')
 def px4_dynamic_env(self):
     # The generated files from configuration possibly don't exist if it's just
@@ -216,7 +216,9 @@ def configure(cfg):
     env = cfg.env
 
     env.AP_PROGRAM_FEATURES += ['px4_ap_program']
-    env.AP_STLIB_FEATURES += ['px4_ap_stlib']
+
+    kw = env.AP_LIBRARIES_OBJECTS_KW
+    kw['features'] = Utils.to_list(kw.get('features', [])) + ['px4_ap_library']
 
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
