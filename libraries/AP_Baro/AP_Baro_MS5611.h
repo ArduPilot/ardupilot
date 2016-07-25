@@ -49,12 +49,16 @@ protected:
     } _accum;
 
     uint8_t _state;
+    uint8_t _instance;
     uint32_t _last_cmd_usec;
 
+    /* Last compensated values from accumulated sample */
+    float _D1, _D2;
+
     // Internal calibration registers
-    uint16_t                 _c1,_c2,_c3,_c4,_c5,_c6;
-    float                    _D1, _D2;
-    uint8_t _instance;
+    struct {
+        uint16_t c1, c2, c3, c4, c5, c6;
+    } _cal_reg;
 };
 
 class AP_Baro_MS5611 : public AP_Baro_MS56XX
@@ -62,7 +66,7 @@ class AP_Baro_MS5611 : public AP_Baro_MS56XX
 public:
     AP_Baro_MS5611(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 protected:
-    void _calculate();
+    void _calculate() override;
 };
 
 class AP_Baro_MS5607 : public AP_Baro_MS56XX
@@ -70,7 +74,7 @@ class AP_Baro_MS5607 : public AP_Baro_MS56XX
 public:
     AP_Baro_MS5607(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 protected:
-    void _calculate();
+    void _calculate() override;
 };
 
 class AP_Baro_MS5637 : public AP_Baro_MS56XX
@@ -78,6 +82,6 @@ class AP_Baro_MS5637 : public AP_Baro_MS56XX
 public:
     AP_Baro_MS5637(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 protected:
-    void _calculate();
+    void _calculate() override;
     bool _read_prom(uint16_t prom[8]) override;
 };
