@@ -73,7 +73,7 @@ public:
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
     // tasks in microseconds
-    void run(uint16_t time_available);
+    void run(uint32_t time_available);
 
     // return the number of microseconds available for the current task
     uint16_t time_available_usec(void);
