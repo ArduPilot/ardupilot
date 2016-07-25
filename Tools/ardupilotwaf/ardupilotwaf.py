@@ -60,7 +60,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ICEngine',
 ]
 
-def _get_legacy_defines(sketch_name):
+def get_legacy_defines(sketch_name):
     return [
         'APM_BUILD_DIRECTORY=APM_BUILD_' + sketch_name,
         'SKETCH="' + sketch_name + '"',
@@ -111,7 +111,7 @@ def ap_program(bld,
         program_name = bld.path.name
 
     if use_legacy_defines:
-        kw['defines'].extend(_get_legacy_defines(bld.path.name))
+        kw['defines'].extend(get_legacy_defines(bld.path.name))
 
     kw['cxxflags'] = kw.get('cxxflags', []) + ['-include', 'ap_config.h']
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
@@ -185,7 +185,7 @@ def ap_stlib(bld, **kw):
     kw['features'] = kw.get('features', []) + bld.env.AP_STLIB_FEATURES
     kw['source'] = sources
     kw['target'] = kw['name']
-    kw['defines'] = _get_legacy_defines(kw['ap_vehicle'])
+    kw['defines'] = get_legacy_defines(kw['ap_vehicle'])
     kw['idx'] = _get_next_idx()
 
     bld.stlib(**kw)
