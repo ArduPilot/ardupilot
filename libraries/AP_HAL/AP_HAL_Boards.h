@@ -236,6 +236,7 @@
 #define HAL_RCOUT_BEBOP_BLDC_I2C_ADDR 0x08
 /* focal length 3.6 um, 2x binning in each direction
  * 240x240 crop rescaled to 64x64 */
+#define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/APM/logs"
@@ -276,6 +277,7 @@
 /* focal length 3.6 um, 2x binning in each direction
  * 240x240 crop rescaled to 64x64 */
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
+#define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
@@ -397,6 +399,7 @@
  * focal length 2.1 mm, pixel size 3 um
  * 240x240 crop rescaled to 64x64 */
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (3.0 / (2.1 * 2.0 * 240 / 64))
+#define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
@@ -548,4 +551,8 @@
 
 #ifndef HAL_HAVE_IMU_HEATER
 #define HAL_HAVE_IMU_HEATER 0
+#endif
+
+#ifndef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
+#define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 1
 #endif
