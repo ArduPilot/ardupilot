@@ -75,11 +75,6 @@ private:
      */
     float get_margin() const { return _fence.get_margin() * 100.0f; }
 
-    /*
-     * returns the point closest to p on the line segment (v,w)
-     */
-    Vector2f closest_point(Vector2f p, Vector2f v, Vector2f w) const;
-
     // external references
     const AP_AHRS& _ahrs;
     const AP_InertialNav& _inav;
