@@ -433,7 +433,7 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
                 }
     } // if buffer full
 
-    vehicle.last_update_ms = AP_HAL::millis() - vehicle.info.tslc;
+    vehicle.last_update_ms = AP_HAL::millis() - (vehicle.info.tslc * 1000);
     push_sample(vehicle); // note that set_vehicle modifies vehicle
 }
 
@@ -444,7 +444,6 @@ void AP_ADSB::set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle)
 {
     if (index < in_state.list_size) {
         in_state.vehicle_list[index] = vehicle;
-        in_state.vehicle_list[index].last_update_ms = AP_HAL::millis();
     }
 }
 
