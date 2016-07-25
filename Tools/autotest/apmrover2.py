@@ -101,7 +101,7 @@ def drive_APMrover2(binary, viewerip=None, map=False, valgrind=False, gdb=False)
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/Rover.parm\n" % testdir)
+    mavproxy.send("param load %s/default_params/Rover.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
     mavproxy.send("param set LOG_REPLAY 1\n")
     mavproxy.send("param set LOG_DISARMED 1\n")

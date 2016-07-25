@@ -250,33 +250,33 @@ case $FRAME in
     +|quad|quad-*)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/copter_params.parm"
+        DEFAULTS_PATH="$autotest/default_params/copter_params.parm"
 	;;
     X*)
 	BUILD_TARGET="sitl"
         EXTRA_PARM="param set FRAME 1;"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/copter_params.parm"
+        DEFAULTS_PATH="$autotest/default_params/copter_params.parm"
 	;;
     octa*)
 	BUILD_TARGET="sitl-octa"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/copter_params.parm"
+        DEFAULTS_PATH="$autotest/default_params/copter_params.parm"
 	;;
     tri*)
 	BUILD_TARGET="sitl-tri"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/tri_params.parm"
+        DEFAULTS_PATH="$autotest/default_params/tri_params.parm"
 	;;
     y6*)
 	BUILD_TARGET="sitl-y6"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/y6_params.parm"
+        DEFAULTS_PATH="$autotest/default_params/y6_params.parm"
 	;;
     firefly*)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/firefly.parm"
+        DEFAULTS_PATH="$autotest/default_params/firefly.parm"
 	;;
     heli-dual)
         BUILD_TARGET="sitl-heli-dual"
@@ -289,26 +289,26 @@ case $FRAME in
     heli*)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/Helicopter.parm"
+        DEFAULTS_PATH="$autotest/default_params/Helicopter.parm"
 	;;
     singlecopter*)
 	BUILD_TARGET="sitl-single"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/SingleCopter.parm"
+        DEFAULTS_PATH="$autotest/default_params/SingleCopter.parm"
 	;;
     coaxcopter*)
 	BUILD_TARGET="sitl-coax"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/CoaxCopter.parm"
+        DEFAULTS_PATH="$autotest/default_params/CoaxCopter.parm"
 	;;
     IrisRos)
 	BUILD_TARGET="sitl"
-        DEFAULTS_PATH="$autotest/copter_params.parm"
+        DEFAULTS_PATH="$autotest/default_params/copter_params.parm"
 	;;
     Gazebo)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/copter_params.parm"
+        DEFAULTS_PATH="$autotest/default_params/copter_params.parm"
 	;;
     CRRCSim|last_letter*)
 	BUILD_TARGET="sitl"
@@ -318,37 +318,37 @@ case $FRAME in
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
         check_jsbsim_version
-        DEFAULTS_PATH="$autotest/ArduPlane.parm"
+        DEFAULTS_PATH="$autotest/default_params/ArduPlane.parm"
 	;;
     quadplane-tilttri*)
 	BUILD_TARGET="sitl-tri"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/quadplane-tilttri.parm"
+        DEFAULTS_PATH="$autotest/default_params/quadplane-tilttri.parm"
 	;;
     quadplane*)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/quadplane.parm"
+        DEFAULTS_PATH="$autotest/default_params/quadplane.parm"
 	;;
     plane-elevon*)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/plane-elevons.parm"
+        DEFAULTS_PATH="$autotest/default_params/plane-elevons.parm"
 	;;
     plane-vtail*)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/plane-vtail.parm"
+        DEFAULTS_PATH="$autotest/default_params/plane-vtail.parm"
 	;;
     plane*)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/plane.parm"
+        DEFAULTS_PATH="$autotest/default_params/plane.parm"
 	;;
     rover-skid)
 	BUILD_TARGET="sitl"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/Rover-skid.parm"
+        DEFAULTS_PATH="$autotest/default_params/Rover-skid.parm"
 	;;
     flightaxis*)
         MODEL="$FRAME"
@@ -361,7 +361,7 @@ case $FRAME in
     *-heli)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
-        DEFAULTS_PATH="$autotest/Helicopter.parm"
+        DEFAULTS_PATH="$autotest/default_params/Helicopter.parm"
 	;;
     *)
         MODEL="$FRAME"
