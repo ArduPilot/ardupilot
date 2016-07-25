@@ -439,9 +439,9 @@ void Copter::guided_vel_control_run()
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - vel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !pos_control.get_desired_velocity().is_zero()) {
-        guided_set_desired_velocity_with_accel_limits(Vector3f(0.0f,0.0f,0.0f));
+        guided_set_desired_velocity_with_accel_and_fence_limits(Vector3f(0.0f,0.0f,0.0f));
     } else {
-        guided_set_desired_velocity_with_accel_limits(guided_vel_target_cms);
+        guided_set_desired_velocity_with_accel_and_fence_limits(guided_vel_target_cms);
     }
 
     // call velocity controller which includes z axis controller
@@ -588,7 +588,7 @@ void Copter::guided_angle_control_run()
 }
 
 // helper function to update position controller's desired velocity while respecting acceleration limits
-void Copter::guided_set_desired_velocity_with_accel_limits(const Vector3f& vel_des)
+void Copter::guided_set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des)
 {
     // get current desired velocity
     Vector3f curr_vel_des = pos_control.get_desired_velocity();
@@ -608,14 +608,15 @@ void Copter::guided_set_desired_velocity_with_accel_limits(const Vector3f& vel_d
     if (!is_zero(vel_delta_xy) && (vel_delta_xy > vel_delta_xy_max)) {
         ratio_xy = vel_delta_xy_max / vel_delta_xy;
     }
+    curr_vel_des.x += (vel_delta.x * ratio_xy);
+    curr_vel_des.y += (vel_delta.y * ratio_xy);
 
     // limit z change
     float vel_delta_z_max = G_Dt * pos_control.get_accel_z();
-
-    // new target
-    curr_vel_des.x += (vel_delta.x * ratio_xy);
-    curr_vel_des.y += (vel_delta.y * ratio_xy);
     curr_vel_des.z += constrain_float(vel_delta.z, -vel_delta_z_max, vel_delta_z_max);
+
+    // limit the velocity to prevent fence violations
+    avoid.adjust_velocity(pos_control.get_pos_xy_kP(), pos_control.get_accel_xy(), curr_vel_des);
 
     // update position controller with new target
     pos_control.set_desired_velocity(curr_vel_des);
