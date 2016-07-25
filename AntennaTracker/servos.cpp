@@ -3,7 +3,7 @@
 #include "Tracker.h"
 
 /*
- * servos.pde - code to move pitch and yaw servos to attain a target heading or pitch
+ * servos.cpp - code to move pitch and yaw servos to attain a target heading or pitch
  */
 
 // init_servos - initialises the servos

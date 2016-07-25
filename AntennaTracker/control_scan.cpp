@@ -3,7 +3,7 @@
 #include "Tracker.h"
 
 /*
- * control_scan.pde - scan control mode
+ * control_scan.cpp - scan control mode
  */
 
 /*

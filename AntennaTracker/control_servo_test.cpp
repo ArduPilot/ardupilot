@@ -3,7 +3,7 @@
 #include "Tracker.h"
 
 /*
- * control_servo_test.pde - GCS controlled servo test mode
+ * control_servo_test.cpp - GCS controlled servo test mode
  */
 
 /*
