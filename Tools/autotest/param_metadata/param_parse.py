@@ -181,6 +181,9 @@ for library in libraries:
         for param in library.params:
             validate(param)
 
+    def sortlib(x):
+        return x.name
+
     def do_emit(emit):
         emit.set_annotate_with_vehicle(len(vehicles) > 1)
         for vehicle in vehicles:
@@ -188,7 +191,8 @@ for library in libraries:
 
         emit.start_libraries()
 
-        for library in libraries:
+        sorted_libraries = sorted(libraries, key=sortlib)
+        for library in sorted_libraries:
             if library.params:
                 emit.emit(library, f)
 
