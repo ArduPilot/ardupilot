@@ -27,8 +27,10 @@ public:
     /*
      * Adjusts the desired velocity so that the vehicle can stop
      * before the fence/object.
+     * Note: Vector3f version is for convenience and only adjusts x and y axis
      */
     void adjust_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel);
+    void adjust_velocity(const float kP, const float accel_cmss, Vector3f &desired_vel);
 
     static const struct AP_Param::GroupInfo var_info[];
 
