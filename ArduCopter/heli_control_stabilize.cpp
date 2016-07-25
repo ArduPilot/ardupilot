@@ -4,7 +4,7 @@
 
 #if FRAME_CONFIG == HELI_FRAME
 /*
- * heli_control_stabilize.pde - init and run calls for stabilize flight mode for trad heli
+ * heli_control_stabilize.cpp - init and run calls for stabilize flight mode for trad heli
  */
 
 // stabilize_init - initialise stabilize controller

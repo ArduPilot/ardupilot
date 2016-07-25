@@ -3,7 +3,7 @@
 #include "Copter.h"
 
 /*
- * tuning.pde - function to update various parameters in flight using the ch6 tuning knob
+ * tuning.cpp - function to update various parameters in flight using the ch6 tuning knob
  *      This should not be confused with the AutoTune feature which can bve found in control_autotune.pde
  */
 

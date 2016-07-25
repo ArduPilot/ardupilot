@@ -5,7 +5,7 @@
 #if POSHOLD_ENABLED == ENABLED
 
 /*
- * control_poshold.pde - init and run calls for PosHold flight mode
+ * control_poshold.cpp - init and run calls for PosHold flight mode
  *     PosHold tries to improve upon regular loiter by mixing the pilot input with the loiter controller
  */
 

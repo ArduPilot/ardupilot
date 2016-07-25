@@ -4,7 +4,7 @@
 
 #if FRAME_CONFIG == HELI_FRAME
 /*
- * heli_control_acro.pde - init and run calls for acro flight mode for trad heli
+ * heli_control_acro.cpp - init and run calls for acro flight mode for trad heli
  */
 
 // heli_acro_init - initialise acro controller

@@ -3,7 +3,7 @@
 
 
 /*
- * control_acro.pde - init and run calls for acro flight mode
+ * control_acro.cpp - init and run calls for acro flight mode
  */
 
 // acro_init - initialise acro controller

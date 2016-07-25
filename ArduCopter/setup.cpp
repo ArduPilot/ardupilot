@@ -427,7 +427,7 @@ void Copter::print_gyro_offsets(void)
 
 #endif // CLI_ENABLED
 
-// report_compass - displays compass information.  Also called by compassmot.pde
+// report_compass - displays compass information.  Also called by compassmot.cpp
 void Copter::report_compass()
 {
     cliSerial->printf("Compass\n");

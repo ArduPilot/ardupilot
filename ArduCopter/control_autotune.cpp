@@ -5,7 +5,7 @@
 #if AUTOTUNE_ENABLED == ENABLED
 
 /*
- * control_autotune.pde - init and run calls for autotune flight mode
+ * control_autotune.cpp - init and run calls for autotune flight mode
  *
  * Instructions:
  *      1) Set up one flight mode switch position to be AltHold.
