@@ -37,6 +37,15 @@ void AC_Avoid::adjust_velocity(const float kP, const float accel_cmss, Vector2f 
     }
 }
 
+// convenience function to accept Vector3f.  Only x and y are adjusted
+void AC_Avoid::adjust_velocity(const float kP, const float accel_cmss, Vector3f &desired_vel)
+{
+    Vector2f des_vel_xy(desired_vel.x, desired_vel.y);
+    adjust_velocity(kP, accel_cmss, des_vel_xy);
+    desired_vel.x = des_vel_xy.x;
+    desired_vel.y = des_vel_xy.y;
+}
+
 /*
  * Adjusts the desired velocity for the circular fence.
  */
