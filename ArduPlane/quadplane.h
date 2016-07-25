@@ -224,6 +224,9 @@ private:
     // control ESC throttle calibration
     AP_Int8 esc_calibration;
     void run_esc_calibration(void);
+
+    // ICEngine control on landing
+    AP_Int8 land_icengine_cut;
     
     struct {
         AP_Float gain;
