@@ -442,7 +442,7 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
 
     sil = util.start_SIL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=10,
                          valgrind=valgrind, gdb=gdb,
-                         defaults_file=os.path.join(testdir, 'ArduPlane.parm'))
+                         defaults_file=os.path.join(testdir, 'default_params/ArduPlane.parm'))
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)

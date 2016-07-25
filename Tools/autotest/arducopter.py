@@ -937,7 +937,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/copter_params.parm\n" % testdir)
+    mavproxy.send("param load %s/default_params/copter_params.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
     mavproxy.send("param set LOG_REPLAY 1\n")
     mavproxy.send("param set LOG_DISARMED 1\n")
@@ -1285,7 +1285,7 @@ def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/Helicopter.parm\n" % testdir)
+    mavproxy.send("param load %s/default_params/Helicopter.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
     mavproxy.send("param set LOG_REPLAY 1\n")
     mavproxy.send("param set LOG_DISARMED 1\n")
