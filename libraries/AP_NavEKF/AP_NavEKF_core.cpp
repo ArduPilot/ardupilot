@@ -3335,7 +3335,6 @@ void NavEKF_core::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
 void NavEKF_core::getEulerAngles(Vector3f &euler) const
 {
     state.quat.to_euler(euler.x, euler.y, euler.z);
-    euler = euler - _ahrs->get_trim();
 }
 
 // This returns the specific forces in the NED frame
@@ -4345,9 +4344,7 @@ void NavEKF_core::setWindVelStates()
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF_core::getRotationBodyToNED(Matrix3f &mat) const
 {
-    Vector3f trim = _ahrs->get_trim();
     state.quat.rotation_matrix(mat);
-    mat.rotateXYinv(trim);
 }
 
 // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements

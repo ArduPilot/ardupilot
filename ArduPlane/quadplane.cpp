@@ -1754,7 +1754,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
         vel_forward.integrator = 0;
         return 0;
     }
-    Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
+    Vector3f vel_error_body = ahrs.get_rotation_vehicle_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
 
     // find component of velocity error in fwd body frame direction
     float fwd_vel_error = vel_error_body * Vector3f(1,0,0);

@@ -57,7 +57,7 @@ void loop(void)
 
     if (now - last_compass > 100*1000UL &&
         compass.read()) {
-        heading = compass.calculate_heading(ahrs.get_rotation_body_to_ned());
+        heading = compass.calculate_heading(ahrs.get_rotation_autopilot_body_to_ned());
         // read compass at 10Hz
         last_compass = now;
     }

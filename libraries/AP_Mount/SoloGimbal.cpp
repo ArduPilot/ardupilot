@@ -29,7 +29,7 @@ bool SoloGimbal::aligned()
 
 gimbal_mode_t SoloGimbal::get_mode()
 {
-    if ((_gimbalParams.initialized() && is_zero(_gimbalParams.get_K_rate())) || (_ahrs.get_rotation_body_to_ned().c.z < 0 && !(_lockedToBody || _calibrator.running()))) {
+    if ((_gimbalParams.initialized() && is_zero(_gimbalParams.get_K_rate())) || (_ahrs.get_rotation_vehicle_body_to_ned().c.z < 0 && !(_lockedToBody || _calibrator.running()))) {
         return GIMBAL_MODE_IDLE;
     } else if (!_ekf.getStatus()) {
         return GIMBAL_MODE_POS_HOLD;
@@ -270,7 +270,7 @@ Vector3f SoloGimbal::get_ang_vel_dem_yaw(const Quaternion &quatEst)
     float dt = _measurement.delta_time;
     float alpha = dt/(dt+tc);
 
-    Matrix3f Tve = _ahrs.get_rotation_body_to_ned();
+    Matrix3f Tve = _ahrs.get_rotation_vehicle_body_to_ned();
     Matrix3f Teg;
     quatEst.inverse().rotation_matrix(Teg);
 

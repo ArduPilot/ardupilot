@@ -136,7 +136,7 @@ bool AC_PrecLand::get_target_velocity_relative(Vector3f& ret)
 void AC_PrecLand::calc_angles_and_pos(const Vector3f& target_vec_unit_body, float alt_above_terrain_cm)
 {
     // rotate into NED frame
-    Vector3f target_vec_unit_ned = _ahrs.get_rotation_body_to_ned()*target_vec_unit_body;
+    Vector3f target_vec_unit_ned = _ahrs.get_rotation_vehicle_body_to_ned()*target_vec_unit_body;
 
     // extract the angles to target (logging only)
     _angle_to_target.x = atan2f(-target_vec_unit_body.y, target_vec_unit_body.z);

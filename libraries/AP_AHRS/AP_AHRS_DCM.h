@@ -65,8 +65,13 @@ public:
     }
 
     // return rotation matrix representing rotaton from body to earth axes
-    const Matrix3f &get_rotation_body_to_ned(void) const {
+    const Matrix3f &get_rotation_vehicle_body_to_ned(void) const {
         return _body_dcm_matrix;
+    }
+
+    // return rotation matrix representing rotaton from body to earth axes
+    const Matrix3f &get_rotation_autopilot_body_to_ned(void) const {
+        return _dcm_matrix;
     }
 
     // return the current drift correction integrator value

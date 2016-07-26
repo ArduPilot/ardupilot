@@ -152,7 +152,7 @@ void Plane::calc_gndspeed_undershoot()
 	// This prevents flyaway if wind takes plane backwards
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
 	    Vector2f gndVel = ahrs.groundspeed_vector();
-		const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
+		const Matrix3f &rotMat = ahrs.get_rotation_vehicle_body_to_ned();
 		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
 		yawVect.normalize();
 		float gndSpdFwd = yawVect * gndVel;

@@ -113,14 +113,14 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
 void AC_AttitudeControl::relax_attitude_controllers()
 {
     // TODO add _ahrs.get_quaternion()
-    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
-    _attitude_target_ang_vel = _ahrs.get_gyro();
+    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_vehicle_body_to_ned());
+    _attitude_target_ang_vel = _ahrs.get_rotation_vehicle_body_to_autopilot_body().mul_transpose(_ahrs.get_gyro());
     _attitude_target_euler_angle = Vector3f(_ahrs.roll, _ahrs.pitch, _ahrs.yaw);
 
     // Set reference angular velocity used in angular velocity controller equal
     // to the input angular velocity and reset the angular velocity integrators.
     // This zeros the output of the angular velocity controller.
-    _rate_target_ang_vel = _ahrs.get_gyro();
+    _rate_target_ang_vel = _ahrs.get_rotation_vehicle_body_to_autopilot_body().mul_transpose(_ahrs.get_gyro());
     get_rate_roll_pid().reset_I();
     get_rate_pitch_pid().reset_I();
     get_rate_yaw_pid().reset_I();
@@ -377,7 +377,7 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     // Retrieve quaternion vehicle attitude
     // TODO add _ahrs.get_quaternion()
     Quaternion attitude_vehicle_quat;
-    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_vehicle_body_to_ned());
 
     // Compute attitude error
     Vector3f attitude_error_vector;
@@ -385,10 +385,11 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Compute the angular velocity target from the attitude error
     _rate_target_ang_vel = update_ang_vel_target_from_att_error(attitude_error_vector);
+    Vector3f gyro = _ahrs.get_rotation_vehicle_body_to_autopilot_body().mul_transpose(_ahrs.get_gyro());
 
     // Add feedforward term that attempts to ensure that roll and pitch errors rotate with the body frame rather than the reference frame.
-    _rate_target_ang_vel.x += attitude_error_vector.y * _ahrs.get_gyro().z;
-    _rate_target_ang_vel.y += -attitude_error_vector.x * _ahrs.get_gyro().z;
+    _rate_target_ang_vel.x += attitude_error_vector.y * gyro.z;
+    _rate_target_ang_vel.y += -attitude_error_vector.x * gyro.z;
 
     // Add the angular velocity feedforward, rotated into vehicle frame
     Quaternion attitude_target_ang_vel_quat = Quaternion(0.0f, _attitude_target_ang_vel.x, _attitude_target_ang_vel.y, _attitude_target_ang_vel.z);
@@ -397,13 +398,13 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Correct the thrust vector and smoothly add feedforward and yaw input
     if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE*2.0f){
-        _rate_target_ang_vel.z = _ahrs.get_gyro().z;
+        _rate_target_ang_vel.z = gyro.z;
     }else if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE){
         float flip_scalar = (1.0f - (_thrust_error_angle-AC_ATTITUDE_THRUST_ERROR_ANGLE)/AC_ATTITUDE_THRUST_ERROR_ANGLE);
         _rate_target_ang_vel.x += target_ang_vel_quat.q2*flip_scalar;
         _rate_target_ang_vel.y += target_ang_vel_quat.q3*flip_scalar;
         _rate_target_ang_vel.z += target_ang_vel_quat.q4;
-        _rate_target_ang_vel.z = _ahrs.get_gyro().z*(1.0-flip_scalar) + _rate_target_ang_vel.z*flip_scalar;
+        _rate_target_ang_vel.z = gyro.z*(1.0-flip_scalar) + _rate_target_ang_vel.z*flip_scalar;
     } else {
         _rate_target_ang_vel.x += target_ang_vel_quat.q2;
         _rate_target_ang_vel.y += target_ang_vel_quat.q3;
@@ -583,7 +584,7 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f attit
 // Run the roll angular velocity PID controller and return the output
 float AC_AttitudeControl::rate_target_to_motor_roll(float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().x;
+    float current_rate_rads = _ahrs.get_rotation_vehicle_body_to_autopilot_body().mul_transpose(_ahrs.get_gyro()).x;
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
     // pass error to PID controller
@@ -607,7 +608,7 @@ float AC_AttitudeControl::rate_target_to_motor_roll(float rate_target_rads)
 // Run the pitch angular velocity PID controller and return the output
 float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().y;
+    float current_rate_rads = _ahrs.get_rotation_vehicle_body_to_autopilot_body().mul_transpose(_ahrs.get_gyro()).y;
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
     // pass error to PID controller
@@ -631,7 +632,7 @@ float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_target_rads)
 // Run the yaw angular velocity PID controller and return the output
 float AC_AttitudeControl::rate_target_to_motor_yaw(float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().z;
+    float current_rate_rads = _ahrs.get_rotation_vehicle_body_to_autopilot_body().mul_transpose(_ahrs.get_gyro()).z;
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
     // pass error to PID controller

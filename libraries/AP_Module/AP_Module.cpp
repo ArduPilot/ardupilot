@@ -152,7 +152,7 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS_NavEKF &ahrs)
     }
 
     Quaternion q;
-    q.from_rotation_matrix(ahrs.get_rotation_body_to_ned());
+    q.from_rotation_matrix(ahrs.get_rotation_vehicle_body_to_ned());
     state.quat[0] = q[0];
     state.quat[1] = q[1];
     state.quat[2] = q[2];

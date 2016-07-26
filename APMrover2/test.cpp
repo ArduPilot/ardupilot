@@ -390,7 +390,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
         if(medium_loopCounter >= 5){
             if (compass.read()) {
                 // Calculate heading
-                Matrix3f m = ahrs.get_rotation_body_to_ned();
+                Matrix3f m = ahrs.get_rotation_autopilot_body_to_ned();
                 heading = compass.calculate_heading(m);
                 compass.learn_offsets();
             }

@@ -92,7 +92,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         }
 
         Quaternion ned_to_vehicle_quat;
-        ned_to_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+        ned_to_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_vehicle_body_to_ned());
 
         Quaternion vehicle_to_gimbal_quat;
         vehicle_to_gimbal_quat.from_vector312(joint_angles.x,joint_angles.y,joint_angles.z);
