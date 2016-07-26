@@ -33,6 +33,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS_Y
     // @DisplayName: Compass offsets in milligauss on the Y axis
@@ -40,6 +41,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS_Z
     // @DisplayName: Compass offsets in milligauss on the Z axis
@@ -47,6 +49,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("OFS",    1, Compass, _state[0].offset, 0),
 
     // @Param: DEC
@@ -92,6 +95,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT_Y
     // @DisplayName: Motor interference compensation for body frame Y axis
@@ -99,6 +103,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT_Z
     // @DisplayName: Motor interference compensation for body frame Z axis
@@ -106,6 +111,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("MOT",    7, Compass, _state[0].motor_compensation, 0),
 
     // @Param: ORIENT
@@ -128,6 +134,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS2_Y
     // @DisplayName: Compass2 offsets in milligauss on the Y axis
@@ -135,6 +142,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS2_Z
     // @DisplayName: Compass2 offsets in milligauss on the Z axis
@@ -142,6 +150,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("OFS2",    10, Compass, _state[1].offset, 0),
 
     // @Param: MOT2_X
@@ -150,6 +159,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT2_Y
     // @DisplayName: Motor interference compensation to compass2 for body frame Y axis
@@ -157,6 +167,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT2_Z
     // @DisplayName: Motor interference compensation to compass2 for body frame Z axis
@@ -164,6 +175,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("MOT2",    11, Compass, _state[1].motor_compensation, 0),
 
     // @Param: PRIMARY
@@ -179,6 +191,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS3_Y
     // @DisplayName: Compass3 offsets in milligauss on the Y axis
@@ -186,6 +199,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: OFS3_Z
     // @DisplayName: Compass3 offsets in milligauss on the Z axis
@@ -193,6 +207,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -400 400
     // @Units: milligauss
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("OFS3",    13, Compass, _state[2].offset, 0),
 
     // @Param: MOT3_X
@@ -201,6 +216,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT3_Y
     // @DisplayName: Motor interference compensation to compass3 for body frame Y axis
@@ -208,6 +224,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
 
     // @Param: MOT3_Z
     // @DisplayName: Motor interference compensation to compass3 for body frame Z axis
@@ -215,21 +232,25 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("MOT3",    14, Compass, _state[2].motor_compensation, 0),
 
     // @Param: DEV_ID
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
+    // @User: Advanced
     AP_GROUPINFO("DEV_ID",  15, Compass, _state[0].dev_id, 0),
 
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
+    // @User: Advanced
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
 
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
+    // @User: Advanced
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
 
     // @Param: USE2
@@ -277,79 +298,97 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DIA_X
     // @DisplayName: Compass soft-iron diagonal X component
     // @Description: DIA_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA_Y
     // @DisplayName: Compass soft-iron diagonal Y component
     // @Description: DIA_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA_Z
     // @DisplayName: Compass soft-iron diagonal Z component
     // @Description: DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("DIA",    24, Compass, _state[0].diagonals, 0),
 
     // @Param: ODI_X
     // @DisplayName: Compass soft-iron off-diagonal X component
     // @Description: ODI_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI_Y
     // @DisplayName: Compass soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI_Z
     // @DisplayName: Compass soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("ODI",    25, Compass, _state[0].offdiagonals, 0),
 
     // @Param: DIA2_X
     // @DisplayName: Compass2 soft-iron diagonal X component
     // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA2_Y
     // @DisplayName: Compass2 soft-iron diagonal Y component
     // @Description: DIA_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA2_Z
     // @DisplayName: Compass2 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("DIA2",    26, Compass, _state[1].diagonals, 0),
 
     // @Param: ODI2_X
     // @DisplayName: Compass2 soft-iron off-diagonal X component
     // @Description: ODI_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI2_Y
     // @DisplayName: Compass2 soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI2_Z
     // @DisplayName: Compass2 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("ODI2",    27, Compass, _state[1].offdiagonals, 0),
 
     // @Param: DIA3_X
     // @DisplayName: Compass3 soft-iron diagonal X component
     // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA3_Y
     // @DisplayName: Compass3 soft-iron diagonal Y component
     // @Description: DIA_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: DIA3_Z
     // @DisplayName: Compass3 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("DIA3",    28, Compass, _state[2].diagonals, 0),
 
     // @Param: ODI3_X
     // @DisplayName: Compass3 soft-iron off-diagonal X component
     // @Description: ODI_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI3_Y
     // @DisplayName: Compass3 soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
 
     // @Param: ODI3_Z
     // @DisplayName: Compass3 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
+    // @User: Advanced
     AP_GROUPINFO("ODI3",    29, Compass, _state[2].offdiagonals, 0),
 
     // @Param: CAL_FIT
