@@ -25,30 +25,35 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
     // @Values: 0:None,1:PX4-PWM
+    // @User: Standard
     AP_GROUPINFO("_TYPE",    0, AP_RPM, _type[0], 0),
 
     // @Param: _SCALING
     // @DisplayName: RPM scaling
     // @Description: Scaling factor between sensor reading and RPM.
     // @Increment: 0.001
+    // @User: Standard
     AP_GROUPINFO("_SCALING", 1, AP_RPM, _scaling[0], 1.0f),
 
     // @Param: _MAX
     // @DisplayName: Maximum RPM
     // @Description: Maximum RPM to report
     // @Increment: 1
+    // @User: Standard
     AP_GROUPINFO("_MAX", 2, AP_RPM, _maximum[0], 100000),
 
     // @Param: _MIN
     // @DisplayName: Minimum RPM
     // @Description: Minimum RPM to report
     // @Increment: 1
+    // @User: Standard
     AP_GROUPINFO("_MIN", 3, AP_RPM, _minimum[0], 10),
 
     // @Param: _MIN_QUAL
     // @DisplayName: Minimum Quality
     // @Description: Minimum data quality to be used
     // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("_MIN_QUAL", 4, AP_RPM, _quality_min[0], 0.5),
 
 #if RPM_MAX_INSTANCES > 1
@@ -56,12 +61,14 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @DisplayName: Second RPM type
     // @Description: What type of RPM sensor is connected
     // @Values: 0:None,1:PX4-PWM
+    // @User: Advanced
     AP_GROUPINFO("2_TYPE",    10, AP_RPM, _type[1], 0),
 
     // @Param: 2_SCALING
     // @DisplayName: RPM scaling
     // @Description: Scaling factor between sensor reading and RPM.
     // @Increment: 0.001
+    // @User: Advanced
     AP_GROUPINFO("2_SCALING", 11, AP_RPM, _scaling[1], 1.0f),
 #endif
 
