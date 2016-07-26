@@ -106,7 +106,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
             if(medium_loopCounter == 5) {
                 if (compass.read()) {
                     // Calculate heading
-                    const Matrix3f &m = ahrs.get_rotation_body_to_ned();
+                    const Matrix3f &m = ahrs.get_rotation_autopilot_body_to_ned();
                     heading = compass.calculate_heading(m);
                     compass.learn_offsets();
                 }
