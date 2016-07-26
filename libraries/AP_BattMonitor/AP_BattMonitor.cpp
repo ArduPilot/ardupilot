@@ -3,6 +3,7 @@
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -298,7 +299,6 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
     return false;
 }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // return true if any battery is pushing too much power
 bool AP_BattMonitor::overpower_detected() const
 {
@@ -311,11 +311,14 @@ bool AP_BattMonitor::overpower_detected() const
 
 bool AP_BattMonitor::overpower_detected(uint8_t instance) const
 {
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (instance < _num_instances && _watt_max[instance] > 0) {
         float power = _BattMonitor_STATE(instance).current_amps * _BattMonitor_STATE(instance).voltage;
         return _BattMonitor_STATE(instance).healthy && (power > _watt_max[instance]);
     }
     return false;
-}
+#else
+    return false;
 #endif
+}
 
