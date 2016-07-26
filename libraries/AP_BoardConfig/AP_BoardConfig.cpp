@@ -71,6 +71,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
     // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
     // @RebootRequired: True
+    // @User: Advanced
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, px4.pwm_count, BOARD_PWM_COUNT_DEFAULT),
 #endif
 
@@ -80,6 +81,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
+    // @User: Advanced
     AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, px4.ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
 
     // @Param: SER2_RTSCTS
@@ -87,6 +89,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk and PX4. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
+    // @User: Advanced
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, px4.ser2_rtscts, 2),
 #endif
     
@@ -96,6 +99,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
+    // @User: Standard
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, px4.safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
 #endif
 
@@ -105,6 +109,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: This sets the SBUS output frame rate in Hz
     // @Values: 0:Disabled,1:50Hz,2:75Hz,3:100Hz,4:150Hz,5:200Hz,6:250Hz,7:300Hz
     // @RebootRequired: True
+    // @User: Advanced
     AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, px4.sbus_out_rate, 0),
 #endif
 
@@ -120,6 +125,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @DisplayName:  Enable use of UAVCAN devices
     // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory
     // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
     AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, px4.can_enable, 0),
 #endif
 
@@ -130,6 +136,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @Bitmask: 0:Ch1,1:Ch2,2:Ch3,3:Ch4,4:Ch5,5:Ch6,6:Ch7,7:Ch8,8:Ch9,9:Ch10,10:Ch11,11:Ch12,12:Ch13,13:Ch14
     // @RebootRequired: True
+    // @User: Advanced
     AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, px4.ignore_safety_channels, 0),
 #endif
 
@@ -139,6 +146,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. A value of -1 disables heating.
     // @Range: -1 80
     // @Units: degreesC
+    // @User: Advanced
     AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
 
