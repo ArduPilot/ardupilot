@@ -173,6 +173,14 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     }
 }
 
+Matrix3f AP_AHRS::get_rotation_vehicle_body_to_autopilot_body(void) const
+{
+    Matrix3f ret;
+    ret.identity();
+    ret.rotateXYinv(_trim);
+    return ret;
+}
+
 // return a ground speed estimate in m/s
 Vector2f AP_AHRS::groundspeed_vector(void)
 {
@@ -231,7 +239,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 void AP_AHRS::update_trig(void)
 {
     Vector2f yaw_vector;
-    const Matrix3f &temp = get_rotation_body_to_ned();
+    const Matrix3f &temp = get_rotation_vehicle_body_to_ned();
 
     // sin_yaw, cos_yaw
     yaw_vector.x = temp.a.x;

@@ -62,7 +62,8 @@ public:
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const;
-    const Matrix3f &get_rotation_body_to_ned(void) const;
+    const Matrix3f &get_rotation_autopilot_body_to_ned(void) const;
+    const Matrix3f &get_rotation_vehicle_body_to_ned(void) const;
 
     // return the current drift correction integrator value
     const Vector3f &get_gyro_drift(void) const;
@@ -255,6 +256,7 @@ private:
     bool ekf2_started:1;
     bool force_ekf:1;
     Matrix3f _dcm_matrix;
+    Matrix3f _body_dcm_matrix;
     Vector3f _dcm_attitude;
     Vector3f _gyro_bias;
     Vector3f _gyro_estimate;

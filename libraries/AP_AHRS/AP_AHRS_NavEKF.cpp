@@ -38,6 +38,7 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gp
     _ekf_flags(flags)
 {
     _dcm_matrix.identity();
+    _body_dcm_matrix.identity();
 }
 
 // return the smoothed gyro vector corrected for drift
@@ -49,12 +50,20 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
     return _gyro_estimate;
 }
 
-const Matrix3f &AP_AHRS_NavEKF::get_rotation_body_to_ned(void) const
+const Matrix3f &AP_AHRS_NavEKF::get_rotation_autopilot_body_to_ned(void) const
 {
     if (!active_EKF_type()) {
-        return AP_AHRS_DCM::get_rotation_body_to_ned();
+        return AP_AHRS_DCM::get_rotation_autopilot_body_to_ned();
     }
     return _dcm_matrix;
+}
+
+const Matrix3f &AP_AHRS_NavEKF::get_rotation_vehicle_body_to_ned(void) const
+{
+    if (!active_EKF_type()) {
+        return AP_AHRS_DCM::get_rotation_vehicle_body_to_ned();
+    }
+    return _body_dcm_matrix;
 }
 
 const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
@@ -132,12 +141,10 @@ void AP_AHRS_NavEKF::update_EKF1(void)
     if (ekf1_started) {
         EKF1.UpdateFilter();
         if (active_EKF_type() == EKF_TYPE1) {
-            Vector3f eulers;
             EKF1.getRotationBodyToNED(_dcm_matrix);
-            EKF1.getEulerAngles(eulers);
-            roll  = eulers.x;
-            pitch = eulers.y;
-            yaw   = eulers.z;
+            _body_dcm_matrix = _dcm_matrix;
+            _body_dcm_matrix.rotateXYinv(_trim);
+            _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
             update_cd_values();
             update_trig();
@@ -206,12 +213,10 @@ void AP_AHRS_NavEKF::update_EKF2(void)
     if (ekf2_started) {
         EKF2.UpdateFilter();
         if (active_EKF_type() == EKF_TYPE2) {
-            Vector3f eulers;
             EKF2.getRotationBodyToNED(_dcm_matrix);
-            EKF2.getEulerAngles(-1,eulers);
-            roll  = eulers.x;
-            pitch = eulers.y;
-            yaw   = eulers.z;
+            _body_dcm_matrix = _dcm_matrix;
+            _body_dcm_matrix.rotateXYinv(_trim);
+            _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
             update_cd_values();
             update_trig();
@@ -452,9 +457,11 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
         // EKF is secondary
 #if AP_AHRS_WITH_EKF1
         EKF1.getEulerAngles(eulers);
+        eulers -= _trim;
         return ekf1_started;
 #else
         EKF2.getEulerAngles(-1, eulers);
+        eulers -= _trim;
         return ekf2_started;
 #endif
 
