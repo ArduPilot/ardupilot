@@ -44,6 +44,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: GPS type
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
+    // @User: Advanced
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
     // @Param: TYPE2
@@ -51,12 +52,14 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: GPS type of 2nd GPS
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF
     // @RebootRequired: True
+    // @User: Advanced
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
 
     // @Param: NAVFILTER
     // @DisplayName: Navigation filter setting
     // @Description: Navigation filter engine setting
     // @Values: 0:Portable,2:Stationary,3:Pedestrian,4:Automotive,5:Sea,6:Airborne1G,7:Airborne2G,8:Airborne4G
+    // @User: Advanced
     AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
 
     // @Param: AUTO_SWITCH
@@ -93,6 +96,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: Destination for GPS_INJECT_DATA MAVLink packets
     // @Description: The GGS can send raw serial packets to inject data to multiple GPSes.
     // @Values: 0:send to first GPS,1:send to 2nd GPS,127:send to all
+    // @User: Advanced
     AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, GPS_RTK_INJECT_TO_ALL),
 
     // @Param: SBP_LOGMASK
@@ -107,6 +111,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
     // @Values: 0:Disabled,1:log every sample,5:log every 5 samples
     // @RebootRequired: True
+    // @User: Advanced
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
 
     // @Param: GNSS_MODE
