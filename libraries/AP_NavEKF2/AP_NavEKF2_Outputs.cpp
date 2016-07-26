@@ -102,7 +102,6 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
 void NavEKF2_core::getEulerAngles(Vector3f &euler) const
 {
     outputDataNew.quat.to_euler(euler.x, euler.y, euler.z);
-    euler = euler - _ahrs->get_trim();
 }
 
 // return body axis gyro bias estimates in rad/sec
@@ -136,9 +135,7 @@ void NavEKF2_core::getTiltError(float &ang) const
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 {
-    Vector3f trim = _ahrs->get_trim();
     outputDataNew.quat.rotation_matrix(mat);
-    mat.rotateXYinv(trim);
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
