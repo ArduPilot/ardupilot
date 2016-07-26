@@ -661,6 +661,9 @@ bool QuadPlane::should_relax(void)
 // see if we are flying in vtol
 bool QuadPlane::is_flying_vtol(void)
 {
+    if (!available()) {
+        return false;
+    }
     if (motors->get_throttle() > 0.01f) {
         // if we are demanding more than 1% throttle then don't consider aircraft landed
         return true;
