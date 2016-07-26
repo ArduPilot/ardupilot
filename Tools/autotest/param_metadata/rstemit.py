@@ -180,7 +180,7 @@ Complete Parameter List
             rows.append(v)
         return self.tablify(rows, headings=render_info["headings"])
 
-    def emit(self, g, f):
+    def emit(self, g):
         tag = '%s Parameters' % self.escape(g.name)
         reference = "parameters_" + g.name
 

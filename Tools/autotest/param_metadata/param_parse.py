@@ -210,14 +210,14 @@ for library in libraries:
     def do_emit(emit):
         emit.set_annotate_with_vehicle(len(vehicles) > 1)
         for vehicle in vehicles:
-            emit.emit(vehicle, f)
+            emit.emit(vehicle)
 
         emit.start_libraries()
 
         sorted_libraries = sorted(libraries, key=sortlib)
         for library in sorted_libraries:
             if library.params:
-                emit.emit(library, f)
+                emit.emit(library)
 
         emit.close()
 
