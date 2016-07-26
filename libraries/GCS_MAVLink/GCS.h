@@ -18,6 +18,8 @@
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
+#define MSG_QUEUE_SIZE 64
+
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
@@ -348,7 +350,7 @@ private:
     uint16_t _log_data_page;
 
     // deferred message handling
-    enum ap_message deferred_messages[MSG_RETRY_DEFERRED];
+    enum ap_message deferred_messages[MSG_QUEUE_SIZE];
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
 
