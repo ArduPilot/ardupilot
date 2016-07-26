@@ -52,9 +52,12 @@ void NavEKF2_core::ResetVelocity(void)
     zeroRows(P,3,4);
     zeroCols(P,3,4);
 
-    // set the variances to the measurement variance
-    P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
-
+    if (PV_AidingMode == AID_RELATIVE) {
+        P[4][4] = P[3][3] = sq(10.0f);
+    } else {
+        // set the variances to the measurement variance
+        P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
+    }
 }
 
 // resets position states to last GPS measurement or to zero if in constant position mode

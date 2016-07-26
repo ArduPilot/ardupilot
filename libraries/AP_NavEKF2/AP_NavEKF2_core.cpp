@@ -151,6 +151,7 @@ void NavEKF2_core::InitialiseVariables()
     magTimeout = false;
     allMagSensorsFailed = false;
     tasTimeout = true;
+    flowTimeout = true;
     badMagYaw = false;
     badIMUdata = false;
     finalInflightYawInit = false;

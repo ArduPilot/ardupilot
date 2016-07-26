@@ -162,7 +162,7 @@ void NavEKF2_core::setAidingMode()
     PV_AidingModePrev = PV_AidingMode;
 
     // Determine if we should change aiding mode
-     if (PV_AidingMode == AID_NONE) {
+    if (PV_AidingMode == AID_NONE) {
         // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
         // and IMU gyro bias estimates have stabilised
         bool filterIsStable = tiltAlignComplete && yawAlignComplete && checkGyroCalStatus();
@@ -170,52 +170,48 @@ void NavEKF2_core::setAidingMode()
         // GPS aiding is the perferred option unless excluded by the user
         if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit) {
             PV_AidingMode = AID_ABSOLUTE;
-        } else if ((frontend->_fusionModeGPS == 3) && optFlowDataPresent()) {
+        } else if ((frontend->_fusionModeGPS == 3) && flowDataValid) {
             PV_AidingMode = AID_RELATIVE;
         }
     } else if (PV_AidingMode == AID_RELATIVE) {
-         // Check if the optical flow sensor has timed out
-         bool flowSensorTimeout = ((imuSampleTime_ms - flowValidMeaTime_ms) > 5000);
-         // Check if the fusion has timed out (flow measurements have been rejected for too long)
-         bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
-         if (flowSensorTimeout || flowFusionTimeout) {
+         if (!flowDataValid) {
              PV_AidingMode = AID_NONE;
          }
-     } else if (PV_AidingMode == AID_ABSOLUTE) {
-         // check if we can use opticalflow as a backup
-         bool optFlowBackupAvailable = (flowDataValid && !hgtTimeout);
+    } else if (PV_AidingMode == AID_ABSOLUTE) {
+        // check if we can use opticalflow as a backup
+        bool optFlowBackupAvailable = (flowDataValid && !hgtTimeout);
 
-         // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
-         uint16_t gpsRetryTimeout_ms = useAirspeed() ? frontend->gpsRetryTimeUseTAS_ms : frontend->gpsRetryTimeNoTAS_ms;
+        // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
+        uint16_t gpsRetryTimeout_ms = useAirspeed() ? frontend->gpsRetryTimeUseTAS_ms : frontend->gpsRetryTimeNoTAS_ms;
 
-         // Set the time that copters will fly without a GPS lock before failing the GPS and switching to a non GPS mode
-         uint16_t gpsFailTimeout_ms = optFlowBackupAvailable ? frontend->gpsFailTimeWithFlow_ms : gpsRetryTimeout_ms;
+        // Set the time that copters will fly without a GPS lock before failing the GPS and switching to a non GPS mode
+        uint16_t gpsFailTimeout_ms = optFlowBackupAvailable ? frontend->gpsFailTimeWithFlow_ms : gpsRetryTimeout_ms;
 
-         // If we haven't received GPS data for a while and we are using it for aiding, then declare the position and velocity data as being timed out
-         if (imuSampleTime_ms - lastTimeGpsReceived_ms > gpsFailTimeout_ms) {
+        // If we haven't received GPS data for a while and we are using it for aiding, then declare the position and velocity data as being timed out
+        if (imuSampleTime_ms - lastTimeGpsReceived_ms > gpsFailTimeout_ms) {
 
-             // Let other processes know that GPS is not available and that a timeout has occurred
-             posTimeout = true;
-             velTimeout = true;
-             gpsNotAvailable = true;
+            // Let other processes know that GPS is not available and that a timeout has occurred
+            posTimeout = true;
+            velTimeout = true;
+            gpsNotAvailable = true;
 
-             // If we are totally reliant on GPS for navigation, then we need to switch to a non-GPS mode of operation
-             // If we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
-             // If we can do optical flow nav (valid flow data and height above ground estimate), then go into flow nav mode.
-             if (!useAirspeed() && !assume_zero_sideslip()) {
-                 if (optFlowBackupAvailable) {
-                     // attempt optical flow navigation
-                     PV_AidingMode = AID_RELATIVE;
-                 } else {
-                     // put the filter into constant position mode
-                     PV_AidingMode = AID_NONE;
-                 }
-             }
-         } else if (gpsInhibit) {
-             // put the filter into constant position mode in response to an exernal request
-             PV_AidingMode = AID_NONE;
-         }
-     }
+            // If we are totally reliant on GPS for navigation, then we need to switch to a non-GPS mode of operation
+            // If we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
+            // If we can do optical flow nav (valid flow data and height above ground estimate), then go into flow nav mode.
+            if (!useAirspeed() && !assume_zero_sideslip()) {
+                if (optFlowBackupAvailable) {
+                    // attempt optical flow navigation
+                    PV_AidingMode = AID_RELATIVE;
+                } else {
+                    // put the filter into constant position mode
+                    PV_AidingMode = AID_NONE;
+                }
+            }
+        } else if (gpsInhibit) {
+            // put the filter into constant position mode in response to an exernal request
+            PV_AidingMode = AID_NONE;
+        }
+    }
 
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {

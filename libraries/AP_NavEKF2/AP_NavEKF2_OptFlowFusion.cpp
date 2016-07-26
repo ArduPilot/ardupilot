@@ -70,6 +70,8 @@ void NavEKF2_core::SelectFlowFusion()
         flowDataToFuse = false;
     }
 
+    flowTimeout = imuSampleTime_ms - prevFlowFuseTime_ms > 5000;
+
     // stop the performance timer
     hal.util->perf_end(_perf_FuseOptFlow);
 }
@@ -412,11 +414,11 @@ void NavEKF2_core::FuseOptFlow()
             // calculate innovation variance for X axis observation and protect against a badly conditioned calculation
             if (t61 > R_LOS) {
                 t62 = 1.0f/t61;
-                faultStatus.bad_yflow = false;
+                faultStatus.bad_xflow = false;
             } else {
                 t61 = 0.0f;
                 t62 = 1.0f/R_LOS;
-                faultStatus.bad_yflow = true;
+                faultStatus.bad_xflow = true;
                 return;
             }
             varInnovOptFlow[0] = t61;
@@ -620,10 +622,7 @@ void NavEKF2_core::FuseOptFlow()
         flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
-        if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
-            // record the last time observations were accepted for fusion
-            prevFlowFuseTime_ms = imuSampleTime_ms;
-
+        if (flowTestRatio[obsIndex] < 1.0f) {
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
@@ -662,6 +661,9 @@ void NavEKF2_core::FuseOptFlow()
             }
 
             if (healthyFusion) {
+                // record the last time observations were accepted for fusion
+                prevFlowFuseTime_ms = imuSampleTime_ms;
+
                 // update the covariance matrix
                 for (uint8_t i= 0; i<=stateIndexLim; i++) {
                     for (uint8_t j= 0; j<=stateIndexLim; j++) {
@@ -684,7 +686,6 @@ void NavEKF2_core::FuseOptFlow()
                 // the first 3 states represent the angular misalignment vector. This is
                 // is used to correct the estimated quaternion on the current time step
                 stateStruct.quat.rotate(stateStruct.angErr);
-
             } else {
                 // record bad axis
                 if (obsIndex == 0) {

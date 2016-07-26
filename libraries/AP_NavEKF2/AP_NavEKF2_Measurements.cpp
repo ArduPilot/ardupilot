@@ -113,7 +113,7 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
     stateStruct.quat.rotation_matrix(Tbn_flow);
     Tnb_flow = Tbn_flow.transposed();
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
-    if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
+    if ((rawFlowQuality > 0) && rawFlowRates.length() < MIN(4.2f, frontend->_maxFlowRate) && rawGyroRates.length() < MIN(4.2f, frontend->_maxFlowRate)) {
         // correct flow sensor rates for bias
         omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
         omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
