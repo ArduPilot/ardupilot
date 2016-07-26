@@ -40,6 +40,8 @@ public:
 
     bool is_current_thread();
 
+    bool is_started() const { return _started; }
+
     size_t get_stack_usage();
 
     bool set_stack_size(size_t stack_size);
