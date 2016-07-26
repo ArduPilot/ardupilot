@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Description: This is the best climb rate that the aircraft can achieve with the throttle set to THR_MAX and the airspeed set to the default value. For electric aircraft make sure this number can be achieved towards the end of flight when the battery voltage has reduced. The setting of this parameter can be checked by commanding a positive altitude change of 100m in loiter, RTL or guided mode. If the throttle required to climb is close to THR_MAX and the aircraft is maintaining airspeed, then this parameter is set correctly. If the airspeed starts to reduce, then the parameter is set to high, and if the throttle demand require to climb and maintain speed is noticeably less than THR_MAX, then either CLMB_MAX should be increased or THR_MAX reduced.
     // @Increment: 0.1
     // @Range: 0.1 20.0
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("CLMB_MAX",    0, AP_TECS, _maxClimbRate, 5.0f),
 
     // @Param: SINK_MIN
@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Description: This is the sink rate of the aircraft with the throttle set to THR_MIN and the same airspeed as used to measure CLMB_MAX.
     // @Increment: 0.1
     // @Range: 0.1 10.0
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("SINK_MIN",    1, AP_TECS, _minSinkRate, 2.0f),
 
     // @Param: TIME_CONST
@@ -225,8 +225,8 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     AP_GROUPINFO("TKOFF_IGAIN", 25, AP_TECS, _integGain_takeoff, 0),
 
     // @Param: LAND_PDAMP
-    // @DisplayName: Pitch damping gain
-    // @Description: This is the damping gain for the pitch demand loop. Increase to add damping  to correct for oscillations in speed and height. If set to 0 then TECS_PTCH_DAMP will be used instead.
+    // @DisplayName: Pitch damping gain when landing
+    // @Description: This is the damping gain for the pitch demand loop during landing. Increase to add damping  to correct for oscillations in speed and height. If set to 0 then TECS_PTCH_DAMP will be used instead.
     // @Range: 0.1 1.0
     // @Increment: 0.1
     // @User: Advanced
