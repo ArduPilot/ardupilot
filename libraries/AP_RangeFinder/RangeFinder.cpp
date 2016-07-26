@@ -227,6 +227,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
+
     // @Param: 3_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
@@ -300,17 +301,19 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_GNDCLEAR", 35, RangeFinder, _ground_clearance_cm[2], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
-#endif
 
-#if RANGEFINDER_MAX_INSTANCES > 3
     // @Param: 3_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
+    // @DisplayName: Bus address of third rangefinder
     // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
-    
+
+#endif
+
+#if RANGEFINDER_MAX_INSTANCES > 3
+
     // @Param: 4_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
