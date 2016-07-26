@@ -136,33 +136,9 @@ const uint8_t SPIDeviceManager::_n_device_desc = LINUX_SPI_DEVICE_NUM_DEVICES;
 /* Private struct to maintain for each bus */
 class SPIBus {
 public:
-    ~SPIBus()
-    {
-        if (fd >= 0) {
-            ::close(fd);
-        }
-    }
+    ~SPIBus();
 
-    int open(uint16_t bus_, uint16_t kernel_cs_)
-    {
-        char path[sizeof("/dev/spidevXXXXX.XXXXX")];
-
-        if (fd > 0) {
-            return -EBUSY;
-        }
-
-        snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus_, kernel_cs_);
-        fd = ::open(path, O_RDWR | O_CLOEXEC);
-        if (fd < 0) {
-            AP_HAL::panic("SPI: unable to open SPI bus %s: %s",
-                          path, strerror(errno));
-        }
-
-        bus = bus_;
-        kernel_cs = kernel_cs_;
-
-        return fd;
-    }
+    int open(uint16_t bus_, uint16_t kernel_cs_);
 
     Semaphore sem;
     int fd = -1;
@@ -170,6 +146,36 @@ public:
     uint16_t kernel_cs;
     uint8_t ref;
 };
+
+SPIBus::~SPIBus()
+{
+    if (fd >= 0) {
+        ::close(fd);
+    }
+}
+
+
+int SPIBus::open(uint16_t bus_, uint16_t kernel_cs_)
+{
+    char path[sizeof("/dev/spidevXXXXX.XXXXX")];
+
+    if (fd > 0) {
+        return -EBUSY;
+    }
+
+    snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus_, kernel_cs_);
+    fd = ::open(path, O_RDWR | O_CLOEXEC);
+    if (fd < 0) {
+        AP_HAL::panic("SPI: unable to open SPI bus %s: %s",
+                      path, strerror(errno));
+    }
+
+    bus = bus_;
+    kernel_cs = kernel_cs_;
+
+    return fd;
+}
+
 
 SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
     : _bus(bus)
