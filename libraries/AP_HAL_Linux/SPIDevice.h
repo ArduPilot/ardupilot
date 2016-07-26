@@ -52,10 +52,11 @@ public:
 
     /* See AP_HAL::Device::register_periodic_callback() */
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
-        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override
-    {
-        return nullptr;
-    }
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
+
+    /* See AP_HAL::Device::adjust_periodic_callback() */
+    bool adjust_periodic_callback(
+        AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
     /* See AP_HAL::Device::get_fd() */
     int get_fd() override;
