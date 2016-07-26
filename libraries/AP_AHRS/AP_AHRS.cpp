@@ -27,6 +27,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Description: This controls how how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
     // @Range: 0.0 1.0
     // @Increment: .01
+    // @User: Advanced
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS, gps_gain, 1.0f),
 
     // @Param: GPS_USE
@@ -41,6 +42,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Description: This controls the weight the compass or GPS has on the heading. A higher value means the heading will track the yaw source (GPS or compass) more rapidly.
     // @Range: 0.1 0.4
     // @Increment: .01
+    // @User: Advanced
     AP_GROUPINFO("YAW_P", 4,    AP_AHRS, _kp_yaw, 0.2f),
 
     // @Param: RP_P
@@ -48,6 +50,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Description: This controls how fast the accelerometers correct the attitude
     // @Range: 0.1 0.4
     // @Increment: .01
+    // @User: Advanced
     AP_GROUPINFO("RP_P",  5,    AP_AHRS, _kp, 0.2f),
 
     // @Param: WIND_MAX
@@ -56,6 +59,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Range: 0 127
     // @Units: m/s
     // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("WIND_MAX",  6,    AP_AHRS, _wind_max, 0.0f),
 
     // NOTE: 7 was BARO_USE
@@ -66,7 +70,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: Radians
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
-    // @User: User
+    // @User: Standard
 
     // @Param: TRIM_Y
     // @DisplayName: AHRS Trim Pitch
@@ -74,7 +78,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: Radians
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
-    // @User: User
+    // @User: Standard
 
     // @Param: TRIM_Z
     // @DisplayName: AHRS Trim Yaw
