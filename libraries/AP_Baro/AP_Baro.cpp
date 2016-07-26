@@ -46,6 +46,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
+    // @User: Advanced
     AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, sensors[0].ground_pressure, 0),
 
     // @Param: TEMP
@@ -55,6 +56,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
+    // @User: Advanced
     AP_GROUPINFO("TEMP", 3, AP_Baro, sensors[0].ground_temperature, 0),
 
     // index 4 reserved for old AP_Int8 version in legacy FRAM
@@ -65,12 +67,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Description: altitude offset in meters added to barometric altitude. This is used to allow for automatic adjustment of the base barometric altitude by a ground station equipped with a barometer. The value is added to the barometric altitude read by the aircraft. It is automatically reset to 0 when the barometer is calibrated on each reboot or when a preflight calibration is performed.
     // @Units: meters
     // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("ALT_OFFSET", 5, AP_Baro, _alt_offset, 0),
 
     // @Param: PRIMARY
     // @DisplayName: Primary barometer
     // @Description: This selects which barometer will be the primary if multiple barometers are found
     // @Values: 0:FirstBaro,1:2ndBaro,2:3rdBaro
+    // @User: Advanced
     AP_GROUPINFO("PRIMARY", 6, AP_Baro, _primary_baro, 0),
 
     AP_GROUPEND
