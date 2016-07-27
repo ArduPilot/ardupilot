@@ -98,7 +98,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: CAN_ENABLE
     // @DisplayName:  Enable use of UAVCAN devices
     // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled,2:enabled pwm control,3:Enabled CAN motor control
     AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
 #endif
 
