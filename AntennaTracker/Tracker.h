@@ -132,6 +132,12 @@ private:
     RC_Channel channel_yaw{CH_YAW};
     RC_Channel channel_pitch{CH_PITCH};
 
+    LowPassFilterFloat yaw_servo_out_filt;
+    LowPassFilterFloat pitch_servo_out_filt;
+
+    bool yaw_servo_out_filt_init = false;
+    bool pitch_servo_out_filt_init = false;
+
     AP_SerialManager serial_manager;
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
     GCS_MAVLINK_Tracker gcs[MAVLINK_COMM_NUM_BUFFERS];
@@ -256,7 +262,7 @@ private:
     void calc_angle_error(float pitch, float yaw, bool direction_reversed);
     void calc_body_frame_target(float pitch, float yaw, float& bf_pitch, float& bf_yaw);
     bool convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& ef_yaw);
-    void set_servo_direction(bool& direction_reversed);
+    bool get_ef_yaw_direction();
 
 public:
     void mavlink_snoop(const mavlink_message_t* msg);

@@ -20,6 +20,9 @@ void Tracker::init_servos()
     // initialise output to servos
     channel_yaw.calc_pwm();
     channel_pitch.calc_pwm();
+
+    yaw_servo_out_filt.set_cutoff_frequency(SERVO_OUT_FILT_HZ);
+    pitch_servo_out_filt.set_cutoff_frequency(SERVO_OUT_FILT_HZ);
 }
 
 /**
@@ -88,6 +91,13 @@ void Tracker::update_pitch_position_servo()
     }
     // rate limit pitch servo
     channel_pitch.set_servo_out(new_servo_out);
+
+    if (pitch_servo_out_filt_init) {
+    	pitch_servo_out_filt.apply(new_servo_out, G_Dt);
+    } else {
+    	pitch_servo_out_filt.reset(new_servo_out);
+    	pitch_servo_out_filt_init = true;
+    }
 }
 
 
@@ -107,7 +117,7 @@ void Tracker::update_pitch_onoff_servo(float pitch)
         // positive error means we are pointing too low, so push the
         // servo up
         channel_pitch.set_servo_out(-9000);
-    } else if (pitch*100<pitch_max_cd){
+    } else if (pitch*100<pitch_max_cd) {
         // negative error means we are pointing too high, so push the
         // servo down
         channel_pitch.set_servo_out(9000);
@@ -121,7 +131,7 @@ void Tracker::update_pitch_cr_servo(float pitch)
 {
     int32_t pitch_min_cd = g.pitch_min*100;
     int32_t pitch_max_cd = g.pitch_max*100;
-    if ((pitch>pitch_min_cd) && (pitch<pitch_max_cd)){
+    if ((pitch>pitch_min_cd) && (pitch<pitch_max_cd)) {
         g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
         channel_pitch.set_servo_out(g.pidPitch2Srv.get_pid());
     }
@@ -205,6 +215,13 @@ void Tracker::update_yaw_position_servo()
     }
 
     channel_yaw.set_servo_out(new_servo_out);
+
+    if(yaw_servo_out_filt_init){
+    	yaw_servo_out_filt.apply(new_servo_out, G_Dt);
+    } else {
+    	yaw_servo_out_filt.reset(new_servo_out);
+    	yaw_servo_out_filt_init = true;
+    }
 }
 
 
