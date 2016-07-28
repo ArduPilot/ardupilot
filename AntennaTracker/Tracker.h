@@ -207,6 +207,10 @@ private:
     void gcs_retry_deferred(void);
     void load_parameters(void);
     void update_auto(void);
+    void calc_angle_error(float pitch, float yaw, bool direction_reversed);
+    void convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw);
+    bool convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& ef_yaw);
+    bool get_ef_yaw_direction();
     void update_manual(void);
     void update_scan(void);
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
@@ -258,10 +262,6 @@ private:
     void start_logging();
     void log_init(void);
     bool should_log(uint32_t mask);
-    void calc_angle_error(float pitch, float yaw, bool direction_reversed);
-    void calc_body_frame_target(float pitch, float yaw, float& bf_pitch, float& bf_yaw);
-    bool convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& ef_yaw);
-    bool get_ef_yaw_direction();
 
 public:
     void mavlink_snoop(const mavlink_message_t* msg);
