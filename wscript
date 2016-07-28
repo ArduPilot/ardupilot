@@ -66,6 +66,11 @@ def options(opt):
         default='sitl',
         help='Target board to build, choices are %s.' % boards_names)
 
+    g.add_option('--debug',
+        action='store_true',
+        default=False,
+        help='Configure as debug variant.')
+
     g.add_option('--no-submodule-update',
         dest='submodule_update',
         action='store_false',
@@ -79,11 +84,6 @@ revisions.
         action='store_true',
         default=False,
         help='Enable benchmarks.')
-
-    g.add_option('--debug',
-        action='store_true',
-        default=False,
-        help='Configure as debug variant.')
 
     g.add_option('--disable-lttng', action='store_true',
         default=False,
