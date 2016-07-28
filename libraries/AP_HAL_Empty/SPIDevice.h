@@ -49,6 +49,13 @@ public:
         return true;
     }
 
+    /* See AP_HAL::SPIDevice::transfer_fullduplex() */
+    bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
+                             uint32_t len) override
+    {
+        return true;
+    }
+
     /* See AP_HAL::Device::get_semaphore() */
     AP_HAL::Semaphore *get_semaphore()
     {
@@ -67,6 +74,15 @@ public:
 
 private:
     Semaphore _semaphore;
+};
+
+class SPIDeviceManager : public AP_HAL::SPIDeviceManager {
+public:
+    SPIDeviceManager() { }
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override
+    {
+        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice());
+    }
 };
 
 }

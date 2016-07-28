@@ -68,7 +68,7 @@ static Empty::I2CDriver i2cDriver0(&i2cSemaphore0);
 static I2CDriver  i2cDriver0(1);
 #endif
 
-static SPIDeviceManager spiDeviceManager;
+static SPIDeviceManager spi_mgr_instance;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
@@ -89,14 +89,7 @@ static AnalogIn_Navio2 analogIn;
 static AnalogIn analogIn;
 #endif
 
-/*
-  select between FRAM and FS
- */
-#if LINUX_STORAGE_USE_FRAM == 1
-static Storage_FRAM storageDriver;
-#else
 static Storage storageDriver;
-#endif
 
 /*
   use the BBB gpio driver on ERLE, PXF and BBBMINI
@@ -219,7 +212,7 @@ HAL_Linux::HAL_Linux() :
         NULL,
         NULL,
 #endif
-        &spiDeviceManager,
+        &spi_mgr_instance,
         &analogIn,
         &storageDriver,
         &uartADriver,
@@ -342,7 +335,6 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
     i2c1->begin();
 #endif
-    spi->init();
     rcout->init();
     rcin->init();
     uartA->begin(115200);

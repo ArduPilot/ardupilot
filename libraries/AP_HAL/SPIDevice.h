@@ -39,6 +39,13 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) override = 0;
 
+    /*
+     * Like #transfer(), but both @send and @recv buffers are transmitted at
+     * the same time: because of this they need to be of the same size.
+     */
+    virtual bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
+                                     uint32_t len) = 0;
+
     /* See Device::get_semaphore() */
     virtual Semaphore *get_semaphore() override = 0;
 
@@ -49,6 +56,12 @@ public:
     virtual int get_fd() override = 0;
 };
 
-/* SPIDeviceManager is temporarily provided by SPIDriver.h */
+class SPIDeviceManager {
+public:
+    virtual OwnPtr<SPIDevice> get_device(const char *name)
+    {
+        return nullptr;
+    }
+};
 
 }

@@ -52,10 +52,6 @@ namespace AP_HAL {
     enum SPIDeviceType {
         // Devices using AP_HAL::SPIDevice abstraction
         SPIDevice_Type              = -1,
-        SPIDevice_Dataflash         = 0,
-        SPIDevice_ADS7844           = 1,
-        SPIDevice_Ublox             = 11,
-        SPIDevice_RASPIO            = 12,
     };
 
     // Must be implemented by the concrete HALs.

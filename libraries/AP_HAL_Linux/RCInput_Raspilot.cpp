@@ -21,14 +21,7 @@ using namespace Linux;
 
 void RCInput_Raspilot::init()
 {
-    _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
-    _spi_sem = _spi->get_semaphore();
-
-    if (_spi_sem == NULL) {
-        AP_HAL::panic("PANIC: RCIutput_Raspilot did not get "
-                                  "valid SPI semaphore!");
-        return; // never reached
-    }
+    _dev = hal.spi->get_device("raspio");
 
     // start the timer process to read samples
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&RCInput_Raspilot::_poll_data, void));
@@ -43,7 +36,7 @@ void RCInput_Raspilot::_poll_data(void)
 
     _last_timer = AP_HAL::micros();
 
-    if (!_spi_sem->take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
@@ -55,9 +48,11 @@ void RCInput_Raspilot::_poll_data(void)
     _dma_packet_tx.crc = 0;
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     /* set raspilotio to read reg4 */
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
+    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
     /* get reg4 data from raspilotio */
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
+    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+		   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
 
     uint16_t num_values = _dma_packet_rx.regs[0];
     uint16_t rc_ok = _dma_packet_rx.regs[1] & (1 << 4);
@@ -69,7 +64,7 @@ void RCInput_Raspilot::_poll_data(void)
       _update_periods(&_dma_packet_rx.regs[6], (uint8_t)num_values);
     }
 
-    _spi_sem->give();
+    _dev->get_semaphore()->give();
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE

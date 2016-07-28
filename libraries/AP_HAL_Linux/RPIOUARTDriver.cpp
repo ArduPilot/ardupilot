@@ -28,8 +28,7 @@ using namespace Linux;
 
 RPIOUARTDriver::RPIOUARTDriver() :
     UARTDriver(false),
-    _spi(NULL),
-    _spi_sem(NULL),
+    _dev(nullptr),
     _last_update_timestamp(0),
     _external(false),
     _need_set_baud(false),
@@ -41,12 +40,12 @@ RPIOUARTDriver::RPIOUARTDriver() :
 
 bool RPIOUARTDriver::sem_take_nonblocking()
 {
-    return _spi_sem->take_nonblocking();
+    return _dev->get_semaphore()->take_nonblocking();
 }
 
 void RPIOUARTDriver::sem_give()
 {
-    _spi_sem->give();
+    _dev->get_semaphore()->give();
 }
 
 bool RPIOUARTDriver::isExternal()
@@ -102,19 +101,7 @@ void RPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
        _writebuf_tail = 0;
    }
 
-   _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
-
-   if (_spi == NULL) {
-       AP_HAL::panic("Cannot get SPIDevice_RASPIO");
-   }
-
-   _spi_sem = _spi->get_semaphore();
-
-    if (_spi_sem == NULL) {
-        AP_HAL::panic("PANIC: RASPIOUARTDriver did not get "
-                                  "valid SPI semaphore!");
-        return; // never reached
-    }
+   _dev = hal.spi->get_device("raspio");
 
     /* set baudrate */
     _baudrate = b;
@@ -159,7 +146,7 @@ void RPIOUARTDriver::_timer_tick(void)
 
         if (_baudrate != 0) {
 
-            if (!_spi_sem->take_nonblocking()) {
+            if (!_dev->get_semaphore()->take_nonblocking()) {
                 return;
             }
 
@@ -173,11 +160,12 @@ void RPIOUARTDriver::_timer_tick(void)
             _dma_packet_tx.crc = 0;
             _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
 
-            _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
+            _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                           (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
 
             hal.scheduler->delay(1);
 
-            _spi_sem->give();
+            _dev->get_semaphore()->give();
 
         }
 
@@ -194,7 +182,7 @@ void RPIOUARTDriver::_timer_tick(void)
 
     _in_timer = true;
 
-    if (!_spi_sem->take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
@@ -235,7 +223,8 @@ void RPIOUARTDriver::_timer_tick(void)
     _dma_packet_tx.crc = 0;
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     /* set raspilotio to read uart data */
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
+    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
 
     hal.scheduler->delay_microseconds(100);
 
@@ -246,12 +235,13 @@ void RPIOUARTDriver::_timer_tick(void)
     memset( &_dma_packet_tx.regs[0], 0, PKT_MAX_REGS*sizeof(uint16_t) );
     _dma_packet_tx.crc = 0;
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
-    _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
+    _dev->transfer((uint8_t *)&_dma_packet_tx, sizeof(_dma_packet_tx),
+                   (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_rx));
 
     hal.scheduler->delay_microseconds(100);
 
     /* release sem */
-    _spi_sem->give();
+    _dev->get_semaphore()->give();
 
     /* add bytes to read buf */
     uint16_t _head;

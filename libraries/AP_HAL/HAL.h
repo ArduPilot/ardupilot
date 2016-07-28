@@ -6,7 +6,7 @@
 #include "GPIO.h"
 #include "RCInput.h"
 #include "RCOutput.h"
-#include "SPIDriver.h"
+#include "SPIDevice.h"
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "system.h"

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AP_HAL_Linux.h"
+#include <AP_HAL/SPIDevice.h>
 
 class Linux::RCOutput_Raspilot : public AP_HAL::RCOutput {
     void     init();
@@ -16,8 +17,7 @@ private:
     void reset();
     void _update(void);
     
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
     
     uint32_t _last_update_timestamp;
     uint16_t _frequency;

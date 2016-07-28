@@ -1,18 +1,16 @@
 #include "SPIUARTDriver.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
-#define SPIUART_DEBUG 0
-
-#include <cassert>
-
-#if SPIUART_DEBUG
+#ifdef SPIUART_DEBUG
+#include <stdio.h>
 #define debug(fmt, args ...)  do {hal.console->printf("[SPIUARTDriver]: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #define error(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
@@ -22,110 +20,92 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-SPIUARTDriver::SPIUARTDriver() :
-    UARTDriver(false),
-    _spi(NULL),
-    _spi_sem(NULL),
-    _last_update_timestamp(0),
-    _buffer(NULL),
-    _external(false)
+SPIUARTDriver::SPIUARTDriver()
+    : UARTDriver(false)
 {
-    _readbuf = NULL;
-    _writebuf = NULL;
-}
-
-bool SPIUARTDriver::sem_take_nonblocking()
-{
-    return _spi_sem->take_nonblocking();
-}
-
-void SPIUARTDriver::sem_give()
-{
-    _spi_sem->give();
 }
 
 void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (device_path != NULL) {
-        UARTDriver::begin(b,rxS,txS);
-        if ( is_initialized()) {
+        UARTDriver::begin(b, rxS, txS);
+        if (is_initialized()) {
             _external = true;
             return;
         }
     }
 
-   if (rxS < 1024) {
-       rxS = 2048;
-   }
-   if (txS < 1024) {
-       txS = 2048;
-   }
+    if (!is_initialized()) {
+        _dev = hal.spi->get_device("ublox");
+        if (!_dev) {
+            return;
+        }
+    }
 
-   /*
+    if (rxS < 1024) {
+        rxS = 2048;
+    }
+    if (txS < 1024) {
+        txS = 2048;
+    }
+
+    /*
      allocate the read buffer
    */
-   if (rxS != 0 && rxS != _readbuf_size) {
-       _readbuf_size = rxS;
-       if (_readbuf != NULL) {
-           free(_readbuf);
-       }
-       _readbuf = (uint8_t *)malloc(_readbuf_size);
-       _readbuf_head = 0;
-       _readbuf_tail = 0;
-   }
+    if (rxS != 0 && rxS != _readbuf_size) {
+        _readbuf_size = rxS;
+        if (_readbuf != NULL) {
+            free(_readbuf);
+        }
+        _readbuf = (uint8_t *)malloc(_readbuf_size);
+        _readbuf_head = 0;
+        _readbuf_tail = 0;
+    }
 
-   /*
+    /*
      allocate the write buffer
    */
-   if (txS != 0 && txS != _writebuf_size) {
-       _writebuf_size = txS;
-       if (_writebuf != NULL) {
-           free(_writebuf);
-       }
-       _writebuf = (uint8_t *)malloc(_writebuf_size);
-       _writebuf_head = 0;
-       _writebuf_tail = 0;
-   }
+    if (txS != 0 && txS != _writebuf_size) {
+        _writebuf_size = txS;
+        if (_writebuf != NULL) {
+            free(_writebuf);
+        }
+        _writebuf = (uint8_t *)malloc(_writebuf_size);
+        _writebuf_head = 0;
+        _writebuf_tail = 0;
+    }
 
-   if (_buffer == NULL) {
-       /* Do not allocate new buffer, if we're just changing speed */
-       _buffer = new uint8_t[rxS];
-       if (_buffer == NULL) {
-           hal.console->printf("Not enough memory\n");
-           AP_HAL::panic("Not enough memory\n");
-       }
-   }
+    if (_buffer == NULL) {
+        /* Do not allocate new buffer, if we're just changing speed */
+        _buffer = new uint8_t[rxS];
+        if (_buffer == NULL) {
+            hal.console->printf("Not enough memory\n");
+            AP_HAL::panic("Not enough memory\n");
+        }
+    }
 
-   _spi = hal.spi->device(AP_HAL::SPIDevice_Ublox);
-
-   if (_spi == NULL) {
-       AP_HAL::panic("Cannot get SPIDevice_Ublox");
-   }
-
-   _spi_sem = _spi->get_semaphore();
-
-   switch (b) {
-       case 4000000U:
-           if (is_initialized()) {
-               /* Do not allow speed changes before device is initialized, because
+    switch (b) {
+    case 4000000U:
+        if (is_initialized()) {
+            /* Do not allow speed changes before device is initialized, because
                 * it can lead to misconfiguraration. Once the device is initialized,
                 * it's sage to update speed
                 */
-               _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
-               debug("Set higher SPI-frequency");
-           } else {
-               _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-               debug("Set lower SPI-frequency");
-           }
-           break;
-       default:
-           _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-           debug("Set lower SPI-frequency");
-           debug("%s: wrong baudrate (%u) for SPI-driven device. setting default speed", __func__, b);
-           break;
-   }
+            _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+            debug("Set higher SPI-frequency");
+        } else {
+            _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+            debug("Set lower SPI-frequency");
+        }
+        break;
+    default:
+        _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+        debug("Set lower SPI-frequency");
+        debug("%s: wrong baudrate (%u) for SPI-driven device. setting default speed", __func__, b);
+        break;
+    }
 
-   _initialised = true;
+    _initialised = true;
 }
 
 int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
@@ -134,13 +114,13 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         return UARTDriver::_write_fd(buf,size);
     }
 
-    if (!sem_take_nonblocking()) {
+    if (!_dev->get_semaphore()->take_nonblocking()) {
         return 0;
     }
 
-    _spi->transaction(buf, _buffer, size);
+    _dev->transfer_fullduplex(buf, _buffer, size);
 
-    sem_give();
+    _dev->get_semaphore()->give();
 
     BUF_ADVANCEHEAD(_writebuf, size);
 
@@ -187,20 +167,15 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
         BUF_ADVANCETAIL(_readbuf, n);
     }
 
-
     return ret;
-
 }
 
-static const uint8_t ff_stub[300] = {0xff};
+static uint8_t ff_stub[300] = {0xff};
+
 int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     if (_external) {
         return UARTDriver::_read_fd(buf, n);
-    }
-
-    if (!sem_take_nonblocking()) {
-        return 0;
     }
 
     /* Make SPI transactions shorter. It can save SPI bus from keeping too
@@ -208,14 +183,16 @@ int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
      * doesn't like to be waiting. Making transactions more frequent but shorter
      * is a win.
      */
-
     if (n > 100) {
         n = 100;
     }
 
-    _spi->transaction(ff_stub, buf, n);
+    if (!_dev->get_semaphore()->take_nonblocking()) {
+        return 0;
+    }
 
-    sem_give();
+    _dev->transfer_fullduplex(ff_stub, buf, n);
+    _dev->get_semaphore()->give();
 
     BUF_ADVANCETAIL(_readbuf, n);
 
@@ -228,6 +205,7 @@ void SPIUARTDriver::_timer_tick(void)
         UARTDriver::_timer_tick();
         return;
     }
+
     /* lower the update rate */
     if (AP_HAL::micros() - _last_update_timestamp < 10000) {
         return;

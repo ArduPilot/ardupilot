@@ -15,15 +15,11 @@ protected:
     int _write_fd(const uint8_t *buf, uint16_t n);
     int _read_fd(uint8_t *buf, uint16_t n);
 
-private:
-    bool sem_take_nonblocking();
-    void sem_give();
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    uint8_t *_buffer;
 
     uint32_t _last_update_timestamp;
 
-    uint8_t *_buffer;
     bool _external;
 };
