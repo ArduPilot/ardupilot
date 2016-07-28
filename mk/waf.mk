@@ -108,7 +108,6 @@ clean:
 
 px4-clean:
 	@echo Removing px4 build directories
-	@rm -rf $(SKETCHBOOK)/build/px4*
+	@rm -rf $(SKETCHBOOK)/build/px4* $(SKETCHBOOK)/build/c4che/px4*
 
 px4-cleandep: px4-clean
-
