@@ -195,6 +195,10 @@ def size_summary(bld, nodes):
 
     return l
 
+@conf
+def build_summary_post_fun(bld):
+    bld.add_post_fun(_build_summary)
+
 @feature('cprogram', 'cxxprogram')
 @before_method('process_rule')
 def init_summary_data(self):
@@ -221,6 +225,3 @@ def configure(cfg):
             'size_bss',
             'size_total',
         ]
-
-def build(bld):
-    bld.add_post_fun(_build_summary)
