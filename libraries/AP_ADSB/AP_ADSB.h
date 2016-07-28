@@ -155,7 +155,7 @@ private:
     struct {
         uint32_t    last_config_ms; // send once every 10s
         uint32_t    last_report_ms; // send at 5Hz
-        int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means broadcast to all
+        int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means transceiver is not detected
         uint32_t    chan_last_ms;
         UAVIONIX_ADSB_RF_HEALTH status;     // transceiver status
         bool        is_flying;
