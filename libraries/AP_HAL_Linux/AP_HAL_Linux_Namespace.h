@@ -9,8 +9,6 @@ namespace Linux {
     class I2CDriver;
     class SPIDeviceManager;
     class SPIDeviceDriver;
-    class AnalogSource;
-    class AnalogIn;
     class Storage;
     class GPIO_BBB;
     class GPIO_RPI;
