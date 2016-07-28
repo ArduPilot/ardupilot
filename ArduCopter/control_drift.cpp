@@ -82,7 +82,7 @@ void Copter::drift_run()
 
     // Roll velocity is feed into roll acceleration to minimize slip
     target_roll = roll_vel_error * -DRIFT_SPEEDGAIN;
-    target_roll = constrain_int16(target_roll, -4500, 4500);
+    target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
 
     // If we let go of sticks, bring us to a stop
     if(is_zero(target_pitch)){
