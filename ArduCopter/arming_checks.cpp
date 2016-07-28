@@ -216,6 +216,10 @@ bool Copter::pre_arm_checks(bool display_failure)
                      */
                     threshold *= 2;
                 }
+
+                // EKF is less sensitive to Z-axis error
+                vec_diff.z *= 0.5f;
+
                 if (vec_diff.length() > threshold) {
                     if (display_failure) {
                         gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent Accelerometers");
