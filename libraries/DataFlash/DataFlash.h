@@ -205,6 +205,8 @@ public:
     bool logging_enabled() const;
     bool logging_failed() const;
 
+    void set_vehicle_armed(bool armed_state);
+
 protected:
 
     const struct LogStructure *_structures;
@@ -257,6 +259,8 @@ private:
     // calculate the length of a message using fields specified in
     // fmt; includes the message header
     int16_t Log_Write_calc_msg_len(const char *fmt) const;
+
+    bool _armed;
 
 private:
     static DataFlash_Class *_instance;
