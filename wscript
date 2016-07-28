@@ -252,6 +252,17 @@ def _build_dynamic_sources(bld):
         ],
     )
 
+    def write_version_header(tsk):
+        bld = tsk.generator.bld
+        return bld.write_version_header(tsk.outputs[0].abspath())
+
+    bld(
+        name='ap_version',
+        target='ap_version.h',
+        vars=['AP_VERSION_ITEMS'],
+        rule=write_version_header,
+    )
+
     bld.env.prepend_value('INCLUDES', [
         bld.bldnode.abspath(),
     ])
@@ -319,10 +330,6 @@ def _build_recursion(bld):
     for d in dirs_to_recurse:
         bld.recurse(d)
 
-def _write_version_header(tsk):
-    bld = tsk.generator.bld
-    return bld.write_version_header(tsk.outputs[0].abspath())
-
 def _build_post_funs(bld):
     if bld.cmd == 'check':
         bld.add_post_fun(ardupilotwaf.test_summary)
@@ -356,14 +363,6 @@ def build(bld):
     _build_common_taskgens(bld)
 
     _build_recursion(bld)
-
-    bld(
-        name='ap_version',
-        target='ap_version.h',
-        vars=['AP_VERSION_ITEMS'],
-        rule=_write_version_header,
-        group='dynamic_sources',
-    )
 
     _build_post_funs(bld)
 
