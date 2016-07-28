@@ -226,7 +226,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: The lowest angle the pitch can reach
     // @Units: Degrees
     // @Increment: 1
-    // @Range: 0 -90
+    // @Range: -90 0
     // @User: Standard
     GSCALAR(pitch_min,               "PITCH_MIN",	PITCH_MIN_DEFAULT),
 
