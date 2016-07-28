@@ -12,8 +12,6 @@ import boards
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 
-Configure.autoconfig = 'clobber'
-
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
 # vehicle, compile all the examples, add a new example. Should fit in
@@ -38,6 +36,8 @@ def init(ctx):
         env.load(p)
     except:
         return
+
+    Configure.autoconfig = 'clobber' if env.AUTOCONFIG else False
 
     if 'VARIANT' not in env:
         return
@@ -70,6 +70,15 @@ def options(opt):
         action='store_true',
         default=False,
         help='Configure as debug variant.')
+
+    g.add_option('--no-autoconfig',
+        dest='autoconfig',
+        action='store_false',
+        default=True,
+        help='''
+Disable autoconfiguration feature. By default, the build system triggers a
+reconfiguration whenever it thinks it's necessary - this option disables that.
+''')
 
     g.add_option('--no-submodule-update',
         dest='submodule_update',
@@ -122,6 +131,7 @@ def _collect_autoconfig_files(cfg):
 def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
     cfg.env.VARIANT = cfg.env.BOARD
     if cfg.env.DEBUG:
@@ -135,6 +145,8 @@ def configure(cfg):
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
+
+    cfg.msg('Autoconfiguration', 'enabled' if cfg.options.autoconfig else 'disabled')
 
     if cfg.options.static:
         cfg.msg('Using static linking', 'yes', color='YELLOW')
