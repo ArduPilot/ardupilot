@@ -316,9 +316,11 @@ def _build_post_funs(bld):
         bld.git_submodule_post_fun()
 
 def build(bld):
-    config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
-    bld.env.CCDEPS = config_hash
-    bld.env.CXXDEPS = config_hash
+    config_node = bld.bldnode.make_node('ap_config.h').abspath()
+    if os.path.exists(config_node):
+        config_hash = Utils.h_file(config_node)
+        bld.env.CCDEPS = config_hash
+        bld.env.CXXDEPS = config_hash
 
     bld.post_mode = Build.POST_LAZY
 
