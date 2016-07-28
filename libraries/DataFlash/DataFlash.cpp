@@ -72,6 +72,17 @@ void DataFlash_Class::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_
     _vehicle_messages = writer;
 }
 
+void DataFlash_Class::set_vehicle_armed(const bool armed_state)
+{
+    if (armed_state == _armed) {
+        // no change in status
+        return;
+    }
+
+    _armed = armed_state;
+}
+
+
 void DataFlash_Class::set_mission(const AP_Mission *mission) {
     FOR_EACH_BACKEND(set_mission(mission));
 }
