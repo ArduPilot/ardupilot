@@ -1152,5 +1152,15 @@ bool DataFlash_File::logging_failed() const
 }
 
 
+void DataFlash_File::vehicle_was_disarmed()
+{
+    if (_front._params.file_disarm_rot) {
+        // rotate our log.  Closing the current one and letting the
+        // logging restart naturally based on log_disarmed should do
+        // the trick:
+        stop_logging();
+    }
+}
+
 #endif // HAL_OS_POSIX_IO
 

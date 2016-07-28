@@ -31,7 +31,14 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("_REPLAY",  3, DataFlash_Class, _params.log_replay,       0),
-    
+
+    // @Param: _FILE_DSRMROT
+    // @DisplayName: Stop logging to current file on disarm
+    // @Description: When set, the current log file is closed when the vehicle is disarmed.  If LOG_DISARMED is set then a fresh log will be opened.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("_FILE_DSRMROT",  4, DataFlash_Class, _params.file_disarm_rot,       0),
+
     AP_GROUPEND
 };
 
@@ -78,8 +85,13 @@ void DataFlash_Class::set_vehicle_armed(const bool armed_state)
         // no change in status
         return;
     }
-
     _armed = armed_state;
+
+    if (!_armed) {
+        // went from armed to disarmed
+        FOR_EACH_BACKEND(vehicle_was_disarmed());
+    }
+
 }
 
 
