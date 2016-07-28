@@ -41,6 +41,7 @@ void AP_RPM_SITL::update(void)
     } else {
         state.rate_rpm = sitl->state.rpm2;
     }
+    state.signal_quality = 0.5f;
     state.last_reading_ms = AP_HAL::millis();
 }
 
