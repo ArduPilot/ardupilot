@@ -237,9 +237,7 @@ void Copter::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    uint32_t now = micros();  // Current time
-    uint32_t limit_time = timer + MAIN_LOOP_MICROS;  // limit of time
-    uint32_t time_available = (limit_time <= now) ? 0u : limit_time - now;
+    uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
     scheduler.run(time_available);
 }
 
