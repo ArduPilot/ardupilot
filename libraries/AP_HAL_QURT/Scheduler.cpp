@@ -17,7 +17,6 @@
 #include <dspal_types.h>
 
 #include "UARTDriver.h"
-//#include "AnalogIn.h"
 #include "Storage.h"
 #include "RCOutput.h"
 #include <AP_Scheduler/AP_Scheduler.h>
@@ -177,9 +176,6 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
     if (_failsafe != NULL) {
         _failsafe();
     }
-
-    // process analog input
-    // ((QURTAnalogIn *)hal.analogin)->_timer_tick();
 
     _in_timer_proc = false;
 }
