@@ -111,3 +111,6 @@ px4-clean:
 	@rm -rf $(SKETCHBOOK)/build/px4* $(SKETCHBOOK)/build/c4che/px4*
 
 px4-cleandep: px4-clean
+
+cleandep:
+	@rm -rf $(SKETCHBOOK)/build
