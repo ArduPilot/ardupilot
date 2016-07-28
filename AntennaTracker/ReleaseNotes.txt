@@ -1,5 +1,11 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 1.0.0 28-Jul-2016
+Changes from 0.8.0
+1) Compensate for tracker tilt by converting earth-frame angle targets to body-frame servo outputs
+2) Tracker location provided by EKF (still falls back to raw GPS if EKF is unable to provide position estimate)
+3) PITCH_MIN, PITCH_MAX parameters replace PITCH_RANGE
+------------------------------------------------------------------
 AntennaTracker 0.8.0 22-Jun-2016
 Changes from 0.7.8
 1) Added PITCH2SRV_FILT, YAW2SRV_FILT added to smooth input to controllers.  Lower values lead to more delay but smoother motion.
