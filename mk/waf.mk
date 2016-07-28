@@ -103,11 +103,12 @@ all:
 	@echo "Build done $(SKETCH)$(BINARY_EXTENSION_DEST)"
 
 clean:
-	mkdir -p $(SKETCHBOOK)/build
-	@cd $(SKETCHBOOK) && modules/waf/waf-light --board $(TARGET_BOARD) configure clean
-
+	@cd $(SKETCHBOOK) && modules/waf/waf-light --board $(TARGET_BOARD) configure
+	@cd $(SKETCHBOOK) && modules/waf/waf-light clean
 
 px4-clean:
 	@echo Removing px4 build directories
 	@rm -rf $(SKETCHBOOK)/build/px4*
+
+px4-cleandep: px4-clean
 
