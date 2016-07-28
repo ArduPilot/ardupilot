@@ -26,7 +26,7 @@ void Tracker::update_auto(void)
 
     float bf_pitch;
     float bf_yaw;
-    calc_body_frame_target(pitch, yaw, bf_pitch, bf_yaw);
+    convert_ef_to_bf(pitch, yaw, bf_pitch, bf_yaw);
 
     // only move servos if target is at least distance_min away
     if ((g.distance_min <= 0) || (nav_status.distance >= g.distance_min)) {
@@ -34,6 +34,7 @@ void Tracker::update_auto(void)
         update_yaw_servo(bf_yaw);
     }
 }
+
 void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
 {
     // Pitch angle error in centidegrees
@@ -58,15 +59,16 @@ void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
     // earth frame to body frame angle error conversion
     float bf_pitch_err;
     float bf_yaw_err;
-    calc_body_frame_target(ef_pitch_angle_error, ef_yaw_angle_error, bf_pitch_err, bf_yaw_err);
+    convert_ef_to_bf(ef_pitch_angle_error, ef_yaw_angle_error, bf_pitch_err, bf_yaw_err);
     nav_status.angle_error_pitch = bf_pitch_err;
     nav_status.angle_error_yaw = bf_yaw_err;
 }
-void Tracker::calc_body_frame_target(float pitch, float yaw, float& bf_pitch, float& bf_yaw)
+
+void Tracker::convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw)
 {
 	// earth frame to body frame pitch and yaw conversion
-    bf_pitch   = ahrs.cos_roll()     * pitch    + ahrs.sin_roll()  * ahrs.cos_pitch() * yaw;
-    bf_yaw     = -ahrs.sin_roll()    * pitch    + ahrs.cos_pitch() * ahrs.cos_roll()  * yaw;
+    bf_pitch = ahrs.cos_roll() * pitch + ahrs.sin_roll() * ahrs.cos_pitch() * yaw;
+    bf_yaw = -ahrs.sin_roll() * pitch + ahrs.cos_pitch() * ahrs.cos_roll() * yaw;
 }
 
 bool Tracker::convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& ef_yaw)
@@ -76,12 +78,12 @@ bool Tracker::convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& e
         return false;
     }
     // convert earth frame angle or rates to body frame
-    ef_pitch =  ahrs.cos_roll()                     * pitch -  ahrs.sin_roll()                     * yaw; //pitch
-    ef_yaw =   (ahrs.sin_roll() / ahrs.cos_pitch()) * pitch + (ahrs.cos_roll() / ahrs.cos_pitch()) * yaw; //yaw
+    ef_pitch = ahrs.cos_roll() * pitch - ahrs.sin_roll() * yaw;
+    ef_yaw = (ahrs.sin_roll() / ahrs.cos_pitch()) * pitch + (ahrs.cos_roll() / ahrs.cos_pitch()) * yaw;
     return true;
 }
 
-// return value is true if takign the long road to the target, false if normal, shortest direction should be used
+// return value is true if taking the long road to the target, false if normal, shortest direction should be used
 bool Tracker::get_ef_yaw_direction()
 {
     // calculating distances from current pitch/yaw to lower and upper limits in centi-degrees
