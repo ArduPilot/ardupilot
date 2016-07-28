@@ -46,6 +46,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
+#include "PollerThread.h"
+#include "Scheduler.h"
+#include "Semaphores.h"
+#include "Thread.h"
 #include "Util.h"
 
 /* Workaround broken header from i2c-tools */
@@ -73,45 +77,66 @@ static inline char *startswith(const char *s, const char *prefix)
 }
 
 /* Private struct to maintain for each bus */
-class I2CBus {
+class I2CBus : public TimerPollable::WrapperCb {
 public:
-    ~I2CBus()
-    {
-        if (fd >= 0) {
-            ::close(fd);
-        }
-    }
+    ~I2CBus();
 
-    int open(uint8_t n)
-    {
-        char path[sizeof("/dev/i2c-XXX")];
-        int r;
+    /*
+     * TimerPollable::WrapperCb methods to take
+     * and release semaphore while calling the callback
+     */
+    void start_cb() override;
+    void end_cb() override;
 
-        if (fd >= 0) {
-            return -EBUSY;
-        }
+    int open(uint8_t n);
 
-        r = snprintf(path, sizeof(path), "/dev/i2c-%u", n);
-        if (r < 0 || r >= (int)sizeof(path)) {
-            return -EINVAL;
-        }
-
-        fd = ::open(path, O_RDWR | O_CLOEXEC);
-        if (fd < 0) {
-            return -errno;
-        }
-
-        bus = n;
-
-        return fd;
-    }
-
+    PollerThread thread;
     Semaphore sem;
     int fd = -1;
     uint8_t bus;
-
     uint8_t ref;
 };
+
+I2CBus::~I2CBus()
+{
+    if (fd >= 0) {
+        ::close(fd);
+    }
+}
+
+void I2CBus::start_cb()
+{
+    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+}
+
+void I2CBus::end_cb()
+{
+    sem.give();
+}
+
+int I2CBus::open(uint8_t n)
+{
+    char path[sizeof("/dev/i2c-XXX")];
+    int r;
+
+    if (fd >= 0) {
+        return -EBUSY;
+    }
+
+    r = snprintf(path, sizeof(path), "/dev/i2c-%u", n);
+    if (r < 0 || r >= (int)sizeof(path)) {
+        return -EINVAL;
+    }
+
+    fd = ::open(path, O_RDWR | O_CLOEXEC);
+    if (fd < 0) {
+        return -errno;
+    }
+
+    bus = n;
+
+    return fd;
+}
 
 I2CDevice::~I2CDevice()
 {
@@ -215,6 +240,32 @@ AP_HAL::Semaphore *I2CDevice::get_semaphore()
 int I2CDevice::get_fd()
 {
     return _bus.fd;
+}
+
+AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(
+    uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    TimerPollable *p = _bus.thread.add_timer(cb, &_bus, period_usec);
+    if (!p) {
+        AP_HAL::panic("Could not create periodic callback");
+    }
+
+    if (!_bus.thread.is_started()) {
+        char name[16];
+        snprintf(name, sizeof(name), "i2c-%u", _bus.bus);
+
+        _bus.thread.set_stack_size(AP_LINUX_SENSORS_STACK_SIZE);
+        _bus.thread.start(name, AP_LINUX_SENSORS_SCHED_POLICY,
+                          AP_LINUX_SENSORS_SCHED_PRIO);
+    }
+
+    return static_cast<AP_HAL::Device::PeriodicHandle>(p);
+}
+
+bool I2CDevice::adjust_periodic_callback(
+    AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
+{
+    return _bus.thread.adjust_timer(static_cast<TimerPollable*>(h), period_usec);
 }
 
 I2CDeviceManager::I2CDeviceManager()
