@@ -95,6 +95,7 @@ all:
 	@echo BINARY_NAME=$(BINARY_NAME)$(BINARY_FRAME)
 	@echo BINARY_EXTENSION=$(BINARY_EXTENSION)
 	@echo BINARY_EXTENSION_DEST=$(BINARY_EXTENSION_DEST)
+	mkdir -p $(SKETCHBOOK)/build
 	cd $(SKETCHBOOK) && modules/waf/waf-light --board $(TARGET_BOARD) configure
 	cd $(SKETCHBOOK) && modules/waf/waf-light $(TARGET_BUILD) $(WAF_FLAGS)
 	@cp $(SKETCHBOOK)/build/$(BIN_DIR)/bin/$(BINARY_NAME)$(BINARY_FRAME)$(BINARY_EXTENSION) $(SKETCH)$(BINARY_EXTENSION_DEST)
@@ -102,5 +103,11 @@ all:
 	@echo "Build done $(SKETCH)$(BINARY_EXTENSION_DEST)"
 
 clean:
-	@cd $(SKETCHBOOK) && modules/waf/waf-light clean
+	mkdir -p $(SKETCHBOOK)/build
+	@cd $(SKETCHBOOK) && modules/waf/waf-light --board $(TARGET_BOARD) configure clean
+
+
+px4-clean:
+	@echo Removing px4 build directories
+	@rm -rf $(SKETCHBOOK)/build/px4*
 
