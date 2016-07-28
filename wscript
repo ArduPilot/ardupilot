@@ -217,10 +217,9 @@ def _build_cmd_tweaks(bld):
         bld.cmd = 'check'
 
     if bld.cmd == 'check':
-        bld.options.clear_failed_tests = True
         if not bld.env.HAS_GTEST:
             bld.fatal('check: gtest library is required')
-        bld.add_post_fun(ardupilotwaf.test_summary)
+        bld.options.clear_failed_tests = True
 
 def _build_dynamic_sources(bld):
     bld(
@@ -307,6 +306,14 @@ def _write_version_header(tsk):
     bld = tsk.generator.bld
     return bld.write_version_header(tsk.outputs[0].abspath())
 
+def _build_post_funs(bld):
+    if bld.cmd == 'check':
+        bld.add_post_fun(ardupilotwaf.test_summary)
+    else:
+        bld.build_summary_post_fun()
+
+    if bld.env.SUBMODULE_UPDATE:
+        bld.git_submodule_post_fun()
 
 def build(bld):
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
@@ -341,9 +348,7 @@ def build(bld):
         group='dynamic_sources',
     )
 
-    bld.load('build_summary')
-    if bld.env.SUBMODULE_UPDATE:
-        bld.git_submodule_post_fun()
+    _build_post_funs(bld)
 
 ardupilotwaf.build_command('check',
     program_group_list='all',
