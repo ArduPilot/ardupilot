@@ -1,2 +1,3 @@
-include ../mk/apm.mk
+include ../mk/waf.mk
+
 
