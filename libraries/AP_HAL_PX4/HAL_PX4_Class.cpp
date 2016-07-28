@@ -15,7 +15,6 @@
 #include "AnalogIn.h"
 #include "Util.h"
 #include "GPIO.h"
-#include "I2CDriver.h"
 #include "I2CDevice.h"
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
@@ -32,7 +31,6 @@
 
 using namespace PX4;
 
-static PX4I2CDriver i2cDriver;
 static Empty::SPIDeviceManager spiDeviceManager;
 //static Empty::GPIO gpioDriver;
 
@@ -86,9 +84,6 @@ HAL_PX4::HAL_PX4() :
         &uartEDriver,  /* uartE */
         &uartFDriver,  /* uartF */
         &i2c_mgr_instance,
-        &i2cDriver, /* i2c */
-        NULL,   /* only one i2c */
-        NULL,   /* only one i2c */
         &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
         &storageDriver, /* storage */
