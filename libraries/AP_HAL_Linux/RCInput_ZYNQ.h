@@ -7,9 +7,6 @@
 
 #include "RCInput.h"
 
-// FIXME A puppie dies when you hard code an address
-#define RCIN_ZYNQ_PULSE_INPUT_BASE  0x43c10000
-
 namespace Linux {
 
 class RCInput_ZYNQ : public RCInput {

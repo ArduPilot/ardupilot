@@ -18,7 +18,8 @@
 #include <unistd.h>
 
 #include "GPIO.h"
-#include "RCInput.h"
+
+#define RCIN_PRUSS_SHAREDRAM_BASE   0x4a312000
 
 extern const AP_HAL::HAL& hal;
 

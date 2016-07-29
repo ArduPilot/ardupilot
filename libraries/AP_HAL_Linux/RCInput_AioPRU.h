@@ -29,7 +29,7 @@ public:
     void init();
     void _timer_tick(void);
 
-private:
+protected:
     static const uint32_t TICK_PER_US = 200;
     static const uint32_t NUM_RING_ENTRIES = 300;
     // shared ring buffer with the PRU which records pin transitions

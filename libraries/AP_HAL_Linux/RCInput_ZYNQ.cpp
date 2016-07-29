@@ -16,6 +16,8 @@
 
 #include "GPIO.h"
 
+#define RCIN_ZYNQ_PULSE_INPUT_BASE  0x43c10000
+
 extern const AP_HAL::HAL& hal;
 
 using namespace Linux;

@@ -7,7 +7,6 @@
 
 #include "RCInput.h"
 
-#define RCIN_PRUSS_SHAREDRAM_BASE   0x4a312000
 // we use 300 ring buffer entries to guarantee that a full 25 byte
 // frame of 12 bits per byte
 
