@@ -1,46 +1,46 @@
 # Makefile wrapper to allow old make commands to use waf build system
 
-SYSTYPE			:=	$(shell uname)
+SOURCEROOT = $(realpath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
-  MK_DIR := $(shell cygpath -m ../mk)
-else
-  MK_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+SRCROOT	:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
+BUILDDIR :=	$(lastword $(subst /, ,$(SRCROOT)))
+
+# Workaround a $(lastword ) bug on cygwin
+ifeq ($(BUILDDIR),)
+  WORDLIST		:=	$(subst /, ,$(SRCROOT))
+  BUILDDIR		:=	$(word $(words $(WORDLIST)),$(WORDLIST))
 endif
 
-include $(MK_DIR)/environ.mk
-
-
 TARGET_BOARD=sitl
-TARGET_BUILD=$(SKETCH)
+TARGET_BUILD=$(BUILDDIR)
 WAF_FLAGS=
 FRAME=
 BINARY_FRAME=
 
-ifeq ($(SKETCH),ArduPlane)
+ifeq ($(BUILDDIR),ArduPlane)
 TARGET_BUILD=plane
 BINARY_NAME=arduplane
 endif
 
-ifeq ($(SKETCH),ArduCopter)
+ifeq ($(BUILDDIR),ArduCopter)
 TARGET_BUILD=copter
 BINARY_NAME=arducopter
 FRAME="quad"
 BINARY_FRAME="-quad"
 endif
 
-ifeq ($(SKETCH),APMrover2)
+ifeq ($(BUILDDIR),APMrover2)
 TARGET_BUILD=rover
 BINARY_NAME=ardurover
 endif
 
-ifeq ($(SKETCH),AntennaTracker)
+ifeq ($(BUILDDIR),AntennaTracker)
 TARGET_BUILD=antennatracker
 BINARY_NAME=antennatracker
 endif
 
 FRAMES = quad tri hexa y6 octa octa-quad heli single coax
-BOARDS = px4-v1 px4-v2 px4-v4 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52 vrhero-v10 erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
+BOARDS = px4-v1 px4-v2 px4-v4 sitl linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52 vrhero-v10 erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
 
 define frame_template
 $(1)-$(2) : FRAME=$(2)
@@ -85,8 +85,8 @@ BINARY_EXTENSION_DEST=".elf"
 endif
 
 all:
-	@echo SKETCHBOOK=$(SKETCHBOOK)
-	@echo SKETCH=$(SKETCH)
+	@echo SOURCEROOT=$(SOURCEROOT)
+	@echo BUILDDIR=$(BUILDDIR)
 	@echo TARGET_BOARD=$(TARGET_BOARD)
 	@echo TARGET_BUILD=$(TARGET_BUILD)
 	@echo WAF_FLAGS=$(WAF_FLAGS)
@@ -95,22 +95,22 @@ all:
 	@echo BINARY_NAME=$(BINARY_NAME)$(BINARY_FRAME)
 	@echo BINARY_EXTENSION=$(BINARY_EXTENSION)
 	@echo BINARY_EXTENSION_DEST=$(BINARY_EXTENSION_DEST)
-	mkdir -p $(SKETCHBOOK)/build
-	cd $(SKETCHBOOK) && modules/waf/waf-light --board $(TARGET_BOARD) configure
-	cd $(SKETCHBOOK) && modules/waf/waf-light $(TARGET_BUILD) $(WAF_FLAGS)
-	@cp $(SKETCHBOOK)/build/$(BIN_DIR)/bin/$(BINARY_NAME)$(BINARY_FRAME)$(BINARY_EXTENSION) $(SKETCH)$(BINARY_EXTENSION_DEST)
-	@ls -l $(SKETCH)$(BINARY_EXTENSION_DEST)
-	@echo "Build done $(SKETCH)$(BINARY_EXTENSION_DEST)"
+	mkdir -p $(SOURCEROOT)/build
+	cd $(SOURCEROOT) && modules/waf/waf-light --board $(TARGET_BOARD) configure
+	cd $(SOURCEROOT) && modules/waf/waf-light $(TARGET_BUILD) $(WAF_FLAGS)
+	@cp $(SOURCEROOT)/build/$(BIN_DIR)/bin/$(BINARY_NAME)$(BINARY_FRAME)$(BINARY_EXTENSION) $(BUILDDIR)$(BINARY_EXTENSION_DEST)
+	@ls -l $(BUILDDIR)$(BINARY_EXTENSION_DEST)
+	@echo "Build done $(BUILDDIR)$(BINARY_EXTENSION_DEST)"
 
 clean:
-	@cd $(SKETCHBOOK) && modules/waf/waf-light --board $(TARGET_BOARD) configure
-	@cd $(SKETCHBOOK) && modules/waf/waf-light clean
+	@cd $(SOURCEROOT) && modules/waf/waf-light --board $(TARGET_BOARD) configure
+	@cd $(SOURCEROOT) && modules/waf/waf-light clean
 
 px4-clean:
 	@echo Removing px4 build directories
-	@rm -rf $(SKETCHBOOK)/build/px4* $(SKETCHBOOK)/build/c4che/px4*
+	@rm -rf $(SOURCEROOT)/build/px4* $(SOURCEROOT)/build/c4che/px4*
 
 px4-cleandep: px4-clean
 
 cleandep:
-	@rm -rf $(SKETCHBOOK)/build
+	@rm -rf $(SOURCEROOT)/build
