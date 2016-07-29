@@ -96,13 +96,13 @@ static const struct {
 
 void SITL_State::_set_signal_handlers(void) const
 {
-    struct sigaction sa_fpe;
+    struct sigaction sa_fpe = {};
 
     sigemptyset(&sa_fpe.sa_mask);
     sa_fpe.sa_handler = _sig_fpe;
     sigaction(SIGFPE, &sa_fpe, nullptr);
 
-    struct sigaction sa_pipe;
+    struct sigaction sa_pipe = {};
 
     sigemptyset(&sa_pipe.sa_mask);
     sa_pipe.sa_handler = SIG_IGN; /* No-op SIGPIPE handler */
