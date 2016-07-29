@@ -25,6 +25,12 @@ Configure.autoconfig = 'clobber'
 # this makes recompilation at least when defines change. which might
 # be sufficient.
 
+def _set_build_context_variant(variant):
+    for c in Context.classes:
+        if not issubclass(c, Build.BuildContext):
+            continue
+        c.variant = variant
+
 def init(ctx):
     env = ConfigSet.ConfigSet()
     try:
@@ -37,10 +43,7 @@ def init(ctx):
         return
 
     # define the variant build commands according to the board
-    for c in Context.classes:
-        if not issubclass(c, Build.BuildContext):
-            continue
-        c.variant = env.VARIANT
+    _set_build_context_variant(env.VARIANT)
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
@@ -123,6 +126,8 @@ def configure(cfg):
     cfg.env.VARIANT = cfg.env.BOARD
     if cfg.env.DEBUG:
         cfg.env.VARIANT += '-debug'
+
+    _set_build_context_variant(cfg.env.VARIANT)
     cfg.setenv(cfg.env.VARIANT)
 
     cfg.env.BOARD = cfg.options.board
