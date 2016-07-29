@@ -1,3 +1,5 @@
+#include "HAL_Linux_Class.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,9 +11,39 @@
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_Module/AP_Module.h>
 
-#include "AP_HAL_Linux_Private.h"
-#include "HAL_Linux_Class.h"
+#include "AnalogIn_ADS1115.h"
+#include "AnalogIn_IIO.h"
+#include "AnalogIn_Navio2.h"
+#include "AnalogIn_Raspilot.h"
+#include "GPIO.h"
+#include "I2CDevice.h"
+#include "OpticalFlow_Onboard.h"
+#include "RCInput.h"
+#include "RCInput_AioPRU.h"
+#include "RCInput_DSM.h"
+#include "RCInput_Navio2.h"
+#include "RCInput_PRU.h"
+#include "RCInput_RPI.h"
+#include "RCInput_Raspilot.h"
+#include "RCInput_SBUS.h"
+#include "RCInput_UART.h"
+#include "RCInput_UDP.h"
+#include "RCOutput_AioPRU.h"
+#include "RCOutput_Bebop.h"
+#include "RCOutput_Disco.h"
+#include "RCOutput_PCA9685.h"
+#include "RCOutput_PRU.h"
+#include "RCOutput_Raspilot.h"
+#include "RCOutput_Sysfs.h"
+#include "RCOutput_ZYNQ.h"
+#include "RPIOUARTDriver.h"
 #include "SPIDevice.h"
+#include "SPIUARTDriver.h"
+#include "Scheduler.h"
+#include "Storage.h"
+#include "UARTDriver.h"
+#include "Util.h"
+#include "Util_RPI.h"
 
 using namespace Linux;
 
