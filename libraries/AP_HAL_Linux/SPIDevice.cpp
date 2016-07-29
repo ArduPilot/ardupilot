@@ -31,6 +31,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/OwnPtr.h>
 
+#include "PollerThread.h"
+#include "Scheduler.h"
+#include "Semaphores.h"
+#include "Thread.h"
 #include "Util.h"
 
 namespace Linux {
@@ -38,42 +42,66 @@ namespace Linux {
 static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 /* Private struct to maintain for each bus */
-class SPIBus {
+class SPIBus : public TimerPollable::WrapperCb {
 public:
-    ~SPIBus()
-    {
-        if (fd >= 0) {
-            ::close(fd);
-        }
-    }
+    ~SPIBus();
 
-    int open(uint16_t bus_, uint16_t kernel_cs_)
-    {
-        char path[sizeof("/dev/spidevXXXXX.XXXXX")];
+    /*
+     * TimerPollable::WrapperCb methods to take
+     * and release semaphore while calling the callback
+     */
+    void start_cb() override;
+    void end_cb() override;
 
-        if (fd > 0) {
-            return -EBUSY;
-        }
+    int open(uint16_t bus_, uint16_t kernel_cs_);
 
-        snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus_, kernel_cs_);
-        fd = ::open(path, O_RDWR | O_CLOEXEC);
-        if (fd < 0) {
-            AP_HAL::panic("SPI: unable to open SPI bus %s: %s",
-                          path, strerror(errno));
-        }
-
-        bus = bus_;
-        kernel_cs = kernel_cs_;
-
-        return fd;
-    }
-
+    PollerThread thread;
     Semaphore sem;
     int fd = -1;
     uint16_t bus;
     uint16_t kernel_cs;
     uint8_t ref;
 };
+
+SPIBus::~SPIBus()
+{
+    if (fd >= 0) {
+        ::close(fd);
+    }
+}
+
+void SPIBus::start_cb()
+{
+    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+}
+
+void SPIBus::end_cb()
+{
+    sem.give();
+}
+
+
+int SPIBus::open(uint16_t bus_, uint16_t kernel_cs_)
+{
+    char path[sizeof("/dev/spidevXXXXX.XXXXX")];
+
+    if (fd > 0) {
+        return -EBUSY;
+    }
+
+    snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus_, kernel_cs_);
+    fd = ::open(path, O_RDWR | O_CLOEXEC);
+    if (fd < 0) {
+        AP_HAL::panic("SPI: unable to open SPI bus %s: %s",
+                      path, strerror(errno));
+    }
+
+    bus = bus_;
+    kernel_cs = kernel_cs_;
+
+    return fd;
+}
+
 
 SPIDevice::SPIDevice(SPIBus &bus, SPIDeviceDriver &device_desc)
     : _bus(bus)
@@ -184,6 +212,33 @@ int SPIDevice::get_fd()
 {
     return _bus.fd;
 }
+
+AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(
+    uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    TimerPollable *p = _bus.thread.add_timer(cb, &_bus, period_usec);
+    if (!p) {
+        AP_HAL::panic("Could not create periodic callback");
+    }
+
+    if (!_bus.thread.is_started()) {
+        char name[16];
+        snprintf(name, sizeof(name), "ap-spi-%u", _bus.bus);
+
+        _bus.thread.set_stack_size(AP_LINUX_SENSORS_STACK_SIZE);
+        _bus.thread.start(name, AP_LINUX_SENSORS_SCHED_POLICY,
+                          AP_LINUX_SENSORS_SCHED_PRIO);
+    }
+
+    return static_cast<AP_HAL::Device::PeriodicHandle>(p);
+}
+
+bool SPIDevice::adjust_periodic_callback(
+    AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
+{
+    return _bus.thread.adjust_timer(static_cast<TimerPollable*>(h), period_usec);
+}
+
 
 AP_HAL::OwnPtr<AP_HAL::SPIDevice>
 SPIDeviceManager::get_device(const char *name)
