@@ -4,7 +4,9 @@
 #include "RCOutput_Sysfs.h"
 #include "RCOutput_Bebop.h"
 
-class Linux::RCOutput_Disco : public AP_HAL::RCOutput {
+namespace Linux {
+
+class RCOutput_Disco : public AP_HAL::RCOutput {
 public:
     RCOutput_Disco(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
     ~RCOutput_Disco() {}
@@ -51,5 +53,6 @@ private:
         { sysfs_out, 5 },
         { sysfs_out, 0 },
     };
-    
 };
+
+}

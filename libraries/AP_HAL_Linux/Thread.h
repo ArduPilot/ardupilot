@@ -23,8 +23,6 @@
 
 #include <AP_HAL/utility/functor.h>
 
-#include "AP_HAL_Linux_Namespace.h"
-
 namespace Linux {
 
 /*

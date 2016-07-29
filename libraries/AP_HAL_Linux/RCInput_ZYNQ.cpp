@@ -1,3 +1,5 @@
+#include "RCInput_ZYNQ.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -13,7 +15,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "GPIO.h"
-#include "RCInput.h"
 
 extern const AP_HAL::HAL& hal;
 

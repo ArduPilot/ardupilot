@@ -4,8 +4,9 @@
 
 #include "UARTDriver.h"
 
+namespace Linux {
 
-class Linux::SPIUARTDriver : public Linux::UARTDriver {
+class SPIUARTDriver : public UARTDriver {
 public:
     SPIUARTDriver();
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
@@ -23,3 +24,5 @@ protected:
 
     bool _external;
 };
+
+}

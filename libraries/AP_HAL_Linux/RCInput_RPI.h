@@ -22,12 +22,13 @@
 #include <queue>
 
 
+namespace Linux {
+
 enum state_t{
     RCIN_RPI_INITIAL_STATE = -1,
     RCIN_RPI_ZERO_STATE = 0,
     RCIN_RPI_ONE_STATE = 1
 };
-
 
 //Memory table structure
 typedef struct {
@@ -45,8 +46,8 @@ typedef struct {
 
 class Memory_table {
 // Allow RCInput_RPI access to private members of Memory_table
-friend class Linux::RCInput_RPI;
-  
+friend class RCInput_RPI;
+
 private:
     void** _virt_pages;
     void** _phys_pages;
@@ -73,14 +74,14 @@ public:
 };
 
 
-class Linux::RCInput_RPI : public Linux::RCInput
-{ 
+class RCInput_RPI : public RCInput
+{
 public:
     void init();
     void _timer_tick(void);
     RCInput_RPI();
     ~RCInput_RPI();
-    
+
 private:
 
     //Physical adresses of peripherals. Are different on different Raspberries.
@@ -110,10 +111,10 @@ private:
 
     uint8_t curr_signal;
     uint8_t last_signal;
-  
+
     state_t state;
-    
-    AP_HAL::DigitalSource *enable_pin; 
+
+    AP_HAL::DigitalSource *enable_pin;
 
     void init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb);
     void* map_peripheral(uint32_t base, uint32_t len);
@@ -127,5 +128,6 @@ private:
     void set_sigaction();
     void set_physical_addresses(int version);
     void deinit() override;
-
 };
+
+}

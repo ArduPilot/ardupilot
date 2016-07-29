@@ -10,7 +10,9 @@
 #define LINUX_SCHEDULER_MAX_TIMESLICED_PROCS 10
 #define LINUX_SCHEDULER_MAX_IO_PROCS 10
 
-class Linux::Scheduler : public AP_HAL::Scheduler {
+namespace Linux {
+
+class Scheduler : public AP_HAL::Scheduler {
 public:
     Scheduler();
 
@@ -109,3 +111,5 @@ private:
     Semaphore _timer_semaphore;
     Semaphore _io_semaphore;
 };
+
+}

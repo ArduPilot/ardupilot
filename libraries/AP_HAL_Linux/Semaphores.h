@@ -6,7 +6,9 @@
 
 #include "AP_HAL_Linux.h"
 
-class Linux::Semaphore : public AP_HAL::Semaphore {
+namespace Linux {
+
+class Semaphore : public AP_HAL::Semaphore {
 public:
     Semaphore() {
         pthread_mutex_init(&_lock, NULL);
@@ -17,3 +19,5 @@ public:
 private:
     pthread_mutex_t _lock;
 };
+
+}

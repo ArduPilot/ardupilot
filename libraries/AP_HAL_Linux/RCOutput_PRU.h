@@ -13,7 +13,9 @@
 #define PWM_CMD_CLR	         5	/* clr a pwm output explicitly */
 #define PWM_CMD_TEST	         6	/* various crap */
 
-class Linux::RCOutput_PRU : public AP_HAL::RCOutput {
+namespace Linux {
+
+class RCOutput_PRU : public AP_HAL::RCOutput {
     void     init();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
@@ -37,3 +39,5 @@ private:
     volatile struct pwm_cmd *sharedMem_cmd;
 
 };
+
+}

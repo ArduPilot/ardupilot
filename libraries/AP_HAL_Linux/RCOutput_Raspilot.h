@@ -3,7 +3,10 @@
 #include "AP_HAL_Linux.h"
 #include <AP_HAL/SPIDevice.h>
 
-class Linux::RCOutput_Raspilot : public AP_HAL::RCOutput {
+namespace Linux {
+
+class RCOutput_Raspilot : public AP_HAL::RCOutput {
+public:
     void     init();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
@@ -16,10 +19,12 @@ class Linux::RCOutput_Raspilot : public AP_HAL::RCOutput {
 private:
     void reset();
     void _update(void);
-    
+
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
-    
+
     uint32_t _last_update_timestamp;
     uint16_t _frequency;
     uint16_t _period_us[8];
 };
+
+}

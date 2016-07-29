@@ -2,7 +2,9 @@
 
 #include "AP_HAL_Linux.h"
 
-class Linux::DigitalSource : public AP_HAL::DigitalSource {
+namespace Linux {
+
+class DigitalSource : public AP_HAL::DigitalSource {
 public:
     DigitalSource(uint8_t v);
     void    mode(uint8_t output);
@@ -13,6 +15,8 @@ private:
     uint8_t _v;
 
 };
+
+}
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 #include "GPIO_BBB.h"

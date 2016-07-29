@@ -5,7 +5,9 @@
 #include "AP_HAL_Linux.h"
 #include "Util.h"
 
-class Linux::PWM_Sysfs_Base {
+namespace Linux {
+
+class PWM_Sysfs_Base {
 public:
     virtual ~PWM_Sysfs_Base();
 
@@ -51,7 +53,7 @@ private:
     char *_period_path = NULL;
 };
 
-class Linux::PWM_Sysfs : public Linux::PWM_Sysfs_Base {
+class PWM_Sysfs : public PWM_Sysfs_Base {
 public:
     PWM_Sysfs(uint8_t chip, uint8_t channel);
 
@@ -63,7 +65,7 @@ private:
     char *_generate_period_path(uint8_t chip, uint8_t channel);
 };
 
-class Linux::PWM_Sysfs_Bebop : public Linux::PWM_Sysfs_Base {
+class PWM_Sysfs_Bebop : public PWM_Sysfs_Base {
 public:
     PWM_Sysfs_Bebop(uint8_t channel);
 
@@ -81,3 +83,5 @@ private:
         return PWM_Sysfs::NORMAL;
     }
 };
+
+}

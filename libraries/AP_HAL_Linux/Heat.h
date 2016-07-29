@@ -15,8 +15,12 @@
  */
 #pragma once
 
-class Linux::Heat {
+namespace Linux {
+
+class Heat {
 public:
     virtual void set_imu_temp(float current) { }
     virtual void set_imu_target_temp(int8_t *target) { }
 };
+
+}

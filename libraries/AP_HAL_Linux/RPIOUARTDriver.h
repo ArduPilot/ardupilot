@@ -5,8 +5,9 @@
 #include "UARTDriver.h"
 #include <AP_HAL/SPIDevice.h>
 
+namespace Linux {
 
-class Linux::RPIOUARTDriver : public Linux::UARTDriver {
+class RPIOUARTDriver : public UARTDriver {
 public:
     RPIOUARTDriver();
 
@@ -37,3 +38,5 @@ private:
     bool _need_set_baud;
     uint32_t _baudrate;
 };
+
+}

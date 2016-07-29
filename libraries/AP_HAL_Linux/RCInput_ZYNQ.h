@@ -5,18 +5,19 @@
   logic doing the edge detection of the PPM sum input
  */
 
-#include "AP_HAL_Linux.h"
+#include "RCInput.h"
 
 // FIXME A puppie dies when you hard code an address
 #define RCIN_ZYNQ_PULSE_INPUT_BASE  0x43c10000
 
-class Linux::RCInput_ZYNQ : public Linux::RCInput
-{
+namespace Linux {
+
+class RCInput_ZYNQ : public RCInput {
 public:
     void init();
     void _timer_tick(void);
 
- private:
+private:
     static const int TICK_PER_US=100;
     static const int TICK_PER_S=100000000;
 
@@ -26,3 +27,5 @@ public:
     // time spent in the low state
     uint32_t _s0_time;
 };
+
+}

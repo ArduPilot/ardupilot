@@ -3,6 +3,10 @@
 #include "AP_HAL_Linux.h"
 #include <AP_HAL/I2CDevice.h>
 
+struct bldc_info;
+
+namespace Linux {
+
 enum bebop_bldc_motor {
     BEBOP_BLDC_MOTOR_1 = 0,
 #if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_DISCO
@@ -49,9 +53,7 @@ public:
     uint8_t temperature;
 };
 
-struct bldc_info;
-
-class Linux::RCOutput_Bebop : public AP_HAL::RCOutput {
+class RCOutput_Bebop : public AP_HAL::RCOutput {
 public:
     RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
@@ -102,3 +104,5 @@ private:
     void _run_rcout();
     static void *_control_thread(void *arg);
 };
+
+}

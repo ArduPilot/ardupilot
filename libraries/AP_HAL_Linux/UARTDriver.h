@@ -5,7 +5,9 @@
 #include "AP_HAL_Linux.h"
 #include "SerialDevice.h"
 
-class Linux::UARTDriver : public AP_HAL::UARTDriver {
+namespace Linux {
+
+class UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(bool default_console);
 
@@ -54,14 +56,14 @@ private:
     uint16_t _base_port;
     char *_ip;
     char *_flag;
-    bool _connected; // true if a client has connected         
+    bool _connected; // true if a client has connected
     bool _packetise; // true if writes should try to be on mavlink boundaries
 
     void _allocate_buffers(uint16_t rxS, uint16_t txS);
     void _deallocate_buffers();
 
     AP_HAL::OwnPtr<SerialDevice> _parseDevicePath(const char *arg);
-    uint64_t _last_write_time;    
+    uint64_t _last_write_time;
 
 protected:
     const char *device_path;
@@ -85,3 +87,5 @@ protected:
     virtual int _read_fd(uint8_t *buf, uint16_t n);
 
 };
+
+}

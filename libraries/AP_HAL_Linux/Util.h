@@ -3,10 +3,12 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_HAL_Linux_Namespace.h"
+#include "Heat.h"
 #include "Perf.h"
 #include "ToneAlarm.h"
 #include "Semaphores.h"
+
+namespace Linux {
 
 enum hw_type {
     UTIL_HARDWARE_RPI1 = 0,
@@ -17,7 +19,7 @@ enum hw_type {
     UTIL_NUM_HARDWARES,
 };
 
-class Linux::Util : public AP_HAL::Util {
+class Util : public AP_HAL::Util {
 public:
     static Util *from(AP_HAL::Util *util) {
         return static_cast<Util*>(util);
@@ -39,7 +41,7 @@ public:
     /*
       set system clock in UTC microseconds
      */
-    void set_system_clock(uint64_t time_utc_usec);    
+    void set_system_clock(uint64_t time_utc_usec);
     const char* get_custom_log_directory() { return custom_log_directory; }
     const char* get_custom_terrain_directory() { return custom_terrain_directory; }
 
@@ -87,20 +89,22 @@ public:
     }
 
     // create a new semaphore
-    AP_HAL::Semaphore *new_semaphore(void) override { return new Linux::Semaphore; }
+    AP_HAL::Semaphore *new_semaphore(void) override { return new Semaphore; }
 
     int get_hw_arm32();
 
 private:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    static Linux::ToneAlarm_Raspilot _toneAlarm;
+    static ToneAlarm_Raspilot _toneAlarm;
 #else
-    static Linux::ToneAlarm _toneAlarm;
+    static ToneAlarm _toneAlarm;
 #endif
-    Linux::Heat *_heat;
+    Heat *_heat;
     int saved_argc;
     char* const *saved_argv;
     const char* custom_log_directory = NULL;
     const char* custom_terrain_directory = NULL;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
+
+}

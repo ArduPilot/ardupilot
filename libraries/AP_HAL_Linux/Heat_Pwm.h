@@ -19,7 +19,9 @@
 #include "PWM_Sysfs.h"
 #include "Heat.h"
 
-class Linux::HeatPwm : public Linux::Heat {
+namespace Linux {
+
+class HeatPwm : public Heat {
 public:
     HeatPwm(uint8_t pwm_num, float Kp, float Ki,
             uint32_t period_ns);
@@ -35,3 +37,5 @@ private:
     float _sum_error;
     int8_t *_target = nullptr;
 };
+
+}

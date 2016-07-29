@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_HAL_Linux_Namespace.h"
 
 #define LINUX_STORAGE_SIZE HAL_STORAGE_SIZE
 #define LINUX_STORAGE_MAX_WRITE 512
@@ -9,7 +8,9 @@
 #define LINUX_STORAGE_LINE_SIZE (1<<LINUX_STORAGE_LINE_SHIFT)
 #define LINUX_STORAGE_NUM_LINES (LINUX_STORAGE_SIZE/LINUX_STORAGE_LINE_SIZE)
 
-class Linux::Storage : public AP_HAL::Storage
+namespace Linux {
+
+class Storage : public AP_HAL::Storage
 {
 public:
     Storage() : _fd(-1),_dirty_mask(0) { }
@@ -39,3 +40,5 @@ protected:
     uint8_t _buffer[LINUX_STORAGE_SIZE];
     volatile uint32_t _dirty_mask;
 };
+
+}

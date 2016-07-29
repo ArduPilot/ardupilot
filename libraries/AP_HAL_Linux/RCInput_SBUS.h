@@ -21,7 +21,9 @@
 #include "RCInput.h"
 #include "RCInput_SBUS.h"
 
-class Linux::RCInput_SBUS : public Linux::RCInput
+namespace Linux {
+
+class RCInput_SBUS : public RCInput
 {
 public:
     void init() override;
@@ -32,4 +34,7 @@ private:
     const char *device_path = "/dev/uart-sbus";
     int32_t fd = -1;
 };
+
+}
+
 #endif // CONFIG_HAL_BOARD_SUBTYPE

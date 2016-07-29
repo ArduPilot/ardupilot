@@ -24,10 +24,13 @@
 #include <AP_HAL_Linux/RCOutput_Bebop.h>
 #include <AP_HAL_Linux/RCOutput_Disco.h>
 
-extern const AP_HAL::HAL& hal;
-
 #define BATTERY_CAPACITY (1200U) /* mAh */
 #define BATTERY_VOLTAGE_COMPENSATION_LANDED (0.2f)
+
+
+extern const AP_HAL::HAL &hal;
+
+using namespace Linux;
 
 /* polynomial compensation coefficients */
 static const float bat_comp_polynomial_coeffs[5] = {
