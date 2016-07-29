@@ -36,6 +36,11 @@ uint32_t ByteBuffer::available(void) const
     return ((head > (_tail=tail))? (size - head) + _tail: _tail - head);
 }
 
+void ByteBuffer::clear(void)
+{
+    head = tail = 0;
+}
+
 uint32_t ByteBuffer::space(void) const
 {
     uint32_t _head = head;

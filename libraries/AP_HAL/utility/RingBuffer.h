@@ -35,6 +35,9 @@ public:
     // number of bytes available to be read
     uint32_t available(void) const;
 
+    // Discards the buffer content, emptying it.
+    void clear(void);
+
     // number of bytes space available to write
     uint32_t space(void) const;
 
