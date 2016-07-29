@@ -54,6 +54,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _roll_target(0.0f),
     _pitch_target(0.0f),
     _alt_max(0.0f),
+    _alt_min(0.0f),
     _distance_to_target(0.0f),
     _accel_target_jerk_limited(0.0f,0.0f),
     _accel_target_filter(POSCONTROL_ACCEL_FILTER_HZ)
@@ -218,6 +219,13 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     if (_alt_max > 0 && _pos_target.z > _alt_max) {
         _pos_target.z = _alt_max;
         _limit.pos_up = true;
+        // decelerate feed forward to zero
+        _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
+    }
+    // ...or below
+    else if (_alt_min > 0 && _pos_target.z <= _alt_min) {
+        _pos_target.z = _alt_min;
+        _limit.pos_down = true;
         // decelerate feed forward to zero
         _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
     }
