@@ -295,11 +295,21 @@ void Copter::set_accel_throttle_I_from_pilot_throttle(float pilot_throttle)
 void Copter::update_poscon_alt_max()
 {
     float alt_limit_cm = 0.0f;  // interpreted as no limit if left as zero
+    int alt_low_cm = 0; // no limit if left as zero
 
 #if AC_FENCE == ENABLED
     // set fence altitude limit in position controller
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
         alt_limit_cm = pv_alt_above_origin(fence.get_safe_alt()*100.0f);
+    }
+
+    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN) != 0) {
+        alt_low_cm = pv_alt_above_origin(fence.get_safe_min_alt() * 100);
+ 
+        // Minimum-alt fence only counts if outside the low-alt radius.
+        if((home_distance / 100) <= fence.get_low_alt_radius()) {
+            alt_low_cm = 0;
+        }
     }
 #endif
 
@@ -311,8 +321,9 @@ void Copter::update_poscon_alt_max()
         }
     }
 
-    // pass limit to pos controller
+    // pass limits to pos controller
     pos_control.set_alt_max(alt_limit_cm);
+    pos_control.set_alt_min(alt_low_cm);
 }
 
 // rotate vector from vehicle's perspective to North-East frame
