@@ -355,14 +355,12 @@ int UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
  */
 bool UARTDriver::_write_pending_bytes(void)
 {
-    uint16_t n;
-
     // write any pending bytes
     uint32_t available_bytes = _writebuf.available();
-    n = available_bytes;
+    uint16_t n = available_bytes;
+    int16_t b = _writebuf.peek(0);
     if (_packetise && n > 0 &&
-        (_writebuf.peek(0) != MAVLINK_STX_MAVLINK1 &&
-         _writebuf.peek(0) != MAVLINK_STX)) {
+        b != MAVLINK_STX_MAVLINK1 && b != MAVLINK_STX) {
         /*
           we have a non-mavlink packet at the start of the
           buffer. Look ahead for a MAVLink start byte, up to 256 bytes
@@ -371,7 +369,7 @@ bool UARTDriver::_write_pending_bytes(void)
         uint16_t limit = n>256?256:n;
         uint16_t i;
         for (i=0; i<limit; i++) {
-            int16_t b = _writebuf.peek(i);
+            b = _writebuf.peek(i);
             if (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX) {
                 n = i;
                 break;
@@ -382,8 +380,8 @@ bool UARTDriver::_write_pending_bytes(void)
             n = limit;
         }
     }
-    const int16_t b = _writebuf.peek(0);
-    if (_packetise && n > 0 && b > 0 &&
+    b = _writebuf.peek(0);
+    if (_packetise && n > 0 &&
         (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX)) {
         uint8_t min_length = (b == MAVLINK_STX_MAVLINK1)?8:12;
         // this looks like a MAVLink packet - try to write on
