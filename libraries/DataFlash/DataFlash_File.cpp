@@ -189,7 +189,7 @@ void DataFlash_File::periodic_fullrate(const uint32_t now)
     DataFlash_Backend::push_log_blocks();
 }
 
-uint16_t DataFlash_File::bufferspace_available()
+uint32_t DataFlash_File::bufferspace_available()
 {
     return _writebuf.space() - critical_message_reserved_space();
 }

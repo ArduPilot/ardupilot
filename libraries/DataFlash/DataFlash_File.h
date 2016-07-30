@@ -46,7 +46,7 @@ public:
 
     /* Write a block of data at current offset */
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
-    uint16_t bufferspace_available();
+    uint32_t bufferspace_available();
 
     // high level interface
     uint16_t find_last_log() override;

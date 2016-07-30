@@ -52,7 +52,7 @@ void DataFlash_MAVLink::Init()
                              // the vehicles
 }
 
-uint16_t DataFlash_MAVLink::bufferspace_available() {
+uint32_t DataFlash_MAVLink::bufferspace_available() {
     return (_blockcount_free * 200 + remaining_space_in_current_block());
 }
 
