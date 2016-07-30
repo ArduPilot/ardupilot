@@ -8,6 +8,7 @@
 
 #if HAL_OS_POSIX_IO
 
+#include <AP_HAL/utility/RingBuffer.h>
 #include "DataFlash_Backend.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
@@ -105,11 +106,8 @@ private:
     const float min_avail_space_percent = 10.0f;
 #endif
     // write buffer
-    uint8_t *_writebuf;
-    uint32_t _writebuf_size; // in bytes; may be == 65536, thus 32-bits
+    ByteBuffer _writebuf;
     const uint16_t _writebuf_chunk;
-    volatile uint16_t _writebuf_head;
-    volatile uint16_t _writebuf_tail;
     uint32_t _last_write_time;
 
     /* construct a file name given a log number. Caller must free. */
@@ -122,19 +120,19 @@ private:
 
     void _io_timer(void);
 
-    uint16_t critical_message_reserved_space() const {
+    uint32_t critical_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        uint16_t ret = 1024;
-        if (ret > _writebuf_size) {
+        uint32_t ret = 1024;
+        if (ret > _writebuf.get_size()) {
             // in this case you will only get critical messages
-            ret = _writebuf_size;
+            ret = _writebuf.get_size();
         }
         return ret;
     };
     uint16_t non_messagewriter_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
         uint16_t ret = 1024;
-        if (ret >= _writebuf_size) {
+        if (ret >= _writebuf.get_size()) {
             // need to allow messages out from the messagewriters.  In
             // this case while you have a messagewriter you won't get
             // any other messages.  This should be a corner case!
