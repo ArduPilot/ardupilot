@@ -160,7 +160,7 @@ const uint32_t AP_GPS::_baudrates[] = {4800U, 38400U, 115200U, 57600U, 9600U, 23
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
-const char AP_GPS::_initialisation_raw_blob[] = UBLOX_SET_BINARY_RAW_BAUD MTK_SET_BINARY SIRF_SET_BINARY;
+const char AP_GPS::_initialisation_raw_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
 
 /*
   send some more initialisation string bytes if there is room in the

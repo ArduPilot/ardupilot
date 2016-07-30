@@ -249,11 +249,35 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
         uint16_t nDOP;
         uint16_t eDOP;
     } dop;
+    struct PACKED ubx_nav_pvt {
+        uint32_t itow; 
+        uint16_t year; 
+        uint8_t month, day, hour, min, sec; 
+        uint8_t valid; 
+        uint32_t t_acc; 
+        int32_t nano; 
+        uint8_t fix_type; 
+        uint8_t flags; 
+        uint8_t flags2; 
+        uint8_t num_sv; 
+        int32_t lon, lat; 
+        int32_t height, h_msl; 
+        uint32_t h_acc, v_acc; 
+        int32_t velN, velE, velD, gspeed; 
+        int32_t head_mot; 
+        uint32_t s_acc; 
+        uint32_t head_acc; 
+        uint16_t p_dop; 
+        uint8_t reserved1[6]; 
+        uint32_t headVeh;
+        uint8_t reserved2[4]; 
+    } pvt;
     const uint8_t MSG_POSLLH = 0x2;
     const uint8_t MSG_STATUS = 0x3;
     const uint8_t MSG_DOP = 0x4;
     const uint8_t MSG_VELNED = 0x12;
     const uint8_t MSG_SOL = 0x6;
+    const uint8_t MSG_PVT = 0x7;
     uint16_t time_week;
     uint32_t time_week_ms;
 
@@ -303,12 +327,42 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     dop.hDOP = 121;
     dop.nDOP = 65535;
     dop.eDOP = 65535;
+    
+    pvt.itow = time_week_ms;
+    pvt.year = 0; 
+    pvt.month = 0;
+    pvt.day = 0;
+    pvt.hour = 0;
+    pvt.min = 0;
+    pvt.sec = 0; 
+    pvt.valid = 0; // invalid utc date
+    pvt.t_acc = 0; 
+    pvt.nano = 0; 
+    pvt.fix_type = 0x3; 
+    pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
+    pvt.flags2 =0; 
+    pvt.num_sv = d->have_lock?_sitl->gps_numsats:3; 
+    pvt.lon = d->longitude * 1.0e7;
+    pvt.lat = d->latitude * 1.0e7; 
+    pvt.height = d->altitude*1000.0f;
+    pvt.h_msl = d->altitude*1000.0f; 
+    pvt.h_acc = 200;
+    pvt.v_acc = 200; 
+    pvt.velN = 1000.0f * d->speedN;
+    pvt.velE = 1000.0f * d->speedE;
+    pvt.velD = 1000.0f * d->speedD;
+    pvt.gspeed = norm(d->speedN, d->speedE) * 1000; 
+    pvt.head_mot = ToDeg(atan2f(d->speedE, d->speedN)) * 1.0e5; 
+    pvt.s_acc = 40; 
+    pvt.head_acc = 38 * 1.0e5; 
+    pvt.p_dop = 65535; 
 
     _gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
     _gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
     _gps_send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
     _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
     _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
+    _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt));
 }
 
 static void swap_uint32(uint32_t *v, uint8_t n)
