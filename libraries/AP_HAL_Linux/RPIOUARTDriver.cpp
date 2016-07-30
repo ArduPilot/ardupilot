@@ -4,7 +4,6 @@
 #include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/RingBuffer.h>
 
 #include "px4io_protocol.h"
 
@@ -34,8 +33,6 @@ RPIOUARTDriver::RPIOUARTDriver() :
     _need_set_baud(false),
     _baudrate(0)
 {
-    _readbuf = NULL;
-    _writebuf = NULL;
 }
 
 bool RPIOUARTDriver::sem_take_nonblocking()
@@ -75,31 +72,8 @@ void RPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     _initialised = false;
     while (_in_timer) hal.scheduler->delay(1);
 
-   /*
-     allocate the read buffer
-   */
-   if (rxS != 0 && rxS != _readbuf_size) {
-       _readbuf_size = rxS;
-       if (_readbuf != NULL) {
-           free(_readbuf);
-       }
-       _readbuf = (uint8_t *)malloc(_readbuf_size);
-       _readbuf_head = 0;
-       _readbuf_tail = 0;
-   }
-
-   /*
-     allocate the write buffer
-   */
-   if (txS != 0 && txS != _writebuf_size) {
-       _writebuf_size = txS;
-       if (_writebuf != NULL) {
-           free(_writebuf);
-       }
-       _writebuf = (uint8_t *)malloc(_writebuf_size);
-       _writebuf_head = 0;
-       _writebuf_tail = 0;
-   }
+    _readbuf.set_size(rxS);
+    _writebuf.set_size(txS);
 
    _dev = hal.spi->get_device("raspio");
 
@@ -110,10 +84,9 @@ void RPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         hal.scheduler->delay(1);
     }
 
-    if (_writebuf_size != 0 && _readbuf_size != 0) {
+    if (_writebuf.get_size() && _readbuf.get_size()) {
         _initialised = true;
     }
-
 }
 
 int RPIOUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
@@ -150,7 +123,7 @@ void RPIOUARTDriver::_timer_tick(void)
                 return;
             }
 
-            struct IOPacket _dma_packet_tx, _dma_packet_rx;
+            struct IOPacket _dma_packet_tx = {0}, _dma_packet_rx = {0};
 
             _dma_packet_tx.count_code = 2 | PKT_CODE_WRITE;
             _dma_packet_tx.page = PX4IO_PAGE_UART_BUFFER;
@@ -186,11 +159,10 @@ void RPIOUARTDriver::_timer_tick(void)
         return;
     }
 
-    struct IOPacket _dma_packet_tx, _dma_packet_rx;
+    struct IOPacket _dma_packet_tx = {0}, _dma_packet_rx = {0};
 
     /* get write_buf bytes */
-    uint16_t _tail;
-    uint16_t n = BUF_AVAILABLE(_writebuf);
+    uint32_t n = _writebuf.available();
 
     if (n > PKT_MAX_REGS * 2) {
         n = PKT_MAX_REGS * 2;
@@ -201,19 +173,7 @@ void RPIOUARTDriver::_timer_tick(void)
         n = _max_size;
     }
 
-    if (n > 0) {
-        uint16_t n1 = _writebuf_size - _writebuf_head;
-        if (n1 >= n) {
-            // do as a single write
-            memcpy( &((uint8_t *)_dma_packet_tx.regs)[0], &_writebuf[_writebuf_head], n );
-        } else {
-            // split into two writes
-            memcpy( &((uint8_t *)_dma_packet_tx.regs)[0], &_writebuf[_writebuf_head], n1 );
-            memcpy( &((uint8_t *)_dma_packet_tx.regs)[n1], &_writebuf[0], n-n1 );
-        }
-
-        BUF_ADVANCEHEAD(_writebuf, n);
-    }
+    _writebuf.read(&((uint8_t *)_dma_packet_tx.regs)[0], n);
 
     _dma_packet_tx.count_code = PKT_MAX_REGS | PKT_CODE_SPIUART;
     _dma_packet_tx.page = PX4IO_PAGE_UART_BUFFER;
@@ -244,8 +204,7 @@ void RPIOUARTDriver::_timer_tick(void)
     _dev->get_semaphore()->give();
 
     /* add bytes to read buf */
-    uint16_t _head;
-    n = BUF_SPACE(_readbuf);
+    n = _readbuf.space();
 
     if (_dma_packet_rx.page == PX4IO_PAGE_UART_BUFFER) {
 
@@ -257,19 +216,7 @@ void RPIOUARTDriver::_timer_tick(void)
             n = PKT_MAX_REGS * 2;
         }
 
-        if (n > 0) {
-            uint16_t n1 = _readbuf_size - _readbuf_tail;
-            if (n1 >= n) {
-                // one read will do
-                memcpy( &_readbuf[_readbuf_tail], &((uint8_t *)_dma_packet_rx.regs)[0], n );
-            } else {
-                memcpy( &_readbuf[_readbuf_tail], &((uint8_t *)_dma_packet_rx.regs)[0], n1 );
-                memcpy( &_readbuf[0], &((uint8_t *)_dma_packet_rx.regs)[n1], n-n1 );
-            }
-
-            BUF_ADVANCETAIL(_readbuf, n);
-        }
-
+        _readbuf.write(&((uint8_t *)_dma_packet_rx.regs)[0], n);
     }
 
     _in_timer = false;
