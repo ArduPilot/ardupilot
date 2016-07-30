@@ -44,7 +44,7 @@ public:
 
     /* Write a block of data at current offset */
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
-    uint16_t bufferspace_available();
+    uint32_t bufferspace_available();
 
     // high level interface
     uint16_t find_last_log() override;
@@ -129,9 +129,9 @@ private:
         }
         return ret;
     };
-    uint16_t non_messagewriter_message_reserved_space() const {
+    uint32_t non_messagewriter_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        uint16_t ret = 1024;
+        uint32_t ret = 1024;
         if (ret >= _writebuf.get_size()) {
             // need to allow messages out from the messagewriters.  In
             // this case while you have a messagewriter you won't get

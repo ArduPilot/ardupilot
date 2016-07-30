@@ -40,7 +40,7 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
 
-    uint16_t bufferspace_available();
+    uint32_t bufferspace_available();
 
 private:
     struct PageHeader {

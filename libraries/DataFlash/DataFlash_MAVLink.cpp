@@ -55,7 +55,7 @@ bool DataFlash_MAVLink::logging_failed() const
     return !_sending_to_client;
 }
 
-uint16_t DataFlash_MAVLink::bufferspace_available() {
+uint32_t DataFlash_MAVLink::bufferspace_available() {
     return (_blockcount_free * 200 + remaining_space_in_current_block());
 }
 

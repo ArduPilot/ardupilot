@@ -473,7 +473,7 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
         return false;
     }
         
-    uint16_t space = _writebuf.space();
+    uint32_t space = _writebuf.space();
 
     if (_writing_startup_messages &&
         _startup_messagewriter->fmt_done()) {

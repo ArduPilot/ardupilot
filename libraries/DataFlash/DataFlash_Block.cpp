@@ -12,11 +12,11 @@ extern AP_HAL::HAL& hal;
 // this if (and only if!) the low level format changes
 #define DF_LOGGING_FORMAT    0x28122013
 
-uint16_t DataFlash_Block::bufferspace_available()
+uint32_t DataFlash_Block::bufferspace_available()
 {
     // because DataFlash_Block devices are ring buffers, we *always*
     // have room...
-    return df_NumPages * df_PageSize; 
+    return df_NumPages * df_PageSize;
 }
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
