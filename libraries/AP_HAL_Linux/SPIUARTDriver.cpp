@@ -5,7 +5,6 @@
 #include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/RingBuffer.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -49,31 +48,8 @@ void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         txS = 2048;
     }
 
-    /*
-     allocate the read buffer
-   */
-    if (rxS != 0 && rxS != _readbuf_size) {
-        _readbuf_size = rxS;
-        if (_readbuf != NULL) {
-            free(_readbuf);
-        }
-        _readbuf = (uint8_t *)malloc(_readbuf_size);
-        _readbuf_head = 0;
-        _readbuf_tail = 0;
-    }
-
-    /*
-     allocate the write buffer
-   */
-    if (txS != 0 && txS != _writebuf_size) {
-        _writebuf_size = txS;
-        if (_writebuf != NULL) {
-            free(_writebuf);
-        }
-        _writebuf = (uint8_t *)malloc(_writebuf_size);
-        _writebuf_head = 0;
-        _writebuf_tail = 0;
-    }
+    _readbuf.set_size(rxS);
+    _writebuf.set_size(txS);
 
     if (_buffer == NULL) {
         /* Do not allocate new buffer, if we're just changing speed */
@@ -122,8 +98,6 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 
     _dev->get_semaphore()->give();
 
-    BUF_ADVANCEHEAD(_writebuf, size);
-
     uint16_t ret = size;
 
     /* Since all SPI-transactions are transfers we need update
@@ -131,41 +105,7 @@ int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
      * this operation since it's the same as in the
      * UARTDriver::write().
      */
-
-    uint8_t *buffer = _buffer;
-
-    uint16_t _head, space;
-    space = BUF_SPACE(_readbuf);
-
-    if (space == 0) {
-        return ret;
-    }
-
-    if (size > space) {
-        size = space;
-    }
-
-    if (_readbuf_tail < _head) {
-        // perform as single memcpy
-        assert(_readbuf_tail+size <= _readbuf_size);
-        memcpy(&_readbuf[_readbuf_tail], buffer, size);
-        BUF_ADVANCETAIL(_readbuf, size);
-        return ret;
-    }
-
-    // perform as two memcpy calls
-    uint16_t n = _readbuf_size - _readbuf_tail;
-    if (n > size) n = size;
-    assert(_readbuf_tail+n <= _readbuf_size);
-    memcpy(&_readbuf[_readbuf_tail], buffer, n);
-    BUF_ADVANCETAIL(_readbuf, n);
-    buffer += n;
-    n = size - n;
-    if (n > 0) {
-        assert(_readbuf_tail+n <= _readbuf_size);
-        memcpy(&_readbuf[_readbuf_tail], buffer, n);
-        BUF_ADVANCETAIL(_readbuf, n);
-    }
+    _readbuf.write(_buffer, size);
 
     return ret;
 }
@@ -193,8 +133,6 @@ int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 
     _dev->transfer_fullduplex(ff_stub, buf, n);
     _dev->get_semaphore()->give();
-
-    BUF_ADVANCETAIL(_readbuf, n);
 
     return n;
 }
