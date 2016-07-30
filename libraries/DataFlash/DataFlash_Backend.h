@@ -60,7 +60,7 @@ public:
 
     void set_mission(const AP_Mission *mission);
 
-    virtual uint16_t bufferspace_available() = 0;
+    virtual uint32_t bufferspace_available() = 0;
 
     virtual uint16_t start_new_log(void) = 0;
     bool log_write_started;
