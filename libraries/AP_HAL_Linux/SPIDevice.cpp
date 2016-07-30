@@ -120,8 +120,10 @@ SPIDesc SPIDeviceManager::_device[] = {
 };
 #else
 // empty device table
-SPIDesc SPIDeviceManager::_device[] = { };
-#define LINUX_SPI_DEVICE_NUM_DEVICES 0
+SPIDesc SPIDeviceManager::_device[] = {
+    SPIDesc("**dummy**",    0, 0, SPI_MODE_3, 0, 0,  0 * MHZ, 0 * MHZ),
+};
+#define LINUX_SPI_DEVICE_NUM_DEVICES 1
 #endif
 
 #ifndef LINUX_SPI_DEVICE_NUM_DEVICES
