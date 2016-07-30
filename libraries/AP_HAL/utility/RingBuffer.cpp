@@ -1,15 +1,13 @@
-#include "RingBuffer.h"
+#include <new>
 #include <stdlib.h>
 #include <string.h>
 
-/*
-  implement a simple ringbuffer of bytes
- */
+#include "RingBuffer.h"
 
 ByteBuffer::ByteBuffer(uint32_t _size)
 {
-    size = _size;
-    buf = new uint8_t[size];
+    buf = new(std::nothrow) uint8_t[_size];
+    size = buf ? _size : 0;
 }
 
 ByteBuffer::~ByteBuffer(void)
@@ -26,9 +24,9 @@ void ByteBuffer::set_size(uint32_t _size)
 
     head = tail = 0;
     if (_size != size) {
-        size = _size;
         oldbuf = buf;
-        buf = new uint8_t[size];
+        buf = new (std::nothrow) uint8_t[_size];
+        size = buf ? _size : 0;
         delete[] oldbuf;
     }
 }
@@ -39,10 +37,15 @@ uint32_t ByteBuffer::available(void) const
     return ((head > (_tail=tail))? (size - head) + _tail: _tail - head);
 }
 
+void ByteBuffer::clear(void)
+{
+    head = tail = 0;
+}
+
 uint32_t ByteBuffer::space(void) const
 {
-    uint32_t _head;
-    return (((_head=head) > tail)?(_head - tail) - 1:((size - tail) + _head) - 1);
+    uint32_t _head = head;
+    return size ? (_head > tail ? 0 : size) + _head - tail - 1 : 0;
 }
 
 bool ByteBuffer::empty(void) const

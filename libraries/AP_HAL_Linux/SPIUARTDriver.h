@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_HAL/utility/RingBuffer.h>
+
 #include "AP_HAL_Linux.h"
 
 #include "UARTDriver.h"
