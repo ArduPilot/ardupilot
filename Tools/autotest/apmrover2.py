@@ -1,17 +1,22 @@
 # drive APMrover2 in SITL
 
-import util, pexpect, sys, time, math, shutil, os
-from common import *
+import os
+import shutil
+
+import pexpect
 from pymavlink import mavutil
-import random
+
+from common import *
+from pysim import util
 
 # get location of scripts
-testdir=os.path.dirname(os.path.realpath(__file__))
+testdir = os.path.dirname(os.path.realpath(__file__))
 
 
-#HOME=mavutil.location(-35.362938,149.165085,584,270)
-HOME=mavutil.location(40.071374969556928,-105.22978898137808,1583.702759,246)
+# HOME=mavutil.location(-35.362938,149.165085,584,270)
+HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 246)
 homeloc = None
+
 
 def arm_rover(mavproxy, mav):
     # wait for EKF and GPS checks to pass
@@ -23,15 +28,16 @@ def arm_rover(mavproxy, mav):
     print("ROVER ARMED")
     return True
 
+
 def drive_left_circuit(mavproxy, mav):
-    '''drive a left circuit, 50m on a side'''
+    """Drive a left circuit, 50m on a side."""
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'MANUAL')
     mavproxy.send('rc 3 2000\n')
 
     print("Driving left circuit")
     # do 4 turns
-    for i in range(0,4):
+    for i in range(0, 4):
         # hard left
         print("Starting turn %u" % i)
         mavproxy.send('rc 1 1000\n')
@@ -45,8 +51,9 @@ def drive_left_circuit(mavproxy, mav):
     print("Circuit complete")
     return True
 
+
 def drive_RTL(mavproxy, mav):
-    '''drive to home'''
+    """Drive to home."""
     print("Driving home in RTL")
     mavproxy.send('switch 3\n')
     if not wait_location(mav, homeloc, accuracy=22, timeout=90):
@@ -54,22 +61,23 @@ def drive_RTL(mavproxy, mav):
     print("RTL Complete")
     return True
 
+
 def setup_rc(mavproxy):
-    '''setup RC override control'''
-    for chan in [1,2,3,4,5,6,7]:
+    """Setup RC override control."""
+    for chan in [1, 2, 3, 4, 5, 6, 7]:
         mavproxy.send('rc %u 1500\n' % chan)
     mavproxy.send('rc 8 1800\n')
 
 
 def drive_mission(mavproxy, mav, filename):
-    '''drive a mission from a file'''
+    """Drive a mission from a file."""
     global homeloc
     print("Driving mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
-    mavproxy.send('switch 4\n') # auto mode
+    mavproxy.send('switch 4\n')  # auto mode
     mavproxy.send('rc 3 1500\n')
     wait_mode(mav, 'AUTO')
     if not wait_waypoint(mav, 1, 4, max_dist=5):
@@ -79,23 +87,23 @@ def drive_mission(mavproxy, mav, filename):
     return True
 
 
-def drive_APMrover2(binary, viewerip=None, map=False, valgrind=False, gdb=False):
-    '''drive APMrover2 in SIL
+def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+    """Drive APMrover2 in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the mission in real time
-    '''
+    """
     global homeloc
 
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
-    if map:
+    if use_map:
         options += ' --map'
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sil = util.start_SIL(binary, wipe=True, model='rover', home=home, speedup=10)
-    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
+    sitl = util.start_SITL(binary, wipe=True, model='rover', home=home, speedup=10)
+    mavproxy = util.start_MAVProxy_SITL('APMrover2', options=options)
 
     print("WAITING FOR PARAMETERS")
     mavproxy.expect('Received [0-9]+ parameters')
@@ -109,10 +117,10 @@ def drive_APMrover2(binary, viewerip=None, map=False, valgrind=False, gdb=False)
 
     # restart with new parms
     util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
+    util.pexpect_close(sitl)
 
-    sil = util.start_SIL(binary, model='rover', home=home, speedup=10, valgrind=valgrind, gdb=gdb)
-    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
+    sitl = util.start_SITL(binary, model='rover', home=home, speedup=10, valgrind=valgrind, gdb=gdb)
+    mavproxy = util.start_MAVProxy_SITL('APMrover2', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
@@ -131,14 +139,14 @@ def drive_APMrover2(binary, viewerip=None, map=False, valgrind=False, gdb=False)
     util.expect_setup_callback(mavproxy, expect_callback)
 
     expect_list_clear()
-    expect_list_extend([sil, mavproxy])
+    expect_list_extend([sitl, mavproxy])
 
     print("Started simulator")
 
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
-    except Exception, msg:
+    except Exception as msg:
         print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
@@ -170,15 +178,15 @@ def drive_APMrover2(binary, viewerip=None, map=False, valgrind=False, gdb=False)
 #        if not drive_RTL(mavproxy, mav):
 #            print("Failed RTL")
 #            failed = True
-    except pexpect.TIMEOUT, e:
+    except pexpect.TIMEOUT as e:
         print("Failed with timeout")
         failed = True
 
     mav.close()
     util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
+    util.pexpect_close(sitl)
 
-    valgrind_log = sil.valgrind_log_filepath()
+    valgrind_log = sitl.valgrind_log_filepath()
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0644)
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))

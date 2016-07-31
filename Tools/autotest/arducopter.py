@@ -7,30 +7,38 @@
 #   switch 5 = Loiter
 #   switch 6 = Stabilize
 
-import util, pexpect, sys, time, math, shutil, os
-from common import *
+import math
+import os
+import shutil
+import time
+
+import pexpect
 from pymavlink import mavutil, mavwp
-import random
+
+from common import *
+from pysim import util
 
 # get location of scripts
-testdir=os.path.dirname(os.path.realpath(__file__))
+testdir = os.path.dirname(os.path.realpath(__file__))
 
-FRAME='+'
-HOME=mavutil.location(-35.362938,149.165085,584,270)
-AVCHOME=mavutil.location(40.072842,-105.230575,1586,0)
+FRAME = '+'
+HOME = mavutil.location(-35.362938, 149.165085, 584, 270)
+AVCHOME = mavutil.location(40.072842, -105.230575, 1586, 0)
 
 homeloc = None
 num_wp = 0
 speedup_default = 10
 
+
 def hover(mavproxy, mav, hover_throttle=1500):
     mavproxy.send('rc 3 %u\n' % hover_throttle)
     return True
 
+
 def arm_motors(mavproxy, mav):
-    '''arm motors'''
+    """Arm motors."""
     print("Arming motors")
-    mavproxy.send('switch 6\n') # stabilize mode
+    mavproxy.send('switch 6\n')  # stabilize mode
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1000\n')
     mavproxy.send('rc 4 2000\n')
@@ -40,10 +48,11 @@ def arm_motors(mavproxy, mav):
     print("MOTORS ARMED OK")
     return True
 
+
 def disarm_motors(mavproxy, mav):
-    '''disarm motors'''
+    """Disarm motors."""
     print("Disarming motors")
-    mavproxy.send('switch 6\n') # stabilize mode
+    mavproxy.send('switch 6\n')  # stabilize mode
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1000\n')
     mavproxy.send('rc 4 1000\n')
@@ -54,9 +63,9 @@ def disarm_motors(mavproxy, mav):
     return True
 
 
-def takeoff(mavproxy, mav, alt_min = 30, takeoff_throttle=1700):
-    '''takeoff get to 30m altitude'''
-    mavproxy.send('switch 6\n') # stabilize mode
+def takeoff(mavproxy, mav, alt_min=30, takeoff_throttle=1700):
+    """Takeoff get to 30m altitude."""
+    mavproxy.send('switch 6\n')  # stabilize mode
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 %u\n' % takeoff_throttle)
     m = mav.recv_match(type='VFR_HUD', blocking=True)
@@ -66,10 +75,11 @@ def takeoff(mavproxy, mav, alt_min = 30, takeoff_throttle=1700):
     print("TAKEOFF COMPLETE")
     return True
 
+
 # loiter - fly south west, then hold loiter within 5m position and altitude
 def loiter(mavproxy, mav, holdtime=10, maxaltchange=5, maxdistchange=5):
-    '''hold loiter position'''
-    mavproxy.send('switch 5\n') # loiter mode
+    """Hold loiter position."""
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
 
     # first aim south east
@@ -79,7 +89,7 @@ def loiter(mavproxy, mav, holdtime=10, maxaltchange=5, maxdistchange=5):
         return False
     mavproxy.send('rc 4 1500\n')
 
-    #fly south east 50m
+    # fly south east 50m
     mavproxy.send('rc 2 1100\n')
     if not wait_distance(mav, 50):
         return False
@@ -114,8 +124,9 @@ def loiter(mavproxy, mav, holdtime=10, maxaltchange=5, maxdistchange=5):
         print("Loiter FAILED")
     return success
 
+
 def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=1080):
-    '''change altitude'''
+    """Change altitude."""
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if(m.alt < alt_min):
         print("Rise to alt:%u from %u" % (alt_min, m.alt))
@@ -124,13 +135,14 @@ def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=108
     else:
         print("Lower to alt:%u from %u" % (alt_min, m.alt))
         mavproxy.send('rc 3 %u\n' % descend_throttle)
-        wait_altitude(mav, (alt_min -5), alt_min)
+        wait_altitude(mav, (alt_min - 5), alt_min)
     hover(mavproxy, mav)
     return True
 
+
 # fly a square in stabilize mode
 def fly_square(mavproxy, mav, side=50, timeout=300):
-    '''fly a square, flying N then E'''
+    """Fly a square, flying N then E ."""
     tstart = get_sim_time(mav)
     success = True
 
@@ -166,7 +178,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     print("Going north %u meters" % side)
     mavproxy.send('rc 2 1300\n')
     if not wait_distance(mav, side):
-        print("Failed to reach distance of %u") % side
+        print("Failed to reach distance of %u" % side)
         success = False
     mavproxy.send('rc 2 1500\n')
 
@@ -178,7 +190,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     print("Going east %u meters" % side)
     mavproxy.send('rc 1 1700\n')
     if not wait_distance(mav, side):
-        print("Failed to reach distance of %u") % side
+        print("Failed to reach distance of %u" % side)
         success = False
     mavproxy.send('rc 1 1500\n')
 
@@ -190,7 +202,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     print("Going south %u meters" % side)
     mavproxy.send('rc 2 1700\n')
     if not wait_distance(mav, side):
-        print("Failed to reach distance of %u") % side
+        print("Failed to reach distance of %u" % side)
         success = False
     mavproxy.send('rc 2 1500\n')
 
@@ -202,7 +214,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     print("Going west %u meters" % side)
     mavproxy.send('rc 1 1300\n')
     if not wait_distance(mav, side):
-        print("Failed to reach distance of %u") % side
+        print("Failed to reach distance of %u" % side)
         success = False
     mavproxy.send('rc 1 1500\n')
 
@@ -212,7 +224,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
 
     # descend to 10m
     print("Descend to 10m in Loiter")
-    mavproxy.send('switch 5\n') # loiter mode
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
     mavproxy.send('rc 3 1300\n')
     time_left = timeout - (get_sim_time(mav) - tstart)
@@ -226,8 +238,9 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
 
     return success
 
+
 def fly_RTL(mavproxy, mav, side=60, timeout=250):
-    '''Return, land'''
+    """Return, land."""
     print("# Enter RTL")
     mavproxy.send('switch 3\n')
     tstart = get_sim_time(mav)
@@ -240,8 +253,9 @@ def fly_RTL(mavproxy, mav, side=60, timeout=250):
             return True
     return False
 
+
 def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
-    '''Fly east, Failsafe, return, land'''
+    """Fly east, Failsafe, return, land."""
 
     # switch to loiter mode temporarily to stop us from rising
     mavproxy.send('switch 5\n')
@@ -285,9 +299,9 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
             # reduce throttle
             mavproxy.send('rc 3 1100\n')
             # switch back to stabilize
-            mavproxy.send('switch 2\n') # land mode
+            mavproxy.send('switch 2\n')  # land mode
             wait_mode(mav, 'LAND')
-            mavproxy.send('switch 6\n') # stabilize mode
+            mavproxy.send('switch 6\n')  # stabilize mode
             wait_mode(mav, 'STABILIZE')
             print("Reached failsafe home OK")
             return True
@@ -295,11 +309,12 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
     # reduce throttle
     mavproxy.send('rc 3 1100\n')
     # switch back to stabilize mode
-    mavproxy.send('switch 2\n') # land mode
+    mavproxy.send('switch 2\n')  # land mode
     wait_mode(mav, 'LAND')
-    mavproxy.send('switch 6\n') # stabilize mode
+    mavproxy.send('switch 6\n')  # stabilize mode
     wait_mode(mav, 'STABILIZE')
     return False
+
 
 def fly_battery_failsafe(mavproxy, mav, timeout=30):
     # assume failure
@@ -332,10 +347,11 @@ def fly_battery_failsafe(mavproxy, mav, timeout=30):
 
     return success
 
+
 # fly_stability_patch - fly south, then hold loiter within 5m position and altitude and reduce 1 motor to 60% efficiency
 def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=10):
-    '''hold loiter position'''
-    mavproxy.send('switch 5\n') # loiter mode
+    """Hold loiter position."""
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
 
     # first south
@@ -345,7 +361,7 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
         return False
     mavproxy.send('rc 4 1500\n')
 
-    #fly west 80m
+    # fly west 80m
     mavproxy.send('rc 2 1100\n')
     if not wait_distance(mav, 80):
         return False
@@ -384,16 +400,17 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
     mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
 
     if success:
-        print("Stability patch and Loiter OK for %u seconds" % holdtime)            
+        print("Stability patch and Loiter OK for %u seconds" % holdtime)
     else:
         print("Stability Patch FAILED")
 
     return success
 
+
 # fly_fence_test - fly east until you hit the horizontal circular fence
 def fly_fence_test(mavproxy, mav, timeout=180):
-    '''hold loiter position'''
-    mavproxy.send('switch 5\n') # loiter mode
+    """Hold loiter position."""
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
 
     # enable fence, disable avoidance
@@ -421,7 +438,7 @@ def fly_fence_test(mavproxy, mav, timeout=180):
         home_distance = get_distance(HOME, pos)
         print("Alt: %u  HomeDistance: %.0f" % (m.alt, home_distance))
         # recenter pitch sticks once we reach home so we don't fly off again
-        if pitching_forward and home_distance < 10 :
+        if pitching_forward and home_distance < 10:
             pitching_forward = False
             mavproxy.send('rc 2 1500\n')
             # disable fence
@@ -430,9 +447,9 @@ def fly_fence_test(mavproxy, mav, timeout=180):
             # reduce throttle
             mavproxy.send('rc 3 1000\n')
             # switch mode to stabilize
-            mavproxy.send('switch 2\n') # land mode
+            mavproxy.send('switch 2\n')  # land mode
             wait_mode(mav, 'LAND')
-            mavproxy.send('switch 6\n') # stabilize mode
+            mavproxy.send('switch 6\n')  # stabilize mode
             wait_mode(mav, 'STABILIZE')
             print("Reached home OK")
             return True
@@ -444,15 +461,16 @@ def fly_fence_test(mavproxy, mav, timeout=180):
     # reduce throttle
     mavproxy.send('rc 3 1000\n')
     # switch mode to stabilize
-    mavproxy.send('switch 2\n') # land mode
+    mavproxy.send('switch 2\n')  # land mode
     wait_mode(mav, 'LAND')
-    mavproxy.send('switch 6\n') # stabilize mode
+    mavproxy.send('switch 6\n')  # stabilize mode
     wait_mode(mav, 'STABILIZE')
     print("Fence test failed to reach home - timed out after %u seconds" % timeout)
     return False
 
+
 def show_gps_and_sim_positions(mavproxy, on_off):
-    if on_off == True:
+    if on_off is True:
         # turn on simulator display of gps and actual position
         mavproxy.send('map set showgpspos 1\n')
         mavproxy.send('map set showsimpos 1\n')
@@ -460,25 +478,26 @@ def show_gps_and_sim_positions(mavproxy, on_off):
         # turn off simulator display of gps and actual position
         mavproxy.send('map set showgpspos 0\n')
         mavproxy.send('map set showsimpos 0\n')
-    
-# fly_gps_glitch_loiter_test - fly south east in loiter and test reaction to gps glitch
+
+
 def fly_gps_glitch_loiter_test(mavproxy, mav, use_map=False, timeout=30, max_distance=20):
-    '''hold loiter position'''
-    mavproxy.send('switch 5\n') # loiter mode
+    """fly_gps_glitch_loiter_test.
+
+     Fly south east in loiter and test reaction to gps glitch."""
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
 
     # turn on simulator display of gps and actual position
     if (use_map):
         show_gps_and_sim_positions(mavproxy, True)
 
-
     # set-up gps glitch array
-    glitch_lat = [0.0002996,0.0006958,0.0009431,0.0009991,0.0009444,0.0007716,0.0006221]
-    glitch_lon = [0.0000717,0.0000912,0.0002761,0.0002626,0.0002807,0.0002049,0.0001304]
+    glitch_lat = [0.0002996, 0.0006958, 0.0009431, 0.0009991, 0.0009444, 0.0007716, 0.0006221]
+    glitch_lon = [0.0000717, 0.0000912, 0.0002761, 0.0002626, 0.0002807, 0.0002049, 0.0001304]
     glitch_num = len(glitch_lat)
     print("GPS Glitches:")
-    for i in range(1,glitch_num):
-        print("glitch %d %.7f %.7f" % (i,glitch_lat[i],glitch_lon[i]))
+    for i in range(1, glitch_num):
+        print("glitch %d %.7f %.7f" % (i, glitch_lat[i], glitch_lon[i]))
 
     # turn south east
     print("turn south east")
@@ -510,7 +529,7 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, use_map=False, timeout=30, max_dis
     success = True
 
     # initialise current glitch
-    glitch_current = 0;
+    glitch_current = 0
     print("Apply first glitch")
     mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' % glitch_lat[glitch_current])
     mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' % glitch_lon[glitch_current])
@@ -529,7 +548,7 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, use_map=False, timeout=30, max_dis
                 mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
             else:
                 print("Applying glitch %u" % glitch_current)
-                #move onto the next glitch
+                # move onto the next glitch
                 mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' % glitch_lat[glitch_current])
                 mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' % glitch_lon[glitch_current])
 
@@ -557,16 +576,17 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, use_map=False, timeout=30, max_dis
         print("GPS glitch test FAILED!")
     return success
 
+
 # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
 def fly_gps_glitch_auto_test(mavproxy, mav, use_map=False, timeout=120):
 
     # set-up gps glitch array
-    glitch_lat = [0.0002996,0.0006958,0.0009431,0.0009991,0.0009444,0.0007716,0.0006221]
-    glitch_lon = [0.0000717,0.0000912,0.0002761,0.0002626,0.0002807,0.0002049,0.0001304]
+    glitch_lat = [0.0002996, 0.0006958, 0.0009431, 0.0009991, 0.0009444, 0.0007716, 0.0006221]
+    glitch_lon = [0.0000717, 0.0000912, 0.0002761, 0.0002626, 0.0002807, 0.0002049, 0.0001304]
     glitch_num = len(glitch_lat)
     print("GPS Glitches:")
-    for i in range(1,glitch_num):
-        print("glitch %d %.7f %.7f" % (i,glitch_lat[i],glitch_lon[i]))
+    for i in range(1, glitch_num):
+        print("glitch %d %.7f %.7f" % (i, glitch_lat[i], glitch_lon[i]))
 
     # Fly mission #1
     print("# Load copter_glitch_mission")
@@ -585,7 +605,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, use_map=False, timeout=120):
     mavproxy.send('wp set 1\n')
 
     # switch into AUTO mode and raise throttle
-    mavproxy.send('switch 4\n') # auto mode
+    mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
     mavproxy.send('rc 3 1500\n')
 
@@ -600,7 +620,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, use_map=False, timeout=120):
     tnow = tstart
 
     # initialise current glitch
-    glitch_current = 0;
+    glitch_current = 0
     print("Apply first glitch")
     mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' % glitch_lat[glitch_current])
     mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' % glitch_lon[glitch_current])
@@ -647,17 +667,18 @@ def fly_gps_glitch_auto_test(mavproxy, mav, use_map=False, timeout=120):
 
     return ret
 
-#fly_simple - assumes the simple bearing is initialised to be directly north
+
+#   fly_simple - assumes the simple bearing is initialised to be directly north
 #   flies a box with 100m west, 15 seconds north, 50 seconds east, 15 seconds south
 def fly_simple(mavproxy, mav, side=50, timeout=120):
 
     failed = False
 
     # hold position in loiter
-    mavproxy.send('switch 5\n') # loiter mode
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
 
-    #set SIMPLE mode for all flight modes
+    # set SIMPLE mode for all flight modes
     mavproxy.send('param set SIMPLE 63\n')
 
     # switch to stabilize mode
@@ -679,7 +700,7 @@ def fly_simple(mavproxy, mav, side=50, timeout=120):
     while get_sim_time(mav) < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (get_sim_time(mav) - tstart)
-        #print("%u" % delta)
+        # print("%u" % delta)
     mavproxy.send('rc 2 1500\n')
 
     # fly north 25 meters
@@ -696,23 +717,24 @@ def fly_simple(mavproxy, mav, side=50, timeout=120):
     while get_sim_time(mav) < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (get_sim_time(mav) - tstart)
-        #print("%u" % delta)
+        # print("%u" % delta)
     mavproxy.send('rc 2 1500\n')
 
-    #restore to default
+    # restore to default
     mavproxy.send('param set SIMPLE 0\n')
 
-    #hover in place
+    # hover in place
     hover(mavproxy, mav)
     return not failed
 
-#fly_super_simple - flies a circle around home for 45 seconds
+
+# fly_super_simple - flies a circle around home for 45 seconds
 def fly_super_simple(mavproxy, mav, timeout=45):
 
     failed = False
 
     # hold position in loiter
-    mavproxy.send('switch 5\n') # loiter mode
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
 
     # fly forward 20m
@@ -722,7 +744,7 @@ def fly_super_simple(mavproxy, mav, timeout=45):
         failed = True
     mavproxy.send('rc 2 1500\n')
 
-    #set SUPER SIMPLE mode for all flight modes
+    # set SUPER SIMPLE mode for all flight modes
     mavproxy.send('param set SUPER_SIMPLE 63\n')
 
     # switch to stabilize mode
@@ -745,18 +767,19 @@ def fly_super_simple(mavproxy, mav, timeout=45):
     mavproxy.send('rc 1 1500\n')
     mavproxy.send('rc 4 1500\n')
 
-    #restore simple mode parameters to default
+    # restore simple mode parameters to default
     mavproxy.send('param set SUPER_SIMPLE 0\n')
 
-    #hover in place
+    # hover in place
     hover(mavproxy, mav)
     return not failed
 
-#fly_circle - flies a circle with 20m radius
+
+# fly_circle - flies a circle with 20m radius
 def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
 
     # hold position in loiter
-    mavproxy.send('switch 5\n') # loiter mode
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
 
     # face west
@@ -766,7 +789,7 @@ def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
         return False
     mavproxy.send('rc 4 1500\n')
 
-    #set CIRCLE radius
+    # set CIRCLE radius
     mavproxy.send('param set CIRCLE_RADIUS 3000\n')
 
     # fly forward (east) at least 100m
@@ -778,10 +801,10 @@ def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
     mavproxy.send('rc 2 1500\n')
 
     # set CIRCLE mode
-    mavproxy.send('switch 1\n') # circle mode
+    mavproxy.send('switch 1\n')  # circle mode
     wait_mode(mav, 'CIRCLE')
 
-    # wait 
+    # wait
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     tstart = get_sim_time(mav)
@@ -793,6 +816,7 @@ def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
 
     print("CIRCLE OK for %u seconds" % holdtime)
     return True
+
 
 # fly_auto_test - fly mission which tests a significant number of commands
 def fly_auto_test(mavproxy, mav):
@@ -810,7 +834,7 @@ def fly_auto_test(mavproxy, mav):
     mavproxy.send('wp set 1\n')
 
     # switch into AUTO mode and raise throttle
-    mavproxy.send('switch 4\n') # auto mode
+    mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
     mavproxy.send('rc 3 1500\n')
 
@@ -818,9 +842,9 @@ def fly_auto_test(mavproxy, mav):
     ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
 
     # land if mission failed
-    if ret == False:
+    if ret is False:
         land(mavproxy, mav)
-    
+
     # set throttle to minimum
     mavproxy.send('rc 3 1000\n')
 
@@ -832,9 +856,10 @@ def fly_auto_test(mavproxy, mav):
 
     return ret
 
+
 # fly_avc_test - fly AVC mission
 def fly_avc_test(mavproxy, mav):
-        
+
     # upload mission from file
     print("# Load copter_AVC2013_mission")
     if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_AVC2013_mission.txt")):
@@ -848,7 +873,7 @@ def fly_avc_test(mavproxy, mav):
     mavproxy.send('wp set 1\n')
 
     # switch into AUTO mode and raise throttle
-    mavproxy.send('switch 4\n') # auto mode
+    mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
     mavproxy.send('rc 3 1500\n')
 
@@ -866,23 +891,25 @@ def fly_avc_test(mavproxy, mav):
 
     return ret
 
+
 def land(mavproxy, mav, timeout=60):
-    '''land the quad'''
+    """Land the quad."""
     print("STARTING LANDING")
-    mavproxy.send('switch 2\n') # land mode
+    mavproxy.send('switch 2\n')  # land mode
     wait_mode(mav, 'LAND')
     print("Entered Landing Mode")
     ret = wait_altitude(mav, -5, 1)
     print("LANDING: ok= %s" % ret)
     return ret
 
-def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
-    '''fly a mission from a file'''
+
+def fly_mission(mavproxy, mav, height_accuracy=-1.0, target_altitude=None):
+    """Fly a mission from a file."""
     global homeloc
     global num_wp
     print("test: Fly a mission from 1 to %u" % num_wp)
     mavproxy.send('wp set 1\n')
-    mavproxy.send('switch 4\n') # auto mode
+    mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
     ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
     expect_msg = "Reached command #%u" % (num_wp-1)
@@ -890,12 +917,13 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
         mavproxy.expect(expect_msg)
     print("test: MISSION COMPLETE: passed=%s" % ret)
     # wait here until ready
-    mavproxy.send('switch 5\n') # loiter mode
+    mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
     return ret
 
+
 def load_mission_from_file(mavproxy, mav, filename):
-    '''Load a mission from a file to flight controller'''
+    """Load a mission from a file to flight controller."""
     global num_wp
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
@@ -908,6 +936,7 @@ def load_mission_from_file(mavproxy, mav, filename):
     num_wp = wploader.count()
     return True
 
+
 def save_mission_to_file(mavproxy, mav, filename):
     global num_wp
     mavproxy.send('wp save %s\n' % filename)
@@ -916,24 +945,26 @@ def save_mission_to_file(mavproxy, mav, filename):
     print("num_wp: %d" % num_wp)
     return True
 
+
 def setup_rc(mavproxy):
-    '''setup RC override control'''
-    for chan in range(1,9):
+    """Setup RC override control."""
+    for chan in range(1, 9):
         mavproxy.send('rc %u 1500\n' % chan)
     # zero throttle
     mavproxy.send('rc 3 1000\n')
 
+
 def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
-    '''fly ArduCopter in SIL
+    """Fly ArduCopter in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the flight in real time
-    '''
+    """
     global homeloc
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sil = util.start_SIL(binary, wipe=True, model='+', home=home, speedup=speedup_default)
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
+    sitl = util.start_SITL(binary, wipe=True, model='+', home=home, speedup=speedup_default)
+    mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
@@ -945,29 +976,29 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
 
     # reboot with new parameters
     util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
+    util.pexpect_close(sitl)
 
-    sil = util.start_SIL(binary, model='+', home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
+    sitl = util.start_SITL(binary, model='+', home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
     if use_map:
         options += ' --map'
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
+    mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
     buildlog = util.reltopdir("../buildlogs/ArduCopter-test.tlog")
     print("buildlog=%s" % buildlog)
-    copyTLog = False
+    copy_tlog = False
     if os.path.exists(buildlog):
         os.unlink(buildlog)
     try:
         os.link(logfile, buildlog)
     except Exception:
-        print( "WARN: Failed to create symlink: " + logfile + " => " + buildlog + ", Will copy tlog manually to target location" )
-        copyTLog = True
+        print("WARN: Failed to create symlink: " + logfile + " => " + buildlog + ", Will copy tlog manually to target location")
+        copy_tlog = True
 
     # the received parameters can come before or after the ready to fly message
     mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
@@ -976,17 +1007,16 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     util.expect_setup_callback(mavproxy, expect_callback)
 
     expect_list_clear()
-    expect_list_extend([sil, mavproxy])
+    expect_list_extend([sitl, mavproxy])
 
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
-    except Exception, msg:
+    except Exception as msg:
         print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
-
 
     failed = False
     failed_test_msg = "None"
@@ -1030,7 +1060,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
 
         # fly the stored mission
         print("# Fly CH7 saved mission")
-        if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
+        if not fly_mission(mavproxy, mav, height_accuracy=0.5, target_altitude=10):
             failed_test_msg = "fly ch7_mission failed"
             print(failed_test_msg)
             failed = True
@@ -1250,38 +1280,37 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
             print(failed_test_msg)
             failed = True
 
-    except pexpect.TIMEOUT, failed_test_msg:
+    except pexpect.TIMEOUT as failed_test_msg:
         failed_test_msg = "Timeout"
         failed = True
 
     mav.close()
     util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
+    util.pexpect_close(sitl)
 
-    valgrind_log = sil.valgrind_log_filepath()
+    valgrind_log = sitl.valgrind_log_filepath()
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0644)
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
 
     # [2014/05/07] FC Because I'm doing a cross machine build (source is on host, build is on guest VM) I cannot hard link
     # This flag tells me that I need to copy the data out
-    if copyTLog:
+    if copy_tlog:
         shutil.copy(logfile, buildlog)
-        
+
     if failed:
         print("FAILED: %s" % failed_test_msg)
         return False
     return True
 
 
-def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False, gdb=False):
-    '''fly ArduCopter in SIL for AVC2013 mission
-    '''
+def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+    """Fly ArduCopter in SITL for AVC2013 mission."""
     global homeloc
 
     home = "%f,%f,%u,%u" % (AVCHOME.lat, AVCHOME.lng, AVCHOME.alt, AVCHOME.heading)
-    sil = util.start_SIL(binary, wipe=True, model='heli', home=home, speedup=speedup_default)
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
+    sitl = util.start_SITL(binary, wipe=True, model='heli', home=home, speedup=speedup_default)
+    mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
@@ -1293,15 +1322,15 @@ def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False, gdb=False):
 
     # reboot with new parameters
     util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
+    util.pexpect_close(sitl)
 
-    sil = util.start_SIL(binary, model='heli', home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
+    sitl = util.start_SITL(binary, model='heli', home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
-    if map:
+    if use_map:
         options += ' --map'
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
+    mavproxy = util.start_MAVProxy_SITL('ArduCopter', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
@@ -1322,21 +1351,20 @@ def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     util.expect_setup_callback(mavproxy, expect_callback)
 
     expect_list_clear()
-    expect_list_extend([sil, mavproxy])
+    expect_list_extend([sitl, mavproxy])
 
-    if map:
+    if use_map:
         mavproxy.send('map icon 40.072467969730496 -105.2314389590174\n')
-        mavproxy.send('map icon 40.072600990533829 -105.23146100342274\n')        
+        mavproxy.send('map icon 40.072600990533829 -105.23146100342274\n')
 
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
-    except Exception, msg:
+    except Exception as msg:
         print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
-
 
     failed = False
     failed_test_msg = "None"
@@ -1373,21 +1401,21 @@ def fly_CopterAVC(binary, viewerip=None, map=False, valgrind=False, gdb=False):
         print("Lowering rotor speed")
         mavproxy.send('rc 8 1000\n')
 
-        #mission includes disarm at end so should be ok to download logs now
+        # mission includes disarm at end so should be ok to download logs now
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/CopterAVC-log.bin")):
             failed_test_msg = "log_download failed"
             print(failed_test_msg)
             failed = True
 
-    except pexpect.TIMEOUT, failed_test_msg:
+    except pexpect.TIMEOUT as failed_test_msg:
         failed_test_msg = "Timeout"
         failed = True
 
     mav.close()
     util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
+    util.pexpect_close(sitl)
 
-    valgrind_log = sil.valgrind_log_filepath()
+    valgrind_log = sitl.valgrind_log_filepath()
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0644)
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/Helicopter-valgrind.log"))
