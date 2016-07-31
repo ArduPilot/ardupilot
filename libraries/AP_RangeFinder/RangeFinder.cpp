@@ -216,7 +216,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_GROUPINFO("2_GNDCLEAR", 22, RangeFinder, _ground_clearance_cm[1], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: 2_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
+    // @DisplayName: Bus address of second rangefinder
     // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
     // @Range: 0 127
     // @Increment: 1
@@ -228,7 +228,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 #if RANGEFINDER_MAX_INSTANCES > 2
 
     // @Param: 3_TYPE
-    // @DisplayName: Second Rangefinder type
+    // @DisplayName: Third Rangefinder type
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink
     AP_GROUPINFO("3_TYPE",    25, RangeFinder, _type[2], 0),
@@ -293,8 +293,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_GROUPINFO("3_RMETRIC", 34, RangeFinder, _ratiometric[2], 1),
 
     // @Param: 3_GNDCLEAR
-    // @DisplayName: Distance (in cm) from the second range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
+    // @DisplayName: Distance (in cm) from the third range finder to the ground
+    // @Description: This parameter sets the expected range measurement(in cm) that the third range finder should return when the vehicle is on the ground.
     // @Units: centimeters
     // @Range: 0 127
     // @Increment: 1
@@ -314,7 +314,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 #if RANGEFINDER_MAX_INSTANCES > 3
 
     // @Param: 4_TYPE
-    // @DisplayName: Second Rangefinder type
+    // @DisplayName: Fourth Rangefinder type
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink
     AP_GROUPINFO("4_TYPE",    37, RangeFinder, _type[3], 0),
@@ -379,8 +379,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_GROUPINFO("4_RMETRIC", 46, RangeFinder, _ratiometric[3], 1),
 
     // @Param: 4_GNDCLEAR
-    // @DisplayName: Distance (in cm) from the second range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
+    // @DisplayName: Distance (in cm) from the fourth range finder to the ground
+    // @Description: This parameter sets the expected range measurement(in cm) that the fourth range finder should return when the vehicle is on the ground.
     // @Units: centimeters
     // @Range: 0 127
     // @Increment: 1
@@ -388,7 +388,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_GROUPINFO("4_GNDCLEAR", 47, RangeFinder, _ground_clearance_cm[3], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: 4_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
+    // @DisplayName: Bus address of fourth rangefinder
     // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
     // @Range: 0 127
     // @Increment: 1
