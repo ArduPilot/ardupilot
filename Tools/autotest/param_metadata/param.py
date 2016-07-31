@@ -2,19 +2,20 @@
 class Parameter(object):
     def __init__(self, name):
         self.name = name
-        
+
 
 class Vehicle(object):
-    def __init__ (self, name, path):
+    def __init__(self, name, path):
         self.name = name
         self.path = path
         self.params = []
-        
+
+
 class Library(object):
-    def __init__ (self, name):
+    def __init__(self, name):
         self.name = name
         self.params = []
-        
+
 known_param_fields = [
              'Description',
              'DisplayName',
@@ -26,15 +27,15 @@ known_param_fields = [
              'RebootRequired',
              'Bitmask',
              'Volatile',
-             'ReadOnly'
+             'ReadOnly',
                       ]
 
 required_param_fields = [
              'Description',
              'DisplayName',
-             'User'
+             'User',
                       ]
 
 known_group_fields = [
-                      'Path'
+                      'Path',
                       ]
