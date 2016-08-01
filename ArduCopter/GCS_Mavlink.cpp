@@ -1663,6 +1663,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_set_attitude_target_t packet;
         mavlink_msg_set_attitude_target_decode(msg, &packet);
 
+        // exit if vehicle is not in Guided mode or Auto-Guided mode
+        if ((copter.control_mode != GUIDED) && (copter.control_mode != GUIDED_NOGPS) && !(copter.control_mode == AUTO && copter.auto_mode == Auto_NavGuided)) {
+            break;
+        }
+
         // ensure type_mask specifies to use attitude and thrust
         if ((packet.type_mask & ((1<<7)|(1<<6))) != 0) {
             break;
