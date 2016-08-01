@@ -92,7 +92,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @DisplayName: Loiter minimum acceleration
     // @Description: Loiter minimum acceleration in cm/s/s. Higher values stop the copter more quickly when the stick is centered, but cause a larger jerk when the copter stops.
     // @Units: cm/s/s
-    // @Range: 100 981
+    // @Range: 25 250
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("LOIT_MINA",   9, AC_WPNav, _loiter_accel_min_cmss, WPNAV_LOITER_ACCEL_MIN),
