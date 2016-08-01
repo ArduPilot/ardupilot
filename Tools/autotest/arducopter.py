@@ -462,13 +462,15 @@ def show_gps_and_sim_positions(mavproxy, on_off):
         mavproxy.send('map set showsimpos 0\n')
     
 # fly_gps_glitch_loiter_test - fly south east in loiter and test reaction to gps glitch
-def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=20):
+def fly_gps_glitch_loiter_test(mavproxy, mav, use_map=False, timeout=30, max_distance=20):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
 
     # turn on simulator display of gps and actual position
-    show_gps_and_sim_positions(mavproxy, True)
+    if (use_map):
+        show_gps_and_sim_positions(mavproxy, True)
+
 
     # set-up gps glitch array
     glitch_lat = [0.0002996,0.0006958,0.0009431,0.0009991,0.0009444,0.0007716,0.0006221]
@@ -482,20 +484,23 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=20):
     print("turn south east")
     mavproxy.send('rc 4 1580\n')
     if not wait_heading(mav, 150):
-        show_gps_and_sim_positions(mavproxy, False)
+        if (use_map):
+            show_gps_and_sim_positions(mavproxy, False)
         return False
     mavproxy.send('rc 4 1500\n')
 
     # fly forward (south east) at least 60m
     mavproxy.send('rc 2 1100\n')
     if not wait_distance(mav, 60):
-        show_gps_and_sim_positions(mavproxy, False)
+        if (use_map):
+            show_gps_and_sim_positions(mavproxy, False)
         return False
     mavproxy.send('rc 2 1500\n')
 
     # wait for copter to slow down
     if not wait_groundspeed(mav, 0, 1):
-        show_gps_and_sim_positions(mavproxy, False)
+        if (use_map):
+            show_gps_and_sim_positions(mavproxy, False)
         return False
 
     # record time and position
@@ -543,7 +548,8 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=20):
         glitch_current = -1
         mavproxy.send('param set SIM_GPS_GLITCH_X 0\n')
         mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
-    show_gps_and_sim_positions(mavproxy, False)
+    if (use_map):
+        show_gps_and_sim_positions(mavproxy, False)
 
     if success:
         print("GPS glitch test passed!  stayed within %u meters for %u seconds" % (max_distance, timeout))
@@ -552,7 +558,7 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=20):
     return success
 
 # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
-def fly_gps_glitch_auto_test(mavproxy, mav, timeout=120):
+def fly_gps_glitch_auto_test(mavproxy, mav, use_map=False, timeout=120):
 
     # set-up gps glitch array
     glitch_lat = [0.0002996,0.0006958,0.0009431,0.0009991,0.0009444,0.0007716,0.0006221]
@@ -569,7 +575,8 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=120):
         return False
 
     # turn on simulator display of gps and actual position
-    show_gps_and_sim_positions(mavproxy, True)
+    if (use_map):
+        show_gps_and_sim_positions(mavproxy, True)
 
     # load the waypoint count
     global homeloc
@@ -584,7 +591,8 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=120):
 
     # wait until 100m from home
     if not wait_distance(mav, 100, 5, 60):
-        show_gps_and_sim_positions(mavproxy, False)
+        if (use_map):
+            show_gps_and_sim_positions(mavproxy, False)
         return False
 
     # record time and position
@@ -632,7 +640,8 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=120):
         print("Dist from home: %u" % dist_to_home)
 
     # turn off simulator display of gps and actual position
-    show_gps_and_sim_positions(mavproxy, False)
+    if (use_map):
+        show_gps_and_sim_positions(mavproxy, False)
 
     print("GPS Glitch test Auto completed: passed=%s" % ret)
 
@@ -914,7 +923,7 @@ def setup_rc(mavproxy):
     # zero throttle
     mavproxy.send('rc 3 1000\n')
 
-def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False, gdb=False):
+def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
     '''fly ArduCopter in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -942,7 +951,7 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
-    if map:
+    if use_map:
         options += ' --map'
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
@@ -1096,7 +1105,7 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False, gdb=False):
 
         # Fly GPS Glitch Loiter test
         print("# GPS Glitch Loiter Test")
-        if not fly_gps_glitch_loiter_test(mavproxy, mav):
+        if not fly_gps_glitch_loiter_test(mavproxy, mav, use_map):
             failed_test_msg = "fly_gps_glitch_loiter_test failed"
             print(failed_test_msg)
             failed = True
@@ -1110,7 +1119,7 @@ def fly_ArduCopter(binary, viewerip=None, map=False, valgrind=False, gdb=False):
 
         # Fly GPS Glitch test in auto mode
         print("# GPS Glitch Auto Test")
-        if not fly_gps_glitch_auto_test(mavproxy, mav):
+        if not fly_gps_glitch_auto_test(mavproxy, mav, use_map):
             failed_test_msg = "fly_gps_glitch_auto_test failed"
             print(failed_test_msg)
             failed = True

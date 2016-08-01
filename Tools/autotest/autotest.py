@@ -266,7 +266,7 @@ def run_step(step):
         return get_default_params('APMrover2', binary)
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
 
     if step == 'fly.CopterAVC':
         return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
