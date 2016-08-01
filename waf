@@ -1,0 +1,22 @@
+#!/usr/bin/python
+
+from __future__ import print_function
+import os
+import os.path as p
+import sys
+
+d = p.dirname(p.realpath(__file__))
+try:
+    os.execv(os.path.join(d, 'modules/waf/waf-light'), sys.argv)
+except OSError:
+    print('Missing waf submodule. Trying to get it')
+
+    from subprocess import check_call, CalledProcessError
+
+    try:
+        check_call(['git', 'submodule', 'update', '--init', 'modules/waf'])
+    except CalledProcessError:
+        print('Could not update submodule', file=sys.stderr)
+        sys.exit(1)
+
+    print('Submodules OK, try running again')
