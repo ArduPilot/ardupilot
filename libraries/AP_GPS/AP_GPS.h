@@ -364,6 +364,8 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    void Write_DataFlash_Log_Startup_messages();
+
 protected:
 
     // dataflash for logging, if available
@@ -441,7 +443,9 @@ private:
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
-    void _broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index);
+
+    void _detection_message(char *buffer, uint8_t buflen, uint8_t instance);
+    void _broadcast_gps_type(uint8_t instance);
 
     /*
       buffer for re-assembling RTCM data for GPS injection.
