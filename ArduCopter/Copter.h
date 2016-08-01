@@ -274,6 +274,11 @@ private:
         uint32_t start_ms;
     } takeoff_state;
 
+    // throw mode state
+    struct {
+        ThrowModeStage stage;
+    } throw_state = {Throw_Disarmed};
+
     uint32_t precland_last_update_ms;
 
     // altitude below which we do no navigation in auto takeoff
