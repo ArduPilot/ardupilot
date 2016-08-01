@@ -630,17 +630,6 @@ private:
 #endif
 
     AP_ADSB adsb {ahrs};
-    struct {
-
-        // flag to signify the current mode is set by ADSB evasion logic
-        bool is_evading:1;
-
-        // generic timestamp for evasion algorithms
-        uint32_t timestamp_ms;
-
-        // previous wp to restore to when switching between modes back to AUTO
-        Location prev_wp;
-    } adsb_state;
 
     // Outback Challenge Failsafe Support
 #if OBC_FAILSAFE == ENABLED
@@ -1017,9 +1006,6 @@ private:
     void update_logging2(void);
     void terrain_update(void);
     void adsb_update(void);
-    bool adsb_evasion_start(void);
-    void adsb_evasion_stop(void);
-    void adsb_evasion_ongoing(void);
     void update_flight_mode(void);
     void stabilize();
     void set_servos_idle(void);
