@@ -62,6 +62,8 @@ public:
 
 	static bool _detect(struct NMEA_detect_state &state, uint8_t data);
 
+    const char *name() const override { return "NMEA"; }
+
 private:
     /// Coding for the GPS sentences that the parser handles
     enum _sentence_types {      //there are some more than 10 fields in some sentences , thus we have to increase these value.

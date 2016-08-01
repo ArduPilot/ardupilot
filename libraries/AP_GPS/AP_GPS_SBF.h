@@ -34,6 +34,8 @@ public:
     // Methods
     bool read();
 
+    const char *name() const override { return "SBF"; }
+
 private:
 
     bool parse(uint8_t temp);
