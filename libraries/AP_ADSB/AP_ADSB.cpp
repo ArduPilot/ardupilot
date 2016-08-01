@@ -396,6 +396,10 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
     bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius;
     bool is_tracked_in_list = find_index(vehicle, &index);
+    uint32_t now = AP_HAL::millis();
+
+    // note the last time the receiver got a packet from the aircraft
+    vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
 
     if (vehicle_loc.is_zero() || out_of_range) {
 
@@ -438,7 +442,6 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
         }
     } // if buffer full
 
-    vehicle.last_update_ms = AP_HAL::millis() - (vehicle.info.tslc * 1000);
     push_sample(vehicle); // note that set_vehicle modifies vehicle
 }
 
