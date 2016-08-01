@@ -212,39 +212,6 @@ float Copter::get_takeoff_trigger_throttle()
     return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
 }
 
-// get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output (in the range 0 to 1) before take-off
-// used only for althold, loiter, hybrid flight modes
-float Copter::get_throttle_pre_takeoff(float input_thr)
-{
-    // exit immediately if input_thr is zero
-    if (input_thr <= 0.0f) {
-        return 0.0f;
-    }
-
-    // ensure reasonable throttle values
-    input_thr = constrain_float(input_thr,0.0f,1000.0f);
-
-    float in_min = 0.0f;
-    float in_max = get_takeoff_trigger_throttle();
-
-    float out_min = 0.0f;
-    float out_max = get_non_takeoff_throttle();
-
-    if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
-        in_min = channel_throttle->get_control_mid();
-    }
-
-    float input_range = in_max-in_min;
-    float output_range = out_max-out_min;
-
-    // sanity check ranges
-    if (input_range <= 0.0f || output_range <= 0.0f) {
-        return 0.0f;
-    }
-
-    return constrain_float(out_min + (input_thr-in_min)*output_range/input_range, out_min, out_max);
-}
-
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
 float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
