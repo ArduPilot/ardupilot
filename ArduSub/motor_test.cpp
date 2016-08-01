@@ -78,12 +78,6 @@ bool Sub::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
         return false;
     }
 
-    // ensure we are landed
-    if (!ap.land_complete) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: vehicle not landed");
-        return false;
-    }
-
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
