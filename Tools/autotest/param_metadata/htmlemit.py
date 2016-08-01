@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Emit docs in a form acceptable to the Ardupilot wordpress docs site
+Emit docs in a form acceptable to the old Ardupilot wordpress docs site
 """
 
 from param import known_param_fields
