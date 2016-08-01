@@ -187,6 +187,8 @@ private:
 
     void guided_start(void);
     void guided_update(void);
+
+    void check_throttle_suppression(void);
     
     AP_Int16 transition_time_ms;
 
@@ -262,10 +264,10 @@ private:
     } transition_state;
 
     // true when waiting for pilot throttle
-    bool throttle_wait;
+    bool throttle_wait:1;
 
     // true when quad is assisting a fixed wing mode
-    bool assisted_flight;
+    bool assisted_flight:1;
 
     struct {
         // time when motors reached lower limit
@@ -324,6 +326,9 @@ private:
         bool motors_active:1;
     } tilt;
 
+    // time when motors were last active
+    uint32_t last_motors_active_ms;
+    
     void tiltrotor_slew(float tilt);
     void tiltrotor_update(void);
     void tilt_compensate(float *thrust, uint8_t num_motors);
