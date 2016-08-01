@@ -50,7 +50,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Description: Enable ADS-B
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("ENABLE",     0, AP_ADSB, _enabled,    0),
+    AP_GROUPINFO("ENABLE",     0, AP_ADSB, _enabled,    1),
 
     // @Param: BEHAVIOR
     // @DisplayName: ADSB based Collision Avoidance Behavior
