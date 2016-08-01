@@ -33,8 +33,6 @@ void Copter::throw_exit()
 // should be called at 100hz or more
 void Copter::throw_run()
 {
-    static ThrowModeState throw_state = Throw_Disarmed;
-
     /* Throw State Machine
     Throw_Disarmed - motors are off
     Throw_Detecting -  motors are on and we are waiting for the throw
@@ -46,7 +44,7 @@ void Copter::throw_run()
     // Don't enter THROW mode if interlock will prevent motors running
     if (!motors.armed() && motors.get_interlock()) {
         // state machine entry is always from a disarmed state
-        throw_state = Throw_Disarmed;
+        throw_state.stage = Throw_Disarmed;
 
         // remember the current value of the motor interlock so that this condition can be restored if we exit the throw mode before starting motors
         throw_early_exit_interlock = true;
@@ -62,9 +60,9 @@ void Copter::throw_run()
         // this is necessary because throw mode uses the interlock to achieve a post arm motor start.
         throw_flight_commenced = false;
 
-    } else if (throw_state == Throw_Disarmed && motors.armed()) {
+    } else if (throw_state.stage == Throw_Disarmed && motors.armed()) {
         gcs_send_text(MAV_SEVERITY_INFO,"waiting for throw");
-        throw_state = Throw_Detecting;
+        throw_state.stage = Throw_Detecting;
 
         // prevent motors from rotating before the throw is detected unless enabled by the user
         if (g.throw_motor_start == 1) {
@@ -73,9 +71,9 @@ void Copter::throw_run()
             motors.set_interlock(false);
         }
 
-    } else if (throw_state == Throw_Detecting && throw_detected()){
+    } else if (throw_state.stage == Throw_Detecting && throw_detected()){
         gcs_send_text(MAV_SEVERITY_INFO,"throw detected - uprighting");
-        throw_state = Throw_Uprighting;
+        throw_state.stage = Throw_Uprighting;
 
         // Cancel the waiting for throw tone sequence
         AP_Notify::flags.waiting_for_throw = false;
@@ -86,9 +84,9 @@ void Copter::throw_run()
         // status to let system know flight control has started which means the entry interlock setting will not restored if we exit to another flight mode
         throw_flight_commenced = true;
 
-    } else if (throw_state == Throw_Uprighting && throw_attitude_good()) {
+    } else if (throw_state.stage == Throw_Uprighting && throw_attitude_good()) {
         gcs_send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
-        throw_state = Throw_HgtStabilise;
+        throw_state.stage = Throw_HgtStabilise;
 
         // initialize vertical speed and acceleration limits
         // use brake mode values for rapid response
@@ -106,9 +104,9 @@ void Copter::throw_run()
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         set_auto_armed(true);
 
-    } else if (throw_state == Throw_HgtStabilise && throw_height_good()) {
+    } else if (throw_state.stage == Throw_HgtStabilise && throw_height_good()) {
         gcs_send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
-        throw_state = Throw_PosHold;
+        throw_state.stage = Throw_PosHold;
 
         // initialise the loiter target to the curent position and velocity
         wp_nav.init_loiter_target();
@@ -118,7 +116,7 @@ void Copter::throw_run()
     }
 
     // Throw State Processing
-    switch (throw_state) {
+    switch (throw_state.stage) {
 
     case Throw_Disarmed:
 

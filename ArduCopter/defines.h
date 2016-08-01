@@ -249,8 +249,8 @@ enum FlipState {
     Flip_Abandon
 };
 
-// Throw states
-enum ThrowModeState {
+// Throw stages
+enum ThrowModeStage {
     Throw_Disarmed,
     Throw_Detecting,
     Throw_Uprighting,
