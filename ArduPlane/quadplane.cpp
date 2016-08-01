@@ -856,8 +856,8 @@ float QuadPlane::assist_climb_rate_cms(void)
 float QuadPlane::desired_auto_yaw_rate_cds(void)
 {
     float aspeed;
-    if (!ahrs.airspeed_estimate(&aspeed) || aspeed < plane.aparm.airspeed_min) {
-        aspeed = plane.aparm.airspeed_min;
+    if (!ahrs.airspeed_estimate(&aspeed) || aspeed < plane.airspeed.get_airspeed_min()) {
+        aspeed = plane.airspeed.get_airspeed_min();
     }
     if (aspeed < 1) {
         aspeed = 1;
@@ -925,7 +925,7 @@ void QuadPlane::update_transition(void)
             transition_start_ms = millis();
         }
 
-        if (have_airspeed && aspeed > plane.aparm.airspeed_min && !assisted_flight) {
+        if (have_airspeed && aspeed > plane.airspeed.get_airspeed_min() && !assisted_flight) {
             transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
@@ -1763,7 +1763,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
     float fwd_vel_error = vel_error_body * Vector3f(1,0,0);
 
     // scale forward velocity error by maximum airspeed
-    fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);
+    fwd_vel_error /= MAX(plane.airspeed.get_airspeed_max(), 5.0f);
 
     // add in a component from our current pitch demand. This tends to
     // move us to zero pitch. Assume that LIM_PITCH would give us the
