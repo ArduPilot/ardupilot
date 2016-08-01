@@ -447,7 +447,15 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
         }
     } // if buffer full
 
-    push_sample(vehicle); // note that set_vehicle modifies vehicle
+    const uint16_t required_flags_avoidance =
+            ADSB_FLAGS_VALID_COORDS |
+            ADSB_FLAGS_VALID_ALTITUDE |
+            ADSB_FLAGS_VALID_HEADING |
+            ADSB_FLAGS_VALID_VELOCITY;
+
+    if (vehicle.info.flags & required_flags_avoidance) {
+        push_sample(vehicle); // note that set_vehicle modifies vehicle
+    }
 }
 
 /*
