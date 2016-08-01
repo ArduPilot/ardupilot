@@ -401,7 +401,12 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     // note the last time the receiver got a packet from the aircraft
     vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
 
-    if (vehicle_loc.is_zero() || out_of_range) {
+    const uint16_t required_flags_position = ADSB_FLAGS_VALID_COORDS | ADSB_FLAGS_VALID_ALTITUDE;
+
+    if (vehicle_loc.is_zero() ||
+            out_of_range ||
+            !(vehicle.info.flags & required_flags_position) ||
+            now - vehicle.last_update_ms > VEHICLE_TIMEOUT_MS) {
 
         // vehicle is out of range or invalid lat/lng. If we're tracking it, delete from list. Otherwise ignore it.
         if (is_tracked_in_list) {
