@@ -66,17 +66,10 @@ void Copter::land_gps_run()
 #endif
         wp_nav.init_loiter_target();
 
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-        // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
-            init_disarm_motors();
-        }
-#else
         // disarm when the landing detector says we've landed
         if (ap.land_complete) {
             init_disarm_motors();
         }
-#endif
         return;
     }
     
@@ -132,17 +125,10 @@ void Copter::land_nogps_run()
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
 
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-        // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
-            init_disarm_motors();
-        }
-#else
         // disarm when the landing detector says we've landed
         if (ap.land_complete) {
             init_disarm_motors();
         }
-#endif
         return;
     }
 

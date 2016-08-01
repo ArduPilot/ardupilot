@@ -375,17 +375,10 @@ void Copter::rtl_land_run()
         // set target to current position
         wp_nav.init_loiter_target();
 
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-        // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
-            init_disarm_motors();
-        }
-#else
         // disarm when the landing detector says we've landed
         if (ap.land_complete) {
             init_disarm_motors();
         }
-#endif
 
         // check if we've completed this stage of RTL
         rtl_state_complete = ap.land_complete;

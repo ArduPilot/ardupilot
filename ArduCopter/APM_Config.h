@@ -45,7 +45,6 @@
 
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
-//#define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM   ENABLED    // when set to ENABLED vehicle will only disarm after landing (in AUTO, LAND or RTL) if pilot has put throttle to zero
 
 //#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 
