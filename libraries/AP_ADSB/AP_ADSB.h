@@ -134,7 +134,6 @@ private:
 
     Location_Class  _my_loc;
 
-    bool _is_in_auto_mode;
 
     // ADSB-IN state. Maintains list of external vehicles
     struct {
@@ -159,6 +158,7 @@ private:
         uint32_t    chan_last_ms;
         UAVIONIX_ADSB_RF_HEALTH status;     // transceiver status
         bool        is_flying;
+        bool        _is_in_auto_mode;
 
         // ADSB-OUT configuration
         struct {

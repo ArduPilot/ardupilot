@@ -547,7 +547,7 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
     }
 
     uint16_t state = 0;
-    if (_is_in_auto_mode) {
+    if (out_state._is_in_auto_mode) {
         state |= UAVIONIX_ADSB_OUT_DYNAMIC_STATE_AUTOPILOT_ENABLED;
     }
     if (!out_state.is_flying) {
