@@ -212,8 +212,16 @@ void AP_ADSB::update(void)
 // -----------------------
 
 
-
     perform_threat_detection();
+
+
+    // -----------------------
+    if (out_state.chan < 0) {
+        // if there's no transceiver detected then do not set ICAO and do not service the transceiver
+        return;
+    }
+    // -----------------------
+
 
     // ensure it's positive 24bit but allow -1
     if (out_state.cfg.ICAO_id_param <= -1 || out_state.cfg.ICAO_id_param > 0x00FFFFFF) {
@@ -238,25 +246,24 @@ void AP_ADSB::update(void)
 
 
     // send static configuration data to transceiver, every 10s
-    if (out_state.chan >= 0 && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
-        if (now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
-            // haven't gotten a heartbeat health status packet in a while, assume hardware failure
-            // TODO: reset out_state.chan
-            out_state.chan = -1;
-        } else {
-            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
-            if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
-                out_state.last_config_ms = now;
-                send_configure(chan);
-            } // last_config_ms
+    if (out_state.chan_last_ms > 0 && now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
+        // haven't gotten a heartbeat health status packet in a while, assume hardware failure
+        // TODO: reset out_state.chan
+        out_state.chan = -1;
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
+    } else if (out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
+        mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
+        if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
+            out_state.last_config_ms = now;
+            send_configure(chan);
+        } // last_config_ms
 
-            // send dynamic data to transceiver at 5Hz
-            if (now - out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
-                out_state.last_report_ms = now;
-                send_dynamic_out(chan);
-            } // last_report_ms
-        } // chan_last_ms
-    }
+        // send dynamic data to transceiver at 5Hz
+        if (now - out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
+            out_state.last_report_ms = now;
+            send_dynamic_out(chan);
+        } // last_report_ms
+    } // chan_last_ms
 }
 
 /*
