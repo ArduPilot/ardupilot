@@ -159,7 +159,7 @@ void AP_ICEngine::update(void)
                 initial_height = -pos.z;
             } else if ((-pos.z) >= initial_height + height_required) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting height reached %.1f",
-                                                 (double)(-pos.z) - initial_height);
+                                                 (double)(-pos.z - initial_height));
                 state = ICE_STARTING;
             }
         }
@@ -282,7 +282,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         initial_height = 0;
         height_required = height_delay;
         state = ICE_START_HEIGHT_DELAY;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", height_delay);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", (double)height_delay);
         return true;
     }
     state = ICE_STARTING;
