@@ -5,7 +5,7 @@
 Waf tool for PX4 build
 """
 
-from waflib import Logs, Task, Utils
+from waflib import Errors, Logs, Task, Utils
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
