@@ -81,6 +81,7 @@ const struct LogStructure Tracker::log_structure[] = {
 void Tracker::Log_Write_Vehicle_Startup_Messages()
 {
     DataFlash.Log_Write_Mode(control_mode);
+    gps.Write_DataFlash_Log_Startup_messages();
 }
 
 // start a new log
