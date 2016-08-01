@@ -82,6 +82,8 @@ public:
 
     virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };
 
+    enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
+    
     //
     // voltage, current and air pressure compensation or limiting features - multicopters only
     //
