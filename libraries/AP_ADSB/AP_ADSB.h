@@ -33,22 +33,9 @@
 class AP_ADSB
 {
 public:
-    enum ADSB_BEHAVIOR {
-        ADSB_BEHAVIOR_NONE = 0,
-        ADSB_BEHAVIOR_LOITER = 1,
-        ADSB_BEHAVIOR_LOITER_AND_DESCEND = 2,
-        ADSB_BEHAVIOR_GUIDED = 3
-    };
-
-    enum ADSB_THREAT_LEVEL {
-        ADSB_THREAT_LOW = 0,
-        ADSB_THREAT_HIGH = 1
-    };
-
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
-        ADSB_THREAT_LEVEL threat_level;   // basic threat level
     };
 
 
@@ -71,11 +58,6 @@ public:
     // handle ADS-B transceiver report
     void transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
 
-    bool get_possible_threat()  { return _enabled && avoid_state.another_vehicle_within_radius; }
-
-    ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(avoid_state.behavior.get()); }
-    bool get_is_evading_threat()  { return _enabled && avoid_state.is_evading_threat; }
-    void set_is_evading_threat(const bool is_evading) { if (_enabled) { avoid_state.is_evading_threat = is_evading; } }
     uint16_t get_vehicle_count() { return in_state.vehicle_count; }
 
     // send ADSB_VEHICLE mavlink message, usually as a StreamRate
@@ -83,7 +65,7 @@ public:
 
     void set_stall_speed_cm(const uint16_t stall_speed_cm) { out_state.cfg.stall_speed_cm = stall_speed_cm; }
 
-    void set_is_auto_mode(const bool is_in_auto_mode) { _is_in_auto_mode = is_in_auto_mode; }
+    void set_is_auto_mode(const bool is_in_auto_mode) { out_state._is_in_auto_mode = is_in_auto_mode; }
     void set_is_flying(const bool is_flying) { out_state.is_flying = is_flying; }
 
     UAVIONIX_ADSB_RF_HEALTH get_transceiver_status(void) { return out_state.status; }
@@ -105,7 +87,7 @@ private:
     void deinit();
 
     // compares current vector against vehicle_list to detect threats
-    void perform_threat_detection(void);
+    void determine_furthest_aircraft(void);
 
     // return index of given vehicle if ICAO_ADDRESS matches. return -1 if no match
     bool find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const;
@@ -177,21 +159,9 @@ private:
     } out_state;
 
 
-    // Avoidance state
-    struct {
-        AP_Int8     behavior;
-
-        bool        another_vehicle_within_radius;
-        bool        is_evading_threat;
-
-        // index of and distance to vehicle with lowest threat
-        uint16_t    lowest_threat_index;
-        float       lowest_threat_distance;
-
-        // index of and distance to vehicle with highest threat
-        uint16_t    highest_threat_index;
-        float       highest_threat_distance;
-    } avoid_state;
+    // index of and distance to furthest vehicle in list
+    uint16_t    furthest_vehicle_index;
+    float       furthest_vehicle_distance;
 
     static const uint8_t max_samples = 30;
     AP_Buffer<adsb_vehicle_t, max_samples> samples;
