@@ -118,6 +118,8 @@ public:
     // return velocity lag
     float get_lag(void) const override;
 
+    const char *name() const { return "u-blox"; }
+
 private:
     // u-blox UBX protocol essentials
     struct PACKED ubx_header {

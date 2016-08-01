@@ -38,6 +38,8 @@ public:
 
     static bool _detect(struct SBP_detect_state &state, uint8_t data);
 
+    const char *name() const { return "SBP"; }
+
 private:
 
    // ************************************************************************

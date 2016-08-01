@@ -396,7 +396,7 @@ void AP_GPS::detect_instance(uint8_t instance)
     switch (_type[instance]) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
     case GPS_TYPE_QURT:
-        _broadcast_gps_type("QURTGPS", instance, -1); // baud rate isn't valid
+        dstate->detect_started_ms = 0; // specified, not detected
         new_gps = new AP_GPS_QURT(*this, state[instance], _port[instance]);
         goto found_gps;
         break;
@@ -405,7 +405,7 @@ void AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the MAV type, do not use AUTO
     // do not try to detect the MAV type, assume it's there
     case GPS_TYPE_MAV:
-        _broadcast_gps_type("MAV", instance, -1);
+        dstate->detect_started_ms = 0; // specified, not detected
         new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
         break;
@@ -414,8 +414,8 @@ void AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the UAVCAN type, do not use AUTO
     // do not try to detect the UAVCAN type, assume it's there
     case GPS_TYPE_UAVCAN:
+        dstate->detect_started_ms = 0; // specified, not detected
         if (AP_BoardConfig::get_can_enable() >= 1) {
-            _broadcast_gps_type("UAVCAN", instance, -1);
             new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
 
             // register new listener at first empty node
@@ -451,17 +451,14 @@ void AP_GPS::detect_instance(uint8_t instance)
     switch (_type[instance]) {
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
-        _broadcast_gps_type("SBF", instance, -1); // baud rate isn't valid
         new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance]);
         break;
 
     case GPS_TYPE_GSOF:
-        _broadcast_gps_type("GSOF", instance, -1); // baud rate isn't valid
         new_gps = new AP_GPS_GSOF(*this, state[instance], _port[instance]);
         break;
 
     case GPS_TYPE_NOVA:
-        _broadcast_gps_type("NOVA", instance, -1); // baud rate isn't valid
         new_gps = new AP_GPS_NOVA(*this, state[instance], _port[instance]);
         break;
 
@@ -511,7 +508,6 @@ void AP_GPS::detect_instance(uint8_t instance)
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
              _baudrates[dstate->current_baud] == 115200) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
-            _broadcast_gps_type("u-blox", instance, dstate->current_baud);
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
         }
 #if !HAL_MINIMIZE_FEATURES
@@ -519,41 +515,34 @@ void AP_GPS::detect_instance(uint8_t instance)
         // and are surprisingly large
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
-            _broadcast_gps_type("MTK19", instance, dstate->current_baud);
             new_gps = new AP_GPS_MTK19(*this, state[instance], _port[instance]);
         } else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
                    AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
-            _broadcast_gps_type("MTK", instance, dstate->current_baud);
             new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
         }
 #endif
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
-            _broadcast_gps_type("SBP", instance, dstate->current_baud);
             new_gps = new AP_GPS_SBP2(*this, state[instance], _port[instance]);
         }
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
-            _broadcast_gps_type("SBP", instance, dstate->current_baud);
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #if !HAL_MINIMIZE_FEATURES
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
-            _broadcast_gps_type("SIRF", instance, dstate->current_baud);
             new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
         }
 #endif
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
-            _broadcast_gps_type("ERB", instance, dstate->current_baud);
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
         } else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
             // prevent false detection of NMEA mode in
             // a MTK or UBLOX which has booted in NMEA mode
             if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
                 AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-                _broadcast_gps_type("NMEA", instance, dstate->current_baud);
                 new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
             }
         }
@@ -561,6 +550,7 @@ void AP_GPS::detect_instance(uint8_t instance)
 
 found_gps:
     if (new_gps != nullptr) {
+        _broadcast_gps_type(instance);
         state[instance].status = NO_FIX;
         drivers[instance] = new_gps;
         timing[instance].last_message_time_ms = now;
@@ -958,24 +948,37 @@ bool AP_GPS::blend_health_check() const
     return (_blend_health_counter < 50);
 }
 
-void AP_GPS::_broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index)
+void AP_GPS::_detection_message(char *buffer, uint8_t buflen, uint8_t instance)
 {
-    char buffer[64];
-    if (baud_index >= 0) {
-        hal.util->snprintf(buffer, sizeof(buffer),
-                           "GPS %d: detected as %s at %d baud",
-                           instance + 1,
-                           type,
-                           _baudrates[baud_index]);
-    } else {
-        hal.util->snprintf(buffer, sizeof(buffer),
-                           "GPS %d: detected as %s",
-                           instance + 1,
-                           type);
+    AP_GPS_Backend *driver = drivers[instance];
+    if (driver == nullptr) {
+        // we really shouldn't have been called
+        buffer[0] = '\0';
+        return;
     }
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
+
+    const struct detect_state dstate = detect_state[instance];
+    if (dstate.detect_started_ms > 0) {
+        hal.util->snprintf(buffer, buflen,
+                 "GPS %d: detected as %s at %d baud",
+                 instance + 1,
+                 driver->name(),
+                 _baudrates[dstate.current_baud]);
+    } else {
+        hal.util->snprintf(buffer, buflen,
+                 "GPS %d: specified as %s",
+                 instance + 1,
+                 driver->name());
+    }
 }
 
+
+void AP_GPS::_broadcast_gps_type(uint8_t instance)
+{
+    char buffer[64];
+    _detection_message(buffer, sizeof(buffer), instance);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
+}
 
 /*
    re-assemble GPS_RTCM_DATA message
@@ -1057,6 +1060,22 @@ void AP_GPS::inject_data_all(const uint8_t *data, uint16_t len)
         if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
             drivers[i]->inject_data(data, len);
         }
+    }
+}
+
+void AP_GPS::Write_DataFlash_Log_Startup_messages()
+{
+    if (_DataFlash == nullptr) {
+        return;
+    }
+
+    for (uint8_t instance=0; instance<num_instances; instance++) {
+        char buffer[64];
+        _detection_message(buffer, sizeof(buffer), instance);
+        if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
+            continue;
+        }
+        _DataFlash->Log_Write_Message(buffer);
     }
 }
 

@@ -29,6 +29,8 @@ public:
     
     bool read() override;
 
+    const char *name() const { return "QURTGPS"; }
+
 private:
     bool initialised = false;
     uint32_t last_tow;

@@ -35,6 +35,8 @@ public:
 
     void handle_msg(const mavlink_message_t *msg);
 
+    const char *name() const { return "MAV"; }
+
 private:
     bool _new_data;
 };
