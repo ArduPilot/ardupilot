@@ -1624,7 +1624,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 } else {
                     // assume that shots modes are all done in guided.
                     // NOTE: this may need to change if we add a non-guided shot mode
-                    bool shot_mode = (!is_zero(packet.param1) && copter.control_mode == GUIDED);
+                    bool shot_mode = (!is_zero(packet.param1) && (copter.control_mode == GUIDED || copter.control_mode == GUIDED_NOGPS));
 
                     if (!shot_mode) {
                         if (copter.set_mode(BRAKE, MODE_REASON_GCS_COMMAND)) {

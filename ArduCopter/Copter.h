@@ -817,6 +817,8 @@ private:
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     void guided_limit_init_time_and_pos();
     bool guided_limit_check();
+    bool guided_nogps_init(bool ignore_checks);
+    void guided_nogps_run();
     bool land_init(bool ignore_checks);
     void land_run();
     void land_gps_run();
