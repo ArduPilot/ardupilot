@@ -16,7 +16,9 @@ bool Copter::throw_init(bool ignore_checks)
         return false;
     }
 
-    // this mode needs a position reference
+    // init state
+    throw_state.nextmode_attempted = false;
+
     return true;
 }
 
@@ -113,6 +115,22 @@ void Copter::throw_run()
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         set_auto_armed(true);
+    } else if (throw_state.stage == Throw_PosHold && throw_position_good()) {
+        if (!throw_state.nextmode_attempted) {
+            switch (g2.throw_nextmode) {
+                case AUTO:
+                case GUIDED:
+                case RTL:
+                case LAND:
+                case BRAKE:
+                    set_mode((control_mode_t)g2.throw_nextmode.get(), MODE_REASON_THROW_COMPLETE);
+                    break;
+                default:
+                    // do nothing
+                    break;
+            }
+            throw_state.nextmode_attempted = true;
+        }
     }
 
     // Throw State Processing
@@ -225,3 +243,8 @@ bool Copter::throw_height_good()
     return (pos_control.get_alt_error() < 50.0f);
 }
 
+bool Copter::throw_position_good()
+{
+    // check that our horizontal position error is within 50cm
+    return (pos_control.get_horizontal_error() < 50.0f);
+}

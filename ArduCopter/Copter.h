@@ -277,7 +277,8 @@ private:
     // throw mode state
     struct {
         ThrowModeStage stage;
-    } throw_state = {Throw_Disarmed};
+        bool nextmode_attempted;
+    } throw_state = {Throw_Disarmed, false};
 
     uint32_t precland_last_update_ms;
 
@@ -850,6 +851,7 @@ private:
     bool throw_detected();
     bool throw_attitude_good();
     bool throw_height_good();
+    bool throw_position_good();
 
     bool rtl_init(bool ignore_checks);
     void rtl_restart_without_terrain();
