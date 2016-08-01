@@ -238,6 +238,14 @@ enum LoiterModeState {
     Loiter_Landed
 };
 
+// Sport states
+enum SportModeState {
+    Sport_MotorStopped,
+    Sport_Takeoff,
+    Sport_Flying,
+    Sport_Landed
+};
+
 // Flip states
 enum FlipState {
     Flip_Start,
