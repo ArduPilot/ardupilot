@@ -39,7 +39,7 @@ def px4_dynamic_env(self):
 @after_method('apply_link')
 @before_method('process_use')
 def px4_import_objects_from_use(self):
-    queue = Utils.to_list(getattr(self, 'use', []))
+    queue = list(Utils.to_list(getattr(self, 'use', [])))
     names = set()
 
     while queue:
