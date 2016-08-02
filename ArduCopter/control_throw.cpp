@@ -234,13 +234,13 @@ bool Copter::throw_detected()
     bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
 
     // Record time and vertical velocity when we detect the possible throw
-    if (possible_throw_detected && ((AP_HAL::millis() - throw_free_fall_start_ms) > 500)) {
-        throw_free_fall_start_ms = AP_HAL::millis();
-        throw_free_fall_start_velz = inertial_nav.get_velocity().z;
+    if (possible_throw_detected && ((AP_HAL::millis() - throw_state.free_fall_start_ms) > 500)) {
+        throw_state.free_fall_start_ms = AP_HAL::millis();
+        throw_state.free_fall_start_velz = inertial_nav.get_velocity().z;
     }
 
     // Once a possible throw condition has been detected, we check for 2.5 m/s of downwards velocity change in less than 0.5 seconds to confirm
-    bool throw_condition_confirmed = ((AP_HAL::millis() - throw_free_fall_start_ms < 500) && ((inertial_nav.get_velocity().z - throw_free_fall_start_velz) < -250.0f));
+    bool throw_condition_confirmed = ((AP_HAL::millis() - throw_state.free_fall_start_ms < 500) && ((inertial_nav.get_velocity().z - throw_state.free_fall_start_velz) < -250.0f));
 
     // start motors and enter the control mode if we are in continuous freefall
     if (throw_condition_confirmed) {

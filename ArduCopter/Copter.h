@@ -274,14 +274,6 @@ private:
         uint32_t start_ms;
     } takeoff_state;
 
-    // throw mode state
-    struct {
-        ThrowModeStage stage;
-        ThrowModeStage prev_stage;
-        uint32_t last_log_ms;
-        bool nextmode_attempted;
-    } throw_state = {Throw_Disarmed, Throw_Disarmed, 0, false};
-
     uint32_t precland_last_update_ms;
 
     // altitude below which we do no navigation in auto takeoff
@@ -410,9 +402,15 @@ private:
     // Flip
     Vector3f flip_orig_attitude;         // original copter attitude before flip
 
-    // Throw
-    uint32_t throw_free_fall_start_ms = 0;  // system time free fall was detected
-    float throw_free_fall_start_velz = 0.0f;// vertical velocity when free fall was detected
+    // throw mode state
+    struct {
+        ThrowModeStage stage;
+        ThrowModeStage prev_stage;
+        uint32_t last_log_ms;
+        bool nextmode_attempted;
+        uint32_t free_fall_start_ms;    // system time free fall was detected
+        float free_fall_start_velz;     // vertical velocity when free fall was detected
+    } throw_state = {Throw_Disarmed, Throw_Disarmed, 0, false, 0, 0.0f};
 
     // Battery Sensors
     AP_BattMonitor battery;
