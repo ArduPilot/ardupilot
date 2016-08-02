@@ -812,7 +812,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             _have_version = true;
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, 
                                              "u-blox %d HW: %s SW: %s",
-                                             state.instance,
+                                             state.instance + 1,
                                              _buffer.mon_ver.hwVersion,
                                              _buffer.mon_ver.swVersion);
             break;
