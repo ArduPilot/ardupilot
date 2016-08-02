@@ -259,6 +259,12 @@ enum ThrowModeStage {
     Throw_PosHold
 };
 
+// Throw types
+enum ThrowModeType {
+    ThrowType_Upward = 0,
+    ThrowType_Drop = 1
+};
+
 // LAND state
 #define LAND_STATE_FLY_TO_LOCATION  0
 #define LAND_STATE_DESCENDING       1
