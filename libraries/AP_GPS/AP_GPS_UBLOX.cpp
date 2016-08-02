@@ -810,11 +810,13 @@ AP_GPS_UBLOX::_parse_gps(void)
             break;
         case MSG_MON_VER:
             _have_version = true;
+            strncpy(_version.hwVersion, _buffer.mon_ver.hwVersion, sizeof(_version.hwVersion));
+            strncpy(_version.swVersion, _buffer.mon_ver.swVersion, sizeof(_version.swVersion));
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, 
                                              "u-blox %d HW: %s SW: %s",
                                              state.instance + 1,
-                                             _buffer.mon_ver.hwVersion,
-                                             _buffer.mon_ver.swVersion);
+                                             _version.hwVersion,
+                                             _version.swVersion);
             break;
         default:
             unexpected_message();
@@ -1318,4 +1320,16 @@ float AP_GPS_UBLOX::get_lag(void) const
         return 0.12f;
         break;
     };
+}
+
+void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
+{
+    AP_GPS_Backend::Write_DataFlash_Log_Startup_messages();
+
+    if (_have_version) {
+        gps._DataFlash->Log_Write_MessageF("u-blox %d HW: %s SW: %s",
+                                           state.instance+1,
+                                           _version.hwVersion,
+                                           _version.swVersion);
+    }
 }
