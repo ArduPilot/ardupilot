@@ -58,8 +58,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
     // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
     // @RebootRequired: True
-    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, _pwm_count, BOARD_PWM_COUNT_DEFAULT),
-#endif
+    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, px4.pwm_count, BOARD_PWM_COUNT_DEFAULT),
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SER1_RTSCTS
@@ -67,15 +66,14 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
-    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, _ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
+    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, px4.ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
 
     // @Param: SER2_RTSCTS
     // @DisplayName: Serial 2 flow control
     // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk and PX4. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
-    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, _ser2_rtscts, 2),
-#endif
+    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, px4.ser2_rtscts, 2),
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETYENABLE
@@ -83,8 +81,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
-    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
-#endif
+    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, px4.safety_enable, 1),
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SBUS_OUT
@@ -92,7 +89,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: This sets the SBUS output frame rate in Hz
     // @Values: 0:Disabled,1:50Hz,2:75Hz,3:100Hz,4:150Hz,5:200Hz,6:250Hz,7:300Hz
     // @RebootRequired: True
-    AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, _sbus_out_rate, 0),
+    AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, px4.sbus_out_rate, 0),
 #endif
 
     // @Param: SERIAL_NUM
@@ -107,7 +104,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @DisplayName:  Enable use of UAVCAN devices
     // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory
     // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
+    AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, px4.can_enable, 0),
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -117,7 +114,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @Bitmask: 0:Ch1,1:Ch2,2:Ch3,3:Ch4,4:Ch5,5:Ch6,6:Ch7,7:Ch8
     // @RebootRequired: True
-    AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, _ignore_safety_channels, 0),
+    AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, px4.ignore_safety_channels, 0),
 #endif
 
 #if HAL_HAVE_IMU_HEATER
@@ -155,7 +152,7 @@ void AP_BoardConfig::init()
         { 8, PWM_SERVO_MODE_12PWM, 0 },
 #endif
     };
-    uint8_t mode_parm = (uint8_t)_pwm_count.get();
+    uint8_t mode_parm = (uint8_t)px4.pwm_count.get();
     uint8_t i;
     for (i=0; i<ARRAY_SIZE(mode_table); i++) {
         if (mode_table[i].mode_parm == mode_parm) {
@@ -187,26 +184,24 @@ void AP_BoardConfig::init()
     // setup channels to ignore the armed state
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd != -1) {
-        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)(0x0000FFFF & _ignore_safety_channels)) != 0) {
+        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)(0x0000FFFF & px4.ignore_safety_channels)) != 0) {
             hal.console->printf("IGNORE_SAFETY failed\n");
         }
         close(px4io_fd);
     }
 
-    hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)_ser1_rtscts.get());
+    hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser1_rtscts.get());
     if (hal.uartD != NULL) {
-        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)_ser2_rtscts.get());
+        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser2_rtscts.get());
     }
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    if (_safety_enable.get() == 0) {
+    if (px4.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
     }
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    if (_sbus_out_rate.get() >= 1) {
+    if (px4.sbus_out_rate.get() >= 1) {
         static const struct {
             uint8_t value;
             uint16_t rate;
@@ -221,7 +216,7 @@ void AP_BoardConfig::init()
         };
         uint16_t rate = 300;
         for (i=0; i<ARRAY_SIZE(rates); i++) {
-            if (rates[i].value == _sbus_out_rate) {
+            if (rates[i].value == px4.sbus_out_rate) {
                 rate = rates[i].rate;
             }
         }
@@ -231,7 +226,7 @@ void AP_BoardConfig::init()
     }
 
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    if (_can_enable >= 1) {
+    if (px4.can_enable >= 1) {
         const char *args[] = { "uavcan", "start", NULL };
         int ret = uavcan_main(3, args);
         if (ret != 0) {
@@ -242,7 +237,7 @@ void AP_BoardConfig::init()
             hal.scheduler->delay(2000);
         }
     }
-    if (_can_enable >= 2) {
+    if (px4.can_enable >= 2) {
         const char *args[] = { "uavcan", "start", "fw", NULL };
         int ret = uavcan_main(4, args);
         if (ret != 0) {

@@ -35,22 +35,21 @@ private:
     AP_Int16 vehicleSerialNumber;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    AP_Int8 _pwm_count;
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    AP_Int8 _ser1_rtscts;
-    AP_Int8 _ser2_rtscts;
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    AP_Int8 _safety_enable;
-    AP_Int32 _ignore_safety_channels;
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    AP_Int8 _sbus_out_rate;
+    struct {
+        AP_Int8 pwm_count;
+        AP_Int8 safety_enable;
+        AP_Int32 ignore_safety_channels;
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
-    AP_Int8 _can_enable;
+        AP_Int8 can_enable;
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        AP_Int8 ser1_rtscts;
+        AP_Int8 ser2_rtscts;
+        AP_Int8 sbus_out_rate;
 #endif
+    } px4;
+    void px4_drivers_start(void);
+#endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
 
     // target temperarure for IMU in Celsius, or -1 to disable
     AP_Int8 _imu_target_temperature;
