@@ -191,8 +191,6 @@ public:
     bool init(bool ignore_checks) override;
     void run() override; // should be called at 100hz or more
 
-    void get_pilot_desired_yaw_rate(int16_t yaw_in, float &yaw_out);
-
 protected:
 private:
 };
