@@ -722,7 +722,9 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
     hal.scheduler->delay(10);
 
     auto &backend = AP_InertialSensor_MPU6000::from(_bus.get_backend());
-    backend._block_read(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, size);
+    if (!backend._block_read(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, size)) {
+        return -1;
+    }
 
     /* disable new reads */
     backend._register_write(_mpu6000_ctrl, 0);
