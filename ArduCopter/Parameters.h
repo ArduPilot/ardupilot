@@ -550,6 +550,10 @@ public:
 
     // button checking
     AP_Button button;
+
+    // Throw mode parameters
+    AP_Int8 throw_nextmode;
+    AP_Int8 throw_type;
 };
 
 extern const AP_Param::Info        var_info[];

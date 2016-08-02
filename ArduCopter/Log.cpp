@@ -714,6 +714,40 @@ void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_tar
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// precision landing logging
+struct PACKED log_Throw {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t stage;
+    float velocity;
+    float velocity_z;
+    float accel;
+    float ef_accel_z;
+    uint8_t throw_detect;
+    uint8_t attitude_ok;
+    uint8_t height_ok;
+    uint8_t pos_ok;
+};
+
+// Write a Throw mode details
+void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool pos_ok)
+{
+    struct log_Throw pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_THROW_MSG),
+        time_us         : AP_HAL::micros64(),
+        stage           : (uint8_t)stage,
+        velocity        : velocity,
+        velocity_z      : velocity_z,
+        accel           : accel,
+        ef_accel_z      : ef_accel_z,
+        throw_detect    : throw_detect,
+        attitude_ok     : attitude_ok,
+        height_ok       : height_ok,
+        pos_ok          : pos_ok
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
@@ -754,6 +788,8 @@ const struct LogStructure Copter::log_structure[] = {
       "PL",    "QBffffff",    "TimeUS,Heal,bX,bY,eX,eY,pX,pY" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
+    { LOG_THROW_MSG, sizeof(log_Throw),
+      "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk" },
 };
 
 #if CLI_ENABLED == ENABLED

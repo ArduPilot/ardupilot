@@ -51,7 +51,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     // if it is, switch needs to be in disabled position to arm
     // otherwise exit immediately.  This check to be repeated,
     // as state can change at any time.
-    if (ap.using_interlock && motors.get_interlock()){
+    if (ap.using_interlock && motors.get_interlock() && (control_mode != THROW)) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motor Interlock Enabled");
         }
@@ -610,7 +610,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // if we are using motor interlock switch and it's enabled, fail to arm
-    if (ap.using_interlock && motors.get_interlock()){
+    if (ap.using_interlock && motors.get_interlock() && (control_mode != THROW)) {
         gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Interlock Enabled");
         return false;
     }

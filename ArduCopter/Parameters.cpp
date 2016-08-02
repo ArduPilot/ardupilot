@@ -973,7 +973,21 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp
     AP_SUBGROUPINFO(button, "BTN_", 2, ParametersG2, AP_Button),
-    
+
+    // @Param: THROW_NEXTMODE
+    // @DisplayName: Throw mode's follow up mode
+    // @Description: Vehicle will switch to this mode after the throw is successfully completed.  Default is to stay in throw mode (18)
+    // @Values: 3:Auto,4:Guided,6:RTL,9:Land,17:Brake,18:Throw
+    // @User: Standard
+    AP_GROUPINFO("THROW_NEXTMODE", 3, ParametersG2, throw_nextmode, 18),
+
+    // @Param: THROW_TYPE
+    // @DisplayName: Type of Type
+    // @Description: Used by THROW mode. Specifies whether Copter is thrown upward or dropped.
+    // @Values: 0:Upward Throw,1:Drop
+    // @User: Standard
+    AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, ThrowType_Upward),
+
     AP_GROUPEND
 };
 

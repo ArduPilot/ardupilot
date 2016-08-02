@@ -600,6 +600,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Throw mode configuration
+//
+#ifndef THROW_HIGH_SPEED
+# define THROW_HIGH_SPEED       300.0f  // vehicle much reach this total 3D speed in cm/s (or be free falling)
+#endif
+#ifndef THROW_VERTICAL_SPEED
+# define THROW_VERTICAL_SPEED   50.0f   // motors start when vehicle reaches this total 3D speed in cm/s
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
 #ifndef LOGGING_ENABLED

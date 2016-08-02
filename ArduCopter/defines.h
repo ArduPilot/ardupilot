@@ -125,6 +125,7 @@ enum mode_reason_t {
     MODE_REASON_FLIP_COMPLETE,
     MODE_REASON_AVOIDANCE,
     MODE_REASON_AVOIDANCE_RECOVERY,
+    MODE_REASON_THROW_COMPLETE,
 };
 
 // Tuning enumeration
@@ -248,13 +249,19 @@ enum FlipState {
     Flip_Abandon
 };
 
-// Throw states
-enum ThrowModeState {
+// Throw stages
+enum ThrowModeStage {
     Throw_Disarmed,
     Throw_Detecting,
     Throw_Uprighting,
     Throw_HgtStabilise,
     Throw_PosHold
+};
+
+// Throw types
+enum ThrowModeType {
+    ThrowType_Upward = 0,
+    ThrowType_Drop = 1
 };
 
 // LAND state
@@ -285,6 +292,7 @@ enum ThrowModeState {
 #define LOG_HELI_MSG                    0x20
 #define LOG_PRECLAND_MSG                0x21
 #define LOG_GUIDEDTARGET_MSG            0x22
+#define LOG_THROW_MSG                   0x23
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
