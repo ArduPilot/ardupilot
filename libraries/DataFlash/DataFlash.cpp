@@ -351,6 +351,11 @@ bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct
             break;
         }
     }
+
+    if (!f) {
+        return false;
+    }
+
     logstruct.msg_type = msg_type;
     strncpy((char*)logstruct.name, f->name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
     strncpy((char*)logstruct.format, f->fmt, sizeof(logstruct.format));
