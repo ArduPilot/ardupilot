@@ -804,11 +804,6 @@ private:
     void parachute_release();
     void parachute_manual_release();
 
-    // support for AP_Avoidance custom flight mode, AVOID_ADSB
-    bool avoid_adsb_init(bool ignore_checks);
-    void avoid_adsb_run();
-    bool avoid_adsb_set_velocity(const Vector3f& velocity_neu);
-
     void ekf_check();
     bool ekf_over_threshold();
     bool ekf_check_position_problem();
@@ -1038,6 +1033,8 @@ private:
 #endif
 
     Copter::FlightMode_SPORT flightmode_sport{*this};
+
+    Copter::FlightMode_AVOID_ADSB flightmode_avoid_adsb{*this};
 
 public:
     void mavlink_delay_cb();
