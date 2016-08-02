@@ -60,7 +60,7 @@ public:
     uint32_t get_size(void) const { return size; }
 
     // set size of ringbuffer, caller responsible for locking
-    void set_size(uint32_t size);
+    bool set_size(uint32_t size);
 
     // advance the read pointer (discarding bytes)
     bool advance(uint32_t n);

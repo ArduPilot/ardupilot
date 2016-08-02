@@ -17,17 +17,21 @@ ByteBuffer::~ByteBuffer(void)
 /*
  * Caller is responsible for locking in set_size()
  */
-void ByteBuffer::set_size(uint32_t _size)
+bool ByteBuffer::set_size(uint32_t _size)
 {
-    uint8_t *oldbuf;
-
     head = tail = 0;
     if (_size != size) {
-        oldbuf = buf;
+        free(buf);
         buf = (uint8_t*)malloc(_size);
-        size = buf ? _size : 0;
-        free(oldbuf);
+        if (!buf) {
+            size = 0;
+            return false;
+        }
+
+        size = _size;
     }
+
+    return true;
 }
 
 uint32_t ByteBuffer::available(void) const
