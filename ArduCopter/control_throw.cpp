@@ -17,6 +17,7 @@ bool Copter::throw_init(bool ignore_checks)
     }
 
     // init state
+    throw_state.stage = Throw_Disarmed;
     throw_state.nextmode_attempted = false;
 
     return true;
