@@ -1,31 +1,11 @@
 #pragma once
 
 #include <atomic>
-#include <stdint.h>
 #include <stdbool.h>
-
-
-/*
-  old style ring buffer handling macros
-
-  These macros assume a ring buffer like this:
-
-    uint8_t *_buf;
-    uint16_t _buf_size;
-    volatile uint16_t _buf_head;
-    volatile uint16_t _buf_tail;
-
-  These should be converted to a class in future
- */
-#define BUF_AVAILABLE(buf) ((buf##_head > (_tail=buf##_tail))? (buf##_size - buf##_head) + _tail: _tail - buf##_head)
-#define BUF_SPACE(buf) (((_head=buf##_head) > buf##_tail)?(_head - buf##_tail) - 1:((buf##_size - buf##_tail) + _head) - 1)
-#define BUF_EMPTY(buf) (buf##_head == buf##_tail)
-#define BUF_ADVANCETAIL(buf, n) buf##_tail = (buf##_tail + n) % buf##_size
-#define BUF_ADVANCEHEAD(buf, n) buf##_head = (buf##_head + n) % buf##_size
-
+#include <stdint.h>
 
 /*
-  new style buffers
+ * Circular buffer of bytes.
  */
 class ByteBuffer {
 public:
@@ -34,6 +14,9 @@ public:
 
     // number of bytes available to be read
     uint32_t available(void) const;
+
+    // Discards the buffer content, emptying it.
+    void clear(void);
 
     // number of bytes space available to write
     uint32_t space(void) const;
@@ -57,7 +40,7 @@ public:
     uint32_t get_size(void) const { return size; }
 
     // set size of ringbuffer, caller responsible for locking
-    void set_size(uint32_t size);
+    bool set_size(uint32_t size);
 
     // advance the read pointer (discarding bytes)
     bool advance(uint32_t n);
@@ -102,10 +85,8 @@ private:
     uint8_t *buf;
     uint32_t size;
 
-    // head is where the next available data is. tail is where new
-    // data is written
-    std::atomic<uint32_t> head{0};
-    std::atomic<uint32_t> tail{0};
+    std::atomic<uint32_t> head{0}; // where to read data
+    std::atomic<uint32_t> tail{0}; // where to write data
 };
 
 /*

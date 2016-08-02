@@ -1,36 +1,37 @@
-#include "RingBuffer.h"
 #include <stdlib.h>
 #include <string.h>
 
-/*
-  implement a simple ringbuffer of bytes
- */
+#include "RingBuffer.h"
 
 ByteBuffer::ByteBuffer(uint32_t _size)
 {
-    size = _size;
-    buf = new uint8_t[size];
+    buf = (uint8_t*)malloc(_size);
+    size = buf ? _size : 0;
 }
 
 ByteBuffer::~ByteBuffer(void)
 {
-    delete [] buf;
+    free(buf);
 }
 
 /*
  * Caller is responsible for locking in set_size()
  */
-void ByteBuffer::set_size(uint32_t _size)
+bool ByteBuffer::set_size(uint32_t _size)
 {
-    uint8_t *oldbuf;
-
     head = tail = 0;
     if (_size != size) {
+        free(buf);
+        buf = (uint8_t*)malloc(_size);
+        if (!buf) {
+            size = 0;
+            return false;
+        }
+
         size = _size;
-        oldbuf = buf;
-        buf = new uint8_t[size];
-        delete[] oldbuf;
     }
+
+    return true;
 }
 
 uint32_t ByteBuffer::available(void) const
@@ -39,10 +40,15 @@ uint32_t ByteBuffer::available(void) const
     return ((head > (_tail=tail))? (size - head) + _tail: _tail - head);
 }
 
+void ByteBuffer::clear(void)
+{
+    head = tail = 0;
+}
+
 uint32_t ByteBuffer::space(void) const
 {
-    uint32_t _head;
-    return (((_head=head) > tail)?(_head - tail) - 1:((size - tail) + _head) - 1);
+    uint32_t _head = head;
+    return size ? (_head > tail ? 0 : size) + _head - tail - 1 : 0;
 }
 
 bool ByteBuffer::empty(void) const
