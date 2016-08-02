@@ -17,6 +17,7 @@ class AP_ADC_ADS1115
 {
 public:
     AP_ADC_ADS1115();
+    ~AP_ADC_ADS1115();
 
     bool init();
     size_t read(adc_report_s *report, size_t length) const;
