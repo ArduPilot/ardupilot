@@ -225,7 +225,7 @@ bool Copter::throw_detected()
         return false;
     }
 
-    // Check for high speed (>500 cm/s)
+    // Check for high speed (at least 3m/s)
     bool high_speed = inertial_nav.get_velocity().length() > THROW_HIGH_SPEED;
 
     // check for upwards or downwards trajectory (airdrop) of 50cm/s
