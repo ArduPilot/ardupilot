@@ -557,10 +557,8 @@ private:
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
 
     void unexpected_message(void);
-    void write_logging_headers(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
-    void log_mon_ver(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
 
