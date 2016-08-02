@@ -964,13 +964,13 @@ void AP_GPS::_broadcast_gps_type(const char *type, uint8_t instance, int8_t baud
     if (baud_index >= 0) {
         hal.util->snprintf(buffer, sizeof(buffer),
                            "GPS %d: detected as %s at %d baud",
-                           instance,
+                           instance + 1,
                            type,
                            _baudrates[baud_index]);
     } else {
         hal.util->snprintf(buffer, sizeof(buffer),
                            "GPS %d: detected as %s",
-                           instance,
+                           instance + 1,
                            type);
     }
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
