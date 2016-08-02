@@ -191,6 +191,30 @@ void Copter::throw_run()
 
         break;
     }
+
+    // log at 10hz or if stage changes
+    uint32_t now = AP_HAL::millis();
+    if ((throw_state.stage != throw_state.prev_stage) || (now - throw_state.last_log_ms) > 100) {
+        throw_state.prev_stage = throw_state.stage;
+        throw_state.last_log_ms = now;
+        float velocity = inertial_nav.get_velocity().length();
+        float velocity_z = inertial_nav.get_velocity().z;
+        float accel = ins.get_accel().length();
+        float ef_accel_z = ahrs.get_accel_ef().z;
+        bool throw_detect = (throw_state.stage > Throw_Detecting) || throw_detected();
+        bool attitude_ok = (throw_state.stage > Throw_Uprighting) || throw_attitude_good();
+        bool height_ok = (throw_state.stage > Throw_HgtStabilise) || throw_height_good();
+        bool pos_ok = (throw_state.stage > Throw_PosHold) || throw_position_good();
+        Log_Write_Throw(throw_state.stage,
+                        velocity,
+                        velocity_z,
+                        accel,
+                        ef_accel_z,
+                        throw_detect,
+                        attitude_ok,
+                        height_ok,
+                        pos_ok);
+    }
 }
 
 bool Copter::throw_detected()
