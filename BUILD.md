@@ -3,16 +3,6 @@
 Ardupilot is gradually moving from the make-based build system to
 [Waf](https://waf.io/).
 
-To keep access to Waf convenient, use the following alias from the
-root ardupilot directory:
-
-```bash
-alias waf="$PWD/modules/waf/waf-light"
-```
-
-You can also define the alias or create a function in your shell rc file (e.g.
-`~/.bashrc`).
-
 You can read the [Waf Book](https://waf.io/book/) if you want to learn more
 about Waf.
 
@@ -23,32 +13,71 @@ Waf should always be called from the ardupilot's root directory.
 Differently from the make-based build, with Waf there's a configure step
 to choose the board to be used (default is `sitl`):
 
+## Basic use ##
+
+There are several commands in the build system for advanced usages, but here we
+list some basic examples.
+
+### Build ArduCopter for only one board ###
+
+Here we use minlure as an example of Linux board. See more advanced usages
+below to get a list of supported boards.
+
 ```bash
-# Configure the Linux board
-waf configure --board=linux
+./waf configure --board minlure
+./waf copter
 ```
 
-Waf build system is composed of commands. For example, the above command
-(`configure`) is for configuring the build. Consequently, in order to build, a
-"build" command is issued, thus `waf build`. That is the default command, so
-calling just `waf` is enough:
+This will buil all copter frames for minlure board. The configure command
+needs to be given only when you are switching from a board (or sitl) to another
+one so usually it's just one command to keep a change/test/debug cycle.
+The build will always be incremental and there's no reason to do a clean
+build
+
+Building ArduCopter Quad for Pixhawk:
+
+```bash
+./waf configure --board px4-v2
+./waf --targets bin/arducopter-quad
+```
+
+px4-v2 board supports the --upload option, so the last command could be:
+
+```bash
+./waf --targets bin/arducopter-quad --upload
+```
+
+In this case it would build and upload to a connected Pixhawk board.
+
+## Advanced use ##
+
+Waf build system is composed of commands. For example, the command below
+(`configure`) is for configuring the build.
+
+```bash
+# Configure the Linux board
+./waf configure --board=linux
+```
+
+Consequently, in order to build, a "build" command is issued, thus `waf build`.
+That is the default command, so calling just `waf` is enough:
 
 ```bash
 # Build programs from bin group
-waf
+./waf
 
 # Waf also accepts '-j' option to parallelize the build.
-waf -j8
+./waf -j8
 ```
 
 To clean things up, use the `clean` or `distclean` command:
 
 ```bash
 # Clean the build products, but keep configure information
-waf clean
+./waf clean
 
 # Clean everything, will need to call configure again
-waf distclean
+./waf distclean
 ```
 
 Using git to clean the files also work fine.
@@ -57,7 +86,7 @@ To list the task generator names that can be used for the option `--targets`,
 use the `list`command:
 
 ```bash
-waf list
+./waf list
 ```
 
 ## Program groups ##
@@ -118,13 +147,13 @@ Examples:
 
 ```bash
 # Group bin is the default one
-waf
+./waf
 
 # Build all vehicles and Antenna Tracker
-waf --program-group bin
+./waf --program-group bin
 
 # Build all benchmarks and tests
-waf --program-group benchmarks --program-group tests
+./waf --program-group benchmarks --program-group tests
 ```
 ### Shortcut for program groups ###
 
@@ -132,13 +161,13 @@ For less typing, you can use the group name as the command to waf. Examples:
 
 ```bash
 # Build all vehicles and Antenna Tracker
-waf bin
+./waf bin
 
 # Build all examples
-waf examples
+./waf examples
 
 # Build arducopter binaries
-waf copter
+./waf copter
 ```
 
 ## Building a specific program ##
@@ -148,10 +177,10 @@ to `build/<board>/` to the option `--targets`. Example:
 
 ```bash
 # Build arducopter for quad frame
-waf --targets bin/arducopter-quad
+./waf --targets bin/arducopter-quad
 
 # Build vectors unit test
-waf --targets tests/test_vectors
+./waf --targets tests/test_vectors
 ```
 
 ## Uploading ##
@@ -163,9 +192,9 @@ Example:
 
 ```bash
 # PX4 supports uploading the program through a USB connection
-waf configure --board px4-v2
+./waf configure --board px4-v2
 # Build arducopter-quad and upload it to my board
-waf --targets bin/arducopter-quad --upload
+./waf --targets bin/arducopter-quad --upload
 ```
 
 ## Checking ##
@@ -188,13 +217,13 @@ Examples:
 
 ```bash
 # Build everything and run relevant tests
-waf check
+./waf check
 
 # Build everything and run all tests
-waf check --alltests
+./waf check --alltests
 
 # Build everything and run all tests
-waf check-all
+./waf check-all
 ```
 
 ## Debugging ##
