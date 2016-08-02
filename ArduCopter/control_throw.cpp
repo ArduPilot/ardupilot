@@ -201,15 +201,15 @@ bool Copter::throw_detected()
         return false;
     }
 
-    // Check for high speed (note get_inertial_nav methods use a cm length scale)
-    bool high_speed = inertial_nav.get_velocity().length() > 500.0f;
+    // Check for high speed (>500 cm/s)
+    bool high_speed = inertial_nav.get_velocity().length() > THROW_HIGH_SPEED;
 
-    // check for upwards or downwards trajectory (airdrop)
+    // check for upwards or downwards trajectory (airdrop) of 50cm/s
     bool changing_height;
     if (g2.throw_type == ThrowType_Drop) {
-        changing_height = inertial_nav.get_velocity().z < -50.0f;
+        changing_height = inertial_nav.get_velocity().z < -THROW_VERTICAL_SPEED;
     } else {
-        changing_height = inertial_nav.get_velocity().z > 50.0f;
+        changing_height = inertial_nav.get_velocity().z > THROW_VERTICAL_SPEED;
     }
 
     // Check the vertical acceleraton is greater than 0.25g
