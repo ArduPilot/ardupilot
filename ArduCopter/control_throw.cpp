@@ -22,15 +22,6 @@ bool Copter::throw_init(bool ignore_checks)
     return true;
 }
 
-// clean up when exiting throw mode
-void Copter::throw_exit()
-{
-    // If exiting throw mode before commencing flight, restore the throttle interlock to the value last set by the switch
-    if (!throw_flight_commenced) {
-        motors.set_interlock(throw_early_exit_interlock);
-    }
-}
-
 // runs the throw to start controller
 // should be called at 100hz or more
 void Copter::throw_run()
@@ -48,30 +39,9 @@ void Copter::throw_run()
         // state machine entry is always from a disarmed state
         throw_state.stage = Throw_Disarmed;
 
-        // remember the current value of the motor interlock so that this condition can be restored if we exit the throw mode before starting motors
-        throw_early_exit_interlock = true;
-
-        // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == 1) {
-            motors.set_interlock(true);
-        } else {
-            motors.set_interlock(false);
-        }
-
-        // status to let system know flight control has not started which means the interlock setting needs to restored if we exit to another flight mode
-        // this is necessary because throw mode uses the interlock to achieve a post arm motor start.
-        throw_flight_commenced = false;
-
     } else if (throw_state.stage == Throw_Disarmed && motors.armed()) {
         gcs_send_text(MAV_SEVERITY_INFO,"waiting for throw");
         throw_state.stage = Throw_Detecting;
-
-        // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == 1) {
-            motors.set_interlock(true);
-        } else {
-            motors.set_interlock(false);
-        }
 
     } else if (throw_state.stage == Throw_Detecting && throw_detected()){
         gcs_send_text(MAV_SEVERITY_INFO,"throw detected - uprighting");
@@ -79,12 +49,6 @@ void Copter::throw_run()
 
         // Cancel the waiting for throw tone sequence
         AP_Notify::flags.waiting_for_throw = false;
-
-        // reset the interlock
-        motors.set_interlock(true);
-
-        // status to let system know flight control has started which means the entry interlock setting will not restored if we exit to another flight mode
-        throw_flight_commenced = true;
 
     } else if (throw_state.stage == Throw_Uprighting && throw_attitude_good()) {
         gcs_send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
@@ -142,11 +106,25 @@ void Copter::throw_run()
 
     case Throw_Disarmed:
 
+        // prevent motors from rotating before the throw is detected unless enabled by the user
+        if (g.throw_motor_start == 1) {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        } else {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        }
+
         // demand zero throttle (motors will be stopped anyway) and continually reset the attitude controller
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         break;
 
     case Throw_Detecting:
+
+        // prevent motors from rotating before the throw is detected unless enabled by the user
+        if (g.throw_motor_start == 1) {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        } else {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        }
 
         // Hold throttle at zero during the throw and continually reset the attitude controller
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -158,6 +136,9 @@ void Copter::throw_run()
 
     case Throw_Uprighting:
 
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
         // demand a level roll/pitch attitude with zero yaw rate
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
 
@@ -167,6 +148,9 @@ void Copter::throw_run()
         break;
 
     case Throw_HgtStabilise:
+
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
@@ -178,6 +162,9 @@ void Copter::throw_run()
         break;
 
     case Throw_PosHold:
+
+        // set motors to full range
+        motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // run loiter controller
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);

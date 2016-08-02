@@ -411,8 +411,6 @@ private:
     Vector3f flip_orig_attitude;         // original copter attitude before flip
 
     // Throw
-    bool throw_early_exit_interlock = true; // value of the throttle interlock that must be restored when exiting throw mode early
-    bool throw_flight_commenced = false;    // true when the throw has been detected and the motors and control loops are running
     uint32_t throw_free_fall_start_ms = 0;  // system time free fall was detected
     float throw_free_fall_start_velz = 0.0f;// vertical velocity when free fall was detected
 
@@ -849,7 +847,6 @@ private:
 
     // Throw to launch functionality
     bool throw_init(bool ignore_checks);
-    void throw_exit();
     void throw_run();
     bool throw_detected();
     bool throw_attitude_good();
