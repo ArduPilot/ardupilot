@@ -236,7 +236,7 @@ bool PX4UARTDriver::tx_pending() { return false; }
 /*
   return number of bytes available to be read from the buffer
  */
-int16_t PX4UARTDriver::available() 
+uint32_t PX4UARTDriver::available()
 { 
 	if (!_initialised) {
         try_initialise();
@@ -249,7 +249,7 @@ int16_t PX4UARTDriver::available()
 /*
   return number of bytes that can be added to the write buffer
  */
-int16_t PX4UARTDriver::txspace() 
+uint32_t PX4UARTDriver::txspace()
 { 
 	if (!_initialised) {
         try_initialise();

@@ -290,7 +290,7 @@ bool UARTDriver::tx_pending()
 /*
   return the number of bytes available to be read
  */
-int16_t UARTDriver::available()
+uint32_t UARTDriver::available()
 {
     if (!_initialised) {
         return 0;
@@ -302,7 +302,7 @@ int16_t UARTDriver::available()
 /*
   how many bytes are available in the output buffer?
  */
-int16_t UARTDriver::txspace()
+uint32_t UARTDriver::txspace()
 {
     if (!_initialised) {
         return 0;

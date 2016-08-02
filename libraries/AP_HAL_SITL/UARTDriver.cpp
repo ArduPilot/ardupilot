@@ -100,7 +100,7 @@ void UARTDriver::end()
 {
 }
 
-int16_t UARTDriver::available(void)
+uint32_t UARTDriver::available(void)
 {
     _check_connection();
 
@@ -111,9 +111,7 @@ int16_t UARTDriver::available(void)
     return _readbuffer.available();
 }
 
-
-
-int16_t UARTDriver::txspace(void)
+uint32_t UARTDriver::txspace(void)
 {
     _check_connection();
     if (!_connected) {
