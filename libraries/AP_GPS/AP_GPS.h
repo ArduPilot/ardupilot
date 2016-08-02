@@ -19,7 +19,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -443,9 +442,6 @@ private:
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
-
-    void _detection_message(char *buffer, uint8_t buflen, uint8_t instance);
-    void _broadcast_gps_type(uint8_t instance);
 
     /*
       buffer for re-assembling RTCM data for GPS injection.

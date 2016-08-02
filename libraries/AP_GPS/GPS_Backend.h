@@ -58,6 +58,9 @@ public:
 
     virtual const char *name() const = 0;
 
+    void broadcast_gps_type() const;
+    virtual void Write_DataFlash_Log_Startup_messages() const;
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
@@ -77,4 +80,6 @@ protected:
        assumes MTK19 millisecond form of bcd_time
     */
     void make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
+
+    void _detection_message(char *buffer, uint8_t buflen) const;
 };
