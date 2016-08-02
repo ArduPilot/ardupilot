@@ -24,6 +24,8 @@
  # define Debug(fmt, args ...)
 #endif
 
+#include <GCS_MAVLink/GCS.h> // for send_statustext_all
+
 extern const AP_HAL::HAL& hal;
 
 AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
@@ -134,3 +136,36 @@ AP_GPS_Backend::inject_data(const uint8_t *data, uint16_t len)
     }
 }
 
+void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) const
+{
+    const uint8_t instance = state.instance;
+    const struct AP_GPS::detect_state dstate = gps.detect_state[instance];
+
+    if (dstate.detect_started_ms > 0) {
+        hal.util->snprintf(buffer, buflen,
+                 "GPS %d: detected as %s at %d baud",
+                 instance + 1,
+                 name(),
+                 gps._baudrates[dstate.current_baud]);
+    } else {
+        hal.util->snprintf(buffer, buflen,
+                 "GPS %d: specified as %s",
+                 instance + 1,
+                 name());
+    }
+}
+
+
+void AP_GPS_Backend::broadcast_gps_type() const
+{
+    char buffer[64];
+    _detection_message(buffer, sizeof(buffer));
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
+}
+
+void AP_GPS_Backend::Write_DataFlash_Log_Startup_messages() const
+{
+    char buffer[64];
+    _detection_message(buffer, sizeof(buffer));
+    gps._DataFlash->Log_Write_Message(buffer);
+}
