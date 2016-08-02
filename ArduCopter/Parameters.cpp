@@ -981,6 +981,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("THROW_NEXTMODE", 3, ParametersG2, throw_nextmode, 18),
 
+    // @Param: THROW_TYPE
+    // @DisplayName: Type of Type
+    // @Description: Used by THROW mode. Specifies whether Copter is thrown upward or dropped.
+    // @Values: 0:Upward Throw,1:Drop
+    // @User: Standard
+    AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, ThrowType_Upward),
+
     AP_GROUPEND
 };
 
