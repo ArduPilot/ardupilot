@@ -133,8 +133,8 @@ def configure(cfg):
     _filter_supported_c_compilers('gcc', 'clang')
     _filter_supported_cxx_compilers('g++', 'clang++')
 
-    cfg.env.AR = cfg.env.TOOLCHAIN + '-ar'
-    cfg.env.PKGCONFIG = cfg.env.TOOLCHAIN + '-pkg-config'
+    cfg.find_toolchain_program('ar')
+
     cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
     cfg.load('compiler_cxx compiler_c')
 
