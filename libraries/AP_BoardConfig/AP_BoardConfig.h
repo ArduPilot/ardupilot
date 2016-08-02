@@ -49,6 +49,12 @@ private:
 #endif
     } px4;
     void px4_drivers_start(void);
+    void px4_setup(void);
+    void px4_setup_pwm(void);
+    void px4_setup_safety(void);
+    void px4_setup_uart(void);
+    void px4_setup_sbus(void);
+    void px4_setup_canbus(void);
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
 
     // target temperarure for IMU in Celsius, or -1 to disable
