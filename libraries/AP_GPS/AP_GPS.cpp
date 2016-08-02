@@ -550,10 +550,10 @@ void AP_GPS::detect_instance(uint8_t instance)
 
 found_gps:
     if (new_gps != nullptr) {
-        _broadcast_gps_type(instance);
         state[instance].status = NO_FIX;
         drivers[instance] = new_gps;
         timing[instance].last_message_time_ms = now;
+        new_gps->broadcast_gps_type();
     }
 }
 
@@ -948,38 +948,6 @@ bool AP_GPS::blend_health_check() const
     return (_blend_health_counter < 50);
 }
 
-void AP_GPS::_detection_message(char *buffer, uint8_t buflen, uint8_t instance)
-{
-    AP_GPS_Backend *driver = drivers[instance];
-    if (driver == nullptr) {
-        // we really shouldn't have been called
-        buffer[0] = '\0';
-        return;
-    }
-
-    const struct detect_state dstate = detect_state[instance];
-    if (dstate.detect_started_ms > 0) {
-        hal.util->snprintf(buffer, buflen,
-                 "GPS %d: detected as %s at %d baud",
-                 instance + 1,
-                 driver->name(),
-                 _baudrates[dstate.current_baud]);
-    } else {
-        hal.util->snprintf(buffer, buflen,
-                 "GPS %d: specified as %s",
-                 instance + 1,
-                 driver->name());
-    }
-}
-
-
-void AP_GPS::_broadcast_gps_type(uint8_t instance)
-{
-    char buffer[64];
-    _detection_message(buffer, sizeof(buffer), instance);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
-}
-
 /*
    re-assemble GPS_RTCM_DATA message
  */
@@ -1070,12 +1038,10 @@ void AP_GPS::Write_DataFlash_Log_Startup_messages()
     }
 
     for (uint8_t instance=0; instance<num_instances; instance++) {
-        char buffer[64];
-        _detection_message(buffer, sizeof(buffer), instance);
         if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
             continue;
         }
-        _DataFlash->Log_Write_Message(buffer);
+        drivers[instance]->Write_DataFlash_Log_Startup_messages();
     }
 }
 
