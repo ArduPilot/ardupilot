@@ -278,6 +278,11 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
     guided_angle_state.climb_rate_cms = climb_rate_cms;
     guided_angle_state.update_time_ms = millis();
 
+    // interpret positive climb rate as triggering take-off
+    if (motors.armed() && !ap.auto_armed && (guided_angle_state.climb_rate_cms > 0.0f)) {
+        set_auto_armed(true);
+    }
+
     // log target
     Log_Write_GuidedTarget(guided_mode,
                            Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
@@ -536,7 +541,7 @@ void Copter::guided_posvel_control_run()
 void Copter::guided_angle_control_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
+    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || (ap.land_complete && guided_angle_state.climb_rate_cms <= 0.0f)) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.set_yaw_target_to_current_heading();
