@@ -218,7 +218,7 @@ bool Copter::throw_detected()
     // Check if the accel length is < 1.0g indicating that any throw action is complete and the copter has been released
     bool no_throw_action = ins.get_accel().length() < 1.0f * GRAVITY_MSS;
 
-    // High velocity or free-fall combined with incresing height indicate a possible air-drop or throw release
+    // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release
     bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
 
     // Record time and vertical velocity when we detect the possible throw
