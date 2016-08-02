@@ -10,29 +10,29 @@
  */
 
 // initialise avoid_adsb controller
-bool Copter::avoid_adsb_init(const bool ignore_checks)
+bool Copter::FlightMode_AVOID_ADSB::init(const bool ignore_checks)
 {
     // re-use guided mode
-    return flightmode_guided.init(ignore_checks);
+    return Copter::FlightMode_GUIDED::init(ignore_checks);
 }
 
-bool Copter::avoid_adsb_set_velocity(const Vector3f& velocity_neu)
+bool Copter::FlightMode_AVOID_ADSB::set_velocity(const Vector3f& velocity_neu)
 {
     // check flight mode
-    if (control_mode != AVOID_ADSB) {
+    if (_copter.control_mode != AVOID_ADSB) {
         return false;
     }
 
     // re-use guided mode's velocity controller
-    flightmode_guided.set_velocity(velocity_neu);
+    Copter::FlightMode_GUIDED::set_velocity(velocity_neu);
     return true;
 }
 
 // runs the AVOID_ADSB controller
-void Copter::avoid_adsb_run()
+void Copter::FlightMode_AVOID_ADSB::run()
 {
     // re-use guided mode's velocity controller
     // Note: this is safe from interference from GCSs and companion computer's whose guided mode
     //       position and velocity requests will be ignored while the vehicle is not in guided mode
-    flightmode_guided.run();
+    Copter::FlightMode_GUIDED::run();
 }
