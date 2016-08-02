@@ -114,6 +114,7 @@ public:
     }
 
     void broadcast_configuration_failure_reason(void) const override;
+    void Write_DataFlash_Log_Startup_messages() const override;
 
     // return velocity lag
     float get_lag(void) const override;
@@ -522,6 +523,7 @@ private:
     uint8_t         _next_message;
     uint8_t         _ublox_port;
     bool            _have_version;
+    struct ubx_mon_ver _version;
     uint32_t        _unconfigured_messages;
     uint8_t         _hardware_generation;
 
