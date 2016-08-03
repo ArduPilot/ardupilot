@@ -20,30 +20,23 @@ from waflib.Tools import clang, clangxx, gcc, gxx
 import os
 import re
 
-def _set_toolchain_prefix_wrapper(tool_module, var, compiler_names):
-    original_configure = tool_module.configure
-    def new_configure(cfg):
-        if cfg.env.TOOLCHAIN == 'native':
-            original_configure(cfg)
-            return
+@conf
+def find_gxx(conf):
+    names = ['g++', 'c++']
+    if conf.env.TOOLCHAIN != 'native':
+        names = ['%s-%s' % (conf.env.TOOLCHAIN, n) for n in names]
+    cxx = conf.find_program(names, var='CXX')
+    conf.get_cc_version(cxx, gcc=True)
+    conf.env.CXX_NAME = 'gcc'
 
-        last_exception = None
-        for name in compiler_names:
-            cfg.env.stash()
-            try:
-                cfg.env[var] = '%s-%s' % (cfg.env.TOOLCHAIN, name)
-                original_configure(cfg)
-            except Errors.ConfigurationError as e:
-                cfg.env.revert()
-                last_exception = e
-            else:
-                cfg.env.commit()
-                return
-        raise last_exception
-    tool_module.configure = new_configure
-
-_set_toolchain_prefix_wrapper(gxx, 'CXX', ('g++', 'c++'))
-_set_toolchain_prefix_wrapper(gcc, 'CC', ('gcc', 'cc'))
+@conf
+def find_gcc(conf):
+    names = ['gcc', 'cc']
+    if conf.env.TOOLCHAIN != 'native':
+        names = ['%s-%s' % (conf.env.TOOLCHAIN, n) for n in names]
+    cc = conf.find_program(names, var='CC')
+    conf.get_cc_version(cc, gcc=True)
+    conf.env.CC_NAME = 'gcc'
 
 def _clang_cross_support(cfg):
     if _clang_cross_support.called:
