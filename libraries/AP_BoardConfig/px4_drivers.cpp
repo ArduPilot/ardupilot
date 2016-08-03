@@ -60,10 +60,6 @@ extern "C" {
     int trone_main(int, char **);
     int mb12xx_main(int, char **);
     int pwm_input_main(int, char **);
-    int oreoled_main(int, char **);
-    int batt_smbus_main(int, char **);
-    int irlock_main(int, char **);
-    int px4flow_main(int, char **);
     int uavcan_main(int, char **);
 };
 
@@ -445,28 +441,9 @@ void AP_BoardConfig::px4_start_optional_sensors(void)
     if (px4_start_driver(mb12xx_main, "mb12xx", "start")) {
         printf("Found mb12xx sensor\n");
     }
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    if (px4_start_driver(px4flow_main, "px4flow", "start")) {
-        printf("Found px4flow sensor\n");
-    }
-#endif
 
     if (px4_start_driver(pwm_input_main, "pwm_input", "start")) {
         printf("started pwm_input driver\n");
-    }
-
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    if (px4_start_driver(oreoled_main, "oreoled", "start autoupdate")) {
-        printf("oreoled started OK\n");
-    }
-#endif
-
-    if (px4_start_driver(batt_smbus_main, "batt_smbus", "-b 2 start")) {
-        printf("Found batt_smbus\n");
-    }
-
-    if (px4_start_driver(irlock_main, "irlock", "start")) {
-        printf("irlock started\n");
     }
 }
 
