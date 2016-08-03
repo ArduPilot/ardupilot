@@ -338,6 +338,12 @@ void AP_BoardConfig::px4_start_fmuv2_sensors(void)
             px4_sensor_error("no lsm303d found");
         }
     }
+
+    if (have_FMUV3) {
+        // on Pixhawk2 default IMU temperature to 60
+        _imu_target_temperature.set_default(60);
+    }
+    
     printf("FMUv2 sensors started\n");
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V2
 }
