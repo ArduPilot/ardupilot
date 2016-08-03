@@ -18,6 +18,8 @@
 
 #endif
 
+extern "C" typedef int (*main_fn_t)(int argc, char **);
+
 class AP_BoardConfig
 {
 public:
@@ -34,6 +36,13 @@ public:
 private:
     AP_Int16 vehicleSerialNumber;
 
+    enum px4_board_type {
+        PX4_BOARD_PX4V1,
+        PX4_BOARD_PIXHAWK,
+        PX4_BOARD_PIXHAWK2,
+        PX4_BOARD_PIXRACER
+    };
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     struct {
         AP_Int8 pwm_count;
@@ -47,6 +56,7 @@ private:
         AP_Int8 ser2_rtscts;
         AP_Int8 sbus_out_rate;
 #endif
+        enum px4_board_type board_type;
     } px4;
     void px4_drivers_start(void);
     void px4_setup(void);
@@ -55,6 +65,15 @@ private:
     void px4_setup_uart(void);
     void px4_setup_sbus(void);
     void px4_setup_canbus(void);
+    void px4_setup_drivers(void);
+    void px4_sensor_error(const char *reason);
+    
+    bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
+    void px4_start_common_sensors(void);
+    void px4_start_fmuv1_sensors(void);
+    void px4_start_fmuv2_sensors(void);
+    void px4_start_fmuv4_sensors(void);
+    void px4_start_optional_sensors(void);
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
 
     // target temperarure for IMU in Celsius, or -1 to disable

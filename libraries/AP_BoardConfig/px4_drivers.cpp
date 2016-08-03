@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_sbus.h>
+#include <nuttx/arch.h>
+#include <spawn.h>
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 #define BOARD_PWM_COUNT_DEFAULT 2
@@ -42,15 +44,36 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-extern "C" int uavcan_main(int argc, const char *argv[]);
+/* 
+   declare driver main entry points
+ */
+extern "C" {
+    int mpu6000_main(int , char **);
+    int mpu9250_main(int , char **);
+    int ms5611_main(int , char **);
+    int l3gd20_main(int , char **);
+    int lsm303d_main(int , char **);
+    int hmc5883_main(int , char **);
+    int ets_airspeed_main(int, char **);
+    int meas_airspeed_main(int, char **);
+    int ll40ls_main(int, char **);
+    int trone_main(int, char **);
+    int mb12xx_main(int, char **);
+    int pwm_input_main(int, char **);
+    int oreoled_main(int, char **);
+    int batt_smbus_main(int, char **);
+    int irlock_main(int, char **);
+    int px4flow_main(int, char **);
+    int uavcan_main(int, char **);
+};
 
+
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 #define _UAVCAN_IOCBASE             (0x4000)                        // IOCTL base for module UAVCAN
 #define _UAVCAN_IOC(_n)             (_IOC(_UAVCAN_IOCBASE, _n))
 
 #define UAVCAN_IOCG_NODEID_INPROGRESS  _UAVCAN_IOC(1)               // query if node identification is in progress
 #endif
-
 
 /*
   setup PWM pins
@@ -69,6 +92,9 @@ void AP_BoardConfig::px4_setup_pwm()
         { 4, PWM_SERVO_MODE_4PWM, 2 },
         { 6, PWM_SERVO_MODE_6PWM, 0 },
         { 7, PWM_SERVO_MODE_3PWM1CAP, 2 },
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+        { 8, PWM_SERVO_MODE_12PWM, 0 },
+#endif
     };
     uint8_t mode_parm = (uint8_t)px4.pwm_count.get();
     uint8_t i;
@@ -166,22 +192,16 @@ void AP_BoardConfig::px4_setup_canbus(void)
 {
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     if (px4.can_enable >= 1) {
-        const char *args[] = { "uavcan", "start", NULL };
-        int ret = uavcan_main(3, args);
-        if (ret != 0) {
-            hal.console->printf("UAVCAN: failed to start\n");
-        } else {
+        if (px4_start_driver(uavcan_main, "uavcan", "start")) {
             hal.console->printf("UAVCAN: started\n");            
             // give some time for CAN bus initialisation
             hal.scheduler->delay(2000);
+        } else {
+            hal.console->printf("UAVCAN: failed to start\n");
         }
     }
     if (px4.can_enable >= 2) {
-        const char *args[] = { "uavcan", "start", "fw", NULL };
-        int ret = uavcan_main(4, args);
-        if (ret != 0) {
-            hal.console->printf("UAVCAN: failed to start servers\n");
-        } else {
+        if (px4_start_driver(uavcan_main, "uavcan", "start fw")) {
             uint32_t start_wait_ms = AP_HAL::millis();
             int fd = open("/dev/uavcan/esc", 0); // design flaw of uavcan driver, this should be /dev/uavcan/node one day
             if (fd == -1) {
@@ -196,10 +216,286 @@ void AP_BoardConfig::px4_setup_canbus(void)
             hal.console->printf("UAVCAN: node discovery complete\n");
             close(fd);
         }
-   }
+    }
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V1
 }
 
+extern "C" int waitpid(pid_t, int *, int);
+
+/*
+  start one px4 driver
+ */
+bool AP_BoardConfig::px4_start_driver(main_fn_t main_function, const char *name, const char *arguments)
+{
+    char *s = strdup(arguments);
+    char *args[10];
+    uint8_t nargs = 0;
+    char *saveptr = nullptr;
+
+    // parse into separate arguments
+    for (char *tok=strtok_r(s, " ", &saveptr); tok; tok=strtok_r(nullptr, " ", &saveptr)) {
+        args[nargs++] = tok;
+        if (nargs == ARRAY_SIZE(args)-1) {
+            break;
+        }
+    }
+    args[nargs++] = nullptr;
+
+    printf("Starting driver %s %s\n", name, arguments);
+    pid_t pid;
+    
+    if (task_spawn(&pid, name, main_function, nullptr, nullptr,
+                   args, nullptr) != 0) {
+        free(s);
+        printf("Failed to spawn %s\n", name);
+        return false;
+    }
+
+    // wait for task to exit and gather status
+    int status = -1;
+    if (waitpid(pid, &status, 0) != pid) {
+        printf("waitpid failed for %s\n", name);
+        free(s);
+        return false;
+    }
+    free(s);
+    return (status >> 8) == 0;
+}
+
+/*
+  setup sensors for PX4v2
+ */
+void AP_BoardConfig::px4_start_fmuv2_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    bool have_FMUV3 = false;
+    
+    printf("Starting FMUv2 sensors\n");
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -X start")) {
+        printf("Have external hmc5883\n");
+    } else {
+        printf("No external hmc5883\n");
+    }
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I -R 4 start")) {
+        printf("Have internal hmc5883\n");
+    } else {
+        printf("No internal hmc5883\n");
+    }
+
+    // external MPU6000 is rotated YAW_180 from standard
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-X -R 4 start")) {
+        printf("Found MPU6000 external\n");
+        have_FMUV3 = true;
+    } else {
+        if (px4_start_driver(mpu9250_main, "mpu9250", "-X -R 4 start")) {
+            printf("Found MPU9250 external\n");
+            have_FMUV3 = true;
+        } else {
+            printf("No MPU6000 or MPU9250 external\n");
+        }
+    }
+    if (have_FMUV3) {
+        // external L3GD20 is rotated YAW_180 from standard
+        if (px4_start_driver(l3gd20_main, "l3gd20", "-X -R 4 start")) {
+            printf("l3gd20 external started OK\n");
+        } else {
+            px4_sensor_error("No l3gd20");
+        }
+        // external LSM303D is rotated YAW_270 from standard
+        if (px4_start_driver(lsm303d_main, "lsm303d", "-a 16 -X -R 6 start")) {
+            printf("lsm303d external started OK\n");
+        } else {
+            px4_sensor_error("No lsm303d");
+        }
+        // internal MPU6000 is rotated ROLL_180_YAW_270 from standard
+        if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 start")) {
+            printf("Found MPU6000 internal\n");
+        } else {
+            if (px4_start_driver(mpu9250_main, "mpu9250", "-R 14 start")) {
+                printf("Found MPU9250 internal\n");
+            } else {
+                px4_sensor_error("No MPU6000 or MPU9250");
+            }
+        }
+        if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -S -R 8 start")) {
+            printf("Found SPI hmc5883\n");
+        }
+    } else {
+        // not FMUV3 (ie. not a pixhawk2)
+        if (px4_start_driver(mpu6000_main, "mpu6000", "start")) {
+            printf("Found MPU6000\n");
+        } else {
+            if (px4_start_driver(mpu9250_main, "mpu9250", "start")) {
+                printf("Found MPU9250\n");
+            } else {
+                printf("No MPU6000 or MPU9250\n");
+            }
+        }
+        if (px4_start_driver(l3gd20_main, "l3gd20", "start")) {
+            printf("l3gd20 started OK\n");
+        } else {
+            px4_sensor_error("no l3gd20 found");
+        }
+        if (px4_start_driver(lsm303d_main, "lsm303d", "-a 16 start")) {
+            printf("lsm303d started OK\n");
+        } else {
+            px4_sensor_error("no lsm303d found");
+        }
+    }
+    printf("FMUv2 sensors started\n");
+#endif // CONFIG_ARCH_BOARD_PX4FMU_V2
+}
+
+/*
+  setup sensors for PX4v1
+ */
+void AP_BoardConfig::px4_start_fmuv1_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    printf("Starting FMUv1 sensors\n");
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -X start")) {
+            printf("Have external hmc5883\n");
+    } else {
+        printf("No external hmc5883\n");
+    }
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I  start")) {
+        printf("Have internal hmc5883\n");
+    } else {
+        printf("No internal hmc5883\n");
+    }
+    if (px4_start_driver(mpu6000_main, "mpu6000", "start")) {
+        printf("mpu6000 started OK\n");
+    } else {
+        px4_sensor_error("mpu6000");
+    }
+    if (px4_start_driver(l3gd20_main, "l3gd20", "start")) {
+        printf("l3gd20 started OK\n");
+    } else {
+        printf("No l3gd20\n");
+    }
+#endif // CONFIG_ARCH_BOARD_PX4FMU_V1
+}
+
+/*
+  setup sensors for FMUv4
+ */
+void AP_BoardConfig::px4_start_fmuv4_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+    printf("Starting FMUv4 sensors\n");
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -X start")) {
+        printf("Have external hmc5883\n");
+    } else {
+        printf("No external hmc5883\n");
+    }
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -S -R 2 start")) {
+        printf("Have SPI hmc5883\n");
+    } else {
+        printf("No SPI hmc5883\n");
+    }
+
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 2 -T 20608 start")) {
+        printf("Found ICM-20608 internal\n");
+    }
+
+    if (px4_start_driver(mpu9250_main, "mpu9250", "-R 2 start")) {
+        printf("Found mpu9250 internal\n");
+    }
+#endif // CONFIG_ARCH_BOARD_PX4FMU_V4
+}
+
+/*
+  setup common sensors
+ */
+void AP_BoardConfig::px4_start_common_sensors(void)
+{
+    printf("Starting APM sensors\n");
+    if (px4_start_driver(ms5611_main, "ms5611", "start")) {
+        printf("ms5611 started OK\n");
+    } else {
+        px4_sensor_error("no ms5611 found");
+    }
+}
+
+
+/*
+  setup optional sensors
+ */
+void AP_BoardConfig::px4_start_optional_sensors(void)
+{
+    if (px4_start_driver(ets_airspeed_main, "ets_airspeed", "start")) {
+        printf("Found ETS airspeed sensor\n");
+    }
+
+    if (px4_start_driver(meas_airspeed_main, "meas_airspeed", "start")) {
+        printf("Found MEAS airspeed sensor\n");
+    } else if (px4_start_driver(meas_airspeed_main, "meas_airspeed", "start -b 2")) {
+        printf("Found MEAS airspeed sensor (bus2)\n");
+    }
+
+    if (px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
+        printf("Found external ll40ls sensor\n");
+    }
+    if (px4_start_driver(ll40ls_main, "ll40ls", "-I start")) {
+        printf("Found internal ll40ls sensor\n");
+    }
+    if (px4_start_driver(trone_main, "trone", "start")) {
+        printf("Found trone sensor\n");
+    }
+    if (px4_start_driver(mb12xx_main, "mb12xx", "start")) {
+        printf("Found mb12xx sensor\n");
+    }
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    if (px4_start_driver(px4flow_main, "px4flow", "start")) {
+        printf("Found px4flow sensor\n");
+    }
+#endif
+
+    if (px4_start_driver(pwm_input_main, "pwm_input", "start")) {
+        printf("started pwm_input driver\n");
+    }
+
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    if (px4_start_driver(oreoled_main, "oreoled", "start autoupdate")) {
+        printf("oreoled started OK\n");
+    }
+#endif
+
+    if (px4_start_driver(batt_smbus_main, "batt_smbus", "-b 2 start")) {
+        printf("Found batt_smbus\n");
+    }
+
+    if (px4_start_driver(irlock_main, "irlock", "start")) {
+        printf("irlock started\n");
+    }
+}
+
+
+void AP_BoardConfig::px4_setup_drivers(void)
+{
+    px4_start_common_sensors();
+    px4_start_fmuv1_sensors();
+    px4_start_fmuv2_sensors();
+    px4_start_fmuv4_sensors();
+    px4_start_optional_sensors();
+}
+
+/*
+  fail startup of a required sensor
+ */
+void AP_BoardConfig::px4_sensor_error(const char *reason)
+{
+    while (true) {
+        printf("Sensor failure: %s\n", reason);
+        hal.console->printf("Sensor failure: %s\n", reason);
+        // need to force LED red
+        hal.scheduler->delay(1000);
+    }
+}
+
+/*
+  setup px4 peripherals and drivers
+ */
 void AP_BoardConfig::px4_setup()
 {
     px4_setup_pwm();
@@ -207,6 +503,10 @@ void AP_BoardConfig::px4_setup()
     px4_setup_uart();
     px4_setup_sbus();
     px4_setup_canbus();
+    px4_setup_drivers();
+
+    // delay for 1 second to give time for drivers to initialise
+    hal.scheduler->delay(1000);
 }
 
 #endif // HAL_BOARD_PX4
