@@ -163,7 +163,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case GUIDED_NOGPS:
-            success = guided_nogps_init(ignore_checks);
+            success = flightmode_guided_nogps.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_guided_nogps;
+            }
             break;
 
         case SMART_RTL:
@@ -235,11 +238,6 @@ void Copter::update_flight_mode()
     }
 
     switch (control_mode) {
-
-        case GUIDED_NOGPS:
-            guided_nogps_run();
-            break;
-
 
         case SMART_RTL:
             smart_rtl_run();
@@ -354,7 +352,6 @@ void Copter::notify_flight_mode()
         return;
     }
     switch (control_mode) {
-        case GUIDED_NOGPS:
         case SMART_RTL:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
@@ -367,9 +364,6 @@ void Copter::notify_flight_mode()
 
     // set flight mode string
     switch (control_mode) {
-        case GUIDED_NOGPS:
-            notify.set_flight_mode_str("GNGP");
-            break;
         default:
             notify.set_flight_mode_str("----");
             break;
