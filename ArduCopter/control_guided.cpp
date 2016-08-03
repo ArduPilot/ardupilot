@@ -598,12 +598,6 @@ void Copter::guided_angle_control_run()
     else
         attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true, get_smoothing_gain());
 
-    // call throttle controller
-    if (rangefinder_alt_ok()) {
-        // if sonar is ok, use surface tracking
-        climb_rate_cms = get_surface_tracking_climb_rate(climb_rate_cms, pos_control.get_alt_target(), G_Dt);
-    }
-
     // call position controller
     pos_control.set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false);
     pos_control.update_z_controller();
