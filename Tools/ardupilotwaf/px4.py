@@ -9,6 +9,7 @@ from waflib import Logs, Task, Utils
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
+import shutil
 import sys
 
 _dynamic_env_data = {}
@@ -60,8 +61,10 @@ def px4_import_objects_from_use(self):
         queue.extend(Utils.to_list(getattr(tg, 'use', [])))
 
 class px4_copy(Task.Task):
-    run_str = '${CP} ${SRC} ${TGT}'
     color = 'CYAN'
+
+    def run(self):
+        shutil.copy2(self.inputs[0].abspath(), self.outputs[0].abspath())
 
     def keyword(self):
         return "PX4: Copying %s to" % self.inputs[0].name
@@ -209,7 +212,6 @@ def _process_romfs(self):
 def configure(cfg):
     cfg.env.CMAKE_MIN_VERSION = '3.2'
     cfg.load('cmake')
-    cfg.find_program('cp')
 
     bldnode = cfg.bldnode.make_node(cfg.variant)
     env = cfg.env
