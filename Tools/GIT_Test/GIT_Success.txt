@@ -20,3 +20,5 @@ Benoit GRUSON
 Dario Lindo Andres
 George Zogopoulos Papaliakos, struggling with Git
 Hao Zhou
+
+Shingo Matsuura (assignment)
