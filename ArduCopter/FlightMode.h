@@ -864,3 +864,34 @@ private:
     float free_fall_start_velz;     // vertical velocity when free fall was detected
 
 };
+
+
+
+class FlightMode_GUIDED_NOGPS : public FlightMode_GUIDED {
+
+public:
+
+    FlightMode_GUIDED_NOGPS(Copter &copter) :
+        Copter::FlightMode_GUIDED(copter)        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override; // should be called at 100hz or more
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override {
+        if (from_gcs) {
+            return true;
+        }
+        return false;
+    }
+    bool is_autopilot() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "GUIDED_NOGPS"; }
+    const char *name4() const override { return "GNGP"; }
+
+private:
+
+};
