@@ -197,11 +197,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			break;
 		case JSButton::button_function_t::k_gain_inc:
 			gain = constrain_float(gain + (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
-			gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain: %2.0f%%",gain*100);
+			gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
 			break;
 		case JSButton::button_function_t::k_gain_dec:
 			gain = constrain_float(gain - (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
-			gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain: %2.0f%%",gain*100);
+			gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
 			break;
 		case JSButton::button_function_t::k_trim_roll_inc:
 			rollTrim = constrain_float(rollTrim+10,-200,200);
