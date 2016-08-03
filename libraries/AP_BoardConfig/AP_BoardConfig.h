@@ -36,18 +36,22 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // public method to start a driver
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
+
+    // valid types for BRD_TYPE
+    enum px4_board_type {
+        PX4_BOARD_AUTO     = 0,
+        PX4_BOARD_PX4V1    = 1,
+        PX4_BOARD_PIXHAWK  = 2,
+        PX4_BOARD_PIXHAWK2 = 3,
+        PX4_BOARD_PIXRACER = 4,
+        PX4_BOARD_PHMINI   = 5,
+        PX4_BOARD_PH2SLIM  = 6,
+    };
 #endif
-    
+        
 private:
     AP_Int16 vehicleSerialNumber;
 
-    enum px4_board_type {
-        PX4_BOARD_PX4V1,
-        PX4_BOARD_PIXHAWK,
-        PX4_BOARD_PIXHAWK2,
-        PX4_BOARD_PIXRACER
-    };
-    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     struct {
         AP_Int8 pwm_count;
@@ -61,7 +65,7 @@ private:
         AP_Int8 ser2_rtscts;
         AP_Int8 sbus_out_rate;
 #endif
-        enum px4_board_type board_type;
+        AP_Int8 board_type;
     } px4;
     void px4_drivers_start(void);
     void px4_setup(void);
@@ -77,6 +81,7 @@ private:
     void px4_start_fmuv1_sensors(void);
     void px4_start_fmuv2_sensors(void);
     void px4_start_fmuv4_sensors(void);
+    void px4_start_pixhawk2slim_sensors(void);
     void px4_start_optional_sensors(void);
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
 

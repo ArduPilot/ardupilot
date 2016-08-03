@@ -125,7 +125,16 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Units: degreesC
     AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
-        
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // @Param: TYPE
+    // @DisplayName: Board type
+    // @Description: This allows selection of a PX4 board type. If set to zero then the board type is auto-detected
+    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Pixhawk2,4:Pixracer,5:PixhawkMini,6:Pixhawk2Slim
+    // @RebootRequired: True
+    AP_GROUPINFO("TYPE", 9, AP_BoardConfig, px4.board_type, PX4_BOARD_AUTO),
+#endif
+    
     AP_GROUPEND
 };
 

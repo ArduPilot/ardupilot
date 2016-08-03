@@ -22,6 +22,7 @@
 #include "AP_BoardConfig.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <GCS_MAVLink/GCS.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -267,11 +268,6 @@ void AP_BoardConfig::px4_start_fmuv2_sensors(void)
     bool have_FMUV3 = false;
     
     printf("Starting FMUv2 sensors\n");
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -X start")) {
-        printf("Have external hmc5883\n");
-    } else {
-        printf("No external hmc5883\n");
-    }
     if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I -R 4 start")) {
         printf("Have internal hmc5883\n");
     } else {
@@ -342,9 +338,54 @@ void AP_BoardConfig::px4_start_fmuv2_sensors(void)
     if (have_FMUV3) {
         // on Pixhawk2 default IMU temperature to 60
         _imu_target_temperature.set_default(60);
+        px4.board_type.set_and_notify(PX4_BOARD_PIXHAWK2);
+    } else {
+        px4.board_type.set_and_notify(PX4_BOARD_PIXHAWK);
     }
     
     printf("FMUv2 sensors started\n");
+#endif // CONFIG_ARCH_BOARD_PX4FMU_V2
+}
+
+
+/*
+  setup sensors for Pixhawk2-slim
+ */
+void AP_BoardConfig::px4_start_pixhawk2slim_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    printf("Starting PH2SLIM sensors\n");
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I -R 4 start")) {
+        printf("Have internal hmc5883\n");
+    } else {
+        printf("No internal hmc5883\n");
+    }
+
+    // external MPU6000 is rotated YAW_180 from standard
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-X -R 4 start")) {
+        printf("Found MPU6000 external\n");
+    } else {
+        if (px4_start_driver(mpu9250_main, "mpu9250", "-X -R 4 start")) {
+            printf("Found MPU9250 external\n");
+        } else {
+            printf("No MPU6000 or MPU9250 external\n");
+        }
+    }
+    // internal MPU6000 is rotated ROLL_180_YAW_270 from standard
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 start")) {
+        printf("Found MPU6000 internal\n");
+    } else {
+        if (px4_start_driver(mpu9250_main, "mpu9250", "-R 14 start")) {
+            printf("Found MPU9250 internal\n");
+        } else {
+            px4_sensor_error("No MPU6000 or MPU9250");
+        }
+    }
+
+    // on Pixhawk2 default IMU temperature to 60
+    _imu_target_temperature.set_default(60);
+    
+    printf("PH2SLIM sensors started\n");
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V2
 }
 
@@ -355,12 +396,7 @@ void AP_BoardConfig::px4_start_fmuv1_sensors(void)
 {
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     printf("Starting FMUv1 sensors\n");
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -X start")) {
-            printf("Have external hmc5883\n");
-    } else {
-        printf("No external hmc5883\n");
-    }
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I  start")) {
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -I start")) {
         printf("Have internal hmc5883\n");
     } else {
         printf("No internal hmc5883\n");
@@ -375,6 +411,7 @@ void AP_BoardConfig::px4_start_fmuv1_sensors(void)
     } else {
         printf("No l3gd20\n");
     }
+    px4.board_type.set_and_notify(PX4_BOARD_PX4V1);
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V1
 }
 
@@ -385,11 +422,6 @@ void AP_BoardConfig::px4_start_fmuv4_sensors(void)
 {
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     printf("Starting FMUv4 sensors\n");
-    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -X start")) {
-        printf("Have external hmc5883\n");
-    } else {
-        printf("No external hmc5883\n");
-    }
     if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -S -R 2 start")) {
         printf("Have SPI hmc5883\n");
     } else {
@@ -403,6 +435,7 @@ void AP_BoardConfig::px4_start_fmuv4_sensors(void)
     if (px4_start_driver(mpu9250_main, "mpu9250", "-R 2 start")) {
         printf("Found mpu9250 internal\n");
     }
+    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V4
 }
 
@@ -411,11 +444,15 @@ void AP_BoardConfig::px4_start_fmuv4_sensors(void)
  */
 void AP_BoardConfig::px4_start_common_sensors(void)
 {
-    printf("Starting APM sensors\n");
     if (px4_start_driver(ms5611_main, "ms5611", "start")) {
         printf("ms5611 started OK\n");
     } else {
         px4_sensor_error("no ms5611 found");
+    }
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -T -X start")) {
+        printf("Have external hmc5883\n");
+    } else {
+        printf("No external hmc5883\n");
     }
 }
 
@@ -457,9 +494,17 @@ void AP_BoardConfig::px4_start_optional_sensors(void)
 void AP_BoardConfig::px4_setup_drivers(void)
 {
     px4_start_common_sensors();
-    px4_start_fmuv1_sensors();
-    px4_start_fmuv2_sensors();
-    px4_start_fmuv4_sensors();
+    switch ((px4_board_type)px4.board_type.get()) {
+    case PX4_BOARD_PH2SLIM:
+        px4_start_pixhawk2slim_sensors();
+        break;
+    case PX4_BOARD_AUTO:
+    default:
+        px4_start_fmuv1_sensors();
+        px4_start_fmuv2_sensors();
+        px4_start_fmuv4_sensors();
+        break;
+    }
     px4_start_optional_sensors();
 }
 
@@ -468,11 +513,16 @@ void AP_BoardConfig::px4_setup_drivers(void)
  */
 void AP_BoardConfig::px4_sensor_error(const char *reason)
 {
+    /*
+      to give the user the opportunity to connect to USB we keep
+      repeating the error.  The mavlink delay callback is initialised
+      before this, so the user can change parameters (and in
+      particular BRD_TYPE if needed)
+    */
     while (true) {
         printf("Sensor failure: %s\n", reason);
         hal.console->printf("Sensor failure: %s\n", reason);
-        // need to force LED red
-        hal.scheduler->delay(1000);
+        hal.scheduler->delay(3000);
     }
 }
 
