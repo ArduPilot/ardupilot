@@ -72,6 +72,7 @@ extern "C" {
 #define UAVCAN_IOCG_NODEID_INPROGRESS  _UAVCAN_IOC(1)               // query if node identification is in progress
 #endif
 
+
 /*
   setup PWM pins
  */
@@ -361,31 +362,44 @@ void AP_BoardConfig::px4_start_pixhawk2slim_sensors(void)
         printf("No internal hmc5883\n");
     }
 
-    // external MPU6000 is rotated YAW_180 from standard
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-X -R 4 start")) {
-        printf("Found MPU6000 external\n");
+    if (px4_start_driver(mpu9250_main, "mpu9250", "-R 14 start")) {
+        printf("Found MPU9250 internal\n");
+    } else if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 -T 20608 start")) {
+        printf("Found ICM20608 internal\n");
     } else {
-        if (px4_start_driver(mpu9250_main, "mpu9250", "-X -R 4 start")) {
-            printf("Found MPU9250 external\n");
-        } else {
-            printf("No MPU6000 or MPU9250 external\n");
-        }
-    }
-    // internal MPU6000 is rotated ROLL_180_YAW_270 from standard
-    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 start")) {
-        printf("Found MPU6000 internal\n");
-    } else {
-        if (px4_start_driver(mpu9250_main, "mpu9250", "-R 14 start")) {
-            printf("Found MPU9250 internal\n");
-        } else {
-            px4_sensor_error("No MPU6000 or MPU9250");
-        }
+        px4_sensor_error("No MPU9250 or ICM20608");
     }
 
     // on Pixhawk2 default IMU temperature to 60
     _imu_target_temperature.set_default(60);
     
     printf("PH2SLIM sensors started\n");
+#endif // CONFIG_ARCH_BOARD_PX4FMU_V2
+}
+
+
+/*
+  setup sensors for PHMINI
+ */
+void AP_BoardConfig::px4_start_phmini_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    printf("Starting PHMINI sensors\n");
+
+    // ICM20608 on SPI
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-S 2 -T 20608 start")) {
+        printf("Found ICM20608 internal\n");
+    } else {
+        px4_sensor_error("No ICM20608 found");
+    }
+
+    if (px4_start_driver(mpu9250_main, "mpu9250", "start")) {
+        printf("Found mpu9260\n");
+    } else {
+        px4_sensor_error("No MPU9250 found");
+    }
+
+    printf("PHMINI sensors started\n");
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V2
 }
 
@@ -498,6 +512,11 @@ void AP_BoardConfig::px4_setup_drivers(void)
     case PX4_BOARD_PH2SLIM:
         px4_start_pixhawk2slim_sensors();
         break;
+
+    case PX4_BOARD_PHMINI:
+        px4_start_phmini_sensors();
+        break;
+
     case PX4_BOARD_AUTO:
     default:
         px4_start_fmuv1_sensors();
@@ -521,7 +540,7 @@ void AP_BoardConfig::px4_sensor_error(const char *reason)
     */
     while (true) {
         printf("Sensor failure: %s\n", reason);
-        hal.console->printf("Sensor failure: %s\n", reason);
+        hal.console->printf("Check BRD_TYPE: %s\n", reason);
         hal.scheduler->delay(3000);
     }
 }
