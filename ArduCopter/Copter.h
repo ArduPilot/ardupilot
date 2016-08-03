@@ -393,16 +393,6 @@ private:
     int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
     uint32_t nav_delay_time_start;
 
-    // throw mode state
-    struct {
-        ThrowModeStage stage;
-        ThrowModeStage prev_stage;
-        uint32_t last_log_ms;
-        bool nextmode_attempted;
-        uint32_t free_fall_start_ms;    // system time free fall was detected
-        float free_fall_start_velz;     // vertical velocity when free fall was detected
-    } throw_state = {Throw_Disarmed, Throw_Disarmed, 0, false, 0, 0.0f};
-
     // Battery Sensors
     AP_BattMonitor battery;
 
@@ -754,14 +744,6 @@ private:
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
 
-    // Throw to launch functionality
-    bool throw_init(bool ignore_checks);
-    void throw_run();
-    bool throw_detected();
-    bool throw_attitude_good();
-    bool throw_height_good();
-    bool throw_position_good();
-
     void crash_check();
     void parachute_check();
     void parachute_release();
@@ -1012,6 +994,8 @@ private:
     Copter::FlightMode_SPORT flightmode_sport{*this};
 
     Copter::FlightMode_AVOID_ADSB flightmode_avoid_adsb{*this};
+
+    Copter::FlightMode_THROW flightmode_throw{*this};
 
 public:
     void mavlink_delay_cb();
