@@ -824,3 +824,43 @@ protected:
 private:
 
 };
+
+
+
+class FlightMode_THROW : public FlightMode {
+
+public:
+
+    FlightMode_THROW(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override; // should be called at 100hz or more
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
+
+
+protected:
+
+    const char *name() const override { return "THROW"; }
+    const char *name4() const override { return "THRW"; }
+
+private:
+
+    bool throw_detected();
+    bool throw_position_good();
+    bool throw_height_good();
+    bool throw_attitude_good();
+
+    ThrowModeStage stage = Throw_Disarmed;
+    ThrowModeStage prev_stage = Throw_Disarmed;
+    uint32_t last_log_ms;
+    bool nextmode_attempted;
+    uint32_t free_fall_start_ms;    // system time free fall was detected
+    float free_fall_start_velz;     // vertical velocity when free fall was detected
+
+};
