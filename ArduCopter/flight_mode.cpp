@@ -155,7 +155,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case GUIDED_NOGPS:
-            success = guided_nogps_init(ignore_checks);
+            success = flightmode_guided_nogps.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_guided_nogps;
+            }
             break;
 
         default:
@@ -216,10 +219,6 @@ void Copter::update_flight_mode()
     }
 
     switch (control_mode) {
-
-        case GUIDED_NOGPS:
-            guided_nogps_run();
-            break;
 
         default:
             break;
@@ -323,10 +322,6 @@ void Copter::notify_flight_mode()
         return;
     }
     switch (control_mode) {
-        case GUIDED_NOGPS:
-            // autopilot modes
-            AP_Notify::flags.autopilot_mode = true;
-            break;
     default:
             // all other are manual flight modes
             AP_Notify::flags.autopilot_mode = false;
@@ -335,9 +330,6 @@ void Copter::notify_flight_mode()
 
     // set flight mode string
     switch (control_mode) {
-        case GUIDED_NOGPS:
-            notify.set_flight_mode_str("GNGP");
-            break;
         default:
             notify.set_flight_mode_str("----");
             break;
@@ -354,9 +346,6 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         return;
     }
     switch (mode) {
-    case GUIDED_NOGPS:
-        port->printf("GUIDED_NOGPS");
-        break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
         break;

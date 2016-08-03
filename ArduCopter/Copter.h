@@ -737,8 +737,6 @@ private:
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
-    bool guided_nogps_init(bool ignore_checks);
-    void guided_nogps_run();
     void land_run_vertical_control(bool pause_descent = false);
     void land_run_horizontal_control();
     void set_mode_land_with_pause(mode_reason_t reason);
@@ -996,6 +994,8 @@ private:
     Copter::FlightMode_AVOID_ADSB flightmode_avoid_adsb{*this};
 
     Copter::FlightMode_THROW flightmode_throw{*this};
+
+    Copter::FlightMode_GUIDED_NOGPS flightmode_guided_nogps{*this};
 
 public:
     void mavlink_delay_cb();
