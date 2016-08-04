@@ -94,6 +94,23 @@ void Copter::althold_run()
 #endif
         break;
 
+    case AltHold_Landed:
+
+        #if FRAME_CONFIG == HELI_FRAME
+        attitude_control.set_yaw_target_to_current_heading();
+        #endif
+        // call attitude controller
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
+        // set motors to spin-when-armed if throttle at zero, otherwise full range
+        if (ap.throttle_zero) {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        } else {
+            motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        }
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
+        break;
+
     case AltHold_Takeoff:
 
         // initiate take-off
@@ -118,23 +135,6 @@ void Copter::althold_run()
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         pos_control.update_z_controller();
-        break;
-
-    case AltHold_Landed:
-
-#if FRAME_CONFIG == HELI_FRAME
-        attitude_control.set_yaw_target_to_current_heading();
-#endif
-        // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->get_control_in()),false,g.throttle_filt);
-        // set motors to spin-when-armed if throttle at zero, otherwise full range
-        if (ap.throttle_zero) {
-            motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        } else {
-            motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());
         break;
 
     case AltHold_Flying:
