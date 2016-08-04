@@ -10,7 +10,8 @@
 
 class AP_PitchController {
 public:
-	AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
+	AP_PitchController(AP_Airspeed &aspeed, AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
+		airspeed(aspeed),
 		aparm(parms),
         autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, parms, _dataflash),
         _ahrs(ahrs)
@@ -37,7 +38,7 @@ public:
     
 private:
 	const AP_Vehicle::FixedWing &aparm;
-	AP_Airspeed airspeed;
+	const AP_Airspeed &airspeed;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
 	AP_Int16 _max_rate_neg;
