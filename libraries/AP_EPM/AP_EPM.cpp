@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AP_EPM::var_info[] = {
     // @Description: EPM enable/disable
     // @User: Standard
     // @Values: 0:Disabled, 1:Enabled
-    AP_GROUPINFO("ENABLE",  0, AP_EPM, _enabled, 0),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_EPM, _enabled, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: GRAB
     // @DisplayName: EPM Grab PWM
