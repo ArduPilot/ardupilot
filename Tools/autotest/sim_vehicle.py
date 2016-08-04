@@ -344,54 +344,54 @@ _options_for_frame = {
     # COPTER
     "+": {
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "copter_params.parm",
+        "default_params_filename": "default_params/copter_params.parm",
     },
     "quad": {
         "model": "+",
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "copter_params.parm",
+        "default_params_filename": "default_params/copter_params.parm",
     },
     "X": {
         "waf_target": "bin/arducopter-quad",
         # this param set FRAME doesn't actually work because mavproxy
         # won't set a parameter unless it knows of it, and the param fetch happens asynchronously
-        "default_params_filename": "copter_params.parm",
+        "default_params_filename": "default_params/copter_params.parm",
         "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
     },
     "hexa": {
         "make_target": "sitl-hexa",
         "waf_target": "bin/arducopter-hexa",
-        "default_params_filename": "copter_params.parm",
+        "default_params_filename": "default_params/copter_params.parm",
     },
     "octa": {
         "make_target": "sitl-octa",
         "waf_target": "bin/arducopter-octa",
-        "default_params_filename": "copter_params.parm",
+        "default_params_filename": "default_params/copter_params.parm",
     },
     "tri": {
         "make_target": "sitl-tri",
         "waf_target": "bin/arducopter-tri",
-        "default_params_filename": "tri_params.parm",
+        "default_params_filename": "default_params/tri_params.parm",
     },
     "y6": {
         "make_target": "sitl-y6",
         "waf_target": "bin/arducopter-y6",
-        "default_params_filename": "y6_params.parm",
+        "default_params_filename": "default_params/y6_params.parm",
     },
     # COPTER TYPES
     "IrisRos": {
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "copter_params.parm",
+        "default_params_filename": "default_params/copter_params.parm",
     },
     "firefly": {
         "waf_target": "bin/arducopter-firefly",
-        "default_params_filename": "firefly.parm",
+        "default_params_filename": "default_params/firefly.parm",
     },
     # HELICOPTER
     "heli": {
         "make_target": "sitl-heli",
         "waf_target": "bin/arducopter-heli",
-        "default_params_filename": "Helicopter.parm",
+        "default_params_filename": "default_params/Helicopter.parm",
     },
     "heli-dual": {
         "make_target": "sitl-heli-dual",
@@ -404,53 +404,53 @@ _options_for_frame = {
     "singlecopter": {
         "make_target": "sitl-single",
         "waf_target": "bin/arducopter-single",
-        "default_params_filename": "SingleCopter.parm",
+        "default_params_filename": "default_params/SingleCopter.parm",
     },
     "coaxcopter": {
         "make_target": "sitl-coax",
         "waf_target": "bin/arducopter-coax",
-        "default_params_filename": "CoaxCopter.parm",
+        "default_params_filename": "default_params/CoaxCopter.parm",
     },
     # PLANE
     "quadplane-tilttri": {
         "make_target": "sitl-tri",
         "waf_target": "bin/arduplane-tri",
-        "default_params_filename": "quadplane-tilttri.parm",
+        "default_params_filename": "default_params/quadplane-tilttri.parm",
     },
     "quadplane-tri": {
         "make_target": "sitl-tri",
         "waf_target": "bin/arduplane-tri",
-        "default_params_filename": "quadplane-tri.parm",
+        "default_params_filename": "default_params/quadplane-tri.parm",
     },
     "quadplane": {
         "waf_target": "bin/arduplane",
-        "default_params_filename": "quadplane.parm",
+        "default_params_filename": "default_params/quadplane.parm",
     },
     "plane-elevon": {
         "waf_target": "bin/arduplane",
-        "default_params_filename": "plane-elevons.parm",
+        "default_params_filename": "default_params/plane-elevons.parm",
     },
     "plane-vtail": {
         "waf_target": "bin/arduplane",
-        "default_params_filename": "plane-vtail.parm",
+        "default_params_filename": "default_params/plane-vtail.parm",
     },
     "plane": {
         "waf_target": "bin/arduplane",
-        "default_params_filename": "plane.parm",
+        "default_params_filename": "default_params/plane.parm",
     },
     # ROVER
     "rover": {
         "waf_target": "bin/ardurover",
-        "default_params_filename": "Rover.parm",
+        "default_params_filename": "default_params/Rover.parm",
     },
     "rover-skid": {
         "waf_target": "bin/ardurover",
-        "default_params_filename": "Rover-skid.parm",
+        "default_params_filename": "default_params/Rover-skid.parm",
     },
     # SIM
     "Gazebo": {
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "copter_params.parm",
+        "default_params_filename": "default_params/copter_params.parm",
     },
     "last_letter": {
         "waf_target": "bin/arduplane",
@@ -460,7 +460,7 @@ _options_for_frame = {
     },
     "jsbsim": {
         "waf_target": "bin/arduplane",
-        "default_params_filename": "ArduPlane.parm",
+        "default_params_filename": "default_params/ArduPlane.parm",
     },
 }
 

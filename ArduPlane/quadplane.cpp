@@ -1012,6 +1012,58 @@ void QuadPlane::update(void)
 }
 
 /*
+  see if motors should be shutdown. If they should be then change AP_Motors state to 
+  AP_Motors::DESIRED_SHUT_DOWN
+
+  This is a safety check to prevent accidental motor runs on the
+  ground, such as if RC fails and QRTL is started
+ */
+void QuadPlane::check_throttle_suppression(void)
+{
+    // if the motors have been running in the last 2 seconds then
+    // allow them to run now
+    if (AP_HAL::millis() - last_motors_active_ms < 2000) {
+        return;
+    }
+
+    // see if motors are already disabled
+    if (motors->get_desired_spool_state() < AP_Motors::DESIRED_THROTTLE_UNLIMITED) {
+        return;
+    }
+
+    // if the users throttle is above zero then allow motors to run
+    if (plane.channel_throttle->get_control_in() != 0) {
+        return;
+    }
+
+    // if we are in a fixed wing auto throttle mode and we have
+    // unsuppressed the throttle then allow motors to run
+    if (plane.auto_throttle_mode && !plane.throttle_suppressed) {
+        return;
+    }
+
+    // if our vertical velocity is greater than 1m/s then allow motors to run
+    if (fabsf(inertial_nav.get_velocity_z()) > 100) {
+        return;
+    }
+
+    // if we are more than 5m from home altitude then allow motors to run
+    if (plane.relative_ground_altitude(plane.g.rangefinder_landing) > 5) {
+        return;
+    }
+
+    // allow for takeoff
+    if (plane.control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_TAKEOFF) {
+        return;
+    }
+    
+    // motors should be in the spin when armed state to warn user they could become active
+    motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+    motors->set_throttle(0);
+    last_motors_active_ms = 0;
+}
+
+/*
   output motors and do any copter needed
  */
 void QuadPlane::motors_output(void)
@@ -1020,6 +1072,10 @@ void QuadPlane::motors_output(void)
         // output is direct from run_esc_calibration()
         return;
     }
+
+    // see if motors should be shut down
+    check_throttle_suppression();
+    
     motors->output();
     if (motors->armed()) {
         plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
@@ -1029,6 +1085,12 @@ void QuadPlane::motors_output(void)
             attitude_control->control_monitor_log();
         }
     }
+
+    // remember when motors were last active for throttle suppression
+    if (motors->get_throttle() > 0.01f || tilt.motors_active) {
+        last_motors_active_ms = AP_HAL::millis();
+    }
+    
 }
 
 /*

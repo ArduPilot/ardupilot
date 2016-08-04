@@ -1267,7 +1267,7 @@ void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, floa
         autotune_state.ignore_next = 1;
         // if maximum measurement was greater than target so increment the success counter
         autotune_counter++;
-    }else if ((measurement_max < target) && (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) && (tune_d > tune_d_min)) {
+    } else if ((measurement_max < target) && (measurement_max > target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) && (tune_d > tune_d_min)) {
         // if bounce back was larger than the threshold so decrement the success counter
         if (autotune_counter > 0 ) {
             autotune_counter--;

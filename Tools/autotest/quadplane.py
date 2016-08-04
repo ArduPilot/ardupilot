@@ -55,7 +55,7 @@ def fly_QuadPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
         options += ' --map'
 
     sil = util.start_SIL(binary, model='quadplane', wipe=True, home=HOME_LOCATION, speedup=10,
-                         defaults_file=os.path.join(testdir, 'quadplane.parm'), valgrind=valgrind, gdb=gdb)
+                         defaults_file=os.path.join(testdir, 'default_params/quadplane.parm'), valgrind=valgrind, gdb=gdb)
     mavproxy = util.start_MAVProxy_SIL('QuadPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
