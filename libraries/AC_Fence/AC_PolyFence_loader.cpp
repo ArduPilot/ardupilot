@@ -35,7 +35,7 @@ bool AC_PolyFence_loader::load_point_from_eeprom(uint16_t i, Vector2l& point)
 
     // read fence point
     point.x = fence_storage.read_uint32(i * sizeof(Vector2l));
-    point.y = fence_storage.read_uint32(i * sizeof(Vector2l) + 4);
+    point.y = fence_storage.read_uint32(i * sizeof(Vector2l) + sizeof(uint32_t));
     return true;
 }
 
@@ -49,7 +49,7 @@ bool AC_PolyFence_loader::save_point_to_eeprom(uint16_t i, const Vector2l& point
 
     // write point to eeprom
     fence_storage.write_uint32(i * sizeof(Vector2l), point.x);
-    fence_storage.write_uint32(i * sizeof(Vector2l)+4, point.y);
+    fence_storage.write_uint32(i * sizeof(Vector2l)+sizeof(uint32_t), point.y);
     return true;
 }
 
