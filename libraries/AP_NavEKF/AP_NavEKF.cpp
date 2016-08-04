@@ -402,6 +402,8 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GPS_CHECK",    33, NavEKF, _gpsCheck, 31),
 
+    // **NOTE** index 34 is "Enable" and is at the top for AP_PARAM_FLAG_ENABLE
+
     AP_GROUPEND
 };
 
