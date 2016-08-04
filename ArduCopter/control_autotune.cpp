@@ -239,7 +239,7 @@ bool Copter::autotune_start(bool ignore_checks)
     }
 
     // ensure we are flying
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete) {
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         return false;
     }
 
@@ -266,9 +266,9 @@ void Copter::autotune_run()
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    // this should not actually be possible because of the autotune_init() checks
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if disarmed or motor interlock not enabled set throttle to zero and exit immediately
+    // NOTE: land_complete is handled below
+    if (!motors.armed() || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->get_control_in())-motors.get_throttle_hover());

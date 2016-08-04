@@ -374,45 +374,6 @@ bool Copter::optflow_position_ok()
 #endif
 }
 
-// update_auto_armed - update status of auto_armed flag
-void Copter::update_auto_armed()
-{
-    // disarm checks
-    if(ap.auto_armed){
-        // if motors are disarmed, auto_armed should also be false
-        if(!motors.armed()) {
-            set_auto_armed(false);
-            return;
-        }
-        // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
-            set_auto_armed(false);
-        }
-#if FRAME_CONFIG == HELI_FRAME 
-        // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
-        // so that rotor runup is checked again before attempting to take-off
-        if(ap.land_complete && !motors.rotor_runup_complete()) {
-            set_auto_armed(false);
-        }
-#endif // HELI_FRAME
-    }else{
-        // arm checks
-        
-#if FRAME_CONFIG == HELI_FRAME
-        // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero && motors.rotor_runup_complete()) {
-            set_auto_armed(true);
-        }
-#else
-        // if motors are armed and throttle is above zero auto_armed should be true
-        // if motors are armed and we are in throw mode, then auto_ermed should be true
-        if(motors.armed() && (!ap.throttle_zero || control_mode == THROW)) {
-            set_auto_armed(true);
-        }
-#endif // HELI_FRAME
-    }
-}
-
 void Copter::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();

@@ -41,8 +41,9 @@ void Copter::circle_run()
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
     
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    // if disarmed, motor interlock disabled, or landed, set throttle to zero and exit immediately
+    // takeoff is not intended to be possible in this mode
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         // To-Do: add some initialisation of position controllers
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
@@ -67,14 +68,6 @@ void Copter::circle_run()
 
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-
-        // check for pilot requested take-off
-        if (ap.land_complete && target_climb_rate > 0) {
-            // indicate we are taking off
-            set_land_complete(false);
-            // clear i term when we're taking off
-            set_throttle_takeoff();
-        }
     }
 
     // set motors to full range

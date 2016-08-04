@@ -231,7 +231,7 @@ private:
             uint8_t simple_mode             : 2; // 1,2     // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
             uint8_t pre_arm_rc_check        : 1; // 3       // true if rc input pre-arm checks have been completed successfully
             uint8_t pre_arm_check           : 1; // 4       // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-            uint8_t auto_armed              : 1; // 5       // stops auto missions from beginning until throttle is raised
+            uint8_t unused2                 : 1; // 5       // formerly auto_armed
             uint8_t logging_started         : 1; // 6       // true if dataflash logging has started
             uint8_t land_complete           : 1; // 7       // true if we have detected a landing
             uint8_t new_radio_frame         : 1; // 8       // Set true if we have new PWM data to act on from the Radio
@@ -628,7 +628,6 @@ private:
     void update_altitude();
     void set_home_state(enum HomeState new_home_state);
     bool home_is_set();
-    void set_auto_armed(bool b);
     void set_simple_mode(uint8_t b);
     void set_failsafe_radio(bool b);
     void set_failsafe_battery(bool b);
@@ -1028,7 +1027,6 @@ private:
     bool position_ok();
     bool ekf_position_ok();
     bool optflow_position_ok();
-    void update_auto_armed();
     void check_usb_mux(void);
     void frsky_telemetry_send(void);
     bool should_log(uint32_t mask);

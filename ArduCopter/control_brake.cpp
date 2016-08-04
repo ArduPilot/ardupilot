@@ -37,8 +37,14 @@ bool Copter::brake_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::brake_run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if landed immediately disarm
+    if (ap.land_complete) {
+        init_disarm_motors();
+        return;
+    }
+
+    // if not disarmed or interlock not enabled set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock()) {
         wp_nav.init_brake_target(BRAKE_MODE_DECEL_RATE);
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
@@ -56,11 +62,6 @@ void Copter::brake_run()
     // relax stop target if we might be landed
     if (ap.land_complete_maybe) {
         wp_nav.loiter_soften_for_landing();
-    }
-
-    // if landed immediately disarm
-    if (ap.land_complete) {
-        init_disarm_motors();
     }
 
     // set motors to full range

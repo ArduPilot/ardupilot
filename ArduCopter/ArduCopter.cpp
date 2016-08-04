@@ -304,9 +304,6 @@ void Copter::throttle_loop()
     // update throttle_low_comp value (controls priority of throttle vs attitude control)
     update_throttle_thr_mix();
 
-    // check auto_armed status
-    update_auto_armed();
-
 #if FRAME_CONFIG == HELI_FRAME
     // update rotor speed
     heli_update_rotor_speed_targets();

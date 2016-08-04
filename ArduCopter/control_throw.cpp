@@ -71,19 +71,12 @@ void Copter::throw_run()
         // set the initial velocity of the height controller demand to the measured velocity if it is going up
         // if it is going down, set it to zero to enforce a very hard stop
         pos_control.set_desired_velocity_z(fmaxf(inertial_nav.get_velocity_z(),0.0f));
-
-        // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
-        set_auto_armed(true);
-
     } else if (throw_state.stage == Throw_HgtStabilise && throw_height_good()) {
         gcs_send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
         throw_state.stage = Throw_PosHold;
 
         // initialise the loiter target to the curent position and velocity
         wp_nav.init_loiter_target();
-
-        // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
-        set_auto_armed(true);
     } else if (throw_state.stage == Throw_PosHold && throw_position_good()) {
         if (!throw_state.nextmode_attempted) {
             switch (g2.throw_nextmode) {
