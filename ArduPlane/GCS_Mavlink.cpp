@@ -1522,7 +1522,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_FAILED;
 
             //Not allowing go around at FLIGHT_LAND_FINAL stage on purpose --
-            //if plane is close to the ground a go around coudld be dangerous.
+            //if plane is close to the ground a go around could be dangerous.
             if (plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
                 plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
                 plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
