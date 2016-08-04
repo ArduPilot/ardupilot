@@ -202,6 +202,12 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // flag exiting this function
     in_arm_motors = false;
 
+    // Log time stamp of arming event
+    arm_time_ms = millis();
+
+    // Start the arming delay
+    ap.in_arming_delay = true;
+
     // return success
     return true;
 }
@@ -254,22 +260,32 @@ void Copter::init_disarm_motors()
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
+
+    ap.in_arming_delay = false;
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Copter::motors_output()
 {
+    // Update arming delay state
+    if (ap.in_arming_delay && (!motors.armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || control_mode == THROW)) {
+        ap.in_arming_delay = false;
+    }
+
     // check if we are performing the motor test
     if (ap.motor_test) {
         motor_test_output();
     } else {
-        if (!ap.using_interlock){
-            // if not using interlock switch, set according to Emergency Stop status
-            // where Emergency Stop is forced false during arming if Emergency Stop switch
-            // is not used. Interlock enabled means motors run, so we must
-            // invert motor_emergency_stop status for motors to run.
-            motors.set_interlock(!ap.motor_emergency_stop);
+        bool interlock = motors.armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
+        if (!motors.get_interlock() && interlock) {
+            motors.set_interlock(true);
+            Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
+        } else if (motors.get_interlock() && !interlock) {
+            motors.set_interlock(false);
+            Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
         }
+
+        // send output signals to motors
         motors.output();
     }
 }
