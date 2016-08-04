@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @DisplayName: Airspeed enable
     // @Description: enable airspeed sensor
     // @Values: 0:Disable,1:Enable
-    AP_GROUPINFO("ENABLE",    0, AP_Airspeed, _enable, 1),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Airspeed, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
     // @Param: USE
     // @DisplayName: Airspeed use
