@@ -207,11 +207,6 @@ float Copter::get_non_takeoff_throttle()
     return MAX(0,motors.get_throttle_hover()/2.0f);
 }
 
-float Copter::get_takeoff_trigger_throttle()
-{
-    return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
-}
-
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
 float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)

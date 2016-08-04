@@ -165,7 +165,7 @@ void Copter::poshold_run()
         takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // check for take-off
-        if (ap.land_complete && (takeoff_state.running || channel_throttle->get_control_in() > get_takeoff_trigger_throttle())) {
+        if (ap.land_complete && (takeoff_state.running || target_climb_rate > 0.0f)) {
             if (!takeoff_state.running) {
                 takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
             }
