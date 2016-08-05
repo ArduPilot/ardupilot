@@ -10,8 +10,9 @@
 
 class AP_RollController {
 public:
-	AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
-		aparm(parms),
+	AP_RollController(AP_Airspeed &aspeed, AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
+        airspeed(aspeed),
+        aparm(parms),
         autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash),
         _ahrs(ahrs)
     { 
@@ -44,6 +45,7 @@ public:
     
 private:
 	const AP_Vehicle::FixedWing &aparm;
+	const AP_Airspeed &airspeed;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
 	uint32_t _last_t;

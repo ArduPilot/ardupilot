@@ -49,7 +49,7 @@ void Copter::brake_run()
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(0)-motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers(0.0f);
         return;
     }
 

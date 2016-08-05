@@ -46,6 +46,11 @@ void Copter::heli_stabilize_run()
         }
     }
 
+    // clear landing flag above zero throttle
+    if (motors.armed() && motors.get_interlock() && motors.rotor_runup_complete() && !ap.throttle_zero) {
+        set_land_complete(false);
+    }
+
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 

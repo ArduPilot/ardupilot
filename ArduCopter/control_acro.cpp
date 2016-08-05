@@ -33,6 +33,9 @@ void Copter::acro_run()
         return;
     }
 
+    // clear landing flag
+    set_land_complete(false);
+
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // convert the input to the desired body frame rate

@@ -47,6 +47,11 @@ void Copter::heli_acro_run()
         }
     }   
 
+    // clear landing flag above zero throttle
+    if (motors.armed() && motors.get_interlock() && motors.rotor_runup_complete() && !ap.throttle_zero) {
+        set_land_complete(false);
+    }
+
     if (!motors.has_flybar()){
         // convert the input to the desired body frame rate
         get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);

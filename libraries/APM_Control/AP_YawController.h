@@ -9,7 +9,8 @@
 
 class AP_YawController {
 public:                      
-	AP_YawController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
+	AP_YawController(AP_Airspeed &aspeed, AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
+        airspeed(aspeed),
 		aparm(parms),
         _ahrs(ahrs)
 	{
@@ -29,6 +30,7 @@ public:
 
 private:
 	const AP_Vehicle::FixedWing &aparm;
+	const AP_Airspeed &airspeed;
 	AP_Float _K_A;
 	AP_Float _K_I;
 	AP_Float _K_D;

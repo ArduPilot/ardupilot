@@ -34,6 +34,9 @@ void Copter::stabilize_run()
         return;
     }
 
+    // clear landing flag
+    set_land_complete(false);
+
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // apply SIMPLE mode transform to pilot inputs

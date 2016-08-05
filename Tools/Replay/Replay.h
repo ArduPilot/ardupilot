@@ -70,7 +70,7 @@ public:
     AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF, EKF2};
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
-    AP_Airspeed airspeed{aparm};
+    AP_Airspeed airspeed;
     DataFlash_Class dataflash{"Replay v0.1"};
 
 private:

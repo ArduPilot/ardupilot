@@ -118,12 +118,12 @@ bool Tracker::get_ef_yaw_direction()
     // checks that the vehicle is outside the tracker's range
     if ((yaw_angle_error_lower < ef_yaw_limit_lower) && (yaw_angle_error_upper > ef_yaw_limit_upper)) {
         // if the tracker is trying to move clockwise to reach the vehicle,
-        // but the tracker coudl get closer to the vehicle by moving counter-clockwise then set direction_reversed to true
+        // but the tracker could get closer to the vehicle by moving counter-clockwise then set direction_reversed to true
         if (ef_yaw_angle_error>0 && ((ef_yaw_limit_lower - yaw_angle_error_lower) < (yaw_angle_error_upper - ef_yaw_limit_upper))) {
             return true;
         }
         // if the tracker is trying to move counter-clockwise to reach the vehicle,
-        // but the tracker coudl get closer to the vehicle by moving then set direction_reversed to true
+        // but the tracker could get closer to the vehicle by moving then set direction_reversed to true
         if (ef_yaw_angle_error<0 && ((ef_yaw_limit_lower - yaw_angle_error_lower) > (yaw_angle_error_upper - ef_yaw_limit_upper))) {
             return true;
         }

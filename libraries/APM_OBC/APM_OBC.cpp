@@ -30,6 +30,13 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo APM_OBC::var_info[] = {
+
+    // @Param: ENABLE
+    // @DisplayName: Enable Advanced Failsafe
+    // @Description: This enables the advanced failsafe system. If this is set to zero (disable) then all the other AFS options have no effect
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("ENABLE", 11, APM_OBC, _enable, 0, AP_PARAM_FLAG_ENABLE),
+
     // @Param: MAN_PIN
     // @DisplayName: Manual Pin
     // @Description: This sets a digital output pin to set high when in manual mode
@@ -93,11 +100,7 @@ const AP_Param::GroupInfo APM_OBC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("QNH_PRESSURE", 10, APM_OBC, _qnh_pressure,    0),
 
-    // @Param: ENABLE
-    // @DisplayName: Enable Advanced Failsafe
-    // @Description: This enables the advanced failsafe system. If this is set to zero (disable) then all the other AFS options have no effect
-    // @User: Advanced
-    AP_GROUPINFO("ENABLE",       11, APM_OBC, _enable,          0),
+    // *NOTE* index 11 is "Enable" and is moved to the top to allow AP_PARAM_FLAG_ENABLE
 
     // *NOTE* index 12 of AP_Int16 RC_FAIL_MS was depreciated. Replaced by RC_FAIL_TIME.
 

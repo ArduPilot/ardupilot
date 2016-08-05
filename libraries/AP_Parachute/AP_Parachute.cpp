@@ -16,7 +16,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Description: Parachute release enabled or disabled
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("ENABLED", 0, AP_Parachute, _enabled, 0),
+    AP_GROUPINFO_FLAGS("ENABLED", 0, AP_Parachute, _enabled, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: TYPE
     // @DisplayName: Parachute release mechanism type (relay or servo)
