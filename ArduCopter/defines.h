@@ -225,7 +225,6 @@ enum RTLState {
 // Alt_Hold states
 enum AltHoldModeState {
     AltHold_MotorStopped,
-    AltHold_NotAutoArmed,
     AltHold_Takeoff,
     AltHold_Flying,
     AltHold_Landed
@@ -234,7 +233,6 @@ enum AltHoldModeState {
 // Loiter states
 enum LoiterModeState {
     Loiter_MotorStopped,
-    Loiter_NotAutoArmed,
     Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
@@ -322,7 +320,6 @@ enum ThrowModeType {
 #define DATA_INIT_SIMPLE_BEARING            9
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
-#define DATA_AUTO_ARMED                     15
 #define DATA_LAND_COMPLETE_MAYBE            17
 #define DATA_LAND_COMPLETE                  18
 #define DATA_NOT_LANDED                     28

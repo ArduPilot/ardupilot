@@ -147,8 +147,13 @@ void Copter::auto_takeoff_start(const Location& dest_loc)
 //      called by auto_run at 100hz or more
 void Copter::auto_takeoff_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // trigger takeoff if throttle has been raised
+    if (motors.armed() && motors.get_interlock() && ap.land_complete && channel_throttle->get_control_in() > get_takeoff_trigger_throttle()) {
+        set_land_complete(false);
+    }
+
+    // if disarmed, interlock disabled or landed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         // initialise wpnav targets
         wp_nav.shift_wp_origin_to_current_pos();
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -223,8 +228,8 @@ void Copter::auto_wp_start(const Location_Class& dest_loc)
 //      called by auto_run at 100hz or more
 void Copter::auto_wp_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if disarmed, interlock disabled or landed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -295,8 +300,8 @@ void Copter::auto_spline_start(const Location_Class& destination, bool stopped_a
 //      called by auto_run at 100hz or more
 void Copter::auto_spline_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if disarmed, interlock disabled or landed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -372,8 +377,8 @@ void Copter::auto_land_start(const Vector3f& destination)
 //      called by auto_run at 100hz or more
 void Copter::auto_land_run()
 {
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    // if disarmed, interlock disabled or landed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
@@ -542,8 +547,8 @@ bool Copter::auto_loiter_start()
 //      called by auto_run at 100hz or more
 void Copter::auto_loiter_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    // if disarmed, interlock disabled or landed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());

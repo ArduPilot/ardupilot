@@ -25,19 +25,6 @@ bool Copter::home_is_set()
 }
 
 // ---------------------------------------------
-void Copter::set_auto_armed(bool b)
-{
-    // if no change, exit immediately
-    if( ap.auto_armed == b )
-        return;
-
-    ap.auto_armed = b;
-    if(b){
-        Log_Write_Event(DATA_AUTO_ARMED);
-    }
-}
-
-// ---------------------------------------------
 void Copter::set_simple_mode(uint8_t b)
 {
     if(ap.simple_mode != b){

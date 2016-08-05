@@ -1330,7 +1330,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_MISSION_START:
             if (copter.motors.armed() && copter.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
-                copter.set_auto_armed(true);
+                // TODO: check if mission begins with takeoff
+                copter.set_land_complete(false);
                 if (copter.mission.state() != AP_Mission::MISSION_RUNNING) {
                     copter.mission.start_or_resume();
                 }

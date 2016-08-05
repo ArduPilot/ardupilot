@@ -279,8 +279,8 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
     guided_angle_state.update_time_ms = millis();
 
     // interpret positive climb rate as triggering take-off
-    if (motors.armed() && !ap.auto_armed && (guided_angle_state.climb_rate_cms > 0.0f)) {
-        set_auto_armed(true);
+    if (motors.armed() && ap.land_complete && (guided_angle_state.climb_rate_cms > 0.0f)) {
+        set_land_complete(false);
     }
 
     // log target
@@ -327,8 +327,8 @@ void Copter::guided_run()
 //      called by guided_run at 100hz or more
 void Copter::guided_takeoff_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if disarmed, interlock disabled or landed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
@@ -365,8 +365,8 @@ void Copter::guided_takeoff_run()
 // called from guided_run
 void Copter::guided_pos_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
+    // if disarmed or motors not enabled or landed, set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
@@ -413,7 +413,7 @@ void Copter::guided_pos_control_run()
 void Copter::guided_vel_control_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         // initialise velocity controller
         pos_control.init_vel_controller_xyz();
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -467,7 +467,7 @@ void Copter::guided_vel_control_run()
 void Copter::guided_posvel_control_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         // set target position and velocity to current position and velocity
         pos_control.set_pos_target(inertial_nav.get_position());
         pos_control.set_desired_velocity(Vector3f(0,0,0));
@@ -540,8 +540,8 @@ void Copter::guided_posvel_control_run()
 // called from guided_run
 void Copter::guided_angle_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || (ap.land_complete && guided_angle_state.climb_rate_cms <= 0.0f)) {
+    // if disarmed, interlock disabled or landed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.set_yaw_target_to_current_heading();

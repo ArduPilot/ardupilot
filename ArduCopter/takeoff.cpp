@@ -39,7 +39,6 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
         switch(control_mode) {
             case GUIDED:
                 if (guided_takeoff_start(takeoff_alt_cm)) {
-                    set_auto_armed(true);
                     return true;
                 }
                 return false;
@@ -47,7 +46,6 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
             case POSHOLD:
             case ALT_HOLD:
             case SPORT:
-                set_auto_armed(true);
                 takeoff_timer_start(takeoff_alt_cm);
                 return true;
             default:
@@ -149,7 +147,7 @@ void Copter::auto_takeoff_set_start_alt(void)
     // start with our current altitude
     auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
     
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         // we are not flying, add the takeoff_nav_alt
         auto_takeoff_no_nav_alt_cm += g2.takeoff_nav_alt * 100;
     }

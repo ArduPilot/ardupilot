@@ -140,8 +140,8 @@ void Copter::poshold_run()
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if disarmed, interlock disabled or landed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock() || ap.land_complete) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         wp_nav.init_loiter_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);

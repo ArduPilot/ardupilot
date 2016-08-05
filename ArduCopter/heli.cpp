@@ -113,7 +113,7 @@ void Copter::heli_update_landing_swash()
             if (rtl_state == RTL_Land) {
                 motors.set_collective_for_landing(true);
             }else{
-                motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
+                motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete);
             }
             break;
 
@@ -121,13 +121,13 @@ void Copter::heli_update_landing_swash()
             if (auto_mode == Auto_Land) {
                 motors.set_collective_for_landing(true);
             }else{
-                motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
+                motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete);
             }
             break;
 
         default:
             // auto and hold use limited swash when landed
-            motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
+            motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete);
             break;
     }
 }
