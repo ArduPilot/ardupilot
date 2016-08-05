@@ -55,6 +55,11 @@ void Copter::drift_run()
         return;
     }
 
+    // clear landing flag above zero throttle
+    if (!ap.throttle_zero) {
+        set_land_complete(false);
+    }
+
     // convert pilot input to lean angles
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
