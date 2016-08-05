@@ -119,7 +119,7 @@ SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("ublox",   0, 0, SPI_MODE_0, 8, RPI_GPIO_8, 250*KHZ, 5*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK
-SPIDeviceDriver SPIDeviceManager::_device[] = {
+SPIDesc SPIDeviceManager::_device[] = {
 		SPIDesc("mpu9250",    0, 0, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 20*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
