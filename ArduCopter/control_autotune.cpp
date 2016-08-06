@@ -392,8 +392,8 @@ void Copter::autotune_attitude_control()
 
         switch (autotune_state.axis) {
         case AUTOTUNE_AXIS_ROLL:
-            autotune_target_rate = constrain_float(attitude_control.max_rate_step_bf_roll(), AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-            autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_roll(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+            autotune_target_rate = constrain_float(ToDeg(attitude_control.max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+            autotune_target_angle = constrain_float(ToDeg(attitude_control.max_angle_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().x) * 100.0f;
             autotune_start_angle = ahrs.roll_sensor;
             rotation_rate_filt.set_cutoff_frequency(attitude_control.get_rate_roll_pid().filt_hz()*2.0f);
@@ -404,8 +404,8 @@ void Copter::autotune_attitude_control()
             }
         break;
         case AUTOTUNE_AXIS_PITCH:
-            autotune_target_rate = constrain_float(attitude_control.max_rate_step_bf_pitch(), AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-            autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_pitch(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+            autotune_target_rate = constrain_float(ToDeg(attitude_control.max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+            autotune_target_angle = constrain_float(ToDeg(attitude_control.max_angle_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().y) * 100.0f;
             autotune_start_angle = ahrs.pitch_sensor;
             rotation_rate_filt.set_cutoff_frequency(attitude_control.get_rate_pitch_pid().filt_hz()*2.0f);
@@ -416,8 +416,8 @@ void Copter::autotune_attitude_control()
             }
             break;
         case AUTOTUNE_AXIS_YAW:
-            autotune_target_rate = constrain_float(attitude_control.max_rate_step_bf_yaw()*0.75f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, AUTOTUNE_TARGET_RATE_YAW_CDS);
-            autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_yaw()*0.75f, AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
+            autotune_target_rate = constrain_float(ToDeg(attitude_control.max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, AUTOTUNE_TARGET_RATE_YAW_CDS);
+            autotune_target_angle = constrain_float(ToDeg(attitude_control.max_angle_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().z) * 100.0f;
             autotune_start_angle = ahrs.yaw_sensor;
             rotation_rate_filt.set_cutoff_frequency(AUTOTUNE_Y_FILT_FREQ);
