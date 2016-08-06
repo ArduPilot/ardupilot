@@ -157,22 +157,22 @@ public:
     // Set z-axis angular velocity in centidegrees/s
     void rate_bf_yaw_target(float rate_cds) { _rate_target_ang_vel.z = radians(rate_cds*0.01f); }
 
-    // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps
+    // Return roll rate step size in radians/s that results in maximum output after 4 time steps
     float max_rate_step_bf_roll();
 
-    // Return pitch rate step size in centidegrees/s that results in maximum output after 4 time steps
+    // Return pitch rate step size in radians/s that results in maximum output after 4 time steps
     float max_rate_step_bf_pitch();
 
-    // Return yaw rate step size in centidegrees/s that results in maximum output after 4 time steps
+    // Return yaw rate step size in radians/s that results in maximum output after 4 time steps
     float max_rate_step_bf_yaw();
 
-    // Return roll step size in centidegrees that results in maximum output after 4 time steps
+    // Return roll step size in radians that results in maximum output after 4 time steps
     float max_angle_step_bf_roll() { return max_rate_step_bf_roll()/_p_angle_roll.kP(); }
 
-    // Return pitch step size in centidegrees that results in maximum output after 4 time steps
+    // Return pitch step size in radians that results in maximum output after 4 time steps
     float max_angle_step_bf_pitch() { return max_rate_step_bf_pitch()/_p_angle_pitch.kP(); }
 
-    // Return yaw step size in centidegrees that results in maximum output after 4 time steps
+    // Return yaw step size in radians that results in maximum output after 4 time steps
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw()/_p_angle_yaw.kP(); }
 
     // Return angular velocity in radians used in the angular velocity controller
