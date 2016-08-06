@@ -10,18 +10,11 @@
 #define DEBUG 0
 #define SERVO_MAX 4500	// This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
-// active altitude sensor
-// ----------------------
-#define SONAR 0
-
 // CH 7 control
 enum ch7_option {
     CH7_DO_NOTHING=0,
     CH7_SAVE_WP=1
 };
-
-#define T6 1000000
-#define T7 10000000
 
 // HIL enumerations
 #define HIL_MODE_DISABLED			0
@@ -44,17 +37,6 @@ enum mode {
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
 #define FAILSAFE_EVENT_RC       (1<<2)
-
-//repeating events
-#define NO_REPEAT 0
-#define CH_5_TOGGLE 1
-#define CH_6_TOGGLE 2
-#define CH_7_TOGGLE 3
-#define CH_8_TOGGLE 4
-#define RELAY_TOGGLE 5
-#define STOP_REPEAT 10
-
-#define MAV_CMD_CONDITION_YAW 23
 
 //  Logging parameters
 #define LOG_CTUN_MSG	        0x01
@@ -86,37 +68,3 @@ enum mode {
 #define MASK_LOG_RC     		(1<<14)
 #define MASK_LOG_ARM_DISARM     (1<<15)
 #define MASK_LOG_IMU_RAW        (1UL<<19)
-
-
-// Waypoint Modes
-// ----------------
-#define ABS_WP 0
-#define REL_WP 1
-
-// Command Queues
-// ---------------
-#define COMMAND_MUST 0
-#define COMMAND_MAY 1
-#define COMMAND_NOW 2
-
-// Events
-// ------
-#define EVENT_WILL_REACH_WAYPOINT 1
-#define EVENT_SET_NEW_COMMAND_INDEX 2
-#define EVENT_LOADED_WAYPOINT 3
-#define EVENT_LOOP 4
-
-// Climb rate calculations
-#define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
-
-// sonar
-#define MAX_SONAR_XL 0
-#define MAX_SONAR_LV 1
-#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
-#define AN4			4
-#define AN5			5
-
-#define SPEEDFILT 400			// centimeters/second; the speed below which a groundstart will be triggered
-
-// convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
-#define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)
