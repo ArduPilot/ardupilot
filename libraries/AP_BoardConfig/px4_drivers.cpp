@@ -21,7 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BoardConfig.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <GCS_MAVLink/GCS.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,17 +31,6 @@
 #include <drivers/drv_sbus.h>
 #include <nuttx/arch.h>
 #include <spawn.h>
-
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-#define BOARD_PWM_COUNT_DEFAULT 2
-#define BOARD_SER1_RTSCTS_DEFAULT 0 // no flow control on UART5 on FMUv1
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-#define BOARD_PWM_COUNT_DEFAULT 6
-#define BOARD_SER1_RTSCTS_DEFAULT 2
-#else // V2
-#define BOARD_PWM_COUNT_DEFAULT 4
-#define BOARD_SER1_RTSCTS_DEFAULT 2
-#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -65,7 +54,10 @@ extern "C" {
 };
 
 
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+/*
+  this is needed for the code to wait for CAN startup
+ */
 #define _UAVCAN_IOCBASE             (0x4000)                        // IOCTL base for module UAVCAN
 #define _UAVCAN_IOC(_n)             (_IOC(_UAVCAN_IOCBASE, _n))
 
@@ -112,11 +104,13 @@ void AP_BoardConfig::px4_setup_pwm()
             hal.console->printf("RCOutput: unable to setup AUX PWM with BRD_PWM_COUNT %u\n", mode_parm);
         }   
         close(fd);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         if (mode_table[i].num_gpios < 2) {
             // reduce change of config mistake where relay and PWM interfere
             AP_Param::set_default_by_name("RELAY_PIN", -1);
             AP_Param::set_default_by_name("RELAY_PIN2", -1);
         }
+#endif
     }
 }
 
@@ -126,10 +120,12 @@ void AP_BoardConfig::px4_setup_pwm()
  */
 void AP_BoardConfig::px4_setup_uart()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser1_rtscts.get());
     if (hal.uartD != NULL) {
         hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser2_rtscts.get());
     }
+#endif
 }
 
 /*
@@ -137,6 +133,7 @@ void AP_BoardConfig::px4_setup_uart()
  */
 void AP_BoardConfig::px4_setup_safety()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // setup channels to ignore the armed state
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd != -1) {
@@ -145,6 +142,7 @@ void AP_BoardConfig::px4_setup_safety()
         }
         close(px4io_fd);
     }
+#endif
 
     if (px4.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
@@ -157,6 +155,7 @@ void AP_BoardConfig::px4_setup_safety()
  */
 void AP_BoardConfig::px4_setup_sbus(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (px4.sbus_out_rate.get() >= 1) {
         static const struct {
             uint8_t value;
@@ -180,6 +179,7 @@ void AP_BoardConfig::px4_setup_sbus(void)
             hal.console->printf("Failed to enable SBUS out\n");
         }
     }
+#endif
 }
 
 
@@ -188,7 +188,7 @@ void AP_BoardConfig::px4_setup_sbus(void)
  */
 void AP_BoardConfig::px4_setup_canbus(void)
 {
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     if (px4.can_enable >= 1) {
         if (px4_start_driver(uavcan_main, "uavcan", "start")) {
             hal.console->printf("UAVCAN: started\n");            
@@ -215,7 +215,7 @@ void AP_BoardConfig::px4_setup_canbus(void)
             close(fd);
         }
     }
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V1
+#endif // CONFIG_HAL_BOARD && !CONFIG_ARCH_BOARD_PX4FMU_V1
 }
 
 extern "C" int waitpid(pid_t, int *, int);
@@ -507,6 +507,7 @@ void AP_BoardConfig::px4_start_optional_sensors(void)
 
 void AP_BoardConfig::px4_setup_drivers(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     px4_start_common_sensors();
     switch ((px4_board_type)px4.board_type.get()) {
     case PX4_BOARD_PH2SLIM:
@@ -525,6 +526,10 @@ void AP_BoardConfig::px4_setup_drivers(void)
         break;
     }
     px4_start_optional_sensors();
+
+    // delay for 1 second to give time for drivers to initialise
+    hal.scheduler->delay(1000);
+#endif // HAL_BOARD_PX4
 }
 
 /*
@@ -556,9 +561,6 @@ void AP_BoardConfig::px4_setup()
     px4_setup_sbus();
     px4_setup_canbus();
     px4_setup_drivers();
-
-    // delay for 1 second to give time for drivers to initialise
-    hal.scheduler->delay(1000);
 }
 
 #endif // HAL_BOARD_PX4

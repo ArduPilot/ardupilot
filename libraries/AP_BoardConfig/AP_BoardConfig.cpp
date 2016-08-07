@@ -59,6 +59,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
     // @RebootRequired: True
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, px4.pwm_count, BOARD_PWM_COUNT_DEFAULT),
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SER1_RTSCTS
@@ -74,14 +75,16 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, px4.ser2_rtscts, 2),
-
+#endif
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
-    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, px4.safety_enable, 1),
+    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, px4.safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: SBUS_OUT
@@ -138,18 +141,16 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPEND
 };
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-extern "C" int uavcan_main(int argc, const char *argv[]);
-#endif
-
 void AP_BoardConfig::init()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     px4_setup();
 #endif
     
+#if HAL_HAVE_IMU_HEATER
     // let the HAL know the target temperature. We pass a pointer as
     // we want the user to be able to change the parameter without
     // rebooting
     hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
+#endif
 }
