@@ -191,7 +191,7 @@
 // AIRSPEED_CRUISE
 //
 #ifndef SPEED_CRUISE
-# define SPEED_CRUISE		3 // 3 m/s
+# define SPEED_CRUISE		5 // in m/s
 #endif
 
 #ifndef GSBOOST
