@@ -164,7 +164,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
         alt_above_ground = rangefinder_state.alt_cm_filt.get();
     } else {
         if (!navigating || !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
-            current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_above_ground);
+            alt_above_ground = current_loc.alt;
         }
     }
 
