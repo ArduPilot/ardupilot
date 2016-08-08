@@ -323,7 +323,7 @@ void Plane::one_second_loop()
     // make it possible to change orientation at runtime
     ahrs.set_orientation();
 
-    adsb.set_stall_speed_cm(airspeed.get_airspeed_min());
+    adsb.set_stall_speed_cm(aparm.airspeed_min);
 
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
@@ -398,8 +398,8 @@ void Plane::airspeed_ratio_update(void)
         // don't calibrate when not moving
         return;        
     }
-    if (airspeed.get_airspeed() < airspeed.get_airspeed_min() &&
-        gps.ground_speed() < (uint32_t)airspeed.get_airspeed_min()) {
+    if (airspeed.get_airspeed() < aparm.airspeed_min && 
+        gps.ground_speed() < (uint32_t)aparm.airspeed_min) {
         // don't calibrate when flying below the minimum airspeed. We
         // check both airspeed and ground speed to catch cases where
         // the airspeed ratio is way too low, which could lead to it

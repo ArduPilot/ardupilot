@@ -394,7 +394,7 @@ private:
 #endif
 
     // Airspeed Sensors
-    AP_Airspeed airspeed;
+    AP_Airspeed airspeed {aparm};
 
     // ACRO controller state
     struct {
