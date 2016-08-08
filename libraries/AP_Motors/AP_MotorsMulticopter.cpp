@@ -144,12 +144,15 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 // Constructor
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
+    _spool_mode(SHUT_DOWN),
+    _spin_up_ratio(0.0f),
     _batt_voltage_resting(0.0f),
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
     _batt_timer(0),
     _lift_max(1.0f),
-    _throttle_limit(1.0f)
+    _throttle_limit(1.0f),
+    _throttle_thrust_max(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
