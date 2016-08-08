@@ -25,9 +25,11 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+static AP_Vehicle::FixedWing aparm;
+
 float temperature;
 
-AP_Airspeed airspeed;
+AP_Airspeed airspeed(aparm);
 
 void setup()
 {
