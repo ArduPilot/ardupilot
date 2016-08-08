@@ -97,6 +97,7 @@ private:
     uint16_t _error_count;
 
     float _temp_filtered;
+    float _accel_scale;
     LowPassFilter2pFloat _temp_filter;
 
     AP_HAL::DigitalSource *_drdy_pin;
