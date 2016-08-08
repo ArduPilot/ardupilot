@@ -575,7 +575,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                     } else {
                         result = MAV_RESULT_FAILED;
                     }
-                } 
+                }
                 if (is_equal(packet.param3,1.0f)) {
                     tracker.init_barometer(false);
                     // zero the altitude difference on next baro update
@@ -603,7 +603,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                     tracker.ins.init_gyro();
                     // accel trim
                     float trim_roll, trim_pitch;
-                    if(tracker.ins.calibrate_trim(trim_roll, trim_pitch)) {
+                    if (tracker.ins.calibrate_trim(trim_roll, trim_pitch)) {
                         // reset ahrs's trim to suggested values from calibration routine
                         tracker.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                         result = MAV_RESULT_ACCEPTED;
