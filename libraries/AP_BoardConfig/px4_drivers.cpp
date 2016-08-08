@@ -420,11 +420,6 @@ void AP_BoardConfig::px4_start_fmuv1_sensors(void)
     } else {
         px4_sensor_error("mpu6000");
     }
-    if (px4_start_driver(l3gd20_main, "l3gd20", "start")) {
-        printf("l3gd20 started OK\n");
-    } else {
-        printf("No l3gd20\n");
-    }
     px4.board_type.set_and_notify(PX4_BOARD_PX4V1);
 #endif // CONFIG_ARCH_BOARD_PX4FMU_V1
 }
