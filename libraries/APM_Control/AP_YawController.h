@@ -29,7 +29,6 @@ public:
 
 private:
 	const AP_Vehicle::FixedWing &aparm;
-	AP_Airspeed airspeed;
 	AP_Float _K_A;
 	AP_Float _K_I;
 	AP_Float _K_D;

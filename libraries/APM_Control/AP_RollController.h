@@ -44,7 +44,6 @@ public:
     
 private:
 	const AP_Vehicle::FixedWing &aparm;
-	AP_Airspeed airspeed;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
 	uint32_t _last_t;
