@@ -159,9 +159,6 @@ private:
     // mapping between input channels
     RCMapper rcmap;
 
-    // Airspeed Sensors
-    AP_Airspeed airspeed;
-
     // board specific config
     AP_BoardConfig BoardConfig;
 
@@ -224,12 +221,12 @@ private:
 #endif
 
     AP_L1_Control L1_controller {ahrs};
-    AP_TECS TECS_controller {airspeed, ahrs, aparm};
+    AP_TECS TECS_controller {ahrs, aparm};
 
     // Attitude to servo controllers
-    AP_RollController  rollController {airspeed, ahrs, aparm, DataFlash};
-    AP_PitchController pitchController {airspeed, ahrs, aparm, DataFlash};
-    AP_YawController   yawController {airspeed, ahrs, aparm};
+    AP_RollController  rollController {ahrs, aparm, DataFlash};
+    AP_PitchController pitchController {ahrs, aparm, DataFlash};
+    AP_YawController   yawController {ahrs, aparm};
     AP_SteerController steerController {ahrs};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -395,6 +392,9 @@ private:
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry {ahrs, battery};
 #endif
+
+    // Airspeed Sensors
+    AP_Airspeed airspeed;
 
     // ACRO controller state
     struct {
