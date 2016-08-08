@@ -254,11 +254,11 @@ AP_GPS::detect_instance(uint8_t instance)
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
-		dstate->last_baud++;
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
 		}
 		uint32_t baudrate = _baudrates[dstate->last_baud];
+		dstate->last_baud++;
 		_port[instance]->begin(baudrate);
 		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
