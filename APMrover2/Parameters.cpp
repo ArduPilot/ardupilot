@@ -122,7 +122,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-	GSCALAR(speed_cruise,        "CRUISE_SPEED",    5),
+	GSCALAR(speed_cruise,        "CRUISE_SPEED",    SPEED_CRUISE),
 
     // @Param: SPEED_TURN_GAIN
     // @DisplayName: Target speed reduction while turning
