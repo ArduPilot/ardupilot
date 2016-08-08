@@ -1,5 +1,44 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.0-rc2 08-Aug-2016
+Changes from 3.4.0-rc1
+1) ADSB based avoidance of manned aircraft
+2) Polygon fence (works seamlessly with circular and altitude fences)
+3) Throttle related changes:
+    a) motors speed feedback to pilot while landed - motors only spin up to minimum throttle as throttle stick is brought to mid (previously spun up to 25%)
+    b) MOT_HOVER_LEARN allows MOT_THST_HOVER to be learned in flight
+    c) THR_MIN becomes MOT_SPIN_MIN
+    d) THR_MID becomes MOT_THST_HOVER
+4) Precision landing:
+    a) control improved by reducing lag from sensor and correcting math errors
+    b) descent rate slows to allow time to correct horizontal position error
+5) Guided mode:
+    a) velocity controller accelerates/decelerates smoothly to target
+    b) Guided_NoGPS flight mode added to allow companion computer control in non-GPS environments
+    c) stop at fence if using velocity controller, reject points outside fence if using position controller
+6) Throw Mode:
+    a) THROW_NEXTMODE parameter allows copter to switch to Auto, Guided, RTL, Land or Brake after throw is complete  
+    b) Throw mode fixes so motors reliably start
+7) Attitude controller:
+    a) use Quaternions instead of Euler angles
+    b) ATC_ANG_LIM_TC allows controlling rate at which lean angles are limited to preserve altitude in AltHold, Loiter
+8) EKF can use range finder as primary height source if EKF2_RNG_USE_HGT parameter is set to 70
+9) Bug fixes
+    a) AutoTune fix so that gains don't fall too low
+    b) Rally points with altitudes no longer cause vehicle to climb above fence during RTL
+    c) various EKF fixes including bug in initialisation of declination co-variances
+    d) SingleCopter, CoaxCopter flag gains 
+10) Small enhancements:
+    a) Rally points outside fence are ignored
+    b) AP_Button support added to allow ground station to see if user has pushed a button on the flight controller
+    c) support for PLAY_TUNE and LED_CONTROL mavlink messages to cause vehicle to play tune or change colour of LED
+    d) support for GPS_INPUT mavlink message to allow supplying vehicle position data from other sources
+    e) NAV_DELAY mission command to delay start of mission (or individual command) until a specified absolute time
+    e) TKOFF_NAV_ALT param allows take-off with no horizontal position hold until vehicle reaches specified altitude (intended mostly for helicopters)
+    f) SCHED_LOOP_RATE param allows slowing main loop rate from default of 400 (intended for developers only) 
+11) Safety (in addition to Fence improvements above):
+    a) Motors begin spinning 2 seconds after arming (previously motors spun immediately)
+------------------------------------------------------------------
 Copter 3.4.0-rc1 28-May-2016
 Changes from 3.3.3
 1) EKF2 allows "boat mode" (attitude initialisation without gyro calibration)
