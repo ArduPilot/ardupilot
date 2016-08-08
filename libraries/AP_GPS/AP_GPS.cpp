@@ -267,10 +267,14 @@ AP_GPS::detect_instance(uint8_t instance)
         send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
     else
 #endif
-        send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+        if(_auto_config == 1){
+            send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+        }
     }
 
-    send_blob_update(instance);
+    if(_auto_config == 1){
+        send_blob_update(instance);
+    }
 
     while (initblob_state[instance].remaining == 0 && _port[instance]->available() > 0
             && new_gps == NULL) {
@@ -386,7 +390,9 @@ AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    send_blob_update(instance);
+    if(_auto_config == 1){
+        send_blob_update(instance);
+    }
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
