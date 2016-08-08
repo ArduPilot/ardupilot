@@ -15,7 +15,7 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor - fill in all the initial values
-Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms)
+Airspeed_Calibration::Airspeed_Calibration()
     : P(100,   0,         0,
         0,   100,         0,
         0,     0,  0.000001f)
@@ -23,7 +23,6 @@ Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms)
     , Q1(0.0000005f)
     , state(0, 0, 0)
     , DT(1)
-    , aparm(parms)
 {
 }
 
@@ -70,7 +69,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg, int16_t m
         -(state.z*SH2*(2*vg.y - 2*state.y))/2,
         1/SH2);
 
-    // Calculate the fusion innovaton covariance assuming a TAS measurement
+    // Calculate the fusion innovation covariance assuming a TAS measurement
     // noise of 1.0 m/s
     // S = H_TAS*P*H_TAS' + 1.0; % [1 x 3] * [3 x 3] * [3 x 1] + [1 x 1]
     Vector3f PH = P * H_TAS;

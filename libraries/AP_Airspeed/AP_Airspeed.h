@@ -16,7 +16,7 @@ class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
     // constructor
-    Airspeed_Calibration(const AP_Vehicle::FixedWing &parms);
+    Airspeed_Calibration();
 
     // initialise the calibration
     void init(float initial_ratio);
@@ -32,14 +32,13 @@ private:
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
     const float DT; // time delta
-    const AP_Vehicle::FixedWing &aparm;
 };
 
 class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed(const AP_Vehicle::FixedWing &parms);
+    AP_Airspeed();
 
     void init(void);
 

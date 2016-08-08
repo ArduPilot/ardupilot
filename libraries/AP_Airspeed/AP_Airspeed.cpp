@@ -139,9 +139,9 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 };
 
 
-AP_Airspeed::AP_Airspeed(const AP_Vehicle::FixedWing &parms)
+AP_Airspeed::AP_Airspeed()
     : _EAS2TAS(1.0f)
-    , _calibration(parms)
+    , _calibration()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
