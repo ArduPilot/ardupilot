@@ -502,7 +502,7 @@ void Copter::print_enabled(bool b)
 
 void Copter::report_version()
 {
-    cliSerial->printf("FW Ver: %d\n",(int)g.k_format_version);
+    cliSerial->printf("FW Ver: %d\n",(int)(g.k_format_version));
     print_divider();
     print_blanks(2);
 }
