@@ -545,7 +545,7 @@ void AP_BoardConfig::px4_sensor_error(const char *reason)
     */
     while (true) {
         printf("Sensor failure: %s\n", reason);
-        hal.console->printf("Check BRD_TYPE: %s\n", reason);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
         hal.scheduler->delay(3000);
     }
 }
