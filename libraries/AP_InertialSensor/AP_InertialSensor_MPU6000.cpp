@@ -561,7 +561,6 @@ void AP_InertialSensor_MPU6000::_read_sample()
 
     if (!_block_read(MPUREG_INT_STATUS, (uint8_t *) &rx, sizeof(rx))) {
         if (++_error_count > 4) {
-            // TODO: set bus speed low for this (and only this) device
             hal.console->printf("MPU60x0: error reading sample\n");
             return;
         }
