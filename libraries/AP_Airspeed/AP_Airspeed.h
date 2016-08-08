@@ -23,7 +23,7 @@ public:
 
     // take current airspeed in m/s and ground speed vector and return
     // new scaling factor
-    float update(float airspeed, const Vector3f &vg);
+    float update(float airspeed, const Vector3f &vg, int16_t max_airspeed_allowed_during_cal);
 
 private:
     // state of kalman filter for airspeed ratio estimation
@@ -125,7 +125,7 @@ public:
     }
 
     // update airspeed ratio calibration
-    void update_calibration(const Vector3f &vground);
+    void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
 	// log data to MAVLink
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
