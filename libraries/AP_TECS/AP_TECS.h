@@ -121,7 +121,6 @@ private:
     AP_AHRS &_ahrs;
 
     const AP_Vehicle::FixedWing &aparm;
-    AP_Airspeed airspeed;
 
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;
