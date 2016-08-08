@@ -27,7 +27,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 float temperature;
 
-AP_Airspeed airspeed();
+AP_Airspeed airspeed;
 
 void setup()
 {
