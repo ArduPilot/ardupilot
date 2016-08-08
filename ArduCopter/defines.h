@@ -271,9 +271,10 @@ enum ThrowModeType {
     ThrowType_Drop = 1
 };
 
-// LAND state
-#define LAND_STATE_FLY_TO_LOCATION  0
-#define LAND_STATE_DESCENDING       1
+enum LandStateType {
+    LandStateType_FlyToLocation = 0,
+    LandStateType_Descending = 1
+};
 
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00
