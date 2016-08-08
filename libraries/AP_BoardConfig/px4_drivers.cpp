@@ -494,9 +494,11 @@ void AP_BoardConfig::px4_start_optional_sensors(void)
         printf("Found mb12xx sensor\n");
     }
 
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     if (px4_start_driver(pwm_input_main, "pwm_input", "start")) {
         printf("started pwm_input driver\n");
     }
+#endif
 }
 
 
