@@ -34,6 +34,14 @@ board_branch() {
     esac
 }
 
+waf() {
+    if [ -x ./waf ]; then
+        ./waf "$@"
+    else
+        ./modules/waf/waf-light "$@"
+    fi
+}
+
 # checkout the right version of the tree
 checkout() {
     vehicle="$1"
@@ -85,7 +93,18 @@ checkout() {
 # support the board in this release
 skip_board() {
     b="$1"
-    if grep -q "$b" ../mk/targets.mk ../Tools/ardupilotwaf/boards.py; then
+    if grep -q "$b" ../mk/targets.mk; then
+        return 1
+    fi
+    echo "Skipping unsupported board $b"
+    return 0
+}
+
+# check if we should skip this build because we don't
+# support the board in this release
+skip_board_waf() {
+    b="$1"
+    if grep -q "$b" $BASEDIR/Tools/ardupilotwaf/boards.py; then
         return 1
     fi
     echo "Skipping unsupported board $b"
@@ -166,7 +185,7 @@ build_arduplane() {
     tag="$1"
     echo "Building ArduPlane $tag binaries from $(pwd)"
     pushd ArduPlane
-    for b in apm1 apm2 erlebrain2 navio navio2 pxf pxfmini; do
+    for b in apm1 apm2; do
         checkout ArduPlane $tag $b "" || {
             echo "Failed checkout of ArduPlane $b $tag"
             error_count=$((error_count+1))
@@ -186,6 +205,26 @@ build_arduplane() {
         copyit $BUILDROOT/ArduPlane.$extension $ddir $tag
         touch $binaries/Plane/$tag
     done
+    popd
+    for b in erlebrain2 navio navio2 pxf pxfmini; do
+        checkout ArduPlane $tag $b "" || {
+            echo "Failed checkout of ArduPlane $b $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+        skip_board_waf $b && continue
+        echo "Building ArduPlane $b binaries"
+        ddir=$binaries/Plane/$hdate/$b
+        skip_build $tag $ddir && continue
+        waf configure --board $b --out $BUILDROOT clean plane || {
+            echo "Failed build of ArduPlane $b $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+        copyit $BUILDROOT/$b/bin/arduplane $ddir $tag
+        touch $binaries/Plane/$tag
+    done
+    pushd ArduPlane
     echo "Building ArduPlane PX4 binaries"
     ddir=$binaries/Plane/$hdate/PX4
     checkout ArduPlane $tag PX4 "" || {
@@ -222,7 +261,6 @@ build_arduplane() {
 build_arducopter() {
     tag="$1"
     echo "Building ArduCopter $tag binaries from $(pwd)"
-    pushd ArduCopter
     frames="quad tri hexa y6 octa octa-quad heli"
     for b in erlebrain2 navio navio2 pxf pxfmini; do
         for f in $frames; do
@@ -231,21 +269,21 @@ build_arducopter() {
                 error_count=$((error_count+1))
                 continue
             }
-            skip_board $b && continue
+            skip_board_waf $b && continue
             echo "Building ArduCopter $b binaries $f"
             ddir=$binaries/Copter/$hdate/$b-$f
             skip_build $tag $ddir && continue
-            make clean || continue
-            make $b-$f -j4 || {
+            waf configure --board $b --out $BUILDROOT clean \
+                    build --targets bin/arducopter-$f || {
                 echo "Failed build of ArduCopter $b-$f $tag"
                 error_count=$((error_count+1))
                 continue
             }
-            extension=$(board_extension $b)
-            copyit $BUILDROOT/ArduCopter.$extension $ddir $tag
+            copyit $BUILDROOT/$b/bin/arducopter-$f $ddir $tag
             touch $binaries/Copter/$tag
         done
     done
+    pushd ArduCopter
     for f in $frames; do
         checkout ArduCopter $tag PX4 $f || {
             echo "Failed checkout of ArduCopter PX4 $tag $f"
@@ -276,7 +314,7 @@ build_rover() {
     tag="$1"
     echo "Building APMrover2 $tag binaries from $(pwd)"
     pushd APMrover2
-    for b in apm1 apm2 erlebrain2 navio navio2 pxf pxfmini; do
+    for b in apm1 apm2; do
         echo "Building APMrover2 $b binaries"
         checkout APMrover2 $tag $b "" || continue
         skip_board $b && continue
@@ -292,6 +330,22 @@ build_rover() {
         copyit $BUILDROOT/APMrover2.$extension $ddir $tag
         touch $binaries/Rover/$tag
     done
+    popd
+    for b in erlebrain2 navio navio2 pxf pxfmini; do
+        echo "Building APMrover2 $b binaries"
+        checkout APMrover2 $tag $b "" || continue
+        skip_board_waf $b && continue
+        ddir=$binaries/Rover/$hdate/$b
+        skip_build $tag $ddir && continue
+        waf configure --board $b --out $BUILDROOT clean rover || {
+            echo "Failed build of APMrover2 $b $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+        copyit $BUILDROOT/$b/bin/ardurover $ddir $tag
+        touch $binaries/Rover/$tag
+    done
+    pushd APMrover2
     echo "Building APMrover2 PX4 binaries"
     ddir=$binaries/Rover/$hdate/PX4
     checkout APMrover2 $tag PX4 "" || {
