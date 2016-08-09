@@ -49,7 +49,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, con
  * init - perform required initialisation
  * for Copter
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint8_t *control_mode, uint32_t *ap_value, uint32_t *control_sensors_present, uint32_t *control_sensors_enabled, uint32_t *control_sensors_health, int32_t *home_distance, int32_t *home_bearing)
+void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, uint32_t *control_sensors_present, uint32_t *control_sensors_enabled, uint32_t *control_sensors_health, int32_t *home_distance, int32_t *home_bearing)
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
@@ -76,8 +76,6 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         _ap.home_bearing = home_bearing;
     }
     
-    _ap.control_mode = control_mode; // flight mode
-    
     if (_port != NULL) {
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
         // we don't want flow control for either protocol
@@ -89,7 +87,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
  * init - perform required initialisation
  * for Plane and Rover
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, uint8_t *control_mode)
+void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager)
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
@@ -97,8 +95,6 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, uint8_t *contr
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort; // FrSky SPort protocol (X-receivers)
     }
-
-    _ap.control_mode = control_mode;
 
     if (_port != NULL) {
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
@@ -297,7 +293,7 @@ void AP_Frsky_Telem::send_SPort(void)
                             send_uint32(DATA_ID_TEMP2, (uint16_t)(_ahrs.get_gps().num_sats() * 10 + _ahrs.get_gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
                             break;
                         case 1:
-                            send_uint32(DATA_ID_TEMP1, (uint16_t)*_ap.control_mode); // send flight mode
+                            send_uint32(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
                             break;
                     }
                     if (_SPort.various_call++ > 1) _SPort.various_call = 0;
@@ -321,7 +317,7 @@ void AP_Frsky_Telem::send_D(void)
     if (now - _D.last_200ms_frame > 200) {
         _D.last_200ms_frame = now;
         send_uint16(DATA_ID_TEMP2, (uint16_t)(_ahrs.get_gps().num_sats() * 10 + _ahrs.get_gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
-        send_uint16(DATA_ID_TEMP1, (uint16_t)*_ap.control_mode); // send flight mode
+        send_uint16(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
         send_uint16(DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
         send_uint16(DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
         send_uint16(DATA_ID_CURRENT, (uint16_t)roundf(_battery.current_amps() * 10.0f)); // send current consumption
@@ -660,7 +656,7 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     uint32_t ap_status;
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
-    ap_status = (uint8_t)(*_ap.control_mode & AP_CONTROL_MODE_LIMIT);
+    ap_status = (uint8_t)(_ap.control_mode & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
     ap_status |= (uint8_t)(*_ap.value & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
     // land complete flag

@@ -117,11 +117,13 @@ public:
     AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint8_t *control_mode, uint32_t *ap_value, uint32_t *control_sensors_present, uint32_t *control_sensors_enabled, uint32_t *control_sensors_health, int32_t *home_distance, int32_t *home_bearing);
-    void init(const AP_SerialManager &serial_manager, uint8_t *control_mode);
+    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, uint32_t *control_sensors_present, uint32_t *control_sensors_enabled, uint32_t *control_sensors_health, int32_t *home_distance, int32_t *home_bearing);
+    void init(const AP_SerialManager &serial_manager);
     // add statustext message to FrSky lib queue. This function is static so it can be called from any library.
     static void queue_message(MAV_SEVERITY severity, const char *text);
 
+    void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
+    
     struct msg_t
     {
         mavlink_statustext_t data[MSG_BUFFER_LENGTH];
@@ -147,7 +149,7 @@ private:
     
     struct
     {
-        uint8_t *control_mode;
+        uint8_t control_mode;
         uint32_t *value;
         uint32_t *control_sensors_present;
         uint32_t *control_sensors_enabled;
