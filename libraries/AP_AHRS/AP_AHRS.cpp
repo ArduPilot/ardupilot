@@ -173,14 +173,6 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     }
 }
 
-Matrix3f AP_AHRS::get_rotation_autopilot_body_to_vehicle_body(void) const
-{
-
-    Matrix3f ret;
-    ret.from_euler(_trim.x, _trim.y, 0.0f);
-    return ret;
-}
-
 // return a ground speed estimate in m/s
 Vector2f AP_AHRS::groundspeed_vector(void)
 {
@@ -238,6 +230,12 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 //      should be called after _dcm_matrix is updated
 void AP_AHRS::update_trig(void)
 {
+    if (_last_trim != _trim.get()) {
+        _last_trim = _trim.get();
+        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
+    }
+
     Vector2f yaw_vector;
     const Matrix3f &temp = get_rotation_body_to_ned();
 

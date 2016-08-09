@@ -85,6 +85,10 @@ public:
         _home.alt        = 0;
         _home.lng        = 0;
         _home.lat        = 0;
+
+        _last_trim = _trim.get();
+        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
     }
 
     // empty virtual destructor
@@ -240,8 +244,8 @@ public:
     // return a DCM rotation matrix representing our current
     // attitude
     virtual const Matrix3f &get_rotation_body_to_ned(void) const = 0;
-    Matrix3f get_rotation_autopilot_body_to_vehicle_body(void) const;
-    Matrix3f get_rotation_vehicle_body_to_autopilot_body(void) const { return get_rotation_autopilot_body_to_vehicle_body().transposed(); }
+    const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
+    const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
@@ -512,6 +516,11 @@ protected:
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
+
+    // cached trim rotations
+    Vector3f _last_trim;
+    Matrix3f _rotation_autopilot_body_to_vehicle_body;
+    Matrix3f _rotation_vehicle_body_to_autopilot_body;
 
     // the limit of the gyro drift claimed by the sensors, in
     // radians/s/s
