@@ -266,7 +266,7 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
 }
 
 // set guided mode angle target
-void Copter::guided_set_angle(const Quaternion &q, float yaw_rate_rads, bool use_yaw_rate, float climb_rate_cms)
+void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads)
 {
     // check we are in velocity control mode
     if (guided_mode != Guided_Angle) {

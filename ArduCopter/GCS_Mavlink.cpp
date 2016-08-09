@@ -1694,7 +1694,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         }
 
         copter.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
-            packet.body_yaw_rate, use_yaw_rate, climb_rate_cms);
+            climb_rate_cms, use_yaw_rate, packet.body_yaw_rate);
 
         break;
     }
