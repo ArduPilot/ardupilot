@@ -315,9 +315,8 @@ void Copter::throttle_loop()
     heli_update_landing_swash();
 #endif
 
-#if GNDEFFECT_COMPENSATION == ENABLED
+    // compensate for ground effect (if enabled)
     update_ground_effect_detector();
-#endif // GNDEFFECT_COMPENSATION == ENABLED
 }
 
 // update_mount - update camera mount position
