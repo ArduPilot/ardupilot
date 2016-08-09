@@ -4345,9 +4345,8 @@ void NavEKF_core::setWindVelStates()
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF_core::getRotationBodyToNED(Matrix3f &mat) const
 {
-    Vector3f trim = _ahrs->get_trim();
     state.quat.rotation_matrix(mat);
-    mat.rotateXYinv(trim);
+    mat = mat * _ahrs->get_rotation_vehicle_body_to_autopilot_body();
 }
 
 // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
