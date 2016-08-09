@@ -18,7 +18,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_InertialNav/AP_InertialNav.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -115,7 +114,7 @@ class AP_Frsky_Telem
 {
 public:
     //constructor
-    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng, const AP_InertialNav_NavEKF &inav);
+    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
     // init - perform required initialisation
     void init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint8_t *control_mode, uint32_t *ap_value, uint32_t *control_sensors_present, uint32_t *control_sensors_enabled, uint32_t *control_sensors_health, int32_t *home_distance, int32_t *home_bearing);
@@ -134,7 +133,6 @@ private:
     AP_AHRS &_ahrs;
     const AP_BattMonitor &_battery;
     const RangeFinder &_rng;
-    const AP_InertialNav &_inav;
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
     bool _initialised_uart;

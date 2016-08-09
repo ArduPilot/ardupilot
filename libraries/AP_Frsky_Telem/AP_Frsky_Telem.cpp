@@ -26,11 +26,10 @@ extern const AP_HAL::HAL& hal;
 AP_Frsky_Telem::msg_t _msg;
 
 //constructor
-AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng, const AP_InertialNav_NavEKF &inav) :
+AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng) :
     _ahrs(ahrs),
     _battery(battery),
     _rng(rng),
-    _inav(inav),
     _port(NULL),
     _protocol(),
     _initialised_uart(),
@@ -179,7 +178,10 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 }
                 return;
             } else if ((now - _passthrough.timer_vario) > 500) {
-                send_uint32(VARIO_FIRST_ID, (int32_t)roundf(_inav.get_velocity_z())); // vertical velocity in cm/s
+                Vector3f velNED;
+                if (_ahrs.get_velocity_NED(velNED)) {
+                    send_uint32(VARIO_FIRST_ID, (int32_t)roundf(-velNED.z*100)); // vertical velocity in cm/s, +ve up
+                }
                 _passthrough.timer_vario = AP_HAL::millis();
                 return;
             } else if ((now - _passthrough.timer_alt) > 1000) {
@@ -706,11 +708,15 @@ uint32_t AP_Frsky_Telem::calc_home(void)
 uint32_t AP_Frsky_Telem::calc_velandyaw(void)
 {
     uint32_t velandyaw;
+    Vector3f velNED {};
+
+    // if we can't get velocity then we use zero for vertical velocity
+    _ahrs.get_velocity_NED(velNED);
 
     // vertical velocity in dm/s
-    velandyaw = prep_number(roundf(_inav.get_velocity_z() * 0.1f), 2, 1);
+    velandyaw = prep_number(roundf(velNED.z * 10), 2, 1);
     // horizontal velocity in dm/s
-    velandyaw |= prep_number(roundf(_inav.get_velocity_xy() * 0.1f), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
+    velandyaw |= prep_number(roundf(_ahrs.groundspeed_vector().length() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     // yaw from [0;36000] centidegrees to .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
     velandyaw |= ((uint16_t)roundf(_ahrs.yaw_sensor * 0.05f) & VELANDYAW_YAW_LIMIT)<<VELANDYAW_YAW_OFFSET;
     return velandyaw;
