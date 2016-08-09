@@ -49,7 +49,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, con
  * init - perform required initialisation
  * for Copter
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, uint32_t *control_sensors_present, uint32_t *control_sensors_enabled, uint32_t *control_sensors_health, int32_t *home_distance, int32_t *home_bearing)
+void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing)
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
@@ -69,9 +69,6 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
         _params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
         _ap.value = ap_value; // ap bit-field
-        _ap.control_sensors_present = control_sensors_present;
-        _ap.control_sensors_enabled = control_sensors_enabled;
-        _ap.control_sensors_health = control_sensors_health;
         _ap.home_distance = home_distance;
         _ap.home_bearing = home_bearing;
     }
@@ -511,36 +508,35 @@ void AP_Frsky_Telem::control_sensors_check(void)
     uint32_t now = AP_HAL::millis();
 
     if ((now - _control_sensors_timer) > 5000) { // prevent repeating any system_status messages unless 5 seconds have passed
-        uint32_t _control_sensors_flags = (*_ap.control_sensors_health ^ *_ap.control_sensors_enabled) & *_ap.control_sensors_present;
         // only one error is reported at a time (in order of preference). Same setup and displayed messages as Mission Planner.
-        if ((_control_sensors_flags & MAV_SYS_STATUS_SENSOR_GPS) > 0) {
+        if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_GPS) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad GPS Health");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_SENSOR_3D_GYRO) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_3D_GYRO) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Gyro Health");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_SENSOR_3D_ACCEL) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_3D_ACCEL) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Accel Health");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_SENSOR_3D_MAG) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_3D_MAG) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Compass Health");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Baro Health");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_SENSOR_LASER_POSITION) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_LASER_POSITION) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad LiDAR Health");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad OptFlow Health");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_TERRAIN) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_TERRAIN) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad or No Terrain Data");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_GEOFENCE) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_GEOFENCE) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Geofence Breach");
             _control_sensors_timer = now;
-        } else if ((_control_sensors_flags & MAV_SYS_STATUS_AHRS) > 0) {
+        } else if ((_ap.sensor_status_error_flags & MAV_SYS_STATUS_AHRS) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad AHRS");
             _control_sensors_timer = now;
         }
