@@ -390,6 +390,26 @@ build_antennatracker() {
         copyit $BUILDROOT/AntennaTracker.$extension $ddir $tag
         touch $binaries/AntennaTracker/$tag
     done
+    popd
+    for b in navio navio2; do
+        checkout AntennaTracker $tag $b "" || {
+            echo "Failed checkout of AntennaTracker $b $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+        skip_board_waf $b && continue
+        echo "Building AntennaTracker $b binaries"
+        ddir=$binaries/AntennaTracker/$hdate/$b
+        skip_build $tag $ddir && continue
+        waf configure --board $b --out $BUILDROOT clean antennatracker || {
+            echo "Failed build of AntennaTracker $b $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+        copyit $BUILDROOT/$b/bin/antennatracker $ddir $tag
+        touch $binaries/AntennaTracker/$tag
+    done
+    pushd AntennaTracker
     echo "Building AntennaTracker PX4 binaries"
     ddir=$binaries/AntennaTracker/$hdate/PX4
     checkout AntennaTracker $tag PX4 "" || {
