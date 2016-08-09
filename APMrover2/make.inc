@@ -38,7 +38,6 @@ LIBRARIES += AP_Navigation
 LIBRARIES += APM_Control
 LIBRARIES += AP_L1_Control
 LIBRARIES += AP_BoardConfig
-LIBRARIES += AP_InertialNav
 LIBRARIES += AP_Frsky_Telem
 LIBRARIES += AP_Notify
 LIBRARIES += AP_BattMonitor

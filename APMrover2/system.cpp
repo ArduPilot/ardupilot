@@ -129,7 +129,7 @@ void Rover::init_ardupilot()
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager, (uint8_t *)&control_mode);
+    frsky_telemetry.init(serial_manager);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
@@ -277,6 +277,10 @@ void Rover::set_mode(enum mode mode)
     throttle = 500;
     g.pidSpeedThrottle.reset_I();
 
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.update_control_mode(control_mode);
+#endif
+    
     if (control_mode != AUTO) {
         auto_triggered = false;
     }
