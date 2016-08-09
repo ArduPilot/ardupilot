@@ -130,6 +130,10 @@ NOINLINE void Copter::send_limits_status(mavlink_channel_t chan)
 
 NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
 {
+    uint32_t control_sensors_present;
+    uint32_t control_sensors_enabled;
+    uint32_t control_sensors_health;
+
     // default sensors present
     control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
 
@@ -291,6 +295,12 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
         0, // comm drops in pkts,
         0, 0, 0, 0);
 
+#if FRSKY_TELEM_ENABLED == ENABLED
+    // give mask of error flags to Frsky_Telemetry
+    uint32_t sensors_error_flags = (control_sensors_health ^ control_sensors_enabled) & control_sensors_present;
+    frsky_telemetry.update_sensor_status_flags(sensors_error_flags);
+#endif
+    
 }
 
 void NOINLINE Copter::send_location(mavlink_channel_t chan)
