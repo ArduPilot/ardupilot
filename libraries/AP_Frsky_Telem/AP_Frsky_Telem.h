@@ -117,12 +117,19 @@ public:
     AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, uint32_t *control_sensors_present, uint32_t *control_sensors_enabled, uint32_t *control_sensors_health, int32_t *home_distance, int32_t *home_bearing);
+    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing);
     void init(const AP_SerialManager &serial_manager);
     // add statustext message to FrSky lib queue. This function is static so it can be called from any library.
     static void queue_message(MAV_SEVERITY severity, const char *text);
 
+    // update flight control mode. The control mode is vehicle type specific
     void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
+
+    // update error mask of sensors and subsystems. The mask uses the
+    // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
+    // indicates that the sensor or subsystem is present but not
+    // functioning correctly
+    void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_error_flags = error_mask; }
     
     struct msg_t
     {
@@ -151,9 +158,7 @@ private:
     {
         uint8_t control_mode;
         uint32_t *value;
-        uint32_t *control_sensors_present;
-        uint32_t *control_sensors_enabled;
-        uint32_t *control_sensors_health;
+        uint32_t sensor_status_error_flags;
         int32_t *home_distance;
         int32_t *home_bearing;
     } _ap;
