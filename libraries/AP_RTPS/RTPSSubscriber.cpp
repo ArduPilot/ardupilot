@@ -100,3 +100,7 @@ void RTPSIsolatedSubscriber<State>::SubListener::onNewDataMessage(Subscriber* su
     } catch (...) {
     }
 }
+
+#include "AHRS.h"
+
+template class RTPSIsolatedSubscriber<AHRS>;

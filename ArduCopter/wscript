@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 def build(bld):
+    extra_libs = []
     vehicle = bld.path.name
     bld.ap_stlib(
         name=vehicle + '_libs',
@@ -32,6 +33,19 @@ def build(bld):
         ],
         use='mavlink',
     )
+    if 'LIB_FASTRTPS' in bld.env and 'LIB_FASTCDR' in bld.env:
+        extra_libs.append(vehicle + '_except_libs')
+        bld.ap_stlib(
+            name=vehicle + '_except_libs',
+            ap_vehicle=vehicle,
+            ap_libraries = [
+                'AP_RTPS',
+            ],
+            cxxflags = [
+                '-fexceptions',
+            ],
+            use_default_ap_libraries = False
+        )
 
     frames = (
         'quad', 'tri', 'hexa', 'y6', 'octa', 'octa-quad', 'heli', 'single',
@@ -42,6 +56,6 @@ def build(bld):
         bld.ap_program(
             program_name='arducopter-%s' % frame,
             program_groups=['bin', 'copter'],
-            use=vehicle + '_libs',
+            use=[vehicle + '_libs'] + extra_libs,
             defines=['FRAME_CONFIG=%s' % frame_config],
         )

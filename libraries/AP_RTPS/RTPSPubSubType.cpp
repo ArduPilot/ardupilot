@@ -116,3 +116,7 @@ bool RTPSPubSubType<State>::getKey(void* data, InstanceHandle_t* handle)
 
     return true;
 }
+
+#include "AHRS.h"
+
+template class RTPSPubSubType<AHRS>;

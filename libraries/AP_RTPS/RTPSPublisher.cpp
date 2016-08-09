@@ -94,3 +94,7 @@ int RTPSIsolatedPublisher<State>::publish_state(State& st)
 
     return listener.n_matched;
 }
+
+#include "AHRS.h"
+
+template class RTPSIsolatedPublisher<AHRS>;
