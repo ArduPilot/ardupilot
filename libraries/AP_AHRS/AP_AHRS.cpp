@@ -173,6 +173,14 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     }
 }
 
+Matrix3f AP_AHRS::get_rotation_autopilot_body_to_vehicle_body(void) const
+{
+    Matrix3f ret;
+    ret.identity();
+    ret.rotateXYinv(_trim);
+    return ret.transposed();
+}
+
 // return a ground speed estimate in m/s
 Vector2f AP_AHRS::groundspeed_vector(void)
 {

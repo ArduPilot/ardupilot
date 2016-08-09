@@ -172,7 +172,7 @@ void AP_AHRS_NavEKF::update_EKF1(void)
                     accel.z -= abias2;
                 }
                 if (_ins.get_accel_health(i)) {
-                    _accel_ef_ekf[i] = _dcm_matrix * accel;
+                    _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
                 }
             }
 
@@ -246,7 +246,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
                     accel.z -= abias;
                 }
                 if (_ins.get_accel_health(i)) {
-                    _accel_ef_ekf[i] = _dcm_matrix * accel;
+                    _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
                 }
             }
             _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
