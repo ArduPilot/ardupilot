@@ -167,7 +167,7 @@ void Copter::init_ardupilot()
 #else
   #error Unrecognised frame type
 #endif
-    &g.fs_batt_voltage, &g.fs_batt_mah, (uint8_t *)&control_mode, &ap.value, &control_sensors_present, &control_sensors_enabled, &control_sensors_health, &home_distance, &home_bearing);
+    &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value, &home_distance, &home_bearing);
 #endif
 
     // identify ourselves correctly with the ground station
