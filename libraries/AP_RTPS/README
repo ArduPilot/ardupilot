@@ -1,0 +1,146 @@
+What is this
+------------
+
+This directory contains a library to interface Ardupilot projects with
+RTPS publishers and subscribers.  RTPS stands for Real Time Publish
+Subscribe and is a protocol that is used by many other robotics
+projects to publish and consume ever changing data, such as readings
+from sensors and results from calculations.
+
+This library relies on Fast-RTPS and Fast-CDR, which comprises of an
+open source and complete implementation of both the RTPS protocol and
+Common Data Representation, which is a serialization protocol that
+often goes hand-in-hand with RTPS.  These two libraries were chosen
+since they're also chosen by the ROS2 project.
+
+Unfortunately, these libraries require the use of exceptions in C++,
+and Ardupilot is built without them.  Thus, this library is built with
+exception handling code, and all entry points are protected with a
+try-catch block.  Only this library is built differently, and is then
+statically linked with the rest of the code.
+
+How to add new message types
+----------------------------
+
+In addition to the Fast-RTPS and Fast-CDR libraries, you'll also need
+the fastrtpsgen tool that comes with Fast-RTPS.  This tool, which
+requires a Java Runtime Environment to operate, generates sample
+applications from IDL (Interface Description Language) files.
+
+There is strong evidence that the authors of this tool supports only
+the generation of sample applications, instead of being something that
+can be integrated in a build system; for instance, the generated
+boilerplate is yours to modify.
+
+Only the code for serializing and deserializing messages is required
+for AP_RTPS.  The rest of the boilerplate code has been made generic
+via the use of C++ templates from the generated code produced by
+fastrtpsgen.  As a result, only two files need to be copied to the
+AP_RTPS directory.
+
+For instance, let's create a Sample.idl file containing this:
+
+	struct Sample {
+		long long value;
+	};
+
+A list of supported types can be found in the Fast-RTPS documentation,
+here: https://eprosima-fast-rtps.readthedocs.org/
+
+Use fastrtpsgen to generate the sample code:
+
+	$ /path/to/Fast-RTPS/fastrtpsgen/scripts/fastrtpsgen \
+		-example x64Linux2.6gcc \
+		Sample.idl
+	Loading templates...
+	Processing the file Sample.idl...
+	Generating Type definition files...
+	Generating TopicDataTypes files...
+	Generating Publisher files...
+	Generating Subscriber files...
+	Generating main file...
+	Generating solution for arch x64Linux2.6gcc...
+	Generating makefile solution
+
+Files will be generated in the current directory.
+
+Copy Sample.cxx and Sample.h to the AP_RTPS directory, renaming
+Sample.cxx to Sample.cpp (due to consistency reasons with the build
+system, only .cpp files are built).
+
+Edit RTPSPublisher.cpp, RTPSPubSubType.cpp, and RTPSSubscriber.cpp. In
+each of these files, add at the very end:
+
+	#include "Sample.h"
+
+	template class RTPSIsolatedPublisher<Sample>;
+
+Change RTPSIsolatedPublisher for RTPSPubSubType and
+RTPSIsolatedSubscriber in their respective files.  Use the already
+existing explicit template instantiations for guidance.
+
+After this is done, AP_RTPS will be able to subscribe and publish
+messages of this type.  No publisher or subscriber will be created,
+however; this must be done within the Ardupilot project you're working
+on.
+
+To do this in ArduCopter, for instance, edit rtps.cpp inside the
+ArduCopter directory.  Include the definition for the type you want to
+publish or subscribe right in the beginning of this file:
+
+	#include "AP_RTPS/Sample.h"
+
+Find the the definition of Copter::init_rtps(). Close to it there will
+be the declaration of a few objects.  Say you want to only publish
+Sample data; add this line next to other declarations of
+RTPSPublisher<T>:
+
+	RTPSPublisher<Sample> sample_publisher;
+
+Link this publisher with the helper class, by changing the current
+declaration of pub_helper to read:
+
+	PublisherHelper pub_helper{ ...current contents..., &sample_publisher};
+
+Then, within Copter::init_rtps(), initialize the publisher:
+
+	sample_publisher.init("Sample", [this]() -> Sample {
+		Sample new_state;
+		new_state.value(1);
+		return new_state;
+	});
+
+The lambda capturing "this" is necessary to keep the publisher and the
+Copter classes separate without them having to be friends with each
+other.  Of course, the value being published here is a constant, but
+any of the data available in the Copter class is available from this
+callback.
+
+And, that's it for publishers.  For subscribers, it's similar, and
+should be self-explanatory from the other subscribers in rtps.cpp.
+
+Building and running with RTPS enabled
+--------------------------------------
+
+Fast-RTPS and Fast-CDR will be automatically detected by the build
+system.  Currently, only the SITL and Linux targets support them; it
+should be possible to add support for other ports, but this will
+potentially require changes in the Fast-RTPS library as well, since it
+completely encapsulates the implementation details.
+
+Testing
+-------
+
+To test the interoperability with another process, one can just follow
+the instructions to build the sample application as generated by
+fastrtpsgen, and execute it in either subscriber or publisher mode.  It
+might be necessary to modify the sample application to print out or
+generate values.
+
+For instance, to test a subscriber, edit the generated
+SampleSubscriber.cxx file, and modify the
+SampleSubscriber::SubListener::onDataMessage() function to print out
+the received structure.  And, to test the other side, edit
+SamplePublisher.cxx, and modify SamplePublisher::run() to initialize a
+Sample structure and publish a new version whenever new data should be
+made available.
