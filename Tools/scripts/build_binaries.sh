@@ -111,6 +111,17 @@ skip_board_waf() {
     return 0
 }
 
+skip_frame() {
+    board=$1
+    frame=$2
+    if [ "$board" = "bebop" ]; then
+        if [ "$frame" != "quad" ]; then
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # check if we should skip this build because we have already
 # built this version
 skip_build() {
@@ -262,7 +273,7 @@ build_arducopter() {
     tag="$1"
     echo "Building ArduCopter $tag binaries from $(pwd)"
     frames="quad tri hexa y6 octa octa-quad heli"
-    for b in erlebrain2 navio navio2 pxf pxfmini; do
+    for b in erlebrain2 navio navio2 pxf pxfmini bebop; do
         for f in $frames; do
             checkout ArduCopter $tag $b $f || {
                 echo "Failed checkout of ArduCopter $b $tag $f"
@@ -273,6 +284,7 @@ build_arducopter() {
             echo "Building ArduCopter $b binaries $f"
             ddir=$binaries/Copter/$hdate/$b-$f
             skip_build $tag $ddir && continue
+            skip_frame $b $f && continue
             waf configure --board $b --out $BUILDROOT clean \
                     build --targets bin/arducopter-$f || {
                 echo "Failed build of ArduCopter $b-$f $tag"
