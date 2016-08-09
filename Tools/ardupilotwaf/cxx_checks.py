@@ -200,3 +200,24 @@ def check_libdl(cfg, env):
     if ret:
         env.LIB += cfg.env['LIB_DL']
     return ret
+
+@conf
+def check_libfastrtps(cfg, env):
+    if cfg.env.STATIC_LINKING:
+        cfg.msg("Checking for 'libfastrtps':", 'disabled for static build', color='YELLOW')
+        return False
+    if cfg.options.disable_libfastrtps:
+        cfg.msg("Checking for 'libfastrtps':", 'disabled', color='YELLOW')
+        return False
+
+    ret_rtps = cfg.check(compiler='cxx', lib='fastrtps', mandatory=False, global_define=True)
+    if not ret_rtps:
+        return False
+
+    ret_cdr = cfg.check(compiler='cxx', lib='fastcdr', mandatory=False, global_define=True)
+    if not ret_cdr:
+        return False
+
+    env.LIB += cfg.env['LIB_FASTRTPS']
+    env.LIB += cfg.env['LIB_FASTCDR']
+    return True
