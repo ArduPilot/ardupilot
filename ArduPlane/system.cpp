@@ -160,7 +160,7 @@ void Plane::init_ardupilot()
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager, (uint8_t *)&control_mode);
+    frsky_telemetry.init(serial_manager);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
@@ -356,6 +356,10 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
 
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.update_control_mode(control_mode);
+#endif
+    
     if (previous_mode == AUTOTUNE && control_mode != AUTOTUNE) {
         // restore last gains
         autotune_restore();
