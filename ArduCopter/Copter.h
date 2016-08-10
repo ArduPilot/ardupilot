@@ -126,7 +126,7 @@ class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK;
     friend class Parameters;
-
+    //friend class PMS3003;
     Copter(void);
 
     // HAL::Callbacks implementation.
@@ -218,7 +218,7 @@ private:
 #ifdef USERHOOK_VARIABLES
 # include USERHOOK_VARIABLES
 #endif
-
+    //PMS3003 Env_Sen;
     // Documentation of GLobals:
     union {
         struct {
@@ -645,7 +645,7 @@ private:
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
     void Log_Write_Optflow();
-    void Log_Write_Enviro(int16_t _PM10,int16_t _PM25,int16_t _PM100,int16_t _CP030,int16_t _CP050,int16_t _CP10,int16_t _CP25,int16_t _CP50,int16_t _CP100,int16_t _HUM,int16_t _TEMP_C);//-------------------------------------------------------------------// added by Luis
+    void Log_Write_Enviro(int16_t _PM10, int16_t _PM25, int16_t _PM100, int16_t _CP030, int16_t _CP050, int16_t _CP10, int16_t _CP25, int16_t _CP50, int16_t _CP100, int16_t _HUM, int16_t _TEMP_C);//-------------------------------------------------------------------// added by Luis
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();

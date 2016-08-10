@@ -1,9 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Copter.h"
-
+#include "UserVariables.h"
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
+PMS3003 EnvSen(1,1,1,1,1,1,1,1,1,1,1); //constructor with 1s to verify communication
+
 
 void Copter::gcs_send_heartbeat(void)
 {
@@ -374,15 +376,16 @@ void NOINLINE Copter::send_servo_out(mavlink_channel_t chan)
 
 void NOINLINE Copter::send_radio_out(mavlink_channel_t chan)
 {
+    EnvSen._timer(); // collect data from Arduino (PMS3303) Sensor
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
         0,     // port
-        hal.rcout->read(0),
-        hal.rcout->read(1),
-        hal.rcout->read(2),
-        hal.rcout->read(3),
-        hal.rcout->read(4),
+        EnvSen._PM10, //hal.rcout->read(0),
+        EnvSen._PM25, //hal.rcout->read(1),
+        EnvSen._PM100, //hal.rcout->read(2),
+        EnvSen._HUM, //hal.rcout->read(3),
+        EnvSen._TEMP_C, //hal.rcout->read(4),
         hal.rcout->read(5),
         hal.rcout->read(6),
         hal.rcout->read(7));

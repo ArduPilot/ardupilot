@@ -268,7 +268,7 @@ struct PACKED log_Enviro {  //==================================================
 };
 
 //Write an environmental packet
-void Copter::Log_Write_Enviro(int16_t _PM10,int16_t _PM25,int16_t _PM100,int16_t _CP030,int16_t _CP050,int16_t _CP10,int16_t _CP25,int16_t _CP50,int16_t _CP100, int16_t _HUM, int16_t _TEMP_C)
+void Copter::Log_Write_Enviro(int16_t _PM10, int16_t _PM25, int16_t _PM100, int16_t _CP030, int16_t _CP050,int16_t _CP10,int16_t _CP25,int16_t _CP50,int16_t _CP100, int16_t _HUM, int16_t _TEMP_C)
 {
     struct log_Enviro pkt = {
             LOG_PACKET_HEADER_INIT(LOG_ENVIRO_MSG),

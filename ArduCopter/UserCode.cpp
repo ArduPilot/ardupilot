@@ -91,13 +91,10 @@ void PMS3003::_measure(void)
 void PMS3003::_collect(void)
 {
     uint8_t data[20];
-
     _measurement_started_ms = 0;
-
     if (hal.i2c->read(I2C_ADDRESS_PMS3003, 20, data) != 0) {
         return;
     }
-
     _PM10 = (data[0] << 8) + data[1];
     _PM25 = (data[2] << 8) + data[3];
     _PM100 = (data[4] << 8) + data[5];
@@ -109,7 +106,6 @@ void PMS3003::_collect(void)
     _CP100 = (data[16] << 8) + data[17];
     _HUM = data[18];
     _TEMP_C = data[19];
-
     _last_sample_time_ms = AP_HAL::millis();
 }
 //=========================================================================
