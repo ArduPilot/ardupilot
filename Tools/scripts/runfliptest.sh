@@ -35,7 +35,7 @@ def wait_time(mav, simtime):
         if t2 - t1 > simtime:
             break
 
-cmd = 'sim_vehicle.sh -j4 -D -L KSFO -S5'
+cmd = 'sim_vehicle.py -j4 -D -L KSFO -S5'
 mavproxy = pexpect.spawn(cmd, logfile=sys.stdout, timeout=30)
 mavproxy.expect("Ready to FLY")
 
