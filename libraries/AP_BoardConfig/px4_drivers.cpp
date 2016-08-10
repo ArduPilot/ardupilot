@@ -367,8 +367,10 @@ void AP_BoardConfig::px4_start_pixhawk2slim_sensors(void)
         printf("Found MPU9250 internal\n");
     } else if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 -T 20608 start")) {
         printf("Found ICM20608 internal\n");
+    } else if (px4_start_driver(mpu6000_main, "mpu6000", "-R 14 start")) {
+        printf("Found MPU6000 internal\n");
     } else {
-        px4_sensor_error("No MPU9250 or ICM20608");
+        px4_sensor_error("No MPU9250 or ICM20608 or MPU6000");
     }
 
     // on Pixhawk2 default IMU temperature to 60
