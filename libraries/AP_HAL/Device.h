@@ -141,12 +141,6 @@ public:
      */
     virtual bool unregister_callback(PeriodicHandle h) { return false; }
 
-    /*
-     * Temporary method to get the fd used by this device: it's here only for
-     * allowing to convert old drivers to this new interface
-     */
-    virtual int get_fd() = 0;
-
     /**
      * Some devices connected on the I2C or SPI bus require a bit to be set on
      * the register address in order to perform a read operation. This sets a

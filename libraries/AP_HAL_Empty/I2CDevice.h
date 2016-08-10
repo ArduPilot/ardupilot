@@ -77,9 +77,6 @@ public:
     {
         return true;
     }
-
-    /* See AP_HAL::Device::get_fd() */
-    int get_fd() { return -1; }
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
