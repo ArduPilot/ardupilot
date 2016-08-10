@@ -53,7 +53,7 @@ extern const AP_HAL::HAL& hal;
 
 #define SCHED_THREAD(name_, UPPER_NAME_)                        \
     {                                                           \
-        .name = "sched-" #name_,                                \
+        .name = "ap-" #name_,                                   \
         .thread = &_##name_##_thread,                           \
         .policy = SCHED_FIFO,                                   \
         .prio = APM_LINUX_##UPPER_NAME_##_PRIORITY,             \
