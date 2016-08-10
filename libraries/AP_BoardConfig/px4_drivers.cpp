@@ -260,6 +260,7 @@ bool AP_BoardConfig::px4_start_driver(main_fn_t main_function, const char *name,
     return (status >> 8) == 0;
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 /*
   setup sensors for PX4v2
  */
@@ -500,7 +501,148 @@ void AP_BoardConfig::px4_start_optional_sensors(void)
     }
 #endif
 }
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+void AP_BoardConfig::vrx_start_brain51_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -R 12 -I start")) {
+        printf("HMC5883 Internal GPS started OK\n");
+    } else {
+        printf("HMC5883 Internal GPS start failed\n");
+    }
+
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
+        printf("MPU6000 Internal started OK\n");
+    } else {
+        px4_sensor_error("MPU6000 Internal start failed");
+    }
+#endif
+}
+
+void AP_BoardConfig::vrx_start_brain52_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -R 12 -I start")) {
+        printf("HMC5883 Internal GPS started OK\n");
+    } else {
+        printf("HMC5883 Internal GPS start failed\n");
+    }
+
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
+        printf("MPU6000 Internal started OK\n");
+    } else {
+        px4_sensor_error("MPU6000 Internal start failed");
+    }
+#endif
+}
+
+void AP_BoardConfig::vrx_start_ubrain51_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
+        printf("MPU6000 Internal started OK\n");
+    } else {
+        px4_sensor_error("MPU6000 Internal start failed");
+    }
+#endif
+}
+
+void AP_BoardConfig::vrx_start_ubrain52_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
+        printf("MPU6000 Internal started OK\n");
+    } else {
+        px4_sensor_error("MPU6000 Internal start failed");
+    }
+#endif
+}
+
+void AP_BoardConfig::vrx_start_core10_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_VRCORE_V10)
+    if (px4_start_driver(mpu9250_main, "mpu9250", "-R 4 start")) {
+        printf("MPU9250 Internal started OK\n");
+    } else {
+        px4_sensor_error("MPU9250 Internal start failed");
+    }
+#endif
+}
+
+void AP_BoardConfig::vrx_start_brain54_sensors(void)
+{
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -R 12 -I start")) {
+        printf("HMC5883 Internal GPS started OK\n");
+    } else {
+        printf("HMC5883 Internal GPS start failed\n");
+    }
+
+    if (px4_start_driver(mpu6000_main, "mpu6000", "-R 12 start")) {
+        printf("MPU6000 Internal started OK\n");
+    } else {
+        px4_sensor_error("MPU6000 Internal start failed");
+    }
+#endif
+}
+
+/*
+  setup common sensors
+ */
+void AP_BoardConfig::vrx_start_common_sensors(void)
+{
+    if (px4_start_driver(ms5611_main, "ms5611", "-s start")) {
+        printf("MS5611 Internal started OK\n");
+    } else {
+        px4_sensor_error("MS5611 Internal start failed");
+    }
+
+    if (px4_start_driver(hmc5883_main, "hmc5883", "-C -X start")) {
+        printf("HMC5883 External GPS started OK\n");
+    } else {
+        printf("HMC5883 External GPS start failed\n");
+    }
+}
+
+
+/*
+  setup optional sensors
+ */
+void AP_BoardConfig::vrx_start_optional_sensors(void)
+{
+    if (px4_start_driver(ets_airspeed_main, "ets_airspeed", "start")) {
+        printf("Found ETS airspeed sensor\n");
+    } else if (px4_start_driver(ets_airspeed_main, "meas_airspeed", "start -b 2")) {
+        printf("Found ETS airspeed sensor (bus2)\n");
+    }
+
+    if (px4_start_driver(meas_airspeed_main, "meas_airspeed", "start")) {
+        printf("Found MEAS airspeed sensor\n");
+    } else if (px4_start_driver(meas_airspeed_main, "meas_airspeed", "start -b 2")) {
+        printf("Found MEAS airspeed sensor (bus2)\n");
+    }
+
+    if (px4_start_driver(ll40ls_main, "ll40ls", "-X start")) {
+        printf("Found external ll40ls sensor\n");
+    }
+    if (px4_start_driver(ll40ls_main, "ll40ls", "-I start")) {
+        printf("Found internal ll40ls sensor\n");
+    }
+
+    if (px4_start_driver(trone_main, "trone", "start")) {
+        printf("Found trone sensor\n");
+    }
+    if (px4_start_driver(mb12xx_main, "mb12xx", "start")) {
+        printf("Found mb12xx sensor\n");
+    }
+
+    if (px4_start_driver(pwm_input_main, "pwm_input", "start")) {
+        printf("started pwm_input driver\n");
+    }
+}
+#endif
 
 void AP_BoardConfig::px4_setup_drivers(void)
 {
@@ -524,9 +666,42 @@ void AP_BoardConfig::px4_setup_drivers(void)
     }
     px4_start_optional_sensors();
 
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    vrx_start_common_sensors();
+    switch ((px4_board_type)px4.board_type.get()) {
+    case VRX_BOARD_BRAIN51:
+        vrx_start_brain51_sensors();
+        break;
+
+    case VRX_BOARD_BRAIN52:
+        vrx_start_brain52_sensors();
+        break;
+
+    case VRX_BOARD_UBRAIN51:
+        vrx_start_ubrain51_sensors();
+        break;
+
+    case VRX_BOARD_UBRAIN52:
+        vrx_start_ubrain52_sensors();
+        break;
+
+    case VRX_BOARD_CORE10:
+        vrx_start_core10_sensors();
+        break;
+
+    case VRX_BOARD_BRAIN54:
+        vrx_start_brain54_sensors();
+        break;
+
+    default:
+        break;
+    }
+    vrx_start_optional_sensors();
+
+#endif // HAL_BOARD_PX4
+
     // delay for 1 second to give time for drivers to initialise
     hal.scheduler->delay(1000);
-#endif // HAL_BOARD_PX4
 }
 
 /*
