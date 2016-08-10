@@ -33,10 +33,10 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // public method to start a driver
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
-
+    
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // valid types for BRD_TYPE
     enum px4_board_type {
         PX4_BOARD_AUTO     = 0,
