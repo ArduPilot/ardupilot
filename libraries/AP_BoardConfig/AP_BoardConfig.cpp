@@ -43,9 +43,23 @@
 #define BOARD_PWM_COUNT_DEFAULT 4
 #define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
+#define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 # define BOARD_SAFETY_ENABLE_DEFAULT 0
 # define BOARD_PWM_COUNT_DEFAULT 8
+# if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
+#  define BOARD_TYPE_DEFAULT VRX_BOARD_BRAIN51
+# elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+#  define BOARD_TYPE_DEFAULT VRX_BOARD_BRAIN52
+# elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+#  define BOARD_TYPE_DEFAULT VRX_BOARD_UBRAIN51
+# elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+#  define BOARD_TYPE_DEFAULT VRX_BOARD_UBRAIN52
+# elif defined(CONFIG_ARCH_BOARD_VRCORE_V10)
+#  define BOARD_TYPE_DEFAULT VRX_BOARD_CORE10
+# elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
+#  define BOARD_TYPE_DEFAULT VRX_BOARD_BRAIN54
+# endif
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -129,13 +143,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: TYPE
     // @DisplayName: Board type
-    // @Description: This allows selection of a PX4 board type. If set to zero then the board type is auto-detected
-    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Pixhawk2,4:Pixracer,5:PixhawkMini,6:Pixhawk2Slim
+    // @Description: This allows selection of a PX4 or VRBRAIN board type. If set to zero then the board type is auto-detected (PX4)
+    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Pixhawk2,4:Pixracer,5:PixhawkMini,6:Pixhawk2Slim,7:VRBrain 5.1,8:VRBrain 5.2,9:VR Micro Brain 5.1,10:VR Micro Brain 5.2,11:VRBrain Core 1.0,12:VRBrain 5.4
     // @RebootRequired: True
-    AP_GROUPINFO("TYPE", 9, AP_BoardConfig, px4.board_type, PX4_BOARD_AUTO),
+    AP_GROUPINFO("TYPE", 9, AP_BoardConfig, px4.board_type, BOARD_TYPE_DEFAULT),
 #endif
     
     AP_GROUPEND
