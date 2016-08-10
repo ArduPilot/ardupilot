@@ -10,7 +10,7 @@ namespace {
 	int16_t mode = 1100;
 	int16_t cam_tilt = 1500;
 	int16_t cam_tilt_goal = 1500;
-	float cam_tilt_alpha = 0.9;
+	float cam_tilt_alpha = 0.97;
 	int16_t lights1 = 1100;
 	int16_t lights2 = 1100;
 	int16_t rollTrim = 0;
@@ -50,17 +50,14 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 		// Act if button is pressed
 		// Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
 		for ( uint8_t i = 0 ; i < 16 ; i++ ) {
-			if ( (buttons & (1 << i)) && !(buttons_prev & (1 << i)) ) {
-				handle_jsbutton_press(i,shift);
+			if ( (buttons & (1 << i)) ) {
+				handle_jsbutton_press(i,shift,(buttons_prev & (1 << i)));
 				buttonDebounce = tnow_ms;
 			}
 		}
 
 		buttons_prev = buttons;
 	}
-
-	// Camera tilt low pass filter
-	cam_tilt = cam_tilt*cam_tilt_alpha+cam_tilt_goal*(1-cam_tilt_alpha);
 
 	// Set channels to override
 	channels[0] = 1500 + pitchTrim;                           // pitch
@@ -70,7 +67,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	channels[4] = mode;                                       // for testing only
 	channels[5] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900);           // forward for ROV
 	channels[6] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900);           // lateral for ROV
-	channels[7] = cam_tilt;                                    // camera tilt
+	channels[7] = 0xffff;                                     // camera tilt (sent in camera_tilt_smooth)
 	channels[8] = lights1;                                    // lights 1
 	channels[9] = lights2;                                    // lights 2
 	channels[10] = video_switch;                              // video switch
@@ -84,7 +81,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
 }
 
-void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
+void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 	// Act based on the function assigned to this button
 	switch ( get_button(button)->function(shift) ) {
 		case JSButton::button_function_t::k_arm_toggle:
@@ -133,7 +130,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 		case JSButton::button_function_t::k_camera_trigger:
 			break;
 		case JSButton::button_function_t::k_camera_source_toggle:
-			{
+			if ( !held ) {
 				static bool video_toggle = false;
 				video_toggle = !video_toggle;
 				if ( video_toggle ) {
@@ -146,7 +143,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			}
 			break;
 		case JSButton::button_function_t::k_lights1_cycle:
-			{
+			if ( !held ) {
 				static bool increasing = true;
 				if ( increasing ) {
 					lights1 = constrain_float(lights1+100,1100,1900);
@@ -159,13 +156,17 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			}
 			break;
 		case JSButton::button_function_t::k_lights1_brighter:
-			lights1 = constrain_float(lights1+100,1100,1900);
+			if ( !held ) {
+				lights1 = constrain_float(lights1+100,1100,1900);
+			}
 			break;
 		case JSButton::button_function_t::k_lights1_dimmer:
-			lights1 = constrain_float(lights1-100,1100,1900);
+			if ( !held ) {
+				lights1 = constrain_float(lights1-100,1100,1900);
+			}
 			break;
 		case JSButton::button_function_t::k_lights2_cycle:
-			{
+			if ( !held ) {
 				static bool increasing = true;
 				if ( increasing ) {
 					lights2 = constrain_float(lights2+100,1100,1900);
@@ -178,13 +179,17 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			}
 			break;
 		case JSButton::button_function_t::k_lights2_brighter:
-			lights2 = constrain_float(lights2+100,1100,1900);
+			if ( !held ) {
+				lights2 = constrain_float(lights2+100,1100,1900);
+			}
 			break;
 		case JSButton::button_function_t::k_lights2_dimmer:
-			lights2 = constrain_float(lights2-100,1100,1900);
+			if ( !held ) {
+				lights2 = constrain_float(lights2-100,1100,1900);
+			}
 			break;
 		case JSButton::button_function_t::k_gain_toggle:
-			{
+			if ( !held ) {
 				static bool lowGain = false;
 				lowGain = !lowGain;
 				if ( lowGain ) {
@@ -196,12 +201,16 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			}
 			break;
 		case JSButton::button_function_t::k_gain_inc:
-			gain = constrain_float(gain + (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
-			gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
+			if ( !held ) {
+				gain = constrain_float(gain + (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
+				gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
+			}
 			break;
 		case JSButton::button_function_t::k_gain_dec:
-			gain = constrain_float(gain - (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
-			gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
+			if ( !held ) {
+				gain = constrain_float(gain - (maxGain-minGain)/(numGainSettings-1), minGain, maxGain);
+				gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",gain*100);
+			}
 			break;
 		case JSButton::button_function_t::k_trim_roll_inc:
 			rollTrim = constrain_float(rollTrim+10,-200,200);
@@ -216,10 +225,12 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			pitchTrim = constrain_float(pitchTrim-10,-200,200);
 			break;
 		case JSButton::button_function_t::k_input_hold_toggle:
-			zTrim = z_last-500;
-			xTrim = x_last;
-			yTrim = y_last;
-			gcs_send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+			if ( !held ) {
+				zTrim = z_last-500;
+				xTrim = x_last;
+				yTrim = y_last;
+				gcs_send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+			}
 			break;
 	}
 }
@@ -245,4 +256,17 @@ JSButton* Sub::get_button(uint8_t index) {
 		case 15: return &g.jbtn_15;
 		default: return &g.jbtn_0;
 	}
+}
+
+void Sub::camera_tilt_smooth() {
+	int16_t channels[11];
+
+	for ( uint8_t i = 0 ; i < 11 ; i++ ) {
+		channels[i] = 0xffff;
+	}
+	// Camera tilt low pass filter
+	cam_tilt = cam_tilt*cam_tilt_alpha+cam_tilt_goal*(1-cam_tilt_alpha);
+	channels[7] = cam_tilt;
+
+	failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
 }
