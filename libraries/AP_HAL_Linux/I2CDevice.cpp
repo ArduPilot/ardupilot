@@ -237,11 +237,6 @@ AP_HAL::Semaphore *I2CDevice::get_semaphore()
     return &_bus.sem;
 }
 
-int I2CDevice::get_fd()
-{
-    return _bus.fd;
-}
-
 AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(
     uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
