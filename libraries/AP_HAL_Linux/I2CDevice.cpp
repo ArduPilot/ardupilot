@@ -168,6 +168,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         nmsgs++;
     }
 
+    /* interpret it as an input error if nothing has to be done */
     if (!nmsgs) {
         return false;
     }
