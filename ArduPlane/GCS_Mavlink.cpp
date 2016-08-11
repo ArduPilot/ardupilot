@@ -1513,11 +1513,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
-                // when packet.param1 == 3 we reboot to hold in bootloader
-                hal.scheduler->reboot(is_equal(packet.param1,3.0f));
-                result = MAV_RESULT_ACCEPTED;
-            }
+            result = handle_preflight_reboot(packet, plane.quadplane.enable != 0);
             break;
 
         case MAV_CMD_DO_LAND_START:

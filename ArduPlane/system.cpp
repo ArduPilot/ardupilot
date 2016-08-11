@@ -103,13 +103,16 @@ void Plane::init_ardupilot()
     init_rc_out_main();
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    // this must be before BoardConfig.init() so if
-    // BRD_SAFETYENABLE==0 then we don't have safety off yet
-    for (uint8_t tries=0; tries<10; tries++) {
-        if (setup_failsafe_mixing()) {
-            break;
+    if (!quadplane.enable) {
+        // this must be before BoardConfig.init() so if
+        // BRD_SAFETYENABLE==0 then we don't have safety off yet. For
+        // quadplanes we wait till AP_Motors is initialised
+        for (uint8_t tries=0; tries<10; tries++) {
+            if (setup_failsafe_mixing()) {
+                break;
+            }
+            hal.scheduler->delay(10);
         }
-        hal.scheduler->delay(10);
     }
 #endif
 
