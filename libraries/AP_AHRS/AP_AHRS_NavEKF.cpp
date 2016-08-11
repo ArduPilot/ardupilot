@@ -1109,6 +1109,24 @@ bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets)
     }
 }
 
+// Retrieves the NED delta velocity corrected
+void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
+{
+    if (ekf_type() == 2) {
+        uint8_t imu_idx = EKF2.getPrimaryCoreIMUIndex();
+        float accel_z_bias;
+        EKF2.getAccelZBias(-1,accel_z_bias);
+        ret.zero();
+        _ins.get_delta_velocity(imu_idx, ret);
+        dt = _ins.get_delta_velocity_dt(imu_idx);
+        ret.z -= accel_z_bias*dt;
+        ret = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
+        ret.z += GRAVITY_MSS*dt;
+    } else {
+        AP_AHRS::getCorrectedDeltaVelocityNED(ret, dt);
+    }
+}
+
 // report any reason for why the backend is refusing to initialise
 const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
 {

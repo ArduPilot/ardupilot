@@ -463,6 +463,9 @@ public:
     int8_t get_ekf_type(void) const {
         return _ekf_type;
     }
+
+    // Retrieves the corrected NED delta velocity in use by the inertial navigation
+    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const { ret.zero(); _ins.get_delta_velocity(ret); dt = _ins.get_delta_velocity_dt(); }
     
 protected:
     AHRS_VehicleClass _vehicle_class;
