@@ -169,7 +169,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     }
 
     if (!nmsgs) {
-        return false;
+        return true;
     }
 
     struct i2c_rdwr_ioctl_data i2c_data = { };
