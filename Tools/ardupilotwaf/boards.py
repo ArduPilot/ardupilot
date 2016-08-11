@@ -473,3 +473,184 @@ class px4_v4(px4):
         super(px4_v4, self).__init__()
         self.version = '4'
         self.use_px4io = False
+
+class vrbrain(Board):
+    abstract = True
+    toolchain = 'arm-none-eabi'
+
+    def __init__(self):
+        self.version = None
+
+    def configure(self, cfg):
+        if not self.version:
+            cfg.fatal('configure: vrbrain: version required')
+
+        super(vrbrain, self).configure(cfg)
+        cfg.load('vrbrain')
+
+    def configure_env(self, cfg, env):
+        super(vrbrain, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_VRBRAIN',
+            HAVE_STD_NULLPTR_T = 0,
+        )
+        env.CXXFLAGS += [
+            '-Wlogical-op',
+            '-Wframe-larger-than=1300',
+            '-fsingle-precision-constant',
+            '-Wno-error=double-promotion',
+            '-Wno-error=missing-declarations',
+            '-Wno-error=float-equal',
+            '-Wno-error=undef',
+            '-Wno-error=cpp',
+        ]
+        env.AP_LIBRARIES += [
+            'AP_HAL_VRBRAIN',
+        ]
+        env.GIT_SUBMODULES += [
+            'PX4Firmware',
+            'PX4NuttX',
+            'uavcan',
+        ]
+
+        env.VRBRAIN_VERSION = self.version
+
+        env.AP_PROGRAM_AS_STLIB = True
+
+    def build(self, bld):
+        super(vrbrain, self).build(bld)
+        bld.ap_version_append_str('NUTTX_GIT_VERSION', bld.git_submodule_head_hash('PX4NuttX', short=True))
+        bld.ap_version_append_str('PX4_GIT_VERSION', bld.git_submodule_head_hash('PX4Firmware', short=True))
+        bld.load('vrbrain')
+
+class vrbrain_v51(vrbrain):
+    name = 'vrbrain-v51'
+    def __init__(self):
+        super(vrbrain_v51, self).__init__()
+        self.version = '51'
+
+class vrbrain_v52(vrbrain):
+    name = 'vrbrain-v52'
+    def __init__(self):
+        super(vrbrain_v52, self).__init__()
+        self.version = '52'
+
+class vrbrain_v54(vrbrain):
+    name = 'vrbrain-v54'
+    def __init__(self):
+        super(vrbrain_v54, self).__init__()
+        self.version = '54'
+
+class vrubrain(Board):
+    abstract = True
+    toolchain = 'arm-none-eabi'
+
+    def __init__(self):
+        self.version = None
+
+    def configure(self, cfg):
+        if not self.version:
+            cfg.fatal('configure: vrubrain: version required')
+
+        super(vrubrain, self).configure(cfg)
+        cfg.load('vrubrain')
+
+    def configure_env(self, cfg, env):
+        super(vrubrain, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_VRBRAIN',
+            HAVE_STD_NULLPTR_T = 0,
+        )
+        env.CXXFLAGS += [
+            '-Wlogical-op',
+            '-Wframe-larger-than=1300',
+            '-fsingle-precision-constant',
+            '-Wno-error=double-promotion',
+            '-Wno-error=missing-declarations',
+            '-Wno-error=float-equal',
+            '-Wno-error=undef',
+            '-Wno-error=cpp',
+        ]
+        env.AP_LIBRARIES += [
+            'AP_HAL_VRBRAIN',
+        ]
+        env.GIT_SUBMODULES += [
+            'PX4Firmware',
+            'PX4NuttX',
+            'uavcan',
+        ]
+
+        env.VRUBRAIN_VERSION = self.version
+
+        env.AP_PROGRAM_AS_STLIB = True
+
+    def build(self, bld):
+        super(vrubrain, self).build(bld)
+        bld.ap_version_append_str('NUTTX_GIT_VERSION', bld.git_submodule_head_hash('PX4NuttX', short=True))
+        bld.ap_version_append_str('PX4_GIT_VERSION', bld.git_submodule_head_hash('PX4Firmware', short=True))
+        bld.load('vrubrain')
+
+class vrubrain_v51(vrubrain):
+    name = 'vrubrain-v51'
+    def __init__(self):
+        super(vrubrain_v51, self).__init__()
+        self.version = '51'
+
+class vrcore(Board):
+    abstract = True
+    toolchain = 'arm-none-eabi'
+
+    def __init__(self):
+        self.version = None
+
+    def configure(self, cfg):
+        if not self.version:
+            cfg.fatal('configure: vrubrain: version required')
+
+        super(vrcore, self).configure(cfg)
+        cfg.load('vrcore')
+
+    def configure_env(self, cfg, env):
+        super(vrcore, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_VRBRAIN',
+            HAVE_STD_NULLPTR_T = 0,
+        )
+        env.CXXFLAGS += [
+            '-Wlogical-op',
+            '-Wframe-larger-than=1300',
+            '-fsingle-precision-constant',
+            '-Wno-error=double-promotion',
+            '-Wno-error=missing-declarations',
+            '-Wno-error=float-equal',
+            '-Wno-error=undef',
+            '-Wno-error=cpp',
+        ]
+        env.AP_LIBRARIES += [
+            'AP_HAL_VRBRAIN',
+        ]
+        env.GIT_SUBMODULES += [
+            'PX4Firmware',
+            'PX4NuttX',
+            'uavcan',
+        ]
+
+        env.VRCORE_VERSION = self.version
+
+        env.AP_PROGRAM_AS_STLIB = True
+
+    def build(self, bld):
+        super(vrcore, self).build(bld)
+        bld.ap_version_append_str('NUTTX_GIT_VERSION', bld.git_submodule_head_hash('PX4NuttX', short=True))
+        bld.ap_version_append_str('PX4_GIT_VERSION', bld.git_submodule_head_hash('PX4Firmware', short=True))
+        bld.load('vrcore')
+
+class vrcore_v10(vrcore):
+    name = 'vrcore-v10'
+    def __init__(self):
+        super(vrcore_v10, self).__init__()
+        self.version = '10'
+
