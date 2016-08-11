@@ -69,7 +69,8 @@ enum FlightMode {
     //UWAFSL START
     UW_MODE_1     = 21,
     UW_MODE_2     = 22,
-    UW_MODE_3     = 23
+    UW_MODE_3     = 23,
+	UW_MODE_4     = 24
     //UWAFSL END
 };
 

@@ -404,6 +404,7 @@ void Plane::set_mode(enum FlightMode mode)
 	case UW_MODE_1:
 	case UW_MODE_2:
 	case UW_MODE_3:
+	case UW_MODE_4:
 	//UWAFSL END
     case FLY_BY_WIRE_A:
         auto_throttle_mode = false;
@@ -516,6 +517,7 @@ bool Plane::mavlink_set_mode(uint8_t mode)
 	case UW_MODE_1:
 	case UW_MODE_2:
 	case UW_MODE_3:
+	case UW_MODE_4:
 	//UWAFSL END
     case LOITER:
     case QSTABILIZE:
@@ -721,6 +723,9 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 		break;
 	case UW_MODE_3:
 		port->print("UW_Mode_3");
+		break;
+	case UW_MODE_4:
+		port->print("UW_Mode_4");
 		break;
 	//UWAFSL END
     case QSTABILIZE:

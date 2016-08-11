@@ -54,6 +54,7 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
 	case UW_MODE_1:
 	case UW_MODE_2:
 	case UW_MODE_3:
+	case UW_MODE_4:
 	//UWAFSL END
     case CIRCLE:
         base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
@@ -211,6 +212,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
 	case UW_MODE_1:
 	case UW_MODE_2:
 	case UW_MODE_3:
+	case UW_MODE_4:
 	//UWAFSL END
     case CIRCLE:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control

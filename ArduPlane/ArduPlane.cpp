@@ -634,6 +634,45 @@ void Plane::update_flight_mode(void)
 			channel_rudder->servo_out = -g.uw_gain_rudder*CSD.GetRudder()*100*180/3.14; //Units: centi-degrees
 			break;
 		}
+		
+		case UW_MODE_4:{
+
+			//roll, pitch and yaw angles
+			double phi		= ahrs.roll;	// (rad)
+			double theta	= ahrs.pitch;	// (rad)
+			double psi 		= ahrs.yaw;		// (rad)
+
+			//time
+			uint32_t timer = micros(); // microseconds
+
+			//period
+			double T = 10.0; // seconds
+
+			//channel 1: sine wave oscillates between 4500 and -4500 
+			channel_roll->servo_out = 4500*sin(2*3.14/T*timer/1000); //Units: centi-degrees
+
+			//channel 2: servo's deflection angle equals twice the pitch angle
+			channel_pitch->servo_out = 2*theta*100*180/3.14; //Units: centi-degrees
+
+			//channel 3
+			calc_throttle();
+
+			//channel 4: servo's deflection angle equals twice the yaw angle
+			channel_rudder->servo_out = 2*psi*100*180/3.14; //Units: centi-degrees
+
+			//channel 5: cosine wave oscillates between 1000 pwm and 2000 pwm
+			g.rc_5.set_pwm(1500 + 500*cos(2*3.14/T*timer/1000));
+
+			//channel 6: Square wave switches between 1000 pwm and 2000 pwm
+			g.rc_6.set_pwm(sin(2.0*3.14/T*timer/1000.0)>=0.0 ? 2000.0:1000.0);
+
+			//channel 7: sine wave oscillates between 1200 pwm and 1800 pwm
+			g.rc_7.set_pwm(1500 + 300*sin(2*3.14/T*timer/1000));
+
+			//channel 8: Square wave switching between 1200 pwm and 1800 pwm
+			g.rc_8.set_pwm(sin(2.0*3.14/T*timer/1000.0)>=0.0 ? 1800.0:1200.0);
+			break;
+		}
 		//UWAFSL END
 
     case TRAINING: {
@@ -847,6 +886,7 @@ void Plane::update_navigation()
 	case UW_MODE_1:
 	case UW_MODE_2:
 	case UW_MODE_3:
+	case UW_MODE_4:
 	//UWAFSL END
 
     case CRUISE:

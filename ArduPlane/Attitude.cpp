@@ -373,6 +373,10 @@ void Plane::stabilize()
         // nothing to do
         return;
     }
+	if (control_mode == UW_MODE_4) {
+        // nothing to do
+        return;
+    }
     //UWAFSL END
     float speed_scaler = get_speed_scaler();
 

@@ -56,6 +56,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
 	case UW_MODE_1:
 	case UW_MODE_2:
 	case UW_MODE_3:
+	case UW_MODE_4:
 	//UWAFSL END
     default:
         break;
@@ -118,6 +119,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
 	case UW_MODE_1:
 	case UW_MODE_2:
 	case UW_MODE_3:
+	case UW_MODE_4:
 	//UWAFSL END
     default:
         break;
