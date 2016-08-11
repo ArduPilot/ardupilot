@@ -402,6 +402,7 @@ failed:
     // restore safety state if it was previously armed
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
         hal.rcout->force_safety_off();
+        hal.rcout->force_safety_no_wait();
     }
     if (!ret) {
         // clear out the mixer CRC so that we will attempt to send it again
