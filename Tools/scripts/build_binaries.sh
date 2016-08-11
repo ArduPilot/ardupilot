@@ -116,10 +116,10 @@ skip_frame() {
     frame=$2
     if [ "$board" = "bebop" ]; then
         if [ "$frame" != "quad" ]; then
-            return 1
+            return 0
         fi
     fi
-    return 0
+    return 1
 }
 
 # check if we should skip this build because we have already
