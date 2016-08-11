@@ -26,11 +26,14 @@
 #include <utility>
 #include <vector>
 
+#include "AP_Common/Location.h"
 #include "AP_HAL/AP_HAL.h"
 #include "AP_HAL/Scheduler.h"
 #include "AP_HAL/Semaphores.h"
 #include "AP_RTPS/AHRS.h"
+#include "AP_RTPS/WaypointNED.h"
 #include "AP_RTPS/RTPSPublisher.h"
+#include "AP_RTPS/RTPSSubscriber.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -38,6 +41,7 @@ namespace {
 
 static const uint32_t MAX_WAIT_UPDATE_MS = 2;
 static const uint32_t MAX_WAIT_PUBLISH_MS = 2;
+static const uint32_t MAX_WAIT_SUBSCRIBE_MS = 2;
 
 class RTPSPublisherItem {
     // Class used only for the std::vector in PublisherHelper below.
@@ -113,7 +117,7 @@ void RTPSPublisher<State>::publish()
         changed = false;
         semaphore->give();
 
-        publisher.iter(copy);
+        publisher.publish_state(copy);
     }
 }
 
@@ -129,6 +133,81 @@ void RTPSPublisher<State>::update()
         state = std::move(new_state);
         changed = true;
 
+        semaphore->give();
+    }
+}
+
+class RTPSSubscriberItem {
+public:
+    virtual void iter() = 0;
+};
+
+template <class State>
+class RTPSSubscriber : public RTPSSubscriberItem {
+public:
+    void init(const std::string& topic,
+        std::function<void(const State&)> got_state_func);
+
+    virtual void iter() override;
+private:
+    AP_HAL::Semaphore *semaphore;
+
+    std::function<void(const State&)> got_state_func;
+    RTPSIsolatedSubscriber<State> subscriber;
+    State state;
+
+    bool changed{false};
+    bool initialized{false};
+};
+
+template <class State>
+void RTPSSubscriber<State>::init(const std::string& topic,
+    std::function<void(const State&)> got_state_func_)
+{
+    std::string subscriber_name{SKETCHNAME "_"};
+
+    if (initialized) {
+        return;
+    }
+
+    semaphore = hal.util->new_semaphore();
+    if (!semaphore) {
+        AP_HAL::panic("Failed to create semaphore for %s RTPS subscriber",
+            topic.c_str());
+        return;
+    }
+
+    const auto got_state_func_locked = [this](const State& s) -> void {
+        if (semaphore->take(MAX_WAIT_SUBSCRIBE_MS)) {
+            state = std::move(s);
+            changed = true;
+            semaphore->give();
+        }
+    };
+
+    subscriber_name.append(topic);
+    if (!subscriber.init(subscriber_name, topic, got_state_func_locked)) {
+        AP_HAL::panic("Failed to initialize RTPS subscriber for topic %s",
+            topic.c_str());
+        return;
+    }
+
+    got_state_func = got_state_func_;
+    initialized = true;
+}
+
+template <class State>
+void RTPSSubscriber<State>::iter()
+{
+    if (!initialized) {
+        return;
+    }
+
+    if (semaphore->take(MAX_WAIT_SUBSCRIBE_MS)) {
+        if (changed) {
+            got_state_func(state);
+            changed = false;
+        }
         semaphore->give();
     }
 }
@@ -158,8 +237,28 @@ void PublisherHelper::update()
     }
 }
 
+class SubscriberHelper {
+private:
+    std::vector<RTPSSubscriberItem *> subscribers;
+public:
+    SubscriberHelper(std::initializer_list<RTPSSubscriberItem *> items)
+        : subscribers{std::move(items)} {}
+
+    void get_new_messages();
+};
+
+void SubscriberHelper::get_new_messages()
+{
+    for (auto sub : subscribers) {
+        sub->iter();
+    }
+}
+
 RTPSPublisher<AHRS> ahrs_publisher;
-PublisherHelper helper{&ahrs_publisher};
+PublisherHelper pub_helper{&ahrs_publisher};
+
+RTPSSubscriber<WaypointNED> waypoint_subscriber;
+SubscriberHelper sub_helper{&waypoint_subscriber};
 
 }
 
@@ -179,13 +278,26 @@ void Copter::init_rtps()
         return new_state;
     });
 
+    waypoint_subscriber.init("WaypointNED", [this](const WaypointNED& w) -> void {
+        const Location_Class loc {
+            (int32_t)w.latitude(),
+            (int32_t)w.longitude(),
+            (int32_t)(w.altitude() * 100),
+            Location_Class::ALT_FRAME_ABSOLUTE
+        };
+        const auto pos_ned = pv_location_to_vector(loc);
+        guided_set_destination(pos_ned);
+    });
+
     hal.scheduler->register_io_process(
-        FUNCTOR_BIND(&helper, &PublisherHelper::publish, void));
+        FUNCTOR_BIND(&pub_helper, &PublisherHelper::publish, void));
+    hal.scheduler->register_io_process(
+        FUNCTOR_BIND(&sub_helper, &SubscriberHelper::get_new_messages, void));
 }
 
 void Copter::rtps_update_task()
 {
-    helper.update();
+    pub_helper.update();
 }
 #else
 void Copter::init_rtps()

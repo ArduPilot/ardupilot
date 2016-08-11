@@ -96,5 +96,7 @@ int RTPSIsolatedPublisher<State>::publish_state(State& st)
 }
 
 #include "AHRS.h"
+#include "WaypointNED.h"
 
 template class RTPSIsolatedPublisher<AHRS>;
+template class RTPSIsolatedPublisher<WaypointNED>;

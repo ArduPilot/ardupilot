@@ -1,0 +1,5 @@
+struct WaypointNED {
+	long long latitude;	/* degrees * 1e7 */
+	long long longitude;	/* degrees * 1e7 */
+	long long altitude;	/* in m (AMSL, above mean sea leavel) */
+};

@@ -118,5 +118,7 @@ bool RTPSPubSubType<State>::getKey(void* data, InstanceHandle_t* handle)
 }
 
 #include "AHRS.h"
+#include "WaypointNED.h"
 
 template class RTPSPubSubType<AHRS>;
+template class RTPSPubSubType<WaypointNED>;

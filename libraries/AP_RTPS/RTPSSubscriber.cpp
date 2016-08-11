@@ -102,5 +102,7 @@ void RTPSIsolatedSubscriber<State>::SubListener::onNewDataMessage(Subscriber* su
 }
 
 #include "AHRS.h"
+#include "WaypointNED.h"
 
 template class RTPSIsolatedSubscriber<AHRS>;
+template class RTPSIsolatedSubscriber<WaypointNED>;
