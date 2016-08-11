@@ -146,6 +146,12 @@ void AP_BoardConfig::px4_setup_safety()
 
     if (px4.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
+        hal.rcout->force_safety_no_wait();
+        // wait until safety has been turned off
+        uint8_t count = 20;
+        while (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED && count--) {
+            hal.scheduler->delay(20);
+        }
     }
 }
 
