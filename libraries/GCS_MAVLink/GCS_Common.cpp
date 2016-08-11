@@ -24,6 +24,13 @@
 #include "ap_version.h"
 #include "GCS.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <drivers/drv_pwm_output.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
@@ -1719,4 +1726,46 @@ void GCS_MAVLINK::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_C
             }
         }
     }
+}
+
+/*
+  handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
+
+  Optionally disable PX4IO overrides. This is done for quadplanes to
+  prevent the mixer running while rebooting which can start the VTOL
+  motors. That can be dangerous when a preflight reboot is done with
+  the pilot close to the aircraft and can also damage the aircraft
+ */
+uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides)
+{
+    if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
+        if (disable_overrides) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+            // disable overrides while rebooting
+            int px4io_fd = open("/dev/px4io", 0);
+            if (px4io_fd >= 0) {
+                // disable OVERRIDES so we don't run the mixer while
+                // rebooting
+                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
+                    hal.console->printf("SET_OVERRIDE_OK failed\n");
+                }
+                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
+                    hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
+                }
+                close(px4io_fd);
+            }
+#endif
+        }
+
+        // force safety on 
+        hal.rcout->force_safety_on();
+        hal.rcout->force_safety_no_wait();
+        hal.scheduler->delay(200);
+
+        // when packet.param1 == 3 we reboot to hold in bootloader
+        bool hold_in_bootloader = is_equal(packet.param1,3.0f);
+        hal.scheduler->reboot(hold_in_bootloader);
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_UNSUPPORTED;
 }
