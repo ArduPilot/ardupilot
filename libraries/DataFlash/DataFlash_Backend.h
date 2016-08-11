@@ -117,6 +117,10 @@ public:
     // values contained in arg_list:
     bool Log_Write(uint8_t msg_type, va_list arg_list, bool is_critical=false);
 
+    // these methods are used when reporting system status over mavlink
+    virtual bool logging_enabled() const = 0;
+    virtual bool logging_failed() const = 0;
+
 protected:
     uint32_t dropped;
     uint8_t internal_errors; // uint8_t - wishful thinking?

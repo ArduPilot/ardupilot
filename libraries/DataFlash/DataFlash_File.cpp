@@ -1100,5 +1100,29 @@ void DataFlash_File::_io_timer(void)
     hal.util->perf_end(_perf_write);
 }
 
+// this sensor is enabled if we should be logging at the moment
+bool DataFlash_File::logging_enabled() const
+{
+    if (hal.util->get_soft_armed() ||
+        _front.log_while_disarmed()) {
+        return true;
+    }
+    return false;
+}
+
+bool DataFlash_File::logging_failed() const
+{
+    if (_write_fd == -1 &&
+        (hal.util->get_soft_armed() ||
+         _front.log_while_disarmed())) {
+        return true;
+    }
+    if (_open_error) {
+        return true;
+    }
+    return false;
+}
+
+
 #endif // HAL_OS_POSIX_IO
 
