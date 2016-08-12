@@ -350,6 +350,9 @@ private:
         // flag to hold whether battery low voltage threshold has been breached
         uint8_t low_battery:1;
 
+        // true if an adsb related failsafe has occurred
+        uint8_t adsb:1;
+
         // saved flight mode
         enum FlightMode saved_mode;
 
