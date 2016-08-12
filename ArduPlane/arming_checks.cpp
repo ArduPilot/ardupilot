@@ -75,6 +75,14 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         ret = false;
     }
 
+    // check adsb avoidance failsafe
+    if (plane.failsafe.adsb) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: ADSB threat detected");
+        }
+        ret = false;
+    }
+
     return ret;
 }
 
