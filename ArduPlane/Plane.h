@@ -1027,7 +1027,6 @@ private:
     void update_logging1(void);
     void update_logging2(void);
     void terrain_update(void);
-    void adsb_update(void);
     void update_flight_mode(void);
     void stabilize();
     void set_servos_idle(void);
