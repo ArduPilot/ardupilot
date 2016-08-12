@@ -1125,6 +1125,13 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &c
     plane.reset_offset_altitude();
 }
 
+void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
+                                        mavlink_message_t &msg)
+{
+    plane.avoidance_adsb.handle_msg(msg);
+    GCS_MAVLINK::packetReceived(status, msg);
+}
+
 void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
