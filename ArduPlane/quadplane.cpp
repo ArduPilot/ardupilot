@@ -1253,7 +1253,7 @@ bool QuadPlane::in_vtol_mode(void)
             plane.control_mode == QLOITER ||
             plane.control_mode == QLAND ||
             plane.control_mode == QRTL ||
-            (plane.control_mode == GUIDED && plane.auto_state.vtol_loiter) ||
+            ((plane.control_mode == GUIDED || plane.control_mode == AVOID_ADSB) && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }
 

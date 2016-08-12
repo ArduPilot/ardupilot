@@ -450,6 +450,7 @@ void Plane::set_mode(enum FlightMode mode)
         do_loiter_at_location();
         break;
 
+    case AVOID_ADSB:
     case GUIDED:
         auto_throttle_mode = true;
         auto_navigation_mode = true;
@@ -507,6 +508,7 @@ bool Plane::mavlink_set_mode(uint8_t mode)
     case AUTOTUNE:
     case FLY_BY_WIRE_B:
     case CRUISE:
+    case AVOID_ADSB:
     case GUIDED:
     case AUTO:
     case RTL:
@@ -705,6 +707,9 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case LOITER:
         port->print("Loiter");
+        break;
+    case AVOID_ADSB:
+        port->print("AVOID_ADSB");
         break;
     case GUIDED:
         port->print("Guided");

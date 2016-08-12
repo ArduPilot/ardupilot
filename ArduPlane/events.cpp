@@ -36,6 +36,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
         break;
         
     case AUTO:
+    case AVOID_ADSB:
     case GUIDED:
     case LOITER:
         if(g.short_fs_action != 0) {
@@ -95,6 +96,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
         break;
         
     case AUTO:
+    case AVOID_ADSB:
     case GUIDED:
     case LOITER:
         if(g.long_fs_action == 3) {
