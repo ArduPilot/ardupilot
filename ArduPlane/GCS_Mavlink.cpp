@@ -52,6 +52,7 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     case AUTO:
     case RTL:
     case LOITER:
+    case AVOID_ADSB:
     case GUIDED:
     case CIRCLE:
     case QRTL:
@@ -209,6 +210,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     case AUTO:
     case RTL:
     case LOITER:
+    case AVOID_ADSB:
     case GUIDED:
     case CIRCLE:
     case QRTL:
@@ -1242,7 +1244,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             // this command should be ignored since it comes in from GCS
             // or a companion computer:
             result = MAV_RESULT_FAILED;
-            if (plane.control_mode != GUIDED && plane.control_mode != AUTO) {
+            if (plane.control_mode != GUIDED && plane.control_mode != AUTO && plane.control_mode != AVOID_ADSB) {
                 // failed
                 break;
             }
@@ -2122,7 +2124,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // in e.g., RTL, CICLE. Specifying a single mode for companion
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
-        if (plane.control_mode != GUIDED) { // don't screw up failsafes
+        if (plane.control_mode != GUIDED && plane.control_mode != AVOID_ADSB) { // don't screw up failsafes
             break; 
         }
 
@@ -2220,7 +2222,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != GUIDED) {
+        if (plane.control_mode != GUIDED && plane.control_mode != AVOID_ADSB) {
             //don't screw up failsafes
             break;
         }

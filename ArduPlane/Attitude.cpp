@@ -432,7 +432,7 @@ void Plane::calc_throttle()
     int32_t commanded_throttle = SpdHgt_Controller->get_throttle_demand();
 
     // Received an external msg that guides throttle in the last 3 seconds?
-    if (control_mode == GUIDED &&
+    if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             plane.guided_state.last_forced_throttle_ms > 0 &&
             millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
         commanded_throttle = plane.guided_state.forced_throttle;
@@ -458,7 +458,7 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
     int16_t commanded_rudder;
 
     // Received an external msg that guides yaw in the last 3 seconds?
-    if (control_mode == GUIDED &&
+    if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
@@ -542,7 +542,7 @@ void Plane::calc_nav_pitch()
     int32_t commanded_pitch = SpdHgt_Controller->get_pitch_demand();
 
     // Received an external msg that guides roll in the last 3 seconds?
-    if (control_mode == GUIDED &&
+    if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             plane.guided_state.last_forced_rpy_ms.y > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
         commanded_pitch = plane.guided_state.forced_rpy_cd.y;
@@ -560,7 +560,7 @@ void Plane::calc_nav_roll()
     int32_t commanded_roll = nav_controller->nav_roll_cd();
 
     // Received an external msg that guides roll in the last 3 seconds?
-    if (control_mode == GUIDED &&
+    if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             plane.guided_state.last_forced_rpy_ms.x > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
         commanded_roll = plane.guided_state.forced_rpy_cd.x;
@@ -1064,7 +1064,7 @@ void Plane::set_servos(void)
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             channel_throttle->set_radio_out(channel_throttle->get_radio_in());
-        } else if (control_mode == GUIDED && 
+        } else if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
                    guided_throttle_passthru) {
             // manual pass through of throttle while in GUIDED
             channel_throttle->set_radio_out(channel_throttle->get_radio_in());
@@ -1342,6 +1342,7 @@ bool Plane::allow_reverse_thrust(void)
     case FLY_BY_WIRE_B:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_FBWB);
         break;
+    case AVOID_ADSB:
     case GUIDED:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_GUIDED);
         break;

@@ -581,6 +581,7 @@ void Plane::update_flight_mode(void)
         handle_auto_mode();
         break;
 
+    case AVOID_ADSB:
     case GUIDED:
         if (auto_state.vtol_loiter && quadplane.available()) {
             quadplane.guided_update();
@@ -806,6 +807,7 @@ void Plane::update_navigation()
         // fall through to LOITER
 
     case LOITER:
+    case AVOID_ADSB:
     case GUIDED:
         update_loiter(radius);
         break;

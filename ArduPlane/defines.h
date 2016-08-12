@@ -58,6 +58,7 @@ enum FlightMode {
     AUTO          = 10,
     RTL           = 11,
     LOITER        = 12,
+    AVOID_ADSB    = 14,
     GUIDED        = 15,
     INITIALISING  = 16,
     QSTABILIZE    = 17,
