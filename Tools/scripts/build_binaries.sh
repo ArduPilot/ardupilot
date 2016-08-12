@@ -151,7 +151,7 @@ skip_build() {
 addfwversion() {
     destdir="$1"
     git log -1 > "$destdir/git-version.txt"
-    [ -f APM_Config.h ] && {
+    [ -f "version.h" ] && {
         shopt -s nullglob
         version=$(grep 'define.THISFIRMWARE' version.h 2> /dev/null | cut -d'"' -f2)
         echo >> "$destdir/git-version.txt"
