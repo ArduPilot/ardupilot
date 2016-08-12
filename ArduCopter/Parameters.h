@@ -554,6 +554,9 @@ public:
     // Throw mode parameters
     AP_Int8 throw_nextmode;
     AP_Int8 throw_type;
+
+    // ground effect compensation enable/disable
+    AP_Int8 gndeffect_comp_enabled;
 };
 
 extern const AP_Param::Info        var_info[];

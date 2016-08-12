@@ -18,7 +18,6 @@ MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= drivers/led
 MODULES		+= drivers/px4fmu
 MODULES		+= drivers/rgbled
-MODULES		+= drivers/mpu6000
 MODULES		+= drivers/hmc5883
 MODULES		+= drivers/ms5611
 MODULES		+= drivers/mb12xx
@@ -35,6 +34,8 @@ MODULES		+= drivers/meas_airspeed
 MODULES		+= drivers/mkblctrl
 MODULES		+= drivers/batt_smbus
 MODULES		+= drivers/irlock
+MODULES		+= drivers/pwm_input
+MODULES		+= drivers/px4flow
 
 #
 # System commands
@@ -47,17 +48,17 @@ MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 #MODULES	+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
-MODULES         += systemcmds/mtd
-MODULES         += systemcmds/ver
+MODULES		+= systemcmds/mtd
+MODULES		+= systemcmds/ver
 
 ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/reflect),)  
-MODULES         += systemcmds/reflect
+MODULES		+= systemcmds/reflect
 endif
 ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/motor_test),)  
-MODULES         += systemcmds/motor_test
+MODULES		+= systemcmds/motor_test
 endif
 ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/usb_connected),)  
-MODULES         += systemcmds/usb_connected
+MODULES		+= systemcmds/usb_connected
 endif
 
 #
@@ -67,6 +68,8 @@ MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
 MODULES		+= lib/mathlib/math/filter
+MODULES		+= lib/mathlib
+#MODULES		+= modules/uavcan
 
 # Note: auth disabled to keep us under 1MB flash because of STM32 bug
 #ifneq ($(wildcard $(PX4_ROOT)/src/systemcmds/auth),)  

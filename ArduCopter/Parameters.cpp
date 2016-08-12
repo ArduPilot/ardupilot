@@ -988,6 +988,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, ThrowType_Upward),
 
+    // @Param: GND_EFFECT_COMP
+    // @DisplayName: Ground Effect Compensation Enable/Disable
+    // @Description: Ground Effect Compensation Enable/Disable
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 0),
+
     AP_GROUPEND
 };
 

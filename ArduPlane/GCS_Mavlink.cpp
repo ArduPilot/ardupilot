@@ -155,9 +155,12 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     if (aparm.throttle_min < 0) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }
+    if (plane.DataFlash.logging_present()) { // primary logging only (usually File)
+        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
+    }
 
     // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control, geofence and motor output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE);
+    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE & ~MAV_SYS_STATUS_LOGGING);
 
     if (airspeed.enabled() && airspeed.use()) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
@@ -165,6 +168,10 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
 
     if (geofence_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
+    }
+
+    if (plane.DataFlash.logging_enabled()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
     switch (control_mode) {
@@ -265,6 +272,10 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
         control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
     }
 #endif
+
+    if (plane.DataFlash.logging_failed()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
+    }
 
     if (millis() - failsafe.last_valid_rc_ms < 200) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;

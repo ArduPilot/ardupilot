@@ -16,14 +16,14 @@ class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
     // constructor
-    Airspeed_Calibration(const AP_Vehicle::FixedWing &parms);
+    Airspeed_Calibration();
 
     // initialise the calibration
     void init(float initial_ratio);
 
     // take current airspeed in m/s and ground speed vector and return
     // new scaling factor
-    float update(float airspeed, const Vector3f &vg);
+    float update(float airspeed, const Vector3f &vg, int16_t max_airspeed_allowed_during_cal);
 
 private:
     // state of kalman filter for airspeed ratio estimation
@@ -32,14 +32,13 @@ private:
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
     const float DT; // time delta
-    const AP_Vehicle::FixedWing &aparm;
 };
 
 class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed(const AP_Vehicle::FixedWing &parms);
+    AP_Airspeed();
 
     void init(void);
 
@@ -125,7 +124,7 @@ public:
     }
 
     // update airspeed ratio calibration
-    void update_calibration(const Vector3f &vground);
+    void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
 	// log data to MAVLink
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);

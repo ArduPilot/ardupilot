@@ -156,11 +156,15 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     if (ap.rc_receiver_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
+    if (copter.DataFlash.logging_present()) { // primary logging only (usually File)
+        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
+    }
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
-                                                         ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS);
+                                                         ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
+                                                         ~MAV_SYS_STATUS_LOGGING);
 
     switch (control_mode) {
     case ALT_HOLD:
@@ -186,6 +190,11 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     }
+
+    if (copter.DataFlash.logging_enabled()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
+    }
+
 
     // default to all healthy except baro, compass, gps and receiver which we set individually
     control_sensors_health = control_sensors_present & ~(MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE |
@@ -224,6 +233,10 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     if (ahrs.initialised() && !ahrs.healthy()) {
         // AHRS subsystem is unhealthy
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
+    }
+
+    if (copter.DataFlash.logging_failed()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
 
     int16_t battery_current = -1;
@@ -1685,7 +1698,17 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             // descend at up to WPNAV_SPEED_DN
             climb_rate_cms = (0.5f - packet.thrust) * 2.0f * -fabsf(copter.wp_nav.get_speed_down());
         }
-        copter.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);
+
+        // if the body_yaw_rate field is ignored, use the commanded yaw position
+        // otherwise use the commanded yaw rate
+        bool use_yaw_rate = false;
+        if ((packet.type_mask & (1<<2)) == 0) {
+            use_yaw_rate = true;
+        }
+
+        copter.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
+            climb_rate_cms, use_yaw_rate, packet.body_yaw_rate);
+
         break;
     }
 
