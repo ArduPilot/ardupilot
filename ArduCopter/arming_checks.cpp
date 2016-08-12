@@ -347,7 +347,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         // check adsb avoidance failsafe
         if (failsafe.adsb) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: ADSB threat detected");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: ADSB threat detected");
             }
             return false;
         }
@@ -696,7 +696,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
         if (failsafe.adsb) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: ADSB threat detected");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: ADSB threat detected");
             }
             return false;
         }
