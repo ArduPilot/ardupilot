@@ -51,6 +51,7 @@ public:
         k_param_num_resets,
         k_param_NavEKF2,
         k_param_g2,
+        k_param_avoidance_adsb,
 
         // Misc
         //

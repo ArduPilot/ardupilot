@@ -102,6 +102,7 @@
 #include "defines.h"
 
 #include "Parameters.h"
+#include "avoidance_adsb.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -158,6 +159,7 @@ public:
     friend class QuadPlane;
     friend class AP_Tuning_Plane;
     friend class AP_AdvancedFailsafe_Plane;
+    friend class AP_Avoidance_Plane;
 
     Plane(void);
 
@@ -655,6 +657,9 @@ private:
 
     AP_ADSB adsb {ahrs};
 
+    // avoidance of adsb enabled vehicles (normally manned vheicles)
+    AP_Avoidance_Plane avoidance_adsb {ahrs, adsb};
+
     // Outback Challenge Failsafe Support
     AP_AdvancedFailsafe_Plane afs {mission, barometer, gps, rcmap};
 
@@ -1027,6 +1032,7 @@ private:
     void update_logging1(void);
     void update_logging2(void);
     void terrain_update(void);
+    void avoidance_adsb_update(void);
     void update_flight_mode(void);
     void stabilize();
     void set_servos_idle(void);
@@ -1100,6 +1106,10 @@ private:
     void parachute_release();
     bool parachute_manual_release();
     void accel_cal_update(void);
+
+    // support for AP_Avoidance custom flight mode, AVOID_ADSB
+    bool avoid_adsb_init(bool ignore_checks);
+    void avoid_adsb_run();
 
 public:
     void mavlink_delay_cb();
