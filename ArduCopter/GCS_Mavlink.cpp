@@ -53,6 +53,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
     case AUTO:
     case RTL:
     case LOITER:
+    case AVOID_ADSB:
     case GUIDED:
     case CIRCLE:
     case POSHOLD:
@@ -169,6 +170,7 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     switch (control_mode) {
     case ALT_HOLD:
     case AUTO:
+    case AVOID_ADSB:
     case GUIDED:
     case LOITER:
     case RTL:
