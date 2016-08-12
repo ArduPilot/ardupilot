@@ -1,11 +1,14 @@
 #!/bin/bash
 
+# this script is run by the root user in the virtual machine
+
 set -e
+set -x
 
 echo "Initial setup of SITL-vagrant instance."
 
 BASE_PKGS="gawk make git arduino-core curl"
-SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-empy python-pyparsing ccache"
+SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk3.0 python-scipy python-opencv python-numpy python-empy python-pyparsing ccache"
 PYTHON_PKGS="pymavlink MAVProxy droneapi"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
@@ -21,45 +24,61 @@ ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
 
-sudo usermod -a -G dialout $USER
+usermod -a -G dialout $USER
 
-sudo apt-get -y remove modemmanager
-sudo apt-get -y update
-sudo apt-get -y install dos2unix g++-4.7 ccache python-lxml screen
-sudo apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS
-sudo pip -q install $PYTHON_PKGS
-sudo pip install catkin_pkg
+apt-get -y remove modemmanager
+apt-get -y update
+apt-get -y install dos2unix g++-4.7 ccache python-lxml screen xterm gdb
+apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS
+pip -q install $PYTHON_PKGS
+easy_install catkin_pkg
 
 
 # ARM toolchain
 if [ ! -d /opt/$ARM_ROOT ]; then
     (
-        cd /opt;
-        sudo wget -nv $ARM_TARBALL_URL;
-        sudo tar xjf ${ARM_TARBALL};
-        sudo rm ${ARM_TARBALL};
+        sudo -u vagrant wget -nv $ARM_TARBALL_URL
+        pushd /opt
+        tar xjf ${OLDPWD}/${ARM_TARBALL}
+        popd
+        rm ${ARM_TARBALL}
     )
 fi
 
 exportline="export PATH=/opt/$ARM_ROOT/bin:\$PATH"
-if grep -Fxq "$exportline" /home/vagrant/.profile; then echo nothing to do ; else echo $exportline >> /home/vagrant/.profile; fi
+DOT_PROFILE=/home/vagrant/.profile
+PROFILE_TEXT=""
+if grep -Fxq "$exportline" $DOT_PROFILE; then
+    echo nothing to do
+else
+    PROFILE_TEXT="
+$PROFILE_TEXT
+$exportline
+"
+fi
 
-echo "source /vagrant/Tools/vagrant/shellinit.sh" >>/home/vagrant/.profile
+PROFILE_TEXT="
+$PROFILE_TEXT
+source /vagrant/Tools/vagrant/shellinit.sh
 # This allows the PX4NuttX build to proceed when the underlying fs is on windows
 # It is only marginally less efficient on Linux
-echo "export PX4_WINTOOL=y" >>/home/vagrant/.profile
-ln -fs /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
+export PX4_WINTOOL=y
+export PATH=\$PATH:\$HOME/jsbsim/src
+"
+
+echo "$PROFILE_TEXT" | sudo -u vagrant dd conv=notrunc oflag=append of=$DOT_PROFILE
+sudo -u vagrant ln -fs /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
 
 # build JSB sim
-pushd /tmp
+apt-get install -y libtool libtool-bin automake autoconf libexpat1-dev
+sudo -u vagrant sh <<"EOF"
+cd $HOME
 rm -rf jsbsim
 git clone https://github.com/tridge/jsbsim.git
-sudo apt-get install -y libtool automake autoconf libexpat1-dev
 cd jsbsim
 ./autogen.sh
 make -j2
-sudo make install
-popd
+EOF
 
 # Now you can run
 # vagrant ssh -c "screen -d -R"
