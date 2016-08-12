@@ -150,8 +150,9 @@ skip_build() {
 
 addfwversion() {
     destdir="$1"
+    src="$2"
     git log -1 > "$destdir/git-version.txt"
-    [ -f "version.h" ] && {
+    [ -f "$src/version.h" ] && {
         shopt -s nullglob
         version=$(grep 'define.THISFIRMWARE' version.h 2> /dev/null | cut -d'"' -f2)
         echo >> "$destdir/git-version.txt"
@@ -165,16 +166,17 @@ copyit() {
     file="$1"
     dir="$2"
     tag="$3"
+    src="${4:-.}"
     bname=$(basename $dir)
     tdir=$(dirname $(dirname $(dirname $dir)))/$tag/$bname
     if [ "$tag" = "latest" ]; then
         mkdir -p "$dir"
         /bin/cp "$file" "$dir"
-        addfwversion "$dir"
+        addfwversion "$dir" "$src"
     fi
     echo "Copying $file to $tdir"
     mkdir -p "$tdir"
-    addfwversion "$tdir"
+    addfwversion "$tdir" "$src"
 
     rsync "$file" "$tdir"
 }
@@ -232,7 +234,7 @@ build_arduplane() {
             error_count=$((error_count+1))
             continue
         }
-        copyit $BUILDROOT/$b/bin/arduplane $ddir $tag
+        copyit $BUILDROOT/$b/bin/arduplane $ddir $tag "ArduPlane"
         touch $binaries/Plane/$tag
     done
     pushd ArduPlane
@@ -291,7 +293,7 @@ build_arducopter() {
                 error_count=$((error_count+1))
                 continue
             }
-            copyit $BUILDROOT/$b/bin/arducopter-$f $ddir $tag
+            copyit $BUILDROOT/$b/bin/arducopter-$f $ddir $tag "ArduCopter"
             touch $binaries/Copter/$tag
         done
     done
@@ -354,7 +356,7 @@ build_rover() {
             error_count=$((error_count+1))
             continue
         }
-        copyit $BUILDROOT/$b/bin/ardurover $ddir $tag
+        copyit $BUILDROOT/$b/bin/ardurover $ddir $tag "APMRover2"
         touch $binaries/Rover/$tag
     done
     pushd APMrover2
@@ -418,7 +420,7 @@ build_antennatracker() {
             error_count=$((error_count+1))
             continue
         }
-        copyit $BUILDROOT/$b/bin/antennatracker $ddir $tag
+        copyit $BUILDROOT/$b/bin/antennatracker $ddir $tag "AntennaTracker"
         touch $binaries/AntennaTracker/$tag
     done
     pushd AntennaTracker
