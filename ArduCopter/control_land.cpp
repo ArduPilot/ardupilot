@@ -170,8 +170,21 @@ void Copter::land_run_vertical_control(bool pause_descent)
 
     float cmb_rate = 0;
     if (!pause_descent) {
+        float max_land_descent_velocity;
+        if (g.land_speed_high > 0) {
+            max_land_descent_velocity = -g.land_speed_high;
+        } else {
+            max_land_descent_velocity = pos_control.get_speed_down();
+        }
+
+        // Don't speed up for landing.
+        max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
+
+        // Compute a vertical velocity demand such that the vehicle approaches LAND_START_ALT. Without the below constraint, this would cause the vehicle to hover at LAND_START_ALT.
         cmb_rate = AC_AttitudeControl::sqrt_controller(LAND_START_ALT-alt_above_ground, g.p_alt_hold.kP(), pos_control.get_accel_z());
-        cmb_rate = constrain_float(cmb_rate, pos_control.get_speed_down(), -abs(g.land_speed));
+
+        // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
+        cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
         if (doing_precision_landing && alt_above_ground < 300.0f) {
             float land_slowdown = MAX(0.0f, pos_control.get_horizontal_error()*(abs(g.land_speed)/precland_acceptable_error));
