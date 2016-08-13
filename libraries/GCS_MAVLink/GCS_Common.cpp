@@ -985,7 +985,8 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     if (msg_snoop != NULL) {
         msg_snoop(&msg);
     }
-    if (routing.check_and_forward(chan, &msg)) {
+    if (routing.check_and_forward(chan, &msg) &&
+        accept_packet(status, msg)) {
         handleMessage(&msg);
     }
 }

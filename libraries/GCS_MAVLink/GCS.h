@@ -225,6 +225,10 @@ public:
 
 protected:
 
+    // overridable method to check for packet acceptance. Allows for
+    // enforcement of GCS sysid
+    virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
+    
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
     uint16_t        waypoint_request_i; // request index
