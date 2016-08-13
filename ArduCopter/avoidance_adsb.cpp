@@ -78,6 +78,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
             // unsupported actions and those that require no response
             case MAV_COLLISION_ACTION_NONE:
+                return actual_action;
             case MAV_COLLISION_ACTION_REPORT:
             default:
                 break;
