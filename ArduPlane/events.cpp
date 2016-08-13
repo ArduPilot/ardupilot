@@ -2,7 +2,7 @@
 
 #include "Plane.h"
 
-void Plane::failsafe_short_on_event(enum failsafe_state fstype)
+void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t reason)
 {
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
@@ -21,9 +21,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
         failsafe.saved_mode = control_mode;
         failsafe.saved_mode_set = 1;
         if(g.short_fs_action == 2) {
-            set_mode(FLY_BY_WIRE_A);
+            set_mode(FLY_BY_WIRE_A, reason);
         } else {
-            set_mode(CIRCLE);
+            set_mode(CIRCLE, reason);
         }
         break;
 
@@ -32,7 +32,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     case QHOVER:
         failsafe.saved_mode = control_mode;
         failsafe.saved_mode_set = 1;
-        set_mode(QLAND);
+        set_mode(QLAND, reason);
         break;
         
     case AUTO:
@@ -43,9 +43,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
             failsafe.saved_mode = control_mode;
             failsafe.saved_mode_set = 1;
             if(g.short_fs_action == 2) {
-                set_mode(FLY_BY_WIRE_A);
+                set_mode(FLY_BY_WIRE_A, reason);
             } else {
-                set_mode(CIRCLE);
+                set_mode(CIRCLE, reason);
             }
         }
         break;
@@ -60,7 +60,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     gcs_send_text_fmt(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
 }
 
-void Plane::failsafe_long_on_event(enum failsafe_state fstype)
+void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason)
 {
     // This is how to handle a long loss of control signal failsafe.
     gcs_send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event on, ");
@@ -83,16 +83,16 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
             parachute_release();
 #endif
         } else if (g.long_fs_action == 2) {
-            set_mode(FLY_BY_WIRE_A);
+            set_mode(FLY_BY_WIRE_A, reason);
         } else {
-            set_mode(RTL);
+            set_mode(RTL, reason);
         }
         break;
 
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
-        set_mode(QLAND);
+        set_mode(QLAND, reason);
         break;
         
     case AUTO:
@@ -104,9 +104,9 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
             parachute_release();
 #endif
         } else if (g.long_fs_action == 2) {
-            set_mode(FLY_BY_WIRE_A);
+            set_mode(FLY_BY_WIRE_A, reason);
         } else if (g.long_fs_action == 1) {
-            set_mode(RTL);
+            set_mode(RTL, reason);
         }
         break;
 
@@ -122,7 +122,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
     gcs_send_text_fmt(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
 }
 
-void Plane::failsafe_short_off_event()
+void Plane::failsafe_short_off_event(mode_reason_t reason)
 {
     // We're back in radio contact
     gcs_send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off");
@@ -132,7 +132,7 @@ void Plane::failsafe_short_off_event()
     // --------------------------------------------------------
     if (control_mode == CIRCLE && failsafe.saved_mode_set) {
         failsafe.saved_mode_set = 0;
-        set_mode(failsafe.saved_mode);
+        set_mode(failsafe.saved_mode, reason);
     }
 }
 
@@ -146,7 +146,7 @@ void Plane::low_battery_event(void)
     if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
         flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
         flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-    	set_mode(RTL);
+    	set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
     	aparm.throttle_cruise.load();
     }
     failsafe.low_battery = true;

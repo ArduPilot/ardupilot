@@ -317,7 +317,9 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     enum FlightMode control_mode = INITIALISING;
+    mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
     enum FlightMode previous_mode = INITIALISING;
+    mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
 
     // Used to maintain the state of the previous control switch position
     // This is set to 254 when we need to re-read the switch
@@ -915,9 +917,9 @@ private:
     void autotune_restore(void);
     void autotune_enable(bool enable);
     bool fly_inverted(void);
-    void failsafe_short_on_event(enum failsafe_state fstype);
-    void failsafe_long_on_event(enum failsafe_state fstype);
-    void failsafe_short_off_event();
+    void failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t reason);
+    void failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason);
+    void failsafe_short_off_event(mode_reason_t reason);
     void low_battery_event(void);
     void update_events(void);
     uint8_t max_fencepoints(void);
@@ -989,7 +991,7 @@ private:
     void init_ardupilot();
     void startup_ground(void);
     enum FlightMode get_previous_mode();
-    void set_mode(enum FlightMode mode);
+    void set_mode(enum FlightMode mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
     void exit_mode(enum FlightMode mode);
     void check_long_failsafe();
