@@ -292,7 +292,7 @@ void Plane::geofence_check(bool altitude_check_only)
             guided_WP_loc.lat == geofence_state->guided_lat &&
             guided_WP_loc.lng == geofence_state->guided_lng) {
             geofence_state->old_switch_position = 254;
-            set_mode(get_previous_mode());
+            set_mode(get_previous_mode(), MODE_REASON_GCS_COMMAND);
         }
         return;
     }
@@ -311,7 +311,7 @@ void Plane::geofence_check(bool altitude_check_only)
     struct Location loc;
 
     // Never trigger a fence breach in the final stage of landing
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
         return;
     }
 
@@ -380,9 +380,9 @@ void Plane::geofence_check(bool altitude_check_only)
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
         if (g.fence_action == FENCE_ACTION_RTL) {
-            set_mode(RTL);
+            set_mode(RTL, MODE_REASON_FENCE_BREACH);
         } else {
-            set_mode(GUIDED);
+            set_mode(GUIDED, MODE_REASON_FENCE_BREACH);
         }
         g.auto_trim.set(saved_auto_trim);
 

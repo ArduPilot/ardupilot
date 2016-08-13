@@ -510,7 +510,7 @@ void Plane::handle_auto_mode(void)
 
     if (mission.state() != AP_Mission::MISSION_RUNNING) {
         // this should never be reached
-        set_mode(RTL);
+        set_mode(RTL, MODE_REASON_MISSION_END);
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
@@ -779,7 +779,7 @@ void Plane::update_navigation()
     case RTL:
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
             nav_controller->reached_loiter_target()) {
-            set_mode(QRTL);
+            set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
         } else if (g.rtl_autoland == 1 &&
             !auto_state.checked_for_autoland &&

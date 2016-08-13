@@ -33,7 +33,7 @@ bool Plane::verify_land()
             mission.resume();
             if (!success) {
                 // on a restart failure lets RTL or else the plane may fly away with nowhere to go!
-                set_mode(RTL);
+                set_mode(RTL, MODE_REASON_MISSION_END);
             }
             // make sure to return false so it leaves the mission index alone
         }
@@ -368,7 +368,9 @@ bool Plane::jump_to_landing_sequence(void)
     uint16_t land_idx = mission.get_landing_sequence_start();
     if (land_idx != 0) {
         if (mission.set_current_cmd(land_idx)) {
-            set_mode(AUTO);
+
+            // in case we're in RTL
+            set_mode(AUTO, MODE_REASON_UNKNOWN);
 
             //if the mission has ended it has to be restarted
             if (mission.state() == AP_Mission::MISSION_STOPPED) {

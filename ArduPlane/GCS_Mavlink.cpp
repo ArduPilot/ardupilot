@@ -1199,7 +1199,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             // location is valid load and set
             if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
                 (plane.control_mode == GUIDED)) {
-                plane.set_mode(GUIDED);
+                plane.set_mode(GUIDED, MODE_REASON_GCS_COMMAND);
                 plane.guided_WP_loc = requested_position;
 
                 // add home alt if needed
@@ -1267,12 +1267,12 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_NAV_LOITER_UNLIM:
-            plane.set_mode(LOITER);
+            plane.set_mode(LOITER, MODE_REASON_GCS_COMMAND);
             result = MAV_RESULT_ACCEPTED;
             break;
 
         case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-            plane.set_mode(RTL);
+            plane.set_mode(RTL, MODE_REASON_GCS_COMMAND);
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -1334,7 +1334,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_MISSION_START:
-            plane.set_mode(AUTO);
+            plane.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -1476,19 +1476,19 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             switch ((uint16_t)packet.param1) {
             case MAV_MODE_MANUAL_ARMED:
             case MAV_MODE_MANUAL_DISARMED:
-                plane.set_mode(MANUAL);
+                plane.set_mode(MANUAL, MODE_REASON_GCS_COMMAND);
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
             case MAV_MODE_AUTO_ARMED:
             case MAV_MODE_AUTO_DISARMED:
-                plane.set_mode(AUTO);
+                plane.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
             case MAV_MODE_STABILIZE_DISARMED:
             case MAV_MODE_STABILIZE_ARMED:
-                plane.set_mode(FLY_BY_WIRE_A);
+                plane.set_mode(FLY_BY_WIRE_A, MODE_REASON_GCS_COMMAND);
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
