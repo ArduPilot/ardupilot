@@ -30,9 +30,6 @@ protected:
     // horizontal avoidance handler
     bool handle_avoidance_horizontal(const AP_Avoidance::Obstacle *obstacle, bool allow_mode_change);
 
-    // perpendicular (3 dimensional) avoidance handler
-    bool handle_avoidance_perpendicular(const AP_Avoidance::Obstacle *obstacle, bool allow_mode_change);
-
     // control mode before avoidance began
     FlightMode prev_control_mode = RTL;
 };
