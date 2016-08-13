@@ -2432,3 +2432,17 @@ void Plane::gcs_retry_deferred(void)
     gcs_send_message(MSG_RETRY_DEFERRED);
     GCS_MAVLINK::service_statustext();
 }
+
+/*
+  return true if we will accept this packet. Used to implement SYSID_ENFORCE
+ */
+bool GCS_MAVLINK_Plane::accept_packet(const mavlink_status_t &status, mavlink_message_t &msg)
+{
+    if (!plane.g2.sysid_enforce) {
+        return true;
+    }
+    if (msg.msgid == MAVLINK_MSG_ID_RADIO || msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
+        return true;
+    }
+    return (msg.sysid == plane.g.sysid_my_gcs);
+}
