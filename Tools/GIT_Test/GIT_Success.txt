@@ -13,7 +13,7 @@ Andreas Antonopoulos wuz'ere
 Robert Lefebvre, unconfuzzled his clone.
 Olivier check test
 Phil Rowse was here :)
-Nils Högberg (Vizual54) testing
+Nils H¡¦berg (Vizual54) testing
 Linus Penzlien 
 Hazy
 Benoit GRUSON
@@ -33,3 +33,4 @@ Yasuhide Horiuchi
 Tatsuya Yamaguchi
 Kenji Koseki
 Shinya Oda
+Yuki Yoshioka
