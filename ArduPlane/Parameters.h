@@ -52,6 +52,7 @@ public:
         k_param_g2,
         k_param_avoidance_adsb,
         k_param_landing,
+        k_param_NavEKF3,
 
         // Misc
         //
@@ -202,10 +203,10 @@ public:
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
         k_param_curr_amp_offset,
-        k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
+        k_param_NavEKF,  // deprecated - remove
         k_param_mission, // mission library
         k_param_serial_manager, // serial manager library
-        k_param_NavEKF2_old,  // deprecated
+        k_param_NavEKF2_old,  // deprecated - remove
         k_param_land_pre_flare_alt, // unused - moved to AP_Landing
         k_param_land_pre_flare_airspeed = 149,  // unused - moved to AP_Landing
 
