@@ -152,6 +152,12 @@
  # define RANGEFINDER_TILT_CORRECTION ENABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Proximity sensor
+//
+#ifndef PROXIMITY_ENABLED
+ # define PROXIMITY_ENABLED ENABLED
+#endif
 
 #ifndef MAV_SYSTEM_ID
  # define MAV_SYSTEM_ID          1
