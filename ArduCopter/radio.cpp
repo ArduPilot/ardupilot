@@ -76,7 +76,7 @@ void Copter::init_rc_out()
     esc_calibration_startup_check();
 
     // enable output to motors
-    pre_arm_rc_checks();
+    arming.pre_arm_rc_checks();
     if (ap.pre_arm_rc_check) {
         enable_motor_output();
     }
