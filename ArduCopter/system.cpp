@@ -255,6 +255,9 @@ void Copter::init_ardupilot()
     // initialise rangefinder
     init_rangefinder();
 
+    // init proximity sensor
+    init_proximity();
+
     // initialise AP_RPM library
     rpm_sensor.init();
 
