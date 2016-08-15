@@ -75,12 +75,11 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const AP_BattMonitor &battery, const enum HomeState &home_set) :
+                     const AP_BattMonitor &battery) :
     ahrs(ahrs_ref),
     barometer(baro),
     _compass(compass),
     _battery(battery),
-    home_is_set(home_set),
     armed(false),
     arming_method(NONE)
 {
@@ -337,7 +336,7 @@ bool AP_Arming::gps_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         //GPS OK?
-        if (home_is_set == HOME_UNSET || 
+        if (home_status() == HOME_UNSET ||
             gps.status() < AP_GPS::GPS_OK_FIX_3D) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Bad GPS Position");
