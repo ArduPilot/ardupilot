@@ -7,12 +7,15 @@
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
+#include <AP_Proximity/AP_Proximity.h>
 
 #define AC_AVOID_ACCEL_CMSS_MAX         100.0f  // maximum acceleration/deceleration in cm/s/s used to avoid hitting fence
 
 // bit masks for enabled fence types.
 #define AC_AVOID_DISABLED               0       // avoidance disabled
 #define AC_AVOID_STOP_AT_FENCE          1       // stop at fence
+#define AC_AVOID_USE_PROXIMITY_SENSOR   2       // stop based on proximity sensor output
+#define AC_AVOID_ALL                    3       // use fence and promiximity sensor
 
 /*
  * This class prevents the vehicle from leaving a polygon fence in
@@ -22,7 +25,7 @@ class AC_Avoid {
 public:
 
     /// Constructor
-    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence);
+    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity);
 
     /*
      * Adjusts the desired velocity so that the vehicle can stop
@@ -46,6 +49,10 @@ private:
      */
     void adjust_velocity_poly(const float kP, const float accel_cmss, Vector2f &desired_vel);
 
+    /*
+     * Adjusts the desired velocity based on output from the proximity sensor
+     */
+    void adjust_velocity_proximity(const float kP, const float accel_cmss, Vector2f &desired_vel);
 
     /*
      * Limits the component of desired_vel in the direction of the unit vector
@@ -81,6 +88,7 @@ private:
     const AP_AHRS& _ahrs;
     const AP_InertialNav& _inav;
     const AC_Fence& _fence;
+    const AP_Proximity& _proximity;
 
     // parameters
     AP_Int8 _enabled;
