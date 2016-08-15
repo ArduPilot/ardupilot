@@ -854,6 +854,14 @@ uint16_t Plane::throttle_min(void) const
 *****************************************/
 void Plane::set_servos(void)
 {
+    // this is to allow the failsafe module to deliberately crash 
+    // the plane. Only used in extreme circumstances to meet the
+    // OBC rules
+    if (afs.should_crash_vehicle()) {
+        afs.terminate_vehicle();
+        return;
+    }
+
     int16_t last_throttle = channel_throttle->get_radio_out();
 
     // do any transition updates for quadplane
@@ -1218,13 +1226,6 @@ void Plane::set_servos(void)
             break;
         }
     }
-
-#if OBC_FAILSAFE == ENABLED
-    // this is to allow the failsafe module to deliberately crash 
-    // the plane. Only used in extreme circumstances to meet the
-    // OBC rules
-    obc.check_crash_plane();
-#endif
 
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {

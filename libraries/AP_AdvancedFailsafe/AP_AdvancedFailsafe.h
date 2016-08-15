@@ -30,13 +30,13 @@
 #include <inttypes.h>
 
 
-class APM_OBC
+class AP_AdvancedFailsafe
 {
 public:
     enum control_mode {
-        OBC_MANUAL = 0,
-        OBC_FBW    = 1,
-        OBC_AUTO   = 2
+        AFS_MANUAL     = 0,
+        AFS_STABILIZED = 1,
+        AFS_AUTO       = 2
     };
 
     enum state {
@@ -47,7 +47,7 @@ public:
     };
 
     // Constructor
-    APM_OBC(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
+    AP_AdvancedFailsafe(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
         mission(_mission),
         baro(_baro),
         gps(_gps),
@@ -64,19 +64,28 @@ public:
         }
 
     // check that everything is OK
-    void check(enum control_mode control_mode, uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
+    void check(uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
 
     // generate heartbeat msgs, so external failsafe boards are happy
     // during sensor calibration
     void heartbeat(void);
 
-    // called in servo output code to set servos to crash position if needed
-    void check_crash_plane(void);
-
+    // return true if we are terminating (deliberately crashing the vehicle)
+    bool should_crash_vehicle(void);
+    
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-private:
+    // called to set all outputs to termination state
+    virtual void terminate_vehicle(void) = 0;
+        
+protected:
+    // setup failsafe values for if FMU firmware stops running
+    virtual void setup_IO_failsafe(void) = 0;
+
+    // return the AFS mapped control mode
+    virtual enum control_mode afs_mode(void) = 0;
+
     enum state _state;
 
     AP_Mission &mission;
@@ -127,11 +136,5 @@ private:
     // have the failsafe values been setup?
     bool _failsafe_setup:1;
 
-    // setup failsafe values for if FMU firmware stops running
-    void setup_failsafe(void);
-
     bool check_altlimit(void);
 };
-
-// map from ArduPlane control_mode to APM_OBC::control_mode
-#define OBC_MODE(control_mode) (auto_throttle_mode?APM_OBC::OBC_AUTO:(control_mode==MANUAL?APM_OBC::OBC_MANUAL:APM_OBC::OBC_FBW))
