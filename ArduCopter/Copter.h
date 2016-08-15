@@ -828,6 +828,7 @@ private:
     void land_run();
     void land_gps_run();
     void land_nogps_run();
+    int32_t land_get_alt_above_ground(void);
     void land_run_vertical_control(bool pause_descent = false);
     void land_run_horizontal_control();
     void land_do_not_use_GPS();
