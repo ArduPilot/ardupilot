@@ -60,6 +60,7 @@
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
+#include <AP_Proximity/AP_Proximity.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
@@ -195,6 +196,10 @@ private:
         uint32_t last_healthy_ms;
         LowPassFilterFloat alt_cm_filt; // altitude filter
     } rangefinder_state = { false, false, 0, 0 };
+
+#if PROXIMITY_ENABLED == ENABLED
+    AP_Proximity proximity {serial_manager};
+#endif
 
     AP_RPM rpm_sensor;
 
@@ -712,6 +717,8 @@ private:
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
     void button_update();
+    void init_proximity();
+    void update_proximity();
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
