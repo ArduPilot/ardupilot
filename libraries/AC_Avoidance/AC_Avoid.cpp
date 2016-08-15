@@ -5,18 +5,20 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Avoidance control enable/disable
     // @Description: Enabled/disable stopping at fence
-    // @Values: 0:None,1:StopAtFence
+    // @Values: 0:None,1:StopAtFence,2:UseProximitySensor,3:All
+    // @Bitmask: 0:StopAtFence,1:UseProximitySensor
     // @User: Standard
-    AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_STOP_AT_FENCE),
+    AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_ALL),
 
     AP_GROUPEND
 };
 
 /// Constructor
-AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence)
+AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity)
     : _ahrs(ahrs),
       _inav(inav),
-      _fence(fence)
+      _fence(fence),
+      _proximity(proximity)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -31,9 +33,13 @@ void AC_Avoid::adjust_velocity(const float kP, const float accel_cmss, Vector2f 
     // limit acceleration
     float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
-    if (_enabled == AC_AVOID_STOP_AT_FENCE) {
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
         adjust_velocity_circle(kP, accel_cmss_limited, desired_vel);
         adjust_velocity_poly(kP, accel_cmss_limited, desired_vel);
+    }
+
+    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0) {
+        adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel);
     }
 }
 
@@ -138,7 +144,7 @@ void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vect
             // We are strictly inside the given edge.
             // Adjust velocity to not violate this edge.
             limit_direction /= limit_distance;
-            limit_velocity(kP, accel_cmss, safe_vel, limit_direction, limit_distance);
+            limit_velocity(kP, accel_cmss, safe_vel, limit_direction, MAX(limit_distance - get_margin(),0.0f));
         } else {
             // We are exactly on the edge - treat this as a fence breach.
             // i.e. do not adjust velocity.
@@ -150,6 +156,37 @@ void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vect
 }
 
 /*
+ * Adjusts the desired velocity based on output from the proximity sensor
+ */
+void AC_Avoid::adjust_velocity_proximity(const float kP, const float accel_cmss, Vector2f &desired_vel)
+{
+    // exit immediately if proximity sensor is not present
+    if (_proximity.get_status() != AP_Proximity::Proximity_Good) {
+        return;
+    }
+
+    // exit immediately if no desired velocity
+    if (desired_vel.is_zero()) {
+        return;
+    }
+
+    // normalise desired velocity vector
+    Vector2f vel_dir = desired_vel.normalized();
+
+    // get angle of desired velocity
+    float heading_rad = atan2f(vel_dir.y, vel_dir.x);
+
+    // rotate desired velocity angle into body-frame angle
+    float heading_bf_rad = wrap_PI(heading_rad - _ahrs.yaw);
+
+    // get nearest object using body-frame angle and shorten desired velocity (which must remain in earth-frame)
+    float distance_m;
+    if (_proximity.get_horizontal_distance(degrees(heading_bf_rad), distance_m)) {
+        limit_velocity(kP, accel_cmss, desired_vel, vel_dir, MAX(distance_m*100.0f - 200.0f, 0.0f));
+    }
+}
+
+/*
  * Limits the component of desired_vel in the direction of the unit vector
  * limit_direction to be at most the maximum speed permitted by the limit_distance.
  *
@@ -158,7 +195,7 @@ void AC_Avoid::adjust_velocity_poly(const float kP, const float accel_cmss, Vect
  */
 void AC_Avoid::limit_velocity(const float kP, const float accel_cmss, Vector2f &desired_vel, const Vector2f limit_direction, const float limit_distance) const
 {
-    const float max_speed = get_max_speed(kP, accel_cmss, limit_distance - get_margin());
+    const float max_speed = get_max_speed(kP, accel_cmss, limit_distance);
     // project onto limit direction
     const float speed = desired_vel * limit_direction;
     if (speed > max_speed) {
