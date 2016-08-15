@@ -74,7 +74,7 @@ bool Copter::guided_takeoff_start(float final_alt_above_home)
     // clear i term when we're taking off
     set_throttle_takeoff();
 
-    // get initial alt for WP_TKOFF_NAV_ALT
+    // get initial alt for WP_NAVALT_MIN
     auto_takeoff_set_start_alt();
     
     return true;
