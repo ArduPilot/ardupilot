@@ -17,8 +17,8 @@
 /*
     AP_AdvancedFailsafe.cpp
 
-    Outback Challenge Failsafe module
-
+    This is an advanced failsafe module originally modelled on the
+    failsafe rules of the Outback Challenge
 */
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AdvancedFailsafe.h"
