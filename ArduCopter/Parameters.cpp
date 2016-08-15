@@ -963,12 +963,12 @@ const AP_Param::Info Copter::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
-    // @Param: TKOFF_NAV_ALT
-    // @DisplayName: Takeoff navigation altitude
-    // @Description: This is the altitude in meters above the takeoff point that attitude changes for navigation can begin
+    // @Param: WP_NAVALT_MIN
+    // @DisplayName: Minimum navigation altitude
+    // @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
     // @Range: 0 5
     // @User: Standard
-    AP_GROUPINFO("WP_TKOFF_NAV_ALT", 1, ParametersG2, takeoff_nav_alt, 0),
+    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
 
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp

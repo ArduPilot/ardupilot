@@ -546,7 +546,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // altitude at which nav control can start in takeoff
-    AP_Float takeoff_nav_alt;
+    AP_Float wp_navalt_min;
 
     // button checking
     AP_Button button;
