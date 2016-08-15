@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: REQUIRE
     // @DisplayName: Require Arming Motors 
-    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure.
+    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure. This parameter is relevant for ArduPlane only.
     // @Values: 0:Disabled,1:THR_MIN PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
     AP_GROUPINFO_FLAGS("REQUIRE",     0,      AP_Arming,  require,                 1, AP_PARAM_NO_SHIFT),
@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: MIN_VOLT
     // @DisplayName: Minimum arming voltage on the first battery
-    // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
+    // @Description: The minimum voltage on the first battery to arm, 0 disables the check.  This parameter is relevant for ArduPlane only.
     // @Units: Volts
     // @Increment: 0.1 
     // @User: Standard
@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: MIN_VOLT2
     // @DisplayName: Minimum arming voltage on the second battery
-    // @Description: The minimum voltage on the first battery to arm, 0 disabes the check
+    // @Description: The minimum voltage on the first battery to arm, 0 disables the check. This parameter is relevant for ArduPlane only.
     // @Units: Volts
     // @Increment: 0.1 
     // @User: Standard
