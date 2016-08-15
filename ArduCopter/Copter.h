@@ -635,6 +635,15 @@ private:
     void set_land_complete_maybe(bool b);
     void set_pre_arm_check(bool b);
     void set_pre_arm_rc_check(bool b);
+    bool rc_calibration_checks(bool display_failure);
+    bool gps_checks(bool display_failure);
+    bool fence_checks(bool display_failure);
+    bool compass_checks(bool display_failure);
+    bool ins_checks(bool display_failure);
+    bool board_voltage_checks(bool display_failure);
+    bool parameter_checks(bool display_failure);
+    bool pilot_throttle_checks(bool display_failure);
+    bool barometer_checks(bool display_failure);
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
