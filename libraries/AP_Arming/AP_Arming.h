@@ -44,7 +44,7 @@ public:
     };
 
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-              const AP_BattMonitor &battery, const enum HomeState &home_set);
+              const AP_BattMonitor &battery);
 
     ArmingRequired arming_required();
     virtual bool arm(uint8_t method);
@@ -78,7 +78,6 @@ protected:
     const AP_Baro           &barometer;
     Compass                 &_compass;
     const AP_BattMonitor    &_battery;
-    const enum HomeState    &home_is_set;
 
     // internal members
     bool                    armed:1;
@@ -108,4 +107,6 @@ protected:
     bool board_voltage_checks(bool report);
 
     bool manual_transmitter_checks(bool report);
+
+    virtual enum HomeState home_status() const = 0;
 };
