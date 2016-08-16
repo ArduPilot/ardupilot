@@ -2114,14 +2114,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
-#if ADSB_ENABLED == ENABLED
-        copter.adsb.update_vehicle(msg);
-#endif
-        break;
-
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
 #if ADSB_ENABLED == ENABLED
-        copter.adsb.transceiver_report(chan, msg);
+        copter.adsb.handle_message(chan, msg);
 #endif
         break;
 
