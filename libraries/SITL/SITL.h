@@ -121,6 +121,7 @@ public:
     AP_Int16 adsb_plane_count;
     AP_Float adsb_radius_m;
     AP_Float adsb_altitude_m;
+    AP_Int8  adsb_tx;
 
     // Earth magnetic field anomaly
     AP_Vector3f mag_anomaly_ned; // NED anomaly vector at ground level (mGauss)
