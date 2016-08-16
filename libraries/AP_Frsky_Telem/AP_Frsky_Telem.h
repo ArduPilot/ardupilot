@@ -24,55 +24,12 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
-/* FrSky sensor hub data IDs */
-#define FRSKY_ID_GPS_ALT_BP     0x01
-#define FRSKY_ID_TEMP1          0x02
-#define FRSKY_ID_RPM            0x03
-#define FRSKY_ID_FUEL           0x04
-#define FRSKY_ID_TEMP2          0x05
-#define FRSKY_ID_VOLTS          0x06
-#define FRSKY_ID_GPS_ALT_AP     0x09
-#define FRSKY_ID_BARO_ALT_BP    0x10
-#define FRSKY_ID_GPS_SPEED_BP   0x11
-#define FRSKY_ID_GPS_LONG_BP    0x12
-#define FRSKY_ID_GPS_LAT_BP     0x13
-#define FRSKY_ID_GPS_COURS_BP   0x14
-#define FRSKY_ID_GPS_DAY_MONTH  0x15
-#define FRSKY_ID_GPS_YEAR       0x16
-#define FRSKY_ID_GPS_HOUR_MIN   0x17
-#define FRSKY_ID_GPS_SEC        0x18
-#define FRSKY_ID_GPS_SPEED_AP   0x19
-#define FRSKY_ID_GPS_LONG_AP    0x1A
-#define FRSKY_ID_GPS_LAT_AP     0x1B
-#define FRSKY_ID_GPS_COURS_AP   0x1C
-#define FRSKY_ID_BARO_ALT_AP    0x21
-#define FRSKY_ID_GPS_LONG_EW    0x22
-#define FRSKY_ID_GPS_LAT_NS     0x23
-#define FRSKY_ID_ACCEL_X        0x24
-#define FRSKY_ID_ACCEL_Y        0x25
-#define FRSKY_ID_ACCEL_Z        0x26
-#define FRSKY_ID_CURRENT        0x28
-#define FRSKY_ID_VARIO          0x30
-#define FRSKY_ID_VFAS           0x39
-#define FRSKY_ID_VOLTS_BP       0x3A
-#define FRSKY_ID_VOLTS_AP       0x3B
-
-// Default sensor data IDs (Physical IDs + CRC)
-#define DATA_ID_VARIO            0x00 // 0
-#define DATA_ID_FLVSS            0xA1 // 1
-#define DATA_ID_FAS              0x22 // 2
-#define DATA_ID_GPS              0x83 // 3
-#define DATA_ID_RPM              0xE4 // 4
-#define DATA_ID_SP2UH            0x45 // 5
-#define DATA_ID_SP2UR            0xC6 // 6
-
-#define SPORT_START_FRAME 0x7E
 
 class AP_Frsky_Telem
 {
 public:
     //constructor
-    AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery);
+    AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery, AP_Baro* baro = NULL);
 
     // supported protocols
     enum FrSkyProtocol {
@@ -87,7 +44,7 @@ public:
     // send_frames - sends updates down telemetry link for both DPORT and SPORT protocols
     //  should be called by main program at 50hz to allow poll for serial bytes
     //  coming from the receiver for the SPort protocol
-    void send_frames(uint8_t control_mode);
+    void send_frames(uint8_t control_mode, bool armed);
 
 private:
 
@@ -108,6 +65,7 @@ private:
     void frsky_send_hub_startstop();
     void frsky_send_sport_prim();
     void frsky_send_data(uint8_t id, int16_t data);
+    void frsky_send_data_smart(uint16_t id, uint32_t data);
 
     // methods to convert flight controller data to frsky telemetry format
     void calc_baro_alt();
@@ -118,14 +76,26 @@ private:
 
     // methods to send individual pieces of data down telemetry link
     void send_gps_sats(void);
+    void send_smart_gps_sats(void);
     void send_mode(void);
+    void send_smart_mode(void);
     void send_baro_alt_m(void);
     void send_baro_alt_cm(void);
+    void send_smart_baro_alt(void);
+    void send_smart_vario(void);
+    void send_smart_attitude(void);
     void send_batt_remain(void);
     void send_batt_volts(void);
     void send_current(void);
+    void send_smart_batt_volts(void);
+    void send_smart_current(void);
     void send_prearm_error(void);
     void send_heading(void);
+    void send_smart_gps_lat(void);
+    void send_smart_gps_lon(void);
+    void send_smart_gps_cog(void);
+    void send_smart_gps_alt(void);
+    void send_smart_gps_spd(void);
     void send_gps_lat_dd(void);
     void send_gps_lat_mm(void);
     void send_gps_lat_ns(void);
@@ -139,6 +109,7 @@ private:
 
     AP_AHRS &_ahrs;                         // reference to attitude estimate
     AP_BattMonitor &_battery;               // reference to battery monitor object
+    AP_Baro *_baro;                         // pointer to (optional) baro object
     AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
     bool _initialised_uart;                 // true when we have detected the protocol and UART has been initialised
     enum FrSkyProtocol _protocol;           // protocol used - detected using SerialManager's SERIALX_PROTOCOL parameter
@@ -168,12 +139,17 @@ private:
     int16_t _speed_in_meter;
     uint16_t _speed_in_centimeter;
 
+    float _lon;
+    float _lat;
+    float _baro_alt;
+
     bool _baro_data_ready;
     int16_t _baro_alt_meters;
     uint16_t _baro_alt_cm;
 
     bool _mode_data_ready;
     uint8_t _mode; 
+    bool _armed;
 
     uint8_t _fas_call;
     uint8_t _gps_call;
@@ -181,4 +157,6 @@ private:
     uint8_t _various_call;
 
     uint8_t _sport_status;
+
+    const AP_GPS& _gps;
 };

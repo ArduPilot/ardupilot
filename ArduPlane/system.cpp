@@ -781,7 +781,7 @@ bool Plane::should_log(uint32_t mask)
 #if FRSKY_TELEM_ENABLED == ENABLED
 void Plane::frsky_telemetry_send(void)
 {
-    frsky_telemetry.send_frames((uint8_t)control_mode);
+    frsky_telemetry.send_frames((uint8_t)control_mode, arming.is_armed());
 }
 #endif
 
