@@ -2,23 +2,49 @@
 #define AP_WATERDETECTOR_H
 
 #include <AP_Param/AP_Param.h>
+//#include <AP_Common/AP_Common.h>
+
+#define WATERDETECTOR_MAX_INSTANCES 3
+
+class AP_WaterDetector_Backend;
 
 class AP_WaterDetector
 {
 
+	friend class AP_WaterDetector_Backend;
+
 public:
 	AP_WaterDetector(); // constructor
 
+	enum WaterDetector_Type {
+		WATERDETECTOR_TYPE_NONE = 0,
+		WATERDETECTOR_TYPE_DIGITAL = 1,
+		WATERDETECTOR_TYPE_ANALOG = 2,
+		WATERDETECTOR_TYPE_MAVLINK = 3
+	};
+
+	struct WaterDetector_State {
+		uint8_t instance;
+		bool status;
+	};
+
 	bool get_status(void) const { return _status; } // return current status
 	void set_status(bool status) { _status = status; } // set status externally, ie via mavlink message from subsystems
-	void read(void);
+
+	void init(void); // initialize all drivers
+	void update(void); // update all instances
+
+	AP_Int8 _type[WATERDETECTOR_MAX_INSTANCES]; // Analog, Digital, Mavlink
+	AP_Int8 _pin[WATERDETECTOR_MAX_INSTANCES]; // pin that detector is connected to
+	AP_Int8 _default_reading[WATERDETECTOR_MAX_INSTANCES]; // default reading when water detector is dry
 
 	static const struct AP_Param::GroupInfo var_info[];
 
-protected:
-	bool _status; // current status, true if water detected, false if dry
-	AP_Int8 _pin; // pin that detector is connected to
-	AP_Int8 _default_reading; // default reading when water detector is dry
+private:
+	AP_WaterDetector_Backend *drivers[WATERDETECTOR_MAX_INSTANCES];
+	WaterDetector_State state[WATERDETECTOR_MAX_INSTANCES];
+
+	bool _status; // current status, true if water detected, false if all sensors dry
 
 };
 

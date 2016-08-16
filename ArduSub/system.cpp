@@ -269,6 +269,8 @@ void Sub::init_ardupilot()
 
 	}
 
+    water_detector.init();
+
 	// read Baro pressure at ground
 	//-----------------------------
 	init_barometer(true);
