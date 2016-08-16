@@ -19,6 +19,7 @@
  *
  */
 #include "AP_Baro.h"
+#include "AP_Baro_Backend.h"
 
 #include <utility>
 
@@ -26,12 +27,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
-#include "AP_Baro_BMP085.h"
-#include "AP_Baro_HIL.h"
-#include "AP_Baro_MS5611.h"
-#include "AP_Baro_PX4.h"
-#include "AP_Baro_qflight.h"
-#include "AP_Baro_QURT.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -282,10 +277,11 @@ float AP_Baro::get_calibration_temperature(uint8_t instance) const
 void AP_Baro::init(void)
 {
     if (_hil_mode) {
-        drivers[0] = new AP_Baro_HIL(*this);
+        drivers[0] = create_default_baro_backend<HAL_BARO_HIL>(*this);
         _num_drivers = 1;
         return;
     }
+
     drivers[0] = create_default_baro_backend<HAL_BARO_DEFAULT>(*this);
     _num_drivers = 1;
 
