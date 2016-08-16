@@ -668,3 +668,7 @@
 #ifndef FRSKY_TELEM_ENABLED
   #  define FRSKY_TELEM_ENABLED          ENABLED
 #endif
+
+#ifndef ADVANCED_FAILSAFE
+# define ADVANCED_FAILSAFE DISABLE
+#endif

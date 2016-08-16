@@ -267,6 +267,16 @@ void Copter::init_disarm_motors()
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Copter::motors_output()
 {
+#if ADVANCED_FAILSAFE == ENABLED
+    // this is to allow the failsafe module to deliberately crash 
+    // the vehicle. Only used in extreme circumstances to meet the
+    // OBC rules
+    if (g2.afs.should_crash_vehicle()) {
+        g2.afs.terminate_vehicle();
+        return;
+    }
+#endif
+
     // Update arming delay state
     if (ap.in_arming_delay && (!motors.armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || control_mode == THROW)) {
         ap.in_arming_delay = false;

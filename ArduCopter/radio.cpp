@@ -97,7 +97,6 @@ void Copter::enable_motor_output()
 
 void Copter::read_radio()
 {
-    static uint32_t last_update_ms = 0;
     uint32_t tnow_ms = millis();
 
     if (hal.rcin->new_input()) {
@@ -118,11 +117,11 @@ void Copter::read_radio()
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
 
-        float dt = (tnow_ms - last_update_ms)*1.0e-3f;
+        float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
         rc_throttle_control_in_filter.apply(g.rc_3.get_control_in(), dt);
-        last_update_ms = tnow_ms;
+        last_radio_update_ms = tnow_ms;
     }else{
-        uint32_t elapsed = tnow_ms - last_update_ms;
+        uint32_t elapsed = tnow_ms - last_radio_update_ms;
         // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
         if (((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))) &&
             (g.failsafe_throttle && (ap.rc_receiver_present||motors.armed()) && !failsafe.radio)) {
