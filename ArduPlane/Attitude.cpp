@@ -1217,11 +1217,13 @@ void Plane::set_servos(void)
             break;
 
         case AP_Arming::YES_ZERO_PWM:
+            channel_throttle->set_servo_out(0);
             channel_throttle->set_radio_out(0);
             break;
 
         case AP_Arming::YES_MIN_PWM:
         default:
+            channel_throttle->set_servo_out(0);
             channel_throttle->set_radio_out(throttle_min());
             break;
         }
@@ -1263,6 +1265,9 @@ void Plane::set_servos(void)
         channel_throttle->set_servo_out(override_pct);
         channel_throttle->calc_pwm();
     }
+
+    // allow for secondary throttle
+    RC_Channel_aux::set_servo_out_for(RC_Channel_aux::k_throttle, channel_throttle->get_servo_out());
     
     // send values to the PWM timers for output
     // ----------------------------------------
