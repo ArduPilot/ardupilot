@@ -14,6 +14,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+
+
 /*
   constructor - opens the PX4 drivers
  */
@@ -44,6 +46,19 @@ AP_Baro_PX4::AP_Baro_PX4(AP_Baro &baro) :
         ioctl(instances[i].fd, SENSORIOCSQUEUEDEPTH, 20);
     }
 }
+#if defined(HAL_BARO_PX4)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_PX4>(AP_Baro& baro)
+{
+    return new  AP_Baro_PX4(baro);
+}
+#endif
+
+#if defined(HAL_BARO_VRBRAIN)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_VRBRAIN>(AP_Baro& baro)
+{
+    return new  AP_Baro_PX4(baro);
+}
+#endif
 
 // Read the sensor
 void AP_Baro_PX4::update(void)

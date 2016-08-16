@@ -14,6 +14,11 @@
 #define BARO_MAX_DRIVERS 2
 
 class AP_Baro_Backend;
+class AP_Baro;
+
+// This function is specialised for each Baro backend
+template <uint32_t BackendId>
+AP_Baro_Backend* create_default_baro_backend(AP_Baro& baro);
 
 class AP_Baro
 {

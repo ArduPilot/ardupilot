@@ -29,6 +29,13 @@ AP_Baro_QURT::AP_Baro_QURT(AP_Baro &baro)
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_QURT::timer, void));
 }
 
+#if defined(HAL_BARO_QURT)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_QURT>(AP_Baro& baro)
+{
+   return new AP_Baro_QURT(baro);
+}
+#endif
+
 /*
   transfer data to the frontend
  */
@@ -45,7 +52,7 @@ void AP_Baro_QURT::update(void)
         count = 0;
         temp_sum = 0;
         press_sum = 0;
-        
+
         _copy_to_frontend(instance, pressure, temperature);
         lock.give();
     }
@@ -54,7 +61,7 @@ void AP_Baro_QURT::update(void)
 void AP_Baro_QURT::timer(void)
 {
     if (handle == 0) {
-        int ret = bmp280_open("/dev/i2c-2", &handle);        
+        int ret = bmp280_open("/dev/i2c-2", &handle);
         if (ret != 0) {
             AP_HAL::panic("unable to open QURT baro");
             return;

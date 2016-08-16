@@ -21,6 +21,13 @@ AP_Baro_QFLIGHT::AP_Baro_QFLIGHT(AP_Baro &baro) :
     hal.scheduler->delay(100);
 }
 
+#if defined(HAL_BARO_QFLIGHT)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_QFLIGHT>(AP_Baro& baro)
+{
+   return new AP_Baro_QFLIGHT(baro);
+}
+#endif
+
 // Read the sensor
 void AP_Baro_QFLIGHT::timer_update(void)
 {
@@ -29,7 +36,7 @@ void AP_Baro_QFLIGHT::timer_update(void)
         return;
     }
     last_check_ms = now;
-    
+
     if (barobuf == nullptr) {
         barobuf = QFLIGHT_RPC_ALLOCATE(DSPBuffer::BARO);
         if (barobuf == nullptr) {

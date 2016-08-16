@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "AP_Baro_HIL.h"
-
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -11,10 +10,18 @@ AP_Baro_HIL::AP_Baro_HIL(AP_Baro &baro) :
     _instance = _frontend.register_sensor();
 }
 
+#if defined (HAL_BARO_HIL)
+template <>
+AP_Baro_Backend* create_default_baro_backend<HAL_BARO_HIL>(AP_Baro& baro)
+{
+    return new AP_Baro_HIL(baro);
+}
+#endif
+
 // ==========================================================================
 // based on tables.cpp from http://www.pdas.com/atmosdownload.html
 
-/* 
+/*
    Compute the temperature, density, and pressure in the standard atmosphere
    Correct to 20 km.  Only approximate thereafter.
 */

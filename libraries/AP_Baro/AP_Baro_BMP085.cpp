@@ -19,6 +19,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -82,6 +83,14 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
 
     sem->give();
 }
+
+#if defined(HAL_BARO_BMP085) && defined(HAL_BARO_BMP085_BUS) && defined(HAL_BARO_BMP085_I2C_ADDR)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_BMP085>(AP_Baro& baro)
+{
+    return new AP_Baro_BMP085(baro,
+        std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR)));
+}
+#endif
 
 /*
   This is a state machine. Acumulate a new sensor reading.
