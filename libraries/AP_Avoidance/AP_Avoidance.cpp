@@ -153,6 +153,7 @@ void AP_Avoidance::deinit(void)
         delete [] _obstacles;
         _obstacles = nullptr;
         _obstacles_allocated = 0;
+        handle_recovery(AP_AVOIDANCE_RECOVERY_RTL);
     }
     _obstacle_count = 0;
 }
