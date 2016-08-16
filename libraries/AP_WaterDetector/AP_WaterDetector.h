@@ -10,7 +10,7 @@ public:
 	AP_WaterDetector(); // constructor
 
 	bool get_status(void) const { return _status; } // return current status
-	void set_status(bool status) const { _status = status; } // set status externally, ie via mavlink message from subsystems
+	void set_status(bool status) { _status = status; } // set status externally, ie via mavlink message from subsystems
 	void read(void);
 
 	static const struct AP_Param::GroupInfo var_info[];
