@@ -132,6 +132,10 @@ void RC_Channel_aux::aux_servo_function_setup(void)
         // tenth percentage tilt
         set_range_out(0,1000);
         break;
+    case RC_Channel_aux::k_throttle:
+        // fixed wing throttle
+        set_range_out(0,100);
+        break;
     default:
         break;
     }
