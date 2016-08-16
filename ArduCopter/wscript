@@ -29,6 +29,7 @@ def build(bld):
             'AP_Relay',
             'AP_ServoRelayEvents',
             'AP_Avoidance',
+            'AP_AdvancedFailsafe'
         ],
         use='mavlink',
     )
