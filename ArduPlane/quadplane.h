@@ -8,6 +8,7 @@
 #include <AC_WPNav/AC_WPNav.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
+#include <AP_Proximity/AP_Proximity.h>
 
 /*
   frame types for quadplane build. Most case be set with
