@@ -644,7 +644,10 @@ def start_antenna_tracker(autotest, opts):
     progress("Preparing antenna tracker")
     tracker_home = find_location_by_name(find_autotest_dir(), opts.tracker_location)
     vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
-    do_build(vehicledir, opts, "sitl-debug")
+    tracker_frame_options = {
+        "waf_target": _default_waf_target["AntennaTracker"],
+    }
+    do_build(vehicledir, opts, tracker_frame_options)
     tracker_instance = 1
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
