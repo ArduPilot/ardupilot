@@ -386,6 +386,8 @@ public:
 		k_param_jbtn_13,
 		k_param_jbtn_14,
 		k_param_jbtn_15, // 276
+
+		k_param_water_detector, // water detector object
     };
 
     AP_Int16        format_version;

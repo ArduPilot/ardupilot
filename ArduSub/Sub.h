@@ -88,6 +88,7 @@
 #include <AP_RPM/AP_RPM.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
+#include <AP_WaterDetector/AP_WaterDetector.h> // Water detector
 
 // Configuration
 #include "defines.h"
@@ -165,6 +166,8 @@ private:
     DataFlash_Class DataFlash;
 
     AP_GPS gps;
+
+    AP_WaterDetector water_detector;
 
     // flight modes convenience array
     AP_Int8 *flight_modes;

@@ -877,6 +877,11 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS_", AP_GPS),
 
+    // Water driver
+    // @Group: WD_
+    // @Path: ../libraries/AP_WaterDetector/AP_WaterDetector.cpp
+	GOBJECT(water_detector, "WD_", AP_WaterDetector),
+
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
