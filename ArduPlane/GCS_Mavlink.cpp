@@ -2259,11 +2259,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
-        plane.adsb.update_vehicle(msg);
-        break;
-
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
-        plane.adsb.transceiver_report(chan, msg);
+        plane.adsb.handle_message(chan, msg);
         break;
 
     case MAVLINK_MSG_ID_SETUP_SIGNING:
