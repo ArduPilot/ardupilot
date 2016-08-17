@@ -28,11 +28,13 @@ protected:
     bool pre_arm_proximity_check(bool display_failure);
     bool arm_checks(bool display_failure, bool arming_from_gcs);
 
+    // NOTE! the following check functions *DO* call into AP_Arming:
+    bool ins_checks(bool display_failure) override;
+
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
     bool gps_checks(bool display_failure);
     bool fence_checks(bool display_failure);
     bool compass_checks(bool display_failure);
-    bool ins_checks(bool display_failure) override;
     bool board_voltage_checks(bool display_failure);
     bool parameter_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
