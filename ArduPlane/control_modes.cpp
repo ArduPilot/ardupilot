@@ -104,12 +104,12 @@ uint8_t Plane::readSwitch(void)
 {
     uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
-    if (pulsewidth > 1230 && pulsewidth <= 1360) return 1;
-    if (pulsewidth > 1360 && pulsewidth <= 1490) return 2;
-    if (pulsewidth > 1490 && pulsewidth <= 1620) return 3;
-    if (pulsewidth > 1620 && pulsewidth <= 1749) return 4;              // Software Manual
-    if (pulsewidth >= 1750) return 5;                                                           // Hardware Manual
-    return 0;
+    if (pulsewidth <= 1230) return 0;
+    if (pulsewidth <= 1360) return 1;
+    if (pulsewidth <= 1490) return 2;
+    if (pulsewidth <= 1620) return 3;
+    if (pulsewidth <= 1749) return 4;              // Software Manual
+    return 5;                                                           // Hardware Manual
 }
 
 void Plane::reset_control_switch()
