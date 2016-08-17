@@ -155,9 +155,12 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     if (aparm.throttle_min < 0) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }
+    if (plane.DataFlash.logging_present()) { // primary logging only (usually File)
+        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
+    }
 
     // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control, geofence and motor output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE);
+    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE & ~MAV_SYS_STATUS_LOGGING);
 
     if (airspeed.enabled() && airspeed.use()) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
@@ -165,6 +168,10 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
 
     if (geofence_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
+    }
+
+    if (plane.DataFlash.logging_enabled()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
     switch (control_mode) {
@@ -265,6 +272,10 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
         control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
     }
 #endif
+
+    if (plane.DataFlash.logging_failed()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
+    }
 
     if (millis() - failsafe.last_valid_rc_ms < 200) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
@@ -1502,11 +1513,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
-                // when packet.param1 == 3 we reboot to hold in bootloader
-                hal.scheduler->reboot(is_equal(packet.param1,3.0f));
-                result = MAV_RESULT_ACCEPTED;
-            }
+            result = handle_preflight_reboot(packet, plane.quadplane.enable != 0);
             break;
 
         case MAV_CMD_DO_LAND_START:
@@ -1550,6 +1557,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             
             if (!plane.geofence_present()) {
+                plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Fence not configured");
                 result = MAV_RESULT_FAILED;
             } else {
                 switch((uint16_t)packet.param1) {
@@ -2251,11 +2259,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
-        plane.adsb.update_vehicle(msg);
-        break;
-
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-        plane.adsb.transceiver_report(chan, msg);
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
+        plane.adsb.handle_message(chan, msg);
         break;
 
     case MAVLINK_MSG_ID_SETUP_SIGNING:

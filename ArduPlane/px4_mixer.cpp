@@ -355,7 +355,12 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        pwm_values.values[i] = 900;
+        if (RC_Channel_aux::channel_function(i) >= RC_Channel_aux::k_motor1 &&
+            RC_Channel_aux::channel_function(i) <= RC_Channel_aux::k_motor8) {
+            pwm_values.values[i] = quadplane.thr_min_pwm;
+        } else {
+            pwm_values.values[i] = 900;
+        }
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_MIN_PWM, (long unsigned int)&pwm_values) != 0) {
         hal.console->printf("SET_MIN_PWM failed\n");
@@ -363,7 +368,13 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        pwm_values.values[i] = 2100;
+        if (RC_Channel_aux::channel_function(i) >= RC_Channel_aux::k_motor1 &&
+            RC_Channel_aux::channel_function(i) <= RC_Channel_aux::k_motor8) {
+            hal.rcout->write(i, quadplane.thr_min_pwm);
+            pwm_values.values[i] = quadplane.thr_min_pwm;
+        } else {
+            pwm_values.values[i] = 2100;
+        }
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_values) != 0) {
         hal.console->printf("SET_MAX_PWM failed\n");
@@ -374,7 +385,6 @@ bool Plane::setup_failsafe_mixing(void)
         goto failed;
     }
 
-    // setup for immediate manual control if FMU dies
     if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 1) != 0) {
         hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
         goto failed;
@@ -392,6 +402,7 @@ failed:
     // restore safety state if it was previously armed
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
         hal.rcout->force_safety_off();
+        hal.rcout->force_safety_no_wait();
     }
     if (!ret) {
         // clear out the mixer CRC so that we will attempt to send it again

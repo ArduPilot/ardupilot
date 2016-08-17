@@ -66,7 +66,11 @@ public:
     void flush(void);
 #endif
     void periodic_fullrate(const uint32_t now);
-    
+
+    // this method is used when reporting system status over mavlink
+    bool logging_enabled() const;
+    bool logging_failed() const;
+
 private:
     int _write_fd;
     int _read_fd;

@@ -48,7 +48,7 @@ void Copter::update_land_detector()
     } else if (ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME
         // if rotor speed and collective pitch are high then clear landing flag
-        if (motors.get_throttle() > get_non_takeoff_throttle() && motors.rotor_runup_complete()) {
+        if (motors.get_throttle() > get_non_takeoff_throttle() && !motors.limit.throttle_lower && motors.rotor_runup_complete()) {
 #else
         // if throttle output is high then clear landing flag
         if (motors.get_throttle() > get_non_takeoff_throttle()) {
@@ -68,7 +68,13 @@ void Copter::update_land_detector()
         // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
         bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX);
 
-        if (motor_at_lower_limit && accel_stationary) {
+        // check that vertical speed is within 1m/s of zero
+        bool descent_rate_low = fabsf(inertial_nav.get_velocity_z()) < 100;
+
+        // if we have a healthy rangefinder only allow landing detection below 2 meters
+        bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
+
+        if (motor_at_lower_limit && accel_stationary && descent_rate_low && rangefinder_check) {
             // landed criteria met - increment the counter and check if we've triggered
             if( land_detector_count < ((float)LAND_DETECTOR_TRIGGER_SEC)*scheduler.get_loop_rate_hz()) {
                 land_detector_count++;

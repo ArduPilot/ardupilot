@@ -53,6 +53,7 @@ VRBRAIN_V52_CONFIG_FILE=config_vrbrain-v52_APM.mk
 VRBRAIN_V54_CONFIG_FILE=config_vrbrain-v54_APM.mk
 VRCORE_V10_CONFIG_FILE=config_vrcore-v10_APM.mk
 VRUBRAIN_V51_CONFIG_FILE=config_vrubrain-v51_APM.mk
+VRUBRAIN_V52_CONFIG_FILE=config_vrubrain-v52_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_VRBRAIN -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
@@ -164,7 +165,7 @@ vrubrain-v52: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(VRBRAIN
 
 
 
-vrbrainStd: vrbrain-v51 vrbrain-v52 vrbrain-v54 vrcore-v10 vrubrain-v51 vrubrain-v52
+vrbrainStd: vrbrain-v51 vrbrain-v52 vrbrain-v54 vrcore-v10 vrubrain-v51
 vrbrainStdP: 
 vrbrainPro: 
 vrbrainProP: 

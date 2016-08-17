@@ -444,8 +444,12 @@ bool QuadPlane::setup(void)
     // setup the trim of any motors used by AP_Motors so px4io
     // failsafe will disable motors
     for (uint8_t i=0; i<8; i++) {
-        RC_Channel_aux::set_servo_failsafe_pwm((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+i),
-                                               thr_min_pwm);
+        RC_Channel_aux::Aux_servo_function_t func = (RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+i);
+        RC_Channel_aux::set_servo_failsafe_pwm(func, thr_min_pwm);
+        uint8_t chan;
+        if (RC_Channel_aux::find_channel(func, chan)) {
+            RC_Channel::rc_channel(chan)->set_radio_trim(thr_min_pwm);
+        }
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -976,6 +980,12 @@ void QuadPlane::update(void)
         return;
     }
 
+    if (plane.afs.should_crash_vehicle()) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        motors->output();
+        return;
+    }
+    
     if (motor_test.running) {
         motor_test_output();
         return;
@@ -1068,6 +1078,11 @@ void QuadPlane::check_throttle_suppression(void)
  */
 void QuadPlane::motors_output(void)
 {
+    if (plane.afs.should_crash_vehicle()) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        motors->output();
+        return;
+    }
     if (esc_calibration && AP_Notify::flags.esc_calibration && plane.control_mode == QSTABILIZE) {
         // output is direct from run_esc_calibration()
         return;

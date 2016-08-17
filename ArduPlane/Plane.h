@@ -53,7 +53,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
 
-#include <APM_OBC/APM_OBC.h>
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <APM_Control/APM_Control.h>
 #include <APM_Control/AP_AutoTune.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
@@ -126,6 +126,26 @@ protected:
     bool ins_checks(bool report);
 };
 
+
+/*
+  a plane specific AP_AdvancedFailsafe class
+ */
+class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
+{
+public:
+    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap);
+
+    // called to set all outputs to termination state
+    void terminate_vehicle(void);
+    
+protected:
+    // setup failsafe values for if FMU firmware stops running
+    void setup_IO_failsafe(void);
+
+    // return the AFS mapped control mode
+    enum control_mode afs_mode(void);
+};
+
 /*
   main APM:Plane class
  */
@@ -137,6 +157,7 @@ public:
     friend class AP_Arming_Plane;
     friend class QuadPlane;
     friend class AP_Tuning_Plane;
+    friend class AP_AdvancedFailsafe_Plane;
 
     Plane(void);
 
@@ -394,7 +415,7 @@ private:
 #endif
 
     // Airspeed Sensors
-    AP_Airspeed airspeed {aparm};
+    AP_Airspeed airspeed;
 
     // ACRO controller state
     struct {
@@ -632,9 +653,7 @@ private:
     AP_ADSB adsb {ahrs};
 
     // Outback Challenge Failsafe Support
-#if OBC_FAILSAFE == ENABLED
-    APM_OBC obc {mission, barometer, gps, rcmap};
-#endif
+    AP_AdvancedFailsafe_Plane afs {mission, barometer, gps, rcmap};
 
     /*
       meta data to support counting the number of circles in a loiter
@@ -991,7 +1010,7 @@ private:
     void update_GPS_10Hz(void);
     void update_compass(void);
     void update_alt(void);
-    void obc_fs_check(void);
+    void afs_fs_check(void);
     void compass_accumulate(void);
     void compass_cal_update();
     void barometer_accumulate(void);

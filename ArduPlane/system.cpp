@@ -103,22 +103,31 @@ void Plane::init_ardupilot()
     init_rc_out_main();
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    // this must be before BoardConfig.init() so if
-    // BRD_SAFETYENABLE==0 then we don't have safety off yet
-    for (uint8_t tries=0; tries<10; tries++) {
-        if (setup_failsafe_mixing()) {
-            break;
+    if (!quadplane.enable) {
+        // this must be before BoardConfig.init() so if
+        // BRD_SAFETYENABLE==0 then we don't have safety off yet. For
+        // quadplanes we wait till AP_Motors is initialised
+        for (uint8_t tries=0; tries<10; tries++) {
+            if (setup_failsafe_mixing()) {
+                break;
+            }
+            hal.scheduler->delay(10);
         }
-        hal.scheduler->delay(10);
     }
 #endif
 
-    BoardConfig.init();
+    GCS_MAVLINK::set_dataflash(&DataFlash);
 
     // initialise serial ports
     serial_manager.init();
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
-    GCS_MAVLINK::set_dataflash(&DataFlash);
+    // Register mavlink_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+
+    // setup any board specific drivers
+    BoardConfig.init();
 
     // allow servo set on all channels except first 4
     ServoRelayEvents.set_channel_mask(0xFFF0);
@@ -144,7 +153,7 @@ void Plane::init_ardupilot()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
 
@@ -183,10 +192,6 @@ void Plane::init_ardupilot()
         ahrs.set_optflow(&optflow);
     }
 #endif
-
-    // Register mavlink_delay_cb, which will run anytime you have
-    // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);

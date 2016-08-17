@@ -8,7 +8,7 @@ def build(bld):
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'APM_Control',
-            'APM_OBC',
+            'AP_AdvancedFailsafe',
             'AP_ADSB',
             'AP_Arming',
             'AP_Camera',

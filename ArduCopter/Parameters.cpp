@@ -963,12 +963,12 @@ const AP_Param::Info Copter::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
-    // @Param: TKOFF_NAV_ALT
-    // @DisplayName: Takeoff navigation altitude
-    // @Description: This is the altitude in meters above the takeoff point that attitude changes for navigation can begin
+    // @Param: WP_NAVALT_MIN
+    // @DisplayName: Minimum navigation altitude
+    // @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
     // @Range: 0 5
     // @User: Standard
-    AP_GROUPINFO("WP_TKOFF_NAV_ALT", 1, ParametersG2, takeoff_nav_alt, 0),
+    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
 
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp
@@ -987,6 +987,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 0:Upward Throw,1:Drop
     // @User: Standard
     AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, ThrowType_Upward),
+
+    // @Param: GND_EFFECT_COMP
+    // @DisplayName: Ground Effect Compensation Enable/Disable
+    // @Description: Ground Effect Compensation Enable/Disable
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 0),
 
     AP_GROUPEND
 };

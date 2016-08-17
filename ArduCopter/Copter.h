@@ -592,7 +592,6 @@ private:
     int16_t hover_roll_trim_scalar_slew;
 #endif
 
-#if GNDEFFECT_COMPENSATION == ENABLED
     // ground effect detector
     struct {
         bool takeoff_expected;
@@ -600,7 +599,6 @@ private:
         uint32_t takeoff_time_ms;
         float takeoff_alt_cm;
     } gndeffect_state;
-#endif // GNDEFFECT_COMPENSATION == ENABLED
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
@@ -637,6 +635,15 @@ private:
     void set_land_complete_maybe(bool b);
     void set_pre_arm_check(bool b);
     void set_pre_arm_rc_check(bool b);
+    bool rc_calibration_checks(bool display_failure);
+    bool gps_checks(bool display_failure);
+    bool fence_checks(bool display_failure);
+    bool compass_checks(bool display_failure);
+    bool ins_checks(bool display_failure);
+    bool board_voltage_checks(bool display_failure);
+    bool parameter_checks(bool display_failure);
+    bool pilot_throttle_checks(bool display_failure);
+    bool barometer_checks(bool display_failure);
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
@@ -812,7 +819,7 @@ private:
     bool guided_set_destination(const Location_Class& dest_loc);
     void guided_set_velocity(const Vector3f& velocity);
     void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
-    void guided_set_angle(const Quaternion &q, float climb_rate_cms);
+    void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_run();
     void guided_takeoff_run();
     void guided_pos_control_run();
@@ -830,6 +837,7 @@ private:
     void land_run();
     void land_gps_run();
     void land_nogps_run();
+    int32_t land_get_alt_above_ground(void);
     void land_run_vertical_control(bool pause_descent = false);
     void land_run_horizontal_control();
     void land_do_not_use_GPS();
@@ -927,9 +935,7 @@ private:
     void update_land_and_crash_detectors();
     void update_land_detector();
     void update_throttle_thr_mix();
-#if GNDEFFECT_COMPENSATION == ENABLED
     void update_ground_effect_detector(void);
-#endif // GNDEFFECT_COMPENSATION == ENABLED
     void landinggear_update();
     void update_notify();
     void motor_test_output();

@@ -90,10 +90,19 @@ void Rover::init_ardupilot()
 
     load_parameters();
 
-    BoardConfig.init();
+    GCS_MAVLINK::set_dataflash(&DataFlash);
 
     // initialise serial ports
     serial_manager.init();
+
+    // setup first port early to allow BoardConfig to report errors
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+
+    // Register mavlink_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+    
+    BoardConfig.init();
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
@@ -114,7 +123,7 @@ void Rover::init_ardupilot()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
 
@@ -128,12 +137,6 @@ void Rover::init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
-
-    GCS_MAVLINK::set_dataflash(&DataFlash);
-
-    // Register mavlink_delay_cb, which will run anytime you have
-    // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     if (g.compass_enabled==true) {
         if (!compass.init()|| !compass.read()) {
