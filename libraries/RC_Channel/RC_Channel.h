@@ -40,7 +40,7 @@ public:
     };
 
     // setup min and max radio values in CLI
-    void        update_min_max();
+    void        update_min_max();  // 
     void        zero_min_max();
 
     // startup
@@ -83,9 +83,9 @@ public:
     // generate PWM from servo_out value
     void        calc_pwm(void);
 
-    int16_t     pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim);
-    int16_t     pwm_to_angle_dz(uint16_t dead_zone);
-    int16_t     pwm_to_angle();
+    int16_t     pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim) const;
+    int16_t     pwm_to_angle_dz(uint16_t dead_zone) const;
+    int16_t     pwm_to_angle()const;
 
     /*
       return a normalised input for a channel, in range -1 to 1,
@@ -99,12 +99,12 @@ public:
     */
     float       norm_input_dz();
 
-    uint8_t     percent_input();
-    float       norm_output();
-    int16_t     angle_to_pwm();
-    int16_t     pwm_to_range();
-    int16_t     pwm_to_range_dz(uint16_t dead_zone);
-    int16_t     range_to_pwm();
+    uint8_t     percent_input()const;
+    float       norm_output()const;
+    int16_t     angle_to_pwm()const;
+    int16_t     pwm_to_range()const;
+    int16_t     pwm_to_range_dz(uint16_t dead_zone)const;
+    int16_t     range_to_pwm()const;
     void        output() const;
     void        output_trim() const;
     static void output_trim_all();
@@ -157,9 +157,24 @@ public:
 
 private:
 
-    // pwm is stored here
-    int16_t     _radio_in;
-    // value generated from PWM
+    // The raw PWM input from user joystick. Range approx 900 millisec to 2100 millisec [see <AP_HAL/RCInput.h>]
+    // set by 
+    //    this->set_radio_in(int16_t val)  // only used by arduplane at startup
+    //    this->set_pwm(int16_t pwm) 
+    //    this->set_pwm_no_deadzone(int16_t pwm)
+    //    this->input()  // which  calls the Hal::RCInput abstraction, which is the runtime update
+    int16_t     _radio_in;  
+   //-------------------------------------
+    
+    // Represents a desired abstract constrol output
+    // Usually by scaling the _radio_in PWM input -Check This
+    // where the functions are yaw,pitch, roll, throttle
+    // Uses the current units represented by _type_in variable
+    // type_in may be RC_CHANNEL_TYPE_RANGE,RC_CHANNEL_TYPE_ANGLE,RC_CHANNEL_TYPE_ANGLE_RAW 
+    // set by
+    //     this->set_control_in(int16_t val)
+    //     this->set_pwm_no_deadzone(int16_t pwm);
+    //     this->set_pwm(int16_t pwm)
     int16_t     _control_in;
     // current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100
     int16_t     _servo_out;
@@ -173,6 +188,7 @@ private:
 
     AP_Int8     _reverse;
     AP_Int16    _dead_zone;
+    // An ID representing the curent units of contol_in
     uint8_t     _type_in;
     int16_t     _high_in;
     int16_t     _low_in;
@@ -183,5 +199,5 @@ private:
     static RC_Channel *_rc_ch[RC_MAX_CHANNELS];
 
 protected:
-    uint8_t     _ch_out;
+    uint8_t     _ch_out; // joystick input channel
 };
