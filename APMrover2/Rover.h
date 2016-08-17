@@ -63,7 +63,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 
-#include <AP_Arming/AP_Arming.h>
+#include "AP_Arming.h"
 #include "compat.h"
 
 #include <AP_Notify/AP_Notify.h>                    // Notify library
@@ -93,7 +93,7 @@ public:
     friend class GCS_MAVLINK_Rover;
     friend class Parameters;
     friend class ParametersG2;
-    friend class AP_Arming;
+    friend class AP_Arming_Rover;
 
     Rover(void);
 
@@ -152,7 +152,7 @@ private:
 #endif
 
     // Arming/Disarming management class
-    AP_Arming arming {ahrs, barometer, compass, battery, home_is_set};
+    AP_Arming_Rover arming {ahrs, barometer, compass, battery};
 
     AP_L1_Control L1_controller;
 
