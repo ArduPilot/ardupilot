@@ -6,6 +6,8 @@
 
 #define WATERDETECTOR_MAX_INSTANCES 3
 
+#define WATERDETECTOR_COOLDOWN_MS 4000
+
 class AP_WaterDetector_Backend;
 
 class AP_WaterDetector
@@ -29,7 +31,7 @@ public:
 	};
 
 	bool get_status(void) const { return _status; } // return current status
-	void set_status(bool status) { _status = status; } // set status externally, ie via mavlink message from subsystems
+	void set_detect(void); // set status externally, ie via mavlink message from subsystems
 
 	void init(void); // initialize all drivers
 	void update(void); // update all instances
@@ -45,6 +47,7 @@ private:
 	WaterDetector_State state[WATERDETECTOR_MAX_INSTANCES];
 
 	bool _status; // current status, true if water detected, false if all sensors dry
+	uint32_t _last_detect_ms;
 
 };
 

@@ -13,7 +13,7 @@ void AP_WaterDetector_Digital::read()
 {
 	if(water_detector._pin[state.instance] >= 0) {
 		hal.gpio->pinMode(water_detector._pin[state.instance], HAL_GPIO_INPUT);
-		state.status = hal.gpio->read(water_detector._pin[state.instance])==water_detector._default_reading[state.instance]?0:1;
+		state.status = hal.gpio->read(water_detector._pin[state.instance])==water_detector._default_reading[state.instance]?false:true;
 	} else {
 		state.status = false;
 	}

@@ -8,10 +8,6 @@ AP_WaterDetector_Analog::AP_WaterDetector_Analog(AP_WaterDetector &_water_detect
 AP_WaterDetector_Backend(_water_detector, _state)
 {
     source = hal.analogin->channel(water_detector._pin[state.instance]);
-    if (source == NULL) {
-        return;
-    }
-
 }
 
 void AP_WaterDetector_Analog::read()
@@ -19,7 +15,7 @@ void AP_WaterDetector_Analog::read()
 	if(source != NULL && water_detector._pin[state.instance] >= 0) {
 		source->set_pin(water_detector._pin[state.instance]);
 		state.status = source->voltage_average() > 2.0f;
-		state.status = state.status==water_detector._default_reading[state.instance]?0:1;
+		state.status = state.status==water_detector._default_reading[state.instance]?false:true;
 	} else {
 		state.status = false;
 	}

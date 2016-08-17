@@ -2,6 +2,8 @@
 #include "AP_WaterDetector_Digital.h"
 #include "AP_WaterDetector_Analog.h"
 
+#include <AP_HAL/AP_HAL.h>
+
 const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 
 	// @Param: PIN
@@ -75,7 +77,8 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 };
 
 AP_WaterDetector::AP_WaterDetector() :
-	_status(false)
+	_status(false),
+	_last_detect_ms(0)
 {
 	AP_Param::setup_object_defaults(this, var_info);
 
@@ -105,11 +108,21 @@ void AP_WaterDetector::init()
 
 void AP_WaterDetector::update()
 {
-	_status = false;
+	uint32_t tnow = AP_HAL::millis();
+
 	for(int i = 0; i < WATERDETECTOR_MAX_INSTANCES; i++) {
 		if(drivers[i] != NULL) {
 			drivers[i]->read();
-			_status |= state[i].status;
+			if(state[i].status) {
+				_last_detect_ms = tnow;
+			}
 		}
 	}
+
+	_status = tnow < _last_detect_ms + WATERDETECTOR_COOLDOWN_MS;
+}
+
+void AP_WaterDetector::set_detect()
+{
+	_last_detect_ms = AP_HAL::millis();
 }
