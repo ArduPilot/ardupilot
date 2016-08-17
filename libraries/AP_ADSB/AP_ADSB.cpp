@@ -346,9 +346,11 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
     vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
 
     const uint16_t required_flags_position = ADSB_FLAGS_VALID_COORDS | ADSB_FLAGS_VALID_ALTITUDE;
+    const bool detected_ourself = (out_state.cfg.ICAO_id != 0) && (out_state.cfg.ICAO_id == vehicle.info.ICAO_address);
 
     if (vehicle_loc.is_zero() ||
             out_of_range ||
+            detected_ourself ||
             !(vehicle.info.flags & required_flags_position) ||
             now - vehicle.last_update_ms > VEHICLE_TIMEOUT_MS) {
 
