@@ -210,12 +210,12 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
             if (comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
                 for (uint8_t i=0; i<compass.get_count(); i++) {
                     // interference is impact@fullthrottle / mag field * 100
-                    interference_pct[i] = motor_compensation[i].length() / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
+                    interference_pct[i] = motor_compensation[i].length() / (float)arming.compass_magfield_expected() * 100.0f;
                 }
             }else{
                 for (uint8_t i=0; i<compass.get_count(); i++) {
                     // interference is impact/amp * (max current seen / max throttle seen) / mag field * 100
-                    interference_pct[i] = motor_compensation[i].length() * (current_amps_max/throttle_pct_max) / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
+                    interference_pct[i] = motor_compensation[i].length() * (current_amps_max/throttle_pct_max) / (float)arming.compass_magfield_expected() * 100.0f;
                 }
             }
 

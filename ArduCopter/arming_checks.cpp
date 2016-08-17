@@ -129,62 +129,20 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
 
 bool AP_Arming_Copter::compass_checks(bool display_failure)
 {
-    // check Compass
-    Compass &compass = _compass; // avoid code churn
+    bool ret = AP_Arming::compass_checks(display_failure);
+
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_COMPASS)) {
-        //check if compass has calibrated and requires reboot
-        if (compass.compass_cal_requires_reboot()) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "PreArm: Compass calibrated requires reboot");
-            }
-            return false;
-        }
-
-        // check the primary compass is healthy
-        if (!compass.healthy()) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Compass not healthy");
-            }
-            return false;
-        }
-
-        // check compass learning is on or offsets have been set
-        if (!compass.configured()) {
+        // check compass offsets have been set.  AP_Arming only checks
+        // this if learning is off; Copter *always* checks.
+        if (!_compass.configured()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Compass not calibrated");
             }
-            return false;
+            ret = false;
         }
-
-        // check for unreasonable compass offsets
-        Vector3f offsets = compass.get_offsets();
-        if (offsets.length() > COMPASS_OFFSETS_MAX) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Compass offsets too high");
-            }
-            return false;
-        }
-
-        // check for unreasonable mag field length
-        float mag_field = compass.get_field().length();
-        if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65f || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35f) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check mag field");
-            }
-            return false;
-        }
-
-        // check all compasses point in roughly same direction
-        if (!compass.consistent()) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent compasses");
-            }
-            return false;
-        }
-
     }
 
-    return true;
+    return ret;
 }
 
 bool AP_Arming_Copter::gps_checks(bool display_failure)
