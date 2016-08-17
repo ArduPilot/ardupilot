@@ -65,6 +65,8 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
+    uint16_t compass_magfield_expected() const;
+
 protected:
     // Parameters
     AP_Int8                 require;
@@ -96,7 +98,7 @@ protected:
 
     virtual bool ins_checks(bool report);
 
-    bool compass_checks(bool report);
+    virtual bool compass_checks(bool report);
 
     bool gps_checks(bool report);
 
@@ -109,4 +111,5 @@ protected:
     bool manual_transmitter_checks(bool report);
 
     virtual enum HomeState home_status() const = 0;
+
 };
