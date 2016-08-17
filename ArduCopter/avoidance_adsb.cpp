@@ -102,13 +102,40 @@ void AP_Avoidance_Copter::handle_recovery(uint8_t recovery_action)
         copter.Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_ADSB, ERROR_CODE_ERROR_RESOLVED);
 
         // restore flight mode if requested and user has not changed mode since
-        if (recovery_action == AP_AVOIDANCE_RECOVERY_RETURN_TO_PREVIOUS_FLIGHTMODE && copter.control_mode_reason == MODE_REASON_AVOIDANCE) {
-            if (!copter.set_mode(prev_control_mode, MODE_REASON_AVOIDANCE_RECOVERY)) {
-                // on failure RTL or LAND
-                if (!copter.set_mode(RTL, MODE_REASON_AVOIDANCE_RECOVERY)) {
-                    copter.set_mode(LAND, MODE_REASON_AVOIDANCE_RECOVERY);
+        if (copter.control_mode_reason == MODE_REASON_AVOIDANCE) {
+            switch (recovery_action) {
+
+            case AP_AVOIDANCE_RECOVERY_REMAIN_IN_AVOID_ADSB:
+                // do nothing, we'll stay in the AVOID_ADSB mode which is guided which will loiter forever
+                break;
+
+            case AP_AVOIDANCE_RECOVERY_RESUME_PREVIOUS_FLIGHTMODE:
+                set_mode_else_try_RTL_else_LAND(prev_control_mode);
+                break;
+
+            case AP_AVOIDANCE_RECOVERY_RTL:
+                set_mode_else_try_RTL_else_LAND(RTL);
+                break;
+
+            case AP_AVOIDANCE_RECOVERY_RESUME_IF_AUTO_ELSE_LOITER:
+                if (prev_control_mode == AUTO) {
+                    set_mode_else_try_RTL_else_LAND(AUTO);
                 }
-            }
+                break;
+
+            default:
+                break;
+            } // switch
+        }
+    }
+}
+
+void AP_Avoidance_Copter::set_mode_else_try_RTL_else_LAND(control_mode_t mode)
+{
+    if (!copter.set_mode(mode, MODE_REASON_AVOIDANCE_RECOVERY)) {
+        // on failure RTL or LAND
+        if (!copter.set_mode(RTL, MODE_REASON_AVOIDANCE_RECOVERY)) {
+            copter.set_mode(LAND, MODE_REASON_AVOIDANCE_RECOVERY);
         }
     }
 }
