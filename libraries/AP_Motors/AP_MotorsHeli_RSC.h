@@ -4,6 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include <RC_Channel/RC_Channel_aux.h>
 
 // rotor controller states
 enum RotorControlState {
@@ -24,7 +25,7 @@ enum RotorControlMode {
 class AP_MotorsHeli_RSC {
 public:
     friend class AP_MotorsHeli_Single;
-    
+
     AP_MotorsHeli_RSC(RC_Channel_aux::Aux_servo_function_t aux_fn,
                       uint8_t default_channel) :
         _aux_fn(aux_fn),
@@ -39,7 +40,7 @@ public:
 
     // set_critical_speed
     void        set_critical_speed(float critical_speed) { _critical_speed = critical_speed; }
-    
+
     // get_critical_speed
     float       get_critical_speed() const { return _critical_speed; }
 
@@ -79,11 +80,11 @@ public:
 
 private:
     uint64_t        _last_update_us;
-    
+
     // channel setup for aux function
     RC_Channel_aux::Aux_servo_function_t _aux_fn;
     uint8_t         _default_channel;
-    
+
     // internal variables
     RotorControlMode _control_mode = ROTOR_CONTROL_MODE_DISABLED;   // motor control mode, Passthrough or Setpoint
     float           _critical_speed = 0.0f;     // rotor speed below which flight is not possible
@@ -104,7 +105,7 @@ private:
     AP_Int16        _pwm_min;
     AP_Int16        _pwm_max;
     AP_Int8         _pwm_rev;
-    
+
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
 

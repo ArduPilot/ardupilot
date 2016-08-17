@@ -22,6 +22,8 @@
 
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
+#include <RC_Channel/RC_Channel_aux.h>
+
 extern const AP_HAL::HAL& hal;
 
 // Constructor

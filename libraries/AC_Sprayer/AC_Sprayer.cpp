@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL/AP_HAL.h>
+#include <RC_Channel/RC_Channel_aux.h>
 #include "AC_Sprayer.h"
 
 extern const AP_HAL::HAL& hal;
@@ -159,7 +160,7 @@ AC_Sprayer::update()
     }
 
     // if spraying or testing update the pump servo position
-    if (_flags.spraying || _flags.testing) {        
+    if (_flags.spraying || _flags.testing) {
         RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, MIN(MAX(ground_speed * _pump_pct_1ms, 100 *_pump_min_pct),10000),0,10000);
         RC_Channel_aux::set_radio(RC_Channel_aux::k_sprayer_spinner, _spinner_pwm);
     }else{

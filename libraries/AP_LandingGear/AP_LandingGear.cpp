@@ -4,6 +4,7 @@
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
+#include <RC_Channel/RC_Channel_aux.h>
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -44,17 +45,17 @@ void AP_LandingGear::deploy()
     RC_Channel_aux::set_radio(RC_Channel_aux::k_landing_gear_control, _servo_deploy_pwm);
 
     // set deployed flag
-    _deployed = true;    
+    _deployed = true;
 }
 
 /// retract - retract landing gear
 void AP_LandingGear::retract()
-{    
+{
     // set servo PWM to retracted position
     RC_Channel_aux::set_radio(RC_Channel_aux::k_landing_gear_control, _servo_retract_pwm);
 
     // reset deployed flag
-    _deployed = false;   
+    _deployed = false;
 }
 
 /// update - should be called at 10hz
@@ -82,5 +83,5 @@ void AP_LandingGear::update()
 
     if (_command_mode == LandingGear_Retract){
         retract();
-    }    
+    }
 }

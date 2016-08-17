@@ -24,7 +24,7 @@ public:
     ///
     RC_Channel(uint8_t ch_out) :
         _high_in(1),
-        _ch_out(ch_out) 
+        _ch_out(ch_out)
     {
 		  AP_Param::setup_object_defaults(this, var_info);
         if (ch_out < RC_MAX_CHANNELS) {
@@ -62,7 +62,7 @@ public:
     bool        get_reverse(void) const;
     void        set_default_dead_zone(int16_t dzone);
     uint16_t    get_dead_zone(void) const { return _dead_zone; }
-    
+
     // get the channel number
     uint8_t     get_ch_out(void) const { return _ch_out; }
 
@@ -119,11 +119,11 @@ public:
 
     static RC_Channel *rc_channel(uint8_t i);
 
-    static RC_Channel **rc_channel_array(void) 
+    static RC_Channel **rc_channel_array(void)
     {
         return _rc_ch;
     }
-    
+
     bool       in_trim_dz();
 
     int16_t    get_radio_in() const { return _radio_in;}
@@ -149,12 +149,12 @@ public:
     int16_t    get_radio_trim() const { return _radio_trim.get();}
     void       set_radio_trim(int16_t val) { _radio_trim.set(val);}
     void       save_radio_trim() { _radio_trim.save();}
-    
+
     bool min_max_configured()
     {
         return _radio_min.configured() && _radio_max.configured();
     }
-    
+
 private:
 
     // pwm is stored here
@@ -185,6 +185,3 @@ private:
 protected:
     uint8_t     _ch_out;
 };
-
-// This is ugly, but it fixes poorly architected library
-#include "RC_Channel_aux.h"
