@@ -212,93 +212,20 @@ bool AP_Arming_Copter::fence_checks(bool display_failure)
 
 bool AP_Arming_Copter::ins_checks(bool display_failure)
 {
-    // check INS
-    const AP_InertialSensor &ins = _ins; // avoid code churn
+    bool ret = AP_Arming::ins_checks(display_failure);
+
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
-        // check accelerometers have been calibrated
-        if (!ins.accel_calibrated_ok_all()) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accels not calibrated");
-            }
-            return false;
-        }
-
-        // check accels are healthy
-        if (!ins.get_accel_health_all()) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accelerometers not healthy");
-            }
-            return false;
-        }
-
-        //check if accelerometers have calibrated and require reboot
-        if (ins.accel_cal_requires_reboot()) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
-            }
-            return false;
-        }
-
-        // check all accelerometers point in roughly same direction
-        if (ins.get_accel_count() > 1) {
-            const Vector3f &prime_accel_vec = ins.get_accel();
-            for(uint8_t i=0; i<ins.get_accel_count(); i++) {
-                // get next accel vector
-                const Vector3f &accel_vec = ins.get_accel(i);
-                Vector3f vec_diff = accel_vec - prime_accel_vec;
-                float threshold = PREARM_MAX_ACCEL_VECTOR_DIFF;
-                if (i >= 2) {
-                    /*
-                     * for boards with 3 IMUs we only use the first two
-                     * in the EKF. Allow for larger accel discrepancy
-                     * for IMU3 as it may be running at a different temperature
-                     */
-                    threshold *= 2;
-                }
-
-                // EKF is less sensitive to Z-axis error
-                vec_diff.z *= 0.5f;
-
-                if (vec_diff.length() > threshold) {
-                    if (display_failure) {
-                        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent Accelerometers");
-                    }
-                    return false;
-                }
-            }
-        }
-
-        // check gyros are healthy
-        if (!ins.get_gyro_health_all()) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Gyros not healthy");
-            }
-            return false;
-        }
-
-        // check all gyros are consistent
-        if (ins.get_gyro_count() > 1) {
-            for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
-                // get rotation rate difference between gyro #i and primary gyro
-                Vector3f vec_diff = ins.get_gyro(i) - ins.get_gyro();
-                if (vec_diff.length() > PREARM_MAX_GYRO_VECTOR_DIFF) {
-                    if (display_failure) {
-                        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent Gyros");
-                    }
-                    return false;
-                }
-            }
-        }
 
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: gyros still settling");
             }
-            return false;
+            ret = false;
         }
     }
-    return true;
+
+    return ret;
 }
 
 bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
