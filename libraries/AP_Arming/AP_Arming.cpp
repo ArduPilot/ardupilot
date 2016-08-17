@@ -21,6 +21,7 @@
 // this can also be overridden for specific boards in the HAL
 #define AP_ARMING_COMPASS_OFFSETS_MAX   600
 #endif
+#define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
@@ -86,6 +87,11 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &comp
     AP_Param::setup_object_defaults(this, var_info);
     memset(last_accel_pass_ms, 0, sizeof(last_accel_pass_ms));
     memset(last_gyro_pass_ms, 0, sizeof(last_gyro_pass_ms));
+}
+
+uint16_t AP_Arming::compass_magfield_expected() const
+{
+    return AP_ARMING_COMPASS_MAGFIELD_EXPECTED;
 }
 
 bool AP_Arming::is_armed()
