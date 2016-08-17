@@ -153,7 +153,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
     float   throttle_thrust_best_rpy;   // throttle providing maximum roll, pitch and yaw range without climbing
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
-    float   rpy_low = 0.0f;             // lowest motor value
+    float   rpy_low = 1.0f;             // lowest motor value
     float   rpy_high = 0.0f;            // highest motor value
     float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   unused_range;               // amount of yaw we can fit in the current channel
@@ -222,7 +222,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     // add yaw to intermediate numbers for each motor
-    rpy_low = 0.0f;
+    rpy_low = 1.0f;
     rpy_high = 0.0f;
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
