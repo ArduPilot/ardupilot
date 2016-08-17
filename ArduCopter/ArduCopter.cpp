@@ -127,7 +127,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
 #if ADSB_ENABLED == ENABLED
-    SCHED_TASK(avoidance_adsb_update, 10,    400),
+    SCHED_TASK(avoidance_adsb_update, 10,    100),
 #endif
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,   5,     75),
