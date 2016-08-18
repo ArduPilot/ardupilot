@@ -123,6 +123,7 @@ def px4_firmware(self):
         'px4',
         'build_firmware_px4fmu-v%s' % version,
     )
+    fw_task.set_run_after(self.link_task)
 
     # we need to synchronize in order to avoid the output expected by the
     # previous ap_program being overwritten before used
