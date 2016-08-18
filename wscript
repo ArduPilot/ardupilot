@@ -168,12 +168,8 @@ def configure(cfg):
         cfg.end_msg('no')
         cfg.env.SUBMODULE_UPDATE = False
 
-    cfg.start_msg('Update submodules')
-    if cfg.env.SUBMODULE_UPDATE:
-        cfg.end_msg('yes')
-        cfg.load('git_submodule')
-    else:
-        cfg.end_msg('no')
+    cfg.msg('Update submodules', 'yes' if cfg.env.SUBMODULE_UPDATE else 'no')
+    cfg.load('git_submodule')
 
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
