@@ -19,6 +19,7 @@
  *
  */
 #include "AP_Baro.h"
+#include "AP_Baro_Backend.h"
 
 #include <utility>
 
@@ -26,12 +27,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
-#include "AP_Baro_BMP085.h"
-#include "AP_Baro_HIL.h"
-#include "AP_Baro_MS5611.h"
-#include "AP_Baro_PX4.h"
-#include "AP_Baro_qflight.h"
-#include "AP_Baro_QURT.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -282,46 +277,15 @@ float AP_Baro::get_calibration_temperature(uint8_t instance) const
 void AP_Baro::init(void)
 {
     if (_hil_mode) {
-        drivers[0] = new AP_Baro_HIL(*this);
+        drivers[0] = create_default_baro_backend<HAL_BARO_HIL>(*this);
         _num_drivers = 1;
         return;
     }
 
-#if HAL_BARO_DEFAULT == HAL_BARO_PX4 || HAL_BARO_DEFAULT == HAL_BARO_VRBRAIN
-    drivers[0] = new AP_Baro_PX4(*this);
+    drivers[0] = create_default_baro_backend<HAL_BARO_DEFAULT>(*this);
     _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_HIL
-    drivers[0] = new AP_Baro_HIL(*this);
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_BMP085
-    drivers[0] = new AP_Baro_BMP085(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR)));
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_I2C
-    drivers[0] = new AP_Baro_MS5611(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR)));
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_SPI
-    drivers[0] = new AP_Baro_MS5611(*this,
-        std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5607_I2C
-    drivers[0] = new AP_Baro_MS5607(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)));
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5637_I2C
-    drivers[0] = new AP_Baro_MS5637(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5637_I2C_BUS, HAL_BARO_MS5637_I2C_ADDR)));
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_QFLIGHT
-    drivers[0] = new AP_Baro_QFLIGHT(*this);
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_QURT
-    drivers[0] = new AP_Baro_QURT(*this);
-    _num_drivers = 1;
-#endif
 
-    if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == NULL) {
+    if ( _num_sensors == 0 || drivers[0] == NULL) {
         AP_HAL::panic("Baro: unable to initialise driver");
     }
 }

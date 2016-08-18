@@ -18,6 +18,9 @@
 #include <utility>
 
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/SPIDevice.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -63,6 +66,38 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev
     , _dev(std::move(dev))
 {
 }
+
+#if defined (HAL_BARO_MS5611_I2C) && defined(HAL_BARO_MS5611_I2C_BUS) && defined(HAL_BARO_MS5611_I2C_ADDR)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_MS5611_I2C>(AP_Baro& baro)
+{
+    return new AP_Baro_MS5611(baro,
+        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR)));
+}
+#endif
+
+#if defined (HAL_BARO_MS5611_SPI) && defined(HAL_BARO_MS5611_NAME)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_MS5611_SPI>(AP_Baro& baro)
+{
+    return new AP_Baro_MS5611(baro,
+        std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME)));
+}
+#endif
+
+#if defined(HAL_BARO_MS5607_I2C) && defined(HAL_BARO_MS5607_I2C_BUS) && defined(HAL_BARO_MS5607_I2C_ADDR)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_MS5607_I2C>(AP_Baro& baro)
+{
+    return new AP_Baro_MS5607(baro,
+        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)));
+}
+#endif
+
+#if defined (HAL_BARO_MS5637_I2C) && defined (HAL_BARO_MS5637_I2C_BUS) && defined(HAL_BARO_MS5637_I2C_ADDR)
+template<> AP_Baro_Backend* create_default_baro_backend<HAL_BARO_MS5637_I2C>(AP_Baro& baro)
+{
+    return new AP_Baro_MS5637(baro,
+        std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5637_I2C_BUS, HAL_BARO_MS5637_I2C_ADDR)));
+}
+#endif
 
 void AP_Baro_MS56XX::_init()
 {
