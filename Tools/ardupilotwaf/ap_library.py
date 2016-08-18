@@ -23,19 +23,14 @@ arguments to be passed to bld.objects() when during the creation of the task
 generators. You can use it to pass extra arguments to that function (although
 some of them will be rewritten, see the implementation for details).
 
-This tool also provides a feature to check if the headers used by the source
-files don't use vehicle-related headers. The task generators for performing the
-checks are created with bld.ap_library_check_headers(). They should be created
-in a build group that is processed after the compilation tasks, because they
-use the result of Waf's C preprocessor to know what headers should be checked.
-The results can be reported to the user by calling
-bld.ap_library_check_summary() to add the post build callback.
+This tool also checks if the headers used by the source files don't use
+vehicle-related headers and fails the build if they do.
 """
 import re
 
-from waflib import Errors, Logs, Task, Utils
+from waflib import Errors, Task, Utils
 from waflib.Configure import conf
-from waflib.TaskGen import before_method, feature
+from waflib.TaskGen import after_method, before_method, feature
 from waflib.Tools import c_preproc
 
 import ardupilotwaf as ap
@@ -131,70 +126,67 @@ def process_ap_libraries(self):
         if vehicle:
             self.use.append(_vehicle_tgen_name(l, vehicle))
 
-class ap_library_check_header(Task.Task):
+class ap_library_check_headers(Task.Task):
     color = 'PINK'
-    tasks = []
+    before  = 'cxx c'
+    dispatched_headers = set()
+    whitelist = (
+        'libraries/AP_Vehicle/AP_Vehicle_Type.h',
+    )
 
     def run(self):
-        self.tasks.append(self)
-        n = self.inputs[0]
-        s = _remove_comments(n.read())
-        self.guilty = _macros_re.search(s) is not None
+        for n in self.headers:
+            s = _remove_comments(n.read())
+            if _macros_re.search(s):
+                raise Errors.WafError('%s: library header uses vehicle-dependent macros' % n.srcpath())
 
-    def post_run(self):
-        super(ap_library_check_header, self).post_run()
-        if self.guilty:
-            self.generator.bld.task_sigs[self.uid()] = None
+    def uid(self):
+        try:
+            return self._uid
+        except AttributeError:
+            self._uid = 'check_headers-%s' % self.compiled_task.uid()
+            return self._uid
+
+    def signature(self):
+        bld = self.generator.bld
+        # force scan() to be called
+        bld.imp_sigs[self.uid()] = None
+        return super(ap_library_check_headers, self).signature()
+
+    def scan(self):
+        r = []
+        self.headers = []
+
+        # force dependency scan, if necessary
+        self.compiled_task.signature()
+        for n in self.generator.bld.node_deps[self.compiled_task.uid()]:
+            if not n.is_src():
+                continue
+            if n.srcpath() in self.whitelist:
+                continue
+
+            r.append(n)
+            if n not in self.dispatched_headers:
+                self.headers.append(n)
+                self.dispatched_headers.add(n)
+
+        return r, []
+
+    def __str__(self):
+        return str(self.compiled_task)
 
     def keyword(self):
-        return 'Checking header'
+        return 'Checking included headers'
 
-_object_tgens = []
 @feature('ap_library_object')
+@after_method('process_source')
 def ap_library_register_for_check(self):
-    _object_tgens.append(self)
-
-_headers_exceptions = (
-    'libraries/AP_Vehicle/AP_Vehicle_Type.h',
-)
-_headers = set()
-@feature('ap_library_check_headers')
-def ap_library_process_headers(self):
-    for o in _object_tgens:
-        if not hasattr(o, 'compiled_tasks'):
-            continue
-
-        for t in o.compiled_tasks:
-            for n in self.bld.node_deps[t.uid()]:
-                if not n.is_src():
-                    continue
-                if n.srcpath() in _headers_exceptions:
-                    continue
-                if n in _headers:
-                    continue
-                _headers.add(n)
-                self.create_task('ap_library_check_header', n)
-
-@conf
-def ap_library_check_headers(bld, name):
-    return bld(name=name, features='ap_library_check_headers')
-
-def _check_summary(bld):
-    if not ap_library_check_header.tasks:
+    if not hasattr(self, 'compiled_tasks'):
         return
 
-    guilty = [t.inputs[0].srcpath() for t in ap_library_check_header.tasks if t.guilty]
-    if guilty:
-        Logs.warn('ap_libraries: the following headers use vehicle-dependent macros:')
-        for path in guilty:
-            Logs.warn('    %s' % path)
-        bld.fatal('ap_libraries: there are headers using vehicle-dependent macros')
-    else:
-        Logs.info('ap_libraries: all headers okay')
-
-@conf
-def ap_library_check_summary(bld):
-    bld.add_post_fun(_check_summary)
+    for t in self.compiled_tasks:
+        tsk = self.create_task('ap_library_check_headers')
+        tsk.compiled_task = t
 
 def configure(cfg):
     cfg.env.AP_LIBRARIES_OBJECTS_KW = dict()
