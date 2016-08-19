@@ -302,6 +302,8 @@ private:
         uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
         uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
         uint8_t terrain             : 1; // 6   // true if the missing terrain data failsafe has occurred
+        uint8_t leak				: 1; // true if leak recently detected
+        uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
 
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
@@ -1049,6 +1051,8 @@ private:
     void init_capabilities(void);
     void dataflash_periodic(void);
     void accel_cal_update(void);
+
+    void set_leak_status(bool status);
 
 public:
     void mavlink_delay_cb();
