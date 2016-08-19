@@ -95,7 +95,7 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
-    return 0;
+
 }
 
 int8_t Rover::test_radio(uint8_t argc, const Menu::arg *argv)

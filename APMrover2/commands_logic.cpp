@@ -178,7 +178,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
             gcs_send_text(MAV_SEVERITY_CRITICAL,"Verify condition. Unsupported command");
             return true;
 	}
-    return false;
+
 }
 
 /********************************************************************************/
