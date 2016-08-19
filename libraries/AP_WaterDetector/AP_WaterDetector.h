@@ -6,7 +6,7 @@
 
 #define WATERDETECTOR_MAX_INSTANCES 3
 
-#define WATERDETECTOR_COOLDOWN_MS 4000
+#define WATERDETECTOR_COOLDOWN_MS 3000 // status will return true for this long after last time water was detected
 
 class AP_WaterDetector_Backend;
 
@@ -22,7 +22,7 @@ public:
 		WATERDETECTOR_TYPE_NONE = 0,
 		WATERDETECTOR_TYPE_DIGITAL = 1,
 		WATERDETECTOR_TYPE_ANALOG = 2,
-		WATERDETECTOR_TYPE_MAVLINK = 3
+		WATERDETECTOR_TYPE_MAVLINK = 3 // unused, status can be set after handling mavlink packets with set_detect
 	};
 
 	struct WaterDetector_State {
@@ -34,7 +34,7 @@ public:
 	void set_detect(void); // set status externally, ie via mavlink message from subsystems
 
 	void init(void); // initialize all drivers
-	void update(void); // update all instances
+	bool update(void); // update all instances, should be called frequently by vehicle code
 
 	AP_Int8 _type[WATERDETECTOR_MAX_INSTANCES]; // Analog, Digital, Mavlink
 	AP_Int8 _pin[WATERDETECTOR_MAX_INSTANCES]; // pin that detector is connected to

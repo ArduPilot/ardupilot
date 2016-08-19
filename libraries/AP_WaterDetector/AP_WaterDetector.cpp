@@ -9,7 +9,7 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Param: PIN
 	// @DisplayName: Pin that water detector is connected to
 	// @Description:
-    // @Values: 55:Pixhawk Aux6
+    // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
     AP_GROUPINFO("1_PIN", 0, AP_WaterDetector, _pin[0], -1),
 
@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("1_DEFAULT", 1, AP_WaterDetector, _default_reading[0], 0),
+	AP_GROUPINFO("1_DEFAULT", 1, AP_WaterDetector, _default_reading[0], 1),
 
 	// @Param: TYPE
 	// @DisplayName: Water detector instance type
@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Param: PIN
 	// @DisplayName: Pin that water detector is connected to
 	// @Description:
-    // @Values: 55:Pixhawk Aux6
+    // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
     AP_GROUPINFO("2_PIN", 3, AP_WaterDetector, _pin[1], -1),
 
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("2_DEFAULT", 4, AP_WaterDetector, _default_reading[1], 0),
+	AP_GROUPINFO("2_DEFAULT", 4, AP_WaterDetector, _default_reading[1], 1),
 
 	// @Param: TYPE
 	// @DisplayName: Water detector instance type
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Param: PIN
 	// @DisplayName: Pin that water detector is connected to
 	// @Description:
-    // @Values: 55:Pixhawk Aux6
+    // @Values: -1:Disabled, 50:Pixhawk Aux1, 51:Pixhawk Aux2, 52:Pixhawk Aux3, 53:Pixhawk Aux4, 54:Pixhawk Aux5, 55:Pixhawk Aux6, 13:Pixhawk 3.3ADC1, 14:Pixhawk 3.3ADC2, 15:Pixhawk 6.6ADC
 	// @User: Standard
     AP_GROUPINFO("3_PIN", 6, AP_WaterDetector, _pin[2], -1),
 
@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_WaterDetector::var_info[] = {
 	// @Description:
 	// @Values: 0:Low, 1:High
 	// @User: Standard
-	AP_GROUPINFO("3_DEFAULT", 7, AP_WaterDetector, _default_reading[2], 0),
+	AP_GROUPINFO("3_DEFAULT", 7, AP_WaterDetector, _default_reading[2], 1),
 
 	// @Param: TYPE
 	// @DisplayName: Water detector instance type
@@ -106,7 +106,7 @@ void AP_WaterDetector::init()
 	}
 }
 
-void AP_WaterDetector::update()
+bool AP_WaterDetector::update()
 {
 	uint32_t tnow = AP_HAL::millis();
 
@@ -120,6 +120,8 @@ void AP_WaterDetector::update()
 	}
 
 	_status = tnow < _last_detect_ms + WATERDETECTOR_COOLDOWN_MS;
+
+	return _status;
 }
 
 void AP_WaterDetector::set_detect()
