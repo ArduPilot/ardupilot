@@ -73,6 +73,17 @@ void Sub::failsafe_battery_event(void)
 
 }
 
+void Sub::set_leak_status(bool status) {
+	uint32_t tnow = AP_HAL::millis();
+
+	failsafe.leak = status;
+
+	if(failsafe.leak && tnow > failsafe.last_leak_warn_ms + 5000) {
+		failsafe.last_leak_warn_ms = tnow;
+		gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Leak Detected");
+	}
+}
+
 // failsafe_gcs_check - check for ground station failsafe
 void Sub::failsafe_gcs_check()
 {
