@@ -460,6 +460,8 @@ void Sub::dataflash_periodic(void)
 // three_hz_loop - 3.3hz loop
 void Sub::three_hz_loop()
 {
+	set_leak_status(water_detector.update());
+
     // check if we've lost contact with the ground station
     failsafe_gcs_check();
 
