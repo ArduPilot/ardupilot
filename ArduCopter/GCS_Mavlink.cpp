@@ -2259,3 +2259,17 @@ void Copter::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
 }
+
+/*
+  return true if we will accept this packet. Used to implement SYSID_ENFORCE
+ */
+bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_message_t &msg)
+{
+    if (!copter.g2.sysid_enforce) {
+        return true;
+    }
+    if (msg.msgid == MAVLINK_MSG_ID_RADIO || msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
+        return true;
+    }
+    return (msg.sysid == copter.g.sysid_my_gcs);
+}

@@ -1031,6 +1031,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACRO_THR_MID", 10, ParametersG2, acro_thr_mid, ACRO_THR_MID_DEFAULT),
 
+    // @Group: SYSID_ENFORCE
+    // @DisplayName: GCS sysid enforcement
+    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
+    // @Values: 0:NotEnforced,1:Enforced
+    // @User: Advanced
+    AP_GROUPINFO("SYSID_ENFORCE", 11, ParametersG2, sysid_enforce, 0),
+    
     AP_GROUPEND
 };
 
