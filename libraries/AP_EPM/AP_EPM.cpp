@@ -11,6 +11,7 @@
 #include "AP_EPM.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <RC_Channel/RC_Channel_aux.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstdio>
@@ -73,7 +74,7 @@ AP_EPM::AP_EPM(void) :
     _flags.active = false;
 }
 
-void AP_EPM::init() 
+void AP_EPM::init()
 {
     // return immediately if not enabled
     if (!_enabled) {
@@ -149,7 +150,7 @@ void AP_EPM::release()
 }
 
 // neutral - return the epm pwm output to the neutral position
-void AP_EPM::neutral() 
+void AP_EPM::neutral()
 {
     // return immediately if not enabled
     if (!_enabled) {

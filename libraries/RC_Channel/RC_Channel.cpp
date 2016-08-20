@@ -306,7 +306,7 @@ RC_Channel::update_min_max()
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t _trim)
+RC_Channel::pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t _trim)const
 {
     int16_t radio_trim_high = _trim + dead_zone;
     int16_t radio_trim_low  = _trim - dead_zone;
@@ -329,7 +329,7 @@ RC_Channel::pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t _trim)
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
+RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)const
 {
     return pwm_to_angle_dz_trim(dead_zone, _radio_trim);
 }
@@ -339,14 +339,14 @@ RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
   the current radio_in value
  */
 int16_t
-RC_Channel::pwm_to_angle()
+RC_Channel::pwm_to_angle()const
 {
 	return pwm_to_angle_dz(_dead_zone);
 }
 
 
 int16_t
-RC_Channel::angle_to_pwm()
+RC_Channel::angle_to_pwm()const
 {
     int16_t reverse_mul = (_reverse==-1?-1:1);
     if((_servo_out * reverse_mul) > 0) {
@@ -361,7 +361,7 @@ RC_Channel::angle_to_pwm()
   range, using the specified deadzone
  */
 int16_t
-RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
+RC_Channel::pwm_to_range_dz(uint16_t dead_zone)const
 {
     int16_t r_in = constrain_int16(_radio_in, _radio_min.get(), _radio_max.get());
 
@@ -384,14 +384,14 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
   range
  */
 int16_t
-RC_Channel::pwm_to_range()
+RC_Channel::pwm_to_range()const
 {
     return pwm_to_range_dz(_dead_zone);
 }
 
 
 int16_t
-RC_Channel::range_to_pwm()
+RC_Channel::range_to_pwm()const
 {
     if (_high_out == _low_out) {
         return _radio_trim;
@@ -441,7 +441,7 @@ RC_Channel::norm_input_dz()
   get percentage input from 0 to 100. This ignores the trim value.
  */
 uint8_t
-RC_Channel::percent_input()
+RC_Channel::percent_input()const
 {
     if (_radio_in <= _radio_min) {
         return _reverse==-1?100:0;
@@ -457,7 +457,7 @@ RC_Channel::percent_input()
 }
 
 float
-RC_Channel::norm_output()
+RC_Channel::norm_output()const
 {
     int16_t mid = (_radio_max + _radio_min) / 2;
     float ret;
