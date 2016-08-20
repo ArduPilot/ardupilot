@@ -82,6 +82,9 @@ void NavEKF2_core::readRangeFinder(void)
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
 
+                // indicate we have updated the measurement
+                rngValidMeaTime_ms = imuSampleTime_ms;
+
             } else if (!takeOffDetected && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
@@ -96,10 +99,10 @@ void NavEKF2_core::readRangeFinder(void)
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
 
+                // indicate we have updated the measurement
+                rngValidMeaTime_ms = imuSampleTime_ms;
+
             }
-
-            rngValidMeaTime_ms = imuSampleTime_ms;
-
         }
     }
 }
