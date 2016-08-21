@@ -44,7 +44,7 @@ void Copter::update_land_detector()
         // if disarmed, always landed.
         set_land_complete(true);
     } else if (ap.land_complete) {
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
         // if rotor speed and collective pitch are high then clear landing flag
         if (motors.get_throttle() > get_non_takeoff_throttle() && !motors.limit.throttle_lower && motors.rotor_runup_complete()) {
 #else
@@ -55,7 +55,7 @@ void Copter::update_land_detector()
         }
     } else {
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
         // check that collective pitch is on lower limit (should be constrained by LAND_COL_MIN)
         bool motor_at_lower_limit = motors.limit.throttle_lower;
 #else
@@ -133,7 +133,7 @@ void Copter::set_land_complete_maybe(bool b)
 //  has no effect when throttle is above hover throttle
 void Copter::update_throttle_thr_mix()
 {
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
     // if disarmed or landed prioritise throttle
     if(!motors.armed() || ap.land_complete) {
         attitude_control.set_throttle_mix_min();
