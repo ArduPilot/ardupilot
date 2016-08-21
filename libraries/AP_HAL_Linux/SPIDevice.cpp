@@ -426,6 +426,15 @@ SPIDeviceManager::get_device(const char *name)
     return dev;
 }
 
+uint8_t SPIDeviceManager::get_count() {
+   return _n_device_desc;
+}
+
+const char* SPIDeviceManager::get_device_name(uint8_t n)
+{
+    return _device[n].name;
+}
+
 /* Create a new device increasing the bus reference */
 AP_HAL::OwnPtr<AP_HAL::SPIDevice>
 SPIDeviceManager::_create_device(SPIBus &b, SPIDesc &desc) const
