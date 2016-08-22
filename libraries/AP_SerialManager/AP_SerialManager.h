@@ -81,6 +81,7 @@ public:
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
         SerialProtocol_Lidar = 9,
+        SerialProtocol_Lidar360 = 10,
     };
 
     // Constructor
