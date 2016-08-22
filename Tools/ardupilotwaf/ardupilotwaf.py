@@ -2,8 +2,7 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Logs, Options, Utils
-from waflib.Build import BuildContext
+from waflib import Build, Logs, Options, Utils
 from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature
 import os.path, os
@@ -317,7 +316,7 @@ def build_command(name,
         program_group_list=program_group_list,
     )
 
-    class context_class(BuildContext):
+    class context_class(Build.BuildContext):
         cmd = name
     context_class.__doc__ = doc
 
@@ -377,7 +376,17 @@ my board".
         action='store_true',
         help='Output all test programs.')
 
-
 def build(bld):
     bld.add_pre_fun(_process_build_command)
     bld.add_pre_fun(_select_programs_from_group)
+
+class CleanContext(Build.CleanContext):
+    Build.SAVED_ATTRS.append('ap_persistent_task_sigs')
+
+    def clean(self):
+        saved_sigs = dict(self.ap_persistent_task_sigs)
+
+        super(CleanContext, self).clean()
+
+        self.task_sigs.update(saved_sigs)
+        self.ap_persistent_task_sigs.update(saved_sigs)
