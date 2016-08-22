@@ -176,10 +176,15 @@ bool Copter::verify_command_callback(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
+/*******************************************************************************
+Verify command Handlers
 
-// verify_command - this will be called repeatedly by ap_mission lib to ensure the active commands are progressing
-//  should return true once the active navigation command completes successfully
-//  called at 10hz or higher
+Each type of mission element has a "verify" operation. The verify
+operation returns true when the mission element has completed and we
+should move onto the next mission element.
+Return true if we do not recognize the command so that we move on to the next command
+*******************************************************************************/
+
 bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch(cmd.id) {
@@ -231,11 +236,31 @@ bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_CONDITION_YAW:
         return verify_yaw();
 
-    case MAV_CMD_DO_PARACHUTE:
-        // assume parachute was released successfully
+    // do commands (always return true)
+    case MAV_CMD_DO_CHANGE_SPEED:
+    case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_DO_MOUNT_CONTROL:
+    case MAV_CMD_DO_CONTROL_VIDEO:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_PARACHUTE:  // assume parachute was released successfully
+    case MAV_CMD_DO_GRIPPER:
+    case MAV_CMD_DO_GUIDED_LIMITS:
         return true;
 
     default:
+        // error message
+        if (AP_Mission::is_nav_cmd(cmd)) {
+            gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav. Invalid or no current nav cmd");
+        }else{
+            gcs_send_text(MAV_SEVERITY_WARNING,"Verify condition. Invalid or no current condition cmd");
+        }
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -883,7 +908,7 @@ void Copter::do_set_home(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-// do_roi - starts actions required by MAV_CMD_NAV_ROI
+// do_roi - starts actions required by MAV_CMD_DO_SET_ROI
 //          this involves either moving the camera to point at the ROI (region of interest)
 //          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
 //	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
