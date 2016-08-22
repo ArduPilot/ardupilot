@@ -146,10 +146,15 @@ bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
     }
     return false;
 }
-/********************************************************************************/
-// Verify command Handlers
-//      Returns true if command complete
-/********************************************************************************/
+
+/*******************************************************************************
+Verify command Handlers
+
+Each type of mission element has a "verify" operation. The verify
+operation returns true when the mission element has completed and we
+should move onto the next mission element.
+Return true if we do not recognize the command so that we move on to the next command
+*******************************************************************************/
 
 bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -170,15 +175,32 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
         case MAV_CMD_CONDITION_DISTANCE:
             return verify_within_distance();
 
+        // do commands (always return true)
+        case MAV_CMD_DO_CHANGE_SPEED:
+        case MAV_CMD_DO_SET_HOME:
+        case MAV_CMD_DO_SET_SERVO:
+        case MAV_CMD_DO_SET_RELAY:
+        case MAV_CMD_DO_REPEAT_SERVO:
+        case MAV_CMD_DO_REPEAT_RELAY:
+        case MAV_CMD_DO_CONTROL_VIDEO:
+        case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        case MAV_CMD_DO_DIGICAM_CONTROL:
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        case MAV_CMD_DO_SET_ROI:
+        case MAV_CMD_DO_SET_REVERSE:
+            return true;
+
         default:
-            if (cmd.id > MAV_CMD_CONDITION_LAST) {
-                // this is a command that doesn't require verify
-                return true;
+            // error message
+            if (AP_Mission::is_nav_cmd(cmd)) {
+                gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav. Invalid or no current nav cmd");
+            }else{
+                gcs_send_text(MAV_SEVERITY_WARNING,"Verify condition. Invalid or no current condition cmd");
             }
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Verify condition. Unsupported command");
+            // return true if we do not recognize the command so that we move on to the next command
             return true;
 	}
-    return false;
+
 }
 
 /********************************************************************************/
