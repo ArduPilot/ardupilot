@@ -87,9 +87,8 @@ def cygwin_pidof(proc_name):
                 pid = int(line_split[0].strip())
             except:
                 pid = int(line_split[1].strip())
-                str_pid = str(pid)
-            if str_pid not in pids:
-                pids.append(str_pid)
+            if pid not in pids:
+                pids.append(pid)
     return pids
 
 
@@ -143,7 +142,7 @@ def kill_tasks():
     """Clean up stray processes by name.  This is a somewhat shotgun approach"""
     progress("Killing tasks")
     try:
-        victim_names = [
+        victim_names = set([
             'JSBSim',
             'lt-JSBSim',
             'ArduPlane.elf',
@@ -154,7 +153,12 @@ def kill_tasks():
             'MAVProxy.exe',
             'runsim.py',
             'AntennaTracker.elf',
-        ]
+        ])
+        for frame in _options_for_frame.keys():
+            if not _options_for_frame[frame].has_key("waf_target"):
+                continue
+            exe_name = os.path.basename(_options_for_frame[frame]["waf_target"])
+            victim_names.add(exe_name)
 
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
