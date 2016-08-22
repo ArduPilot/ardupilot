@@ -26,6 +26,7 @@ some of them will be rewritten, see the implementation for details).
 This tool also checks if the headers used by the source files don't use
 vehicle-related headers and fails the build if they do.
 """
+import os
 import re
 
 from waflib import Errors, Task, Utils
@@ -151,18 +152,23 @@ class ap_library_check_headers(Task.Task):
         bld = self.generator.bld
         # force scan() to be called
         bld.imp_sigs[self.uid()] = None
-        return super(ap_library_check_headers, self).signature()
+        s = super(ap_library_check_headers, self).signature()
+        bld.ap_persistent_task_sigs[self.uid()] = s
+        return s
 
     def scan(self):
         r = []
         self.headers = []
+        srcnode_path = self.generator.bld.srcnode.abspath()
 
         # force dependency scan, if necessary
         self.compiled_task.signature()
         for n in self.generator.bld.node_deps[self.compiled_task.uid()]:
-            if not n.is_src():
+            # using common Node methods doesn't work here
+            p = n.abspath()
+            if not p.startswith(srcnode_path):
                 continue
-            if n.srcpath() in self.whitelist:
+            if os.path.relpath(p, srcnode_path) in self.whitelist:
                 continue
 
             r.append(n)
