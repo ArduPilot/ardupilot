@@ -380,6 +380,17 @@ bool Copter::parameter_checks(bool display_failure)
             return false;
         }
         #endif
+
+        #if PROXIMITY_ENABLED == ENABLED
+        // check proximity sensor if enabled
+        if (copter.proximity.get_status() == AP_Proximity::Proximity_NoData) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
+            }
+            return false;
+        }
+        #endif
+
         #if FRAME_CONFIG == HELI_FRAME
         // check helicopter parameters
         if (!motors.parameter_check(display_failure)) {
