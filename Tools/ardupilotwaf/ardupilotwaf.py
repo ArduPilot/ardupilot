@@ -349,6 +349,7 @@ def options(opt):
         'configure': opt.add_option_group('Ardupilot configure options'),
         'build': opt.add_option_group('Ardupilot build options'),
         'check': opt.add_option_group('Ardupilot check options'),
+        'clean': opt.add_option_group('Ardupilot clean options'),
     }
 
     g = opt.ap_groups['build']
@@ -376,6 +377,17 @@ my board".
         action='store_true',
         help='Output all test programs.')
 
+    g = opt.ap_groups['clean']
+
+    g.add_option('--clean-all-sigs',
+        action='store_true',
+        help='''
+Clean signatures for all tasks. By default, some tasks that don't produce files
+and are time consuming keep their signatures when clean is called without this
+parameter. One example is the group of tasks that check headers included by
+Ardupilot libraries.
+''')
+
 def build(bld):
     bld.add_pre_fun(_process_build_command)
     bld.add_pre_fun(_select_programs_from_group)
@@ -384,9 +396,11 @@ class CleanContext(Build.CleanContext):
     Build.SAVED_ATTRS.append('ap_persistent_task_sigs')
 
     def clean(self):
-        saved_sigs = dict(self.ap_persistent_task_sigs)
+        if not self.options.clean_all_sigs:
+            saved_sigs = dict(self.ap_persistent_task_sigs)
 
         super(CleanContext, self).clean()
 
-        self.task_sigs.update(saved_sigs)
-        self.ap_persistent_task_sigs.update(saved_sigs)
+        if not self.options.clean_all_sigs:
+            self.task_sigs.update(saved_sigs)
+            self.ap_persistent_task_sigs.update(saved_sigs)
