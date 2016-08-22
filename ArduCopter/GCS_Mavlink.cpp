@@ -143,6 +143,11 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     if (copter.DataFlash.logging_present()) { // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
+#if PROXIMITY_ENABLED == ENABLED
+    if (copter.proximity.get_status() > AP_Proximity::Proximity_NotConnected) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
+#endif
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
@@ -221,6 +226,12 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     if (copter.DataFlash.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
+
+#if PROXIMITY_ENABLED == ENABLED
+    if (copter.proximity.get_status() < AP_Proximity::Proximity_Good) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
+#endif
 
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
