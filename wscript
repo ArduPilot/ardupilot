@@ -47,13 +47,6 @@ def init(ctx):
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
-
-    opt.ap_groups = {
-        'configure': opt.add_option_group('Ardupilot configure options'),
-        'build': opt.add_option_group('Ardupilot build options'),
-        'check': opt.add_option_group('Ardupilot check options'),
-    }
-
     opt.load('ardupilotwaf')
     opt.load('build_summary')
 
