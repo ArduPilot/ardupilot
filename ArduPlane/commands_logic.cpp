@@ -242,6 +242,7 @@ Verify command Handlers
 Each type of mission element has a "verify" operation. The verify
 operation returns true when the mission element has completed and we
 should move onto the next mission element.
+Return true if we do not recognize the command so that we move on to the next command
 *******************************************************************************/
 
 bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Returns true if command complete
@@ -251,11 +252,11 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_TAKEOFF:
         return verify_takeoff();
 
-    case MAV_CMD_NAV_LAND:
-        return verify_land();
-
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
+
+    case MAV_CMD_NAV_LAND:
+        return verify_land();
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlim();
@@ -278,6 +279,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_ALTITUDE_WAIT:
         return verify_altitude_wait(cmd);
 
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        return quadplane.verify_vtol_takeoff(cmd);
+
+    case MAV_CMD_NAV_VTOL_LAND:
+        return quadplane.verify_vtol_land();
+
     // Conditional commands
 
     case MAV_CMD_CONDITION_DELAY:
@@ -290,14 +297,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_PARACHUTE:
         // assume parachute was released successfully
         return true;
-        break;
 #endif
-
-    case MAV_CMD_NAV_VTOL_TAKEOFF:
-        return quadplane.verify_vtol_takeoff(cmd);
-
-    case MAV_CMD_NAV_VTOL_LAND:
-        return quadplane.verify_vtol_land();
         
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -306,16 +306,16 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_SET_RELAY:
     case MAV_CMD_DO_REPEAT_SERVO:
     case MAV_CMD_DO_REPEAT_RELAY:
-    case MAV_CMD_DO_CONTROL_VIDEO:
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-    case MAV_CMD_NAV_ROI:
-    case MAV_CMD_DO_MOUNT_CONFIGURE:
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
+    case MAV_CMD_DO_CONTROL_VIDEO:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_VTOL_TRANSITION:
     case MAV_CMD_DO_ENGINE_CONTROL:
         return true;
@@ -325,9 +325,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         if (AP_Mission::is_nav_cmd(cmd)) {
             gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav. Invalid or no current nav cmd");
         }else{
-        gcs_send_text(MAV_SEVERITY_WARNING,"Verify condition. Invalid or no current condition cmd");
-    }
-        // return true so that we do not get stuck at this command
+            gcs_send_text(MAV_SEVERITY_WARNING,"Verify condition. Invalid or no current condition cmd");
+        }
+        // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
 }
