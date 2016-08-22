@@ -156,7 +156,6 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
                                                          ~MAV_SYS_STATUS_LOGGING);
 
     switch (control_mode) {
-    case ALT_HOLD:
     case AUTO:
     case AVOID_ADSB:
     case GUIDED:
@@ -166,13 +165,18 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     case LAND:
     case POSHOLD:
     case BRAKE:
+    case THROW:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
+    case ALT_HOLD:
+    case GUIDED_NOGPS:
     case SPORT:
+    case AUTOTUNE:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:
+        // stabilize, acro, drift, and flip have no automatic x,y or z control (i.e. all manual)
         break;
     }
 
