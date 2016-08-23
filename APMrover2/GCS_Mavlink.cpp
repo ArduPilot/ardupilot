@@ -1245,6 +1245,88 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:     // MAV ID: 84
+        {
+            // decode packet
+            mavlink_set_position_target_local_ned_t packet;
+            mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
+
+            // exit if vehicle is not in Guided mode
+            if (rover.control_mode != GUIDED) {
+                break;
+            }
+
+            // check for supported coordinate frames
+            if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
+                packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
+                packet.coordinate_frame != MAV_FRAME_BODY_NED &&
+                packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
+                break;
+            }
+
+            bool pos_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+
+            // prepare and send target position
+            if (!pos_ignore) {
+                Location loc = rover.current_loc;
+                if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
+                    packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+                    // rotate from body-frame to NE frame
+                    float ne_x = packet.x*rover.ahrs.cos_yaw() - packet.y*rover.ahrs.sin_yaw();
+                    float ne_y = packet.x*rover.ahrs.sin_yaw() + packet.y*rover.ahrs.cos_yaw();
+                    // add offset to current location
+                    location_offset(loc, ne_x, ne_y);
+                } else if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED) {
+                    // add offset to current location
+                    location_offset(loc, packet.x, packet.y);
+                } else {
+                    // MAV_FRAME_LOCAL_NED interpret as an offset from home
+                    loc = rover.ahrs.get_home();
+                    location_offset(loc, packet.x, packet.y);
+                }
+
+                rover.guided_WP = loc;
+                rover.rtl_complete = false;
+                rover.set_guided_WP();
+            }
+
+            break;
+        }
+
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:    // MAV ID: 86
+        {
+            // decode packet
+            mavlink_set_position_target_global_int_t packet;
+            mavlink_msg_set_position_target_global_int_decode(msg, &packet);
+
+            // exit if vehicle is not in Guided mode
+            if (rover.control_mode != GUIDED) {
+                break;
+            }
+
+            // check for supported coordinate frames
+            if (packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
+                packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+                packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
+                packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
+                break;
+            }
+
+            bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+
+            // prepare and send target position
+            if (!pos_ignore) {
+                Location loc = rover.current_loc;
+                loc.lat = packet.lat_int;
+                loc.lng = packet.lon_int;
+                rover.guided_WP = loc;
+                rover.rtl_complete = false;
+                rover.set_guided_WP();
+            }
+
+            break;
+        }
+
     case MAVLINK_MSG_ID_GPS_INPUT:
         {
             rover.gps.handle_msg(msg);
