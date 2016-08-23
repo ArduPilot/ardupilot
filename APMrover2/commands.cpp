@@ -5,14 +5,14 @@
     void set_guided_WP(void)
     void init_home()
     void restart_nav()
-************************************************************ 
+************************************************************
 */
 
 
 /*
- *  set_next_WP - sets the target location the vehicle should fly to
+ *  set_auto_WP - sets the target location the vehicle should drive to in Auto mode
  */
-void Rover::set_next_WP(const struct Location& loc)
+void Rover::set_auto_WP(const struct Location& loc)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------

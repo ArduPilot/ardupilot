@@ -469,7 +469,7 @@ private:
     void calc_lateral_acceleration();
     void calc_nav_steer();
     void set_servos(void);
-    void set_next_WP(const struct Location& loc);
+    void set_auto_WP(const struct Location& loc);
     void set_guided_WP(const struct Location& loc);
     void init_home();
     void restart_nav();
