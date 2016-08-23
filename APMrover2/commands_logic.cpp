@@ -236,7 +236,7 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     Location cmdloc = cmd.content.location;
     location_sanitize(current_loc, cmdloc);
-    set_next_WP(cmdloc);
+    set_auto_WP(cmdloc);
 }
 
 void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
