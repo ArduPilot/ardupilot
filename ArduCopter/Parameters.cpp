@@ -911,6 +911,12 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
 
+#if PROXIMITY_ENABLED == ENABLED
+    // @Group: PRX_
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
+    GOBJECT(proximity, "PRX_", AP_Proximity),
+#endif
+
     // @Param: AUTOTUNE_AXES
     // @DisplayName: Autotune axis bitmask
     // @Description: 1-byte bitmap of axes to autotune
