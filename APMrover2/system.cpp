@@ -333,13 +333,11 @@ void Rover::set_mode(enum mode mode)
 
     case GUIDED:
         auto_throttle_mode = true;
-        rtl_complete = false;
         /*
            when entering guided mode we set the target as the current
            location. This matches the behaviour of the copter code.
            */
-        guided_WP = current_loc;
-        set_guided_WP();
+        set_guided_WP(current_loc);
         break;
 
     default:

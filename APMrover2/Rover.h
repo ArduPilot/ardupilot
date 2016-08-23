@@ -338,8 +338,6 @@ private:
     struct Location prev_WP;
     // The location of the current/active waypoint.  Used for track following
     struct Location next_WP;
-    // The location of the active waypoint in Guided mode.
-    struct Location guided_WP;
 
     // IMU variables
     // The main loop execution time.  Seconds
@@ -472,7 +470,7 @@ private:
     void calc_nav_steer();
     void set_servos(void);
     void set_next_WP(const struct Location& loc);
-    void set_guided_WP(void);
+    void set_guided_WP(const struct Location& loc);
     void init_home();
     void restart_nav();
     void exit_mission();
