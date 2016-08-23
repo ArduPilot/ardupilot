@@ -263,7 +263,8 @@ void Sub::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Sub::one_hz_loop()
 {
-    bool arm_check = arming.pre_arm_checks(false);
+    arming.pre_arm_checks(false);
+    const bool arm_check = arming.all_enabled_checks_passing();
     ap.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_gps_check = position_ok();

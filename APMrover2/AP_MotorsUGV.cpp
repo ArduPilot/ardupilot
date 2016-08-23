@@ -475,46 +475,33 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
 }
 
 //  returns true if checks pass, false if they fail.  report should be true to send text messages to GCS
-bool AP_MotorsUGV::pre_arm_check(bool report) const
+void AP_MotorsUGV::pre_arm_check()
 {
     // check if both regular and skid steering functions have been defined
     if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
         SRV_Channels::function_assigned(SRV_Channel::k_throttleRight) &&
         SRV_Channels::function_assigned(SRV_Channel::k_throttle) &&
         SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-        if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: regular AND skid steering configured");
-        }
-        return false;
+        rover.arming.check_failed(AP_Arming::ARMING_CHECK_NONE, "regular AND skid steering configured");
+        return;
     }
     // check if only one of skid-steering output has been configured
     if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) != SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
-        if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check skid steering config");
-        }
-        return false;
+        rover.arming.check_failed(AP_Arming::ARMING_CHECK_NONE, "check skid steering config");
+        return;
     }
     // check if only one of throttle or steering outputs has been configured, if has a sail allow no throttle
     if ((has_sail() || SRV_Channels::function_assigned(SRV_Channel::k_throttle)) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-        if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
-        }
-        return false;
+        rover.arming.check_failed(AP_Arming::ARMING_CHECK_NONE, "check steering and throttle config");
     }
     // check if one of custom config motors hasn't been configured
     for (uint8_t i=0; i<_motors_num; i++)
     {
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
-        if (SRV_Channels::function_assigned(function)) {
-            return true;
-        } else {
-            if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check %u", function);
-                return false;
-            }
+        if (!SRV_Channels::function_assigned(function)) {
+            rover.arming.check_failed(AP_Arming::ARMING_CHECK_NONE, "servo output channel for motor %u not found", i);
         }
     }
-    return true;
 }
 
 // sanity check parameters

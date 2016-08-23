@@ -18,12 +18,12 @@ public:
     AP_Arming_Plane(const AP_Arming_Plane &other) = delete;
     AP_Arming_Plane &operator=(const AP_Arming_Plane&) = delete;
 
-    bool pre_arm_checks(bool report);
+    void _pre_arm_checks() override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    bool ins_checks(bool report);
+    void ins_checks();
 
 };

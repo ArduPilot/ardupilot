@@ -569,32 +569,25 @@ void AP_MotorsHeli_Single::servo_test()
 }
 
 // parameter_check - check if helicopter specific parameters are sensible
-bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
+void AP_MotorsHeli_Single::parameter_check()
 {
+    AP_Arming &arming = AP::arming();
+
     // returns false if Phase Angle is outside of range
     if ((_phase_angle > 30) || (_phase_angle < -30)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_PHANG out of range");
-        }
-        return false;
+        arming.check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, "H_PHANG out of range");
     }
 
     // returns false if Acro External Gyro Gain is outside of range
     if ((_ext_gyro_gain_acro < 0) || (_ext_gyro_gain_acro > 1000)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN_ACRO out of range");
-        }
-        return false;
+        arming.check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, "H_GYR_GAIN_ACRO out of range");
     }
 
     // returns false if Standard External Gyro Gain is outside of range
     if ((_ext_gyro_gain_std < 0) || (_ext_gyro_gain_std > 1000)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN out of range");
-        }
-        return false;
+        arming.check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, "H_GYR_GAIN out of range");
     }
 
     // check parent class parameters
-    return AP_MotorsHeli::parameter_check(display_msg);
+    AP_MotorsHeli::parameter_check();
 }

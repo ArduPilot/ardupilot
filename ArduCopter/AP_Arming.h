@@ -20,34 +20,34 @@ public:
     AP_Arming_Copter &operator=(const AP_Arming_Copter&) = delete;
 
     void update(void);
-    bool all_checks_passing(ArmingMethod method);
 
-    bool rc_calibration_checks(bool display_failure) override;
+    void rc_calibration_checks() override;
 
 protected:
 
-    bool pre_arm_checks(bool display_failure) override;
-    bool pre_arm_ekf_attitude_check();
-    bool pre_arm_terrain_check(bool display_failure);
-    bool pre_arm_proximity_check(bool display_failure);
-    bool arm_checks(bool display_failure, AP_Arming::ArmingMethod method);
+    void pre_arm_checks(bool report) override;
+    void _pre_arm_checks() override;
+    void pre_arm_ekf_attitude_check();
+    void pre_arm_terrain_check();
+    void pre_arm_proximity_check();
+    void arm_checks(AP_Arming::ArmingMethod method) override;
 
     // NOTE! the following check functions *DO* call into AP_Arming:
-    bool ins_checks(bool display_failure) override;
-    bool compass_checks(bool display_failure) override;
-    bool gps_checks(bool display_failure) override;
-    bool barometer_checks(bool display_failure) override;
-    bool board_voltage_checks(bool display_failure) override;
+    void ins_checks() override;
+    void compass_checks() override;
+    void gps_checks() override;
+    void barometer_checks() override;
+    void board_voltage_checks() override;
 
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
-    bool fence_checks(bool display_failure);
-    bool parameter_checks(bool display_failure);
-    bool motor_checks(bool display_failure);
-    bool pilot_throttle_checks(bool display_failure);
+    void fence_checks();
+    void parameter_checks();
+    void motor_checks();
+    void pilot_throttle_checks();
 
     void set_pre_arm_check(bool b);
 
 private:
 
-    void parameter_checks_pid_warning_message(bool display_failure, const char *error_msg);
+    void parameter_checks_pid_warning_message(const char *error_msg);
 };

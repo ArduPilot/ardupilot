@@ -271,9 +271,10 @@ void Plane::one_second_loop()
     SRV_Channels::enable_aux_servos();
 
     // update notify flags
-    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    arming.pre_arm_checks(false);
+    AP_Notify::flags.pre_arm_check = arming.all_enabled_checks_passing();
     AP_Notify::flags.pre_arm_gps_check = true;
-    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+    AP_Notify::flags.armed = arming.is_armed();
 
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {

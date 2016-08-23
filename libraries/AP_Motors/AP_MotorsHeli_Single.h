@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Arming/AP_Arming.h>
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
 
@@ -100,7 +101,7 @@ public:
     void set_acro_tail(bool set) override { _acro_tail = set; }
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check(bool display_msg) const override;
+    void parameter_check() override;
 
     // var_info
     static const struct AP_Param::GroupInfo var_info[];

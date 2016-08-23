@@ -150,7 +150,7 @@ bool Copter::init_arm_motors(const AP_Arming::ArmingMethod method, const bool do
     }
 
     // run pre-arm-checks and display failures
-    if (do_arming_checks && !arming.all_checks_passing(method)) {
+    if (do_arming_checks && !arming.ok_to_fly(method)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;

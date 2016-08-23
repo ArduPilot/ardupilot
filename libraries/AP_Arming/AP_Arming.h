@@ -59,12 +59,17 @@ public:
     uint16_t get_enabled_checks();
 
     // pre_arm_checks() is virtual so it can be modified in a vehicle specific subclass
-    virtual bool pre_arm_checks(bool report);
+    virtual void pre_arm_checks(bool report);
+    virtual void _pre_arm_checks();
+    bool check_failing(const ArmingChecks check) const;
+    bool all_enabled_checks_passing() const;
+    bool ok_to_fly(ArmingMethod method);
+    bool ok_to_use_rc();
 
     // some arming checks have side-effects, or require some form of state
     // change to have occurred, and thus should not be done as pre-arm
     // checks.  Those go here:
-    bool arm_checks(ArmingMethod method);
+    virtual void arm_checks(ArmingMethod method);
 
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
@@ -78,6 +83,9 @@ public:
     ArmingRudder get_rudder_arming_type() const { return (ArmingRudder)_rudder_arming.get(); }
 
     static const struct AP_Param::GroupInfo        var_info[];
+
+    // handle the case where a check fails
+    void check_failed(const enum AP_Arming::ArmingChecks check, const char *fmt, ...);
 
 protected:
 
@@ -95,39 +103,41 @@ protected:
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
-    virtual bool barometer_checks(bool report);
+    virtual void barometer_checks();
 
-    bool airspeed_checks(bool report);
+    void airspeed_checks();
 
-    bool logging_checks(bool report);
+    void logging_checks();
 
-    virtual bool ins_checks(bool report);
+    virtual void ins_checks();
 
-    virtual bool compass_checks(bool report);
+    virtual void compass_checks();
 
-    virtual bool gps_checks(bool report);
+    virtual void gps_checks();
 
-    bool battery_checks(bool report);
+    void battery_checks();
 
-    bool hardware_safety_check(bool report);
+    void hardware_safety_check();
 
-    virtual bool board_voltage_checks(bool report);
+    virtual void board_voltage_checks();
 
-    virtual bool rc_calibration_checks(bool report);
+    virtual void rc_calibration_checks();
 
-    bool manual_transmitter_checks(bool report);
+    void manual_transmitter_checks();
 
-    virtual bool system_checks(bool report);
-    
-    bool servo_checks(bool report) const;
-    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
+    virtual void system_checks();
+
+    void servo_checks();
+    void rc_checks_copter_sub(const RC_Channel *channels[4],
+                              const bool check_min_max = true);
 
     // returns true if a particular check is enabled
     bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
     // returns a mavlink severity which should be used if a specific check fails
     MAV_SEVERITY check_severity(const enum AP_Arming::ArmingChecks check) const;
-    // handle the case where a check fails
-    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const;
+    uint32_t failing_checks; // bitmask of failing checks
+    bool report_failing_checks : 1; // set to true to report failures to GCS
+    bool arming_check_none_failed : 1; // true if a check unassociated with a bit fails
 
 private:
 

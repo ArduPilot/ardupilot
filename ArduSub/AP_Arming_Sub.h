@@ -11,9 +11,9 @@ public:
     AP_Arming_Sub(const AP_Arming_Sub &other) = delete;
     AP_Arming_Sub &operator=(const AP_Arming_Sub&) = delete;
 
-    bool rc_calibration_checks(bool display_failure) override;
-    bool pre_arm_checks(bool display_failure) override;
+    void rc_calibration_checks() override;
+    void pre_arm_checks(bool report) override;
 
 protected:
-    bool ins_checks(bool display_failure) override;
+    void ins_checks() override;
 };

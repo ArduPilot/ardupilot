@@ -16,13 +16,13 @@ public:
     AP_Arming_Rover(const AP_Arming_Rover &other) = delete;
     AP_Arming_Rover &operator=(const AP_Arming_Rover&) = delete;
 
-    bool pre_arm_checks(bool report) override;
-    bool pre_arm_rc_checks(const bool display_failure);
-    bool gps_checks(bool display_failure) override;
+    void _pre_arm_checks() override;
+    void pre_arm_rc_checks();
+    void gps_checks() override;
 
 protected:
-    bool fence_checks(bool report);
-    bool proximity_check(bool report);
+    void fence_checks();
+    void proximity_check();
 
 private:
 

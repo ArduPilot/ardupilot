@@ -32,7 +32,7 @@ void Copter::esc_calibration_startup_check()
     }
 
     // exit immediately if pre-arm rc checks fail
-    if (!arming.rc_calibration_checks(true)) {
+    if (!arming.ok_to_use_rc()) {
         // clear esc flag for next time
         if ((g.esc_calibrate != ESCCAL_NONE) && (g.esc_calibrate != ESCCAL_DISABLED)) {
             g.esc_calibrate.set_and_save(ESCCAL_NONE);

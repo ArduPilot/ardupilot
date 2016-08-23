@@ -1,7 +1,7 @@
 #include "AP_Arming_Sub.h"
 #include "Sub.h"
 
-bool AP_Arming_Sub::rc_calibration_checks(bool display_failure)
+void AP_Arming_Sub::rc_calibration_checks()
 {
     const RC_Channel *channels[] = {
         sub.channel_roll,
@@ -9,37 +9,28 @@ bool AP_Arming_Sub::rc_calibration_checks(bool display_failure)
         sub.channel_throttle,
         sub.channel_yaw
     };
-    return rc_checks_copter_sub(display_failure, channels, false /* check_min_max */);
+    rc_checks_copter_sub(channels);
 }
 
-bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
+void AP_Arming_Sub::pre_arm_checks(bool report)
 {
     if (armed) {
-        return true;
+        return;
     }
-
-    return AP_Arming::pre_arm_checks(display_failure);
+    AP_Arming::pre_arm_checks(report);
 }
 
-bool AP_Arming_Sub::ins_checks(bool display_failure)
+void AP_Arming_Sub::ins_checks()
 {
     // call parent class checks
-    if (!AP_Arming::ins_checks(display_failure)) {
-        return false;
-    }
+    AP_Arming::ins_checks();
 
     // additional sub-specific checks
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_INS)) {
         if (!AP::ahrs().healthy()) {
             const char *reason = AP::ahrs().prearm_failure_reason();
             if (reason == nullptr) {
                 reason = "AHRS not healthy";
             }
-            check_failed(ARMING_CHECK_INS, display_failure, "%s", reason);
-            return false;
+            check_failed(ARMING_CHECK_INS, "%s", reason);
         }
-    }
-
-    return true;
 }

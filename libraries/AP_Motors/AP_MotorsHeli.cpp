@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsHeli.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Arming/AP_Arming.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -356,42 +357,30 @@ void AP_MotorsHeli::output_disarmed()
 }
 
 // parameter_check - check if helicopter specific parameters are sensible
-bool AP_MotorsHeli::parameter_check(bool display_msg) const
+void AP_MotorsHeli::parameter_check()
 {
+    AP_Arming &arming = AP::arming();
+
     // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true
     if (_rsc_critical >= _rsc_setpoint) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
-        }
-        return false;
+        arming.check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, "H_RSC_CRITICAL too large");
     }
 
     // returns false if RSC Mode is not set to a valid control mode
-    if (_rsc_mode <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _rsc_mode > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
-        }
-        return false;
+    if (_rsc_mode <= (int8_t)ROTOR_CONTROL_MODE_DISABLED ||
+        _rsc_mode > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+        arming.check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, "RSC_MODE invalid");
     }
 
     // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
     if (_rsc_runup_time <= _rsc_ramp_time){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
-        }
-        return false;
+        arming.check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, "H_RUNUP_TIME too small");
     }
 
     // returns false if idle output is higher than critical rotor speed as this could block runup_complete from going false
     if ( _rsc_idle_output >=  _rsc_critical){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
-        }
-        return false;
+        arming.check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, "H_RSC_IDLE too large");
     }
-
-    // all other cases parameters are OK
-    return true;
 }
 
 // reset_swash_servo

@@ -80,7 +80,7 @@ public:
     //
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    virtual bool parameter_check(bool display_msg) const;
+    virtual void parameter_check();
 
     // has_flybar - returns true if we have a mechical flybar
     virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }

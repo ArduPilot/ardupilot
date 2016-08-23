@@ -55,7 +55,7 @@ void Sub::init_rc_out()
     motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 
     // enable output to motors
-    if (arming.rc_calibration_checks(true)) {
+    if (arming.ok_to_use_rc()) {
         enable_motor_output();
     }
 

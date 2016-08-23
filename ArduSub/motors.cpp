@@ -19,7 +19,7 @@ bool Sub::init_arm_motors(AP_Arming::ArmingMethod method)
 
     in_arm_motors = true;
 
-    if (!arming.pre_arm_checks(true)) {
+    if (!arming.ok_to_fly(method)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;

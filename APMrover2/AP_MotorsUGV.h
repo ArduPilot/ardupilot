@@ -101,8 +101,8 @@ public:
     // test steering or throttle output using a pwm value
     bool output_test_pwm(motor_test_order motor_seq, float pwm);
 
-    //  returns true if checks pass, false if they fail.  display_failure argument should be true to send text messages to GCS
-    bool pre_arm_check(bool report) const;
+    //  calls into arming check if any failures occur
+    void pre_arm_check();
 
     // structure for holding motor limit flags
     struct AP_MotorsUGV_limit {

@@ -133,6 +133,9 @@ public:
     void setup(void) override;
     void loop(void) override;
 
+    // Arming/Disarming management class
+    AP_Arming_Rover arming;
+
 private:
 
     // must be the first AP_Param variable declared to ensure its
@@ -186,9 +189,6 @@ private:
 #else
     AP_AHRS_DCM ahrs;
 #endif
-
-    // Arming/Disarming management class
-    AP_Arming_Rover arming;
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
