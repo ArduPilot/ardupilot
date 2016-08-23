@@ -70,7 +70,7 @@ bool Plane::verify_land()
                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
     bool below_flare_alt = (height <= g.land_flare_alt);
     bool below_flare_sec = (aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec);
-    bool probably_crashed = (fabsf(auto_state.sink_rate) < 0.2f && !is_flying());
+    bool probably_crashed = (g.crash_detection_enable && fabsf(auto_state.sink_rate) < 0.2f && !is_flying());
 
     if ((on_approach_stage && below_flare_alt) ||
         (on_approach_stage && below_flare_sec && (auto_state.wp_proportion > 0.5)) ||
