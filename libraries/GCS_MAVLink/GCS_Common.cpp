@@ -681,7 +681,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
     rate *= adjust_rate_for_stream_trigger(stream_num);
 
     if (rate <= 0) {
-        if (chan_is_streaming | (1U<<(chan-MAVLINK_COMM_0))) {
+        if (chan_is_streaming & (1U<<(chan-MAVLINK_COMM_0))) {
             // if currently streaming then check if all streams are disabled
             // to allow runtime detection of user disabling streaming
             bool is_streaming = false;
