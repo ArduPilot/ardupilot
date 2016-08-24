@@ -2,9 +2,11 @@
 
 #include "Sub.h"
 
-/*
- * control_stabilize.pde - init and run calls for stabilize flight mode
- */
+namespace {
+	static uint32_t last_stabilize_message_ms = 0;
+	uint32_t last_pilot_heading;
+	uint32_t last_pilot_yaw_input_ms = 0;
+}
 
 // stabilize_init - initialise stabilize controller
 bool Sub::stabilize_init(bool ignore_checks)
@@ -15,6 +17,8 @@ bool Sub::stabilize_init(bool ignore_checks)
     }
     // set target altitude to zero for reporting
     pos_control.set_alt_target(0);
+    last_pilot_heading = ahrs.yaw_sensor;
+
 
     return true;
 }
@@ -23,15 +27,16 @@ bool Sub::stabilize_init(bool ignore_checks)
 // should be called at 100hz or more
 void Sub::stabilize_run()
 {
+	uint32_t tnow = millis();
     float target_roll, target_pitch;
     float target_yaw_rate;
     float pilot_throttle_scaled;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed() || !motors.get_interlock()) {
-    	motors.output_min();
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        last_pilot_heading = ahrs.yaw_sensor;
         return;
     }
 
@@ -51,9 +56,33 @@ void Sub::stabilize_run()
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+	// update attitude controller targets
 
-    // body-frame rate controller is run directly from 100hz loop
+	if (target_yaw_rate != 0) { // call attitude controller with rate yaw determined by pilot input
+		attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+		last_pilot_heading = ahrs.yaw_sensor;
+		last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
+
+	} else { // hold current heading
+
+		if(tnow > last_stabilize_message_ms + 1500) {
+			gcs_send_text_fmt(MAV_SEVERITY_INFO, "target: %d", last_pilot_heading);
+			last_stabilize_message_ms = tnow;
+		}
+
+		// this check is required to prevent bounce back after very fast yaw maneuvers
+		// the inertia of the vehicle causes the heading to move slightly past the point when pilot input actually stopped
+		if(tnow < last_pilot_yaw_input_ms + 250) { // give 250ms to slow down, then set target heading
+			target_yaw_rate = 0;
+
+			// call attitude controller with target yaw rate = 0 to decelerate on yaw axis
+			attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+			last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
+
+		} else { // call attitude controller holding absolute absolute bearing
+			attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true, get_smoothing_gain());
+		}
+	}
 
     // output pilot's throttle
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
