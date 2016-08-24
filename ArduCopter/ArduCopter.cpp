@@ -152,6 +152,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
 #endif
     SCHED_TASK(button_update,          5,    100),
+#if defined(HAVE_FASTRTPS) && defined(HAVE_FASTCDR) && \
+    HAVE_FASTRTPS == 1 && HAVE_FASTCDR == 1
+    SCHED_TASK(rtps_update_task,      50,     75),
+#endif
 };
 
 

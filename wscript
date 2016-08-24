@@ -102,6 +102,10 @@ revisions.
         default=False,
         help="Don't use libiio even if supported by board and dependencies available")
 
+    g.add_option('--disable-libfastrtps', action='store_true',
+        default=False,
+        help="Don't use libfastrtps even if supported by board and dependencies available")
+
     g.add_option('--disable-tests', action='store_true',
         default=False,
         help="Disable compilation and test execution")

@@ -1094,6 +1094,9 @@ private:
     void dataflash_periodic(void);
     void accel_cal_update(void);
 
+    void init_rtps(void);
+    void rtps_update_task(void);
+
 public:
     void mavlink_delay_cb();
     void failsafe_check();

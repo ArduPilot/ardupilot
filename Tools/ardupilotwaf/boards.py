@@ -202,6 +202,7 @@ class sitl(Board):
         ]
 
         cfg.check_librt(env)
+        cfg.check_libfastrtps(env)
 
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES += [
@@ -236,6 +237,7 @@ class linux(Board):
         cfg.check_lttng(env)
         cfg.check_libdl(env)
         cfg.check_libiio(env)
+        cfg.check_libfastrtps(env)
 
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES = [

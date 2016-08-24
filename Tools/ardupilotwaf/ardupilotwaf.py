@@ -171,8 +171,11 @@ def ap_stlib(bld, **kw):
     if 'ap_libraries' not in kw:
         bld.fatal('Missing ap_libraries for ap_stlib')
 
+    if kw.get('use_default_ap_libraries', True):
+        kw['ap_libraries'].extend(bld.env.AP_LIBRARIES)
+
     sources = []
-    libraries = unique_list(kw['ap_libraries'] + bld.env.AP_LIBRARIES)
+    libraries = unique_list(kw['ap_libraries'])
 
     for lib_name in libraries:
         lib_node = bld.srcnode.find_dir('libraries/' + lib_name)
