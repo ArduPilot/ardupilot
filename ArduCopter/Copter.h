@@ -309,12 +309,13 @@ private:
         uint32_t last_edge_time_ms;         // system time that switch position was last changed
     } control_switch_state;
 
-    struct {
+    typedef struct {
         bool running;
         float max_speed;
         float alt_delta;
         uint32_t start_ms;
-    } takeoff_state;
+    } takeoff_state_t;
+    takeoff_state_t takeoff_state;
 
     // altitude below which we do no navigation in auto takeoff
     float auto_takeoff_no_nav_alt_cm;
