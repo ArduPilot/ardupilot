@@ -277,6 +277,10 @@ void Rover::set_mode(enum mode mode)
     throttle = 500;
     g.pidSpeedThrottle.reset_I();
 
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry.update_control_mode(control_mode);
+#endif
+    
     if (control_mode != AUTO) {
         auto_triggered = false;
     }
@@ -486,16 +490,6 @@ bool Rover::should_log(uint32_t mask)
     }
     return ret;
 }
-
-/*
-  send FrSky telemetry. Should be called at 5Hz by scheduler
- */
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Rover::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
 
 /*
   update AHRS soft arm state and log as needed

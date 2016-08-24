@@ -83,24 +83,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    uint8_t mav_type;
-#if (FRAME_CONFIG == QUAD_FRAME)
-    mav_type = MAV_TYPE_QUADROTOR;
-#elif (FRAME_CONFIG == TRI_FRAME)
-    mav_type = MAV_TYPE_TRICOPTER;
-#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
-    mav_type = MAV_TYPE_HEXAROTOR;
-#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
-    mav_type = MAV_TYPE_OCTOROTOR;
-#elif (FRAME_CONFIG == HELI_FRAME)
-    mav_type = MAV_TYPE_HELICOPTER;
-#elif (FRAME_CONFIG == SINGLE_FRAME || FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
-    mav_type = MAV_TYPE_QUADROTOR;
-#else
-  #error Unrecognised frame type
-#endif
-    
-    gcs[chan-MAVLINK_COMM_0].send_heartbeat(mav_type,
+    gcs[chan-MAVLINK_COMM_0].send_heartbeat(FRAME_MAV_TYPE,
                                             base_mode,
                                             custom_mode,
                                             system_status);
@@ -295,6 +278,12 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
         0, // comm drops in pkts,
         0, 0, 0, 0);
 
+#if FRSKY_TELEM_ENABLED == ENABLED
+    // give mask of error flags to Frsky_Telemetry
+    uint32_t sensors_error_flags = (control_sensors_health ^ control_sensors_enabled) & control_sensors_present;
+    frsky_telemetry.update_sensor_status_flags(sensors_error_flags);
+#endif
+    
 }
 
 void NOINLINE Copter::send_location(mavlink_channel_t chan)

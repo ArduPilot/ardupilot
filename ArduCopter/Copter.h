@@ -81,7 +81,6 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_ADSB/AP_ADSB.h>
@@ -110,6 +109,9 @@
 #if PRECISION_LANDING == ENABLED
 #include <AC_PrecLand/AC_PrecLand.h>
 #include <AP_IRLock/AP_IRLock.h>
+#endif
+#if FRSKY_TELEM_ENABLED == ENABLED
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #endif
 
 // Local modules
@@ -311,6 +313,23 @@ private:
         uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
+
+    // setup FRAME_MAV_TYPE
+#if (FRAME_CONFIG == QUAD_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
+#elif (FRAME_CONFIG == TRI_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_TRICOPTER
+#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_HEXAROTOR
+#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_OCTOROTOR
+#elif (FRAME_CONFIG == HELI_FRAME)
+ #define FRAME_MAV_TYPE MAV_TYPE_HELICOPTER
+#elif (FRAME_CONFIG == SINGLE_FRAME || FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a quad
+ #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
+#else
+ #error Unrecognised frame type
+#endif
 
     // Motor Output
 #if FRAME_CONFIG == QUAD_FRAME
@@ -1034,7 +1053,6 @@ private:
     bool optflow_position_ok();
     void update_auto_armed();
     void check_usb_mux(void);
-    void frsky_telemetry_send(void);
     bool should_log(uint32_t mask);
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
