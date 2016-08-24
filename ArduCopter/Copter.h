@@ -261,7 +261,7 @@ private:
 #endif
 
     // Documentation of GLobals:
-    union {
+    typedef union {
         struct {
             uint8_t unused1                 : 1; // 0
             uint8_t simple_mode             : 2; // 1,2     // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
@@ -290,7 +290,9 @@ private:
             uint8_t compass_init_location   : 1; // 26      // true when the compass's initial location has been set
         };
         uint32_t value;
-    } ap;
+    } ap_t;
+
+    ap_t ap;
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
