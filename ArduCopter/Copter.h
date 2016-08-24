@@ -112,6 +112,10 @@
 #include <AP_IRLock/AP_IRLock.h>
 #endif
 
+#if ADVANCED_FAILSAFE == ENABLED
+#include "afs_copter.h"
+#endif
+
 // Local modules
 #include "Parameters.h"
 #include "avoidance_adsb.h"
@@ -120,12 +124,17 @@
 #include <SITL/SITL.h>
 #endif
 
+
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Copter;
     friend class AP_Rally_Copter;
     friend class Parameters;
+    friend class ParametersG2;
     friend class AP_Avoidance_Copter;
+#if ADVANCED_FAILSAFE == ENABLED
+    friend class AP_AdvancedFailsafe_Copter;
+#endif
 
     Copter(void);
 
@@ -573,6 +582,9 @@ private:
     // true if we are out of time in our event timeslice
     bool gcs_out_of_time;
 
+    // last valid RC input time
+    uint32_t last_radio_update_ms;
+    
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
@@ -799,6 +811,9 @@ private:
     void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
     void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
     void avoidance_adsb_update(void);
+#if ADVANCED_FAILSAFE == ENABLED
+    void afs_fs_check(void);
+#endif
     bool brake_init(bool ignore_checks);
     void brake_run();
     void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
