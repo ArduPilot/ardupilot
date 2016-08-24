@@ -9,6 +9,11 @@
 // althold_init - initialise althold controller
 bool Sub::althold_init(bool ignore_checks)
 {
+	if(!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
+		gcs_send_text(MAV_SEVERITY_WARNING, "Depth hold requires external pressure sensor.");
+		return false;
+	}
+
     // initialize vertical speeds and leash lengths
     // sets the maximum speed up and down returned by position controller
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
