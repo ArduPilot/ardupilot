@@ -481,9 +481,11 @@ uint32_t AP_Frsky_Telem::get_next_msg_chunk(void)
         }
     }
     _msg_chunk.repeats++;
-    if (_msg_chunk.repeats > 2) {
+    if (_msg_chunk.repeats > 2) { // repeat each message chunk 3 times to ensure transmission
         _msg_chunk.repeats = 0;
-        _msg.sent_idx = (_msg.sent_idx + 1) % MSG_BUFFER_LENGTH;
+        if (_msg_chunk.char_index == 0) { // if we're ready for the next message
+            _msg.sent_idx = (_msg.sent_idx + 1) % MSG_BUFFER_LENGTH; // flag the current message as sent
+        }
     }
     return _msg_chunk.chunk;
 }
