@@ -542,9 +542,7 @@ void Plane::log_init(void)
         gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
         DataFlash.Prep();
         gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
-        for (uint8_t i=0; i<num_gcs; i++) {
-            gcs_chan[i].reset_cli_timeout();
-        }
+        gcs().reset_cli_timeout();
     }
 }
 

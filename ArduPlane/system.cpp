@@ -122,7 +122,7 @@ void Plane::init_ardupilot()
 
     // initialise serial ports
     serial_manager.init();
-    gcs_chan[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -161,9 +161,7 @@ void Plane::init_ardupilot()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
+    gcs().setup_uarts(serial_manager);
 
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
@@ -229,16 +227,7 @@ void Plane::init_ardupilot()
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
 #if CLI_ENABLED == ENABLED
-    if (g.cli_enabled == 1) {
-        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->printf("%s\n", msg);
-        if (gcs_chan[1].initialised && (gcs_chan[1].get_uart() != nullptr)) {
-            gcs_chan[1].get_uart()->printf("%s\n", msg);
-        }
-        if (num_gcs > 2 && gcs_chan[2].initialised && (gcs_chan[2].get_uart() != nullptr)) {
-            gcs_chan[2].get_uart()->printf("%s\n", msg);
-        }
-    }
+    gcs().handle_interactive_setup();
 #endif // CLI_ENABLED
 
     init_capabilities();
@@ -571,8 +560,8 @@ void Plane::check_long_failsafe()
                    (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
-                   gcs_chan[0].last_radio_status_remrssi_ms != 0 &&
-                   (tnow - gcs_chan[0].last_radio_status_remrssi_ms) > g.long_fs_timeout*1000) {
+                   gcs().chan(0).last_radio_status_remrssi_ms != 0 &&
+                   (tnow - gcs().chan(0).last_radio_status_remrssi_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         }
     } else {
