@@ -1009,7 +1009,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
-#if ADVANCED_FAILSAFE == ENABLE
+#if ADVANCED_FAILSAFE == ENABLED
     : afs(copter.mission, copter.barometer, copter.gps, copter.rcmap)
 #endif
 {
