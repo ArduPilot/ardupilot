@@ -861,8 +861,13 @@ uint16_t DataFlash_File::start_new_log(void)
 
     char buf[30];
     snprintf(buf, sizeof(buf), "%u\r\n", (unsigned)log_num);
-    write(fd, buf, strlen(buf));
+    const ssize_t to_write = strlen(buf);
+    const ssize_t written = write(fd, buf, to_write);
     close(fd);
+
+    if (written < to_write) {
+        return 0xFFFF;
+    }
 
     return log_num;
 }
