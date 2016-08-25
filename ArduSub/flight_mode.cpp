@@ -55,8 +55,8 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
             success = guided_init(ignore_checks);
             break;
 
-        case LAND:
-            success = land_init(ignore_checks);
+        case SURFACE:
+            success = surface_init(ignore_checks);
             break;
 
         case RTL:
@@ -172,8 +172,8 @@ void Sub::update_flight_mode()
             guided_run();
             break;
 
-        case LAND:
-            land_run();
+        case SURFACE:
+            surface_run();
             break;
 
         case RTL:
@@ -304,7 +304,7 @@ void Sub::notify_flight_mode(control_mode_t mode) {
         case GUIDED:
         case RTL:
         case CIRCLE:
-        case LAND:
+        case SURFACE:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
             break;
@@ -345,8 +345,8 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case CIRCLE:
         port->print("CIRCLE");
         break;
-    case LAND:
-        port->print("LAND");
+    case SURFACE:
+        port->print("SURFACE");
         break;
     case OF_LOITER:
         port->print("OF_LOITER");

@@ -8,29 +8,29 @@
  */
 void Sub::failsafe_radio_on_event()
 {
-    // if motors are not armed there is nothing to do
-    if( !motors.armed() ) {
-        return;
-    }
-
-    if (should_disarm_on_failsafe()) {
-        init_disarm_motors();
-    } else {
-        if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
-            // continue mission
-        } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
-            // continue landing
-        } else {
-            if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
-            } else {
-                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
-            }
-        }
-    }
-
-    // log the error to the dataflash
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_OCCURRED);
+//    // if motors are not armed there is nothing to do
+//    if( !motors.armed() ) {
+//        return;
+//    }
+//
+//    if (should_disarm_on_failsafe()) {
+//        init_disarm_motors();
+//    } else {
+//        if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
+//            // continue mission
+//        } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
+//            // continue landing
+//        } else {
+//            if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
+//                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+//            } else {
+//                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+//            }
+//        }
+//    }
+//
+//    // log the error to the dataflash
+//    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
 
@@ -46,30 +46,30 @@ void Sub::failsafe_radio_off_event()
 
 void Sub::failsafe_battery_event(void)
 {
-    // return immediately if low battery event has already been triggered
-    if (failsafe.battery) {
-        return;
-    }
-
-    // failsafe check
-	if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
-		if (should_disarm_on_failsafe()) {
-			init_disarm_motors();
-		} else {
-			if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
-				set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-			} else {
-				set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-			}
-		}
-	}
-
-    // set the low battery flag
-    set_failsafe_battery(true);
-
-    // warn the ground station and log to dataflash
-    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
+//    // return immediately if low battery event has already been triggered
+//    if (failsafe.battery) {
+//        return;
+//    }
+//
+//    // failsafe check
+//	if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
+//		if (should_disarm_on_failsafe()) {
+//			init_disarm_motors();
+//		} else {
+//			if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
+//				set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+//			} else {
+//				set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+//			}
+//		}
+//	}
+//
+//    // set the low battery flag
+//    set_failsafe_battery(true);
+//
+//    // warn the ground station and log to dataflash
+//    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
+//    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
 
@@ -195,14 +195,14 @@ void Sub::failsafe_terrain_on_event()
 //  this is always called from a failsafe so we trigger notification to pilot
 void Sub::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
 {
-    // attempt to switch to RTL, if this fails then switch to Land
-    if (!set_mode(RTL, reason)) {
-        // set mode to land will trigger mode change notification to pilot
-        set_mode_land_with_pause(reason);
-    } else {
-        // alert pilot to mode change
-        AP_Notify::events.failsafe_mode_change = 1;
-    }
+//    // attempt to switch to RTL, if this fails then switch to Land
+//    if (!set_mode(RTL, reason)) {
+//        // set mode to land will trigger mode change notification to pilot
+//        set_mode_land_with_pause(reason);
+//    } else {
+//        // alert pilot to mode change
+//        AP_Notify::events.failsafe_mode_change = 1;
+//    }
 }
 
 bool Sub::should_disarm_on_failsafe() {

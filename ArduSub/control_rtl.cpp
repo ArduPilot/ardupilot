@@ -105,7 +105,9 @@ void Sub::rtl_climb_start()
     if (!wp_nav.set_wp_destination(rtl_path.climb_target)) {
         // this should not happen because rtl_build_path will have checked terrain data was available
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-        set_mode(LAND, MODE_REASON_TERRAIN_FAILSAFE);
+
+        // land mode replaced by surface mode, does not have this functionality
+        //set_mode(LAND, MODE_REASON_TERRAIN_FAILSAFE);
         return;
     }
     wp_nav.set_fast_waypoint(true);
@@ -375,8 +377,9 @@ void Sub::rtl_land_run()
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    land_run_horizontal_control();
-    land_run_vertical_control();
+    // land mode replaced by surface mode, does not have this functionality
+//    land_run_horizontal_control();
+//    land_run_vertical_control();
 
     // check if we've completed this stage of RTL
     rtl_state_complete = ap.land_complete;
