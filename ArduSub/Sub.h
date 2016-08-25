@@ -791,16 +791,7 @@ private:
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     void guided_limit_init_time_and_pos();
     bool guided_limit_check();
-    bool land_init(bool ignore_checks);
-    void land_run();
-    void land_gps_run();
-    void land_nogps_run();
-    void land_run_vertical_control(bool pause_descent = false);
-    void land_run_horizontal_control();
     float get_land_descent_speed();
-    void land_do_not_use_GPS();
-    void set_mode_land_with_pause(mode_reason_t reason);
-    bool landing_with_GPS();
     bool loiter_init(bool ignore_checks);
     void loiter_run();
     bool poshold_init(bool ignore_checks);
@@ -1053,6 +1044,9 @@ private:
     void accel_cal_update(void);
 
     void set_leak_status(bool status);
+
+    bool surface_init(bool ignore_flags);
+    void surface_run();
 
 public:
     void mavlink_delay_cb();
