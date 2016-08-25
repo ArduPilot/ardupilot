@@ -77,12 +77,18 @@
 // Configuration
 #include "config.h"
 
+#if ADVANCED_FAILSAFE == ENABLED
+ #include "afs_rover.h"
+#endif
+
 // Local modules
 #include "defines.h"
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
+
+
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -92,7 +98,11 @@ class Rover : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Rover;
     friend class Parameters;
+    friend class ParametersG2;
     friend class AP_Arming;
+#if ADVANCED_FAILSAFE == ENABLED
+    friend class AP_AdvancedFailsafe_Rover;
+#endif
 
     Rover(void);
 
@@ -110,6 +120,7 @@ private:
 
     // all settable parameters
     Parameters g;
+    ParametersG2 g2;
 
     // main loop scheduler
     AP_Scheduler scheduler;
@@ -353,6 +364,9 @@ private:
 
     // true if we are out of time in our event timeslice
     bool gcs_out_of_time;
+    
+    // last valid RC input time
+    uint32_t last_radio_update_ms;
 
     static const AP_Param::Info var_info[];
     static const LogStructure log_structure[];
@@ -521,6 +535,10 @@ private:
     bool motor_active();
     void update_home();
     void accel_cal_update(void);
+#if ADVANCED_FAILSAFE == ENABLED
+    void afs_fs_check(void);
+#endif
+
 public:
     bool print_log_menu(void);
     int8_t dump_log(uint8_t argc, const Menu::arg *argv);

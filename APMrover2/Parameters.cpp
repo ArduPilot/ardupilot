@@ -556,8 +556,39 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Button/AP_Button.cpp
     GOBJECT(button, "BTN_",  AP_Button),
     
+    // @Group: 
+    // @Path: Parameters.cpp
+    GOBJECT(g2, "",  ParametersG2),
+    
 	AP_VAREND
 };
+
+/*
+  2nd group of parameters
+ */
+const AP_Param::GroupInfo ParametersG2::var_info[] = {
+
+#if ADVANCED_FAILSAFE == ENABLED
+    // @Group: AFS_
+    // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
+    AP_SUBGROUPINFO(afs, "AFS_", 6, ParametersG2, AP_AdvancedFailsafe),
+#endif
+    
+    AP_GROUPEND
+};
+
+
+/*
+  constructor for g2 object
+ */
+ParametersG2::ParametersG2(void)
+#if ADVANCED_FAILSAFE == ENABLED
+    : afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
+#endif
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 
 /*
   This is a conversion table from old parameter values to new
