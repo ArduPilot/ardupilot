@@ -21,6 +21,22 @@ bool Copter::rtl_init(bool ignore_checks)
     }
 }
 
+/*
+  check if an RTL should be done as AUTO starting at DO_LAND_START
+ */
+control_mode_t Copter::check_do_land_start(void)
+{
+    uint16_t land_start_idx = mission.get_landing_sequence_start();
+    if (land_start_idx == 0) {
+        // keep doing RTL
+        return RTL;
+    }
+    mission.set_current_cmd(land_start_idx);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,"Starting RTL mission at %u", (unsigned)land_start_idx);
+    return AUTO;
+}
+
+
 // re-start RTL with terrain following disabled
 void Copter::rtl_restart_without_terrain()
 {

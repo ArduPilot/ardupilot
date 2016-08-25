@@ -565,6 +565,9 @@ public:
 
     // developer options
     AP_Int32 dev_options;
+
+    // type of RTL
+    AP_Int8 rtl_type;
 };
 
 extern const AP_Param::Info        var_info[];

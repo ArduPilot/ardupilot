@@ -26,6 +26,11 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return true;
     }
 
+    // check if an RTL needs to be converted to an AUTO
+    if (mode == RTL && g2.rtl_type == RTLType_MissionDoLandStart) {
+        mode = check_do_land_start();
+    }
+    
     switch (mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME
@@ -262,7 +267,7 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 #endif
 
     // stop mission when we leave auto mode
-    if (old_control_mode == AUTO) {
+    if (old_control_mode == AUTO && control_mode != AUTO) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
         }

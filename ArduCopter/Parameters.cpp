@@ -1007,6 +1007,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 0:ADSBMavlinkProcessing
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
+
+    // @Param: RTL_TYPE
+    // @DisplayName: RTL handling type
+    // @Description: This controls how RTL is handled. A value of zero means a conventional RTL. A value of 1 uses the closest DO_LAND_START marker in the mission waypoints to fly a pre-planned path. If no DO_LAND_START markers a found a conventional RTL is used.
+    // @Values: 0:Normal,1:MissionDoLandStart
+    // @User: Advanced
+    AP_GROUPINFO("RTL_TYPE", 8, ParametersG2, rtl_type, RTLType_Normal),
     
     AP_GROUPEND
 };

@@ -899,6 +899,7 @@ private:
     bool throw_position_good();
 
     bool rtl_init(bool ignore_checks);
+    control_mode_t check_do_land_start(void);
     void rtl_restart_without_terrain();
     void rtl_run();
     void rtl_climb_start();
