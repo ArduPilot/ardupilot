@@ -153,7 +153,7 @@ void Copter::init_ardupilot()
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager, FIRMWARE_STRING, FRAME_CONFIG_STRING,
+    frsky_telemetry.init(serial_manager, FIRMWARE_STRING " " FRAME_CONFIG_STRING,
                          FRAME_MAV_TYPE,
                          &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value, &home_distance, &home_bearing);
 #endif
