@@ -620,6 +620,9 @@ public:
     // Autonmous autorotation
     AC_Autorotation arot;
 #endif
+
+    // type of RTL
+    AP_Int8 rtl_type;
 };
 
 extern const AP_Param::Info        var_info[];

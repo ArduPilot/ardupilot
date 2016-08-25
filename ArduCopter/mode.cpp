@@ -183,6 +183,14 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
+    // check if an RTL needs to be converted to an AUTO
+    if (mode == Mode::Number::RTL &&
+        copter.g2.rtl_type == (uint8_t)RTLType::MissionDoLandStart) {
+        if (check_do_land_start()) {
+            mode = Mode::Number::AUTO;
+            reason = MODE_REASON_DO_LAND_START;
+        }
+    }
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
@@ -305,6 +313,29 @@ bool Copter::set_mode(const uint8_t new_mode, const ModeReason reason)
     }
 #endif
     return copter.set_mode(static_cast<Mode::Number>(new_mode), ModeReason::GCS_COMMAND);
+}
+
+/*
+  check if an RTL should be done as AUTO starting at DO_LAND_START;
+  returns true if mode should be changed to AUTO
+ */
+bool Copter::check_do_land_start(void)
+{
+#if MODE_AUTO_ENABLED == ENABLED
+    AP_Mission *mission = AP::mission();
+    if (mission == nullptr) {
+        return false;
+    }
+    uint16_t land_start_idx = mission->get_landing_sequence_start();
+    if (land_start_idx != 0) {
+        mission->set_current_cmd(land_start_idx);
+        gcs().send_text(MAV_SEVERITY_INFO,"Starting RTL mission at %u", (unsigned)land_start_idx);
+        return true;
+    }
+#endif
+
+    // keep doing RTL
+    return false;
 }
 
 // update_flight_mode - calls the appropriate attitude controllers based on flight mode

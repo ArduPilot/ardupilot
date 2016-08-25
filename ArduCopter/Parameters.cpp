@@ -953,7 +953,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 0:Disabled, 1:Continue if in Auto on RC failsafe only, 2:Continue if in Auto on GCS failsafe only, 3:Continue if in Auto on RC and/or GCS failsafe, 4:Continue if in Guided on RC failsafe only, 8:Continue if landing on any failsafe, 16:Continue if in pilot controlled modes on GCS failsafe, 19:Continue if in Auto on RC and/or GCS failsafe and continue if in pilot controlled modes on GCS failsafe
     // @Bitmask: 0:Continue if in Auto on RC failsafe, 1:Continue if in Auto on GCS failsafe, 2:Continue if in Guided on RC failsafe, 3:Continue if landing on any failsafe, 4:Continue if in pilot controlled modes on GCS failsafe
     // @User: Advanced
+
     AP_GROUPINFO("FS_OPTIONS", 36, ParametersG2, fs_options, 0),
+    // @Param: RTL_TYPE
+    // @DisplayName: RTL handling type
+    // @Description: This controls how RTL is handled. A value of zero means a conventional RTL. A value of 1 uses the closest DO_LAND_START marker in the mission waypoints to fly a pre-planned path. If no DO_LAND_START markers a found a conventional RTL is used.
+    // @Values: 0:Normal,1:MissionDoLandStart
+    // @User: Advanced
+    AP_GROUPINFO("RTL_TYPE", 37, ParametersG2, rtl_type, (float)RTLType::Normal),
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     // @Group: AROT_

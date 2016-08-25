@@ -150,6 +150,12 @@ enum DevOptions {
     DevOptionVFR_HUDRelativeAlt = 2,
 };
 
+// values for RTL_TYPE
+enum class RTLType {
+    Normal = 0,
+    MissionDoLandStart = 1
+};
+
 //  Logging parameters
 enum LoggingParameters {
      LOG_CONTROL_TUNING_MSG,

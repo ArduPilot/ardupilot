@@ -806,6 +806,7 @@ private:
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
+    bool check_do_land_start(void);
     void update_flight_mode();
     void notify_flight_mode();
 
