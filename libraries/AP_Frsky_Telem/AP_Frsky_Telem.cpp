@@ -47,7 +47,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, con
  * init - perform required initialisation
  * for Copter
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing)
+void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing)
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
@@ -57,11 +57,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
         // add firmware and frame info to message queue
-        char text[50];
-        strncpy(text, firmware_str, sizeof(text));
-        strncat(text, " ", 1); // add a space before adding FRAME_CONFIG_STRING
-        strncat(text, frame_config_str, 10); // FRAME_CONFIG_STRING shouldn't be more that 10 chars (see config.h)
-        queue_message(MAV_SEVERITY_INFO, text);
+        queue_message(MAV_SEVERITY_INFO, firmware_str);
         // save main parameters locally
         _params.mav_type = mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
         _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts

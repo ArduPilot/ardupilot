@@ -117,7 +117,7 @@ public:
     AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing);
+    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing);
     void init(const AP_SerialManager &serial_manager);
 
     // add statustext message to FrSky lib queue.
