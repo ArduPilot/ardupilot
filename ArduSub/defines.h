@@ -105,7 +105,7 @@ enum control_mode_t {
     LOITER =        5,  // automatic horizontal acceleration with automatic throttle
     RTL =           6,  // automatic return to launching point
     CIRCLE =        7,  // automatic circular flight with automatic throttle
-    LAND =          9,  // automatic landing with horizontal position control
+    SURFACE =       9,  // automatic landing with horizontal position control
     OF_LOITER =    10,  // deprecated
     DRIFT =        11,  // semi-automous position, yaw and throttle control
     SPORT =        13,  // manual earth-frame angular rate control with manual throttle
@@ -131,7 +131,8 @@ enum mode_reason_t {
     MODE_REASON_FENCE_BREACH,
 	MODE_REASON_TERRAIN_FAILSAFE,
 	MODE_REASON_BRAKE_TIMEOUT,
-	MODE_REASON_FLIP_COMPLETE
+	MODE_REASON_FLIP_COMPLETE,
+	MODE_REASON_SURFACE_COMPLETE
 };
 
 // Tuning enumeration
