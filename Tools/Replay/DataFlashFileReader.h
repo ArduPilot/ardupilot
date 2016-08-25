@@ -5,6 +5,10 @@
 class DataFlashFileReader
 {
 public:
+
+    DataFlashFileReader();
+    ~DataFlashFileReader();
+
     bool open_log(const char *logfile);
     bool update(char type[5]);
 
@@ -18,4 +22,12 @@ protected:
 
 #define LOGREADER_MAX_FORMATS 255 // must be >= highest MESSAGE
     struct log_Format formats[LOGREADER_MAX_FORMATS] {};
+
+private:
+    ssize_t read_input(void *buf, size_t count);
+
+    uint64_t bytes_read = 0;
+    uint32_t message_count = 0;
+    uint64_t start_micros;
+
 };

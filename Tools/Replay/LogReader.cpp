@@ -37,6 +37,7 @@ const struct LogStructure log_structure[] = {
 
 LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
                      AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const char **&_nottypes):
+    DataFlashFileReader(),
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
