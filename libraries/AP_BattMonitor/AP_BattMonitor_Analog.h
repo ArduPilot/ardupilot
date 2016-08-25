@@ -115,6 +115,9 @@ public:
     /// Read the battery voltage and current.  Should be called at 10hz
     void read();
 
+    /// returns true if battery monitor provides consumed energy info
+    bool has_consumed_energy() const override { return has_current(); }
+
     /// returns true if battery monitor provides current info
     bool has_current() const override;
 

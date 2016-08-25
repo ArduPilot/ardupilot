@@ -196,6 +196,17 @@ bool AP_BattMonitor::healthy(uint8_t instance) const {
     return instance < _num_instances && state[instance].healthy;
 }
 
+/// has_consumed_energy - returns true if battery monitor instance provides consumed energy info
+bool AP_BattMonitor::has_consumed_energy(uint8_t instance) const
+{
+    if (instance < _num_instances && drivers[instance] != nullptr && _params[instance].type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
+        return drivers[instance]->has_consumed_energy();
+    }
+
+    // not monitoring current
+    return false;
+}
+
 /// has_current - returns true if battery monitor instance provides current info
 bool AP_BattMonitor::has_current(uint8_t instance) const
 {
@@ -242,6 +253,15 @@ float AP_BattMonitor::current_amps(uint8_t instance) const {
 float AP_BattMonitor::current_total_mah(uint8_t instance) const {
     if (instance < _num_instances) {
         return state[instance].current_total_mah;
+    } else {
+        return 0.0f;
+    }
+}
+
+/// consumed_wh - returns energy consumed since start-up in watt-hours
+float AP_BattMonitor::consumed_wh(uint8_t instance) const {
+    if (instance < _num_instances) {
+        return state[instance].consumed_wh;
     } else {
         return 0.0f;
     }
