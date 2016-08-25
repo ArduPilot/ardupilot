@@ -95,6 +95,7 @@
 #include <AP_Landing/AP_Landing.h>
 
 #include "GCS_Mavlink.h"
+#include "GCS_Plane.h"
 #include "quadplane.h"
 #include "tuning.h"
 
@@ -144,6 +145,7 @@ public:
     friend class AP_Tuning_Plane;
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
+    friend class GCS_Plane;
 
     Plane(void);
 
@@ -250,10 +252,8 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK_Plane gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs; // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    GCS_Plane _gcs; // avoid using this; use gcs()
+    GCS_Plane &gcs() { return _gcs; }
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
