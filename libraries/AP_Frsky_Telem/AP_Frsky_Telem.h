@@ -134,7 +134,10 @@ public:
     
     struct msg_t
     {
-        mavlink_statustext_t data[MSG_BUFFER_LENGTH];
+        struct {
+            const char *text;
+            uint8_t severity;
+        } data[MSG_BUFFER_LENGTH];
         uint8_t queued_idx;
         uint8_t sent_idx;
     };

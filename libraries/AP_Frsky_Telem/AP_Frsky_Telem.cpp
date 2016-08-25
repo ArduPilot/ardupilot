@@ -495,7 +495,7 @@ uint32_t AP_Frsky_Telem::get_next_msg_chunk(void)
 void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 {
     _msg.data[_msg.queued_idx].severity = severity;
-    strncpy((char *)_msg.data[_msg.queued_idx].text, text, 50);
+    _msg.data[_msg.queued_idx].text = text;
     _msg.queued_idx = (_msg.queued_idx + 1) % MSG_BUFFER_LENGTH;
 }
 
