@@ -270,7 +270,7 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng) const;
+    uint32_t getLastYawResetAngle(float &yawAngDelta);
 
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
@@ -379,4 +379,12 @@ private:
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
+
+    // used to keep track of yaw angle changes due to change of primary instance
+    uint8_t prev_instance = 0;          // active core number from the previous time step
+    uint32_t last_ekf_reset_ms= 0;      // last time the active ekf performed a yaw reset (msec)
+    uint32_t last_lane_switch_ms = 0;   // last time there was a lane switch (msec)
+    uint32_t yaw_reset_time_ms = 0;     // last time a yaw reset event was published
+    float yaw_reset_delta = 0.0f;       // the amount of yaw change due to the last published yaw reset (rad)
+    float prev_yaw = 0.0f;              // yaw angle published by the active core from the previous time step (rad)
 };
