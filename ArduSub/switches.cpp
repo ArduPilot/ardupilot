@@ -453,14 +453,16 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #endif
 
         case AUXSW_LAND:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(LAND, MODE_REASON_TX_COMMAND);
-            }else{
-                // return to flight mode switch's flight mode if we are currently in LAND
-                if (control_mode == LAND) {
-                    reset_control_switch();
-                }
-            }
+        	// Do nothing for Sub
+
+//            if (ch_flag == AUX_SWITCH_HIGH) {
+//                set_mode(LAND, MODE_REASON_TX_COMMAND);
+//            }else{
+//                // return to flight mode switch's flight mode if we are currently in LAND
+//                if (control_mode == LAND) {
+//                    reset_control_switch();
+//                }
+//            }
             break;
 
 #if PARACHUTE == ENABLED

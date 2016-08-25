@@ -246,23 +246,8 @@ void Sub::exit_mission()
 {
     // play a tone
     AP_Notify::events.mission_complete = 1;
-    // if we are not on the ground switch to loiter or land
-    if(!ap.land_complete) {
-        // try to enter loiter but if that fails land
-        if(!auto_loiter_start()) {
-            set_mode(LAND, MODE_REASON_MISSION_END);
-        }
-    }else{
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-        // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.throttle_zero || failsafe.radio) {
-            init_disarm_motors();
-        }
-#else
-        // if we've landed it's safe to disarm
-        init_disarm_motors();
-#endif
-    }
+
+	init_disarm_motors();
 }
 
 /********************************************************************************/

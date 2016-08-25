@@ -170,7 +170,7 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case LOITER:
     case RTL:
     case CIRCLE:
-    case LAND:
+    case SURFACE:
     case OF_LOITER:
     case POSHOLD:
     case BRAKE:
@@ -1278,11 +1278,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_NAV_LAND:
-            if (sub.set_mode(LAND, MODE_REASON_GCS_COMMAND)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
+// Not supported in sub
+//        case MAV_CMD_NAV_LAND:
+//            if (sub.set_mode(LAND, MODE_REASON_GCS_COMMAND)) {
+//                result = MAV_RESULT_ACCEPTED;
+//            }
+//            break;
 
         case MAV_CMD_CONDITION_YAW:
             // param1 : target angle [0-360]
@@ -1652,28 +1653,30 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-		/* Solo user holds down Fly button for a couple of seconds */
-		case MAV_CMD_SOLO_BTN_FLY_HOLD: {
-			result = MAV_RESULT_ACCEPTED;
+// Not supported in Sub
 
-			if (sub.failsafe.radio) {
-				break;
-			}
-
-			if (!sub.motors.armed()) {
-				// if disarmed, arm motors
-				sub.init_arm_motors(true);
-			} else if (sub.ap.land_complete) {
-				// if armed and landed, takeoff
-				if (sub.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
-					sub.do_user_takeoff(packet.param1*100, true);
-				}
-			} else {
-				// if flying, land
-				sub.set_mode(LAND, MODE_REASON_GCS_COMMAND);
-			}
-			break;
-		}
+//		/* Solo user holds down Fly button for a couple of seconds */
+//		case MAV_CMD_SOLO_BTN_FLY_HOLD: {
+//			result = MAV_RESULT_ACCEPTED;
+//
+//			if (sub.failsafe.radio) {
+//				break;
+//			}
+//
+//			if (!sub.motors.armed()) {
+//				// if disarmed, arm motors
+//				sub.init_arm_motors(true);
+//			} else if (sub.ap.land_complete) {
+//				// if armed and landed, takeoff
+//				if (sub.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
+//					sub.do_user_takeoff(packet.param1*100, true);
+//				}
+//			} else {
+//				// if flying, land
+//				sub.set_mode(LAND, MODE_REASON_GCS_COMMAND);
+//			}
+//			break;
+//		}
 
 		/* Solo user presses pause button */
 		case MAV_CMD_SOLO_BTN_PAUSE_CLICK: {
