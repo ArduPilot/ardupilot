@@ -119,8 +119,9 @@ public:
     // init - perform required initialisation
     void init(const AP_SerialManager &serial_manager, const char *firmware_str, const char *frame_config_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing);
     void init(const AP_SerialManager &serial_manager);
-    // add statustext message to FrSky lib queue. This function is static so it can be called from any library.
-    static void queue_message(MAV_SEVERITY severity, const char *text);
+
+    // add statustext message to FrSky lib queue.
+    void queue_message(MAV_SEVERITY severity, const char *text);
 
     // update flight control mode. The control mode is vehicle type specific
     void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
@@ -220,6 +221,8 @@ private:
         uint8_t repeats; // send each message "chunk" 3 times to make sure the entire messsage gets through without getting cut
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
+
+    msg_t _msg;
     
     // main transmission function when protocol is FrSky SPort Passthrough (OpenTX)
     void send_SPort_Passthrough(void);

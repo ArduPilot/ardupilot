@@ -23,8 +23,6 @@
 #include "AP_Frsky_Telem.h"
 extern const AP_HAL::HAL& hal;
 
-AP_Frsky_Telem::msg_t _msg;
-
 //constructor
 AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng) :
     _ahrs(ahrs),
