@@ -134,6 +134,7 @@ class ap_library_check_headers(Task.Task):
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
     )
+    whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
     def run(self):
         for n in self.headers:
