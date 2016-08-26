@@ -388,6 +388,7 @@ public:
 		k_param_jbtn_15, // 276
 
 		k_param_water_detector, // water detector object
+		k_param_failsafe_leak, // leak failsafe behavior
     };
 
     AP_Int16        format_version;
@@ -416,6 +417,7 @@ public:
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
 
+    AP_Int8			failsafe_leak;				// leak detection failsafe behavior
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 

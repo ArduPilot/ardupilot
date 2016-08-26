@@ -304,6 +304,7 @@ private:
         uint8_t terrain             : 1; // 6   // true if the missing terrain data failsafe has occurred
         uint8_t leak				: 1; // true if leak recently detected
         uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
+        uint32_t last_gcs_warn_ms;
 
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
@@ -603,7 +604,6 @@ private:
     void set_simple_mode(uint8_t b);
     void set_failsafe_radio(bool b);
     void set_failsafe_battery(bool b);
-    void set_failsafe_gcs(bool b);
     void set_land_complete(bool b);
     void set_land_complete_maybe(bool b);
     void set_pre_arm_check(bool b);
@@ -848,7 +848,6 @@ private:
     void failsafe_radio_off_event();
     void failsafe_battery_event(void);
     void failsafe_gcs_check();
-    void failsafe_gcs_off_event(void);
     void failsafe_terrain_check();
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
