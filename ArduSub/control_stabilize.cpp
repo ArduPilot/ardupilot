@@ -3,7 +3,6 @@
 #include "Sub.h"
 
 namespace {
-	static uint32_t last_stabilize_message_ms = 0;
 	uint32_t last_pilot_heading;
 	uint32_t last_pilot_yaw_input_ms = 0;
 }
@@ -64,11 +63,6 @@ void Sub::stabilize_run()
 		last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
 	} else { // hold current heading
-
-		if(tnow > last_stabilize_message_ms + 1500) {
-			gcs_send_text_fmt(MAV_SEVERITY_INFO, "target: %d", last_pilot_heading);
-			last_stabilize_message_ms = tnow;
-		}
 
 		// this check is required to prevent bounce back after very fast yaw maneuvers
 		// the inertia of the vehicle causes the heading to move slightly past the point when pilot input actually stopped
