@@ -74,65 +74,84 @@ void Sub::failsafe_battery_event(void)
 }
 
 void Sub::set_leak_status(bool status) {
-	uint32_t tnow = AP_HAL::millis();
-
-	failsafe.leak = status;
 	AP_Notify::flags.leak_detected = status;
 
-	if(failsafe.leak && tnow > failsafe.last_leak_warn_ms + 5000) {
+	// Do nothing if we are dry, or if leak failsafe action is disabled
+	if(status == false || g.failsafe_leak == FS_LEAK_DISABLED) {
+		failsafe.leak = false;
+		return;
+	}
+
+	uint32_t tnow = AP_HAL::millis();
+
+	// We have a leak
+	// Always send a warning every 5 seconds
+	if(tnow > failsafe.last_leak_warn_ms + 5000) {
 		failsafe.last_leak_warn_ms = tnow;
-		gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Leak Detected");
+		gcs_send_text(MAV_SEVERITY_WARNING, "Leak Detected");
+	}
+
+	// Do nothing if we have already triggered the failsafe action, or if the motors are disarmed
+	if(failsafe.leak || !motors.armed()) {
+		return;
+	}
+
+	failsafe.leak = true;
+
+	// Handle failsafe action
+	if(g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
+		set_mode(SURFACE, MODE_REASON_LEAK_FAILSAFE);
 	}
 }
 
 // failsafe_gcs_check - check for ground station failsafe
 void Sub::failsafe_gcs_check()
 {
-    uint32_t last_gcs_update_ms;
-
-    // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs and we are not in guided mode
+    // return immediately if gcs failsafe action is disabled
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if ((!failsafe.gcs) && (g.failsafe_gcs == FS_GCS_DISABLED)) {
+    if (!g.failsafe_gcs && g.failsafe_gcs == FS_GCS_DISABLED) {
     	return;
     }
 
-    // calc time since last gcs update
-    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
-    last_gcs_update_ms = AP_HAL::millis() - failsafe.last_heartbeat_ms;
+    uint32_t tnow = AP_HAL::millis();
 
-    // check if all is well
-    if (last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
-        // check for recovery from gcs failsafe
+    // Check if we have gotten a GCS heartbeat recently (GCS sysid must match SYSID_MYGCS parameter)
+    if (tnow < failsafe.last_heartbeat_ms + FS_GCS_TIMEOUT_MS) {
+        // Log event if we are recovering from previous gcs failsafe
         if (failsafe.gcs) {
-            failsafe_gcs_off_event();
-            set_failsafe_gcs(false);
+            Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
         }
+        failsafe.gcs = false;
         return;
     }
 
-    // do nothing if gcs failsafe already triggered or motors disarmed
+    //////////////////////////////
+    // GCS heartbeat has timed out
+    //////////////////////////////
+
+	// Send a warning every 5 seconds
+	if(tnow > failsafe.last_gcs_warn_ms + 5000) {
+		failsafe.last_gcs_warn_ms = tnow;
+		gcs_send_text_fmt(MAV_SEVERITY_WARNING, "MYGCS: %d, heartbeat lost", g.sysid_my_gcs);
+	}
+
+    // do nothing if we have already triggered the failsafe action, or if the motors are disarmed
     if (failsafe.gcs || !motors.armed()) {
         return;
     }
 
-    // GCS failsafe event has occured
     // update state, log to dataflash
-    set_failsafe_gcs(true);
+    failsafe.gcs = true;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    // clear overrides so that RC control can be regained with radio.
-    hal.rcin->clear_overrides();
-    failsafe.rc_override_active = false;
-
-    // Disarm the motors, pilot has lost all contact/control over vehicle.
-    init_disarm_motors();
-}
-
-// failsafe_gcs_off_event - actions to take when GCS contact is restored
-void Sub::failsafe_gcs_off_event(void)
-{
-    // log recovery of GCS in logs?
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
+    // handle failsafe action
+    if(g.failsafe_gcs == FS_GCS_DISARM) {
+    	init_disarm_motors();
+    } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
+    	set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE);
+    } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
+    	set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE);
+    }
 }
 
 // executes terrain failsafe if data is missing for longer than a few seconds

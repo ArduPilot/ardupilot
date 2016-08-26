@@ -92,12 +92,6 @@ void Sub::set_failsafe_battery(bool b)
 }
 
 // ---------------------------------------------
-void Sub::set_failsafe_gcs(bool b)
-{
-    failsafe.gcs = b;
-}
-
-// ---------------------------------------------
 
 void Sub::set_pre_arm_check(bool b)
 {

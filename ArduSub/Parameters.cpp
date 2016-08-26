@@ -190,10 +190,17 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
-    // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. NB. The GCS Failsafe is only active when RC_OVERRIDE is being used to control the vehicle.
-    // @Values: 0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode
+    // @Description: Controls what action to take when GCS heartbeat is lost.
+    // @Values: 0:Disabled,1:Warn only,2:Disarm,3:Enter depth hold mode,4:Enter surface mode
     // @User: Standard
-    GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_ENABLED_ALWAYS_RTL),
+    GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_DISABLED),
+
+    // @Param: FS_LEAK_ENABLE
+    // @DisplayName: Leak Failsafe Enable
+    // @Description: Controls what action to take if a leak is detected.
+    // @Values: 0:Disabled,1:Warn only,2:Enter surface mode
+    // @User: Standard
+    GSCALAR(failsafe_leak, "FS_LEAK_ENABLE", FS_LEAK_DISABLED),
 
     // @Param: GPS_HDOP_GOOD
     // @DisplayName: GPS Hdop Good
