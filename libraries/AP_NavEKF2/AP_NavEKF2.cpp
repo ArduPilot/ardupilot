@@ -1155,15 +1155,15 @@ uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
     // check for an internal ekf yaw reset
     float temp_yaw_delta;
     uint32_t ekf_reset_ms = core[primary].getLastYawResetAngle(temp_yaw_delta);
-    if (ekf_reset_ms != last_ekf_reset_ms) {
+    if (ekf_reset_ms != yaw_step_data.last_ekf_reset_ms) {
         // record the time of the ekf's internal yaw reset event
-        last_ekf_reset_ms = ekf_reset_ms;
+        yaw_step_data.last_ekf_reset_ms = ekf_reset_ms;
 
         // record the the ekf's internal yaw reset value
-        yaw_reset_delta = temp_yaw_delta;
+        yaw_step_data.yaw_delta = temp_yaw_delta;
 
         // record the yaw reset event time
-        yaw_reset_time_ms = imuSampleTime_us/1000;
+        yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
 
     }
 
@@ -1171,31 +1171,31 @@ uint32_t NavEKF2::getLastYawResetAngle(float &yawAngDelta)
     // to the difference in yaw angle between the current and last yaw angle
     Vector3f eulers_primary;
     core[primary].getEulerAngles(eulers_primary);
-    if (primary != prev_instance) {
+    if (primary != yaw_step_data.prev_instance) {
         // the delta is the difference between the current and previous yaw
         // This overwrites any yaw reset value recorded from an internal eff reset
-        yaw_reset_delta += wrap_PI(eulers_primary.z - prev_yaw);
+        yaw_step_data.yaw_delta += wrap_PI(eulers_primary.z - yaw_step_data.prev_yaw);
 
         // record the time of the yaw reset event
-        yaw_reset_time_ms = imuSampleTime_us/1000;
+        yaw_step_data.yaw_reset_time_ms = imuSampleTime_us/1000;
 
         // update the time recorded for the last ekf internal yaw reset forthe primary core to
         // prevent a yaw ekf reset event being published on the next frame due to the change in time
-        last_ekf_reset_ms = ekf_reset_ms;
+        yaw_step_data.last_ekf_reset_ms = ekf_reset_ms;
 
     }
 
     // record the yaw angle from the primary core
-    prev_yaw = eulers_primary.z;
+    yaw_step_data.prev_yaw = eulers_primary.z;
 
     // record the primary core
-    prev_instance = primary;
+    yaw_step_data.prev_instance = primary;
 
     // return the yaw delta from the last event
-    yawAngDelta = yaw_reset_delta;
+    yawAngDelta = yaw_step_data.yaw_delta;
 
     // return the time of the last event
-    return yaw_reset_time_ms;
+    return yaw_step_data.yaw_reset_time_ms;
 }
 
 // return the amount of NE position change due to the last position reset in metres
