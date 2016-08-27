@@ -267,8 +267,8 @@ public:
     void update_vel_controller_xyz(float ekfNavVelGainScaler);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    float get_roll() const { return _roll_target; }
-    float get_pitch() const { return _pitch_target; }
+    float get_roll_rad() const { return _roll_target_rad; }
+    float get_pitch_rad() const { return _pitch_target_rad; }
 
     // get_leash_xy - returns horizontal leash length in cm
     float get_leash_xy() const { return _leash; }
@@ -388,8 +388,8 @@ private:
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
 
     // output from controller
-    float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
-    float       _pitch_target;          // desired roll pitch in centi-degrees calculated by position controller
+    float       _roll_target_rad;           // desired roll angle in radians calculated by position controller
+    float       _pitch_target_rad;          // desired roll pitch in radians calculated by position controller
 
     // position controller internal variables
     Vector3f    _pos_target;            // target location in cm from home
