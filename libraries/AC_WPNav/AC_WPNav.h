@@ -83,8 +83,8 @@ public:
     /// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
     void calculate_loiter_leash_length();
 
-    /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
-    void set_pilot_desired_acceleration(float control_roll, float control_pitch);
+    /// set_pilot_desired_acceleration_rad - sets pilot desired acceleration from roll and pitch stick input
+    void set_pilot_desired_acceleration_rad(float control_roll_rad, float control_pitch_rad);
 
     /// clear_pilot_desired_acceleration - clear pilot desired acceleration
     void clear_pilot_desired_acceleration() { _pilot_accel_fwd_cms = 0.0f; _pilot_accel_rgt_cms = 0.0f; }
@@ -95,8 +95,8 @@ public:
     /// get_loiter_distance_to_target - get horizontal distance to loiter target in cm
     float get_loiter_distance_to_target() const { return _pos_control.get_distance_to_target(); }
 
-    /// get_loiter_bearing_to_target - get bearing to loiter target in centi-degrees
-    int32_t get_loiter_bearing_to_target() const;
+    /// get_loiter_bearing_to_target - get bearing to loiter target in radians
+    float get_loiter_bearing_to_target_rad() const;
 
     /// get_loiter_target - returns loiter target position
     const Vector3f& get_loiter_target() const { return _pos_control.get_pos_target(); }
@@ -168,8 +168,8 @@ public:
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
     float get_wp_distance_to_destination() const;
 
-    /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
-    int32_t get_wp_bearing_to_destination() const;
+    /// get_bearing_to_destination - get bearing to next waypoint in radians
+    float get_wp_bearing_to_destination_rad() const;
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
     bool reached_wp_destination() const { return _flags.reached_destination; }
@@ -203,7 +203,7 @@ public:
     // spline-fast - next segment is spline, vehicle's destination velocity should be parallel to position difference vector from previous segment's origin to this segment's destination
 
     // get_yaw - returns target yaw in centi-degrees (used for wp and spline navigation)
-    float get_yaw() const { return _yaw; }
+    float get_yaw_rad() const { return _yaw_rad; }
 
     /// set_spline_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -240,8 +240,8 @@ public:
     ///
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_roll() const { return _pos_control.get_roll(); }
-    int32_t get_pitch() const { return _pos_control.get_pitch(); }
+    float get_roll_rad() const { return _pos_control.get_roll_rad(); }
+    float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
 
     /// get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     float get_desired_alt() const { return _pos_control.get_alt_target(); }
@@ -276,8 +276,8 @@ protected:
     ///		updated velocity sent directly to position controller
     void calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit);
 
-    /// get_bearing_cd - return bearing in centi-degrees between two positions
-    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
+    /// get_bearing_cd - return bearing in radians between two positions
+    float get_bearing_rad(const Vector3f &origin, const Vector3f &destination) const;
 
     /// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is traveling at full speed
     void calc_slow_down_distance(float speed_cms, float accel_cmss);
@@ -357,7 +357,7 @@ protected:
     Vector3f    _spline_destination_vel;// the target velocity vector at the destination point of the spline segment
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
     float       _spline_vel_scaler;	    //
-    float       _yaw;                   // heading according to yaw
+    float       _yaw_rad;                   // heading according to yaw
 
     // terrain following variables
     bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin

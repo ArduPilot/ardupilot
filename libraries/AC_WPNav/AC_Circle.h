@@ -50,9 +50,9 @@ public:
     void update();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_roll() const { return _pos_control.get_roll(); }
-    int32_t get_pitch() const { return _pos_control.get_pitch(); }
-    int32_t get_yaw() const { return _yaw; }
+    float get_roll_rad() const { return _pos_control.get_roll_rad(); }
+    float get_pitch_rad() const { return _pos_control.get_pitch_rad(); }
+    float get_yaw_rad() const { return _yaw_rad; }
 
     // get_closest_point_on_circle - returns closest point on the circle
     //  circle's center should already have been set
@@ -93,7 +93,7 @@ private:
     // internal variables
     uint32_t    _last_update;   // time of last update_loiter call
     Vector3f    _center;        // center of circle in cm from home
-    float       _yaw;           // yaw heading (normally towards circle center)
+    float       _yaw_rad;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
     float       _angle_total;   // total angle travelled in radians
     float       _angular_vel;   // angular velocity in radians/sec
