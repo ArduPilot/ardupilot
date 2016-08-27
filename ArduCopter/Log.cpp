@@ -375,7 +375,7 @@ void Copter::Log_Write_Performance()
 // Write an attitude packet
 void Copter::Log_Write_Attitude()
 {
-    Vector3f targets = attitude_control.get_att_target_euler_cd();
+    Vector3f targets = attitude_control.get_att_target_euler_rad()*RAD_TO_DEG*100.0f;
     targets.z = wrap_360_cd(targets.z);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 

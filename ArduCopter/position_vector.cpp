@@ -31,14 +31,14 @@ float Copter::pv_alt_above_home(float alt_above_origin_cm)
     return alt_above_origin_cm + (origin.alt - ahrs.get_home().alt);
 }
 
-// pv_get_bearing_cd - return bearing in centi-degrees between two positions
-float Copter::pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
+// pv_get_bearing_rad - return bearing in centi-degrees between two positions
+float Copter::pv_get_bearing_rad(const Vector3f &origin, const Vector3f &destination)
 {
-    float bearing = atan2f(destination.y-origin.y, destination.x-origin.x) * DEGX100;
-    if (bearing < 0) {
-        bearing += 36000;
+    float bearing_rad = atan2f(destination.y-origin.y, destination.x-origin.x);
+    if (bearing_rad < 0) {
+        bearing_rad += 2.0f*M_PI;
     }
-    return bearing;
+    return bearing_rad;
 }
 
 // pv_get_horizontal_distance_cm - return distance between two positions in cm

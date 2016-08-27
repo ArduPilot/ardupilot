@@ -40,7 +40,7 @@ bool Copter::loiter_init(bool ignore_checks)
 void Copter::loiter_run()
 {
     LoiterModeState loiter_state;
-    float target_yaw_rate = 0.0f;
+    float target_yaw_rate_rads = 0.0f;
     float target_climb_rate = 0.0f;
     float takeoff_climb_rate = 0.0f;
 
@@ -54,10 +54,10 @@ void Copter::loiter_run()
         update_simple_mode();
 
         // process pilot's roll and pitch input
-        wp_nav.set_pilot_desired_acceleration(channel_roll->get_control_in(), channel_pitch->get_control_in());
+        wp_nav.set_pilot_desired_acceleration_rad(radians(channel_roll->get_control_in()*0.01f), radians(channel_pitch->get_control_in()*0.01f));
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
 
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
@@ -106,7 +106,7 @@ void Copter::loiter_run()
         pos_control.relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
 #endif
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(wp_nav.get_roll_rad(), wp_nav.get_pitch_rad(), target_yaw_rate_rads, get_smoothing_gain());
         pos_control.update_z_controller();
         break;
 
@@ -130,7 +130,7 @@ void Copter::loiter_run()
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(wp_nav.get_roll_rad(), wp_nav.get_pitch_rad(), target_yaw_rate_rads, get_smoothing_gain());
 
         // update altitude target and call position controller
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
@@ -148,7 +148,7 @@ void Copter::loiter_run()
         wp_nav.init_loiter_target();
         attitude_control.reset_rate_controller_I_terms();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(0, 0, 0, get_smoothing_gain());
         pos_control.relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control.update_z_controller();
         break;
@@ -162,7 +162,7 @@ void Copter::loiter_run()
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(wp_nav.get_roll_rad(), wp_nav.get_pitch_rad(), target_yaw_rate_rads, get_smoothing_gain());
 
         // adjust climb rate using rangefinder
         if (rangefinder_alt_ok()) {

@@ -20,10 +20,10 @@ static uint32_t vel_update_time_ms;         // system time of last target update
 
 struct {
     uint32_t update_time_ms;
-    float roll_cd;
-    float pitch_cd;
-    float yaw_cd;
-    float yaw_rate_cds;
+    float roll_rad;
+    float pitch_rad;
+    float yaw_rad;
+    float yaw_rate_rads;
     float climb_rate_cms;
     bool use_yaw_rate;
 } static guided_angle_state = {0,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false};
@@ -161,11 +161,11 @@ void Copter::guided_angle_control_start()
 
     // initialise targets
     guided_angle_state.update_time_ms = millis();
-    guided_angle_state.roll_cd = ahrs.roll_sensor;
-    guided_angle_state.pitch_cd = ahrs.pitch_sensor;
-    guided_angle_state.yaw_cd = ahrs.yaw_sensor;
+    guided_angle_state.roll_rad = ahrs.roll;
+    guided_angle_state.pitch_rad = ahrs.pitch;
+    guided_angle_state.yaw_rad = ahrs.yaw;
     guided_angle_state.climb_rate_cms = 0.0f;
-    guided_angle_state.yaw_rate_cds = 0.0f;
+    guided_angle_state.yaw_rate_rads = 0.0f;
     guided_angle_state.use_yaw_rate = false;
 
     // pilot always controls yaw
@@ -274,11 +274,9 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms, bool us
     }
 
     // convert quaternion to euler angles
-    q.to_euler(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd);
-    guided_angle_state.roll_cd = ToDeg(guided_angle_state.roll_cd) * 100.0f;
-    guided_angle_state.pitch_cd = ToDeg(guided_angle_state.pitch_cd) * 100.0f;
-    guided_angle_state.yaw_cd = wrap_180_cd(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
-    guided_angle_state.yaw_rate_cds = ToDeg(yaw_rate_rads) * 100.0f;
+    q.to_euler(guided_angle_state.roll_rad, guided_angle_state.pitch_rad, guided_angle_state.yaw_rad);
+    guided_angle_state.yaw_rad = wrap_PI(guided_angle_state.yaw_rad);
+    guided_angle_state.yaw_rate_rads = yaw_rate_rads;
     guided_angle_state.use_yaw_rate = use_yaw_rate;
 
     guided_angle_state.climb_rate_cms = climb_rate_cms;
@@ -291,7 +289,7 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms, bool us
 
     // log target
     Log_Write_GuidedTarget(guided_mode,
-                           Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
+                           Vector3f(guided_angle_state.roll_rad, guided_angle_state.pitch_rad, guided_angle_state.yaw_rad)*RAD_TO_DEG,
                            Vector3f(0.0f, 0.0f, guided_angle_state.climb_rate_cms));
 }
 
@@ -337,7 +335,7 @@ void Copter::guided_takeoff_run()
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -348,10 +346,10 @@ void Copter::guided_takeoff_run()
     }
 
     // process pilot's yaw input
-    float target_yaw_rate = 0;
+    float target_yaw_rate_rads = 0.0f;
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
     }
 
     // set motors to full range
@@ -364,7 +362,7 @@ void Copter::guided_takeoff_run()
     pos_control.update_z_controller();
 
     // call attitude controller
-    auto_takeoff_attitude_run(target_yaw_rate);
+    auto_takeoff_attitude_run_rad(target_yaw_rate_rads);
 }
 
 // guided_pos_control_run - runs the guided position controller
@@ -375,7 +373,7 @@ void Copter::guided_pos_control_run()
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -386,11 +384,11 @@ void Copter::guided_pos_control_run()
     }
 
     // process pilot's yaw input
-    float target_yaw_rate = 0;
+    float target_yaw_rate_rads = 0.0f;
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
+        if (!is_zero(target_yaw_rate_rads)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
@@ -407,10 +405,10 @@ void Copter::guided_pos_control_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(wp_nav.get_roll_rad(), wp_nav.get_pitch_rad(), target_yaw_rate_rads, get_smoothing_gain());
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw_rad(wp_nav.get_roll_rad(), wp_nav.get_pitch_rad(), get_auto_heading_rad(), true, get_smoothing_gain());
     }
 }
 
@@ -424,7 +422,7 @@ void Copter::guided_vel_control_run()
         pos_control.init_vel_controller_xyz();
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -435,11 +433,11 @@ void Copter::guided_vel_control_run()
     }
 
     // process pilot's yaw input
-    float target_yaw_rate = 0;
+    float target_yaw_rate_rads = 0;
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
+        if (!is_zero(target_yaw_rate_rads)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
@@ -461,10 +459,10 @@ void Copter::guided_vel_control_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(pos_control.get_roll_rad(), pos_control.get_pitch_rad(), target_yaw_rate_rads, get_smoothing_gain());
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw_rad(pos_control.get_roll_rad(), pos_control.get_pitch_rad(), get_auto_heading_rad(), true, get_smoothing_gain());
     }
 }
 
@@ -479,7 +477,7 @@ void Copter::guided_posvel_control_run()
         pos_control.set_desired_velocity(Vector3f(0,0,0));
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -490,12 +488,12 @@ void Copter::guided_posvel_control_run()
     }
 
     // process pilot's yaw input
-    float target_yaw_rate = 0;
+    float target_yaw_rate_rads = 0.0f;
 
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
+        if (!is_zero(target_yaw_rate_rads)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
@@ -535,10 +533,10 @@ void Copter::guided_posvel_control_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(pos_control.get_roll(), pos_control.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(pos_control.get_roll_rad(), pos_control.get_pitch_rad(), target_yaw_rate_rads, get_smoothing_gain());
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(pos_control.get_roll(), pos_control.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw_rad(pos_control.get_roll_rad(), pos_control.get_pitch_rad(), get_auto_heading_rad(), true, get_smoothing_gain());
     }
 }
 
@@ -551,7 +549,7 @@ void Copter::guided_angle_control_run()
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f, get_smoothing_gain());
         attitude_control.set_throttle_out(0.0f,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -563,19 +561,19 @@ void Copter::guided_angle_control_run()
     }
 
     // constrain desired lean angles
-    float roll_in = guided_angle_state.roll_cd;
-    float pitch_in = guided_angle_state.pitch_cd;
-    float total_in = norm(roll_in, pitch_in);
-    float angle_max = MIN(attitude_control.get_althold_lean_angle_max(), aparm.angle_max);
-    if (total_in > angle_max) {
-        float ratio = angle_max / total_in;
-        roll_in *= ratio;
-        pitch_in *= ratio;
+    float roll_in_rad = guided_angle_state.roll_rad;
+    float pitch_in_rad = guided_angle_state.pitch_rad;
+    float total_in_rad = norm(roll_in_rad, pitch_in_rad);
+    float angle_max_rad = MIN(attitude_control.get_althold_lean_angle_max_rad(), radians(aparm.angle_max*0.01f));
+    if (total_in_rad > angle_max_rad) {
+        float ratio = angle_max_rad / total_in_rad;
+        roll_in_rad *= ratio;
+        pitch_in_rad *= ratio;
     }
 
     // wrap yaw request
-    float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
-    float yaw_rate_in = wrap_180_cd(guided_angle_state.yaw_rate_cds);
+    float yaw_in_rad = wrap_PI(guided_angle_state.yaw_rad);
+    float yaw_rate_in_rads = wrap_PI(guided_angle_state.yaw_rate_rads);
 
     // constrain climb rate
     float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav.get_speed_down()), wp_nav.get_speed_up());
@@ -583,10 +581,10 @@ void Copter::guided_angle_control_run()
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - guided_angle_state.update_time_ms > GUIDED_ATTITUDE_TIMEOUT_MS) {
-        roll_in = 0.0f;
-        pitch_in = 0.0f;
+        roll_in_rad = 0.0f;
+        pitch_in_rad = 0.0f;
         climb_rate_cms = 0.0f;
-        yaw_rate_in = 0.0f;
+        yaw_rate_in_rads = 0.0f;
     }
 
     // set motors to full range
@@ -594,9 +592,9 @@ void Copter::guided_angle_control_run()
 
     // call attitude controller
     if (guided_angle_state.use_yaw_rate) {
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(roll_in, pitch_in, yaw_rate_in, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(roll_in_rad, pitch_in_rad, yaw_rate_in_rads, get_smoothing_gain());
     } else {
-        attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw_rad(roll_in_rad, pitch_in_rad, yaw_in_rad, true, get_smoothing_gain());
     }
 
     // call position controller

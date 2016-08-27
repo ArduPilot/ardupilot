@@ -40,11 +40,11 @@ void Copter::calc_wp_bearing()
 {
     // get target from loiter or wpinav controller
     if (control_mode == LOITER || control_mode == CIRCLE) {
-        wp_bearing = wp_nav.get_loiter_bearing_to_target();
+        wp_bearing_rad = wp_nav.get_loiter_bearing_to_target_rad();
     } else if (control_mode == AUTO || control_mode == RTL || (control_mode == GUIDED && guided_mode == Guided_WP)) {
-        wp_bearing = wp_nav.get_wp_bearing_to_destination();
+        wp_bearing_rad = wp_nav.get_wp_bearing_to_destination_rad();
     } else {
-        wp_bearing = 0;
+        wp_bearing_rad = 0.0f;
     }
 }
 
@@ -56,7 +56,7 @@ void Copter::calc_home_distance_and_bearing()
         Vector3f home = pv_location_to_vector(ahrs.get_home());
         Vector3f curr = inertial_nav.get_position();
         home_distance = pv_get_horizontal_distance_cm(curr, home);
-        home_bearing = pv_get_bearing_cd(curr,home);
+        home_bearing_rad = pv_get_bearing_rad(curr,home);
 
         // update super simple bearing (if required) because it relies on home_bearing
         update_super_simple_bearing(false);

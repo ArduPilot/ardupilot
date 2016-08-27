@@ -26,7 +26,7 @@ bool Copter::heli_acro_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::heli_acro_run()
 {
-    float target_roll, target_pitch, target_yaw;
+    float target_roll_rad, target_pitch_rad, target_yaw_rad;
     float pilot_throttle_scaled;
     
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup, because
@@ -54,40 +54,40 @@ void Copter::heli_acro_run()
 
     if (!motors.has_flybar()){
         // convert the input to the desired body frame rate
-        get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
+        get_pilot_desired_angle_rates_rad(radians(channel_roll->get_control_in()*0.01f), radians(channel_pitch->get_control_in()*0.01f), radians(channel_yaw->get_control_in()*0.01f), target_roll_rad, target_pitch_rad, target_yaw_rad);
 
         if (motors.supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and
             // pass-through the input direct to output.
-            target_yaw = channel_yaw->pwm_to_angle_dz(0);
+            target_yaw_rad = radians(channel_yaw->pwm_to_angle_dz(0)*0.01f);
         }
 
         // run attitude controller
-        attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+        attitude_control.input_rate_bf_roll_pitch_yaw_rad(target_roll_rad, target_pitch_rad, target_yaw_rad);
     }else{
         /*
           for fly-bar passthrough use control_in values with no
           deadzone. This gives true pass-through.
          */
-        float roll_in = channel_roll->pwm_to_angle_dz(0);
-        float pitch_in = channel_pitch->pwm_to_angle_dz(0);
-        float yaw_in;
+        float roll_in_rads = radians(channel_roll->pwm_to_angle_dz(0)*0.01f);
+        float pitch_in_rads = radians(channel_pitch->pwm_to_angle_dz(0)*0.01f);
+        float yaw_in_rads;
         
         if (motors.supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and
             // pass-through the input direct to output.
-            yaw_in = channel_yaw->pwm_to_angle_dz(0);
+            yaw_in_rads = radians(channel_yaw->pwm_to_angle_dz(0)*0.01f);
         } else {
             // if there is no external gyro then run the usual
             // ACRO_YAW_P gain on the input control, including
             // deadzone
-            yaw_in = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+            yaw_in_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
         }
 
         // run attitude controller
-        attitude_control.passthrough_bf_roll_pitch_rate_yaw(roll_in, pitch_in, yaw_in);
+        attitude_control.passthrough_bf_roll_pitch_rate_yaw_rad(roll_in_rads, pitch_in_rads, yaw_in_rads);
     }
 
     // get pilot's desired throttle

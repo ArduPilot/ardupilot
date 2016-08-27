@@ -24,8 +24,8 @@ bool Copter::heli_stabilize_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::heli_stabilize_run()
 {
-    float target_roll, target_pitch;
-    float target_yaw_rate;
+    float target_roll_rad, target_pitch_rad;
+    float target_yaw_rate_rads;
     float pilot_throttle_scaled;
 
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup, because
@@ -56,16 +56,16 @@ void Copter::heli_stabilize_run()
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+    get_pilot_desired_lean_angles_rad(radians(channel_roll->get_control_in()*0.01f), radians(channel_pitch->get_control_in()*0.01f), target_roll_rad, target_pitch_rad, radians(aparm.angle_max*0.01f));
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
 
     // get pilot's desired throttle
     pilot_throttle_scaled = input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(target_roll_rad, target_pitch_rad, target_yaw_rate_rads, get_smoothing_gain());
 
     // output pilot's throttle - note that TradHeli does not used angle-boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);

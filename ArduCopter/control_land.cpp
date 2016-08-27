@@ -57,7 +57,7 @@ void Copter::land_gps_run()
     if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -90,8 +90,8 @@ void Copter::land_gps_run()
 //      should be called at 100hz or more
 void Copter::land_nogps_run()
 {
-    float target_roll = 0.0f, target_pitch = 0.0f;
-    float target_yaw_rate = 0;
+    float target_roll_rad = 0.0f, target_pitch_rad = 0.0f;
+    float target_yaw_rate_rads = 0.0f;
 
     // process pilot inputs
     if (!failsafe.radio) {
@@ -104,20 +104,20 @@ void Copter::land_nogps_run()
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
-
+            float angle_max_rad = radians(aparm.angle_max*0.01f);
             // get pilot desired lean angles
-            get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+            get_pilot_desired_lean_angles_rad(radians(channel_roll->get_control_in()*0.01f), radians(channel_pitch->get_control_in()*0.01f), target_roll_rad, target_pitch_rad, angle_max_rad);
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
     }
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(target_roll_rad, target_pitch_rad, target_yaw_rate_rads, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
 #else
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -136,7 +136,7 @@ void Copter::land_nogps_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(target_roll_rad, target_pitch_rad, target_yaw_rate_rads, get_smoothing_gain());
 
     // pause before beginning land descent
     if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
@@ -212,8 +212,8 @@ void Copter::land_run_vertical_control(bool pause_descent)
 
 void Copter::land_run_horizontal_control()
 {
-    int16_t roll_control = 0, pitch_control = 0;
-    float target_yaw_rate = 0;
+    float roll_control_rad = 0, pitch_control_rad = 0;
+    float target_yaw_rate_rads = 0;
     
     // relax loiter target if we might be landed
     if (ap.land_complete_maybe) {
@@ -235,17 +235,17 @@ void Copter::land_run_horizontal_control()
             update_simple_mode();
 
             // process pilot's roll and pitch input
-            roll_control = channel_roll->get_control_in();
-            pitch_control = channel_pitch->get_control_in();
+            roll_control_rad = radians(channel_roll->get_control_in()*0.01f);
+            pitch_control_rad = radians(channel_pitch->get_control_in()*0.01f);
 
             // record if pilot has overriden roll or pitch
-            if (roll_control != 0 || pitch_control != 0) {
+            if (roll_control_rad != 0 || pitch_control_rad != 0) {
                 ap.land_repo_active = true;
             }
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
     }
 
 #if PRECISION_LANDING == ENABLED
@@ -263,13 +263,13 @@ void Copter::land_run_horizontal_control()
 #endif
     
     // process roll, pitch inputs
-    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
+    wp_nav.set_pilot_desired_acceleration_rad(roll_control_rad, pitch_control_rad);
 
     // run loiter controller
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-    int32_t nav_roll  = wp_nav.get_roll();
-    int32_t nav_pitch = wp_nav.get_pitch();
+    float nav_roll_rad  = wp_nav.get_roll_rad();
+    float nav_pitch_rad = wp_nav.get_pitch_rad();
 
     if (g2.wp_navalt_min > 0) {
         // user has requested an altitude below which navigation
@@ -279,13 +279,13 @@ void Copter::land_run_horizontal_control()
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
         int alt_above_ground = land_get_alt_above_ground();
-        float attitude_limit_cd = linear_interpolate(700, aparm.angle_max, alt_above_ground,
+        float attitude_limit_rad = (DEG_TO_RAD/100.0f)*linear_interpolate(700, aparm.angle_max, alt_above_ground,
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
-        float total_angle_cd = norm(nav_roll, nav_pitch);
-        if (total_angle_cd > attitude_limit_cd) {
-            float ratio = attitude_limit_cd / total_angle_cd;
-            nav_roll *= ratio;
-            nav_pitch *= ratio;
+        float total_angle_rad = norm(nav_roll_rad, nav_pitch_rad);
+        if (total_angle_rad > attitude_limit_rad) {
+            float ratio = attitude_limit_rad / total_angle_rad;
+            nav_roll_rad *= ratio;
+            nav_pitch_rad *= ratio;
 
             // tell position controller we are applying an external limit
             pos_control.set_limit_accel_xy();
@@ -294,7 +294,7 @@ void Copter::land_run_horizontal_control()
 
     
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(nav_roll_rad, nav_pitch_rad, target_yaw_rate_rads, get_smoothing_gain());
 }
 
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch

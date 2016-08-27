@@ -550,7 +550,7 @@ void Copter::init_simple_bearing()
     simple_sin_yaw = ahrs.sin_yaw();
 
     // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
-    super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
+    super_simple_last_bearing_rad = wrap_2PI(ahrs.yaw+M_PI);
     super_simple_cos_yaw = simple_cos_yaw;
     super_simple_sin_yaw = simple_sin_yaw;
 
@@ -595,11 +595,10 @@ void Copter::update_super_simple_bearing(bool force_update)
     // check if we are in super simple mode and at least 10m from home
     if(force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
         // check the bearing to home has changed by at least 5 degrees
-        if (labs(super_simple_last_bearing - home_bearing) > 500) {
-            super_simple_last_bearing = home_bearing;
-            float angle_rad = radians((super_simple_last_bearing+18000)/100);
-            super_simple_cos_yaw = cosf(angle_rad);
-            super_simple_sin_yaw = sinf(angle_rad);
+        if (fabsf(super_simple_last_bearing_rad - home_bearing_rad) > radians(5.0f)) {
+            super_simple_last_bearing_rad = home_bearing_rad;
+            super_simple_cos_yaw = cosf(super_simple_last_bearing_rad+M_PI);
+            super_simple_sin_yaw = sinf(super_simple_last_bearing_rad+M_PI);
         }
     }
 }

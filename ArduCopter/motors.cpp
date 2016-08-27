@@ -160,7 +160,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // --------------------
     init_simple_bearing();
 
-    initial_armed_bearing = ahrs.yaw_sensor;
+    initial_armed_bearing_rad = ahrs.yaw;
 
     if (ap.home_state == HOME_UNSET) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
