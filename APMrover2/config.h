@@ -33,10 +33,6 @@
 /// change in your local copy of APM_Config.h.
 ///
 
-// Just so that it's completely clear...
-#define ENABLED			1
-#define DISABLED		0
-
 //////////////////////////////////////////////////////////////////////////////
 // sensor types
 
