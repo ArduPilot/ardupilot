@@ -354,12 +354,20 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("ODI3",    29, Compass, _state[2].offdiagonals, 0),
 
     // @Param: CAL_FIT
-    // @DisplayName: Compass calibration fitness
-    // @Description: This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the primary magnetometer. Other magnetometers get double the value.
-    // @Range: 4 20
+    // @DisplayName: External Compass calibration fitness
+    // @Description: This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the external magnetometer. Internal magnetometers get max(double the value, COMPASS_ICAL_FIT).
+    // @Range: 4 25
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, 8.0f),
+
+    // @Param: ICAL_FIT
+    // @DisplayName: Non-Primary Compass calibration fitness
+    // @Description: This controls the fitness level required for a successful compass calibration of internal compasses. The chosen fitness is equal to max(2*COMPASS_CAL_FIT, COMPASS_ICAL_FIT)
+    // @Range: 8 50
+    // @Increment: 0.1
+    // @User: Advanced    
+    AP_GROUPINFO("ICAL_FIT", 31, Compass, _int_calibration_threshold, 16.0f),
 
     AP_GROUPEND
 };
