@@ -736,11 +736,6 @@ bool Compass::configured(uint8_t i)
         return false;
     }
 
-    // exit immediately if all offsets (mG) are zero
-    if (is_zero(get_offsets(i).length())) {
-        return false;
-    }
-
     // backup detected dev_id
     int32_t dev_id_orig = _state[i].dev_id;
 
