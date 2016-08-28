@@ -153,9 +153,11 @@ void Copter::init_ardupilot()
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
+    int32_t home_bearing_cd = (int32_t)(degrees(home_bearing_rad)*100);
     frsky_telemetry.init(serial_manager, FIRMWARE_STRING " " FRAME_CONFIG_STRING,
                          FRAME_MAV_TYPE,
-                         &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value, &home_distance, &home_bearing);
+                         &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value, &home_distance, &home_bearing_cd);
+    home_bearing_rad = radians(home_bearing_cd*0.01f);
 #endif
 
     // identify ourselves correctly with the ground station
