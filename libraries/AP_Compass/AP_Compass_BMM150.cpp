@@ -193,9 +193,8 @@ bool AP_Compass_BMM150::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, AP_COMPASS_TYPE_BMM150);
 
-    hal.scheduler->suspend_timer_procs();
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, void));
-    hal.scheduler->resume_timer_procs();
+    _dev->register_periodic_callback(MEASURE_TIME_USEC,
+            FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, bool));
 
     return true;
 
@@ -242,25 +241,20 @@ int16_t AP_Compass_BMM150::_compensate_z(int16_t z, uint32_t rhall)
     return constrain_int32(dividend / divisor, -0x8000, 0x8000);
 }
 
-void AP_Compass_BMM150::_update()
+bool AP_Compass_BMM150::_update()
 {
     const uint32_t time_usec = AP_HAL::micros();
 
     if (time_usec - _last_update_timestamp < MEASURE_TIME_USEC) {
-        return;
-    }
-
-    if (!_dev->get_semaphore()->take_nonblocking()) {
-        return;
+        return true;
     }
 
     le16_t data[4];
     bool ret = _dev->read_registers(DATA_X_LSB_REG, (uint8_t *) &data, sizeof(data));
-    _dev->get_semaphore()->give();
 
     /* Checking data ready status */
     if (!ret || !(data[3] & 0x1)) {
-        return;
+        return true;
     }
 
     const uint16_t rhall = le16toh(data[3] >> 2);
@@ -287,7 +281,7 @@ void AP_Compass_BMM150::_update()
     correct_field(raw_field, _compass_instance);
 
     if (!_accum_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
+        return true;
     }
     _mag_accum += raw_field;
     _accum_count++;
@@ -297,6 +291,7 @@ void AP_Compass_BMM150::_update()
     }
     _last_update_timestamp = time_usec;
     _accum_sem->give();
+    return true;
 }
 
 void AP_Compass_BMM150::read()
