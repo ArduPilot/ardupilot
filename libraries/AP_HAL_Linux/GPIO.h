@@ -33,4 +33,6 @@ private:
 #include "GPIO_Bebop.h"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #include "GPIO_Disco.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
+#include "GPIO_Aero.h"
 #endif
