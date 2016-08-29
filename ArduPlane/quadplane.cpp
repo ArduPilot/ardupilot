@@ -321,6 +321,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LAND_ICE_CUT", 44, QuadPlane, land_icengine_cut,  1),
     
+    // @Param: ASSIST_ANGLE
+    // @DisplayName: Quadplane assistance angle
+    // @Description: This is the angular error in attitude beyond which the quadplane VTOL motors will provide stability assistance. This will only be used if Q_ASSIST_SPEED is also non-zero. Assistance will be given if the attitude is outside the normal attitude limits by at least 5 degrees and the angular error in roll or pitch is greater than this angle for at least 1 second. Set to zero to disable angle assistance.
+    // @Units: degrees
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ASSIST_ANGLE", 45, QuadPlane, assist_angle, 30),
+
     AP_GROUPEND
 };
 
@@ -871,6 +880,65 @@ float QuadPlane::desired_auto_yaw_rate_cds(void)
 }
 
 /*
+  return true if the quadplane should provide stability assistance
+ */
+bool QuadPlane::assistance_needed(float aspeed)
+{
+    if (assist_speed <= 0) {
+        // assistance disabled
+        in_angle_assist = false;
+        angle_error_start_ms = 0;
+        return false;
+    }
+    if (aspeed < assist_speed) {
+        // assistance due to Q_ASSIST_SPEED
+        in_angle_assist = false;
+        angle_error_start_ms = 0;
+        return true;
+    }
+
+    if (assist_angle <= 0) {
+        in_angle_assist = false;
+        angle_error_start_ms = 0;
+        return false;
+    }
+
+    /*
+      now check if we should provide assistance due to attitude error
+     */
+
+    const uint16_t allowed_envelope_error_cd = 500U;
+    if (labs(ahrs.roll_sensor) <= plane.aparm.roll_limit_cd+allowed_envelope_error_cd &&
+        ahrs.pitch_sensor < plane.aparm.pitch_limit_max_cd+allowed_envelope_error_cd &&
+        ahrs.pitch_sensor > -(plane.aparm.pitch_limit_min_cd+allowed_envelope_error_cd)) {
+        // we are inside allowed attitude envelope
+        in_angle_assist = false;
+        angle_error_start_ms = 0;
+        return false;
+    }
+    
+    uint32_t max_angle_cd = 100U*assist_angle;
+    if ((labs(ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd &&
+         labs(ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd)) {
+        // not beyond angle error
+        angle_error_start_ms = 0;
+        in_angle_assist = false;
+        return false;
+    }
+    if (angle_error_start_ms == 0) {
+        angle_error_start_ms = AP_HAL::millis();
+    }
+    bool ret = (AP_HAL::millis() - angle_error_start_ms) >= 1000U;
+    if (ret && !in_angle_assist) {
+        in_angle_assist = true;
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Angle assist r=%d p=%d",
+                                         (int)(ahrs.roll_sensor/100),
+                                         (int)(ahrs.pitch_sensor/100));
+    }
+    return ret;
+}
+
+/*
   update for transition from quadplane to fixed wing mode
  */
 void QuadPlane::update_transition(void)
@@ -893,7 +961,8 @@ void QuadPlane::update_transition(void)
     /*
       see if we should provide some assistance
      */
-    if (have_airspeed && aspeed < assist_speed &&
+    if (have_airspeed &&
+        assistance_needed(aspeed) &&
         (plane.auto_throttle_mode ||
          plane.channel_throttle->get_control_in()>0 ||
          plane.is_flying())) {
