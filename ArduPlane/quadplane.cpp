@@ -1078,7 +1078,7 @@ void QuadPlane::check_throttle_suppression(void)
  */
 void QuadPlane::motors_output(void)
 {
-    if (plane.afs.should_crash_vehicle()) {
+    if (!hal.util->get_soft_armed() || plane.afs.should_crash_vehicle()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
         return;
