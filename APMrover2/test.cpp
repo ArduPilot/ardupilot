@@ -9,23 +9,23 @@
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
 static const struct Menu::command test_menu_commands[] = {
-    {"pwm",				MENU_FUNC(test_radio_pwm)},
-    {"radio",			MENU_FUNC(test_radio)},
-    {"passthru",		MENU_FUNC(test_passthru)},
-    {"failsafe",		MENU_FUNC(test_failsafe)},
-    {"relay",			MENU_FUNC(test_relay)},
-    {"waypoints",		MENU_FUNC(test_wp)},
-    {"modeswitch",		MENU_FUNC(test_modeswitch)},
+    {"pwm",             MENU_FUNC(test_radio_pwm)},
+    {"radio",           MENU_FUNC(test_radio)},
+    {"passthru",        MENU_FUNC(test_passthru)},
+    {"failsafe",        MENU_FUNC(test_failsafe)},
+    {"relay",           MENU_FUNC(test_relay)},
+    {"waypoints",       MENU_FUNC(test_wp)},
+    {"modeswitch",      MENU_FUNC(test_modeswitch)},
 
     // Tests below here are for hardware sensors only present
     // when real sensors are attached or they are emulated
-    {"gps",			MENU_FUNC(test_gps)},
-    {"ins",			MENU_FUNC(test_ins)},
-    {"sonartest",	MENU_FUNC(test_sonar)},
-    {"compass",		MENU_FUNC(test_mag)},
-    {"logging",		MENU_FUNC(test_logging)},
+    {"gps",         MENU_FUNC(test_gps)},
+    {"ins",         MENU_FUNC(test_ins)},
+    {"sonartest",   MENU_FUNC(test_sonar)},
+    {"compass",     MENU_FUNC(test_mag)},
+    {"logging",     MENU_FUNC(test_logging)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    {"shell", 				MENU_FUNC(test_shell)},
+    {"shell",       MENU_FUNC(test_shell)},
 #endif
 };
 
@@ -85,7 +85,7 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
         if (hal.rcin->new_input()) {
             cliSerial->print("CH:");
             for (int i = 0; i < 8; i++) {
-                cliSerial->print(hal.rcin->read(i));	// Print channel values
+                cliSerial->print(hal.rcin->read(i));  // Print channel values
                 cliSerial->print(",");
                 hal.rcout->write(i, hal.rcin->read(i)); // Copy input to Servos
             }
@@ -332,7 +332,7 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 
         // We are using the IMU
         // ---------------------
-        Vector3f gyros 	= ins.get_gyro();
+        Vector3f gyros = ins.get_gyro();
         Vector3f accels = ins.get_accel();
         cliSerial->printf("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n",
                           (int)ahrs.roll_sensor / 100,

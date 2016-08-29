@@ -41,7 +41,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: RST_SWITCH_CH
     // @DisplayName: Reset Switch Channel
-    // @Description: RC channel to use to reset to last flight mode	after geofence takeover.
+    // @Description: RC channel to use to reset to last flight mode after geofence takeover.
     // @User: Advanced
     GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
 
@@ -435,7 +435,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,                "COMPASS_",	Compass),
+    GOBJECT(compass,                "COMPASS_", Compass),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp

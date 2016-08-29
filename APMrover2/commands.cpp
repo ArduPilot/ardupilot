@@ -3,10 +3,10 @@
 #include "Rover.h"
 
 /* Functions in this file:
-	void set_next_WP(const AP_Mission::Mission_Command& cmd)
-	void set_guided_WP(void)
-	void init_home()
-	void restart_nav()
+    void set_next_WP(const AP_Mission::Mission_Command& cmd)
+    void set_guided_WP(void)
+    void init_home()
+    void restart_nav()
 ************************************************************
 */
 
@@ -35,8 +35,8 @@ void Rover::set_next_WP(const struct Location& loc)
     }
 
     // this is handy for the groundstation
-    wp_totalDistance 	= get_distance(current_loc, next_WP);
-    wp_distance 		= wp_totalDistance;
+    wp_totalDistance     = get_distance(current_loc, next_WP);
+    wp_distance         = wp_totalDistance;
 }
 
 void Rover::set_guided_WP(void)
@@ -50,8 +50,8 @@ void Rover::set_guided_WP(void)
     next_WP = guided_WP;
 
     // this is handy for the groundstation
-    wp_totalDistance 	= get_distance(current_loc, next_WP);
-    wp_distance 		= wp_totalDistance;
+    wp_totalDistance     = get_distance(current_loc, next_WP);
+    wp_distance         = wp_totalDistance;
 }
 
 // run this at setup on the ground

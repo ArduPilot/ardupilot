@@ -203,13 +203,13 @@ public:
     };
 
     AP_Int16    format_version;
-    AP_Int8	    software_type;
+    AP_Int8     software_type;
 
     // Misc
     //
     AP_Int32    log_bitmask;
     AP_Int16    num_resets;
-    AP_Int8	    reset_switch_chan;
+    AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
 
     // braking
@@ -226,14 +226,14 @@ public:
 #endif
 
     // sensor parameters
-    AP_Int8	    compass_enabled;
+    AP_Int8     compass_enabled;
 
     // navigation parameters
     //
     AP_Float    speed_cruise;
     AP_Int8     speed_turn_gain;
     AP_Float    speed_turn_dist;
-    AP_Int8	    ch7_option;
+    AP_Int8     ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
     AP_Float    turn_max_g;
@@ -242,13 +242,13 @@ public:
 
     // RC channels
     RC_Channel      rc_1;
-    RC_Channel_aux	rc_2;
+    RC_Channel_aux  rc_2;
     RC_Channel      rc_3;
     RC_Channel_aux  rc_4;
-    RC_Channel_aux	rc_5;
-    RC_Channel_aux	rc_6;
-    RC_Channel_aux	rc_7;
-    RC_Channel_aux	rc_8;
+    RC_Channel_aux  rc_5;
+    RC_Channel_aux  rc_6;
+    RC_Channel_aux  rc_7;
+    RC_Channel_aux  rc_8;
     RC_Channel_aux  rc_9;
     RC_Channel_aux  rc_10;
     RC_Channel_aux  rc_11;
@@ -270,7 +270,7 @@ public:
     AP_Float    fs_timeout;
     AP_Int8     fs_throttle_enabled;
     AP_Int16    fs_throttle_value;
-    AP_Int8	    fs_gcs_enabled;
+    AP_Int8     fs_gcs_enabled;
 
     // obstacle control
     AP_Int16    sonar_trigger_cm;

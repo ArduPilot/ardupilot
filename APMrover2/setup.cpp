@@ -6,9 +6,9 @@
 
 // Command/function table for the setup menu
 static const struct Menu::command setup_menu_commands[] = {
-    // command			function called
-    // =======        	===============
-    {"erase",			MENU_FUNC(setup_erase)}
+    // command            function called
+    // =======            ===============
+    {"erase",             MENU_FUNC(setup_erase)}
 };
 
 // Create the setup menu object.
@@ -32,7 +32,7 @@ int8_t Rover::setup_mode(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::setup_erase(uint8_t argc, const Menu::arg *argv)
 {
-    int			c;
+    int c;
 
     cliSerial->printf("\nType 'Y' and hit Enter to erase all waypoint and parameter data, any other key to abort: ");
 

@@ -71,7 +71,7 @@ uint8_t Rover::readSwitch(void)
     if (pulsewidth <= 1749) {
         return 4;    // Software Manual
     }
-    return 5;	// Hardware Manual
+    return 5;  // Hardware Manual
 }
 
 void Rover::reset_control_switch()

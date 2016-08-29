@@ -14,10 +14,10 @@
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
 static const struct Menu::command log_menu_commands[] = {
-    {"dump",	MENU_FUNC(dump_log)},
-    {"erase",	MENU_FUNC(erase_logs)},
-    {"enable",	MENU_FUNC(select_logs)},
-    {"disable",	MENU_FUNC(select_logs)}
+    {"dump",     MENU_FUNC(dump_log)},
+    {"erase",    MENU_FUNC(erase_logs)},
+    {"enable",   MENU_FUNC(select_logs)},
+    {"disable",  MENU_FUNC(select_logs)}
 };
 
 // A Macro to create the Menu
@@ -34,7 +34,7 @@ bool Rover::print_log_menu(void)
         // Pass it the capitalised name of the log option, as defined
         // in defines.h but without the LOG_ prefix.  It will check for
         // the bit being set and print the name of the log option to suit.
-#define PLOG(_s)	if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", #_s)
+#define PLOG(_s)    if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", #_s)
         PLOG(ATTITUDE_FAST);
         PLOG(ATTITUDE_MED);
         PLOG(GPS);
@@ -95,7 +95,7 @@ int8_t Rover::erase_logs(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 {
-    uint16_t	bits;
+    uint16_t    bits;
 
     if (argc != 2) {
         cliSerial->printf("missing log type\n");
@@ -113,7 +113,7 @@ int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
     if (!strcasecmp(argv[1].str, "all")) {
         bits = ~0;
     } else {
-#define TARG(_s)	if (!strcasecmp(argv[1].str, #_s)) bits |= MASK_LOG_ ## _s
+#define TARG(_s)    if (!strcasecmp(argv[1].str, #_s)) bits |= MASK_LOG_ ## _s
         TARG(ATTITUDE_FAST);
         TARG(ATTITUDE_MED);
         TARG(GPS);

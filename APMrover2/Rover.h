@@ -42,16 +42,16 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <PID/PID.h>            // PID library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
-#include <AP_RangeFinder/AP_RangeFinder.h>	// Range finder library
-#include <Filter/Filter.h>			// Filter library
-#include <Filter/Butter.h>			// Filter library - butterworth filter
+#include <AP_RangeFinder/AP_RangeFinder.h>  // Range finder library
+#include <Filter/Filter.h>            // Filter library
+#include <Filter/Butter.h>            // Filter library - butterworth filter
 #include <AP_Buffer/AP_Buffer.h>      // FIFO buffer library
-#include <Filter/ModeFilter.h>		// Mode Filter from Filter library
-#include <Filter/AverageFilter.h>	// Mode Filter from Filter library
+#include <Filter/ModeFilter.h>        // Mode Filter from Filter library
+#include <Filter/AverageFilter.h>    // Mode Filter from Filter library
 #include <AP_Relay/AP_Relay.h>       // APM relay
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Mount/AP_Mount.h>		// Camera/Antenna mount
-#include <AP_Camera/AP_Camera.h>		// Camera triggering
+#include <AP_Mount/AP_Mount.h>        // Camera/Antenna mount
+#include <AP_Camera/AP_Camera.h>        // Camera triggering
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Airspeed/AP_Airspeed.h>    // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>     // needed for AHRS build
@@ -138,7 +138,7 @@ private:
     AP_Button button;
 
     // flight modes convenience array
-    AP_Int8	*modes;
+    AP_Int8 *modes;
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -273,7 +273,7 @@ private:
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
-    float 	ground_speed;
+    float ground_speed;
     int16_t throttle_last;
     int16_t throttle;
 
@@ -307,7 +307,7 @@ private:
     int32_t condition_value;
     // A starting value used to check the status of a conditional command.
     // For example in a delay command the condition_start records that start time for the delay
-    int32_t	condition_start;
+    int32_t condition_start;
 
     // 3D Location vectors
     // Location structure defined in AP_Common
@@ -331,7 +331,7 @@ private:
 
     // Performance monitoring
     // Timer used to accrue data and trigger recording of the performanc monitoring log message
-    int32_t	perf_mon_timer;
+    int32_t perf_mon_timer;
     // The maximum main loop execution time recorded in the current performance monitoring interval
     uint32_t G_Dt_max;
 
