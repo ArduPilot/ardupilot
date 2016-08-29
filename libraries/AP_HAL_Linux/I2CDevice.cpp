@@ -178,7 +178,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     i2c_data.nmsgs = nmsgs;
 
     int r;
-    unsigned retries = _retries;
+    uint8_t retries = _retries;
     do {
         r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
     } while (r == -1 && retries-- > 0);
@@ -217,7 +217,7 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
         };
 
         int r = -EINVAL;
-        unsigned retries = _retries;
+        uint8_t retries = _retries;
         do {
             r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
         } while (r < 0 && retries-- > 0);
