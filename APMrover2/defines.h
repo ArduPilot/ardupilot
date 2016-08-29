@@ -32,7 +32,7 @@ enum ch7_option {
 // ----------------
 enum mode {
     MANUAL=0,
-	LEARNING=2,
+    LEARNING=2,
     STEERING=3,
     HOLD=4,
     AUTO=10,

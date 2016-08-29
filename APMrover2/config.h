@@ -40,7 +40,7 @@
 // HIL_MODE                                 OPTIONAL
 
 #ifndef HIL_MODE
- #define HIL_MODE        HIL_MODE_DISABLED
+#define HIL_MODE        HIL_MODE_DISABLED
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

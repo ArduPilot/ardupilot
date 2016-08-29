@@ -140,9 +140,9 @@ private:
     // flight modes convenience array
     AP_Int8	*modes;
 
-// Inertial Navigation EKF
+    // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF EKF{&ahrs, barometer, sonar};
+    NavEKF EKF {&ahrs, barometer, sonar};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
     AP_AHRS_NavEKF ahrs {ins, barometer, gps, sonar, EKF, EKF2};
 #else
@@ -164,11 +164,11 @@ private:
     AP_Mission mission;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow {ahrs};
 #endif
-    
-    // RSSI 
-    AP_RSSI rssi;          
+
+    // RSSI
+    AP_RSSI rssi;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -219,7 +219,7 @@ private:
 
     // Failsafe
     // A tracking variable for type of failsafe active
-    // Used for failsafe based on loss of RC signal or GCS signal. See 
+    // Used for failsafe based on loss of RC signal or GCS signal. See
     // FAILSAFE_EVENT_*
     struct {
         uint8_t bits;
@@ -245,7 +245,7 @@ private:
     int32_t next_navigation_leg_cd;
 
     // ground speed error in m/s
-    float groundspeed_error;	
+    float groundspeed_error;
 
     // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
     int16_t     throttle_nudge;
@@ -263,7 +263,7 @@ private:
         float turn_angle;
         uint16_t sonar1_distance_cm;
         uint16_t sonar2_distance_cm;
-        
+
         // time when we last detected an obstacle, in milliseconds
         uint32_t detected_time_ms;
     } obstacle;
@@ -327,7 +327,7 @@ private:
     // IMU variables
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
-    float G_Dt;		
+    float G_Dt;
 
     // Performance monitoring
     // Timer used to accrue data and trigger recording of the performanc monitoring log message
@@ -336,7 +336,7 @@ private:
     uint32_t G_Dt_max;
 
     // System Timers
-    // Time in microseconds of start of main control loop. 
+    // Time in microseconds of start of main control loop.
     uint32_t fast_loopTimer_us;
     // Number of milliseconds used in last main loop cycle
     uint32_t delta_us_fast_loop;
@@ -370,13 +370,13 @@ private:
     bool auto_throttle_mode;
 
     // Store the time the last GPS message was received.
-    uint32_t last_gps_msg_ms{0}; 
+    uint32_t last_gps_msg_ms{0};
 
 private:
     // private member functions
     void ahrs_update();
     void mount_update(void);
-    void update_trigger(void);    
+    void update_trigger(void);
     void update_alt();
     void gcs_failsafe_check(void);
     void compass_accumulate(void);
@@ -496,7 +496,7 @@ private:
     void check_usb_mux(void);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
-    void print_hit_enter();    
+    void print_hit_enter();
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);

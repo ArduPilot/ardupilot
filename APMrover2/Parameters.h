@@ -22,7 +22,7 @@ public:
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
-		k_param_software_type,
+        k_param_software_type,
 
         // Misc
         //
@@ -58,7 +58,7 @@ public:
 
         // 100: Arming parameters
         k_param_arming = 100,
-                
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110, // stream rates for uartA
@@ -146,7 +146,7 @@ public:
         k_param_sonar2_old, // unused
         k_param_sonar_debounce,
         k_param_sonar, // sonar object
-        
+
         //
         // 210: driving modes
         //
@@ -200,10 +200,10 @@ public:
         k_param_DataFlash = 253, // Logging Group
 
         // 254,255: reserved
-        };
+    };
 
     AP_Int16    format_version;
-	AP_Int8	    software_type;
+    AP_Int8	    software_type;
 
     // Misc
     //
@@ -216,23 +216,23 @@ public:
     AP_Int8     braking_percent;
     AP_Float    braking_speederr;
 
-	// Telemetry control
-	//
-	AP_Int16    sysid_this_mav;
-	AP_Int16    sysid_my_gcs;
+    // Telemetry control
+    //
+    AP_Int16    sysid_this_mav;
+    AP_Int16    sysid_my_gcs;
     AP_Int8     telem_delay;
 #if CLI_ENABLED == ENABLED
     AP_Int8     cli_enabled;
 #endif
 
     // sensor parameters
-    AP_Int8	    compass_enabled; 
+    AP_Int8	    compass_enabled;
 
     // navigation parameters
     //
     AP_Float    speed_cruise;
     AP_Int8     speed_turn_gain;
-    AP_Float    speed_turn_dist;    
+    AP_Float    speed_turn_dist;
     AP_Int8	    ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
@@ -270,14 +270,14 @@ public:
     AP_Float    fs_timeout;
     AP_Int8     fs_throttle_enabled;
     AP_Int16    fs_throttle_value;
-	AP_Int8	    fs_gcs_enabled;
+    AP_Int8	    fs_gcs_enabled;
 
     // obstacle control
     AP_Int16    sonar_trigger_cm;
     AP_Float    sonar_turn_angle;
     AP_Float    sonar_turn_time;
     AP_Int8     sonar_debounce;
-    
+
 
     // driving modes
     //
@@ -289,7 +289,7 @@ public:
     AP_Int8     mode5;
     AP_Int8     mode6;
     AP_Int8     learn_channel;
-    
+
     // Waypoints
     //
     AP_Float    waypoint_radius;
@@ -317,8 +317,8 @@ public:
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-        pidSpeedThrottle    (0.7,             0.2,             0.2,             4000)
-        {}
+        pidSpeedThrottle(0.7,             0.2,             0.2,             4000)
+    {}
 };
 
 extern const AP_Param::Info var_info[];

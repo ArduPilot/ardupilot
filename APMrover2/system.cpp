@@ -21,14 +21,14 @@ int8_t Rover::main_menu_help(uint8_t argc, const Menu::arg *argv)
                       "\n"
                       "Move the slide switch and reset to FLY.\n"
                       "\n");
-    return(0);
+    return (0);
 }
 
 // Command/function table for the top-level menu.
 
 static const struct Menu::command main_menu_commands[] = {
-//   command        function called
-//   =======        ===============
+    //   command        function called
+    //   =======        ===============
     {"logs",        MENU_FUNC(process_logs)},
     {"setup",       MENU_FUNC(setup_mode)},
     {"test",        MENU_FUNC(test_mode)},
@@ -101,7 +101,7 @@ void Rover::init_ardupilot()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-    
+
     BoardConfig.init();
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
@@ -215,10 +215,10 @@ void Rover::startup_ground(void)
 
     gcs_send_text(MAV_SEVERITY_INFO,"<startup_ground> Ground start");
 
-    #if(GROUND_START_DELAY > 0)
-        gcs_send_text(MAV_SEVERITY_NOTICE,"<startup_ground> With delay");
-        delay(GROUND_START_DELAY * 1000);
-    #endif
+#if(GROUND_START_DELAY > 0)
+    gcs_send_text(MAV_SEVERITY_NOTICE,"<startup_ground> With delay");
+    delay(GROUND_START_DELAY * 1000);
+#endif
 
     //IMU ground start
     //------------------------
@@ -262,7 +262,7 @@ void Rover::set_reverse(bool reverse)
 void Rover::set_mode(enum mode mode)
 {
 
-    if (control_mode == mode){
+    if (control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
         return;
     }
@@ -280,12 +280,12 @@ void Rover::set_mode(enum mode mode)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode);
 #endif
-    
+
     if (control_mode != AUTO) {
         auto_triggered = false;
     }
 
-    switch(control_mode) {
+    switch (control_mode) {
     case MANUAL:
     case HOLD:
     case LEARNING:
@@ -412,7 +412,8 @@ void Rover::update_notify()
     notify.update();
 }
 
-void Rover::resetPerfData(void) {
+void Rover::resetPerfData(void)
+{
     mainLoop_count = 0;
     G_Dt_max = 0;
     perf_mon_timer = millis();
