@@ -57,7 +57,7 @@ bool Rover::auto_check_trigger(void)
     if (!is_zero(g.auto_kickstart)) {
         float xaccel = ins.get_accel().x;
         if (xaccel >= g.auto_kickstart) {
-            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Triggered AUTO xaccel=%.1f", (double)xaccel);
+            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Triggered AUTO xaccel=%.1f", static_cast<double>(xaccel));
             auto_triggered = true;
             return true;
         }

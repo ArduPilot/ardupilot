@@ -1148,18 +1148,18 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                     break;
                 }
                 Location new_home_loc {};
-                new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-                new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-                new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+                new_home_loc.lat = static_cast<int32_t>(packet.param5 * 1.0e7f);
+                new_home_loc.lng = static_cast<int32_t>(packet.param6 * 1.0e7f);
+                new_home_loc.alt = static_cast<int32_t>(packet.param7 * 100.0f);
                 rover.ahrs.set_home(new_home_loc);
                 rover.home_is_set = HOME_SET_NOT_LOCKED;
                 rover.Log_Write_Home_And_Origin();
                 GCS_MAVLINK::send_home_all(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
                 rover.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                        (double)(new_home_loc.lat*1.0e-7f),
-                                        (double)(new_home_loc.lng*1.0e-7f),
-                                        (uint32_t)(new_home_loc.alt*0.01f));
+                                        static_cast<double>(new_home_loc.lat * 1.0e-7f),
+                                        static_cast<double>(new_home_loc.lng * 1.0e-7f),
+                                        static_cast<uint32_t>(new_home_loc.alt * 0.01f));
             }
             break;
         }
@@ -1618,7 +1618,7 @@ void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
+    hal.util->vsnprintf(reinterpret_cast<char *>(str), sizeof(str), fmt, arg_list);
     va_end(arg_list);
     GCS_MAVLINK::send_statustext(severity, 0xFF, str);
 }

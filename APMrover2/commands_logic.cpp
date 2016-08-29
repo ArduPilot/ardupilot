@@ -336,7 +336,7 @@ void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
         g.speed_cruise.set(cmd.content.speed.target_ms);
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", (double)g.speed_cruise.get());
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", static_cast<double>(g.speed_cruise.get()));
     }
 
     if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
