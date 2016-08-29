@@ -110,7 +110,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Advanced
     // @Units: seconds
-    // @Range: 0 10
+    // @Range: 0 30
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
