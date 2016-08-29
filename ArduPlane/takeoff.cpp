@@ -225,3 +225,19 @@ return_zero:
     return 0;
 }
 
+
+/*
+  called when an auto-takeoff is complete
+ */
+void Plane::complete_auto_takeoff(void)
+{
+#if GEOFENCE_ENABLED == ENABLED
+    if (g.fence_autoenable > 0) {
+        if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
+            gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
+        } else {
+            gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
+        }
+    }
+#endif
+}

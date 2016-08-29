@@ -548,15 +548,7 @@ bool Plane::verify_takeoff()
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
 
-#if GEOFENCE_ENABLED == ENABLED
-        if (g.fence_autoenable > 0) {
-            if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
-                gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
-            } else {
-                gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
-            }
-        }
-#endif
+        plane.complete_auto_takeoff();
 
         // don't cross-track on completion of takeoff, as otherwise we
         // can end up doing too sharp a turn
