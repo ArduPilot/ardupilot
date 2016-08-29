@@ -32,7 +32,7 @@ void Rover::read_receiver_rssi(void)
     receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
-//Calibrate compass
+// Calibrate compass
 void Rover::compass_cal_update()
 {
     if (!hal.util->get_soft_armed()) {
@@ -49,7 +49,7 @@ void Rover::accel_cal_update()
     }
     ins.acal_update();
     // check if new trim values, and set them    float trim_roll, trim_pitch;
-    float trim_roll,trim_pitch;
+    float trim_roll, trim_pitch;
     if (ins.get_new_trim(trim_roll, trim_pitch)) {
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }

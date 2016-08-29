@@ -187,7 +187,7 @@
 // AIRSPEED_CRUISE
 //
 #ifndef SPEED_CRUISE
-# define SPEED_CRUISE        5 // in m/s
+# define SPEED_CRUISE        5  // in m/s
 #endif
 
 #ifndef TURN_GAIN
@@ -198,7 +198,7 @@
 // Servo Mapping
 //
 #ifndef THROTTLE_MIN
-# define THROTTLE_MIN            0 // percent
+# define THROTTLE_MIN            0  // percent
 #endif
 #ifndef THROTTLE_CRUISE
 # define THROTTLE_CRUISE        45

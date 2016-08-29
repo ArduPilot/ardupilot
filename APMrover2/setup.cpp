@@ -54,4 +54,4 @@ void Rover::zero_eeprom(void)
     cliSerial->printf("done\n");
 }
 
-#endif // CLI_ENABLED
+#endif  // CLI_ENABLED

@@ -32,7 +32,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
+#include <AP_InertialSensor/AP_InertialSensor.h>  // Inertial Sensor (uncalibated IMU) Library
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <AP_NavEKF/AP_NavEKF.h>
@@ -69,7 +69,7 @@
 #include "compat.h"
 
 #include <AP_Notify/AP_Notify.h>      // Notify library
-#include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
+#include <AP_BattMonitor/AP_BattMonitor.h>  // Battery monitor library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <AP_Button/AP_Button.h>
@@ -82,7 +82,7 @@
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 
-#include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_Declination/AP_Declination.h>  // ArduPilot Mega Declination Helper Library
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -358,9 +358,9 @@ private:
     static const LogStructure log_structure[];
 
     // Loiter control
-    uint16_t loiter_time_max; // How long we should loiter at the nav_waypoint (time in seconds)
+    uint16_t loiter_time_max;  // How long we should loiter at the nav_waypoint (time in seconds)
     uint32_t loiter_time;     // How long have we been loitering - The start time in millis
-    float distance_past_wp; // record the distance we have gone past the wp
+    float distance_past_wp;  // record the distance we have gone past the wp
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
@@ -425,7 +425,7 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
-    void start_logging() ;
+    void start_logging();
     void Log_Arm_Disarm();
 
     void load_parameters(void);

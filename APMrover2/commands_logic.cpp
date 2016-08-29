@@ -17,7 +17,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing command ID #%i",cmd.id);
+    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing command ID #%i", cmd.id);
 
     // remember the course of our next navigation leg
     next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
@@ -175,7 +175,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
             // this is a command that doesn't require verify
             return true;
         }
-        gcs_send_text(MAV_SEVERITY_CRITICAL,"Verify condition. Unsupported command");
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "Verify condition. Unsupported command");
         return true;
     }
     return false;
@@ -210,7 +210,7 @@ void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     Location cmdloc = cmd.content.location;
     location_sanitize(current_loc, cmdloc);
     set_next_WP(cmdloc);
-    loiter_time_max = 100; // an arbitrary large loiter time
+    loiter_time_max = 100;  // an arbitrary large loiter time
     distance_past_wp = 0;
 }
 
@@ -268,7 +268,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 bool Rover::verify_RTL()
 {
     if (wp_distance <= g.waypoint_radius) {
-        gcs_send_text(MAV_SEVERITY_INFO,"Reached destination");
+        gcs_send_text(MAV_SEVERITY_INFO, "Reached destination");
         rtl_complete = true;
         return true;
     }

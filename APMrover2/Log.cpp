@@ -145,7 +145,7 @@ int8_t Rover::process_logs(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-#endif // CLI_ENABLED == ENABLED
+#endif  // CLI_ENABLED == ENABLED
 
 void Rover::do_erase_logs(void)
 {
@@ -306,15 +306,15 @@ xtrack_error        :
 // Write an attitude packet
 void Rover::Log_Write_Attitude()
 {
-    Vector3f targets(0,0,0);       // Rover does not have attitude targets, use place-holder for commonality with Dataflash Log_Write_Attitude message
+    Vector3f targets(0, 0, 0);    // Rover does not have attitude targets, use place-holder for commonality with Dataflash Log_Write_Attitude message
 
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 #if defined(OPTFLOW) and (OPTFLOW == ENABLED)
-    DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
+    DataFlash.Log_Write_EKF(ahrs, optflow.enabled());
 #else
-    DataFlash.Log_Write_EKF(ahrs,false);
+    DataFlash.Log_Write_EKF(ahrs, false);
 #endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
@@ -471,7 +471,7 @@ void Rover::log_init(void)
         gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
         DataFlash.Prep();
         gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
-        for (uint8_t i=0; i<num_gcs; i++) {
+        for (uint8_t i=0; i < num_gcs; i++) {
             gcs[i].reset_cli_timeout();
         }
     }
@@ -497,7 +497,7 @@ void Rover::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page
                              FUNCTOR_BIND_MEMBER(&Rover::print_mode, void, AP_HAL::BetterStream *, uint8_t),
                              cliSerial);
 }
-#endif // CLI_ENABLED
+#endif  // CLI_ENABLED
 
 void Rover::Log_Write_Vehicle_Startup_Messages()
 {
@@ -512,13 +512,12 @@ void Rover::start_logging()
     in_mavlink_delay = true;
     DataFlash.set_mission(&mission);
     DataFlash.setVehicle_Startup_Log_Writer(
-        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
-    );
+        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void));
     DataFlash.StartNewLog();
     in_mavlink_delay = false;
 }
 
-#else // LOGGING_ENABLED
+#else  // LOGGING_ENABLED
 
 // dummy functions
 void Rover::Log_Write_Startup(uint8_t type) {}
@@ -535,4 +534,4 @@ void Rover::Log_Write_Attitude() {}
 void Rover::start_logging() {}
 void Rover::Log_Write_RC(void) {}
 
-#endif // LOGGING_ENABLED
+#endif  // LOGGING_ENABLED

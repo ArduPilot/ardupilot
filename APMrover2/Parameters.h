@@ -26,7 +26,7 @@ public:
 
         // Misc
         //
-        k_param_log_bitmask_old = 10, // unused
+        k_param_log_bitmask_old = 10,  // unused
         k_param_num_resets,
         k_param_reset_switch_chan,
         k_param_initial_mode,
@@ -61,15 +61,15 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110, // stream rates for uartA
-        k_param_gcs1,       // stream rates for uartC
+        k_param_gcs0 = 110,  // stream rates for uartA
+        k_param_gcs1,        // stream rates for uartC
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
         k_param_serial0_baud_old,
         k_param_serial1_baud_old,
         k_param_telem_delay,
-        k_param_skip_gyro_cal, // unused
-        k_param_gcs2,       // stream rates for uartD
+        k_param_skip_gyro_cal,  // unused
+        k_param_gcs2,           // stream rates for uartD
         k_param_serial2_baud_old,
         k_param_serial2_protocol,   // deprecated, can be deleted
         k_param_serial_manager,     // serial manager library
@@ -81,17 +81,17 @@ public:
         // 130: Sensor parameters
         //
         k_param_compass_enabled = 130,
-        k_param_steering_learn, // unused
-        k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
-        k_param_mission, // mission library
-        k_param_NavEKF2_old, // deprecated
+        k_param_steering_learn,  // unused
+        k_param_NavEKF,   // Extended Kalman Filter Inertial Navigation Group
+        k_param_mission,  // mission library
+        k_param_NavEKF2_old,  // deprecated
         k_param_NavEKF2,
 
         // 140: battery controls
         k_param_battery_monitoring = 140,   // deprecated, can be deleted
         k_param_volt_div_ratio,     // deprecated, can be deleted
         k_param_curr_amp_per_volt,  // deprecated, can be deleted
-        k_param_input_voltage, // deprecated, can be deleted
+        k_param_input_voltage,      // deprecated, can be deleted
         k_param_pack_capacity,      // deprecated, can be deleted
         k_param_battery,
 
@@ -106,7 +106,7 @@ public:
         k_param_ch7_option,
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
-        k_param_turn_circle, // unused
+        k_param_turn_circle,  // unused
         k_param_turn_max_g,
 
         //
@@ -138,14 +138,14 @@ public:
         k_param_fs_gcs_enabled,
 
         // obstacle control
-        k_param_sonar_enabled = 190, // deprecated, can be removed
-        k_param_sonar_old, // unused
+        k_param_sonar_enabled = 190,  // deprecated, can be removed
+        k_param_sonar_old,            // unused
         k_param_sonar_trigger_cm,
         k_param_sonar_turn_angle,
         k_param_sonar_turn_time,
-        k_param_sonar2_old, // unused
+        k_param_sonar2_old,           // unused
         k_param_sonar_debounce,
-        k_param_sonar, // sonar object
+        k_param_sonar,                // sonar object
 
         //
         // 210: driving modes
@@ -176,7 +176,7 @@ public:
         //
         // 240: PID Controllers
         k_param_pidNavSteer = 230,
-        k_param_pidServoSteer, // unused
+        k_param_pidServoSteer,  // unused
         k_param_pidSpeedThrottle,
 
         // high RC channels
@@ -197,7 +197,7 @@ public:
         k_param_notify,
         k_param_button,
 
-        k_param_DataFlash = 253, // Logging Group
+        k_param_DataFlash = 253,  // Logging Group
 
         // 254,255: reserved
     };

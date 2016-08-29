@@ -87,7 +87,7 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
             for (int i = 0; i < 8; i++) {
                 cliSerial->print(hal.rcin->read(i));  // Print channel values
                 cliSerial->print(",");
-                hal.rcout->write(i, hal.rcin->read(i)); // Copy input to Servos
+                hal.rcout->write(i, hal.rcin->read(i));  // Copy input to Servos
             }
             cliSerial->println();
         }
@@ -219,7 +219,7 @@ int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 
     for (uint8_t i = 0; i < mission.num_commands(); i++) {
         AP_Mission::Mission_Command temp_cmd;
-        if (mission.read_cmd_from_storage(i,temp_cmd)) {
+        if (mission.read_cmd_from_storage(i, temp_cmd)) {
             test_wp_print(temp_cmd);
         }
     }
@@ -305,7 +305,7 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 {
-    //cliSerial->printf("Calibrating.");
+    // cliSerial->printf("Calibrating.");
     ahrs.init();
     ahrs.set_fly_forward(true);
 
@@ -399,7 +399,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
         }
 
         counter++;
-        if (counter>20) {
+        if (counter > 20) {
             if (compass.healthy()) {
                 const Vector3f mag_ofs = compass.get_offsets();
                 const Vector3f mag = compass.get_field();
@@ -410,7 +410,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
             } else {
                 cliSerial->println("compass not healthy");
             }
-            counter=0;
+            counter = 0;
         }
         if (cliSerial->available() > 0) {
             break;
@@ -441,10 +441,10 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
 
     float sonar_dist_cm_min = 0.0f;
     float sonar_dist_cm_max = 0.0f;
-    float voltage_min=0.0f, voltage_max = 0.0f;
+    float voltage_min = 0.0f, voltage_max = 0.0f;
     float sonar2_dist_cm_min = 0.0f;
     float sonar2_dist_cm_max = 0.0f;
-    float voltage2_min=0.0f, voltage2_max = 0.0f;
+    float voltage2_min = 0.0f, voltage2_max = 0.0f;
     uint32_t last_print = 0;
 
     while (true) {
@@ -499,7 +499,7 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 /*
- *  run a debug shell
+ *  Run a debug shell
  */
 int8_t Rover::test_shell(uint8_t argc, const Menu::arg *argv)
 {
@@ -508,4 +508,4 @@ int8_t Rover::test_shell(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
-#endif // CLI_ENABLED
+#endif  // CLI_ENABLED

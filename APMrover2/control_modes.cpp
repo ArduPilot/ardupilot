@@ -93,7 +93,7 @@ void Rover::read_trim_switch()
         if (channel_learn->get_radio_in() > CH_7_PWM_TRIGGER) {
             // switch is engaged
             ch7_flag = true;
-        } else { // switch is disengaged
+        } else {  // switch is disengaged
             if (ch7_flag) {
                 ch7_flag = false;
 

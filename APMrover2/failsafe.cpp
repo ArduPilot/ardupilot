@@ -44,7 +44,7 @@ void Rover::failsafe_check()
         last_timestamp = tnow;
         hal.rcin->clear_overrides();
         uint8_t start_ch = 0;
-        for (uint8_t ch=start_ch; ch<4; ch++) {
+        for (uint8_t ch=start_ch; ch < 4; ch++) {
             hal.rcout->write(ch, hal.rcin->read(ch));
         }
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);

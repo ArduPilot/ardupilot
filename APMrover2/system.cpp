@@ -49,7 +49,7 @@ int8_t Rover::reboot_board(uint8_t argc, const Menu::arg *argv)
 void Rover::run_cli(AP_HAL::UARTDriver *port)
 {
     // disable the failsafe code in the CLI
-    hal.scheduler->register_timer_failsafe(NULL,1);
+    hal.scheduler->register_timer_failsafe(NULL, 1);
 
     // disable the mavlink delay callback
     hal.scheduler->register_delay_callback(NULL, 5);
@@ -63,7 +63,7 @@ void Rover::run_cli(AP_HAL::UARTDriver *port)
     }
 }
 
-#endif // CLI_ENABLED
+#endif  // CLI_ENABLED
 
 static void mavlink_delay_cb_static()
 {
@@ -138,13 +138,13 @@ void Rover::init_ardupilot()
     log_init();
 #endif
 
-    if (g.compass_enabled==true) {
+    if (g.compass_enabled == true) {
         if (!compass.init()|| !compass.read()) {
             cliSerial->println("Compass initialisation failed!");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
-            //compass.get_offsets();                        // load offsets to account for airframe magnetic interference
+            // compass.get_offsets();                        // load offsets to account for airframe magnetic interference
         }
     }
 
@@ -206,21 +206,21 @@ void Rover::init_ardupilot()
     reset_control_switch();
 }
 
-//********************************************************************************
-//This function does all the calibrations, etc. that we need during a ground start
-//********************************************************************************
+//*********************************************************************************
+// This function does all the calibrations, etc. that we need during a ground start
+//*********************************************************************************
 void Rover::startup_ground(void)
 {
     set_mode(INITIALISING);
 
-    gcs_send_text(MAV_SEVERITY_INFO,"<startup_ground> Ground start");
+    gcs_send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
 
 #if(GROUND_START_DELAY > 0)
-    gcs_send_text(MAV_SEVERITY_NOTICE,"<startup_ground> With delay");
+    gcs_send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
     delay(GROUND_START_DELAY * 1000);
 #endif
 
-    //IMU ground start
+    // IMU ground start
     //------------------------
     //
 
@@ -240,7 +240,7 @@ void Rover::startup_ground(void)
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
 
-    gcs_send_text(MAV_SEVERITY_INFO,"Ready to drive");
+    gcs_send_text(MAV_SEVERITY_INFO, "Ready to drive");
 }
 
 /*
@@ -537,7 +537,7 @@ bool Rover::disarm_motors(void)
         mission.reset();
     }
 
-    //only log if disarming was successful
+    // only log if disarming was successful
     change_arm_state();
 
     return true;

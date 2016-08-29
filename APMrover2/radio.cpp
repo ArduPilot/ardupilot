@@ -34,7 +34,7 @@ void Rover::init_rc_in()
     channel_steer->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
 
-    //set auxiliary ranges
+    // set auxiliary ranges
     update_aux();
 }
 
@@ -97,7 +97,7 @@ void Rover::rudder_arm_disarm_check()
                     rudder_arm_timer = now;
                 }
             } else {
-                //time to arm!
+                // time to arm!
                 arm_motors(AP_Arming::RUDDER);
                 rudder_arm_timer = 0;
             }
@@ -118,7 +118,7 @@ void Rover::rudder_arm_disarm_check()
                     rudder_arm_timer = now;
                 }
             } else {
-                //time to disarm!
+                // time to disarm!
                 disarm_motors();
                 rudder_arm_timer = 0;
             }

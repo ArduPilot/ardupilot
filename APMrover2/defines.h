@@ -20,8 +20,8 @@
 
 // CH 7 control
 enum ch7_option {
-    CH7_DO_NOTHING=0,
-    CH7_SAVE_WP=1
+    CH7_DO_NOTHING = 0,
+    CH7_SAVE_WP = 1
 };
 
 // HIL enumerations
@@ -31,14 +31,14 @@ enum ch7_option {
 // Auto Pilot modes
 // ----------------
 enum mode {
-    MANUAL=0,
-    LEARNING=2,
-    STEERING=3,
-    HOLD=4,
-    AUTO=10,
-    RTL=11,
-    GUIDED=15,
-    INITIALISING=16
+    MANUAL = 0,
+    LEARNING = 2,
+    STEERING = 3,
+    HOLD = 4,
+    AUTO = 10,
+    RTL = 11,
+    GUIDED = 15,
+    INITIALISING = 16
 };
 
 // types of failsafe events
