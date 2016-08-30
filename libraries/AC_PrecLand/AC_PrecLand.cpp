@@ -67,7 +67,7 @@ void AC_PrecLand::init()
             _backend = new AC_PrecLand_Companion(*this, _backend_state);
             break;
         // IR Lock
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
         case PRECLAND_TYPE_IRLOCK:
             _backend = new AC_PrecLand_IRLock(*this, _backend_state);
             break;
