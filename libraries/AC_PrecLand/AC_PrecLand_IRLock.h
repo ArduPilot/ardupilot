@@ -6,7 +6,9 @@
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
 #include <AP_IRLock/AP_IRLock.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_IRLock/AP_IRLock_SITL.h>
+#endif
 
 // this only builds for PX4 so far
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
