@@ -217,13 +217,13 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
             recv += recv_len;
         };
 
-        int r = -EINVAL;
+        int r;
         unsigned retries = _retries;
         do {
             r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
-        } while (r < 0 && retries-- > 0);
+        } while (r == -1 && retries-- > 0);
 
-        if (r < 0) {
+        if (r == -1) {
             return false;
         }
 
