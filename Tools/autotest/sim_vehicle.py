@@ -17,7 +17,7 @@ import subprocess
 import sys
 import tempfile
 import time
-
+import shlex
 
 # List of open terminal windows for macosx
 windowID = []
@@ -239,6 +239,8 @@ group_build.add_option("-j", "--jobs", default=None, type='int', help="number of
 group_build.add_option("-b", "--build-target", default=None, type='string', help="override SITL build target")
 group_build.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help="build system to use")
 group_build.add_option("", "--no-rebuild-on-failure", dest="rebuild_on_failure", action='store_false', default=True, help="if build fails, do not clean and rebuild")
+group_build.add_option("", "--waf-configure-arg", action="append", dest="waf_configure_args", type="string", default=[], help="extra arguments to pass to waf in its configure step")
+group_build.add_option("", "--waf-build-arg", action="append", dest="waf_build_args", type="string", default=[], help="extra arguments to pass to waf in its build step")
 parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -535,8 +537,11 @@ def do_build_waf(opts, frame_options):
     cmd_configure = [waf_light, "configure", "--board", "sitl"]
     if opts.debug:
         cmd_configure.append("--debug")
+    pieces = [ shlex.split(x) for x in opts.waf_configure_args ]
+    for piece in pieces:
+        cmd_configure.extend(piece)
 
-    run_cmd_blocking("Configure waf", cmd_configure)
+    run_cmd_blocking("Configure waf", cmd_configure, check=True)
 
     if opts.clean:
         run_cmd_blocking("Building clean", [waf_light, "clean"])
@@ -544,6 +549,9 @@ def do_build_waf(opts, frame_options):
     cmd_build = [waf_light, "build", "--target", frame_options["waf_target"]]
     if opts.jobs is not None:
         cmd_build += ['-j', str(opts.jobs)]
+    pieces = [ shlex.split(x) for x in opts.waf_build_args ]
+    for piece in pieces:
+        cmd_build.extend(piece)
 
     _, sts = run_cmd_blocking("Building", cmd_build)
 
@@ -615,11 +623,16 @@ def progress_cmd(what, cmd):
     progress(shell_text)
 
 
-def run_cmd_blocking(what, cmd, quiet=False, **kw):
+def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     if not quiet:
         progress_cmd(what, cmd)
     p = subprocess.Popen(cmd, **kw)
-    return os.waitpid(p.pid, 0)
+    ret = os.waitpid(p.pid, 0)
+    _, sts = ret
+    if check and sts != 0:
+        progress("(%s) exited with code %d" % (what,sts,))
+        sys.exit(1)
+    return ret
 
 
 def run_in_terminal_window(autotest, name, cmd):
