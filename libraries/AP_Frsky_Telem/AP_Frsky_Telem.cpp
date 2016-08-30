@@ -617,7 +617,7 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
     // GPS vertical dilution of precision in dm
     gps_status |= prep_number(roundf(_ahrs.get_gps().get_vdop() * 0.1f),2,1)<<GPS_VDOP_OFFSET; 
     // Altitude MSL in dm
-    Location loc = _ahrs.get_gps().location();
+    const Location &loc = _ahrs.get_gps().location();
     gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET; 
     return gps_status;
 }
@@ -836,7 +836,7 @@ void AP_Frsky_Telem::calc_gps_position(void)
     float speed;
 
     if (_ahrs.get_gps().status() >= 3) {
-        Location loc = _ahrs.get_gps().location(); //get gps instance 0
+        const Location &loc = _ahrs.get_gps().location(); //get gps instance 0
         lat = format_gps(fabsf(loc.lat/10000000.0f));
         _gps.latdddmm = lat;
         _gps.latmmmm = (lat - _gps.latdddmm) * 10000;
