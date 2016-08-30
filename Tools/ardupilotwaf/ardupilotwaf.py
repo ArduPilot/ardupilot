@@ -2,20 +2,19 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Logs, Options, Utils
-from waflib.Build import BuildContext
+from waflib import Build, Logs, Options, Utils
 from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature
 import os.path, os
 from collections import OrderedDict
+
+import ap_persistent
 
 SOURCE_EXTS = [
     '*.S',
     '*.c',
     '*.cpp',
 ]
-
-UTILITY_SOURCE_EXTS = [ 'utility/' + glob for glob in SOURCE_EXTS ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_AccelCal',
@@ -147,17 +146,6 @@ def ap_example(bld, **kw):
     kw['program_groups'] = 'examples'
     ap_program(bld, use_legacy_defines=False, **kw)
 
-# NOTE: Code in libraries/ is compiled multiple times. So ensure each
-# compilation is independent by providing different index for each.
-# The need for this should disappear when libraries change to be
-# independent of vehicle type.
-LAST_IDX = 0
-
-def _get_next_idx():
-    global LAST_IDX
-    LAST_IDX += 1
-    return LAST_IDX
-
 def unique_list(items):
     '''remove duplicate elements from a list while maintaining ordering'''
     return list(OrderedDict.fromkeys(items))
@@ -171,22 +159,13 @@ def ap_stlib(bld, **kw):
     if 'ap_libraries' not in kw:
         bld.fatal('Missing ap_libraries for ap_stlib')
 
-    sources = []
-    libraries = unique_list(kw['ap_libraries'] + bld.env.AP_LIBRARIES)
+    kw['ap_libraries'] = unique_list(kw['ap_libraries'] + bld.env.AP_LIBRARIES)
+    for l in kw['ap_libraries']:
+        bld.ap_library(l, kw['ap_vehicle'])
 
-    for lib_name in libraries:
-        lib_node = bld.srcnode.find_dir('libraries/' + lib_name)
-        if lib_node is None:
-            bld.fatal('Could not find library ' + lib_name)
-        lib_sources = lib_node.ant_glob(SOURCE_EXTS + UTILITY_SOURCE_EXTS)
-        sources.extend(lib_sources)
-
-    kw['cxxflags'] = kw.get('cxxflags', []) + ['-include', 'ap_config.h']
-    kw['features'] = kw.get('features', []) + bld.env.AP_STLIB_FEATURES
-    kw['source'] = sources
+    kw['features'] = kw.get('features', []) + ['cxx', 'cxxstlib']
     kw['target'] = kw['name']
-    kw['defines'] = get_legacy_defines(kw['ap_vehicle'])
-    kw['idx'] = _get_next_idx()
+    kw['source'] = []
 
     bld.stlib(**kw)
 
@@ -339,7 +318,7 @@ def build_command(name,
         program_group_list=program_group_list,
     )
 
-    class context_class(BuildContext):
+    class context_class(Build.BuildContext):
         cmd = name
     context_class.__doc__ = doc
 
@@ -368,6 +347,13 @@ def _select_programs_from_group(bld):
             bld.targets += ',' + tg.name
 
 def options(opt):
+    opt.ap_groups = {
+        'configure': opt.add_option_group('Ardupilot configure options'),
+        'build': opt.add_option_group('Ardupilot build options'),
+        'check': opt.add_option_group('Ardupilot check options'),
+        'clean': opt.add_option_group('Ardupilot clean options'),
+    }
+
     g = opt.ap_groups['build']
 
     g.add_option('--program-group',
@@ -393,12 +379,18 @@ my board".
         action='store_true',
         help='Output all test programs.')
 
+    g = opt.ap_groups['clean']
+
+    g.add_option('--clean-all-sigs',
+        action='store_true',
+        help='''
+Clean signatures for all tasks. By default, tasks that scan for implicit
+dependencies (like the compilation tasks) keep the dependency information
+across clean commands, so that that information is changed only when really
+necessary. Also, some tasks that don't really produce files persist their
+signature. This option avoids that behavior when cleaning the build.
+''')
 
 def build(bld):
-    global LAST_IDX
-    # FIXME: This is done to prevent same task generators being created with
-    # different idx when build() is called multiple times (e.g. waf bin tests).
-    # Ideally, task generators should be created just once.
-    LAST_IDX = 0
     bld.add_pre_fun(_process_build_command)
     bld.add_pre_fun(_select_programs_from_group)

@@ -80,7 +80,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Standard
     // @Units: seconds
-    // @Range: 0 10
+    // @Range: 0 30
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
@@ -92,7 +92,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Bitmask: 0:Steering,1:Throttle
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
-    // @Param: MAG_ENABLED
+    // @Param: MAG_ENABLE
     // @DisplayName: Enable Compass
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
     // @User: Standard
@@ -122,7 +122,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-	GSCALAR(speed_cruise,        "CRUISE_SPEED",    5),
+	GSCALAR(speed_cruise,        "CRUISE_SPEED",    SPEED_CRUISE),
 
     // @Param: SPEED_TURN_GAIN
     // @DisplayName: Target speed reduction while turning

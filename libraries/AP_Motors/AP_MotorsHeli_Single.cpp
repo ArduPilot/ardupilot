@@ -423,7 +423,8 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         if ((_main_rotor.get_control_output() > _main_rotor.get_idle_output()) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
-            yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_mid_pct);
+            // the 4.5 scaling factor is to bring the values in line with previous releases
+            yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_mid_pct) / 4.5f;
         }
     } else {
         yaw_offset = 0.0f;

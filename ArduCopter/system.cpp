@@ -110,10 +110,19 @@ void Copter::init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
-    BoardConfig.init();
+    GCS_MAVLINK::set_dataflash(&DataFlash);
 
-    // initialise serial port
+    // initialise serial ports
     serial_manager.init();
+
+    // setup first port early to allow BoardConfig to report errors
+    gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+
+    // Register mavlink_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+    
+    BoardConfig.init();
 
     // init EPM cargo gripper
 #if EPM_ENABLED == ENABLED
@@ -132,24 +141,21 @@ void Copter::init_ardupilot()
     
     barometer.init();
 
-    // Register the mavlink service callback. This will run
-    // anytime there are more than 5ms remaining in a call to
-    // hal.scheduler->delay.
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
     ap.usb_connected = true;
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         gcs[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
 
 #if FRSKY_TELEM_ENABLED == ENABLED
-    // setup frsky
-    frsky_telemetry.init(serial_manager);
+    // setup frsky, and pass a number of parameters to the library
+    frsky_telemetry.init(serial_manager, FIRMWARE_STRING " " FRAME_CONFIG_STRING,
+                         FRAME_MAV_TYPE,
+                         &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value, &home_distance, &home_bearing);
 #endif
 
     // identify ourselves correctly with the ground station
@@ -158,8 +164,6 @@ void Copter::init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
-
-    GCS_MAVLINK::set_dataflash(&DataFlash);
 
     // update motor interlock state
     update_using_interlock();
@@ -423,15 +427,6 @@ void Copter::check_usb_mux(void)
     // the user has switched to/from the telemetry port
     ap.usb_connected = usb_check;
 }
-
-// frsky_telemetry_send - sends telemetry data using frsky telemetry
-//  should be called at 5Hz by scheduler
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Copter::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
 
 /*
   should we log a message type now?

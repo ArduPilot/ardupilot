@@ -127,10 +127,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
 #if ADSB_ENABLED == ENABLED
-    SCHED_TASK(avoidance_adsb_update, 10,    400),
+    SCHED_TASK(avoidance_adsb_update, 10,    100),
 #endif
-#if FRSKY_TELEM_ENABLED == ENABLED
-    SCHED_TASK(frsky_telemetry_send,   5,     75),
+#if ADVANCED_FAILSAFE == ENABLED
+    SCHED_TASK(afs_fs_check,          10,    100),
 #endif
     SCHED_TASK(terrain_update,        10,    100),
 #if EPM_ENABLED == ENABLED
@@ -238,7 +238,7 @@ void Copter::loop()
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
     uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
-    scheduler.run(time_available);
+    scheduler.run(time_available > MAIN_LOOP_MICROS ? 0u : time_available);
 }
 
 
@@ -315,9 +315,8 @@ void Copter::throttle_loop()
     heli_update_landing_swash();
 #endif
 
-#if GNDEFFECT_COMPENSATION == ENABLED
+    // compensate for ground effect (if enabled)
     update_ground_effect_detector();
-#endif // GNDEFFECT_COMPENSATION == ENABLED
 }
 
 // update_mount - update camera mount position

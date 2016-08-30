@@ -15,7 +15,6 @@ def build(bld):
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AP_InertialNav',
         ],
-        use='mavlink',
     )
 
     bld.ap_program(

@@ -155,7 +155,7 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
 }
 
 // baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] = {4800U, 38400U, 115200U, 57600U, 9600U, 230400U};
+const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
@@ -254,11 +254,11 @@ AP_GPS::detect_instance(uint8_t instance)
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
-		dstate->last_baud++;
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
 		}
 		uint32_t baudrate = _baudrates[dstate->last_baud];
+		dstate->last_baud++;
 		_port[instance]->begin(baudrate);
 		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
@@ -267,10 +267,14 @@ AP_GPS::detect_instance(uint8_t instance)
         send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
     else
 #endif
-        send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+        if(_auto_config == 1){
+            send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+        }
     }
 
-    send_blob_update(instance);
+    if(_auto_config == 1){
+        send_blob_update(instance);
+    }
 
     while (initblob_state[instance].remaining == 0 && _port[instance]->available() > 0
             && new_gps == NULL) {
@@ -386,7 +390,9 @@ AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    send_blob_update(instance);
+    if(_auto_config == 1){
+        send_blob_update(instance);
+    }
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();

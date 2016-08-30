@@ -87,9 +87,8 @@ def cygwin_pidof(proc_name):
                 pid = int(line_split[0].strip())
             except:
                 pid = int(line_split[1].strip())
-                str_pid = str(pid)
-            if str_pid not in pids:
-                pids.append(str_pid)
+            if pid not in pids:
+                pids.append(pid)
     return pids
 
 
@@ -143,7 +142,7 @@ def kill_tasks():
     """Clean up stray processes by name.  This is a somewhat shotgun approach"""
     progress("Killing tasks")
     try:
-        victim_names = [
+        victim_names = set([
             'JSBSim',
             'lt-JSBSim',
             'ArduPlane.elf',
@@ -154,7 +153,12 @@ def kill_tasks():
             'MAVProxy.exe',
             'runsim.py',
             'AntennaTracker.elf',
-        ]
+        ])
+        for frame in _options_for_frame.keys():
+            if not _options_for_frame[frame].has_key("waf_target"):
+                continue
+            exe_name = os.path.basename(_options_for_frame[frame]["waf_target"])
+            victim_names.add(exe_name)
 
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
@@ -344,44 +348,44 @@ _options_for_frame = {
     # COPTER
     "+": {
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter_params.parm",
+        "default_params_filename": "default_params/copter.parm",
     },
     "quad": {
         "model": "+",
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter_params.parm",
+        "default_params_filename": "default_params/copter.parm",
     },
     "X": {
         "waf_target": "bin/arducopter-quad",
         # this param set FRAME doesn't actually work because mavproxy
         # won't set a parameter unless it knows of it, and the param fetch happens asynchronously
-        "default_params_filename": "default_params/copter_params.parm",
+        "default_params_filename": "default_params/copter.parm",
         "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
     },
     "hexa": {
         "make_target": "sitl-hexa",
         "waf_target": "bin/arducopter-hexa",
-        "default_params_filename": "default_params/copter_params.parm",
+        "default_params_filename": "default_params/copter.parm",
     },
     "octa": {
         "make_target": "sitl-octa",
         "waf_target": "bin/arducopter-octa",
-        "default_params_filename": "default_params/copter_params.parm",
+        "default_params_filename": "default_params/copter.parm",
     },
     "tri": {
         "make_target": "sitl-tri",
         "waf_target": "bin/arducopter-tri",
-        "default_params_filename": "default_params/tri_params.parm",
+        "default_params_filename": "default_params/copter-tri.parm",
     },
     "y6": {
         "make_target": "sitl-y6",
         "waf_target": "bin/arducopter-y6",
-        "default_params_filename": "default_params/y6_params.parm",
+        "default_params_filename": "default_params/copter-y6.parm",
     },
     # COPTER TYPES
     "IrisRos": {
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter_params.parm",
+        "default_params_filename": "default_params/copter.parm",
     },
     "firefly": {
         "waf_target": "bin/arducopter-firefly",
@@ -391,7 +395,7 @@ _options_for_frame = {
     "heli": {
         "make_target": "sitl-heli",
         "waf_target": "bin/arducopter-heli",
-        "default_params_filename": "default_params/Helicopter.parm",
+        "default_params_filename": "default_params/copter-heli.parm",
     },
     "heli-dual": {
         "make_target": "sitl-heli-dual",
@@ -404,12 +408,12 @@ _options_for_frame = {
     "singlecopter": {
         "make_target": "sitl-single",
         "waf_target": "bin/arducopter-single",
-        "default_params_filename": "default_params/SingleCopter.parm",
+        "default_params_filename": "default_params/copter-single.parm",
     },
     "coaxcopter": {
         "make_target": "sitl-coax",
         "waf_target": "bin/arducopter-coax",
-        "default_params_filename": "default_params/CoaxCopter.parm",
+        "default_params_filename": "default_params/copter-coax.parm",
     },
     # PLANE
     "quadplane-tilttri": {
@@ -441,16 +445,16 @@ _options_for_frame = {
     # ROVER
     "rover": {
         "waf_target": "bin/ardurover",
-        "default_params_filename": "default_params/Rover.parm",
+        "default_params_filename": "default_params/rover.parm",
     },
     "rover-skid": {
         "waf_target": "bin/ardurover",
-        "default_params_filename": "default_params/Rover-skid.parm",
+        "default_params_filename": "default_params/rover-skid.parm",
     },
     # SIM
     "Gazebo": {
         "waf_target": "bin/arducopter-quad",
-        "default_params_filename": "default_params/copter_params.parm",
+        "default_params_filename": "default_params/copter.parm",
     },
     "last_letter": {
         "waf_target": "bin/arduplane",
@@ -460,7 +464,7 @@ _options_for_frame = {
     },
     "jsbsim": {
         "waf_target": "bin/arduplane",
-        "default_params_filename": "default_params/ArduPlane.parm",
+        "default_params_filename": "default_params/plane-jsbsim.parm",
     },
 }
 
@@ -644,7 +648,10 @@ def start_antenna_tracker(autotest, opts):
     progress("Preparing antenna tracker")
     tracker_home = find_location_by_name(find_autotest_dir(), opts.tracker_location)
     vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
-    do_build(vehicledir, opts, "sitl-debug")
+    tracker_frame_options = {
+        "waf_target": _default_waf_target["AntennaTracker"],
+    }
+    do_build(vehicledir, opts, tracker_frame_options)
     tracker_instance = 1
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)

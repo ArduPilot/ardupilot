@@ -35,6 +35,8 @@ class QuadPlane
 public:
     friend class Plane;
     friend class AP_Tuning_Plane;
+    friend class GCS_MAVLINK_Plane;
+    friend class AP_AdvancedFailsafe_Plane;
     
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
@@ -135,7 +137,10 @@ private:
 
     // vertical acceleration the pilot may request
     AP_Int16 pilot_accel_z;
-    
+
+    // check for quadplane assistance needed
+    bool assistance_needed(float aspeed);
+
     // update transition handling
     void update_transition(void);
 
@@ -201,6 +206,10 @@ private:
     // speed below which quad assistance is given
     AP_Float assist_speed;
 
+    // angular error at which quad assistance is given
+    AP_Int8 assist_angle;
+    uint32_t angle_error_start_ms;
+    
     // maximum yaw rate in degrees/second
     AP_Float yaw_rate_max;
 
@@ -268,6 +277,9 @@ private:
 
     // true when quad is assisting a fixed wing mode
     bool assisted_flight:1;
+
+    // true when in angle assist
+    bool in_angle_assist:1;
 
     struct {
         // time when motors reached lower limit

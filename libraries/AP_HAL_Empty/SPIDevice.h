@@ -69,9 +69,6 @@ public:
         return nullptr;
     }
 
-    /* See AP_HAL::Device::get_fd() */
-    int get_fd() override { return -1; }
-
 private:
     Semaphore _semaphore;
 };

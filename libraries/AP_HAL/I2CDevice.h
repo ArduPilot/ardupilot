@@ -66,9 +66,6 @@ public:
     /* See Device::adjust_periodic_callback() */
     virtual bool adjust_periodic_callback(
         Device::PeriodicHandle h, uint32_t period_usec) override = 0;
-
-    /* See Device::get_fd() */
-    virtual int get_fd() override = 0;
 };
 
 class I2CDeviceManager {

@@ -20,6 +20,7 @@
  *      Author: MLandes
  */
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "AP_IRLock_PX4.h"
@@ -34,8 +35,25 @@ AP_IRLock_PX4::AP_IRLock_PX4() :
     _fd(0)
 {}
 
+extern "C" int irlock_main(int, char **);
+
 void AP_IRLock_PX4::init()
 {
+    if (!AP_BoardConfig::px4_start_driver(irlock_main, "irlock", "start")) {
+        hal.console->printf("irlock driver start failed\n");
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+        if (!AP_BoardConfig::px4_start_driver(irlock_main, "irlock", "start -b 2")) {
+            hal.console->printf("irlock driver start failed (bus2)\n");
+        } else {
+            // give it time to initialise
+            hal.scheduler->delay(500);
+        }
+#endif
+    } else {
+        // give it time to initialise
+        hal.scheduler->delay(500);
+    }
+
     _fd = open(IRLOCK0_DEVICE_PATH, O_RDONLY);
     if (_fd < 0) {
         hal.console->printf("Unable to open " IRLOCK0_DEVICE_PATH "\n");

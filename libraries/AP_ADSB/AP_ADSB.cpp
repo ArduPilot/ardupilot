@@ -325,7 +325,7 @@ bool AP_ADSB::find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const
  * Update the vehicle list. If the vehicle is already in the
  * list then it will update it, otherwise it will be added.
  */
-void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
+void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
 {
     if (in_state.vehicle_list == nullptr) {
         // We are only null when disabled. Updating is inhibited.
@@ -346,9 +346,12 @@ void AP_ADSB::update_vehicle(const mavlink_message_t* packet)
     vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
 
     const uint16_t required_flags_position = ADSB_FLAGS_VALID_COORDS | ADSB_FLAGS_VALID_ALTITUDE;
+    const bool detected_ourself = (out_state.cfg.ICAO_id != 0) && ((uint32_t)out_state.cfg.ICAO_id == vehicle.info.ICAO_address);
 
     if (vehicle_loc.is_zero() ||
             out_of_range ||
+            detected_ourself ||
+            (vehicle.info.ICAO_address > 0x00FFFFFF) || // ICAO address is 24bits, so ignore higher values.
             !(vehicle.info.flags & required_flags_position) ||
             now - vehicle.last_update_ms > VEHICLE_TIMEOUT_MS) {
 
@@ -559,7 +562,7 @@ void AP_ADSB::send_configure(const mavlink_channel_t chan)
  * we determine which channel is on so we don't have to send out_state to all channels
  */
 
-void AP_ADSB::transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
+void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
 {
     mavlink_uavionix_adsb_transceiver_health_report_t packet {};
     mavlink_msg_uavionix_adsb_transceiver_health_report_decode(msg, &packet);
@@ -657,4 +660,23 @@ void AP_ADSB::push_sample(adsb_vehicle_t &vehicle)
 bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
 {
     return samples.pop_front(vehicle);
+}
+
+void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg)
+{
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_ADSB_VEHICLE:
+        handle_vehicle(msg);
+        break;
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
+        handle_transceiver_report(chan, msg);
+        break;
+
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
+        // unhandled, these are outbound packets only
+    default:
+        break;
+    }
+
 }

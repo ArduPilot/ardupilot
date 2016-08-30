@@ -64,7 +64,7 @@ public:
     void set_avoidance(AC_Avoid* avoid_ptr) { _avoid = avoid_ptr; }
 
     /// provide rangefinder altitude
-    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_use = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
+    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
     ///
     /// loiter controller
@@ -362,7 +362,8 @@ protected:
     // terrain following variables
     bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _ekf_origin_terrain_alt_set = false;
-    bool        _rangefinder_use = false;
+    bool        _rangefinder_available;
+    AP_Int8     _rangefinder_use;
     bool        _rangefinder_healthy = false;
     float       _rangefinder_alt_cm = 0.0f;
 };

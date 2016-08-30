@@ -353,11 +353,6 @@ AP_HAL::Semaphore *SPIDevice::get_semaphore()
     return &_bus.sem;
 }
 
-int SPIDevice::get_fd()
-{
-    return _bus.fd;
-}
-
 AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(
     uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {

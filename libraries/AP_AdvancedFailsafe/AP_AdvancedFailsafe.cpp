@@ -15,13 +15,13 @@
  */
 
 /*
-    APM_OBC.cpp
+    AP_AdvancedFailsafe.cpp
 
-    Outback Challenge Failsafe module
-
+    This is an advanced failsafe module originally modelled on the
+    failsafe rules of the Outback Challenge
 */
 #include <AP_HAL/AP_HAL.h>
-#include "APM_OBC.h"
+#include "AP_AdvancedFailsafe.h"
 #include <RC_Channel/RC_Channel.h>
 #include <RC_Channel/RC_Channel_aux.h>
 #include <GCS_MAVLink/GCS.h>
@@ -29,76 +29,75 @@
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo APM_OBC::var_info[] = {
-
+const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Enable Advanced Failsafe
     // @Description: This enables the advanced failsafe system. If this is set to zero (disable) then all the other AFS options have no effect
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 11, APM_OBC, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE",       11, AP_AdvancedFailsafe, _enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: MAN_PIN
     // @DisplayName: Manual Pin
     // @Description: This sets a digital output pin to set high when in manual mode
     // @User: Advanced
-    AP_GROUPINFO("MAN_PIN",     0, APM_OBC, _manual_pin,    -1),
+    AP_GROUPINFO("MAN_PIN",     0, AP_AdvancedFailsafe, _manual_pin,    -1),
 
     // @Param: HB_PIN
     // @DisplayName: Heartbeat Pin
     // @Description: This sets a digital output pin which is cycled at 10Hz when termination is not activated. Note that if a FS_TERM_PIN is set then the heartbeat pin will continue to cycle at 10Hz when termination is activated, to allow the termination board to distinguish between autopilot crash and termination.
     // @User: Advanced
-    AP_GROUPINFO("HB_PIN",      1, APM_OBC, _heartbeat_pin, -1),
+    AP_GROUPINFO("HB_PIN",      1, AP_AdvancedFailsafe, _heartbeat_pin, -1),
 
     // @Param: WP_COMMS
     // @DisplayName: Comms Waypoint
     // @Description: Waypoint number to navigate to on comms loss
     // @User: Advanced
-    AP_GROUPINFO("WP_COMMS",    2, APM_OBC, _wp_comms_hold, 0),
+    AP_GROUPINFO("WP_COMMS",    2, AP_AdvancedFailsafe, _wp_comms_hold, 0),
 
     // @Param: GPS_LOSS
     // @DisplayName: GPS Loss Waypoint
     // @Description: Waypoint number to navigate to on GPS lock loss
     // @User: Advanced
-    AP_GROUPINFO("WP_GPS_LOSS", 4, APM_OBC, _wp_gps_loss, 0),
+    AP_GROUPINFO("WP_GPS_LOSS", 4, AP_AdvancedFailsafe, _wp_gps_loss, 0),
 
     // @Param: TERMINATE
     // @DisplayName: Force Terminate
     // @Description: Can be set in flight to force termination of the heartbeat signal
     // @User: Advanced
-    AP_GROUPINFO("TERMINATE",   5, APM_OBC, _terminate, 0),
+    AP_GROUPINFO("TERMINATE",   5, AP_AdvancedFailsafe, _terminate, 0),
 
     // @Param: TERM_ACTION
     // @DisplayName: Terminate action
     // @Description: This can be used to force an action on flight termination. Normally this is handled by an external failsafe board, but you can setup APM to handle it here. If set to 0 (which is the default) then no extra action is taken. If set to the magic value 42 then the plane will deliberately crash itself by setting maximum throws on all surfaces, and zero throttle
     // @User: Advanced
-    AP_GROUPINFO("TERM_ACTION", 6, APM_OBC, _terminate_action, 0),
+    AP_GROUPINFO("TERM_ACTION", 6, AP_AdvancedFailsafe, _terminate_action, 0),
 
     // @Param: TERM_PIN
     // @DisplayName: Terminate Pin
     // @Description: This sets a digital output pin to set high on flight termination
     // @User: Advanced
-    AP_GROUPINFO("TERM_PIN",    7, APM_OBC, _terminate_pin,    -1),
+    AP_GROUPINFO("TERM_PIN",    7, AP_AdvancedFailsafe, _terminate_pin,    -1),
 
     // @Param: AMSL_LIMIT
     // @DisplayName: AMSL limit
     // @Description: This sets the AMSL (above mean sea level) altitude limit. If the pressure altitude determined by QNH exceeds this limit then flight termination will be forced. Note that this limit is in meters, whereas pressure altitude limits are often quoted in feet. A value of zero disables the pressure altitude limit.
     // @User: Advanced
     // @Units: meters
-    AP_GROUPINFO("AMSL_LIMIT",   8, APM_OBC, _amsl_limit,    0),
+    AP_GROUPINFO("AMSL_LIMIT",   8, AP_AdvancedFailsafe, _amsl_limit,    0),
 
     // @Param: AMSL_ERR_GPS
     // @DisplayName: Error margin for GPS based AMSL limit
     // @Description: This sets margin for error in GPS derived altitude limit. This error margin is only used if the barometer has failed. If the barometer fails then the GPS will be used to enforce the AMSL_LIMIT, but this margin will be subtracted from the AMSL_LIMIT first, to ensure that even with the given amount of GPS altitude error the pressure altitude is not breached. OBC users should set this to comply with their D2 safety case. A value of -1 will mean that barometer failure will lead to immediate termination.
     // @User: Advanced
     // @Units: meters
-    AP_GROUPINFO("AMSL_ERR_GPS", 9, APM_OBC, _amsl_margin_gps,  -1),
+    AP_GROUPINFO("AMSL_ERR_GPS", 9, AP_AdvancedFailsafe, _amsl_margin_gps,  -1),
 
     // @Param: QNH_PRESSURE
     // @DisplayName: QNH pressure
     // @Description: This sets the QNH pressure in millibars to be used for pressure altitude in the altitude limit. A value of zero disables the altitude limit.
     // @Units: millibar
     // @User: Advanced
-    AP_GROUPINFO("QNH_PRESSURE", 10, APM_OBC, _qnh_pressure,    0),
+    AP_GROUPINFO("QNH_PRESSURE", 10, AP_AdvancedFailsafe, _qnh_pressure,    0),
 
     // *NOTE* index 11 is "Enable" and is moved to the top to allow AP_PARAM_FLAG_ENABLE
 
@@ -108,44 +107,44 @@ const AP_Param::GroupInfo APM_OBC::var_info[] = {
     // @DisplayName: Maximum number of GPS loss events
     // @Description: Maximum number of GPS loss events before the aircraft stops returning to mission on GPS recovery. Use zero to allow for any number of GPS loss events.
     // @User: Advanced
-    AP_GROUPINFO("MAX_GPS_LOSS", 13, APM_OBC, _max_gps_loss, 0),
+    AP_GROUPINFO("MAX_GPS_LOSS", 13, AP_AdvancedFailsafe, _max_gps_loss, 0),
 
     // @Param: MAX_COM_LOSS
     // @DisplayName: Maximum number of comms loss events
     // @Description: Maximum number of comms loss events before the aircraft stops returning to mission on comms recovery. Use zero to allow for any number of comms loss events.
     // @User: Advanced
-    AP_GROUPINFO("MAX_COM_LOSS", 14, APM_OBC, _max_comms_loss, 0),
+    AP_GROUPINFO("MAX_COM_LOSS", 14, AP_AdvancedFailsafe, _max_comms_loss, 0),
 
     // @Param: GEOFENCE
     // @DisplayName: Enable geofence Advanced Failsafe
     // @Description: This enables the geofence part of the AFS. Will only be in effect if AFS_ENABLE is also 1
     // @User: Advanced
-    AP_GROUPINFO("GEOFENCE",     15, APM_OBC, _enable_geofence_fs, 1),
+    AP_GROUPINFO("GEOFENCE",     15, AP_AdvancedFailsafe, _enable_geofence_fs, 1),
 
     // @Param: RC
     // @DisplayName: Enable RC Advanced Failsafe
     // @Description: This enables the RC part of the AFS. Will only be in effect if AFS_ENABLE is also 1
     // @User: Advanced
-    AP_GROUPINFO("RC",           16, APM_OBC, _enable_RC_fs, 1),
+    AP_GROUPINFO("RC",           16, AP_AdvancedFailsafe, _enable_RC_fs, 1),
 
     // @Param: RC_MAN_ONLY
     // @DisplayName: Enable RC Termination only in manual control modes
     // @Description: If this parameter is set to 1, then an RC loss will only cause the plane to terminate in manual control modes. If it is 0, then the plane will terminate in any flight mode.
     // @User: Advanced
-    AP_GROUPINFO("RC_MAN_ONLY",    17, APM_OBC, _rc_term_manual_only, 1),
+    AP_GROUPINFO("RC_MAN_ONLY",    17, AP_AdvancedFailsafe, _rc_term_manual_only, 1),
 
     // @Param: DUAL_LOSS
     // @DisplayName: Enable dual loss terminate due to failure of both GCS and GPS simultaneously
     // @Description: This enables the dual loss termination part of the AFS system. If this parameter is 1 and both GPS and the ground control station fail simultaneously, this will be considered a "dual loss" and cause termination.
     // @User: Advanced
-    AP_GROUPINFO("DUAL_LOSS",      18, APM_OBC, _enable_dual_loss, 1),
+    AP_GROUPINFO("DUAL_LOSS",      18, AP_AdvancedFailsafe, _enable_dual_loss, 1),
 
     // @Param: RC_FAIL_TIME
     // @DisplayName: RC failure time
     // @Description: This is the time in seconds in manual mode that failsafe termination will activate if RC input is lost. For the OBC rules this should be (1.5). Use 0 to disable.
     // @User: Advanced
     // @Units: seconds
-    AP_GROUPINFO("RC_FAIL_TIME",   19, APM_OBC, _rc_fail_time_seconds,    0),
+    AP_GROUPINFO("RC_FAIL_TIME",   19, AP_AdvancedFailsafe, _rc_fail_time_seconds,    0),
 
     AP_GROUPEND
 };
@@ -153,7 +152,7 @@ const AP_Param::GroupInfo APM_OBC::var_info[] = {
 // check for Failsafe conditions. This is called at 10Hz by the main
 // ArduPlane code
 void
-APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms)
+AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms)
 {    
     if (!_enable) {
         return;
@@ -163,19 +162,21 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
         if (geofence_breached || check_altlimit()) {
             if (!_terminate) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Fence TERMINATE");
-                _terminate.set(1);
+                _terminate.set_and_notify(1);
             }
         }
     }
 
+    enum control_mode mode = afs_mode();
+    
     // check if RC termination is enabled
     // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
     if (_state != STATE_PREFLIGHT && !_terminate && _enable_RC_fs &&
-        (mode == OBC_MANUAL || mode == OBC_FBW || !_rc_term_manual_only) &&
+        (mode == AFS_MANUAL || mode == AFS_STABILIZED || !_rc_term_manual_only) &&
         _rc_fail_time_seconds > 0 &&
             (AP_HAL::millis() - last_valid_rc_ms) > (_rc_fail_time_seconds * 1000.0f)) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
-        _terminate.set(1);
+        _terminate.set_and_notify(1);
     }
     
     // tell the failsafe board if we are in manual control
@@ -183,7 +184,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     // receiver
     if (_manual_pin != -1) {
         hal.gpio->pinMode(_manual_pin, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_manual_pin, mode==OBC_MANUAL);
+        hal.gpio->write(_manual_pin, mode==AFS_MANUAL);
     }
 
     uint32_t now = AP_HAL::millis();
@@ -194,7 +195,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     case STATE_PREFLIGHT:
         // we startup in preflight mode. This mode ends when
         // we first enter auto.
-        if (mode == OBC_AUTO) {
+        if (mode == AFS_AUTO) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting AFS_AUTO");
             _state = STATE_AUTO;
         }
@@ -239,7 +240,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             if(_enable_dual_loss) {
                 if (!_terminate) {
                     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Dual loss TERMINATE");
-                    _terminate.set(1);
+                    _terminate.set_and_notify(1);
                 }
             }
         } else if (gcs_link_ok) {
@@ -261,7 +262,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             // leads to termination if AFS_DUAL_LOSS is 1
             if (!_terminate && _enable_dual_loss) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Dual loss TERMINATE");
-                _terminate.set(1);
+                _terminate.set_and_notify(1);
             }
         } else if (gps_lock_ok) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS OK");
@@ -294,7 +295,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
 
 // send heartbeat messages during sensor calibration
 void
-APM_OBC::heartbeat(void)
+AP_AdvancedFailsafe::heartbeat(void)
 {    
     if (!_enable) {
         return;
@@ -311,7 +312,7 @@ APM_OBC::heartbeat(void)
 
 // check for altitude limit breach
 bool
-APM_OBC::check_altlimit(void)
+AP_AdvancedFailsafe::check_altlimit(void)
 {    
     if (!_enable) {
         return false;
@@ -345,75 +346,26 @@ APM_OBC::check_altlimit(void)
 }
 
 /*
-  setup the IO boards failsafe values for if the FMU firmware crashes
+  return true if we should crash the vehicle
  */
-void APM_OBC::setup_failsafe(void)
+bool AP_AdvancedFailsafe::should_crash_vehicle(void)
 {
     if (!_enable) {
-        return;
-    }
-    const RC_Channel *ch_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
-    const RC_Channel *ch_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
-    const RC_Channel *ch_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
-    const RC_Channel *ch_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
-
-    // setup primary channel output values
-    hal.rcout->set_failsafe_pwm(1U<<(rcmap.roll()-1),     ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
-    hal.rcout->set_failsafe_pwm(1U<<(rcmap.pitch()-1),    ch_pitch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
-    hal.rcout->set_failsafe_pwm(1U<<(rcmap.yaw()-1),      ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
-    hal.rcout->set_failsafe_pwm(1U<<(rcmap.throttle()-1), ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
-
-    // and all aux channels
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_flap_auto, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_flap, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_aileron, RC_Channel::RC_CHANNEL_LIMIT_MIN);
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_rudder, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_manual, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
-    RC_Channel_aux::set_servo_failsafe(RC_Channel_aux::k_none, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
-}
-
-/*
-  setu radio_out values for all channels to termination values if we
-  are terminating
- */
-void APM_OBC::check_crash_plane(void)
-{
-    if (!_enable) {
-        return;
+        return false;
     }
     // ensure failsafe values are setup for if FMU crashes on PX4/Pixhawk
     if (!_failsafe_setup) {
         _failsafe_setup = true;
-        setup_failsafe();
+        setup_IO_failsafe();
     }
 
     // should we crash the plane? Only possible with
     // FS_TERM_ACTTION set to 42
     if (!_terminate || _terminate_action != 42) {
         // not terminating
-        return;
+        return false;
     }
 
-    // we are terminating. Setup primary output channels radio_out values
-    RC_Channel *ch_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
-    RC_Channel *ch_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
-    RC_Channel *ch_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
-    RC_Channel *ch_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
-
-    ch_roll->set_radio_out(ch_roll->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
-    ch_pitch->set_radio_out(ch_pitch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
-    ch_yaw->set_radio_out(ch_yaw->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX));
-    ch_throttle->set_radio_out(ch_throttle->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN));
-
-    // and all aux channels
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap_auto, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_flap, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_aileron, RC_Channel::RC_CHANNEL_LIMIT_MIN);
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_rudder, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_elevator_with_input, RC_Channel::RC_CHANNEL_LIMIT_MAX);
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_manual, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
-    RC_Channel_aux::set_servo_limit(RC_Channel_aux::k_none, RC_Channel::RC_CHANNEL_LIMIT_TRIM);
+    // we are crashing
+    return true;
 }

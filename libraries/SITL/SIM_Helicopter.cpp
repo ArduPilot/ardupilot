@@ -152,6 +152,9 @@ void Helicopter::update(const struct sitl_input &input)
     // air resistance
     Vector3f air_resistance = -velocity_air_ef * (GRAVITY_MSS/terminal_velocity);
 
+    // simulate rotor speed
+    rpm1 = thrust * 1300;
+
     // scale thrust to newtons
     thrust *= thrust_scale;
 

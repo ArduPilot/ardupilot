@@ -69,9 +69,6 @@ public:
         return false;
     }
 
-    // this makes no sense on VRBRAIN
-    int get_fd() override { return -1; }
-
     AP_HAL::Semaphore* get_semaphore() override { return &semaphore; }
 
 private:

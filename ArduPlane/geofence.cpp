@@ -285,14 +285,14 @@ void Plane::geofence_check(bool altitude_check_only)
         // GUIDED to the return point
         if (geofence_state != NULL &&
             (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL) &&
-            control_mode == GUIDED &&
+            (control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             geofence_present() &&
             geofence_state->boundary_uptodate &&
             geofence_state->old_switch_position == oldSwitchPosition &&
             guided_WP_loc.lat == geofence_state->guided_lat &&
             guided_WP_loc.lng == geofence_state->guided_lng) {
             geofence_state->old_switch_position = 254;
-            set_mode(get_previous_mode());
+            set_mode(get_previous_mode(), MODE_REASON_GCS_COMMAND);
         }
         return;
     }
@@ -311,7 +311,7 @@ void Plane::geofence_check(bool altitude_check_only)
     struct Location loc;
 
     // Never trigger a fence breach in the final stage of landing
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE) {
         return;
     }
 
@@ -348,7 +348,7 @@ void Plane::geofence_check(bool altitude_check_only)
 
     // we are outside the fence
     if (geofence_state->fence_triggered &&
-        (control_mode == GUIDED || control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
+        (control_mode == GUIDED || control_mode == AVOID_ADSB || control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
@@ -380,9 +380,9 @@ void Plane::geofence_check(bool altitude_check_only)
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
         if (g.fence_action == FENCE_ACTION_RTL) {
-            set_mode(RTL);
+            set_mode(RTL, MODE_REASON_FENCE_BREACH);
         } else {
-            set_mode(GUIDED);
+            set_mode(GUIDED, MODE_REASON_FENCE_BREACH);
         }
         g.auto_trim.set(saved_auto_trim);
 
@@ -432,7 +432,7 @@ bool Plane::geofence_stickmixing(void) {
     if (geofence_enabled() &&
         geofence_state != NULL &&
         geofence_state->fence_triggered &&
-        control_mode == GUIDED) {
+        (control_mode == GUIDED || control_mode == AVOID_ADSB)) {
         // don't mix in user input
         return false;
     }

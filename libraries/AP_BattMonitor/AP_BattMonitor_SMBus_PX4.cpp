@@ -21,6 +21,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_BattMonitor_SMBus_PX4.h"
 
 #include <sys/types.h>
@@ -32,6 +33,8 @@
 #include <uORB/topics/battery_status.h>
 
 extern const AP_HAL::HAL& hal;
+
+extern "C" int batt_smbus_main(int, char **);
 
 // Constructor
 AP_BattMonitor_SMBus_PX4::AP_BattMonitor_SMBus_PX4(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state) :
@@ -45,6 +48,12 @@ AP_BattMonitor_SMBus_PX4::AP_BattMonitor_SMBus_PX4(AP_BattMonitor &mon, uint8_t 
 
 void AP_BattMonitor_SMBus_PX4::init()
 {
+    if (!AP_BoardConfig::px4_start_driver(batt_smbus_main, "batt_smbus", "-b 2 start")) {
+        hal.console->printf("Unable to start batt_smbus driver\n");
+    } else {
+        // give it time to initialise
+        hal.scheduler->delay(500);
+    }
     // open the device
     _batt_fd = open(BATT_SMBUS0_DEVICE_PATH, O_RDWR);
     if (_batt_fd == -1) {

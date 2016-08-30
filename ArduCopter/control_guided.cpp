@@ -23,8 +23,10 @@ struct {
     float roll_cd;
     float pitch_cd;
     float yaw_cd;
+    float yaw_rate_cds;
     float climb_rate_cms;
-} static guided_angle_state = {0,0.0f, 0.0f, 0.0f, 0.0f};
+    bool use_yaw_rate;
+} static guided_angle_state = {0,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false};
 
 struct Guided_Limit {
     uint32_t timeout_ms;  // timeout (in seconds) from the time that guided is invoked
@@ -72,7 +74,7 @@ bool Copter::guided_takeoff_start(float final_alt_above_home)
     // clear i term when we're taking off
     set_throttle_takeoff();
 
-    // get initial alt for WP_TKOFF_NAV_ALT
+    // get initial alt for WP_NAVALT_MIN
     auto_takeoff_set_start_alt();
     
     return true;
@@ -163,6 +165,8 @@ void Copter::guided_angle_control_start()
     guided_angle_state.pitch_cd = ahrs.pitch_sensor;
     guided_angle_state.yaw_cd = ahrs.yaw_sensor;
     guided_angle_state.climb_rate_cms = 0.0f;
+    guided_angle_state.yaw_rate_cds = 0.0f;
+    guided_angle_state.use_yaw_rate = false;
 
     // pilot always controls yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -262,7 +266,7 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
 }
 
 // set guided mode angle target
-void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
+void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads)
 {
     // check we are in velocity control mode
     if (guided_mode != Guided_Angle) {
@@ -274,6 +278,8 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms)
     guided_angle_state.roll_cd = ToDeg(guided_angle_state.roll_cd) * 100.0f;
     guided_angle_state.pitch_cd = ToDeg(guided_angle_state.pitch_cd) * 100.0f;
     guided_angle_state.yaw_cd = wrap_180_cd(ToDeg(guided_angle_state.yaw_cd) * 100.0f);
+    guided_angle_state.yaw_rate_cds = ToDeg(yaw_rate_rads) * 100.0f;
+    guided_angle_state.use_yaw_rate = use_yaw_rate;
 
     guided_angle_state.climb_rate_cms = climb_rate_cms;
     guided_angle_state.update_time_ms = millis();
@@ -569,6 +575,7 @@ void Copter::guided_angle_control_run()
 
     // wrap yaw request
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
+    float yaw_rate_in = wrap_180_cd(guided_angle_state.yaw_rate_cds);
 
     // constrain climb rate
     float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav.get_speed_down()), wp_nav.get_speed_up());
@@ -579,13 +586,18 @@ void Copter::guided_angle_control_run()
         roll_in = 0.0f;
         pitch_in = 0.0f;
         climb_rate_cms = 0.0f;
+        yaw_rate_in = 0.0f;
     }
 
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true, get_smoothing_gain());
+    if (guided_angle_state.use_yaw_rate) {
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(roll_in, pitch_in, yaw_rate_in, get_smoothing_gain());
+    } else {
+        attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true, get_smoothing_gain());
+    }
 
     // call position controller
     pos_control.set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false);
