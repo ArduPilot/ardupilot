@@ -181,33 +181,31 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
     }
 
 
-    // default to all healthy except baro, compass, gps and receiver which we set individually
-    control_sensors_health = control_sensors_present & ~(MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE |
-                                                         MAV_SYS_STATUS_SENSOR_3D_MAG |
-                                                         MAV_SYS_STATUS_SENSOR_GPS |
-                                                         MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
-    if (barometer.all_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    // default to all healthy
+    control_sensors_health = control_sensors_present;
+
+    if (!barometer.all_healthy()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
-    if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+    if (!g.compass_enabled || !compass.healthy() || !ahrs.use_compass()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
+    if (gps.status() == AP_GPS::NO_GPS) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_GPS;
+    }
+    if (!ap.rc_receiver_present || failsafe.radio) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
 #if OPTFLOW == ENABLED
-    if (optflow.healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    if (!optflow.healthy()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
 #if PRECISION_LANDING == ENABLED
-    if (precland.healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    if (!precland.healthy()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
-    if (ap.rc_receiver_present && !failsafe.radio) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    }
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }
