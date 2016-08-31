@@ -622,3 +622,18 @@
 #ifndef FRSKY_TELEM_ENABLED
   #  define FRSKY_TELEM_ENABLED          ENABLED
 #endif
+
+#ifndef XTRACK_P
+#define XTRACK_P			1.0f
+#define XTRACK_I			0.5f
+#define XTRACK_D			0.0f
+#define XTRACK_IMAX			1000
+#define XTRACK_FILT_HZ	5.0f
+#define XTRACK_DT 0.05f
+#define HEAD_P			1.0f
+#define HEAD_I			0.5f
+#define HEAD_D			0.0f
+#define HEAD_IMAX			1000
+#define HEAD_FILT_HZ		5.0f
+#define HEAD_DT			0.05f
+#endif

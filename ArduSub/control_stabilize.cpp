@@ -57,7 +57,7 @@ void Sub::stabilize_run()
     // call attitude controller
 	// update attitude controller targets
 
-	if (target_yaw_rate != 0) { // call attitude controller with rate yaw determined by pilot input
+	if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
 		attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 		last_pilot_heading = ahrs.yaw_sensor;
 		last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading

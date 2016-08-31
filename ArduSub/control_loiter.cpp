@@ -3,7 +3,7 @@
 // Pilot adjusts desired forward and lateral body-frame velocities
 // Position controller maintains desired velocities
 // GPS position required
-// Code by Jacob Walser
+// Jacob Walser August 2016
 
 #include "Sub.h"
 
@@ -11,10 +11,10 @@
 
 namespace {
 	static uint32_t last_loiter_message_ms = 0;
-	float des_velx = 0; // inav earth-frame +/-x = north/south
-	float des_vely = 0; // inav earth-frame +/-y = east/west
-	float des_velf = 0;
-	float des_velr = 0;
+	float des_velx = 0; // inav earth-frame desired velocity +/- = north/south
+	float des_vely = 0; // inav earth-frame desired velocity +/- = east/west
+	float des_velf = 0; // pilot body-frame desired velocity +/- = forward/backward
+	float des_velr = 0; // pilot body-frame desired velocity +/- = right/left
 }
 
 // Initialize the VelHold controller

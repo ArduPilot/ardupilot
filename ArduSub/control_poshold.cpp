@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 // ArduSub position hold flight mode
 // GPS required
-// Code by Jacob Walser
+// Jacob Walser August 2016
 
 #include "Sub.h"
 

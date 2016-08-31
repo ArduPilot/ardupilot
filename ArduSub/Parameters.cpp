@@ -775,6 +775,10 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GGROUP(p_pos_xy,                "POS_XY_", AC_P),
 
+	GGROUP(pid_crosstrack_control, "XTRACK_", AC_PID),
+
+	GGROUP(pid_heading_control, "HEAD_", AC_PID),
+
     // variables not in the g class which contain EEPROM saved variables
 
 #if CAMERA == ENABLED
