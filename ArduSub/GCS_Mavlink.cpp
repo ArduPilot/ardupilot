@@ -323,7 +323,7 @@ void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
         wp_distance / 1.0e2f,
         pos_control.get_alt_error() / 1.0e2f,
         0,
-        0);
+        gps.crosstrack_error());
 }
 
 // report simulator state
