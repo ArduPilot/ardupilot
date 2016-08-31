@@ -387,6 +387,9 @@ public:
 		k_param_jbtn_14,
 		k_param_jbtn_15, // 276
 
+		k_param_pid_crosstrack_control,
+		k_param_pid_heading_control,
+		
 		k_param_water_detector, // water detector object
 		k_param_failsafe_leak, // leak failsafe behavior
     };
@@ -535,6 +538,13 @@ public:
     AC_P                    p_pos_xy;
     AC_P                    p_alt_hold;
 
+
+
+
+	AC_PID pid_crosstrack_control;
+	AC_PID pid_heading_control;
+
+
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
@@ -572,7 +582,12 @@ public:
         //----------------------------------------------------------------------
         p_pos_xy                (POS_XY_P),
 
-        p_alt_hold              (ALT_HOLD_P)
+        p_alt_hold              (ALT_HOLD_P),
+
+		pid_crosstrack_control  (XTRACK_P,        XTRACK_I,         XTRACK_D,       XTRACK_IMAX,        XTRACK_FILT_HZ,      XTRACK_DT),
+
+		pid_heading_control     (HEAD_P,		  HEAD_I,           HEAD_D,         HEAD_IMAX,          HEAD_FILT_HZ,       HEAD_DT)
+
     {
     }
 };
