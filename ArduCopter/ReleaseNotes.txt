@@ -1,5 +1,20 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.0-rc3 31-Aug-2016
+Changes from 3.4.0-rc2
+1) Landing detector improvements:
+    a) checks that descent rate is less than 1m/s (avoids disarms when vehicle is obviously still descending)
+    b) tradheli fix for landing detector
+2) WP_NAVALT_MIN parameter limits maximum lean angle when vehicle is below the specified alt while taking off or landing.  Only applies in LAND mode, final stage of RTL and during take-off in AUTO mode
+3) GND_EFFECT_COMP parameter allows turning on EKF compensation for ground effect during take-off and landing
+4) Advanced Failsafe for use in OutBack challenge (see http://ardupilot.org/plane/docs/advanced-failsafe-configuration.html)
+5) AutoTune minor improvement to reduce step size on vehicles with very low hover throttle (i.e. high power-to-weight ratio)
+6) Bug fixes, minor improvement:
+    a) LAND_SPEED_HIGH allows specifying vertical descent speed separate from WPNAV_SPEED_DN during the initial descent in LAND mode (and final stage of RTL)
+    b) improved USB driver reliability for windows users (NuttX change)
+    c) report dataflash logging health to ground station
+    d) Guided mode accepts yaw rate from SET_ATTITUDE_TARGET message 
+------------------------------------------------------------------
 Copter 3.4.0-rc2 08-Aug-2016
 Changes from 3.4.0-rc1
 1) ADSB based avoidance of manned aircraft
