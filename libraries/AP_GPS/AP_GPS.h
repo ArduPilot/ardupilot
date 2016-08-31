@@ -70,6 +70,7 @@ public:
 		GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
+		GPS_TYPE_MAVLINK = 15,
     };
 
     /// GPS status codes
@@ -118,6 +119,7 @@ public:
         uint16_t vdop;                      ///< vertical dilution of precision in cm
         uint8_t num_sats;                   ///< Number of visible satellites        
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
+        int16_t crosstrack_error;			///< crosstrack error in cm (negative for steer left, positive for steer right)
         float speed_accuracy;
         float horizontal_accuracy;
         float vertical_accuracy;
@@ -256,6 +258,14 @@ public:
     }
     uint16_t time_week() const {
         return time_week(primary_instance);
+    }
+
+    // GPS crosstrack error
+    int16_t crosstrack_error(uint8_t instance) const {
+    	return state[instance].crosstrack_error;
+    }
+    int16_t crosstrack_error() const {
+    	return crosstrack_error(primary_instance);
     }
 
     // horizontal dilution of precision

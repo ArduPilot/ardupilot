@@ -33,6 +33,7 @@
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
+#include "AP_GPS_MAVLINK.h"
 #include "GPS_Backend.h"
 
 extern const AP_HAL::HAL &hal;
@@ -227,9 +228,21 @@ AP_GPS::detect_instance(uint8_t instance)
         goto found_gps;
     }
 #endif
-    
+
+
+    if(_type[instance] == GPS_TYPE_MAVLINK) {
+		// check for if user selected MAVLINK GPS
+		// Also not possible to autodetect, and does not require a UART
+		//_broadcast_gps_type("MAVLINK", instance, -1); //baud rate isn't valid
+		drivers[instance] = new AP_GPS_MAVLINK(*this, state[instance]); //does not require a UART, sentences come from GCS via mavlink
+    	state[instance].instance = instance;
+    	state[instance].status = NO_FIX;
+    	state[instance].hdop = 9999;
+    	timing[instance].last_message_time_ms = now;
+    	return;
+    }
+
     if (_port[instance] == NULL) {
-        // UART not available
         return;
     }
 

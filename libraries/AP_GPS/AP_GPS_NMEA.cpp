@@ -327,6 +327,9 @@ bool AP_GPS_NMEA::_term_complete()
                     fill_3d_velocity();
                     // VTG has no fix indicator, can't change fix status
                     break;
+                case _GPS_SENTENCE_XTE:
+                	_last_XTE_ms = now;
+                	state.crosstrack_error = _new_crosstrack_error;
                 }
             } else {
                 switch (_sentence_type) {
@@ -366,6 +369,8 @@ bool AP_GPS_NMEA::_term_complete()
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
             _gps_data_good = true;
+        } else if (strcmp(term_type, "XTE") == 0) {
+        	_sentence_type = _GPS_SENTENCE_XTE;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
         }
@@ -437,6 +442,19 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_VTG + 1: // Course (VTG)
             _new_course = _parse_decimal_100(_term);
             break;
+
+        // cross track error
+        case _GPS_SENTENCE_XTE + 3:
+			_new_crosstrack_error = _parse_decimal_100(_term);
+			break;
+
+	    // cross track error steer left or right to correct
+        case _GPS_SENTENCE_XTE + 4:
+			if ((_term[0] == 'L' && _new_crosstrack_error > 0) || (_term[0] == 'R' && _new_crosstrack_error < 0))
+					_new_crosstrack_error = -_new_crosstrack_error;
+			break;
+        case _GPS_SENTENCE_XTE + 5:
+			_gps_data_good = _term[0] == 'M'; // make sure output is in meters
         }
     }
 
