@@ -20,7 +20,17 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_DRDY_PIN RPI_GPIO_24
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #define MPU6000_DRDY_PIN MINNOW_GPIO_I2S_CLK
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#define MPU6000_EXT_SYNC_ENABLE 1
 #endif
+#endif
+
+/*
+  EXT_SYNC allows for frame synchronisation with an external device
+  such as a camera. When enabled the LSB of AccelZ holds the FSYNC bit
+ */
+#ifndef MPU6000_EXT_SYNC_ENABLE
+#define MPU6000_EXT_SYNC_ENABLE 0
 #endif
 
 // MPU 6000 registers
@@ -51,6 +61,13 @@ extern const AP_HAL::HAL& hal;
 #       define MPUREG_SMPLRT_100HZ                  0x09
 #       define MPUREG_SMPLRT_50HZ                   0x13
 #define MPUREG_CONFIG                           0x1A
+#       define MPUREG_CONFIG_EXT_SYNC_SHIFT            3
+#       define MPUREG_CONFIG_EXT_SYNC_GX            0x02
+#       define MPUREG_CONFIG_EXT_SYNC_GY            0x03
+#       define MPUREG_CONFIG_EXT_SYNC_GZ            0x04
+#       define MPUREG_CONFIG_EXT_SYNC_AX            0x05
+#       define MPUREG_CONFIG_EXT_SYNC_AY            0x06
+#       define MPUREG_CONFIG_EXT_SYNC_AZ            0x07
 #define MPUREG_GYRO_CONFIG                      0x1B
 // bit definitions for MPUREG_GYRO_CONFIG
 #       define BITS_GYRO_FS_250DPS                  0x00
@@ -442,7 +459,12 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
         Vector3f accel, gyro;
         float temp;
+        bool fsync_set = false;
 
+#if MPU6000_EXT_SYNC_ENABLE
+        fsync_set = (int16_val(data, 2) & 1U) != 0;
+#endif
+        
         accel = Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2));
@@ -474,7 +496,7 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
-        _notify_new_accel_raw_sample(_accel_instance, accel);
+        _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
         _temp_filtered = _temp_filter.apply(temp);
@@ -579,6 +601,12 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
     } else {
         filter = BITS_DLPF_CFG_256HZ_NOLPF2;
     }
+
+#if MPU6000_EXT_SYNC_ENABLE
+    // add in EXT_SYNC bit if enabled
+    filter |= (MPUREG_CONFIG_EXT_SYNC_AZ << MPUREG_CONFIG_EXT_SYNC_SHIFT);
+#endif
+
     _register_write(MPUREG_CONFIG, filter);
 }
 

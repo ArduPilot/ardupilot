@@ -159,7 +159,8 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              const Vector3f &accel,
-                                                             uint64_t sample_us)
+                                                             uint64_t sample_us,
+                                                             bool fsync_set)
 {
     float dt;
 
@@ -170,7 +171,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     dt = 1.0f / _imu._accel_raw_sample_rates[instance];
 
     // call gyro_sample hook if any
-    AP_Module::call_hook_accel_sample(instance, dt, accel);
+    AP_Module::call_hook_accel_sample(instance, dt, accel, fsync_set);
     
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
