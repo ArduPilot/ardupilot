@@ -17,7 +17,7 @@ extern "C" {
 
 #define AHRS_state_version 1
 #define gyro_sample_version 1
-#define accel_sample_version 1
+#define accel_sample_version 2
 
 enum AHRS_status {
     AHRS_STATUS_INITIALISING    = 0,
@@ -122,6 +122,9 @@ struct accel_sample {
 
     // body frame rates in m/s/s
     float accel[3];
+
+    // true if external frame sync is set
+    bool fsync_set;
 };
     
 /*

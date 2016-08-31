@@ -235,7 +235,7 @@ void AP_Module::call_hook_gyro_sample(uint8_t instance, float dt, const Vector3f
 /*
   call any accel_sample hooks
 */
-void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel)
+void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel, bool fsync_set)
 {
 #if AP_MODULE_SUPPORTED
     if (hooks[HOOK_ACCEL_SAMPLE] == nullptr) {
@@ -254,6 +254,7 @@ void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3
     state.accel[0] = accel[0];
     state.accel[1] = accel[1];
     state.accel[2] = accel[2];
+    state.fsync_set = fsync_set;
 
     for (const struct hook_list *h=hooks[HOOK_ACCEL_SAMPLE]; h; h=h->next) {
         ap_hook_accel_sample_fn_t fn = reinterpret_cast<ap_hook_accel_sample_fn_t>(h->symbol);

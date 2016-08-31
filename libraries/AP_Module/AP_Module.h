@@ -60,7 +60,7 @@ public:
     static void call_hook_gyro_sample(uint8_t instance, float dt, const Vector3f &gyro);
 
     // call any accel_sample hooks
-    static void call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel);
+    static void call_hook_accel_sample(uint8_t instance, float dt, const Vector3f &accel, bool fsync_set);
     
     
 private:
