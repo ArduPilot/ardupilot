@@ -638,8 +638,8 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
     ap_status |= (uint8_t)(*_ap.value & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
-    // land complete flag
-    ap_status |= (uint8_t)(*_ap.value & AP_LANDCOMPLETE_FLAG);
+    // is_flying flag
+    ap_status |= (uint8_t)((*_ap.value & AP_ISFLYING_FLAG) ^ AP_ISFLYING_FLAG);
     // armed flag
     ap_status |= (uint8_t)(AP_Notify::flags.armed)<<AP_ARMED_OFFSET;
     // battery failsafe flag
