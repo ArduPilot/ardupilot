@@ -232,3 +232,19 @@ void AC_AttitudeControl_Multi::rate_controller_run()
 
     control_monitor_update();
 }
+
+// sanity check parameters.  should be called once before takeoff
+void AC_AttitudeControl_Multi::parameter_sanity_check()
+{
+    // sanity check throttle mix parameters
+    if (_thr_mix_min < 0.1f || _thr_mix_min > 0.25f) {
+        _thr_mix_min = AC_ATTITUDE_CONTROL_MIN_DEFAULT;
+    }
+    if (_thr_mix_max < 0.5f || _thr_mix_max > 0.9f) {
+        _thr_mix_max = AC_ATTITUDE_CONTROL_MAX_DEFAULT;
+    }
+    if (_thr_mix_min > _thr_mix_max) {
+        _thr_mix_min = AC_ATTITUDE_CONTROL_MIN_DEFAULT;
+        _thr_mix_max = AC_ATTITUDE_CONTROL_MAX_DEFAULT;
+    }
+}
