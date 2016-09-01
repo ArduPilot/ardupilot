@@ -217,9 +217,6 @@ public:
     // Inverse proportional controller with piecewise sqrt sections to constrain second derivative
     static float stopping_point(float first_ord_mag, float p, float second_ord_lim);
 
-    // User settable parameters
-    static const struct AP_Param::GroupInfo var_info[];
-
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
     float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel);
@@ -237,6 +234,8 @@ public:
     // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
 
+    // User settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
