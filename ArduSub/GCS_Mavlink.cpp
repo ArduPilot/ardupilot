@@ -49,11 +49,12 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     switch (control_mode) {
     case AUTO:
     case RTL:
-    case LOITER:
+    case VELHOLD:
     case GUIDED:
     case CIRCLE:
     case POSHOLD:
     case BRAKE:
+    case TRANSECT:
         base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
@@ -167,18 +168,16 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case ALT_HOLD:
     case AUTO:
     case GUIDED:
-    case LOITER:
+    case VELHOLD:
     case RTL:
     case CIRCLE:
     case SURFACE:
     case OF_LOITER:
     case POSHOLD:
     case BRAKE:
+    case TRANSECT:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
-        break;
-    case SPORT:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:
     	break;
@@ -1267,7 +1266,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 
         case MAV_CMD_NAV_LOITER_UNLIM:
-            if (sub.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
+            if (sub.set_mode(POSHOLD, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1637,78 +1636,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             break;
         }
-
-        /* Solo user presses Fly button */
-		case MAV_CMD_SOLO_BTN_FLY_CLICK: {
-			result = MAV_RESULT_ACCEPTED;
-
-			if (sub.failsafe.radio) {
-				break;
-			}
-
-			// set mode to Loiter or fall back to AltHold
-			if (!sub.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
-				sub.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
-			}
-			break;
-		}
-
-// Not supported in Sub
-
-//		/* Solo user holds down Fly button for a couple of seconds */
-//		case MAV_CMD_SOLO_BTN_FLY_HOLD: {
-//			result = MAV_RESULT_ACCEPTED;
-//
-//			if (sub.failsafe.radio) {
-//				break;
-//			}
-//
-//			if (!sub.motors.armed()) {
-//				// if disarmed, arm motors
-//				sub.init_arm_motors(true);
-//			} else if (sub.ap.land_complete) {
-//				// if armed and landed, takeoff
-//				if (sub.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
-//					sub.do_user_takeoff(packet.param1*100, true);
-//				}
-//			} else {
-//				// if flying, land
-//				sub.set_mode(LAND, MODE_REASON_GCS_COMMAND);
-//			}
-//			break;
-//		}
-
-		/* Solo user presses pause button */
-		case MAV_CMD_SOLO_BTN_PAUSE_CLICK: {
-			result = MAV_RESULT_ACCEPTED;
-
-			if (sub.failsafe.radio) {
-				break;
-			}
-
-			if (sub.motors.armed()) {
-				if (sub.ap.land_complete) {
-					// if landed, disarm motors
-					sub.init_disarm_motors();
-				} else {
-					// assume that shots modes are all done in guided.
-					// NOTE: this may need to change if we add a non-guided shot mode
-					bool shot_mode = (!is_zero(packet.param1) && sub.control_mode == GUIDED);
-
-					if (!shot_mode) {
-						if (sub.set_mode(BRAKE, MODE_REASON_GCS_COMMAND)) {
-							sub.brake_timeout_to_loiter_ms(2500);
-						} else {
-							sub.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
-						}
-					} else {
-						// SoloLink is expected to handle pause in shots
-					}
-				}
-			}
-			break;
-		}
-
 
         default:
             result = MAV_RESULT_UNSUPPORTED;
