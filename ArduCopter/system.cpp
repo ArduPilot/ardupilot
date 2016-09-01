@@ -155,7 +155,7 @@ void Copter::init_ardupilot()
     // setup frsky, and pass a number of parameters to the library
     frsky_telemetry.init(serial_manager, FIRMWARE_STRING " " FRAME_CONFIG_STRING,
                          FRAME_MAV_TYPE,
-                         &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value, &home_distance, &home_bearing);
+                         &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value);
 #endif
 
     // identify ourselves correctly with the ground station
