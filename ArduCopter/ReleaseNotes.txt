@@ -10,10 +10,11 @@ Changes from 3.4.0-rc2
 4) Advanced Failsafe for use in OutBack challenge (see http://ardupilot.org/plane/docs/advanced-failsafe-configuration.html)
 5) AutoTune minor improvement to reduce step size on vehicles with very low hover throttle (i.e. high power-to-weight ratio)
 6) Bug fixes, minor improvement:
-    a) LAND_SPEED_HIGH allows specifying vertical descent speed separate from WPNAV_SPEED_DN during the initial descent in LAND mode (and final stage of RTL)
-    b) improved USB driver reliability for windows users (NuttX change)
-    c) report dataflash logging health to ground station
-    d) Guided mode accepts yaw rate from SET_ATTITUDE_TARGET message 
+    a) OneShot ESC calibration fix
+    b) LAND_SPEED_HIGH allows specifying vertical descent speed separate from WPNAV_SPEED_DN during the initial descent in LAND mode (and final stage of RTL)
+    c) improved USB driver reliability for windows users (NuttX change)
+    d) report dataflash logging health to ground station
+    e) Guided mode accepts yaw rate from SET_ATTITUDE_TARGET message 
 ------------------------------------------------------------------
 Copter 3.4.0-rc2 08-Aug-2016
 Changes from 3.4.0-rc1
