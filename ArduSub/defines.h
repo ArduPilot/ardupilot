@@ -97,22 +97,22 @@ enum aux_sw_func {
 
 // Auto Pilot Modes enumeration
 enum control_mode_t {
-    STABILIZE =     0,  // manual airframe angle with manual throttle
-    ACRO =          1,  // manual body-frame angular rate with manual throttle
-    ALT_HOLD =      2,  // manual airframe angle with automatic throttle
-    AUTO =          3,  // fully automatic waypoint control using mission commands
-    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    VELHOLD =       5,  // automatic horizontal acceleration with automatic throttle
-    RTL =           6,  // automatic return to launching point
-    CIRCLE =        7,  // automatic circular flight with automatic throttle
-    SURFACE =       9,  // automatic landing with horizontal position control
+    STABILIZE =     0,  // manual angle with manual depth/throttle
+    ACRO =          1,  // manual body-frame angular rate with manual depth/throttle
+    ALT_HOLD =      2,  // manual angle with automatic depth/throttle
+    AUTO =          3,  // not implemented in sub // fully automatic waypoint control using mission commands
+    GUIDED =        4,  // not implemented in sub // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    VELHOLD =       5,  // automatic x/y velocity control and automatic depth/throttle
+    RTL =           6,  // not implemented in sub // automatic return to launching point
+    CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
+    SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     OF_LOITER =    10,  // deprecated
-    DRIFT =        11,  // semi-automous position, yaw and throttle control
-    TRANSECT =     13,  // manual earth-frame angular rate control with manual throttle
-    FLIP =         14,  // automatically flip the vehicle on the roll axis
-    AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
+    DRIFT =        11,  // not implemented in sub // semi-automous position, yaw and throttle control
+    TRANSECT =     13,  // automatic x/y velocity, automatic heading/crosstrack error compensation, automatic depth/throttle
+    FLIP =         14,  // not implemented in sub // automatically flip the vehicle on the roll axis
+    AUTOTUNE =     15,  // not implemented in sub // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
+    BRAKE =        17,  // not implemented in sub // full-brake using inertial/GPS system, no pilot input
 	THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
 	MANUAL =	   19   // Pass-through input with no stabilization
 };
