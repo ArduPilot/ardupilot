@@ -23,7 +23,6 @@ bool Sub::poshold_init(bool ignore_checks)
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
-
 	// set target to current position
 	// only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I
 	wp_nav.init_loiter_target();
@@ -35,8 +34,6 @@ bool Sub::poshold_init(bool ignore_checks)
 // should be called at 100hz or more
 void Sub::poshold_run()
 {
-	uint32_t tnow = millis();
-
     // convert inertial nav earth-frame velocities to body-frame
 //    const Vector3f& vel = inertial_nav.get_velocity();
 //    float vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
