@@ -27,20 +27,7 @@ extern const AP_HAL::HAL& hal;
 AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng) :
     _ahrs(ahrs),
     _battery(battery),
-    _rng(rng),
-    _port(NULL),
-    _protocol(),
-    _initialised_uart(),
-    _crc(0),
-    _ap(),
-    _relative_home_altitude(0.0f),
-    _control_sensors_timer(),
-    _paramID(),
-    _gps(),
-    _passthrough(),
-    _SPort(),
-    _D(),
-    _msg_chunk()
+    _rng(rng)
     {}
 
 /*
