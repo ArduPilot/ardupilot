@@ -206,6 +206,7 @@ void Copter::init_ardupilot()
 #endif
     wp_nav.set_avoidance(&avoid);
 
+    attitude_control.parameter_sanity_check();
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
