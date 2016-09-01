@@ -11,43 +11,13 @@
 //  must_nagivate is true if mode must also control horizontal position
 bool Sub::current_mode_has_user_takeoff(bool must_navigate)
 {
-    switch (control_mode) {
-        case GUIDED:
-        case LOITER:
-        case POSHOLD:
-            return true;
-        case ALT_HOLD:
-        case SPORT:
-            return !must_navigate;
-        default:
-            return false;
-    }
+	return false; // not supported  in Sub
 }
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
 bool Sub::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
-    if (motors.armed() && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
-
-        switch(control_mode) {
-            case GUIDED:
-            	if (guided_takeoff_start(takeoff_alt_cm)) {
-                    set_auto_armed(true);
-                    return true;
-                }
-                return false;
-            case LOITER:
-            case POSHOLD:
-            case ALT_HOLD:
-            case SPORT:
-                set_auto_armed(true);
-                takeoff_timer_start(takeoff_alt_cm);
-                return true;
-            default:
-            	return false;
-        }
-    }
-    return false;
+    return false; // not supported in Sub
 }
 
 // start takeoff to specified altitude above home in centimeters

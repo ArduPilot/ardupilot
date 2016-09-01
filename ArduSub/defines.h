@@ -102,13 +102,13 @@ enum control_mode_t {
     ALT_HOLD =      2,  // manual airframe angle with automatic throttle
     AUTO =          3,  // fully automatic waypoint control using mission commands
     GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    LOITER =        5,  // automatic horizontal acceleration with automatic throttle
+    VELHOLD =       5,  // automatic horizontal acceleration with automatic throttle
     RTL =           6,  // automatic return to launching point
     CIRCLE =        7,  // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatic landing with horizontal position control
     OF_LOITER =    10,  // deprecated
     DRIFT =        11,  // semi-automous position, yaw and throttle control
-    SPORT =        13,  // manual earth-frame angular rate control with manual throttle
+    TRANSECT =     13,  // manual earth-frame angular rate control with manual throttle
     FLIP =         14,  // automatically flip the vehicle on the roll axis
     AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
