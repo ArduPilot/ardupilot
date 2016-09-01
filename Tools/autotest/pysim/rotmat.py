@@ -1,42 +1,43 @@
 #!/usr/bin/env python
-#
-# vector3 and rotation matrix classes
-# This follows the conventions in the ArduPilot code,
-# and is essentially a python version of the AP_Math library
-#
-# Andrew Tridgell, March 2012
-#
-# This library is free software; you can redistribute it and/or modify it
-# under the terms of the GNU Lesser General Public License as published by the
-# Free Software Foundation; either version 2.1 of the License, or (at your
-# option) any later version.
-#
-# This library is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License
-# for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with this library; if not, write to the Free Software Foundation,
-# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+"""
+ vector3 and rotation matrix classes
+ This follows the conventions in the ArduPilot code,
+ and is essentially a python version of the AP_Math library
 
-'''rotation matrix class
-'''
+ Andrew Tridgell, March 2012
 
-from math import sin, cos, sqrt, asin, atan2, pi, radians, acos
+ This library is free software; you can redistribute it and/or modify it
+ under the terms of the GNU Lesser General Public License as published by the
+ Free Software Foundation; either version 2.1 of the License, or (at your
+ option) any later version.
+
+ This library is distributed in the hope that it will be useful, but WITHOUT
+ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License
+ for more details.
+
+ You should have received a copy of the GNU Lesser General Public License
+ along with this library; if not, write to the Free Software Foundation,
+ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+
+"""
+
+from math import acos, asin, atan2, cos, pi, radians, sin, sqrt
+
 
 class Vector3:
-    '''a vector'''
+    """A vector."""
+
     def __init__(self, x=None, y=None, z=None):
-        if x != None and y != None and z != None:
+        if x is not None and y is not None and z is not None:
             self.x = float(x)
             self.y = float(y)
             self.z = float(z)
-        elif x != None and len(x) == 3:
+        elif x is not None and len(x) == 3:
             self.x = float(x[0])
             self.y = float(x[1])
             self.z = float(x[2])
-        elif x != None:
+        elif x is not None:
             raise ValueError('bad initialiser')
         else:
             self.x = float(0)
@@ -70,8 +71,8 @@ class Vector3:
 
     def __mul__(self, v):
         if isinstance(v, Vector3):
-            '''dot product'''
-            return self.x*v.x + self.y*v.y + self.z*v.z
+            """dot product"""
+            return self.x * v.x + self.y * v.y + self.z * v.z
         return Vector3(self.x * v,
                        self.y * v,
                        self.z * v)
@@ -84,10 +85,10 @@ class Vector3:
                        self.z / v)
 
     def __mod__(self, v):
-        '''cross product'''
-        return Vector3(self.y*v.z - self.z*v.y,
-                       self.z*v.x - self.x*v.z,
-                       self.x*v.y - self.y*v.x)
+        """Cross product."""
+        return Vector3(self.y * v.z - self.z * v.y,
+                       self.z * v.x - self.x * v.z,
+                       self.x * v.y - self.y * v.x)
 
     def __copy__(self):
         return Vector3(self.x, self.y, self.z)
@@ -95,13 +96,13 @@ class Vector3:
     copy = __copy__
 
     def length(self):
-        return sqrt(self.x**2 + self.y**2 + self.z**2)
+        return sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
 
     def zero(self):
         self.x = self.y = self.z = 0
 
     def angle(self, v):
-        '''return the angle between this vector and another vector'''
+        """Return the angle between this vector and another vector."""
         return acos(self * v) / (self.length() * v.length())
 
     def normalized(self):
@@ -113,8 +114,10 @@ class Vector3:
         self.y = v.y
         self.z = v.z
 
+
 class Matrix3:
-    '''a 3x3 matrix, intended as a rotation matrix'''
+    """A 3x3 matrix, intended as a rotation matrix."""
+
     def __init__(self, a=None, b=None, c=None):
         if a is not None and b is not None and c is not None:
             self.a = a.copy()
@@ -130,18 +133,17 @@ class Matrix3:
             self.c.x, self.c.y, self.c.z)
 
     def identity(self):
-        self.a = Vector3(1,0,0)
-        self.b = Vector3(0,1,0)
-        self.c = Vector3(0,0,1)
+        self.a = Vector3(1, 0, 0)
+        self.b = Vector3(0, 1, 0)
+        self.c = Vector3(0, 0, 1)
 
     def transposed(self):
         return Matrix3(Vector3(self.a.x, self.b.x, self.c.x),
                        Vector3(self.a.y, self.b.y, self.c.y),
                        Vector3(self.a.z, self.b.z, self.c.z))
 
-
     def from_euler(self, roll, pitch, yaw):
-        '''fill the matrix from Euler angles in radians'''
+        """Fill the matrix from Euler angles in radians."""
         cp = cos(pitch)
         sp = sin(pitch)
         sr = sin(roll)
@@ -159,9 +161,8 @@ class Matrix3:
         self.c.y = sr * cp
         self.c.z = cr * cp
 
-
     def to_euler(self):
-        '''find Euler angles (321 convention) for the matrix'''
+        """Find Euler angles (321 convention) for the matrix."""
         if self.c.x >= 1.0:
             pitch = pi
         elif self.c.x <= -1.0:
@@ -169,14 +170,13 @@ class Matrix3:
         else:
             pitch = -asin(self.c.x)
         roll = atan2(self.c.y, self.c.z)
-        yaw  = atan2(self.b.x, self.a.x)
+        yaw = atan2(self.b.x, self.a.x)
         return (roll, pitch, yaw)
 
-
     def to_euler312(self):
-        '''find Euler angles (312 convention) for the matrix.
+        """Find Euler angles (312 convention) for the matrix.
         See http://www.atacolorado.com/eulersequences.doc
-        '''
+        """
         T21 = self.a.y
         T22 = self.b.y
         T23 = self.c.y
@@ -188,7 +188,7 @@ class Matrix3:
         return (roll, pitch, yaw)
 
     def from_euler312(self, roll, pitch, yaw):
-        '''fill the matrix from Euler angles in radians in 312 convention'''
+        """Fill the matrix from Euler angles in radians in 312 convention."""
         c3 = cos(pitch)
         s3 = sin(pitch)
         s2 = sin(roll)
@@ -199,11 +199,11 @@ class Matrix3:
         self.a.x = c1 * c3 - s1 * s2 * s3
         self.b.y = c1 * c2
         self.c.z = c3 * c2
-        self.a.y = -c2*s1
-        self.a.z = s3*c1 + c3*s2*s1
-        self.b.x = c3*s1 + s3*s2*c1
-        self.b.z = s1*s3 - s2*c1*c3
-        self.c.x = -s3*c2
+        self.a.y = -c2 * s1
+        self.a.z = s3 * c1 + c3 * s2 * s1
+        self.b.x = c3 * s1 + s3 * s2 * c1
+        self.b.z = s1 * s3 - s2 * c1 * c3
+        self.c.x = -s3 * c2
         self.c.y = s2
 
     def __add__(self, m):
@@ -249,7 +249,7 @@ class Matrix3:
     copy = __copy__
 
     def rotate(self, g):
-        '''rotate the matrix by a given amount on 3 axes'''
+        """Rotate the matrix by a given amount on 3 axes."""
         temp_matrix = Matrix3()
         a = self.a
         b = self.b
@@ -268,7 +268,7 @@ class Matrix3:
         self.c += temp_matrix.c
 
     def normalize(self):
-        '''re-normalise a rotation matrix'''
+        """Re-normalise a rotation matrix."""
         error = self.a * self.b
         t0 = self.a - (self.b * (0.5 * error))
         t1 = self.b - (self.a * (0.5 * error))
@@ -278,11 +278,12 @@ class Matrix3:
         self.c = t2 * (1.0 / t2.length())
 
     def trace(self):
-        '''the trace of the matrix'''
+        """The trace of the matrix."""
         return self.a.x + self.b.y + self.c.z
 
+
 def test_euler():
-    '''check that from_euler() and to_euler() are consistent'''
+    """Check that from_euler() and to_euler() are consistent."""
     m = Matrix3()
     from math import radians, degrees
     for r in range(-179, 179, 3):
@@ -290,38 +291,41 @@ def test_euler():
             for y in range(-179, 179, 3):
                 m.from_euler(radians(r), radians(p), radians(y))
                 (r2, p2, y2) = m.to_euler()
-                v1 = Vector3(r,p,y)
-                v2 = Vector3(degrees(r2),degrees(p2),degrees(y2))
+                v1 = Vector3(r, p, y)
+                v2 = Vector3(degrees(r2), degrees(p2), degrees(y2))
                 diff = v1 - v2
                 if diff.length() > 1.0e-12:
                     print('EULER ERROR:', v1, v2, diff.length())
 
-def test_euler312_single(r,p,y):
-    '''check that from_euler312() and to_euler312() are consistent for one set of values'''
+
+def test_euler312_single(r, p, y):
+    """Check that from_euler312() and to_euler312() are consistent for one set of values."""
     from math import degrees, radians
     m = Matrix3()
     m.from_euler312(radians(r), radians(p), radians(y))
     (r2, p2, y2) = m.to_euler312()
-    v1 = Vector3(r,p,y)
-    v2 = Vector3(degrees(r2),degrees(p2),degrees(y2))
+    v1 = Vector3(r, p, y)
+    v2 = Vector3(degrees(r2), degrees(p2), degrees(y2))
     diff = v1 - v2
     if diff.length() > 1.0e-12:
         print('EULER ERROR:', v1, v2, diff.length())
 
-def test_one_axis(r,p,y):
-    '''check that from_euler312() and from_euler() are consistent for one set of values on one axis'''
+
+def test_one_axis(r, p, y):
+    """Check that from_euler312() and from_euler() are consistent for one set of values on one axis."""
     from math import degrees, radians
     m = Matrix3()
     m.from_euler312(radians(r), radians(p), radians(y))
     (r2, p2, y2) = m.to_euler()
-    v1 = Vector3(r,p,y)
-    v2 = Vector3(degrees(r2),degrees(p2),degrees(y2))
+    v1 = Vector3(r, p, y)
+    v2 = Vector3(degrees(r2), degrees(p2), degrees(y2))
     diff = v1 - v2
     if diff.length() > 1.0e-12:
         print('EULER ERROR:', v1, v2, diff.length())
 
+
 def test_euler312():
-    '''check that from_euler312() and to_euler312() are consistent'''
+    """Check that from_euler312() and to_euler312() are consistent."""
     m = Matrix3()
 
     for x in range(-89, 89, 3):
@@ -331,10 +335,12 @@ def test_euler312():
     for r in range(-89, 89, 3):
         for p in range(-179, 179, 3):
             for y in range(-179, 179, 3):
-                test_euler312_single(r,p,y)
+                test_euler312_single(r, p, y)
+
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
     test_euler()
     test_euler312()

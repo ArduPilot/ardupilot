@@ -1,28 +1,34 @@
-# fly ArduPlane in SIL
+# Fly ArduPlane in SITL
 
-import util, pexpect, sys, time, math, shutil, os
-from common import *
+import math
+import os
+import shutil
+
+import pexpect
 from pymavlink import mavutil
-import random
+
+from common import *
+from pysim import util
 
 # get location of scripts
-testdir=os.path.dirname(os.path.realpath(__file__))
+testdir = os.path.dirname(os.path.realpath(__file__))
 
 
-HOME_LOCATION='-35.362938,149.165085,585,354'
-WIND="0,180,0.2" # speed,direction,variance
+HOME_LOCATION = '-35.362938,149.165085,585,354'
+WIND = "0,180,0.2"  # speed,direction,variance
 
 homeloc = None
 
+
 def takeoff(mavproxy, mav):
-    '''takeoff get to 30m altitude'''
+    """Takeoff get to 30m altitude."""
 
     # wait for EKF and GPS checks to pass
     wait_seconds(mav, 30)
 
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
-    
+
     mavproxy.send('switch 4\n')
     wait_mode(mav, 'FBWA')
 
@@ -46,7 +52,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+180, timeout=30):
+    if not wait_altitude(mav, homeloc.alt + 150, homeloc.alt + 180, timeout=30):
         return False
 
     # level off
@@ -55,8 +61,9 @@ def takeoff(mavproxy, mav):
     print("TAKEOFF COMPLETE")
     return True
 
+
 def fly_left_circuit(mavproxy, mav):
-    '''fly a left circuit, 200m on a side'''
+    """Fly a left circuit, 200m on a side."""
     mavproxy.send('switch 4\n')
     wait_mode(mav, 'FBWA')
     mavproxy.send('rc 3 2000\n')
@@ -65,11 +72,11 @@ def fly_left_circuit(mavproxy, mav):
 
     print("Flying left circuit")
     # do 4 turns
-    for i in range(0,4):
+    for i in range(0, 4):
         # hard left
         print("Starting turn %u" % i)
         mavproxy.send('rc 1 1000\n')
-        if not wait_heading(mav, 270 - (90*i), accuracy=10):
+        if not wait_heading(mav, 270 - (90 * i), accuracy=10):
             return False
         mavproxy.send('rc 1 1500\n')
         print("Starting leg %u" % i)
@@ -78,20 +85,22 @@ def fly_left_circuit(mavproxy, mav):
     print("Circuit complete")
     return True
 
+
 def fly_RTL(mavproxy, mav):
-    '''fly to home'''
+    """Fly to home."""
     print("Flying home in RTL")
     mavproxy.send('switch 2\n')
     wait_mode(mav, 'RTL')
     if not wait_location(mav, homeloc, accuracy=120,
-                         target_altitude=homeloc.alt+100, height_accuracy=20,
+                         target_altitude=homeloc.alt + 100, height_accuracy=20,
                          timeout=180):
         return False
     print("RTL Complete")
     return True
 
+
 def fly_LOITER(mavproxy, mav, num_circles=4):
-    '''loiter where we are'''
+    """Loiter where we are."""
     print("Testing LOITER for %u turns" % num_circles)
     mavproxy.send('loiter\n')
     wait_mode(mav, 'LOITER')
@@ -122,8 +131,9 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
     print("Completed Loiter OK")
     return True
 
+
 def fly_CIRCLE(mavproxy, mav, num_circles=1):
-    '''circle where we are'''
+    """Circle where we are."""
     print("Testing CIRCLE for %u turns" % num_circles)
     mavproxy.send('mode CIRCLE\n')
     wait_mode(mav, 'CIRCLE')
@@ -156,7 +166,7 @@ def fly_CIRCLE(mavproxy, mav, num_circles=1):
 
 
 def wait_level_flight(mavproxy, mav, accuracy=5, timeout=30):
-    '''wait for level flight'''
+    """Wait for level flight."""
     tstart = get_sim_time(mav)
     print("Waiting for level flight")
     mavproxy.send('rc 1 1500\n')
@@ -175,7 +185,7 @@ def wait_level_flight(mavproxy, mav, accuracy=5, timeout=30):
 
 
 def change_altitude(mavproxy, mav, altitude, accuracy=30):
-    '''get to a given altitude'''
+    """Get to a given altitude."""
     mavproxy.send('mode FBWA\n')
     wait_mode(mav, 'FBWA')
     alt_error = mav.messages['VFR_HUD'].alt - altitude
@@ -183,7 +193,7 @@ def change_altitude(mavproxy, mav, altitude, accuracy=30):
         mavproxy.send('rc 2 2000\n')
     else:
         mavproxy.send('rc 2 1000\n')
-    if not wait_altitude(mav, altitude-accuracy/2, altitude+accuracy/2):
+    if not wait_altitude(mav, altitude-accuracy/2, altitude + accuracy/2):
         return False
     mavproxy.send('rc 2 1500\n')
     print("Reached target altitude at %u" % mav.messages['VFR_HUD'].alt)
@@ -191,10 +201,10 @@ def change_altitude(mavproxy, mav, altitude, accuracy=30):
 
 
 def axial_left_roll(mavproxy, mav, count=1):
-    '''fly a left axial roll'''
+    """Fly a left axial roll."""
     # full throttle!
     mavproxy.send('rc 3 2000\n')
-    if not change_altitude(mavproxy, mav, homeloc.alt+300):
+    if not change_altitude(mavproxy, mav, homeloc.alt + 300):
         return False
 
     # fly the roll in manual
@@ -224,10 +234,10 @@ def axial_left_roll(mavproxy, mav, count=1):
 
 
 def inside_loop(mavproxy, mav, count=1):
-    '''fly a inside loop'''
+    """Fly a inside loop."""
     # full throttle!
     mavproxy.send('rc 3 2000\n')
-    if not change_altitude(mavproxy, mav, homeloc.alt+300):
+    if not change_altitude(mavproxy, mav, homeloc.alt + 300):
         return False
 
     # fly the loop in manual
@@ -252,11 +262,11 @@ def inside_loop(mavproxy, mav, count=1):
 
 
 def test_stabilize(mavproxy, mav, count=1):
-    '''fly stabilize mode'''
+    """Fly stabilize mode."""
     # full throttle!
     mavproxy.send('rc 3 2000\n')
     mavproxy.send('rc 2 1300\n')
-    if not change_altitude(mavproxy, mav, homeloc.alt+300):
+    if not change_altitude(mavproxy, mav, homeloc.alt + 300):
         return False
     mavproxy.send('rc 2 1500\n')
 
@@ -285,12 +295,13 @@ def test_stabilize(mavproxy, mav, count=1):
     mavproxy.send('rc 3 1700\n')
     return wait_level_flight(mavproxy, mav)
 
+
 def test_acro(mavproxy, mav, count=1):
-    '''fly ACRO mode'''
+    """Fly ACRO mode."""
     # full throttle!
     mavproxy.send('rc 3 2000\n')
     mavproxy.send('rc 2 1300\n')
-    if not change_altitude(mavproxy, mav, homeloc.alt+300):
+    if not change_altitude(mavproxy, mav, homeloc.alt + 300):
         return False
     mavproxy.send('rc 2 1500\n')
 
@@ -339,7 +350,7 @@ def test_acro(mavproxy, mav, count=1):
 
 
 def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
-    '''fly FBWB or CRUISE mode'''
+    """Fly FBWB or CRUISE mode."""
     mavproxy.send("mode %s\n" % mode)
     wait_mode(mav, mode)
     mavproxy.send('rc 3 1700\n')
@@ -357,11 +368,11 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
 
     print("Flying right circuit")
     # do 4 turns
-    for i in range(0,4):
+    for i in range(0, 4):
         # hard left
         print("Starting turn %u" % i)
         mavproxy.send('rc 1 1800\n')
-        if not wait_heading(mav, 0 + (90*i), accuracy=20, timeout=60):
+        if not wait_heading(mav, 0 + (90 * i), accuracy=20, timeout=60):
             mavproxy.send('rc 1 1500\n')
             return False
         mavproxy.send('rc 1 1500\n')
@@ -372,11 +383,11 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
 
     print("Flying rudder left circuit")
     # do 4 turns
-    for i in range(0,4):
+    for i in range(0, 4):
         # hard left
         print("Starting turn %u" % i)
         mavproxy.send('rc 4 1900\n')
-        if not wait_heading(mav, 360 - (90*i), accuracy=20, timeout=60):
+        if not wait_heading(mav, 360 - (90 * i), accuracy=20, timeout=60):
             mavproxy.send('rc 4 1500\n')
             return False
         mavproxy.send('rc 4 1500\n')
@@ -396,27 +407,27 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
     if abs(final_alt - initial_alt) > 20:
         print("Failed to maintain altitude")
         return False
-    
+
     return wait_level_flight(mavproxy, mav)
 
 
 def setup_rc(mavproxy):
-    '''setup RC override control'''
-    for chan in [1,2,4,5,6,7]:
+    """Setup RC override control."""
+    for chan in [1, 2, 4, 5, 6, 7]:
         mavproxy.send('rc %u 1500\n' % chan)
     mavproxy.send('rc 3 1000\n')
     mavproxy.send('rc 8 1800\n')
 
 
 def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=None):
-    '''fly a mission from a file'''
+    """Fly a mission from a file."""
     global homeloc
     print("Flying mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
-    mavproxy.send('switch 1\n') # auto mode
+    mavproxy.send('switch 1\n')  # auto mode
     wait_mode(mav, 'AUTO')
     if not wait_waypoint(mav, 1, 7, max_dist=60):
         return False
@@ -426,24 +437,24 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     return True
 
 
-def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
-    '''fly ArduPlane in SIL
+def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+    """Fly ArduPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the flight in real time
-    '''
+    """
     global homeloc
 
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
-    if map:
+    if use_map:
         options += ' --map'
 
-    sil = util.start_SIL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=10,
-                         valgrind=valgrind, gdb=gdb,
-                         defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'))
-    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
+    sitl = util.start_SITL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=10,
+                          valgrind=valgrind, gdb=gdb,
+                          defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'))
+    mavproxy = util.start_MAVProxy_SITL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
@@ -462,14 +473,14 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     expect_list_clear()
-    expect_list_extend([sil, mavproxy])
+    expect_list_extend([sitl, mavproxy])
 
     print("Started simulator")
 
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
-    except Exception, msg:
+    except Exception as msg:
         print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
@@ -534,8 +545,8 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
             print("Failed CIRCLE")
             failed = True
             fail_list.append("LOITER")
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy = 10,
-                           target_altitude=homeloc.alt+100):
+        if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy=10,
+                           target_altitude=(homeloc.alt + 100)):
             print("Failed mission")
             failed = True
             fail_list.append("mission")
@@ -543,16 +554,16 @@ def fly_ArduPlane(binary, viewerip=None, map=False, valgrind=False, gdb=False):
             print("Failed log download")
             failed = True
             fail_list.append("log_download")
-    except pexpect.TIMEOUT, e:
+    except pexpect.TIMEOUT as e:
         print("Failed with timeout")
         failed = True
         fail_list.append("timeout")
 
     mav.close()
     util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
+    util.pexpect_close(sitl)
 
-    valgrind_log = sil.valgrind_log_filepath()
+    valgrind_log = sitl.valgrind_log_filepath()
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0644)
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduPlane-valgrind.log"))
