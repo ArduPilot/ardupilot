@@ -234,6 +234,9 @@ public:
     // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
 
+    // sanity check parameters.  should be called once before take-off
+    virtual void parameter_sanity_check() {}
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
