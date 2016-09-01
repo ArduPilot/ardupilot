@@ -449,6 +449,7 @@ bool QuadPlane::setup(void)
     motors->set_interlock(true);
     pid_accel_z.set_dt(loop_delta_t);
     pos_control->set_dt(loop_delta_t);
+    attitude_control->parameter_sanity_check();
 
     // setup the trim of any motors used by AP_Motors so px4io
     // failsafe will disable motors
