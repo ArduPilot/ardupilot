@@ -34,7 +34,7 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, con
  * init - perform required initialisation
  * for Copter
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing)
+void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value)
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
@@ -50,8 +50,6 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         _params.fs_batt_voltage = fs_batt_voltage; // failsafe battery voltage in volts
         _params.fs_batt_mah = fs_batt_mah; // failsafe reserve capacity in mAh
         _ap.value = ap_value; // ap bit-field
-        _ap.home_distance = home_distance;
-        _ap.home_bearing = home_bearing;
     }
     
     if (_port != NULL) {
@@ -655,13 +653,18 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
  */
 uint32_t AP_Frsky_Telem::calc_home(void)
 {
-    uint32_t home;
-
-    // distance between vehicle and home location in meters
-    home = prep_number(roundf(*_ap.home_distance * 0.01f), 3, 2);
-    // altitude between vehicle and home location in decimeters
+    uint32_t home = 0;
     Location loc;
-    if (_ahrs.get_position(loc)) {
+    if (_ahrs.get_position(loc)) {            
+        // check home_loc is valid
+        const Location &home_loc = _ahrs.get_home();
+        if (home_loc.lat != 0 || home_loc.lng != 0) {
+            // distance between vehicle and home_loc in meters
+            home = prep_number(roundf(get_distance(home_loc, loc)), 3, 2);
+            // angle from front of vehicle to the direction of home_loc in 3 degree increments (just in case, limit to 127 (0x7F) since the value is stored on 7 bits)
+            home |= (((uint8_t)roundf(get_bearing_cd(loc,home_loc) * 0.00333f)) & HOME_BEARING_LIMIT)<<HOME_BEARING_OFFSET;
+        }
+        // altitude between vehicle and home_loc
         _relative_home_altitude = loc.alt;
         if (!loc.flags.relative_alt) {
             // loc.alt has home altitude added, remove it
@@ -671,8 +674,6 @@ uint32_t AP_Frsky_Telem::calc_home(void)
         _relative_home_altitude = 0;
     }
     home |= prep_number(roundf(_relative_home_altitude * 0.1f), 3, 2)<<HOME_ALT_OFFSET;
-    // angle between vehicle and home loc (relative to North) in 3 degree increments (just in case, limit to 127 (0x7F) since the value is stored on 7 bits)
-    home |= (((uint8_t)roundf(*_ap.home_bearing * 0.00333f)) & HOME_BEARING_LIMIT)<<HOME_BEARING_OFFSET;
     return home;
 }
 
