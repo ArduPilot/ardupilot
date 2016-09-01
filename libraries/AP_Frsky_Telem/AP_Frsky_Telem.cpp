@@ -635,7 +635,7 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     uint32_t ap_status;
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
-    ap_status = (uint8_t)(_ap.control_mode & AP_CONTROL_MODE_LIMIT);
+    ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
     ap_status |= (uint8_t)(*_ap.value & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
     // land complete flag
