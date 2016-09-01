@@ -74,7 +74,7 @@ void Sub::brake_run()
     pos_control.update_z_controller();
 
     if (brake_timeout_ms != 0 && millis()-brake_timeout_start >= brake_timeout_ms) {
-        if (!set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
+        if (!set_mode(POSHOLD, MODE_REASON_BRAKE_TIMEOUT)) {
             set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
         }
     }
