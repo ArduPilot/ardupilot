@@ -865,12 +865,15 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
     /*
       fixed wing and rover when in fly_forward mode will fall back to
       DCM if the EKF doesn't have GPS. This is the safest option as
-      DCM is very robust
+      DCM is very robust. Note that we also check the filter status
+      when fly_forward is false and we are disarmed. This is to ensure
+      that the arming checks do wait for good GPS position on fixed
+      wing and rover
      */
     if (ret != EKF_TYPE_NONE &&
         (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
          _vehicle_class == AHRS_VEHICLE_GROUND) &&
-        _flags.fly_forward) {
+        (_flags.fly_forward || !hal.util->get_soft_armed())) {
         nav_filter_status filt_state;
         if (ret == EKF_TYPE2) {
             EKF2.getFilterStatus(-1,filt_state);
