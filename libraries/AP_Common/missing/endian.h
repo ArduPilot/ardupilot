@@ -1,3 +1,7 @@
+#ifdef __APPLE__
+#undef HAVE_ENDIAN_H
+#endif
+
 #if defined(HAVE_ENDIAN_H) && HAVE_ENDIAN_H
 #include_next <endian.h>
 #else
