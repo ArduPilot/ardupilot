@@ -72,7 +72,15 @@ env:
 matrix:
   fast_finish: true
   include:
-    - compiler: "gcc"
+    - os: linux
+      compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v2 px4-v4"
-    - compiler: "gcc"
+    - os: linux
+      compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"
+    # only build sitl under osx
+    # osx should be used only for development
+    - os: osx
+      osx_image: xcode7.3
+      env: CI_BUILD_TARGET="sitl"
+      compiler: "clang"
