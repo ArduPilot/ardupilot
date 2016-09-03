@@ -393,7 +393,7 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, mavlink_messag
 
     // set current command
     if (mission.set_current_cmd(packet.seq)) {
-        mavlink_msg_mission_current_send(chan, mission.get_current_nav_cmd().index);
+        mavlink_msg_mission_current_send(chan, packet.seq);
     }
 }
 
