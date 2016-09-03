@@ -64,11 +64,6 @@ public:
      */
     virtual AuxiliaryBus *get_auxiliary_bus() { return nullptr; }
 
-    /*
-      return the product ID
-     */
-    int16_t product_id(void) const { return _product_id; }
-
     int16_t get_id() const { return _id; }
 
 protected:
@@ -120,9 +115,6 @@ protected:
 
     // set gyro error_count
     void _set_gyro_error_count(uint8_t instance, uint32_t error_count);
-
-    // backend should fill in its product ID from AP_PRODUCT_ID_*
-    int16_t _product_id;
 
     // backend unique identifier or -1 if backend doesn't identify itself
     int16_t _id = -1;

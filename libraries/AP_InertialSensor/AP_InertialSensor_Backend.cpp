@@ -7,8 +7,7 @@
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
-    _imu(imu),
-    _product_id(AP_PRODUCT_ID_NONE)
+    _imu(imu)
 {
     _sem = hal.util->new_semaphore();
 }

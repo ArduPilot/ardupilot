@@ -390,7 +390,6 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
     , _drdy_pin_num_g(drdy_pin_num_g)
     , _rotation(rotation)
 {
-    _product_id = AP_PRODUCT_ID_NONE;
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,

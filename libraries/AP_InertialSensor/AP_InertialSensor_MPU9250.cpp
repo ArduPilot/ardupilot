@@ -302,8 +302,6 @@ void AP_InertialSensor_MPU9250::start()
     _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);
     hal.scheduler->delay(1);
 
-    _product_id = AP_PRODUCT_ID_MPU9250;
-
     // RM-MPU-9250A-00.pdf, pg. 15, select accel full scale 16g
     _register_write(MPUREG_ACCEL_CONFIG,3<<3);
 
