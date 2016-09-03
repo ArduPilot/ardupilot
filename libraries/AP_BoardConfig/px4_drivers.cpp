@@ -196,6 +196,10 @@ void AP_BoardConfig::px4_setup_canbus(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     if (px4.can_enable >= 1) {
+        // give time for other drivers to fully start before we start
+        // canbus. This prevents a race where a canbus mag comes up
+        // before the hmc5883
+        hal.scheduler->delay(500);
         if (px4_start_driver(uavcan_main, "uavcan", "start")) {
             hal.console->printf("UAVCAN: started\n");            
             // give some time for CAN bus initialisation
@@ -203,6 +207,8 @@ void AP_BoardConfig::px4_setup_canbus(void)
         } else {
             hal.console->printf("UAVCAN: failed to start\n");
         }
+        // give time for canbus drivers to register themselves
+        hal.scheduler->delay(1000);
     }
     if (px4.can_enable >= 2) {
         if (px4_start_driver(uavcan_main, "uavcan", "start fw")) {
@@ -739,8 +745,8 @@ void AP_BoardConfig::px4_setup()
     px4_setup_safety();
     px4_setup_uart();
     px4_setup_sbus();
-    px4_setup_canbus();
     px4_setup_drivers();
+    px4_setup_canbus();
 }
 
 #endif // HAL_BOARD_PX4
