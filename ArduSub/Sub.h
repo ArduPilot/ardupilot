@@ -303,6 +303,8 @@ private:
         uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
         uint8_t terrain             : 1; // 6   // true if the missing terrain data failsafe has occurred
         uint8_t leak				: 1; // true if leak recently detected
+        uint8_t internal_pressure  : 1;
+        uint8_t internal_temperature :1;
         uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
         uint32_t last_gcs_warn_ms;
 
@@ -1043,6 +1045,8 @@ private:
     void accel_cal_update(void);
 
     void set_leak_status(bool status);
+    void failsafe_internal_pressure_check();
+    void failsafe_internal_temperature_check();
 
     bool surface_init(bool ignore_flags);
     void surface_run();
