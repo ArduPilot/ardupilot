@@ -261,7 +261,7 @@ void Sub::init_ardupilot()
 		ap.depth_sensor_present = false;
 		for(int i = 1; i < barometer.num_instances(); i++) {
 			barometer.set_type(i, BARO_TYPE_AIR); // Default fcu air baro
-			barometer.set_precision_multiplier(i, 1); // Use default valuse
+			barometer.set_precision_multiplier(i, 1); // Use default values
 		}
 		EKF.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
 		EKF2.set_baro_alt_noise(10.0f);
@@ -270,6 +270,11 @@ void Sub::init_ardupilot()
 	}
 
     water_detector.init();
+
+    // cope with MS5607 in place of MS5611 on fake pixhawks
+	if(barometer.get_pressure(0) < 60000) {
+		barometer.set_precision_multiplier(0, 2);
+	}
 
 	// read Baro pressure at ground
 	//-----------------------------
