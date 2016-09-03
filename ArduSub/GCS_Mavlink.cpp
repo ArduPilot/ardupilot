@@ -1518,6 +1518,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
+            	// Send an invalid signal to the motors to prevent spinning due to neutral (1500) pwm pulse being cut short
+            	// For that matter, send an invalid signal to all channels to prevent undesired/unexpected behavior
+                hal.rcout->cork();
+                for(int i=0; i<RC_MAX_CHANNELS; i++ ) {
+                        hal.rcout->write(i, 0);
+                }
+                hal.rcout->push();
+
                 AP_Notify::flags.firmware_update = 1;
                 sub.update_notify();
                 hal.scheduler->delay(200);
