@@ -1396,7 +1396,7 @@ bool AP_AHRS_NavEKF::have_ekf_logging(void) const
 }
 
 // get earth-frame accel vector for primary IMU
-const Vector3f &AP_AHRS_NavEKF::get_accel_ef() const
+uint8_t AP_AHRS_NavEKF::get_primary_IMU_index() const
 {
     int8_t imu = -1;
     switch (ekf_type()) {
@@ -1410,7 +1410,32 @@ const Vector3f &AP_AHRS_NavEKF::get_accel_ef() const
     if (imu == -1) {
         imu = _ins.get_primary_accel();
     }
-    return get_accel_ef(imu);
+    return imu;
+}
+
+// get earth-frame accel vector for primary IMU
+const Vector3f &AP_AHRS_NavEKF::get_accel_ef() const
+{
+    return get_accel_ef(get_primary_accel_index());
+}
+
+
+// get the index of the current primary accelerometer sensor
+uint8_t AP_AHRS_NavEKF::get_primary_accel_index(void) const
+{
+    if (ekf_type() == 2) {
+        return get_primary_IMU_index();
+    }
+    return _ins.get_primary_accel();
+}
+
+// get the index of the current primary gyro sensor
+uint8_t AP_AHRS_NavEKF::get_primary_gyro_index(void) const
+{
+    if (ekf_type() == 2) {
+        return get_primary_IMU_index();
+    }
+    return _ins.get_primary_gyro();
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

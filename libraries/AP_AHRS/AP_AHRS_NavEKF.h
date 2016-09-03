@@ -232,6 +232,12 @@ public:
 
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
+
+    // get the index of the current primary accelerometer sensor
+    uint8_t get_primary_accel_index(void) const override;
+
+    // get the index of the current primary gyro sensor
+    uint8_t get_primary_gyro_index(void) const override;
     
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
@@ -269,6 +275,9 @@ private:
     void update_EKF1(void);
     void update_EKF2(void);
 
+    // get the index of the current primary IMU
+    uint8_t get_primary_IMU_index(void) const;
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     void update_SITL(void);
