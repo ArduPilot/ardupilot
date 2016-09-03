@@ -64,6 +64,10 @@ public:
      */
     virtual AuxiliaryBus *get_auxiliary_bus() { return nullptr; }
 
+    /*
+     * Return the unique identifier for this backend: it's the same for
+     * several sensors if the backend registers more gyros/accels
+     */
     int16_t get_id() const { return _id; }
 
 protected:
