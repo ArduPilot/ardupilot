@@ -55,10 +55,9 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: PRODUCT_ID
     // @DisplayName: IMU Product ID
-    // @Description: Which type of IMU is installed (read-only).
+    // @Description: unused
     // @User: Advanced
-    // @Values: 0:Unknown,1:unused,2:unused,88:unused,3:SITL,4:PX4v1,5:PX4v2,256:unused,257:Linux
-    AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _product_id,   0),
+    AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _old_product_id,   0),
 
     /*
       The following parameter indexes and reserved from previous use
@@ -656,9 +655,6 @@ AP_InertialSensor::detect_backends(void)
     if (_backend_count == 0) {
         AP_HAL::panic("No INS backends available");
     }
-
-    // set the product ID to the ID of the first backend
-    _product_id.set(_backends[0]->product_id());
 }
 
 /*
@@ -992,7 +988,6 @@ AP_InertialSensor::_init_gyro()
 // save parameters to eeprom
 void AP_InertialSensor::_save_parameters()
 {
-    _product_id.save();
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _accel_scale[i].save();
         _accel_offset[i].save();

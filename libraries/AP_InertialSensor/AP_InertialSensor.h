@@ -319,7 +319,7 @@ private:
     Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
 
     // product id
-    AP_Int16 _product_id;
+    AP_Int16 _old_product_id;
 
     // accelerometer scaling and offsets
     AP_Vector3f _accel_scale[INS_MAX_INSTANCES];

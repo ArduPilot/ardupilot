@@ -42,8 +42,6 @@ bool AP_InertialSensor_SITL::init_sensor(void)
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SITL::timer_update, void));
 
-    _product_id = AP_PRODUCT_ID_NONE;
-
     return true;
 }
 
