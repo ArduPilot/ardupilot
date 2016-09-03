@@ -150,6 +150,13 @@ public:
         _read_flag = flag;
     }
 
+    /*
+     * Unique identifier for this device on the system that shall be the same
+     * across reboots so device-specific values can be loaded from
+     * EEPROM/filesystem.
+     */
+    virtual uint16_t get_id() { return 0; }
+
 protected:
     uint8_t _read_flag = 0;
 };
