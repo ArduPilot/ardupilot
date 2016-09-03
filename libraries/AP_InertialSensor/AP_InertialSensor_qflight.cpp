@@ -35,7 +35,6 @@ bool AP_InertialSensor_QFLIGHT::init_sensor(void)
     accel_instance = _imu.register_accel(1000);
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_QFLIGHT::timer_update, void));
-    _product_id = AP_PRODUCT_ID_MPU9250;
     return true;
 }
 

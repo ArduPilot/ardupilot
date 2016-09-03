@@ -36,8 +36,6 @@ bool AP_InertialSensor_QURT::init_sensor(void)
     mpu9250_mag_buffer = new ObjectBuffer<mpu9x50_data>(20);
     init_mpu9250();
 
-    _product_id = AP_PRODUCT_ID_MPU9250;
-
     return true;
 }
 

@@ -24,9 +24,6 @@ public:
     /* update accel and gyro state */
     bool update();
 
-    // return product ID
-    int16_t product_id() const { return AP_PRODUCT_ID_L3G4200D; }
-
 private:
     bool _init_sensor();
     void _accumulate();
