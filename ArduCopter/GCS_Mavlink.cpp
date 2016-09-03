@@ -1425,6 +1425,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             if (copter.ap.home_state != HOME_UNSET) {
                 send_home(copter.ahrs.get_home());
                 result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
             }
             break;
 
