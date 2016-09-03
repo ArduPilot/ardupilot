@@ -263,6 +263,16 @@ bool I2CDevice::adjust_periodic_callback(
     return _bus.thread.adjust_timer(static_cast<TimerPollable*>(h), period_usec);
 }
 
+uint16_t I2CDevice::get_id()
+{
+    /*
+     * 7 MSb for the device address, followed by the bus number and then the
+     * bus type. When/if we support 10-bit addressing, this needs to be
+     * changed.
+     */
+    return (_address << 9) | (_bus.bus << 3) | bus_type;
+}
+
 I2CDeviceManager::I2CDeviceManager()
 {
     /* Reserve space up-front for 4 buses */

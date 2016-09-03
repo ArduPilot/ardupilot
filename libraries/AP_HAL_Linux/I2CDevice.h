@@ -75,6 +75,8 @@ public:
     bool adjust_periodic_callback(
         AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
+    uint16_t get_id() override;
+
 protected:
     I2CBus &_bus;
     uint8_t _address;
