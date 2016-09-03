@@ -1105,6 +1105,8 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             if (rover.home_is_set != HOME_UNSET) {
                 send_home(rover.ahrs.get_home());
                 result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
             }
             break;
 
