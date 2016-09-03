@@ -432,6 +432,10 @@ void Sub::three_hz_loop()
 {
 	set_leak_status(water_detector.update());
 
+	failsafe_internal_pressure_check();
+
+	failsafe_internal_temperature_check();
+
     // check if we've lost contact with the ground station
     failsafe_gcs_check();
 
