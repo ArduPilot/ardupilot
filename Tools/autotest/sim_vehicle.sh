@@ -313,7 +313,7 @@ case $FRAME in
     ZephyrGazebo)
 	BUILD_TARGET="sitl"
         MODEL="Gazebo"
-        DEFAULTS_PATH="$autotest/default_params/plane-elevons.parm"
+        DEFAULTS_PATH="$autotest/default_params/gazebo-elevons.parm"
 	;;
     CRRCSim|last_letter*)
 	BUILD_TARGET="sitl"
