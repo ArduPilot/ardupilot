@@ -1,7 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Sub.h"
-
+#define FS_INTERNAL_PRESSURE_MAX 105000 // 103000 pascal
+#define FS_INTERNAL_TEMPERATURE_MAX 55 // 50 deg C
 /*
  *       This event will be called when the failsafe changes
  *       boolean failsafe reflects the current state
@@ -71,6 +72,48 @@ void Sub::failsafe_battery_event(void)
 //    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
 //    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
+}
+
+void Sub::failsafe_internal_pressure_check() {
+	uint32_t tnow = AP_HAL::millis();
+	static uint32_t last_pressure_warn_ms;
+	static uint32_t last_pressure_good_ms;
+	if(barometer.get_pressure(0) < FS_INTERNAL_PRESSURE_MAX) {
+		last_pressure_good_ms = tnow;
+		last_pressure_warn_ms = tnow;
+		failsafe.internal_pressure = false;
+		return;
+	}
+
+	if(tnow > last_pressure_good_ms + 2000) {
+		failsafe.internal_pressure = true;
+	}
+
+	if(failsafe.internal_pressure && tnow > last_pressure_warn_ms + 5000) {
+		last_pressure_warn_ms = tnow;
+		gcs_send_text(MAV_SEVERITY_WARNING, "Internal pressure critical!");
+	}
+}
+
+void Sub::failsafe_internal_temperature_check() {
+	uint32_t tnow = AP_HAL::millis();
+	static uint32_t last_temperature_warn_ms;
+	static uint32_t last_temperature_good_ms;
+	if(barometer.get_temperature(0) < FS_INTERNAL_TEMPERATURE_MAX) {
+		last_temperature_good_ms = tnow;
+		last_temperature_warn_ms = tnow;
+		failsafe.internal_temperature = false;
+		return;
+	}
+
+	if(tnow > last_temperature_good_ms + 2000) {
+		failsafe.internal_temperature = true;
+	}
+
+	if(failsafe.internal_temperature && tnow > last_temperature_warn_ms + 5000) {
+		last_temperature_warn_ms = tnow;
+		gcs_send_text(MAV_SEVERITY_WARNING, "Internal temperature critical!");
+	}
 }
 
 void Sub::set_leak_status(bool status) {
