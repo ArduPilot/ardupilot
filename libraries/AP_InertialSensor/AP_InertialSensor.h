@@ -272,8 +272,8 @@ private:
 
     bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
 
-    // save parameters to eeprom
-    void  _save_parameters();
+    // save gyro calibration values to eeprom
+    void _save_gyro_calibration();
 
     // backend objects
     AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
