@@ -196,8 +196,8 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
 
     _dev->get_semaphore()->give();
 
-    _gyro_instance = _imu.register_gyro(800);
-    _accel_instance = _imu.register_accel(800);
+    _gyro_instance = _imu.register_gyro(800, _dev->get_id());
+    _accel_instance = _imu.register_accel(800, _dev->get_id());
 
     // start the timer process to read samples
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_L3G4200D::_accumulate, void));
