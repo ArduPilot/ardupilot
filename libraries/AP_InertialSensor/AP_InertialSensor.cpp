@@ -683,7 +683,7 @@ AP_InertialSensor::init_gyro()
     _init_gyro();
 
     // save calibration
-    _save_parameters();
+    _save_gyro_calibration();
 }
 
 // accelerometer clipping reporting
@@ -986,11 +986,9 @@ AP_InertialSensor::_init_gyro()
 }
 
 // save parameters to eeprom
-void AP_InertialSensor::_save_parameters()
+void AP_InertialSensor::_save_gyro_calibration()
 {
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        _accel_scale[i].save();
-        _accel_offset[i].save();
         _gyro_offset[i].save();
     }
 }
