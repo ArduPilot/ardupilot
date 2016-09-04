@@ -382,8 +382,8 @@ void AP_InertialSensor_MPU6000::start()
     _dev->get_semaphore()->give();
 
     // grab the used instances
-    _gyro_instance = _imu.register_gyro(1000);
-    _accel_instance = _imu.register_accel(1000);
+    _gyro_instance = _imu.register_gyro(1000, _dev->get_id());
+    _accel_instance = _imu.register_accel(1000, _dev->get_id());
 
     // setup sensor rotations from probe()
     set_gyro_orientation(_gyro_instance, _rotation);

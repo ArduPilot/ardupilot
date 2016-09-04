@@ -28,10 +28,10 @@ AP_InertialSensor_Backend *AP_InertialSensor_QURT::detect(AP_InertialSensor &_im
     return sensor;
 }
 
-bool AP_InertialSensor_QURT::init_sensor(void) 
+bool AP_InertialSensor_QURT::init_sensor(void)
 {
-    gyro_instance = _imu.register_gyro(1000);
-    accel_instance = _imu.register_accel(1000);
+    gyro_instance = _imu.register_gyro(1000, 1);
+    accel_instance = _imu.register_accel(1000, 1);
 
     mpu9250_mag_buffer = new ObjectBuffer<mpu9x50_data>(20);
     init_mpu9250();

@@ -66,8 +66,8 @@ public:
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
-    uint8_t register_gyro(uint16_t raw_sample_rate_hz);
-    uint8_t register_accel(uint16_t raw_sample_rate_hz);
+    uint8_t register_gyro(uint16_t raw_sample_rate_hz, uint32_t id);
+    uint8_t register_accel(uint16_t raw_sample_rate_hz, uint32_t id);
 
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
@@ -321,6 +321,11 @@ private:
     // product id
     AP_Int16 _old_product_id;
 
+    // IDs to uniquely identify each sensor: shall remain
+    // the same across reboots
+    AP_Int32 _accel_id[INS_MAX_INSTANCES];
+    AP_Int32 _gyro_id[INS_MAX_INSTANCES];
+
     // accelerometer scaling and offsets
     AP_Vector3f _accel_scale[INS_MAX_INSTANCES];
     AP_Vector3f _accel_offset[INS_MAX_INSTANCES];
@@ -354,8 +359,9 @@ private:
     enum Rotation _gyro_orientation[INS_MAX_INSTANCES];
     enum Rotation _accel_orientation[INS_MAX_INSTANCES];
 
-    // calibrated_ok flags
+    // calibrated_ok/id_ok flags
     bool _gyro_cal_ok[INS_MAX_INSTANCES];
+    bool _accel_id_ok[INS_MAX_INSTANCES];
 
     // primary accel and gyro
     uint8_t _primary_gyro;
