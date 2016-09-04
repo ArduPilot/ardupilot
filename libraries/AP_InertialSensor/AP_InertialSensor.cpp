@@ -376,6 +376,48 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("POS3", 29, AP_InertialSensor, _accel_pos[2], 0.0f),
 
+    // @Param: GYR_ID
+    // @DisplayName: Gyro ID
+    // @Description: Gyro sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("GYR_ID", 30, AP_InertialSensor, _gyro_id[0], 0),
+
+    // @Param: GYR2_ID
+    // @DisplayName: Gyro2 ID
+    // @Description: Gyro2 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("GYR2_ID", 31, AP_InertialSensor, _gyro_id[1], 0),
+
+    // @Param: GYR3_ID
+    // @DisplayName: Gyro3 ID
+    // @Description: Gyro3 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("GYR3_ID", 32, AP_InertialSensor, _gyro_id[2], 0),
+
+    // @Param: ACC_ID
+    // @DisplayName: Accelerometer ID
+    // @Description: Accelerometer sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("ACC_ID", 33, AP_InertialSensor, _accel_id[0], 0),
+
+    // @Param: ACC2_ID
+    // @DisplayName: Accelerometer2 ID
+    // @Description: Accelerometer2 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("ACC2_ID", 34, AP_InertialSensor, _accel_id[1], 0),
+
+    // @Param: ACC3_ID
+    // @DisplayName: Accelerometer3 ID
+    // @Description: Accelerometer3 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("ACC3_ID", 35, AP_InertialSensor, _accel_id[2], 0),
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -457,24 +499,67 @@ AP_InertialSensor *AP_InertialSensor::get_instance()
 /*
   register a new gyro instance
  */
-uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz)
+uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
+                                         uint32_t id)
 {
     if (_gyro_count == INS_MAX_INSTANCES) {
         AP_HAL::panic("Too many gyros");
     }
+
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
+
+    bool saved = _gyro_id[_gyro_count].load();
+
+    if (saved && (uint32_t)_gyro_id[_gyro_count] != id) {
+        // inconsistent gyro id - mark it as needing calibration
+        _gyro_cal_ok[_gyro_count] = false;
+    }
+
+    _gyro_id[_gyro_count].set((int32_t) id);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!saved) {
+        // assume this is the same sensor and save its ID to allow seamless
+        // transition from when we didn't have the IDs.
+        _gyro_id[_gyro_count].save();
+    }
+#endif
+
     return _gyro_count++;
 }
 
 /*
   register a new accel instance
  */
-uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz)
+uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
+                                          uint32_t id)
 {
     if (_accel_count == INS_MAX_INSTANCES) {
         AP_HAL::panic("Too many accels");
     }
+
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
+    bool saved = _accel_id[_accel_count].load();
+
+    if (!saved) {
+        // inconsistent accel id
+        _accel_id_ok[_accel_count] = false;
+    } else if ((uint32_t)_accel_id[_accel_count] != id) {
+        // inconsistent accel id
+        _accel_id_ok[_accel_count] = false;
+    } else {
+        _accel_id_ok[_accel_count] = true;
+    }
+
+    _accel_id[_accel_count].set((int32_t) id);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        // assume this is the same sensor and save its ID to allow seamless
+        // transition from when we didn't have the IDs.
+        _accel_id_ok[_accel_count] = true;
+        _accel_id[_accel_count].save();
+#endif
+
     return _accel_count++;
 }
 
@@ -805,6 +890,9 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
 
     // check each accelerometer has offsets saved
     for (uint8_t i=0; i<get_accel_count(); i++) {
+        if (!_accel_id_ok[i]) {
+            return false;
+        }
         // exactly 0.0 offset is extremely unlikely
         if (_accel_offset[i].get().is_zero()) {
             return false;
@@ -990,6 +1078,7 @@ void AP_InertialSensor::_save_gyro_calibration()
 {
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _gyro_offset[i].save();
+        _gyro_id[i].save();
     }
 }
 
@@ -1443,6 +1532,8 @@ void AP_InertialSensor::_acal_save_calibrations()
             _accel_calibrator[i].get_calibration(bias, gain);
             _accel_offset[i].set_and_save(bias);
             _accel_scale[i].set_and_save(gain);
+            _accel_id[i].save();
+            _accel_id_ok[i] = true;
         } else {
             _accel_offset[i].set_and_save(Vector3f(0,0,0));
             _accel_scale[i].set_and_save(Vector3f(0,0,0));

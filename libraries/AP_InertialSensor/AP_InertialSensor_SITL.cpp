@@ -36,8 +36,8 @@ bool AP_InertialSensor_SITL::init_sensor(void)
 
     // grab the used instances
     for (uint8_t i=0; i<INS_SITL_INSTANCES; i++) {
-        gyro_instance[i] = _imu.register_gyro(sitl->update_rate_hz);
-        accel_instance[i] = _imu.register_accel(sitl->update_rate_hz);
+        gyro_instance[i] = _imu.register_gyro(sitl->update_rate_hz, i);
+        accel_instance[i] = _imu.register_accel(sitl->update_rate_hz, i);
     }
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SITL::timer_update, void));
