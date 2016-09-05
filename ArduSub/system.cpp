@@ -250,6 +250,11 @@ void Sub::init_ardupilot()
     //-----------------------------
     init_barometer(true);
 
+	// backwards compatibility
+	if(attitude_control.get_accel_yaw_max() < 110000.0f) {
+		attitude_control.save_accel_yaw_max(110000.0f);
+	}
+
     // initialise rangefinder
 #if RANGEFINDER_ENABLED == ENABLED
     init_rangefinder();
