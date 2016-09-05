@@ -38,7 +38,7 @@ cache:
     - $HOME/opt
 
 before_install:
-  - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then ./Tools/scripts/install-osx-deps.sh ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then Tools/scripts/install-osx-deps.sh ; fi
   - Tools/scripts/configure-ci.sh
   - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
 
