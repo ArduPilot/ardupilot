@@ -79,6 +79,7 @@ module_mk:
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
 px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
+	$(v) echo Building px4-v1
 	$(RULEHDR)
 	$(v) cp $(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
@@ -88,6 +89,7 @@ px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
 px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
+	$(v) echo Building px4-v2
 	$(RULEHDR)
 	$(v) cp $(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v2_APM
@@ -97,6 +99,7 @@ px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v2.px4"
 
 px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Archives/px4fmu-v4.export $(SKETCHCPP) module_mk
+	$(v) echo Building px4-v4
 	$(RULEHDR)
 	$(v) cp $(PX4_V4_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v4_APM
@@ -107,7 +110,12 @@ px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(PX4_ROOT)/Arc
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4.px4" "$(SKETCH)-v4.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4.px4"
 
-px4: px4-v1 px4-v2 px4-v4
+# force the 3 build types to not run in parallel. We got bad binaries with incorrect parameter handling
+# when these were allowed to happen in parallel
+px4:
+	$(MAKE) px4-v1
+	$(MAKE) px4-v2
+	$(MAKE) px4-v4
 
 px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build $(PX4_ROOT)/Images/*.px4 $(PX4_ROOT)/Images/*.bin
