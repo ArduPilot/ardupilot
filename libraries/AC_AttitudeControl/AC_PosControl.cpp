@@ -473,6 +473,11 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // get i term
     i = _pid_accel_z.get_integrator();
 
+    // ensure imax is always large enough to overpower hover throttle
+    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
+        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+    }
+
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     // To-Do: should this be replaced with limits check from attitude_controller?
     if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i>0&&_accel_error.z<0) || (i<0&&_accel_error.z>0)) {
