@@ -564,6 +564,9 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
+	uint32_t last_pilot_heading;
+	uint32_t last_pilot_yaw_input_ms;
+
 #if GNDEFFECT_COMPENSATION == ENABLED
     // ground effect detector
     struct {
