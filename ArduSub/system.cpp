@@ -271,14 +271,15 @@ void Sub::init_ardupilot()
 
     water_detector.init();
 
-    // cope with MS5607 in place of MS5611 on fake pixhawks
-	if(barometer.get_pressure(0) < 60000) {
-		barometer.set_precision_multiplier(0, 2);
-	}
-
 	// read Baro pressure at ground
 	//-----------------------------
 	init_barometer(true);
+
+    // cope with MS5607 in place of MS5611 on fake pixhawks
+	if(barometer.get_pressure(0) < 60000) {
+		barometer.set_precision_multiplier(0, 2);
+		init_barometer(true); // recalibrate with correct scalar
+	}
 
 	// backwards compatibility
 	if(attitude_control.get_accel_yaw_max() < 110000.0f) {
