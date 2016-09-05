@@ -27,6 +27,8 @@ bool Sub::poshold_init(bool ignore_checks)
 	// only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I
 	wp_nav.init_loiter_target();
 
+	last_pilot_heading = ahrs.yaw_sensor;
+
     return true;
 }
 
@@ -34,6 +36,7 @@ bool Sub::poshold_init(bool ignore_checks)
 // should be called at 100hz or more
 void Sub::poshold_run()
 {
+	uint32_t tnow = AP_HAL::millis();
     // convert inertial nav earth-frame velocities to body-frame
 //    const Vector3f& vel = inertial_nav.get_velocity();
 //    float vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
@@ -101,8 +104,26 @@ void Sub::poshold_run()
 	get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
 	// update attitude controller targets
-	attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+	if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
+		attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+		last_pilot_heading = ahrs.yaw_sensor;
+		last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
+	} else { // hold current heading
+
+		// this check is required to prevent bounce back after very fast yaw maneuvers
+		// the inertia of the vehicle causes the heading to move slightly past the point when pilot input actually stopped
+		if(tnow < last_pilot_yaw_input_ms + 250) { // give 250ms to slow down, then set target heading
+			target_yaw_rate = 0; // Stop rotation on yaw axis
+
+			// call attitude controller with target yaw rate = 0 to decelerate on yaw axis
+			attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+			last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
+
+		} else { // call attitude controller holding absolute absolute bearing
+			attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true, get_smoothing_gain());
+		}
+	}
 	/////////
 	/////////
 

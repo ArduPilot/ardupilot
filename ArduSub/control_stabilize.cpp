@@ -2,11 +2,6 @@
 
 #include "Sub.h"
 
-namespace {
-	uint32_t last_pilot_heading;
-	uint32_t last_pilot_yaw_input_ms = 0;
-}
-
 // stabilize_init - initialise stabilize controller
 bool Sub::stabilize_init(bool ignore_checks)
 {
@@ -26,7 +21,7 @@ bool Sub::stabilize_init(bool ignore_checks)
 // should be called at 100hz or more
 void Sub::stabilize_run()
 {
-	uint32_t tnow = millis();
+	uint32_t tnow = AP_HAL::millis();
     float target_roll, target_pitch;
     float target_yaw_rate;
     float pilot_throttle_scaled;
@@ -67,7 +62,7 @@ void Sub::stabilize_run()
 		// this check is required to prevent bounce back after very fast yaw maneuvers
 		// the inertia of the vehicle causes the heading to move slightly past the point when pilot input actually stopped
 		if(tnow < last_pilot_yaw_input_ms + 250) { // give 250ms to slow down, then set target heading
-			target_yaw_rate = 0;
+			target_yaw_rate = 0;  // Stop rotation on yaw axis
 
 			// call attitude controller with target yaw rate = 0 to decelerate on yaw axis
 			attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
