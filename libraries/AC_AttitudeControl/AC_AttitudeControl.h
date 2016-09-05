@@ -26,7 +26,7 @@
 #define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS              6000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
 #define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS         110000.0f // default maximum acceleration for roll/pitch axis in centidegrees/sec/sec
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-	#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS          0.0f
+	#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS          110000.0f
 #else
 	#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS          27000.0f  // default maximum acceleration for yaw axis in centidegrees/sec/sec
 #endif
