@@ -255,6 +255,8 @@ void Sub::init_ardupilot()
 		attitude_control.save_accel_yaw_max(110000.0f);
 	}
 
+	last_pilot_heading = ahrs.yaw_sensor;
+
     // initialise rangefinder
 #if RANGEFINDER_ENABLED == ENABLED
     init_rangefinder();
