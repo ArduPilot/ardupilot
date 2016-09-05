@@ -13,6 +13,12 @@ static float current_depth = 0;
 // ToDo: doesn't need to be called this fast
 void Sub::update_surface_and_bottom_detector()
 {
+	if(!motors.armed()) { // only update when armed
+		set_surfaced(false);
+		set_bottomed(false);
+		return;
+	}
+
 	Vector3f velocity;
 	ahrs.get_velocity_NED(velocity);
 
