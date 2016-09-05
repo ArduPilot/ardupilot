@@ -390,6 +390,11 @@ bool Plane::setup_failsafe_mixing(void)
         goto failed;
     }
 
+    if (!(ioctl(px4io_fd, PWM_STATUS, 0) & PX4IO_P_STATUS_FLAGS_MIXER_OK)) {
+        hal.console->printf("Mixer failed\n");
+        goto failed;
+    }
+
     ret = true;
 
 failed:
