@@ -164,6 +164,8 @@ stack, including several new features. Some of the changes include:
  - merged support for wide range of VRBrain boards
  - added support for PH2SLIM and PHMINI boards with BRD_TYPE
  - greatly reduced boot time on Pixhawk and similar boards
+ - fixed magic check for signing key in MAVLink2
+ - fixed averaging of gyros for EKF2 gyro bias estimate
  
 
 Release 3.6.0, 6th June 2016
