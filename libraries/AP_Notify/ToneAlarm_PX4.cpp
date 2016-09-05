@@ -277,7 +277,9 @@ void ToneAlarm_PX4::update()
         }else{
             // disarming tune
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
-            stop_cont_tone();
+            if(!flags.leak_detected) {
+            	stop_cont_tone();
+            }
         }
     }
 
