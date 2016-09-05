@@ -239,6 +239,7 @@ bool Plane::setup_failsafe_mixing(void)
     int px4io_fd = -1;
     enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
     struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
+    unsigned mixer_status = 0;
 
     buf = (char *)malloc(buf_size);
     if (buf == NULL) {
@@ -387,6 +388,12 @@ bool Plane::setup_failsafe_mixing(void)
 
     if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 1) != 0) {
         hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
+        goto failed;
+    }
+
+    if (ioctl(px4io_fd, PWM_IO_GET_STATUS, (unsigned long)&mixer_status) != 0 ||
+        (mixer_status & PX4IO_P_STATUS_FLAGS_MIXER_OK) != 0) {
+        hal.console->printf("Mixer failed: 0x%04x\n", mixer_status);
         goto failed;
     }
 
