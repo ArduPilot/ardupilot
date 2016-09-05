@@ -249,7 +249,7 @@ build_arduplane() {
     }
     skip_build $tag $ddir || {
         make px4-clean
-        make px4 -j2 || {
+        (make px4-v1 -j2 && make px4-v2 -j2 && make px4-v4 -j2) || {
             echo "Failed build of ArduPlane PX4 $tag"
             error_count=$((error_count+1))
             checkout ArduPlane "latest" "" ""
@@ -310,7 +310,7 @@ build_arducopter() {
         ddir="$binaries/Copter/$hdate/PX4-$f"
         skip_build $tag $ddir && continue
         make px4-clean
-        make px4-$f -j2 || {
+        (make px4-v1-$f -j2 && make px4-v2-$f -j2 && make px4-v4-$f -j2) || {
             echo "Failed build of ArduCopter PX4 $tag"
             error_count=$((error_count+1))
             continue
@@ -369,7 +369,7 @@ build_rover() {
     }
     skip_build $tag $ddir || {
         make px4-clean
-        make px4 -j2 || {
+        (make px4-v1 -j2 && make px4-v2 -j2 && make px4-v4 -j2) || {
             echo "Failed build of APMrover2 PX4 $tag"
             error_count=$((error_count+1))
             checkout APMrover2 "latest" "" ""
@@ -433,7 +433,7 @@ build_antennatracker() {
     }
     skip_build $tag $ddir || {
         make px4-clean
-        make px4 -j2 || {
+        (make px4-v1 -j2 && make px4-v2 -j2 && make px4-v4 -j2) || {
             echo "Failed build of AntennaTracker PX4 $tag"
             error_count=$((error_count+1))
             checkout AntennaTracker "latest" "" ""
