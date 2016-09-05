@@ -63,11 +63,11 @@ public:
                    NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE);
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f &get_gyro(void) const;
-    const Matrix3f &get_rotation_body_to_ned(void) const;
+    const Vector3f &get_gyro(void) const override;
+    const Matrix3f &get_rotation_body_to_ned(void) const override;
 
     // return the current drift correction integrator value
-    const Vector3f &get_gyro_drift(void) const;
+    const Vector3f &get_gyro_drift(void) const override;
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
@@ -123,10 +123,8 @@ public:
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector(void);
 
-    const Vector3f &get_accel_ef(uint8_t i) const;
-    const Vector3f &get_accel_ef() const {
-        return get_accel_ef(_ins.get_primary_accel());
-    };
+    const Vector3f &get_accel_ef(uint8_t i) const override;
+    const Vector3f &get_accel_ef() const override;
 
     // blended accelerometer values in the earth frame in m/s/s
     const Vector3f &get_accel_ef_blended(void) const;
