@@ -172,9 +172,6 @@ def kill_tasks():
     except Exception as e:
         progress("kill_tasks failed: {}".format(str(e)))
 
-# clean up processes at exit:
-atexit.register(kill_tasks)
-
 
 def check_jsbsim_version():
     """Assert that the JSBSim we will run is the one we expect to run"""
@@ -216,8 +213,6 @@ def find_autotest_dir():
 def find_root_dir():
     """Return path to root directory"""
     return os.path.realpath(os.path.join(find_autotest_dir(), '../..'))
-
-progress("Start")
 
 # define and run parser
 parser = CompatOptionParser("sim_vehicle.py",
@@ -277,6 +272,11 @@ group.add_option("", "--console", default=False, action='store_true', help="load
 parser.add_option_group(group)
 
 cmd_opts, cmd_args = parser.parse_args()
+
+# clean up processes at exit:
+atexit.register(kill_tasks)
+
+progress("Start")
 
 if cmd_opts.sim_vehicle_sh_compatible and cmd_opts.jobs is None:
     cmd_opts.jobs = 1
