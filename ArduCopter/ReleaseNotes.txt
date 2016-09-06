@@ -1,5 +1,15 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.4.0-rc4 06-Sep-2016
+Changes from 3.4.0-rc3
+1) Intel Aero flight controller support
+2) Bug fixes, minor improvements:
+    a) resolve unlikely endless-climb in AltHold, Loiter by ensuring Z-axis accelerometer IMAX can always overpower hover throttle
+    b) fix auto build issue that could lead to parameter corruption
+    c) fix EKF2 gyro estimation error when switching between IMUs
+    d) sanity check MOT_THST_MIX_MIN, MAX parameters
+    e) increase likelihood that parachute will release by reducing counter instead of resetting counter if vehicle becomes temporarily upright
+------------------------------------------------------------------
 Copter 3.4.0-rc3 31-Aug-2016
 Changes from 3.4.0-rc2
 1) Landing detector improvements:
