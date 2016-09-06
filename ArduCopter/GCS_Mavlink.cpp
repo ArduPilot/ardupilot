@@ -313,13 +313,13 @@ void NOINLINE Copter::send_location(mavlink_channel_t chan)
 
 void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
 {
-    const Vector3f &targets = attitude_control.get_att_target_euler_cd();
+    const Vector3f &targets = attitude_control.get_att_target_euler_rad()*RAD_TO_DEG;
     mavlink_msg_nav_controller_output_send(
         chan,
-        targets.x / 1.0e2f,
-        targets.y / 1.0e2f,
-        targets.z / 1.0e2f,
-        wp_bearing / 1.0e2f,
+        targets.x,
+        targets.y,
+        targets.z,
+        degrees(wp_bearing_rad),
         wp_distance / 1.0e2f,
         pos_control.get_alt_error() / 1.0e2f,
         0,
@@ -1225,7 +1225,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             if ((packet.param1 >= 0.0f)   &&
             	(packet.param1 <= 360.0f) &&
             	(is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-            	copter.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
+            	copter.set_auto_yaw_look_at_heading_rad(radians(packet.param1), radians(packet.param2), (int8_t)packet.param3, (uint8_t)packet.param4);
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;

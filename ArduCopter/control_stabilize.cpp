@@ -23,8 +23,8 @@ bool Copter::stabilize_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::stabilize_run()
 {
-    float target_roll, target_pitch;
-    float target_yaw_rate;
+    float target_roll_rad, target_pitch_rad;
+    float target_yaw_rate_rads;
     float pilot_throttle_scaled;
 
     // if not armed set throttle to zero and exit immediately
@@ -41,19 +41,19 @@ void Copter::stabilize_run()
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
-
+    float angle_max_rad = radians(aparm.angle_max*0.01f);
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+    get_pilot_desired_lean_angles_rad(radians(channel_roll->get_control_in()*0.01f), radians(channel_pitch->get_control_in()*0.01f), target_roll_rad, target_pitch_rad, angle_max_rad);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
 
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(target_roll_rad, target_pitch_rad, target_yaw_rate_rads, get_smoothing_gain());
 
     // body-frame rate controller is run directly from 100hz loop
 

@@ -135,16 +135,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
 };
 
 // passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
-void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds)
+void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_rad(float roll_passthrough_rad, float pitch_passthrough_rad, float yaw_rate_bf_rads)
 {
-    // convert from centidegrees on public interface to radians
-    float yaw_rate_bf_rads = radians(yaw_rate_bf_cds*0.01f);
 
     // store roll, pitch and passthroughs
     // NOTE: this abuses yaw_rate_bf_rads
-    _passthrough_roll = roll_passthrough;
-    _passthrough_pitch = pitch_passthrough;
-    _passthrough_yaw = degrees(yaw_rate_bf_rads)*100.0f;
+    _passthrough_roll_rad = roll_passthrough_rad;
+    _passthrough_pitch_rad = pitch_passthrough_rad;
+    _passthrough_yaw_rads = yaw_rate_bf_rads;
 
     // set rate controller to use pass through
     _flags_heli.flybar_passthrough = true;
@@ -154,8 +152,8 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     _attitude_target_ang_vel.y = _ahrs.get_gyro().y;
 
     // accel limit desired yaw rate
-    if (get_accel_yaw_max_radss() > 0.0f) {
-        float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt;
+    if (get_accel_yaw_max_rad() > 0.0f) {
+        float rate_change_limit_rads = get_accel_yaw_max_rad() * _dt;
         float rate_change_rads = yaw_rate_bf_rads - _attitude_target_ang_vel.z;
         rate_change_rads = constrain_float(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
         _attitude_target_ang_vel.z += rate_change_rads;
@@ -214,11 +212,11 @@ void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
 }
 
 // subclass non-passthrough too, for external gyro, no flybar
-void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
+void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw_rad(float roll_rate_rads, float pitch_rate_rads, float yaw_rate_rads)
 {
-    _passthrough_yaw = yaw_rate_bf_cds;
+    _passthrough_yaw_rads = yaw_rate_rads;
 
-    AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
+    AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rad(roll_rate_rads, pitch_rate_rads, yaw_rate_rads);
 }
 
 //
@@ -232,13 +230,13 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
     if (_flags_heli.flybar_passthrough) {
-        _motors.set_roll(_passthrough_roll/4500.0f);
-        _motors.set_pitch(_passthrough_pitch/4500.0f);
+        _motors.set_roll(_passthrough_roll_rad/(DEG_TO_RAD * 45.0f));
+        _motors.set_pitch(_passthrough_pitch_rad/(DEG_TO_RAD * 45.0f));
     } else {
         rate_bf_to_motor_roll_pitch(_rate_target_ang_vel.x, _rate_target_ang_vel.y);
     }
     if (_flags_heli.tail_passthrough) {
-        _motors.set_yaw(_passthrough_yaw/4500.0f);
+        _motors.set_yaw(_passthrough_yaw_rads/(DEG_TO_RAD * 45.0f));
     } else {
         _motors.set_yaw(rate_target_to_motor_yaw(_rate_target_ang_vel.z));
     }

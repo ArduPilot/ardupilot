@@ -536,9 +536,9 @@ void QuadPlane::init_stabilize(void)
 void QuadPlane::hold_stabilize(float throttle_in)
 {    
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                         plane.nav_pitch_cd,
-                                                                         get_desired_yaw_rate_cds(),
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(radians(plane.nav_roll_cd*0.01f),
+                                                                         radians(plane.nav_pitch_cd*0.01f),
+                                                                         radians(get_desired_yaw_rate_cds()*0.01f),
                                                                          smoothing_gain);
 
     if (throttle_in <= 0) {
@@ -592,9 +592,9 @@ void QuadPlane::hold_hover(float target_climb_rate)
     pos_control->set_accel_z(pilot_accel_z);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                         plane.nav_pitch_cd,
-                                                                         get_desired_yaw_rate_cds(),
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(radians(plane.nav_roll_cd*0.01f),
+                                                                         radians(plane.nav_pitch_cd*0.01f),
+                                                                         radians(get_desired_yaw_rate_cds()*0.01f),
                                                                          smoothing_gain);
 
     // call position controller
@@ -735,8 +735,8 @@ void QuadPlane::control_loiter()
     pos_control->set_accel_z(pilot_accel_z);
 
     // process pilot's roll and pitch input
-    wp_nav->set_pilot_desired_acceleration(plane.channel_roll->get_control_in(),
-                                           plane.channel_pitch->get_control_in());
+    wp_nav->set_pilot_desired_acceleration_rad(radians(plane.channel_roll->get_control_in()*0.01f),
+                                           radians(plane.channel_pitch->get_control_in()*0.01f));
 
     // Update EKF speed limit - used to limit speed when we are using optical flow
     float ekfGndSpdLimit, ekfNavVelGainScaler;    
@@ -746,14 +746,14 @@ void QuadPlane::control_loiter()
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(),
-                                                                  wp_nav->get_pitch(),
-                                                                  get_desired_yaw_rate_cds(),
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(wp_nav->get_roll_rad(),
+                                                                  wp_nav->get_pitch_rad(),
+                                                                  radians(get_desired_yaw_rate_cds()*0.01f),
                                                                   4.0f);
 
     // nav roll and pitch are controller by loiter controller
-    plane.nav_roll_cd = wp_nav->get_roll();
-    plane.nav_pitch_cd = wp_nav->get_pitch();
+    plane.nav_roll_cd = degrees(wp_nav->get_roll_rad())*100.0f;
+    plane.nav_pitch_cd = degrees(wp_nav->get_pitch_rad())*100.0f;
 
     if (plane.control_mode == QLAND) {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
@@ -1352,13 +1352,13 @@ void QuadPlane::vtol_position_controller(void)
         // run loiter controller
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                             plane.nav_pitch_cd,
-                                                                             get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(radians(plane.nav_roll_cd*0.01f),
+                                                                             radians(plane.nav_pitch_cd*0.01f),
+                                                                             radians(0.01f*(get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds())),
                                                                              smoothing_gain);
         // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = pos_control->get_roll();
-        plane.nav_pitch_cd = pos_control->get_pitch();
+        plane.nav_roll_cd = degrees(pos_control->get_roll_rad())*100.0f;
+        plane.nav_pitch_cd = degrees(pos_control->get_pitch_rad())*100.0f;
         break;
 
     case QPOS_POSITION1: {
@@ -1426,8 +1426,8 @@ void QuadPlane::vtol_position_controller(void)
         pos_control->freeze_ff_xy();
         
         // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = pos_control->get_roll();
-        plane.nav_pitch_cd = pos_control->get_pitch();
+        plane.nav_roll_cd = degrees(pos_control->get_roll_rad())*100.0f;
+        plane.nav_pitch_cd = degrees(pos_control->get_pitch_rad())*100.0f;
 
         /*
           limit the pitch down with an expanding envelope. This
@@ -1448,9 +1448,9 @@ void QuadPlane::vtol_position_controller(void)
         }
         
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                             plane.nav_pitch_cd,
-                                                                             desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(radians(plane.nav_roll_cd*0.01f),
+                                                                             radians(plane.nav_pitch_cd*0.01f),
+                                                                             radians(0.01f*(desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds())),
                                                                              smoothing_gain);
         if (plane.auto_state.wp_proportion >= 1 ||
             plane.auto_state.wp_distance < 5) {
@@ -1477,13 +1477,13 @@ void QuadPlane::vtol_position_controller(void)
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = wp_nav->get_roll();
-        plane.nav_pitch_cd = wp_nav->get_pitch();
+        plane.nav_roll_cd = degrees(wp_nav->get_roll_rad())*100.0f;
+        plane.nav_pitch_cd = degrees(wp_nav->get_pitch_rad())*100.0f;
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                             plane.nav_pitch_cd,
-                                                                             get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(radians(plane.nav_roll_cd*0.01f),
+                                                                             radians(plane.nav_pitch_cd*0.01f),
+                                                                             radians(0.01f*(get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds())),
                                                                              smoothing_gain);
         break;
 
@@ -1579,14 +1579,14 @@ void QuadPlane::takeoff_controller(void)
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
     
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                         plane.nav_pitch_cd,
-                                                                         get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(radians(plane.nav_roll_cd*0.01f),
+                                                                         radians(plane.nav_pitch_cd*0.01f),
+                                                                         radians(0.01f*(get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds())),
                                                                          smoothing_gain);
     
     // nav roll and pitch are controller by position controller
-    plane.nav_roll_cd = pos_control->get_roll();
-    plane.nav_pitch_cd = pos_control->get_pitch();
+    plane.nav_roll_cd = degrees(pos_control->get_roll_rad())*100.0f;
+    plane.nav_pitch_cd = degrees(pos_control->get_pitch_rad())*100.0f;
     
     pos_control->set_alt_target_from_climb_rate(wp_nav->get_speed_up(), plane.G_Dt, true);
     pos_control->update_z_controller();
@@ -1606,13 +1606,13 @@ void QuadPlane::waypoint_controller(void)
     wp_nav->update_wpnav();
     
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
-                                                       wp_nav->get_pitch(),
-                                                       wp_nav->get_yaw(),
+    attitude_control->input_euler_angle_roll_pitch_yaw_rad(wp_nav->get_roll_rad(),
+                                                       wp_nav->get_pitch_rad(),
+                                                       wp_nav->get_yaw_rad(),
                                                        true, 4.0f);
     // nav roll and pitch are controller by loiter controller
-    plane.nav_roll_cd = wp_nav->get_roll();
-    plane.nav_pitch_cd = wp_nav->get_pitch();
+    plane.nav_roll_cd = degrees(wp_nav->get_roll_rad())*100.0f;
+    plane.nav_pitch_cd = degrees(wp_nav->get_pitch_rad())*100.0f;
     
     // climb based on altitude error
     pos_control->set_alt_target_from_climb_rate_ff(assist_climb_rate_cms(), plane.G_Dt, false);
@@ -1975,7 +1975,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         return 0;
     }
 
-    float roll = wp_nav->get_roll() / 100.0f;
+    float roll = degrees(wp_nav->get_roll_rad());
     if (fabsf(roll) < weathervane.min_roll) {
         weathervane.last_output = 0;
         return 0;        

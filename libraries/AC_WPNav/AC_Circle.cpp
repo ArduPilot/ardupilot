@@ -36,7 +36,7 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _ahrs(ahrs),
     _pos_control(pos_control),
     _last_update(0),
-    _yaw(0.0f),
+    _yaw_rad(0.0f),
     _angle(0.0f),
     _angle_total(0.0f),
     _angular_vel(0.0f),
@@ -146,7 +146,7 @@ void AC_Circle::update()
             _pos_control.set_xy_target(target.x, target.y);
 
             // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-M_PI) * AC_CIRCLE_DEGX100;
+            _yaw_rad = wrap_PI(_angle-M_PI);
         }else{
             // set target position to center
             Vector3f target;
@@ -158,7 +158,7 @@ void AC_Circle::update()
             _pos_control.set_xy_target(target.x, target.y);
 
             // heading is same as _angle but converted to centi-degrees
-            _yaw = _angle * AC_CIRCLE_DEGX100;
+            _yaw_rad = _angle;
         }
 
         // update position controller

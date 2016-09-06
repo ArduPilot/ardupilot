@@ -43,9 +43,9 @@ bool Copter::drift_init(bool ignore_checks)
 void Copter::drift_run()
 {
     static float breaker = 0.0f;
-    static float roll_input = 0.0f;
-    float target_roll, target_pitch;
-    float target_yaw_rate;
+    static float roll_input_rad = 0.0f;
+    float target_roll_rad, target_pitch_rad;
+    float target_yaw_rate_rads;
     float pilot_throttle_scaled;
 
     // if landed and throttle at zero, set throttle to zero and exit immediately
@@ -59,9 +59,9 @@ void Copter::drift_run()
     if (!ap.throttle_zero) {
         set_land_complete(false);
     }
-
+    float angle_max_rad = radians(aparm.angle_max*0.01f);
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+    get_pilot_desired_lean_angles_rad(radians(channel_roll->get_control_in()*0.01f), radians(channel_pitch->get_control_in()*0.01f), target_roll_rad, target_pitch_rad, angle_max_rad);
 
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
@@ -73,28 +73,28 @@ void Copter::drift_run()
     float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
     float pitch_vel = vel.y * ahrs.sin_yaw() + vel.x * ahrs.cos_yaw(); // body pitch vel
 
-    // gain sceduling for Yaw
+    // gain scheduling for Yaw
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
-    target_yaw_rate = ((float)target_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
+    target_yaw_rate_rads = ((float)target_roll_rad/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
 
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     
-    roll_input = roll_input * .96f + (float)channel_yaw->get_control_in() * .04f;
+    roll_input_rad = roll_input_rad * .96f + radians(channel_yaw->get_control_in()*0.01f) * .04f;
 
     //convert user input into desired roll velocity
-    float roll_vel_error = roll_vel - (roll_input / DRIFT_SPEEDGAIN);
+    float roll_vel_error_rad = radians(roll_vel*0.01f) - (roll_input_rad / DRIFT_SPEEDGAIN);
 
     // Roll velocity is feed into roll acceleration to minimize slip
-    target_roll = roll_vel_error * -DRIFT_SPEEDGAIN;
-    target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
+    target_roll_rad = roll_vel_error_rad * -DRIFT_SPEEDGAIN;
+    target_roll_rad = constrain_float(target_roll_rad, -radians(45.0f), radians(45.0f));
 
     // If we let go of sticks, bring us to a stop
-    if(is_zero(target_pitch)){
+    if(is_zero(target_pitch_rad)){
         // .14/ (.03 * 100) = 4.6 seconds till full breaking
         breaker += .03f;
         breaker = MIN(breaker, DRIFT_SPEEDGAIN);
-        target_pitch = pitch_vel * breaker;
+        target_pitch_rad = radians(pitch_vel * breaker * 0.01f);
     }else{
         breaker = 0.0f;
     }
@@ -103,7 +103,7 @@ void Copter::drift_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_rad(target_roll_rad, target_pitch_rad, target_yaw_rate_rads, get_smoothing_gain());
 
     // output pilot's throttle with angle boost
     attitude_control.set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);

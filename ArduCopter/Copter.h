@@ -370,9 +370,9 @@ private:
     float scaleLongDown;
 
     // Location & Navigation
-    int32_t wp_bearing;
+    float wp_bearing_rad;
     // The location of home in relation to the copter in centi-degrees
-    int32_t home_bearing;
+    float home_bearing_rad;
     // distance between plane and home in cm
     int32_t home_distance;
     // distance between plane and next waypoint in cm.
@@ -407,12 +407,12 @@ private:
     // or in SuperSimple mode when the copter leaves a 20m radius from home.
     float simple_cos_yaw;
     float simple_sin_yaw;
-    int32_t super_simple_last_bearing;
+    float super_simple_last_bearing_rad;
     float super_simple_cos_yaw;
     float super_simple_sin_yaw;
 
     // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
-    int32_t initial_armed_bearing;
+    float initial_armed_bearing_rad;
 
     // Throttle variables
     int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
@@ -430,7 +430,7 @@ private:
     uint32_t nav_delay_time_start;
 
     // Flip
-    Vector3f flip_orig_attitude;         // original copter attitude before flip
+    Vector3f flip_orig_attitude_rad;         // original copter attitude before flip
 
     // throw mode state
     struct {
@@ -473,16 +473,16 @@ private:
     Vector3f roi_WP;
 
     // bearing from current location to the yaw_look_at_WP
-    float yaw_look_at_WP_bearing;
+    float yaw_look_at_WP_bearing_rad;
 
     // yaw used for YAW_LOOK_AT_HEADING yaw_mode
-    int32_t yaw_look_at_heading;
+    float yaw_look_at_heading_rad;
 
-    // Deg/s we should turn
-    int16_t yaw_look_at_heading_slew;
+    // radians/s we should turn
+    float yaw_look_at_heading_slew_rads;
 
     // heading when in yaw_look_ahead_bearing
-    float yaw_look_ahead_bearing;
+    float yaw_look_ahead_bearing_rad;
 
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
@@ -678,11 +678,11 @@ private:
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
-    void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
-    float get_pilot_desired_yaw_rate(int16_t stick_angle);
+    void get_pilot_desired_lean_angles_rad(float roll_in_rad, float pitch_in_rad, float &roll_out_rad, float &pitch_out_rad, float angle_max_rad);
+    float get_pilot_desired_yaw_rate_rad(float stick_angle);
     void check_ekf_yaw_reset();
-    float get_roi_yaw();
-    float get_look_ahead_yaw();
+    float get_roi_yaw_rad();
+    float get_look_ahead_yaw_rad();
     void update_throttle_hover();
     void set_throttle_takeoff();
     float get_pilot_desired_throttle(int16_t throttle_control);
@@ -690,7 +690,7 @@ private:
     float get_non_takeoff_throttle();
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     void auto_takeoff_set_start_alt(void);
-    void auto_takeoff_attitude_run(float target_yaw_rate);
+    void auto_takeoff_attitude_run_rad(float target_yaw_rate_rads);
     void set_accel_throttle_I_from_pilot_throttle(float pilot_throttle);
     void update_poscon_alt_max();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -779,7 +779,7 @@ private:
     void delay(uint32_t ms);
     bool acro_init(bool ignore_checks);
     void acro_run();
-    void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
+    void get_pilot_desired_angle_rates_rad(float roll_in_rad, float pitch_in_rad, float yaw_in_rad, float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads);
     bool althold_init(bool ignore_checks);
     void althold_run();
     bool auto_init(bool ignore_checks);
@@ -804,9 +804,9 @@ private:
     void auto_loiter_run();
     uint8_t get_default_auto_yaw_mode(bool rtl);
     void set_auto_yaw_mode(uint8_t yaw_mode);
-    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
+    void set_auto_yaw_look_at_heading_rad(float angle_rad, float turn_rate_rads, int8_t direction, uint8_t relative_angle);
     void set_auto_yaw_roi(const Location &roi_location);
-    float get_auto_heading(void);
+    float get_auto_heading_rad(void);
     bool autotune_init(bool ignore_checks);
     void autotune_stop();
     bool autotune_start(bool ignore_checks);
@@ -822,13 +822,13 @@ private:
     bool autotune_roll_enabled();
     bool autotune_pitch_enabled();
     bool autotune_yaw_enabled();
-    void autotune_twitching_test(float measurement, float target, float &measurement_min, float &measurement_max);
+    void autotune_twitching_test_rad(float measurement_rads, float target_rads, float &measurement_min_rads, float &measurement_max_rads);
     void autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
     void autotune_updating_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
     void autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max);
     void autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float target, float measurement_max);
     void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
-    void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
+    void autotune_twitching_measure_acceleration_rad(float &rate_of_change_radss, float rate_measurement_rads, float &rate_measurement_max_rads);
     void avoidance_adsb_update(void);
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
@@ -881,11 +881,11 @@ private:
     void loiter_run();
     bool poshold_init(bool ignore_checks);
     void poshold_run();
-    void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
-    int16_t poshold_mix_controls(float mix_ratio, int16_t first_control, int16_t second_control);
-    void poshold_update_brake_angle_from_velocity(int16_t &brake_angle, float velocity);
+    void poshold_update_pilot_lean_angle_rad(float &lean_angle_filtered_rad, float &lean_angle_raw_rad);
+    float poshold_mix_controls_rad(float mix_ratio, float first_control_rad, float second_control_rad);
+    void poshold_update_brake_angle_from_velocity_rad(float &brake_angle_rad, float velocity);
     void poshold_update_wind_comp_estimate();
-    void poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle);
+    void poshold_get_wind_comp_lean_angles_rad(float &roll_angle_rad, float &pitch_angle_rad);
     void poshold_roll_controller_to_pilot_override();
     void poshold_pitch_controller_to_pilot_override();
 
@@ -1007,7 +1007,7 @@ private:
     Vector3f pv_location_to_vector(const Location& loc);
     float pv_alt_above_origin(float alt_above_home_cm);
     float pv_alt_above_home(float alt_above_origin_cm);
-    float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
+    float pv_get_bearing_rad(const Vector3f &origin, const Vector3f &destination);
     float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
     float pv_distance_to_home_cm(const Vector3f &destination);
     void default_dead_zones();

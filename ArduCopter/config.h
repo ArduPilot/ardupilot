@@ -418,8 +418,8 @@
  # define ACRO_YAW_P                4.5f
 #endif
 
-#ifndef ACRO_LEVEL_MAX_ANGLE
- # define ACRO_LEVEL_MAX_ANGLE      3000
+#ifndef ACRO_LEVEL_MAX_ANGLE_RAD
+ # define ACRO_LEVEL_MAX_ANGLE_RAD  (30.0f*DEG_TO_RAD)
 #endif
 
 #ifndef ACRO_BALANCE_ROLL
@@ -472,8 +472,8 @@
  # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
-#ifndef AUTO_YAW_SLEW_RATE
- # define AUTO_YAW_SLEW_RATE    60              // degrees/sec
+#ifndef AUTO_YAW_SLEW_RATE_RADS
+ # define AUTO_YAW_SLEW_RATE_RADS    (DEG_TO_RAD*60.0f)              // radians/sec
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED
@@ -488,8 +488,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Stabilize Rate Control
 //
-#ifndef ROLL_PITCH_INPUT_MAX
- # define ROLL_PITCH_INPUT_MAX      4500            // roll, pitch input range
+#ifndef ROLL_PITCH_INPUT_MAX_RAD
+ # define ROLL_PITCH_INPUT_MAX_RAD      (45.0f*DEG_TO_RAD)            // roll, pitch input range
 #endif
 #ifndef DEFAULT_ANGLE_MAX
  # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value

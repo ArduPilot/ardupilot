@@ -51,8 +51,8 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_down_z(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),
-    _roll_target(0.0f),
-    _pitch_target(0.0f),
+    _roll_target_rad(0.0f),
+    _pitch_target_rad(0.0f),
     _alt_max(0.0f),
     _distance_to_target(0.0f),
     _accel_target_jerk_limited(0.0f,0.0f),
@@ -629,8 +629,8 @@ bool AC_PosControl::is_active_xy() const
 void AC_PosControl::init_xy_controller(bool reset_I)
 {
     // set roll, pitch lean angle targets to current attitude
-    _roll_target = _ahrs.roll_sensor;
-    _pitch_target = _ahrs.pitch_sensor;
+    _roll_target_rad = _ahrs.roll;
+    _pitch_target_rad = _ahrs.pitch;
 
     // initialise I terms from lean angles
     if (reset_I) {
@@ -684,8 +684,8 @@ float AC_PosControl::time_since_last_xy_update() const
 void AC_PosControl::init_vel_controller_xyz()
 {
     // set roll, pitch lean angle targets to current attitude
-    _roll_target = _ahrs.roll_sensor;
-    _pitch_target = _ahrs.pitch_sensor;
+    _roll_target_rad = _ahrs.roll;
+    _pitch_target_rad = _ahrs.pitch;
 
     // reset last velocity if this controller has just been engaged or dt is zero
     lean_angles_to_accel(_accel_target.x, _accel_target.y);
@@ -922,12 +922,12 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bo
 {
     float accel_total;                          // total acceleration in cm/s/s
     float accel_right, accel_forward;
-    float lean_angle_max = _attitude_control.lean_angle_max();
+    float lean_angle_max_rad = _attitude_control.lean_angle_max_rad();
     float accel_max = POSCONTROL_ACCEL_XY_MAX;
 
     // limit acceleration if necessary
     if (use_althold_lean_angle) {
-        accel_max = MIN(accel_max, GRAVITY_MSS * 100.0f * tanf(ToRad(constrain_float(_attitude_control.get_althold_lean_angle_max(),1000,8000)/100.0f)));
+        accel_max = MIN(accel_max, GRAVITY_MSS * 100.0f * tanf(constrain_float(_attitude_control.get_althold_lean_angle_max_rad(),ToRad(10.0f),ToRad(80.0f))));
     }
 
     // scale desired acceleration if it's beyond acceptable limit
@@ -970,9 +970,9 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bo
     accel_right = -accel_target_filtered.x*_ahrs.sin_yaw() + accel_target_filtered.y*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    _pitch_target = constrain_float(atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
-    float cos_pitch_target = cosf(_pitch_target*M_PI/18000);
-    _roll_target = constrain_float(atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
+    _pitch_target_rad = constrain_float(atanf(-accel_forward/(GRAVITY_MSS * 100)),-lean_angle_max_rad, lean_angle_max_rad);
+    float cos_pitch_target = cosf(_pitch_target_rad);
+    _roll_target_rad = constrain_float(atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100)), -lean_angle_max_rad, lean_angle_max_rad);
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s

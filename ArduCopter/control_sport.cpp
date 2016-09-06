@@ -37,30 +37,31 @@ void Copter::sport_run()
     // get pilot's desired roll and pitch rates
 
     // calculate rate requests
-    float target_roll_rate = channel_roll->get_control_in() * g.acro_rp_p;
-    float target_pitch_rate = channel_pitch->get_control_in() * g.acro_rp_p;
+    float target_roll_rate_rads = radians(channel_roll->get_control_in() * g.acro_rp_p * 0.01f);
+    float target_pitch_rate_rads = radians(channel_pitch->get_control_in() * g.acro_rp_p * 0.01f);
 
-    int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
-    target_roll_rate -= constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
+    float roll_angle_rad = wrap_PI(ahrs.roll);
+    target_roll_rate_rads -= constrain_float(roll_angle_rad, -ACRO_LEVEL_MAX_ANGLE_RAD, ACRO_LEVEL_MAX_ANGLE_RAD) * g.acro_balance_roll;
 
     // Calculate trainer mode earth frame rate command for pitch
-    int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
-    target_pitch_rate -= constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
+    float pitch_angle_rad = wrap_PI(ahrs.pitch);
+    target_pitch_rate_rads -= constrain_float(pitch_angle_rad, -ACRO_LEVEL_MAX_ANGLE_RAD, ACRO_LEVEL_MAX_ANGLE_RAD) * g.acro_balance_pitch;
 
-    if (roll_angle > aparm.angle_max){
-        target_roll_rate -=  g.acro_rp_p*(roll_angle-aparm.angle_max);
-    }else if (roll_angle < -aparm.angle_max) {
-        target_roll_rate -=  g.acro_rp_p*(roll_angle+aparm.angle_max);
+    float angle_max_rad = radians(aparm.angle_max*0.01f);
+    if (roll_angle_rad > angle_max_rad){
+        target_roll_rate_rads -=  g.acro_rp_p*(roll_angle_rad-angle_max_rad);
+    }else if (roll_angle_rad < -angle_max_rad) {
+        target_roll_rate_rads -=  g.acro_rp_p*(roll_angle_rad+angle_max_rad);
     }
 
-    if (pitch_angle > aparm.angle_max){
-        target_pitch_rate -=  g.acro_rp_p*(pitch_angle-aparm.angle_max);
-    }else if (pitch_angle < -aparm.angle_max) {
-        target_pitch_rate -=  g.acro_rp_p*(pitch_angle+aparm.angle_max);
+    if (pitch_angle_rad > angle_max_rad){
+        target_pitch_rate_rads -=  g.acro_rp_p*(pitch_angle_rad-angle_max_rad);
+    }else if (pitch_angle_rad < -angle_max_rad) {
+        target_pitch_rate_rads -=  g.acro_rp_p*(pitch_angle_rad+angle_max_rad);
     }
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rad(radians(channel_yaw->get_control_in()*0.01f));
 
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
@@ -90,7 +91,7 @@ void Copter::sport_run()
     case Sport_MotorStopped:
 
         motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        attitude_control.input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
+        attitude_control.input_euler_rate_roll_pitch_yaw_rad(target_roll_rate_rads, target_pitch_rate_rads, target_yaw_rate_rads);
 #if FRAME_CONFIG == HELI_FRAME
         // force descent rate and call position controller
         pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
@@ -120,7 +121,7 @@ void Copter::sport_run()
         takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // call attitude controller
-        attitude_control.input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
+        attitude_control.input_euler_rate_roll_pitch_yaw_rad(target_roll_rate_rads, target_pitch_rate_rads, target_yaw_rate_rads);
 
         // call position controller
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
@@ -138,7 +139,7 @@ void Copter::sport_run()
 
         attitude_control.reset_rate_controller_I_terms();
         attitude_control.set_yaw_target_to_current_heading();
-        attitude_control.input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
+        attitude_control.input_euler_rate_roll_pitch_yaw_rad(target_roll_rate_rads, target_pitch_rate_rads, target_yaw_rate_rads);
         pos_control.relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control.update_z_controller();
         break;
@@ -146,7 +147,7 @@ void Copter::sport_run()
     case Sport_Flying:
         motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         // call attitude controller
-        attitude_control.input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
+        attitude_control.input_euler_rate_roll_pitch_yaw_rad(target_roll_rate_rads, target_pitch_rate_rads, target_yaw_rate_rads);
 
         // adjust climb rate using rangefinder
         if (rangefinder_alt_ok()) {

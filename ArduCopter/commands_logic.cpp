@@ -780,9 +780,9 @@ void Copter::do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 void Copter::do_yaw(const AP_Mission::Mission_Command& cmd)
 {
-	set_auto_yaw_look_at_heading(
-		cmd.content.yaw.angle_deg,
-		cmd.content.yaw.turn_rate_dps,
+	set_auto_yaw_look_at_heading_rad(
+		radians(cmd.content.yaw.angle_deg),
+		radians(cmd.content.yaw.turn_rate_dps),
 		cmd.content.yaw.direction,
 		cmd.content.yaw.relative_angle);
 }
@@ -821,7 +821,7 @@ bool Copter::verify_yaw()
     }
 
     // check if we are within 2 degrees of the target heading
-    if (labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200) {
+    if (fabsf(wrap_PI(ahrs.yaw-yaw_look_at_heading_rad)) <= (2.0f*DEG_TO_RAD)) {
         return true;
     }else{
         return false;

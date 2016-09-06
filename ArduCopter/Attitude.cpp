@@ -11,39 +11,39 @@ float Copter::get_smoothing_gain()
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
-void Copter::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
+void Copter::get_pilot_desired_lean_angles_rad(float roll_in_rad, float pitch_in_rad, float &roll_out_rad, float &pitch_out_rad, float angle_max_rad)
 {
     // sanity check angle max parameter
     aparm.angle_max = constrain_int16(aparm.angle_max,1000,8000);
 
     // limit max lean angle
-    angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
+    angle_max_rad = constrain_float(angle_max_rad, radians(10.0f), radians(aparm.angle_max * 0.01f));
 
     // scale roll_in, pitch_in to ANGLE_MAX parameter range
-    float scaler = aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
-    roll_in *= scaler;
-    pitch_in *= scaler;
+    float scaler_rad = radians(aparm.angle_max*0.01f)/(float)ROLL_PITCH_INPUT_MAX_RAD;
+    roll_in_rad *= scaler_rad;
+    pitch_in_rad *= scaler_rad;
 
     // do circular limit
-    float total_in = norm(pitch_in, roll_in);
-    if (total_in > angle_max) {
-        float ratio = angle_max / total_in;
-        roll_in *= ratio;
-        pitch_in *= ratio;
+    float total_in_rad = norm(pitch_in_rad, roll_in_rad);
+    if (total_in_rad > angle_max_rad) {
+        float ratio = angle_max_rad / total_in_rad;
+        roll_in_rad *= ratio;
+        pitch_in_rad *= ratio;
     }
 
     // do lateral tilt to euler roll conversion
-    roll_in = (18000/M_PI) * atanf(cosf(pitch_in*(M_PI/18000))*tanf(roll_in*(M_PI/18000)));
+    roll_in_rad = atanf(cosf(pitch_in_rad)*tanf(roll_in_rad));
 
     // return
-    roll_out = roll_in;
-    pitch_out = pitch_in;
+    roll_out_rad = roll_in_rad;
+    pitch_out_rad = pitch_in_rad;
 }
 
 // get_pilot_desired_heading - transform pilot's yaw input into a
 // desired yaw rate
-// returns desired yaw rate in centi-degrees per second
-float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
+// returns desired yaw rate in radians per second
+float Copter::get_pilot_desired_yaw_rate_rad(float stick_angle)
 {
     // convert pilot input to the desired yaw rate
     return stick_angle * g.acro_yaw_p;
@@ -55,7 +55,7 @@ void Copter::check_ekf_yaw_reset()
     float yaw_angle_change_rad = 0.0f;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+        attitude_control.shift_ef_yaw_target_rad(yaw_angle_change_rad);
         ekfYawReset_ms = new_ekfYawReset_ms;
         Log_Write_Event(DATA_EKF_YAW_RESET);
     }
@@ -65,30 +65,30 @@ void Copter::check_ekf_yaw_reset()
  * yaw controllers
  *************************************************************/
 
-// get_roi_yaw - returns heading towards location held in roi_WP
+// get_roi_yaw_rad - returns heading towards location held in roi_WP
 // should be called at 100hz
-float Copter::get_roi_yaw()
+float Copter::get_roi_yaw_rad()
 {
     static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 100hz
 
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
+        yaw_look_at_WP_bearing_rad = pv_get_bearing_rad(inertial_nav.get_position(), roi_WP);
     }
 
-    return yaw_look_at_WP_bearing;
+    return yaw_look_at_WP_bearing_rad;
 }
 
-float Copter::get_look_ahead_yaw()
+float Copter::get_look_ahead_yaw_rad()
 {
     const Vector3f& vel = inertial_nav.get_velocity();
     float speed = norm(vel.x,vel.y);
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
-        yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
+        yaw_look_ahead_bearing_rad = atan2f(vel.y,vel.x);
     }
-    return yaw_look_ahead_bearing;
+    return yaw_look_ahead_bearing_rad;
 }
 
 /*************************************************************

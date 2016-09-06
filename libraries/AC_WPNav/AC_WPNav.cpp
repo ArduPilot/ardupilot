@@ -132,7 +132,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _spline_time(0.0f),
     _spline_time_scale(0.0f),
     _spline_vel_scaler(0.0f),
-    _yaw(0.0f)
+    _yaw_rad(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -218,11 +218,11 @@ void AC_WPNav::loiter_soften_for_landing()
 }
 
 /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
-void AC_WPNav::set_pilot_desired_acceleration(float control_roll, float control_pitch)
+void AC_WPNav::set_pilot_desired_acceleration_rad(float control_roll_rad, float control_pitch_rad)
 {
     // convert pilot input to desired acceleration in cm/s/s
-    _pilot_accel_fwd_cms = -control_pitch * _loiter_accel_cmss / 4500.0f;
-    _pilot_accel_rgt_cms = control_roll * _loiter_accel_cmss / 4500.0f;
+    _pilot_accel_fwd_cms = -control_pitch_rad * _loiter_accel_cmss / radians(45.0f);
+    _pilot_accel_rgt_cms = control_roll_rad * _loiter_accel_cmss / radians(45.0f);
 }
 
 /// get_loiter_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
@@ -313,9 +313,9 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 }
 
 /// get_bearing_to_target - get bearing to loiter target in centi-degrees
-int32_t AC_WPNav::get_loiter_bearing_to_target() const
+float AC_WPNav::get_loiter_bearing_to_target_rad() const
 {
-    return get_bearing_cd(_inav.get_position(), _pos_control.get_pos_target());
+    return get_bearing_rad(_inav.get_position(), _pos_control.get_pos_target());
 }
 
 // update_loiter - run the loiter controller - gets called at 100hz (APM) or 400hz (PX4)
@@ -400,7 +400,7 @@ void AC_WPNav::wp_and_spline_init()
     // also limit the accel using the maximum lean angle. This
     // prevents the navigation controller from trying to move the
     // target point at an unachievable rate
-    float accel_limit_cms = GRAVITY_MSS * 100 * tanf(radians(_attitude_control.lean_angle_max()*0.01f));
+    float accel_limit_cms = GRAVITY_MSS * 100 * tanf(_attitude_control.lean_angle_max_rad());
     if (_wp_accel_cms > accel_limit_cms) {
         _wp_accel_cms.set(accel_limit_cms);
     }
@@ -502,10 +502,10 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
 
     // initialise yaw heading
     if (_track_length >= WPNAV_YAW_DIST_MIN) {
-        _yaw = get_bearing_cd(_origin, _destination);
+        _yaw_rad = get_bearing_rad(_origin, _destination);
     } else {
         // set target yaw to current heading target
-        _yaw = _attitude_control.get_att_target_euler_cd().z;
+        _yaw_rad = _attitude_control.get_att_target_euler_rad().z;
     }
 
     // get origin's alt-above-terrain
@@ -718,10 +718,10 @@ float AC_WPNav::get_wp_distance_to_destination() const
     return norm(_destination.x-curr.x,_destination.y-curr.y);
 }
 
-/// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
-int32_t AC_WPNav::get_wp_bearing_to_destination() const
+/// get_wp_bearing_to_destination - get bearing to next waypoint in radians
+float AC_WPNav::get_wp_bearing_to_destination_rad() const
 {
-    return get_bearing_cd(_inav.get_position(), _destination);
+    return get_bearing_rad(_inav.get_position(), _destination);
 }
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
@@ -972,7 +972,7 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     }
 
     // initialise yaw heading to current heading
-    _yaw = _attitude_control.get_att_target_euler_cd().z;
+    _yaw_rad = _attitude_control.get_att_target_euler_rad().z;
 
     // store origin and destination locations
     _origin = origin;
@@ -1124,7 +1124,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         _pos_control.set_pos_target(target_pos);
 
         // update the yaw
-        _yaw = RadiansToCentiDegrees(atan2f(target_vel.y,target_vel.x));
+        _yaw_rad = atan2f(target_vel.y,target_vel.x);
 
         // advance spline time to next step
         _spline_time += _spline_time_scale*dt;
@@ -1218,13 +1218,13 @@ bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &te
 /// shared methods
 ///
 
-// get_bearing_cd - return bearing in centi-degrees between two positions
+// get_bearing_rad - return bearing in radians between two positions
 // To-Do: move this to math library
-float AC_WPNav::get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const
+float AC_WPNav::get_bearing_rad(const Vector3f &origin, const Vector3f &destination) const
 {
-    float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * 5729.57795f;
-    if (bearing < 0) {
-        bearing += 36000;
+    float bearing = M_PI/2.0f + atan2f(-(destination.x-origin.x), destination.y-origin.y);
+    if (bearing < 0.0f) {
+        bearing += M_PI * 2.0f;
     }
     return bearing;
 }
