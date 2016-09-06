@@ -117,7 +117,7 @@ public:
     AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value, int32_t *home_distance, int32_t *home_bearing);
+    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, AP_Float *fs_batt_voltage, AP_Float *fs_batt_mah, uint32_t *ap_value);
     void init(const AP_SerialManager &serial_manager);
 
     // add statustext message to FrSky lib queue.
@@ -163,8 +163,6 @@ private:
         uint8_t control_mode;
         uint32_t *value;
         uint32_t sensor_status_error_flags;
-        int32_t *home_distance;
-        int32_t *home_bearing;
     } _ap;
     
     float _relative_home_altitude; // altitude in centimeters above home
